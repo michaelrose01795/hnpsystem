@@ -5952,6 +5952,70 @@ html.staff-scope .myjobs-date {
   }
 }
 
+/* ============================================================= */
+/* Mobile portrait — grouped controls fill content width.        */
+/* Segmented selectors (Day / Week / Month), tab groups, filter  */
+/* bars, action rows, status selectors, button groups and        */
+/* toggle groups all stretch to match the width of the content   */
+/* sections around them instead of shrink-wrapping their         */
+/* buttons. Portrait phones only — tablet, desktop and landscape */
+/* are untouched. Only width / flex behaviour is altered here;   */
+/* colours, radius, shadows, hover and active states are         */
+/* inherited from the base rules unchanged.                      */
+/* ============================================================= */
+@media (max-width: 640px) and (orientation: portrait) {
+  /* 1. Grouped-control containers stretch to the parent's full
+        width instead of shrink-wrapping. Overrides the base
+        `width: fit-content` (.tab-api) / `inline-flex`
+        (.app-layout-tab-row) and any inline `flex: 0 0 auto`
+        used elsewhere to pin a group to its content width. */
+  html.staff-scope .tab-api,
+  html.staff-scope .app-layout-tab-row,
+  html.staff-scope .app-layout-toolbar-row,
+  html.staff-scope .app-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* 2. Buttons inside segmented / tab / toggle groups share the
+        row evenly and wrap to new full-width rows when they no
+        longer fit, rather than overflowing or clipping on
+        iPhone Safari. Touch targets keep their existing height. */
+  html.staff-scope .tab-api > .tab-api__item,
+  html.staff-scope .tab-api > .app-tab,
+  html.staff-scope .app-layout-tab-row > .app-tab,
+  html.staff-scope .app-layout-tab-row > .tab-api__item,
+  html.staff-scope .app-layout-tab-row > button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* 3. Filter / action toolbar children (search boxes, date
+        pickers, dropdowns, action buttons) grow from a
+        comfortable basis so they align with the content beneath
+        and wrap cleanly instead of holding a fixed pixel width. */
+  html.staff-scope .app-layout-toolbar-row > *,
+  html.staff-scope .app-toolbar-row > * {
+    flex: 1 1 140px !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* 4. A grouped selector nested inside a toolbar takes its own
+        full-width row so it lines up with the controls above and
+        below it rather than being squeezed beside them. */
+  html.staff-scope .app-layout-toolbar-row > .app-layout-tab-row,
+  html.staff-scope .app-layout-toolbar-row > .tab-api,
+  html.staff-scope .app-toolbar-row > .app-layout-tab-row,
+  html.staff-scope .app-toolbar-row > .tab-api {
+    flex-basis: 100% !important;
+  }
+}
+
 /* ===========================
    PRINT STYLES – Invoice Only
    =========================== */

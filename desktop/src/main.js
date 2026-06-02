@@ -113,6 +113,53 @@ function createSplashWindow() {
 }
 
 // ---------------------------------------------------------------------------
+// Application menu: kept auto-hidden (see autoHideMenuBar) so the shell still
+// feels like proper desktop software, but its accelerators give the DMS the
+// same keyboard shortcuts the browser provides during `vercel dev`:
+//   - Ctrl/Cmd+R           → reload the current screen
+//   - Ctrl/Cmd+Shift+R / F5 → hard reload (ignore cache)
+//   - Ctrl/Cmd+Shift+I / F12 → toggle DevTools
+//   - Ctrl/Cmd +/-/0        → zoom in / out / reset
+//   - Ctrl/Cmd C/V/X/A      → copy / paste / cut / select-all in text fields
+// Without a menu, Electron strips these accelerators entirely (the old
+// `setApplicationMenu(null)` is exactly why Ctrl+R did nothing in the build).
+// ---------------------------------------------------------------------------
+function buildAppMenu() {
+  const isMac = process.platform === "darwin";
+  const template = [
+    // macOS expects an app menu first; harmless to include only there.
+    ...(isMac ? [{ role: "appMenu" }] : []),
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },         // Ctrl/Cmd+R
+        { role: "forceReload" },    // Ctrl/Cmd+Shift+R (also F5)
+        { role: "toggleDevTools" }, // Ctrl/Cmd+Shift+I (also F12)
+        { type: "separator" },
+        { role: "resetZoom" },      // Ctrl/Cmd+0
+        { role: "zoomIn" },         // Ctrl/Cmd++
+        { role: "zoomOut" },        // Ctrl/Cmd+-
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+  ];
+  return Menu.buildFromTemplate(template);
+}
+
+// ---------------------------------------------------------------------------
 // Main window: loads the hosted Next.js DMS in a clean, browser-chromeless
 // app window. All security flags are explicit so a future refactor can't
 // silently widen the privilege surface.
@@ -135,15 +182,16 @@ function createMainWindow() {
       sandbox: true,                                // Renderer runs in OS sandbox
       webviewTag: false,                            // Disallow nested <webview> tags
       spellcheck: true,                             // Useful for note/text fields in the DMS
-      // devTools enabled in dev only — guards against shipped consoles in prod
-      devTools: !app.isPackaged,
+      // DevTools enabled in dev and the build so F12 / inspect works like the
+      // browser does during `vercel dev` (the dev overlay lives in the app).
+      devTools: true,
     },
   });
 
-  // Strip the default menu in production; keep it in dev so DevTools is reachable.
-  if (app.isPackaged) {
-    Menu.setApplicationMenu(null); // No File/Edit/Help bar — feels like proper desktop software
-  }
+  // Apply our custom menu (auto-hidden via autoHideMenuBar) in every build so
+  // the keyboard accelerators — Ctrl+R reload, copy/paste, zoom, DevTools —
+  // work exactly as they do in the browser. The bar stays hidden until Alt.
+  Menu.setApplicationMenu(buildAppMenu());
 
   // Lock the title so navigations inside the DMS can't override the app branding.
   mainWindow.on("page-title-updated", (event) => {
@@ -323,13 +371,28 @@ function retryLoadMainWindow() {
 // App lifecycle wiring
 // ---------------------------------------------------------------------------
 
-// Refuse all in-app permission requests by default — the DMS shouldn't need
-// camera/mic/geolocation/etc. inside the desktop shell. Override on a
-// case-by-case basis here if a real use-case emerges (e.g. file picker).
+// Refuse in-app permission requests by default — the DMS shouldn't need
+// camera/mic/geolocation/etc. inside the desktop shell — but explicitly ALLOW
+// clipboard access. The dev overlay (and any "copy" button in the DMS) uses the
+// async Clipboard API (`navigator.clipboard.writeText`), which Electron gates
+// behind the `clipboard-sanitized-write` permission. Without this allow-list a
+// deny-all handler silently rejects every copy, so it works in the browser
+// (Vercel) but not inside the packaged shell. Override others case-by-case here.
+const ALLOWED_PERMISSIONS = new Set([
+  "clipboard-read",            // navigator.clipboard.readText
+  "clipboard-write",           // legacy/alias write permission
+  "clipboard-sanitized-write", // navigator.clipboard.writeText (the copy path)
+]);
+
 function lockDownPermissions() {
   const { session } = require("electron"); // Lazy require — session is only ready after `ready`
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false); // Deny by default for a quiet, safe shell
+  // Async permission prompts (e.g. first clipboard write in a session).
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(ALLOWED_PERMISSIONS.has(permission)); // Allow clipboard, deny the rest
+  });
+  // Synchronous permission checks (the Clipboard API consults this too).
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    return ALLOWED_PERMISSIONS.has(permission); // Same allow-list, sync variant
   });
 }
 

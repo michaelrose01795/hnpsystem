@@ -187,7 +187,12 @@
       "PowerShell(npx eslint src/pages/_app.js src/components/Layout.js 2>&1)",
       "PowerShell(npx eslint src/pages/_app.js 2>&1)",
       "Bash(node tools/scripts/check-layers.js)",
-      "Bash(echo \"=== eslint exit: $? ===\")"
+      "Bash(echo \"=== eslint exit: $? ===\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\hnpsystem\" -Recurse -Filter \"*electron*\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path C:\\\\hnpsystem -Directory)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -Recurse -Directory | Where-Object { $_.Name -match \"build|assets\" } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -File | Where-Object { $_.Name -match \"\\\\.env|electron|config\" } | Select-Object -ExpandProperty FullName)"
     ],
     "deny": [],
     "ask": [],

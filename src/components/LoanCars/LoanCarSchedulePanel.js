@@ -18,6 +18,7 @@ import {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LOOK_BACK_DAYS = 14;
 const LOOK_AHEAD_DAYS = 35;
+const LOAN_CAR_MODAL_Z_INDEX = 4000;
 
 const EMPTY_BOOKING = {
   bookingId: "",
@@ -41,20 +42,20 @@ const EMPTY_BOOKING = {
   notes: "",
 };
 
-const COPY_FIELDS = [
-  ["Customer", "customerName"],
-  ["Email", "customerEmail"],
-  ["Phone", "customerPhone"],
-  ["Address", "customerAddress"],
-  ["Postcode", "customerPostcode"],
-  ["Job number", "jobNumber"],
-  ["Customer vehicle reg", "vehicleReg"],
-  ["Vehicle", "vehicleMakeModel"],
-  ["Mileage", "mileage"],
-  ["Insurance provider", "insuranceProvider"],
-  ["Policy number", "insurancePolicyNumber"],
-  ["Licence number", "licenceNumber"],
-  ["Date of birth", "dateOfBirth"],
+const BOOKING_FORM_FIELDS = [
+  { label: "Job number", key: "jobNumber" },
+  { label: "Customer name", key: "customerName" },
+  { label: "Customer email", key: "customerEmail", type: "email" },
+  { label: "Customer phone", key: "customerPhone" },
+  { label: "Address", key: "customerAddress" },
+  { label: "Postcode", key: "customerPostcode" },
+  { label: "Customer vehicle reg", key: "vehicleReg", transform: (value) => value.toUpperCase() },
+  { label: "Vehicle", key: "vehicleMakeModel" },
+  { label: "Mileage", key: "mileage", type: "number" },
+  { label: "Insurance provider", key: "insuranceProvider" },
+  { label: "Policy number", key: "insurancePolicyNumber" },
+  { label: "Licence number", key: "licenceNumber" },
+  { label: "Date of birth", key: "dateOfBirth", type: "date" },
 ];
 
 const toDateKey = (date) => {
@@ -75,6 +76,7 @@ const buildDateRows = () => {
       key: toDateKey(date),
       label: date.toLocaleDateString("en-GB", { weekday: "short" }),
       dateLabel: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      compactDateLabel: date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }),
       isToday: offset === 0,
     };
   });
@@ -119,11 +121,6 @@ const stickyFirstColBg = {
   backgroundColor: "var(--surface)",
 };
 
-const stickyFirstColTodayBg = {
-  backgroundColor: "var(--surface)",
-  backgroundImage: "linear-gradient(var(--theme), var(--theme))",
-};
-
 const labelStyle = {
   display: "flex",
   flexDirection: "column",
@@ -137,6 +134,12 @@ const fieldGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: "var(--layout-card-gap)",
+};
+
+const compactBookingFieldGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gap: "var(--space-2)",
 };
 
 const todayDateKey = () => {
@@ -180,67 +183,83 @@ function ClipboardIcon() {
   );
 }
 
-function CopyField({ label, value, onCopy, copied }) {
+function CopyButton({ label, value, onCopy, copied }) {
+  return (
+    <Button type="button" variant="ghost" size="xs" onClick={() => onCopy(value)} disabled={!value} aria-label={`Copy ${label}`} title={copied ? "Copied" : `Copy ${label}`}>
+      {copied ? "Copied" : <ClipboardIcon />}
+    </Button>
+  );
+}
+
+function CopyableField({ label, valueToCopy, copied, onCopy, children }) {
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) auto",
-        gap: "8px",
-        alignItems: "center",
+        gap: "var(--space-2)",
+        alignItems: "end",
       }}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ color: "var(--grey-accent)", fontSize: "11px", fontWeight: 700 }}>{label}</div>
-        <div style={{ color: "var(--text-1)", fontSize: "13px", overflowWrap: "anywhere" }}>{value || "Not set"}</div>
-      </div>
-      <Button type="button" variant="ghost" size="xs" onClick={() => onCopy(value)} disabled={!value} aria-label={`Copy ${label}`} title={copied ? "Copied" : `Copy ${label}`}>
-        {copied ? "Copied" : <ClipboardIcon />}
-      </Button>
+      <div style={{ minWidth: 0 }}>{children}</div>
+      <CopyButton label={label} value={valueToCopy} onCopy={onCopy} copied={copied} />
     </div>
   );
 }
 
-function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle }) {
+function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle, fixedHeight = false }) {
   const isHighlighted =
     booking &&
     ((highlightedJob && String(booking.jobNumber || "").toLowerCase() === highlightedJob) ||
       (highlightedVehicle && String(booking.vehicleReg || booking.reg || "").toLowerCase() === highlightedVehicle));
+  const actionLabel = booking
+    ? `Open booking for ${booking.vehicleReg || booking.jobNumber || "loan car"}`
+    : "Book available loan car slot";
 
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-label={actionLabel}
       style={{
         width: "100%",
-        minHeight: "44px",
+        height: fixedHeight ? "44px" : "100%",
+        minHeight: fixedHeight ? 0 : "44px",
+        maxHeight: fixedHeight ? "44px" : undefined,
+        boxSizing: "border-box",
         border: 0,
-        borderRadius: "var(--radius-sm)",
-        backgroundColor: booking ? (isHighlighted ? "rgba(var(--primary-rgb), 0.18)" : "var(--warning-surface)") : "transparent",
-        color: booking ? "var(--text-1)" : "var(--success-dark)",
+        borderRadius: 0,
+        backgroundColor: "transparent",
+        color: booking ? "var(--warning-dark)" : "var(--success-dark)",
         cursor: "pointer",
-        display: "flex",
+        display: fixedHeight ? "block" : "flex",
         flexDirection: "column",
         justifyContent: "center",
         gap: "2px",
-        padding: "4px 8px",
+        padding: fixedHeight ? 0 : "6px 8px",
         textAlign: "left",
-        lineHeight: 1.1,
+        lineHeight: fixedHeight ? 0 : 1.1,
         fontWeight: booking ? 600 : 700,
+        overflow: fixedHeight ? "hidden" : undefined,
+        boxShadow: !fixedHeight && isHighlighted ? "inset 0 0 0 2px var(--primary-selected)" : "none",
       }}>
-      {booking ? (
-        <>
-          <strong style={{ fontSize: "12px" }}>
-            #{booking.jobNumber || "Job"} {booking.vehicleReg ? `- ${booking.vehicleReg}` : ""}
-          </strong>
-          <span style={{ fontSize: "12px" }}>{booking.customerName || booking.customer || "Customer"}</span>
-          {booking.startDate !== booking.endDate ? (
-            <span style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
-              {booking.startDate} to {booking.endDate}
+      {fixedHeight ? null : (
+        booking ? (
+          <>
+            <strong style={{ fontSize: "12px" }}>
+              #{booking.jobNumber || "Job"} {booking.vehicleReg ? `- ${booking.vehicleReg}` : ""}
+            </strong>
+            <span style={{ fontSize: "12px" }}>
+              {booking.customerName || booking.customer || "Customer"}
             </span>
-          ) : null}
-        </>
-      ) : (
-        "Available"
+            {booking.startDate !== booking.endDate ? (
+              <span style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
+                {booking.startDate} to {booking.endDate}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          "Available"
+        )
       )}
     </button>
   );
@@ -249,7 +268,7 @@ function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle }) {
 const scrollTodayIntoView = (todayRowRef) => {
   const row = todayRowRef.current;
   if (!row) return;
-  const scroller = row.closest(".app-table-shell-scroll");
+  const scroller = row.closest("[data-loan-car-table-scroll], .app-table-shell-scroll");
   const thead = scroller?.querySelector("thead");
   if (!scroller || !thead) {
     row.scrollIntoView({ block: "start", inline: "nearest" });
@@ -338,7 +357,7 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 240,
+        zIndex: LOAN_CAR_MODAL_Z_INDEX,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -759,6 +778,10 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
       })),
     [cars]
   );
+  const selectedLoanCarLabel =
+    loanCarOptions.find((option) => option.value === form.loanCarId)?.label ||
+    selected.car?.reg ||
+    "";
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -780,12 +803,14 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
     setSearchTerm("");
   };
 
-  const copyValue = async (value) => {
+  const copyValue = async (value, key) => {
     if (!value || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return;
     await navigator.clipboard.writeText(String(value));
-    setCopiedKey(String(value));
+    setCopiedKey(key || String(value));
     window.setTimeout(() => setCopiedKey(""), 1200);
   };
+
+  const copyFormValue = (key, value) => copyValue(value, key);
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -817,7 +842,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 240,
+        zIndex: LOAN_CAR_MODAL_Z_INDEX,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -833,9 +858,8 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
         padding="var(--section-card-padding)"
         gap="var(--layout-card-gap)"
         style={{
-          width: "min(960px, 100%)",
-          maxHeight: "90dvh",
-          overflowY: "auto",
+          width: "min(1180px, 100%)",
+          maxHeight: "calc(100dvh - 32px)",
         }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
           <div>
@@ -891,50 +915,44 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
           ) : null}
         </LayerTheme>
 
-        <div style={fieldGridStyle}>
-          <DropdownField
-            label="Loan car"
-            value={form.loanCarId || ""}
-            onValueChange={(value) => update("loanCarId", value)}
-            options={loanCarOptions}
-            placeholder="Choose loan car"
-          />
-          <Field label="From" type="date" value={form.startDate} onChange={(value) => update("startDate", value)} />
-          <Field label="To" type="date" value={form.endDate} onChange={(value) => update("endDate", value)} />
-          <Field label="Job number" value={form.jobNumber} onChange={(value) => update("jobNumber", value)} />
-          <Field label="Customer name" value={form.customerName} onChange={(value) => update("customerName", value)} />
-          <Field label="Customer email" type="email" value={form.customerEmail} onChange={(value) => update("customerEmail", value)} />
-          <Field label="Customer phone" value={form.customerPhone} onChange={(value) => update("customerPhone", value)} />
-          <Field label="Address" value={form.customerAddress} onChange={(value) => update("customerAddress", value)} />
-          <Field label="Postcode" value={form.customerPostcode} onChange={(value) => update("customerPostcode", value)} />
-          <Field label="Customer vehicle reg" value={form.vehicleReg} onChange={(value) => update("vehicleReg", value)} />
-          <Field label="Vehicle" value={form.vehicleMakeModel} onChange={(value) => update("vehicleMakeModel", value)} />
-          <Field label="Mileage" type="number" value={form.mileage} onChange={(value) => update("mileage", value)} />
-          <Field label="Insurance provider" value={form.insuranceProvider} onChange={(value) => update("insuranceProvider", value)} />
-          <Field label="Policy number" value={form.insurancePolicyNumber} onChange={(value) => update("insurancePolicyNumber", value)} />
-          <Field label="Licence number" value={form.licenceNumber} onChange={(value) => update("licenceNumber", value)} />
-          <Field label="Date of birth" type="date" value={form.dateOfBirth} onChange={(value) => update("dateOfBirth", value)} />
+        <div style={compactBookingFieldGridStyle}>
+          <CopyableField label="Loan car" valueToCopy={selectedLoanCarLabel} copied={copiedKey === "loanCarId"} onCopy={(value) => copyFormValue("loanCarId", value)}>
+            <DropdownField
+              label="Loan car"
+              value={form.loanCarId || ""}
+              onValueChange={(value) => update("loanCarId", value)}
+              options={loanCarOptions}
+              placeholder="Choose loan car"
+            />
+          </CopyableField>
+          <CopyableField label="From" valueToCopy={form.startDate} copied={copiedKey === "startDate"} onCopy={(value) => copyFormValue("startDate", value)}>
+            <Field label="From" type="date" value={form.startDate} onChange={(value) => update("startDate", value)} />
+          </CopyableField>
+          <CopyableField label="To" valueToCopy={form.endDate} copied={copiedKey === "endDate"} onCopy={(value) => copyFormValue("endDate", value)}>
+            <Field label="To" type="date" value={form.endDate} onChange={(value) => update("endDate", value)} />
+          </CopyableField>
+          {BOOKING_FORM_FIELDS.map((field) => (
+            <CopyableField
+              key={field.key}
+              label={field.label}
+              valueToCopy={form[field.key]}
+              copied={copiedKey === field.key}
+              onCopy={(value) => copyFormValue(field.key, value)}
+            >
+              <Field
+                label={field.label}
+                type={field.type || "text"}
+                value={form[field.key]}
+                onChange={(value) => update(field.key, field.transform ? field.transform(value) : value)}
+              />
+            </CopyableField>
+          ))}
         </div>
 
         <label style={labelStyle}>
           Notes
           <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
         </label>
-
-        <LayerTheme
-          as="section"
-          sectionKey="loan-car-booking-copy-fields"
-          sectionType="section-shell"
-          radius="var(--radius-sm)"
-          padding="var(--section-card-padding)"
-          gap="var(--layout-card-gap)">
-          <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "16px" }}>Insurance copy fields</h3>
-          <div style={fieldGridStyle}>
-            {COPY_FIELDS.map(([label, key]) => (
-              <CopyField key={key} label={label} value={form[key]} onCopy={copyValue} copied={copiedKey === String(form[key] || "")} />
-            ))}
-          </div>
-        </LayerTheme>
 
         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
           {form.bookingId || form.id ? (
@@ -965,6 +983,7 @@ export default function LoanCarSchedulePanel({
 }) {
   const scrollRef = useRef(null);
   const todayRowRef = useRef(null);
+  const hasAutoScrolledTodayRef = useRef(false);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [selectedCell, setSelectedCell] = useState(null);
@@ -1005,7 +1024,14 @@ export default function LoanCarSchedulePanel({
     const visibleCarIds = new Set(visibleCars.map((car) => car.loanCarId || car.id));
     return bookings.filter((booking) => visibleCarIds.has(booking.loanCarId));
   }, [bookings, normalizedSearchTerm, visibleCars]);
-  const tableMinWidth = Math.max(680, 180 + visibleCars.length * 200);
+  const isTrackingMode = mode === "tracking";
+  const dayColumnWidth = isTrackingMode ? 160 : 180;
+  const trackingCarColumnWidth = "10ch";
+  const trackingTableWidth = `calc(${dayColumnWidth}px + ${visibleCars.length * 10}ch)`;
+  const tableMinWidth = isTrackingMode
+    ? trackingTableWidth
+    : `${Math.max(680, dayColumnWidth + visibleCars.length * 200)}px`;
+  const tableWidth = "100%";
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -1025,9 +1051,22 @@ export default function LoanCarSchedulePanel({
   }, [loadData, refreshKey]);
 
   useEffect(() => {
+    if (mode !== "tracking" || loading || hasAutoScrolledTodayRef.current) return;
     if (!todayRowRef.current || !scrollRef.current) return;
-    scrollTodayIntoView(todayRowRef);
-  }, []);
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        scrollTodayIntoView(todayRowRef);
+        hasAutoScrolledTodayRef.current = true;
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [loading, mode, visibleCars.length]);
 
   const handleSaveCar = async (car) => {
     const isNewCar = !(car.loanCarId || car.id);
@@ -1079,35 +1118,68 @@ export default function LoanCarSchedulePanel({
         gap="0">
         <div
           ref={scrollRef}
-          className="app-table-shell-scroll tabs-scroll-container-visible loan-car-appointments-table-scroll"
+          className={[
+            "tabs-scroll-container-visible",
+            isTrackingMode ? "" : "app-table-shell-scroll",
+            isTrackingMode ? "tracking-loan-car-appointments-table-scroll" : "loan-car-appointments-table-scroll",
+          ].filter(Boolean).join(" ")}
+          data-loan-car-table-scroll={isTrackingMode ? "true" : undefined}
+          data-app-table-shell={isTrackingMode ? "off" : undefined}
           style={{
             overflowX: "auto",
             overflowY: "auto",
             backgroundColor: "var(--theme)",
-            maxHeight: mode === "tracking" ? "calc(100dvh - 380px)" : "560px",
+            maxHeight: isTrackingMode ? "calc(100dvh - 380px)" : "560px",
+            borderRadius: "var(--radius-md)",
             "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
           }}>
           <table
-            className="app-data-table app-table-shell app-table-shell--with-headings"
+            className={isTrackingMode ? undefined : "app-data-table app-table-shell app-table-shell--with-headings"}
             id={`${mode}-loan-car-appointments-table`}
             data-dev-section="1"
             data-dev-section-key={`${mode}-loan-car-appointments-table`}
             data-dev-section-type="data-table"
-            style={{ minWidth: "100%", width: `${tableMinWidth}px`, tableLayout: "fixed" }}>
+            data-app-table-shell={isTrackingMode ? "off" : undefined}
+            style={{
+              minWidth: tableMinWidth,
+              width: tableWidth,
+              tableLayout: "fixed",
+              borderCollapse: "separate",
+              borderSpacing: isTrackingMode ? "1px 0" : 0,
+              backgroundColor: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+              overflow: "hidden",
+            }}>
             <colgroup>
-              <col style={{ width: "180px" }} />
+              <col style={{ width: `${dayColumnWidth}px` }} />
               {visibleCars.map((car) => (
-                <col key={car.loanCarId || car.id} style={{ width: "200px" }} />
+                <col key={car.loanCarId || car.id} style={{ width: isTrackingMode ? trackingCarColumnWidth : "200px" }} />
               ))}
+              {isTrackingMode ? <col style={{ width: "auto" }} /> : null}
             </colgroup>
             <thead
               data-dev-section="1"
               data-dev-section-key={`${mode}-loan-car-appointments-table-headings`}
               data-dev-section-type="table-headings"
               data-dev-section-parent={`${mode}-loan-car-appointments-table`}
-              style={{ position: "sticky", top: 0, zIndex: 120, ...stickyHeadingBg }}>
-              <tr>
-                <th style={{ left: 0, position: "sticky", top: 0, zIndex: 122, ...stickyHeadingBg }}>
+              style={{ position: "sticky", top: 0, zIndex: 120, height: "44px", maxHeight: "44px", lineHeight: 0, overflow: "hidden", ...stickyHeadingBg }}>
+              <tr style={{ height: "44px", maxHeight: "44px", lineHeight: 0 }}>
+                <th
+                  style={{
+                    left: 0,
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 122,
+                    height: "44px",
+                    minHeight: "44px",
+                    maxHeight: "44px",
+                    boxSizing: "border-box",
+                    padding: isTrackingMode ? "0 12px" : undefined,
+                    textAlign: "left",
+                    lineHeight: 0,
+                    overflow: "hidden",
+                    ...stickyHeadingBg,
+                  }}>
                   <span
                     role="button"
                     tabIndex={0}
@@ -1122,13 +1194,32 @@ export default function LoanCarSchedulePanel({
                       color: "inherit",
                       fontWeight: 800,
                       cursor: "pointer",
-                      display: "inline",
+                      display: "block",
+                      height: "44px",
+                      lineHeight: "44px",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
                     }}>
-                    Appointment Day
+                    data
                   </span>
                 </th>
                 {visibleCars.map((car) => (
-                  <th key={car.loanCarId || car.id} style={{ position: "sticky", top: 0, zIndex: 121, ...stickyHeadingBg }}>
+                  <th
+                    key={car.loanCarId || car.id}
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 121,
+                      height: "44px",
+                      minHeight: "44px",
+                      maxHeight: "44px",
+                      boxSizing: "border-box",
+                      padding: isTrackingMode ? 0 : undefined,
+                      textAlign: "center",
+                      lineHeight: 0,
+                      overflow: "hidden",
+                      ...stickyHeadingBg,
+                    }}>
                     <span
                       role="button"
                       tabIndex={0}
@@ -1143,52 +1234,80 @@ export default function LoanCarSchedulePanel({
                         color: "inherit",
                         fontWeight: 800,
                         cursor: "pointer",
-                        display: "inline",
+                        display: "block",
+                        height: "44px",
+                        lineHeight: "44px",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
                       }}>
                       {car.reg}
                     </span>
-                    <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "var(--grey-accent)" }}>
-                      {car.name}
-                    </span>
                   </th>
                 ))}
+                {isTrackingMode ? (
+                  <th
+                    aria-hidden="true"
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 120,
+                      height: "44px",
+                      minHeight: "44px",
+                      maxHeight: "44px",
+                      boxSizing: "border-box",
+                      padding: 0,
+                      lineHeight: 0,
+                      overflow: "hidden",
+                      ...stickyHeadingBg,
+                    }}
+                  />
+                ) : null}
               </tr>
             </thead>
             <tbody>
-              {dateRows.map((day) => (
+              {dateRows.map((day) => {
+                const todayRowOverlay = day.isToday ? "linear-gradient(var(--theme), var(--theme))" : undefined;
+                const rowBackground = "var(--surface)";
+                return (
                 <tr
                   key={day.key}
                   ref={day.isToday ? todayRowRef : null}
                   className={day.isToday ? "loan-car-today-row" : undefined}
-                  style={{ height: "44px", backgroundColor: day.isToday ? "var(--theme)" : undefined }}>
+                  style={{ height: "44px", maxHeight: "44px", lineHeight: 0, backgroundColor: rowBackground, backgroundImage: todayRowOverlay }}>
                   <td
                     className={day.isToday ? "loan-car-today-cell" : undefined}
                     style={{
                       height: "44px",
+                      minHeight: "44px",
+                      maxHeight: "44px",
+                      boxSizing: "border-box",
                       padding: "0 12px",
                       verticalAlign: "middle",
                       left: 0,
                       position: "sticky",
                       zIndex: 2,
-                      ...(day.isToday ? stickyFirstColTodayBg : stickyFirstColBg),
+                      lineHeight: 0,
+                      overflow: "hidden",
+                      ...stickyFirstColBg,
+                      backgroundImage: todayRowOverlay,
                     }}>
                     <span
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "2px",
+                        display: "block",
+                        height: "44px",
+                        maxHeight: "44px",
                         color: day.isToday ? "var(--primary-selected)" : "var(--text-1)",
                         fontWeight: day.isToday ? 800 : 700,
-                        lineHeight: 1.15,
+                        lineHeight: "44px",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
                       }}>
-                      <span>{day.label}</span>
-                      <span style={{ fontSize: "12px", color: day.isToday ? "var(--primary-selected)" : "var(--grey-accent)" }}>
-                        {day.isToday ? "Today" : day.dateLabel}
-                      </span>
+                      {day.compactDateLabel}
                     </span>
                   </td>
                   {visibleCars.map((car) => {
                     const booking = getBookingForCell(visibleBookings, car.loanCarId || car.id, day.key);
+                    const cellBackground = booking ? "var(--warning-strong)" : rowBackground;
                     return (
                     <td
                       key={`${day.key}-${car.loanCarId || car.id}`}
@@ -1198,21 +1317,46 @@ export default function LoanCarSchedulePanel({
                       ].filter(Boolean).join(" ") || undefined}
                       style={{
                         height: "44px",
-                        padding: "0 12px",
+                        minHeight: "44px",
+                        maxHeight: "44px",
+                        boxSizing: "border-box",
+                        padding: 0,
                         verticalAlign: "middle",
-                        backgroundColor: booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
+                        lineHeight: 0,
+                        overflow: "hidden",
+                        backgroundColor: isTrackingMode ? cellBackground : booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
+                        backgroundImage: isTrackingMode ? todayRowOverlay : undefined,
                       }}>
                         <BookingCell
                           booking={booking}
                           highlightedJob={highlightedJob}
                           highlightedVehicle={highlightedVehicle}
+                          fixedHeight={isTrackingMode}
                           onClick={() => setSelectedCell({ day, car, booking })}
                         />
                       </td>
                     );
                   })}
+                  {isTrackingMode ? (
+                    <td
+                      aria-hidden="true"
+                      style={{
+                        height: "44px",
+                        minHeight: "44px",
+                        maxHeight: "44px",
+                        boxSizing: "border-box",
+                        padding: 0,
+                        verticalAlign: "middle",
+                        lineHeight: 0,
+                        overflow: "hidden",
+                        backgroundColor: rowBackground,
+                        backgroundImage: todayRowOverlay,
+                      }}
+                    />
+                  ) : null}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
