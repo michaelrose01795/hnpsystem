@@ -68,7 +68,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "16px",
+        gap: "10px",
       }}
     >
       <SkeletonKeyframes />

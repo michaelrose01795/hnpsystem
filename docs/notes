@@ -1,19 +1,26 @@
-check loan car section 
 
-CHECK overlay contreol panel
-CHECK loan car table style 
-CHECK HISTORY LOG
+CHECK 1
+Text colour 
+
+
+CHECK 2
+Table style in parts
+
 
 
 TODO
-hover effect for the fuel gauge showing in app and browser hover style fix this as it should only ever use the inapp one. 
+have it so the rows wihin the "apple carplay not connecting Major Service Replace both front tyres" rows within the "Allocate Parts All parts allocated Customer Requests" section are set the "--theme" colour background
 
+TODO
+within "Jobcard Parts Added Table · 1.2.2.1.1.4.1.1.1.1 key: jobcard-parts-added-table source: src/components/PartsTab.js:2043 route: /job-cards/00080 parent jobcard-parts-added-panel (1.2.2.1.1.4.1.1.1)" row remvoe the pre pick locataion text from the "1856015BRIDGESTONE Allocated Bridgestone 185 60 R15 Picked: Service Rack 2" section but keep it within the "pre-pick" column etc
+
+TODO
+have it so "Jobcard Tab Contact Fields · 1.2.2.1.1.4.1.1.1 key: jobcard-tab-contact-fields source: src/pages/job-cards/[jobNumber].js:7061 route: /job-cards/00080 parent jobcard-tab-contact-panel (1.2.2.1.1.4.1.1)" section uses the full width of the card, keep "CUSTOMER NAME Daisy Hamond EMAIL ADDRESS daisyhamond2020@yahoo.co.uk MOBILE PHONE 07407895712 LANDLINE PHONE N/A CONTACT PREFERENCE" section wihtin one row. make sure all sections are wide enough to fit all of the detaisl within the section. 
 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
 
 
-create it so when i click on a section it copys the information of that card which is hard coded to lower the ais tokens to finding the card within the whole repo, so give file name and location and then the card location within the file which was clicked etc. 
 
 
 

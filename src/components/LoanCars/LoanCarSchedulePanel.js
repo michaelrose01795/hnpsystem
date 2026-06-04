@@ -312,6 +312,17 @@ const detailsHistoryPrimaryStyle = {
   lineHeight: 1.25,
 };
 
+// Left cell for fuel rows: optional caption stacked over the read-only gauge.
+// Bounded width so the gauge stays compact and the timestamp keeps its column.
+const detailsHistoryGaugeCellStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  flex: "0 1 240px",
+  minWidth: 0,
+  maxWidth: "240px",
+};
+
 const detailsHistorySecondaryStyle = {
   color: "var(--grey-accent)",
   fontSize: "15px",
@@ -696,7 +707,6 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
   const historyEvents = useMemo(() => {
     return fuelHistoryEntries.flatMap((entry, index) => {
       const olderEntry = fuelHistoryEntries[index + 1];
-      const isCurrent = entry.isCurrentSnapshot || index === 0;
       const fuelChanged =
         entry.isCurrentSnapshot ||
         !olderEntry ||
@@ -711,9 +721,11 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
       const events = [];
 
       if (fuelChanged) {
+        // Fuel rows render the segmented gauge (read-only) instead of a text label.
         events.push({
           id: `${entry.historyId}-fuel`,
-          primary: `${isCurrent ? "Current fuel" : "Filled to"} ${fuelText}`,
+          type: "fuel",
+          fuelLevel: entry.fuelLevel,
           secondary: `${mileageText} · ${timestamp}`,
         });
       }
@@ -911,12 +923,19 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
                   key={entry.id}
                   style={{
                     ...detailsHistoryRowStyle,
+                    // Gauge rows centre-align; text rows keep the baseline alignment.
+                    alignItems: entry.type === "fuel" ? "center" : detailsHistoryRowStyle.alignItems,
                     // Row separator is the one sanctioned "line within a list" use-case.
                     borderBottom: index === historyEvents.length - 1 ? "none" : "var(--separating-line)",
                   }}>
-                  <span style={detailsHistoryPrimaryStyle}>
-                    {entry.primary}
-                  </span>
+                  {entry.type === "fuel" ? (
+                    <div style={detailsHistoryGaugeCellStyle}>
+                      {/* Read-only in history: onChange is a no-op and disabled blocks segment edits. */}
+                      <FuelGauge value={entry.fuelLevel} onChange={() => {}} disabled />
+                    </div>
+                  ) : (
+                    <span style={detailsHistoryPrimaryStyle}>{entry.primary}</span>
+                  )}
                   <span style={detailsHistorySecondaryStyle}>
                     {entry.secondary}
                   </span>

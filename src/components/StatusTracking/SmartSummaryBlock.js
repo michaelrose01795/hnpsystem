@@ -4,18 +4,14 @@
 // responsible party, job story, next likely step, attention items, and blocking reasons.
 
 import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // Inline style constants using CSS variables for consistency with the tracker.
 const STYLES = {
   container: {
-    backgroundColor: "var(--secondary)", // Theme-colour section background
-    borderRadius: "var(--radius-sm)", // Consistent border radius
-    border: "none",
-    boxShadow: "none",
-    padding: "14px 16px", // Comfortable internal spacing
     display: "flex",
     flexDirection: "column",
-    gap: "10px", // Spacing between summary sections
   },
   header: {
     display: "flex",
@@ -32,15 +28,8 @@ const STYLES = {
     color: "var(--accent-purple)", // Accent colour for the section label
   },
   stageBadge: (color) => ({
-    display: "inline-flex",
-    alignItems: "center",
     gap: "6px",
-    fontSize: "13px",
-    fontWeight: 700,
     color: color || "var(--info)",
-    backgroundColor: "var(--surface)",
-    borderRadius: "var(--radius-pill)",
-    padding: "4px 12px",
   }),
   stageDot: (color) => ({
     width: "8px",
@@ -79,9 +68,6 @@ const STYLES = {
     color: "var(--text-1, var(--info-dark))",
   },
   nextStepCard: {
-    backgroundColor: "var(--surface)",
-    borderRadius: "var(--radius-xs)",
-    padding: "10px 12px",
     display: "flex",
     flexDirection: "column",
     gap: "2px",
@@ -116,7 +102,6 @@ const STYLES = {
   },
   blockingBanner: {
     backgroundColor: "rgba(var(--danger-rgb, 220, 38, 38), 0.08)", // Danger-tinted background
-    border: "none",
     borderRadius: "var(--radius-xs)",
     padding: "8px 12px",
     fontSize: "12px",
@@ -128,7 +113,6 @@ const STYLES = {
   },
   attentionBanner: {
     backgroundColor: "rgba(var(--warning-rgb, 245, 158, 11), 0.08)", // Warning-tinted background
-    border: "none",
     borderRadius: "var(--radius-xs)",
     padding: "8px 12px",
     fontSize: "12px",
@@ -150,26 +134,8 @@ const STYLES = {
     flexShrink: 0,
     marginTop: "1px",
   },
-  confidenceBadge: (level) => ({
-    display: "inline-flex",
-    alignItems: "center",
-    fontSize: "9px",
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    padding: "2px 6px",
-    borderRadius: "var(--radius-pill)",
+  confidenceBadge: () => ({
     marginLeft: "6px",
-    backgroundColor: level === "high"
-      ? "rgba(var(--success-rgb, 34, 197, 94), 0.12)" // Green for high
-      : level === "medium"
-      ? "rgba(var(--warning-rgb, 245, 158, 11), 0.12)" // Amber for medium
-      : "rgba(var(--danger-rgb, 220, 38, 38), 0.12)", // Red for low
-    color: level === "high"
-      ? "var(--success)"
-      : level === "medium"
-      ? "var(--warning)"
-      : "var(--danger)",
   }),
 };
 
@@ -180,11 +146,11 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
   const showConfidence = flags.debug_mode_enabled || flags.confidence_display_enabled; // Show confidence badges
 
   return (
-    <div style={STYLES.container}>
+    <LayerTheme radius="var(--radius-sm)" padding="14px 16px" gap="10px" style={STYLES.container}>
       {/* Header row: label + stage badge */}
       <div style={STYLES.header}>
         <span style={STYLES.headerLabel}>Smart Summary</span>
-        <span style={STYLES.stageBadge(summary.stageColor)}>
+        <span className="app-badge app-badge--control app-badge--accent-soft" style={STYLES.stageBadge(summary.stageColor)}>
           <span style={STYLES.stageDot(summary.stageColor)} />
           {summary.stage}
         </span>
@@ -241,7 +207,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {steps.map((step, index) => (
-              <div key={step.label || index} style={STYLES.nextStepCard}>
+              <LayerSurface key={step.label || index} radius="var(--radius-xs)" padding="10px 12px" gap="2px" style={STYLES.nextStepCard}>
                 <span style={STYLES.nextStepLabel}>
                   {multiStep ? `Next Step ${index + 1}` : "Next Step"}
                   {step.department && (
@@ -257,7 +223,9 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
                     </span>
                   )}
                   {!multiStep && showConfidence && summary.nextStepConfidence && (
-                    <span style={STYLES.confidenceBadge(summary.nextStepConfidence)}>
+                    <span className={`app-badge ${
+                      summary.nextStepConfidence === "high" ? "app-badge--success" : summary.nextStepConfidence === "medium" ? "app-badge--warning" : "app-badge--danger"
+                    }`} style={STYLES.confidenceBadge(summary.nextStepConfidence)}>
                       {summary.nextStepConfidence}
                     </span>
                   )}
@@ -266,7 +234,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
                 {step.description && (
                   <span style={STYLES.nextStepDescription}>{step.description}</span>
                 )}
-              </div>
+              </LayerSurface>
             ))}
           </div>
         );
@@ -282,7 +250,9 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
         <div style={STYLES.summarySentence}>
           {summary.summary}
           {showConfidence && summary.summaryConfidence && (
-            <span style={STYLES.confidenceBadge(summary.summaryConfidence)}>
+            <span className={`app-badge ${
+              summary.summaryConfidence === "high" ? "app-badge--success" : summary.summaryConfidence === "medium" ? "app-badge--warning" : "app-badge--danger"
+            }`} style={STYLES.confidenceBadge(summary.summaryConfidence)}>
               {summary.summaryConfidence}
             </span>
           )}
@@ -314,6 +284,6 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
           ))}
         </div>
       )}
-    </div>
+    </LayerTheme>
   );
 }

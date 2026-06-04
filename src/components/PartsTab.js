@@ -70,6 +70,12 @@ const PRE_PICK_OPTIONS = [
   { value: "on_order", label: "On Order" },
 ];
 
+const formatPickedLocationLabel = (value) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "";
+  return PRE_PICK_OPTIONS.find((option) => option.value === normalized)?.label || normalized;
+};
+
 const PartsTabNew = forwardRef(function PartsTabNew(
   { jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId, invoiceReady },
   _ref
@@ -94,6 +100,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [selectedPrePickPartId, setSelectedPrePickPartId] = useState("");
   const [selectedPrePickLocation, setSelectedPrePickLocation] = useState("");
   const [savingPrePick, setSavingPrePick] = useState(false);
+  const [savingPrePickPartId, setSavingPrePickPartId] = useState("");
   const [assignMode, setAssignMode] = useState(false);
   const [assignTargetRequestId, setAssignTargetRequestId] = useState(null);
 
@@ -1014,6 +1021,32 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     [canEdit, onRefreshJob]
   );
 
+  const handlePartPrePickLocationChange = useCallback(
+    async (part, location) => {
+      if (!part?.id || savingPrePickPartId) return;
+
+      setSavingPrePickPartId(String(part.id));
+      try {
+        await handleUpdatePrePickLocation(part, location || null);
+        setPartPopup((current) => {
+          if (!current.open || !current.part || String(current.part.id) !== String(part.id)) {
+            return current;
+          }
+          return {
+            ...current,
+            part: {
+              ...current.part,
+              prePickLocation: location || null,
+            },
+          };
+        });
+      } finally {
+        setSavingPrePickPartId("");
+      }
+    },
+    [handleUpdatePrePickLocation, savingPrePickPartId]
+  );
+
   useEffect(() => {
     if (!selectedPrePickPartId) {
       setSelectedPrePickLocation("");
@@ -1684,16 +1717,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           color: var(--text-1);
         }
       `}</style>
-      <DevLayoutSection
-        sectionKey="jobcard-parts-tab-root"
-        sectionType="section-shell"
-        parentKey="jobcard-tab-parts"
-        backgroundToken="surface"
-        shell
-        style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-      >
-        {/* Search Section */}
-        {showBookPartPanel && (
+      {/* Search Section — render the root wrapper only when the Book Part panel
+          is open. When hidden, omitting it entirely (rather than rendering an
+          empty flex item) avoids leaving the parent stack gap above the parts
+          workspace, so the workspace sits flush to the top of the section. */}
+      {showBookPartPanel && (
+        <DevLayoutSection
+          sectionKey="jobcard-parts-tab-root"
+          sectionType="section-shell"
+          parentKey="jobcard-tab-parts"
+          backgroundToken="surface"
+          shell
+          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+        >
           <DevLayoutSection
             sectionKey="jobcard-parts-stock-search"
             sectionType="content-card"
@@ -1919,8 +1955,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           </div>
         )}
           </DevLayoutSection>
-        )}
-      </DevLayoutSection>
+        </DevLayoutSection>
+      )}
 
       {/* Layout: Parts List (Left) and Requests (Right) - Right side wider for better content fit */}
       <DevLayoutSection
@@ -1933,7 +1969,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           display: "grid",
           gridTemplateColumns: "2fr 3fr",
           gap: "16px",
-          marginTop: showBookPartPanel ? "16px" : "0",
+          // gap to the search panel is now owned by the parent stack (10px); no extra margin needed
         }}
       >
         {/* Left Side - Parts Added to Job */}
@@ -1964,14 +2000,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
-                  color: "var(--primary)",
+                  color: "var(--text-1)",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
                 }}
               >
                 Parts Added to Job
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--info)" }}>
+              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
                 {unallocatedParts.length} unallocated · {bookedParts.length} total
               </p>
             </div>
@@ -2039,6 +2075,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }}
               >
                 <table
+                  className="app-data-table"
                   data-dev-section="1"
                   data-dev-section-key="jobcard-parts-added-table"
                   data-dev-section-type="data-table"
@@ -2051,50 +2088,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     fontSize: "var(--text-caption)",
                   }}
                 >
-                  <thead style={{ background: "transparent" }}>
-                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                  <thead>
+                    <tr>
                       {assignMode && (
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "10px 8px",
-                            width: "40px",
-                            position: "sticky",
-                            top: 0,
-                            background: "transparent",
-                            zIndex: 1,
-                            border: "none",
-                          }}
-                        >
+                        <th style={{ textAlign: "center", width: "40px" }}>
                           Select
                         </th>
                       )}
-                      <th
-                        style={{
-                          textAlign: "left",
-                          padding: "10px 12px",
-                          position: "sticky",
-                          top: 0,
-                          background: "transparent",
-                          zIndex: 1,
-                          border: "none",
-                        }}
-                      >
-                        Part
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "right",
-                          padding: "10px 12px",
-                          position: "sticky",
-                          top: 0,
-                          background: "transparent",
-                          zIndex: 1,
-                          border: "none",
-                        }}
-                      >
-                        Qty
-                      </th>
+                      <th style={{ textAlign: "left" }}>Part</th>
+                      <th style={{ textAlign: "right" }}>Pre-pick</th>
+                      <th style={{ textAlign: "right" }}>Qty</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2106,6 +2109,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
                       const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
                       const isAssignable = !isRemoved && !isAllocated;
+                      const prePickDisplay = part.prePickLocation
+                        ? formatPickedLocationLabel(part.prePickLocation)
+                        : "Not assigned";
 
                       return (
                         <tr
@@ -2127,11 +2133,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               : "var(--surface)",
                             cursor: assignMode ? (isAssignable ? "pointer" : "not-allowed") : "pointer",
                             opacity: isRemoved ? 0.8 : 1,
-                            boxShadow: isRemoved
-                              ? "none"
-                              : isSelected
-                              ? "0 0 0 1px var(--accent-purple)"
-                              : "0 0 0 1px rgba(var(--shadow-rgb), 0.03)",
+                            boxShadow: isSelected ? "0 0 0 1px var(--accent-purple)" : "none",
                           }}
                           title={
                             assignMode
@@ -2150,9 +2152,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           padding: "9px 8px",
                           textAlign: "center",
                           verticalAlign: "middle",
-                          border: "none",
-                          borderTopLeftRadius: "8px",
-                          borderBottomLeftRadius: "8px",
                         }}>
                           <input
                             type="checkbox"
@@ -2171,9 +2170,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <td style={{
                             padding: "9px 12px",
                             verticalAlign: "middle",
-                            border: "none",
-                            borderTopLeftRadius: assignMode ? "0" : "10px",
-                            borderBottomLeftRadius: assignMode ? "0" : "10px",
                             }}>
                             <div style={{
                               display: "flex",
@@ -2250,6 +2246,45 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               {part.description || part.name}
                             </div>
+                            {part.prePickLocation ? (
+                              <div style={{
+                                marginTop: "4px",
+                                fontSize: "var(--text-caption)",
+                                color: isRemoved ? "var(--text-2)" : "var(--accentText)",
+                                fontWeight: 600,
+                                textDecoration: isRemoved ? "line-through" : "none",
+                              }}>
+                                Picked: {formatPickedLocationLabel(part.prePickLocation)}
+                              </div>
+                            ) : null}
+                          </td>
+
+                          {/* Pre-pick Column */}
+                          <td
+                            style={{
+                              padding: "9px 12px",
+                              verticalAlign: "middle",
+                              minWidth: "150px",
+                            }}
+                          >
+                            <div
+                              className="app-input"
+                              aria-label={`Pre-pick location: ${prePickDisplay}`}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                minHeight: "34px",
+                                padding: "6px 10px",
+                                fontSize: "var(--text-caption)",
+                                lineHeight: 1.2,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                opacity: part.prePickLocation ? 1 : 0.72,
+                              }}
+                            >
+                              {prePickDisplay}
+                            </div>
                           </td>
 
                           {/* Qty Column */}
@@ -2259,10 +2294,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             verticalAlign: "middle",
                             color: isRemoved ? "var(--text-2)" : "var(--text-1)",
                             textDecoration: isRemoved ? "line-through" : "none",
-                            border: "none",
-                            borderTopRightRadius: "8px",
-                            borderBottomRightRadius: "8px",
-                              fontWeight: 600,
+                            fontWeight: 600,
                           }}>
                             {part.quantity}
                           </td>
@@ -2299,7 +2331,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
-                  color: "var(--primary)",
+                  color: "var(--text-1)",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
                 }}
@@ -2487,17 +2519,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}`}
                                     data-dev-section-type="data-table"
                                     data-dev-section-parent={`jobcard-parts-customer-request-${request.id}`}
-                                    className="parts-allocate-subtable"
-                                    style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
+                                    className="parts-allocate-subtable app-data-table"
+                                    style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
                                   >
                                     <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
-                                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                                        <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
-                                        <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
-                                        <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
+                                      <tr>
+                                        <th style={{ textAlign: "left" }}>Part number</th>
+                                        <th style={{ textAlign: "left" }}>Description</th>
+                                        <th style={{ textAlign: "right" }}>Qty</th>
+                                        <th style={{ textAlign: "right" }}>Retail</th>
+                                        <th style={{ textAlign: "right" }}>Cost</th>
+                                        <th style={{ textAlign: "center" }}>Unassign</th>
                                       </tr>
                                     </thead>
                                     <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
@@ -2676,11 +2708,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}`}
                                         data-dev-section-type="data-table"
                                         data-dev-section-parent={`jobcard-parts-vhc-request-${request.id}`}
-                                        className="parts-allocate-subtable"
-                                        style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
+                                        className="parts-allocate-subtable app-data-table"
+                                        style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
                                       >
                                         <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
-                                          <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                                          <tr>
                                             <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
                                             <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
                                             <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
@@ -2769,14 +2801,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
-                  color: "var(--primary)",
+                  color: "var(--text-1)",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
                 }}
               >
                 On Order
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--info)" }}>
+              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
                 {partsOnOrderFromDB.length > 0
                   ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? "s" : ""} on order`
                   : "No parts currently on order"}
@@ -2794,27 +2826,22 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }}
               >
                 <table
-                  className="on-order-table"
+                  className="on-order-table app-data-table"
                   data-dev-section="1"
                   data-dev-section-key="jobcard-parts-on-order-table"
                   data-dev-section-type="data-table"
                   data-dev-section-parent="jobcard-parts-on-order-panel"
-                  style={{
-                    width: "100%",
-                    borderCollapse: "separate",
-                    borderSpacing: "0 8px",
-                    background: "var(--theme)",
-                  }}
+                  style={{ width: "100%" }}
                 >
                   <thead data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="jobcard-parts-on-order-table">
-                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Part Name</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Part Number</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Qty</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Price</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>ETA Date</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>ETA Time</th>
-                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Action</th>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>Part Name</th>
+                      <th style={{ textAlign: "left" }}>Part Number</th>
+                      <th style={{ textAlign: "right" }}>Qty</th>
+                      <th style={{ textAlign: "right" }}>Price</th>
+                      <th style={{ textAlign: "left" }}>ETA Date</th>
+                      <th style={{ textAlign: "left" }}>ETA Time</th>
+                      <th style={{ textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
@@ -2839,7 +2866,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               opacity: isRemoved ? 0.8 : 1,
                             }}
                           >
-                            <td style={{ color: "var(--info-dark)", borderTopLeftRadius: "8px", borderBottomLeftRadius: "8px" }}>
+                            <td style={{ color: "var(--info-dark)" }}>
                               <span
                                 className="part-name-cell on-order-cell-scroll"
                                 onMouseDown={handlePartNameDragStart}
@@ -2880,7 +2907,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 className="compact-input"
                               />
                             </td>
-                            <td style={{ textAlign: "center", borderTopRightRadius: "8px", borderBottomRightRadius: "8px" }}>
+                            <td style={{ textAlign: "center" }}>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2950,10 +2977,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--primary)" }}>
-                Set Pre-Picked Location
+                Set Picked Location
               </div>
               <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
-                Choose a part already added to this job and assign its pre-pick location.
+                Choose a part already added to this job and assign the location it has been picked to.
               </div>
 
               <DropdownField
@@ -3039,9 +3066,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               style={{
                 background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
-                padding: "20px",
-                minWidth: "300px",
-                maxWidth: "400px",
+                padding: "24px",
+                width: "min(92vw, 680px)",
+                maxWidth: "680px",
                 boxShadow: "var(--shadow-xl)",
               }}
               onClick={(e) => e.stopPropagation()}
@@ -3074,6 +3101,25 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   Quantity: {partPopup.part.quantity}
                 </div>
               </div>
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <DropdownField
+                label="Pre-pick"
+                placeholder={
+                  savingPrePickPartId === String(partPopup.part.id)
+                    ? "Saving..."
+                    : "Select pre-pick location"
+                }
+                value={partPopup.part.prePickLocation || ""}
+                onChange={(event) => handlePartPrePickLocationChange(partPopup.part, event.target.value)}
+                options={prePickLocationOptions}
+                disabled={
+                  !canEdit ||
+                  partPopup.part.source === "goods-in" ||
+                  normalizePartStatus(partPopup.part.status) === "removed" ||
+                  savingPrePickPartId === String(partPopup.part.id)
+                }
+              />
             </div>
             {Number(partPopup.part.quantity || 0) > 1 && (
               <div style={{ marginBottom: "12px" }}>

@@ -2827,6 +2827,65 @@ export const addJobToDatabase = async ({
    UPDATE JOB
    ✅ NEW: Update any job field
 ============================================ */
+// Human-readable labels for the jobcard fields whose edits are reported on the
+// Job Tracker timeline. Status changes are logged separately to
+// job_status_history, and high-churn internal JSONB (maintenance_info,
+// task_checklist) is intentionally excluded to keep the timeline meaningful.
+const JOB_DETAIL_FIELD_LABELS = {
+  description: "Description",
+  customer: "Customer",
+  vehicle_reg: "Registration",
+  vehicle_make_model: "Vehicle",
+  type: "Job type",
+  job_division: "Division",
+  waiting_status: "Waiting status",
+  vhc_required: "VHC required",
+  cosmetic_notes: "Cosmetic notes",
+  rectification_notes: "Rectification notes",
+  account_number: "Account number",
+  milage: "Mileage",
+  assigned_to: "Assigned technician",
+  job_categories: "Job categories",
+  requests: "Requests",
+  service_mode: "Service mode",
+  service_address: "Service address",
+  service_postcode: "Service postcode",
+  service_contact_name: "Service contact",
+  service_contact_phone: "Service contact phone",
+  appointment_window_start: "Appointment start",
+  appointment_window_end: "Appointment end",
+  access_notes: "Access notes",
+};
+
+// Resolve the acting user id from the update payload (callers may pass any of
+// these). Returns null when no actor is supplied — the timeline then shows
+// "System" for the edit.
+const resolveActivityActorId = (updates = {}) => {
+  const candidates = [
+    updates.activity_actor_id,
+    updates.updated_by,
+    updates.status_updated_by,
+  ];
+  for (const candidate of candidates) {
+    const parsed = Number(String(candidate ?? "").trim());
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+};
+
+// Stable comparison string for detecting real value changes (handles JSONB).
+const stableStringify = (value) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
 export const updateJob = async (jobId, updates) => {
   try {
     console.log("🔄 Updating job:", jobId, "with updates:", updates);
@@ -2938,6 +2997,21 @@ export const updateJob = async (jobId, updates) => {
       }
     }
 
+    // Capture the previous values of any allowlisted jobcard fields being
+    // edited, so we can log only the fields that actually changed.
+    const detailFieldKeys = Object.keys(JOB_DETAIL_FIELD_LABELS).filter((key) =>
+      Object.prototype.hasOwnProperty.call(updates, key)
+    );
+    let previousDetailValues = null;
+    if (detailFieldKeys.length > 0) {
+      const { data: prevDetailRow } = await supabase
+        .from("jobs")
+        .select(detailFieldKeys.join(", "))
+        .eq("id", jobId)
+        .maybeSingle();
+      previousDetailValues = prevDetailRow || {};
+    }
+
     const { data, error } = await supabase
       .from("jobs")
       .update(payload)
@@ -2951,6 +3025,33 @@ export const updateJob = async (jobId, updates) => {
     }
 
     console.log("✅ Job updated successfully:", data);
+
+    // Report meaningful jobcard edits on the Job Tracker timeline. Non-blocking:
+    // a logging failure must never fail the underlying save.
+    if (detailFieldKeys.length > 0 && data) {
+      const changedKeys = detailFieldKeys.filter(
+        (key) =>
+          stableStringify(previousDetailValues?.[key]) !== stableStringify(data[key])
+      );
+      if (changedKeys.length > 0) {
+        const changedLabels = changedKeys.map((key) => JOB_DETAIL_FIELD_LABELS[key]);
+        try {
+          await supabase.from("job_activity_events").insert([
+            {
+              job_id: jobId,
+              category: "job",
+              action: "details_updated",
+              summary: `Job card updated: ${changedLabels.join(", ")}`,
+              payload: { fields: changedKeys },
+              performed_by: resolveActivityActorId(updates),
+              occurred_at: new Date().toISOString(),
+            },
+          ]);
+        } catch (activityError) {
+          console.error("❌ Failed to log job card edit activity:", activityError);
+        }
+      }
+    }
 
     if (hasStatusUpdate && statusSnapshot && data) {
       const jobNumberForNotification =

@@ -348,6 +348,18 @@ export default function StatusSidebar({
     return `${hours}h ${minutes}min(s)`;
   };
 
+  const formatTrackerTimestamp = (value) => {
+    if (!value) return null;
+
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) return null;
+
+    return timestamp.toLocaleString("en-GB");
+  };
+
+  const jobCreatedAtLabel = formatTrackerTimestamp(snapshot?.job?.createdAt);
+  const jobUpdatedAtLabel = formatTrackerTimestamp(snapshot?.job?.lastUpdatedAt || snapshot?.job?.updatedAt);
+  const showJobTrackerMeta = Boolean(jobCreatedAtLabel || jobUpdatedAtLabel);
 
   const showFloatingToggle = showToggleButton && !compactMode && !isDocked;
   const toggleButtonStyle = compactMode
@@ -357,11 +369,7 @@ export default function StatusSidebar({
         position: 'fixed',
         right: '16px',
         bottom: '16px',
-        backgroundColor: 'var(--primary)',
-        color: 'var(--text-2)',
-        border: 'none',
         borderRadius: 'var(--radius-full)',
-
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -378,12 +386,8 @@ export default function StatusSidebar({
         right: isOpen ? `${panelWidth}px` : '0',
         top: '50%',
         transform: 'translateY(-50%)',
-        backgroundColor: 'var(--primary)',
-        color: 'var(--text-2)',
-        border: 'none',
         borderTopLeftRadius: 'var(--radius-xs)',
         borderBottomLeftRadius: 'var(--radius-xs)',
-
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -403,8 +407,7 @@ export default function StatusSidebar({
         top: 0,
         height: '100%',
         width: '100%',
-        backgroundColor: 'var(--surface)',
-
+        padding: 0,
         borderRadius: 0,
         transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 0.3s ease-in-out',
@@ -419,10 +422,8 @@ export default function StatusSidebar({
         width: '100%',
         height: 'auto',
         minHeight: '100%',
-        backgroundColor: 'var(--surface)',
-
+        padding: 0,
         borderRadius: 'var(--radius-md)',
-        border: 'none',
         boxShadow: '0 18px 42px rgba(var(--accentMainRgb), 0.24), 0 8px 22px rgba(0, 0, 0, 0.12)',
         display: 'flex',
         flexDirection: 'column',
@@ -437,8 +438,7 @@ export default function StatusSidebar({
         minHeight: '100vh',
         width: `${panelWidth}px`,
         maxWidth: '100vw',
-        backgroundColor: 'var(--surface)',
-
+        padding: 0,
         borderRadius: '0px',
         transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth}px)`,
         transition: 'transform 0.3s ease-in-out',
@@ -448,48 +448,36 @@ export default function StatusSidebar({
         overflow: 'hidden'
       };
 
-  const handleToggleMouseEnter = (e) => {
-    if (compactMode || isDocked) return;
-    e.currentTarget.style.backgroundColor = 'var(--primary-selected)';
-    e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
-  };
-
-  const handleToggleMouseLeave = (e) => {
-    if (compactMode || isDocked) return;
-    e.currentTarget.style.backgroundColor = 'var(--primary)';
-    e.currentTarget.style.transform = 'translateY(-50%)';
-  };
-
   return (
     <>
       {/* Toggle button - desktop only; compact/mobile view uses external controls */}
       {showFloatingToggle && (
         <button
           aria-label={isOpen ? 'Hide job progress' : 'Show job progress'}
+          className="app-btn app-btn--primary"
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
           style={toggleButtonStyle}
-          onMouseEnter={handleToggleMouseEnter}
-          onMouseLeave={handleToggleMouseLeave}
         >
           {compactMode ? (isOpen ? '▼' : '▲') : isOpen ? '‹' : '›'}
         </button>
       )}
 
       {/* Sidebar panel - FLOATING */}
-      <div style={panelStyle}>
+      <div className="app-page-card app-page-card--no-hover" style={panelStyle}>
         {/* Header */}
-        <div style={{
-          background: 'rgba(var(--surface-rgb), 0.92)',
+        <div className="app-section-card" style={{
           color: 'var(--text-1)',
           padding: compactMode ? '10px 12px' : '0 16px',
           borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
           minHeight: compactMode ? '64px' : '75px',
           display: 'flex',
           alignItems: 'center',
-          position: 'relative'
+          justifyContent: 'center', // .app-section-card is column-flex; center the header content vertically so it lines up with the absolutely-centred Clear Job/Close buttons
+          position: 'relative',
+          boxShadow: 'inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14)',
         }}>
           {canClose && onToggle && (
             <button
@@ -499,7 +487,7 @@ export default function StatusSidebar({
               onToggle();
             }}
               className="app-btn app-btn--xs app-btn--secondary"
-              style={{ position: 'absolute', top: compactMode ? '10px' : '14px', right: jobId ? '104px' : '16px', zIndex: 2 }}
+              style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: jobId ? '104px' : '16px', zIndex: 2 }}
             >
               Close
             </button>
@@ -508,7 +496,7 @@ export default function StatusSidebar({
             <button
               onClick={handleClearJob}
               className="app-btn app-btn--xs app-btn--secondary"
-              style={{ position: 'absolute', top: compactMode ? '10px' : '14px', right: '16px', zIndex: 2 }}
+              style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: '16px', zIndex: 2 }}
             >
               Clear Job
             </button>
@@ -680,18 +668,17 @@ export default function StatusSidebar({
         </div>
 
         {/* Content area: the overlay panel owns scrolling so page scroll does not move the tracker. */}
-        <div style={{
+        <div className="app-page-stack" style={{
           overflowY: 'auto',
           overflowX: 'hidden',
           flex: 1,
           minHeight: 0,
           padding: compactMode ? 'var(--page-gutter-y-mobile, 14px) var(--page-gutter-x-mobile, 12px)' : '20px',
-          background: 'var(--surface)',
           borderRadius: '0 0 var(--radius-md) var(--radius-md)' // Match parent border radius
         }}>
           {/* Show message when no job selected */}
           {!jobId ? (
-            <div style={{ 
+            <div className="app-section-card" style={{ 
               display: 'flex', 
               flexDirection: 'column', 
               alignItems: 'center', 
@@ -711,7 +698,26 @@ export default function StatusSidebar({
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px', minHeight: 0 }}>
+            <div className="app-page-stack" style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px', minHeight: 0 }}>
+              {showJobTrackerMeta && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: '4px 14px',
+                    minWidth: 0,
+                    color: 'var(--text-1)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                    textAlign: 'center',
+                  }}
+                >
+                  {jobCreatedAtLabel && <span>Created: {jobCreatedAtLabel}</span>}
+                  {jobUpdatedAtLabel && <span>Last Updated: {jobUpdatedAtLabel}</span>}
+                </div>
+              )}
               {/* Smart Summary panel — rendered above the timeline when enabled */}
               {trackerFlags.smart_summary_enabled && smartSummary && (
                 <SmartSummaryBlock

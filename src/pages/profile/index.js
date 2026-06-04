@@ -163,7 +163,7 @@ export function ProfilePage({
         onClose={() => setOpenPanel(null)}
         ariaLabel="Desktop app download"
       >
-        <DesktopAppPanel />
+        <DesktopAppPanel onClose={() => setOpenPanel(null)} />
       </PopupModal>
     </div>;
 

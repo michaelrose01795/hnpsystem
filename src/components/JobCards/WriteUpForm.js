@@ -2649,7 +2649,7 @@ function WriteUpForm({
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
                       <p style={sectionTitleStyle}>Fault</p>
-                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--text-1)" }}>
                         {faultProgressLabel}
                       </span>
                     </div>
@@ -2728,7 +2728,7 @@ function WriteUpForm({
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
                       <p style={sectionTitleStyle}>Cause</p>
-                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--text-1)" }}>
                         {causeProgressLabel}
                       </span>
                     </div>
@@ -2794,7 +2794,7 @@ function WriteUpForm({
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
                       <p style={sectionTitleStyle}>Rectification</p>
-                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--text-1)" }}>
                         {rectificationProgressLabel}
                       </span>
                     </div>
@@ -2819,7 +2819,7 @@ function WriteUpForm({
                   }}
                 >
                   {rectificationTasks.length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
+                    <p style={{ margin: 0, color: "var(--text-1)", fontSize: "13px" }}>
                       Add authorised additional work to record rectifications.
                     </p>
                   ) : (

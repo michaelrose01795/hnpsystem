@@ -151,6 +151,16 @@ export default function JobCardDetailPageUi(props) {
     writeUpCompleteInstant,
     writeUpTabMounted,
   } = props; // receive page logic props.
+  const normaliseBadgeText = (value) => String(value || "").trim().toLowerCase();
+  const jobHeaderStatusToneClass = (() => {
+    const status = normaliseBadgeText(overallStatusLabel);
+    if (status === "open" || status === "released" || status === "complete" || status === "completed") return "app-badge--success";
+    if (status.includes("checked") || status.includes("progress")) return "app-badge--accent-soft";
+    if (status.includes("waiting") || status.includes("hold") || status.includes("pending")) return "app-badge--warning";
+    if (status.includes("cancel") || status.includes("failed")) return "app-badge--danger";
+    return "app-badge--neutral";
+  })();
+  const jobDivisionToneClass = jobDivisionLower === "sales" ? "app-badge--accent-soft" : "app-badge--success";
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -210,8 +220,8 @@ export default function JobCardDetailPageUi(props) {
       <>
       <div style={{
         ...pageStackStyle,
-        gap: "16px",
-        rowGap: "16px"
+        gap: "10px",
+        rowGap: "10px"
       }} data-dev-section="1" data-dev-section-key="jobcard-page-shell" data-dev-section-type="page-shell" data-dev-shell="1">
         {isArchiveMode && <LayerSurface as="section" sectionKey="jobcard-archive-banner" sectionType="section-shell" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 16px" style={{
         color: "var(--danger-dark)",
@@ -255,22 +265,7 @@ export default function JobCardDetailPageUi(props) {
             }}>
                 Job Card #{jobData.jobNumber}
               </h1>
-              {/* Header status pills set to 44px tall per design.
-                  inline-flex + alignItems centres the text vertically; vertical
-                  padding is dropped so the fixed height isn't overridden. */}
-              <span style={{
-              height: "44px",
-              padding: "0 16px",
-              display: "inline-flex",
-              alignItems: "center",
-              backgroundColor: overallStatusLabel === "Open" ? "var(--success-surface)" : overallStatusLabel === "Released" ? "var(--success-surface)" : overallStatusLabel === "Complete" ? "var(--theme)" : "var(--warning-surface)",
-              color: overallStatusLabel === "Open" ? "var(--success-dark)" : overallStatusLabel === "Released" ? "var(--success-dark)" : overallStatusLabel === "Complete" ? "var(--info)" : "var(--danger)",
-              borderRadius: "var(--control-radius-xs)",
-              fontWeight: "600",
-              fontSize: "13px",
-              border: "none",
-              letterSpacing: "0.3px"
-            }}>
+              <span className={`app-badge app-badge--control app-badge--uppercase ${jobHeaderStatusToneClass}`}>
                 {overallStatusLabel}
               </span>
               {jobData.jobSource === "Warranty" && <span style={{
@@ -288,19 +283,7 @@ export default function JobCardDetailPageUi(props) {
             }}>
                   {jobData.jobSource}
                 </span>}
-              {jobDivisionLabel && <span style={{
-              height: "44px",
-              padding: "0 16px",
-              display: "inline-flex",
-              alignItems: "center",
-              backgroundColor: jobDivisionLower === "sales" ? "var(--theme)" : "var(--success-surface)",
-              color: jobDivisionLower === "sales" ? "var(--info)" : "var(--success-dark)",
-              borderRadius: "var(--control-radius-xs)",
-              fontWeight: "600",
-              fontSize: "13px",
-              border: "none",
-              letterSpacing: "0.3px"
-            }}>
+              {jobDivisionLabel && <span className={`app-badge app-badge--control app-badge--uppercase ${jobDivisionToneClass}`}>
                   {jobDivisionLabel}
                 </span>}
             </div>
@@ -386,23 +369,6 @@ export default function JobCardDetailPageUi(props) {
             </div>
           </div>
 
-          {/* Row 2: Timestamps + Related Jobs */}
-          <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "8px"
-        }}>
-            <p style={{
-            margin: 0,
-            color: "var(--grey-accent)",
-            fontSize: "14px"
-          }}>
-              Created: {new Date(jobData.createdAt).toLocaleString()} |
-              Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
-            </p>
-          </div>
         </LayerTheme>
 
         {/* ✅ Vehicle & Customer Info Bar */}
@@ -432,29 +398,29 @@ export default function JobCardDetailPageUi(props) {
               <div style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "4px",
+              gap: "6px",
               whiteSpace: "nowrap"
             }}>
                 <span style={{
-                fontSize: "11px",
+                fontSize: "13px",
                 color: "var(--text-1)",
-                fontWeight: "500"
+                fontWeight: "600"
               }}>Mileage</span>
                 <input type="text" inputMode="numeric" maxLength={7} value={vehicleMileageInput} onChange={event => {
                 const digitsOnly = (event.target.value || "").replace(/\D/g, "").slice(0, 7);
                 mileageInputDirtyRef.current = true;
                 setVehicleMileageInput(digitsOnly);
-              }} disabled={!canEdit} aria-label="Vehicle mileage" className="vehicle-mileage-input" style={{
-                width: "64px",
+              }} disabled={!canEdit} aria-label="Vehicle mileage" className="app-input vehicle-mileage-input" style={{
+                width: "86px",
                 margin: 0,
-                padding: "0",
-                borderRadius: "0",
-                border: "none",
-                backgroundColor: "transparent",
-                color: "var(--grey-accent)",
-                fontSize: "13px",
-                fontWeight: "500",
-                lineHeight: 1.2,
+                height: "30px",
+                minHeight: "30px",
+                maxHeight: "30px",
+                padding: "0 10px",
+                borderRadius: "var(--input-radius)",
+                fontSize: "14px",
+                fontWeight: "600",
+                lineHeight: "30px",
                 textAlign: "right",
                 fontFamily: "inherit",
                 opacity: 1,
@@ -474,42 +440,40 @@ export default function JobCardDetailPageUi(props) {
           overflow: "hidden",
           cursor: jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer ? "pointer" : "default"
         }}>
-          <div onClick={() => {
-          const fallbackNameParts = (jobData.customer || "").split(" ").map(part => part.trim()).filter(Boolean);
-          const fallbackFirst = fallbackNameParts[0] || "";
-          const fallbackLast = fallbackNameParts.slice(1).join(" ");
-          const slug = createCustomerDisplaySlug(jobData.customerFirstName || fallbackFirst, jobData.customerLastName || fallbackLast) || null;
-          const target = slug || jobData.customerId || null;
-          if (target) {
-            router.push(`/customers/${target}`);
-          }
+          <div style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          alignItems: "center",
+          columnGap: "10px"
         }}>
-            <div style={summaryPrimaryTextStyle}>
-              {jobData.customer || "N/A"}
+            <div onClick={() => {
+            const fallbackNameParts = (jobData.customer || "").split(" ").map(part => part.trim()).filter(Boolean);
+            const fallbackFirst = fallbackNameParts[0] || "";
+            const fallbackLast = fallbackNameParts.slice(1).join(" ");
+            const slug = createCustomerDisplaySlug(jobData.customerFirstName || fallbackFirst, jobData.customerLastName || fallbackLast) || null;
+            const target = slug || jobData.customerId || null;
+            if (target) {
+              router.push(`/customers/${target}`);
+            }
+          }}>
+              <div style={summaryPrimaryTextStyle}>
+                {jobData.customer || "N/A"}
+              </div>
+              <div style={summarySecondaryTextStyle}>
+                {jobData.customerPhone || jobData.customerEmail || "No contact info"}
+              </div>
             </div>
-            <div style={summarySecondaryTextStyle}>
-              {jobData.customerPhone || jobData.customerEmail || "No contact info"}
-            </div>
-          </div>
-          {vhcCustomerStatusMeta ? (
-          <div style={{ marginTop: "8px" }}>
+            {vhcCustomerStatusMeta ? (
             <span
-            title={vhcCustomerStatusMeta.detail}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "6px 10px",
-              borderRadius: "var(--control-radius)",
-              backgroundColor: vhcCustomerStatusMeta.background, // status chip tint — non-surface, per CLAUDE.md §3.0 rule 5
-              color: vhcCustomerStatusMeta.color,
-              fontSize: "12px",
-              fontWeight: 700,
-              textTransform: "uppercase"
-            }}>
-              Customer VHC: {vhcCustomerStatusMeta.label}
+              title={vhcCustomerStatusMeta.detail}
+              className={`app-badge app-badge--control app-badge--uppercase ${
+                vhcCustomerStatusMeta.label === "Viewed" ? "app-badge--success" : vhcCustomerStatusMeta.label === "Sent" ? "app-badge--accent-soft" : "app-badge--warning"
+              }`}
+            >
+              VHC: {vhcCustomerStatusMeta.label}
             </span>
+            ) : null}
           </div>
-          ) : null}
           </LayerSurface>
 
           <LayerSurface sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
@@ -694,8 +658,8 @@ export default function JobCardDetailPageUi(props) {
           }
           .vehicle-mileage-input::placeholder {
             color: var(--grey-accent);
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
           }
           .vehicle-mileage-input::-webkit-outer-spin-button,
           .vehicle-mileage-input::-webkit-inner-spin-button {
@@ -705,20 +669,21 @@ export default function JobCardDetailPageUi(props) {
           .vehicle-mileage-input {
             -moz-appearance: textfield;
             appearance: textfield;
-            height: 1.2em !important;
-            min-height: 1.2em !important;
-            max-height: 1.2em !important;
+            height: 30px !important;
+            min-height: 30px !important;
+            max-height: 30px !important;
+            line-height: 30px !important;
           }
           .vehicle-mileage-input:disabled {
             opacity: 1;
-            -webkit-text-fill-color: var(--grey-accent);
-            color: var(--grey-accent);
+            -webkit-text-fill-color: var(--text-1);
+            color: var(--text-1);
           }
           .vehicle-mileage-input:focus,
           .vehicle-mileage-input:active {
-            height: 1.2em !important;
-            min-height: 1.2em !important;
-            max-height: 1.2em !important;
+            height: 30px !important;
+            min-height: 30px !important;
+            max-height: 30px !important;
           }
           .edit-requests-hours-input::-webkit-outer-spin-button,
           .edit-requests-hours-input::-webkit-inner-spin-button {
@@ -787,7 +752,8 @@ export default function JobCardDetailPageUi(props) {
           </div>
 
           {canViewPartsTab && <div className="app-page-stack" style={{
-          display: activeTab === "parts" ? undefined : "none"
+          display: activeTab === "parts" ? undefined : "none",
+          gap: "10px" // parts search ↔ workspace gap set to 10px; overrides .app-page-stack's 20px --page-stack-gap for this tab only
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-parts" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Parts tab content">
               {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                   <strong>Locked: Parts</strong>

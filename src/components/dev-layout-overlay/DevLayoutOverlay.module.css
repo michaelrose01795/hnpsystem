@@ -11,61 +11,68 @@
 }
 
 .box {
-  /* Diagram primitive — dashed box outline is the overlay's visualization purpose */
+  /* Diagram primitive — solid outline only, fully transparent fill so the
+     underlying card is unchanged. The outline alone tells the user which
+     section the click targets. */
   position: absolute;
-  border: 2px dashed rgba(var(--accent-base-rgb), 0.74);
+  border: 2px solid rgba(var(--accent-base-rgb), 0.85);
   background: transparent;
   border-radius: 10px;
   pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.42);
+  box-shadow: none;
 }
 
 .boxCreate {
   border-style: solid;
   border-width: 2px;
-  border-color: rgba(var(--accent-base-rgb), 0.82);
-  background: rgba(var(--accent-base-rgb), 0.06);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--surface-rgb), 0.58),
-    0 0 0 1px rgba(var(--accent-base-rgb), 0.08);
+  border-color: rgba(var(--accent-base-rgb), 0.85);
+  background: transparent;
+  box-shadow: none;
 }
 
 .boxSidebar {
-  border-color: transparent;
-  background: rgba(var(--warning-rgb), 0.06);
-  box-shadow: inset 0 0 0 1px rgba(var(--warning-rgb), 0.24);
+  border-style: solid;
+  border-width: 2px;
+  border-color: rgba(var(--warning-rgb), 0.85);
+  background: transparent;
+  box-shadow: none;
 }
 
 .boxSidebarColumn {
   border-style: solid;
   border-width: 2px;
   border-color: rgba(var(--accent-base-rgb), 0.95);
-  background: rgba(var(--accent-base-rgb), 0.1);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--accent-base-rgb), 0.24),
-    0 0 0 1px rgba(var(--accent-base-rgb), 0.08);
+  background: transparent;
+  box-shadow: none;
 }
 
 .boxSidebarPrimary {
   border-style: solid;
   border-width: 3px;
-  border-color: transparent;
-  background: rgba(var(--warning-rgb), 0.12);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--warning-rgb), 0.34),
-    0 0 0 1px rgba(var(--warning-rgb), 0.12);
+  border-color: rgba(var(--warning-rgb), 0.85);
+  background: transparent;
+  box-shadow: none;
 }
 
 .copyTarget {
-  position: absolute;
-  z-index: 1;
+  /* !important is required throughout because the global reset
+     `html.staff-scope button:not(.app-btn) { … position: relative; z-index: 0;
+     background: var(--accent-strong) }` in staffglobal.css has higher
+     specificity than this CSS-module class. Without `position: absolute`
+     winning, every click target falls back to `position: relative` and stacks
+     in normal flow inside the overlay root — landing far from its section, so
+     clicks resolve to whichever target happens to overlap (usually the
+     full-page page-shell target) instead of the section actually clicked. */
+  position: absolute !important;
+  z-index: 1 !important;
   padding: 0;
   margin: 0;
   min-width: 0;
   min-height: 0;
-  border: none;
+  border: none !important;
   border-radius: 10px;
-  background: transparent;
+  background: transparent !important;
+  box-shadow: none !important;
   color: inherit;
   cursor: copy;
   font: inherit;

@@ -33,6 +33,36 @@
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+
+const DESKTOP_APP_PAGE_KEY = "profile-desktop-app-page-card";
+
+function DesktopAppSection({ title, sectionKey, headerRight, children }) {
+  return (
+    <LayerTheme
+      as="section"
+      sectionKey={sectionKey}
+      sectionType="content-card"
+      parentKey={DESKTOP_APP_PAGE_KEY}
+      gap="12px"
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2>
+        {headerRight}
+      </div>
+      {children}
+    </LayerTheme>
+  );
+}
+
+function CloseButton({ onClick }) {
+  return (
+    <Button type="button" variant="secondary" size="sm" pill onClick={onClick} aria-label="Close">
+      Close
+    </Button>
+  );
+}
 
 // Fixed public path the Electron installer will be served from.
 // To switch the card on, place the built installer at:
@@ -84,14 +114,6 @@ const cardStyle = {
   flexDirection: "column",
   gap: "14px",
   boxShadow: "none",
-};
-
-// Panel form: no outer chrome (popup modal provides it).
-const panelStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "14px",
-  minWidth: "min(440px, 100%)",
 };
 
 // Inline SVG monitor icon — keeps the component self-contained, no new asset.
@@ -150,14 +172,14 @@ function StatusPill({ tone, label }) {
   );
 }
 
-function MetaItem({ label, value }) {
+function MetaItem({ label, value, tone = "theme" }) {
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         gap: "2px",
-        background: "var(--theme)",
+        background: tone === "surface" ? "var(--surface)" : "var(--theme)",
         borderRadius: "var(--radius-sm, 12px)",
         padding: "10px 12px",
         minWidth: 0,
@@ -350,11 +372,131 @@ export default function DesktopAppCard({
   );
 }
 
-export function DesktopAppPanel() {
-  const probe = useInstallerProbe();
+export function DesktopAppPanel({ onClose } = {}) {
+  const { available, fileSize, lastUpdated } = useInstallerProbe();
+  const isChecking = available === null;
+  const isAvailable = available === true;
+
+  const statusTone = isChecking ? "checking" : isAvailable ? "ready" : "pending";
+  const statusLabel = isChecking
+    ? "Checking availability"
+    : isAvailable
+    ? "Ready to install"
+    : "Awaiting publish";
+
   return (
-    <div style={panelStyle}>
-      <DesktopAppBody {...probe} />
-    </div>
+    <LayerSurface
+      as="div"
+      sectionKey={DESKTOP_APP_PAGE_KEY}
+      sectionType="page-shell"
+      backgroundToken="surface"
+      widthMode="full"
+      shell
+      padding="var(--page-card-padding)"
+      gap="var(--page-stack-gap)"
+      style={{ minWidth: "min(440px, 100%)" }}
+    >
+      <div className="app-page-stack">
+        <DesktopAppSection
+          title="Desktop App"
+          sectionKey="profile-desktop-app-overview"
+          headerRight={onClose ? <CloseButton onClick={onClose} /> : null}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "14px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "44px",
+                height: "44px",
+                borderRadius: "var(--radius-sm, 12px)",
+                background: "var(--surface)",
+                color: "var(--accentText)",
+                flexShrink: 0,
+              }}
+            >
+              <MonitorIcon />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: "1 1 200px", minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--text-1)" }}>
+                Windows installer
+              </div>
+              <div style={{ fontSize: "0.82rem", color: "var(--text-1)", opacity: 0.75 }}>
+                Runs the DMS as a native desktop app
+              </div>
+            </div>
+            <StatusPill tone={statusTone} label={statusLabel} />
+          </div>
+          <div style={{ fontSize: "0.86rem", lineHeight: 1.55, color: "var(--text-1)" }}>
+            Opens the DMS like normal software — no browser tab, no address bar.
+            Sign in with the same login as the web app, with the same permissions.
+            Updates still come from the live system.
+          </div>
+        </DesktopAppSection>
+
+        <DesktopAppSection title="Download" sectionKey="profile-desktop-app-download">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+            {isAvailable ? (
+              <a href={INSTALLER_URL} download style={{ textDecoration: "none" }}>
+                <Button type="button" variant="primary" size="sm">
+                  Download Windows App
+                </Button>
+              </a>
+            ) : (
+              <Button type="button" variant="primary" size="sm" disabled>
+                {isChecking ? "Checking availability…" : "Download Windows App"}
+              </Button>
+            )}
+          </div>
+          {!isAvailable && !isChecking ? (
+            <div
+              style={{
+                fontSize: "0.8rem",
+                lineHeight: 1.5,
+                color: "var(--warning-base)",
+                background: "rgba(245, 158, 11, 0.1)",
+                borderRadius: "var(--radius-sm, 12px)",
+                padding: "10px 12px",
+              }}
+            >
+              The Windows installer is not available yet. Speak to an admin —
+              once it is published it will appear here automatically.
+            </div>
+          ) : null}
+          {isAvailable ? (
+            <div style={{ fontSize: "0.8rem", lineHeight: 1.55, color: "var(--text-1)", opacity: 0.8 }}>
+              For Windows PCs only. If Windows shows a warning, choose{" "}
+              <strong>More info</strong>, then <strong>Run anyway</strong> — only
+              if this installer came from H&amp;P System.
+            </div>
+          ) : null}
+        </DesktopAppSection>
+
+        <DesktopAppSection title="Details" sectionKey="profile-desktop-app-details">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: "10px",
+            }}
+          >
+            <MetaItem label="Version" value={DEFAULT_VERSION} tone="surface" />
+            <MetaItem label="Last updated" value={lastUpdated || DEFAULT_LAST_UPDATED} tone="surface" />
+            <MetaItem label="File size" value={fileSize || DEFAULT_FILE_SIZE} tone="surface" />
+          </div>
+          <div style={{ fontSize: "0.78rem", lineHeight: 1.5, color: "var(--text-1)", opacity: 0.7 }}>
+            Speak to an admin if the install does not open.
+          </div>
+        </DesktopAppSection>
+      </div>
+    </LayerSurface>
   );
 }

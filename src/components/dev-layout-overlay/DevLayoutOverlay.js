@@ -41,6 +41,15 @@ const sanitizeKey = (value) =>
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
+// Turn a kebab-case section key (e.g. "jobcard-page-shell") into a readable
+// card name (e.g. "Jobcard Page Shell") for the copied locator text.
+const humanizeKey = (value) =>
+  String(value || "")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const isVisibleRect = (rect, minWidth = DEFAULT_MIN_WIDTH, minHeight = DEFAULT_MIN_HEIGHT) =>
   rect.width >= minWidth &&
   rect.height >= minHeight &&
@@ -612,31 +621,35 @@ const formatSourceEntry = (entry) => {
 };
 
 const buildSectionLocatorText = (section, route) => {
-  const sourceEntries = findDevLayoutSectionSources(section.key);
-  const sourceLines = sourceEntries.length
-    ? sourceEntries.slice(0, 4).map(formatSourceEntry)
-    : ["source: not mapped; search for sectionKey/data-dev-section-key below"];
-  const parentLine = section.parentKey ? `parent: ${section.parentNumber || "unknown"} (${section.parentKey})` : "parent: none";
-  const childrenLine = section.childKeys.length
-    ? `children: ${section.childNumbers.join(", ")} (${section.childKeys.join(", ")})`
-    : "children: none";
-  const preview = truncateLabel(section.textPreview, 120);
+  const sources = findDevLayoutSectionSources(section.key);
+  const name = humanizeKey(section.key) || "Unnamed section";
 
-  return [
-    "HNP dev layout section locator",
-    `route: ${section.route || route}`,
-    `source: ${sourceLines.join(" | ")}`,
-    `section: ${section.number || "unknown"} (${section.key})`,
-    parentLine,
-    childrenLine,
-    `type: ${section.type}`,
-    `dom: <${section.tagName || "unknown"}> ${section.wrapperClass}`,
-    `bounds: ${section.width}x${section.height} at (${section.left}, ${section.top})`,
-    `background: ${section.backgroundToken || "unknown"}`,
-    preview ? `text: ${preview}` : "text: none",
-    "",
-    "Use this locator to edit the clicked card/section directly. Do not search the whole repo first unless the source line is dynamic or unmapped.",
-  ].join("\n");
+  // Card name + position first — the two things you usually want at a glance.
+  const lines = [`${name} · ${section.number || "?"}`, `key: ${section.key}`];
+
+  // Exact source location(s) — primary on the "source:" line, any extras
+  // indented underneath so the click target's code home stays obvious.
+  if (sources.length) {
+    lines.push(`source: ${formatSourceEntry(sources[0])}`);
+    sources.slice(1, 4).forEach((entry) => lines.push(formatSourceEntry(entry)));
+  } else {
+    lines.push("source: not mapped");
+  }
+
+  lines.push(`route: ${section.route || route}`);
+
+  // Parent + child count condensed to one short line (the old format dumped
+  // every child key and number, which was the bulk of the noise).
+  const relations = [];
+  if (section.parentKey) {
+    relations.push(`parent ${section.parentKey}${section.parentNumber ? ` (${section.parentNumber})` : ""}`);
+  }
+  if (section.childKeys.length) {
+    relations.push(`${section.childKeys.length} child${section.childKeys.length === 1 ? "" : "ren"}`);
+  }
+  if (relations.length) lines.push(relations.join(" · "));
+
+  return lines.join(" ");
 };
 
 export default function DevLayoutOverlay() {

@@ -42,6 +42,7 @@ import CookieBanner from "@/components/CookieBanner";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import GlobalTableShells from "@/components/App/GlobalTableShells";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
+import GlobalTooltip from "@/components/ui/GlobalTooltip";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
@@ -498,6 +499,7 @@ function AppWrapper({ Component, pageProps }) {
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
+      <GlobalTooltip />
       <DevLayoutOverlayRoot />
     </>
   ); // render the requested page inside its (persistent) layout shell

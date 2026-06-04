@@ -27,7 +27,7 @@ export default function PrePickLocationModal({
 
   const handleConfirm = () => {
     if (!selectedLocation && !allowSkip) {
-      setError("Please select a pre-pick location");
+      setError("Please select a picked location");
       return;
     }
     onConfirm(selectedLocation);
@@ -47,8 +47,8 @@ export default function PrePickLocationModal({
   return (
     <VHCModalShell
       isOpen={isOpen}
-      title="Set Pre-Pick Location"
-      subtitle={`Select a pre-pick location for: ${partName}`}
+      title="Set Picked Location"
+      subtitle={`Select where this part has been picked to: ${partName}`}
       width="600px"
       height="auto"
       onClose={handleClose}
@@ -112,7 +112,7 @@ export default function PrePickLocationModal({
               color: "var(--primary)",
             }}
           >
-            Pre-Pick Location
+            Picked Location
           </label>
           <DropdownField
             value={selectedLocation}
@@ -161,7 +161,7 @@ export default function PrePickLocationModal({
           }}
         >
           <strong>Note:</strong> You can {allowSkip ? "skip this step and " : ""}
-          set or update the pre-pick location later from the Parts tab.
+          set or update the picked location later from the Parts tab.
         </div>
       </div>
     </VHCModalShell>

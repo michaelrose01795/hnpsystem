@@ -25,7 +25,6 @@ import VHCModalShell from "@/components/VHC/VHCModalShell";
 import VhcCustomerDescriptionModal from "@/components/VHC/VhcCustomerDescriptionModal";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
-import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 // VHC status helpers are owned by the canonical engine. summaryStatus.js was
 // deleted in Phase 6 — these helpers now live inline inside the engine.
 import {
@@ -138,16 +137,11 @@ const PRE_PICK_LOCATION_OPTIONS_FULL = [
   { value: "on_order", label: "On Order" },
 ];
 
-const PRE_PICK_LOCATION_OPTIONS_COMPACT = [
-  { value: "", label: "Not assigned" },
-  { value: "service_rack_1", label: "Service Rack 1" },
-  { value: "service_rack_2", label: "Service Rack 2" },
-  { value: "service_rack_3", label: "Service Rack 3" },
-  { value: "service_rack_4", label: "Service Rack 4" },
-  { value: "tyre_shed", label: "Tyre Shed" },
-  { value: "no_pick", label: "No Pick" },
-  { value: "on_order", label: "On Order" },
-];
+const formatPrePickLocationLabel = (value) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "Not assigned";
+  return PRE_PICK_LOCATION_OPTIONS_FULL.find((option) => option.value === normalized)?.label || normalized;
+};
 
 const normalizeInlineText = (value = "") =>
   String(value || "")
@@ -6145,28 +6139,6 @@ export default function VhcDetailsPanel({
     []
   );
 
-  // Handler for Pre-Pick Location dropdown change
-  const handlePrePickLocationChange = useCallback(async (partItemId, location) => {
-    if (location === "on_order") {
-      // Move to Parts On Order section
-      await handlePartStatusUpdate(partItemId, {
-        prePickLocation: "on_order",
-        status: "on_order",
-        stockStatus: null,
-      });
-      return;
-    }
-
-    const sanitizedLocation = location || null;
-
-    // Update pre-pick location
-    await handlePartStatusUpdate(partItemId, {
-      prePickLocation: sanitizedLocation,
-      stockStatus: sanitizedLocation ? "in_stock" : null,
-      status: sanitizedLocation ? "pre_picked" : "pending",
-    });
-  }, [handlePartStatusUpdate]);
-
   // Handler for "Here" button click (moves part back from On Order to Authorised)
   const handlePartArrived = useCallback(async (partItemId) => {
     await handlePartStatusUpdate(partItemId, {
@@ -8085,7 +8057,7 @@ export default function VhcDetailsPanel({
                     <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "140px" }}>Stock Status</th>
                     <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>Location</th>
                     <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Labour (hrs)</th>
-                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Pre-Pick Location</th>
+                    <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Picked Location</th>
                     <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "120px" }}>Action</th>
                   </>
                 )}
@@ -8105,6 +8077,7 @@ export default function VhcDetailsPanel({
                 const price = partItem.unit_price ?? part.unit_price ?? 0;
                 const stockStatusBadge = partItem.stock_status || "—";
                 const prePickLocation = partItem.pre_pick_location || "";
+                const prePickLabel = formatPrePickLocationLabel(prePickLocation);
 
                 return (
                   <tr
@@ -8165,13 +8138,24 @@ export default function VhcDetailsPanel({
                           {formatLabourHoursDisplay(partItem.labour_hours)}
                         </td>
                         <td style={{ padding: "12px 16px" }}>
-                          <DropdownField
-                            value={prePickLocation}
-                            onChange={(e) => handlePrePickLocationChange(partItem.id, e.target.value)}
-                            options={PRE_PICK_LOCATION_OPTIONS_COMPACT}
-                            placeholder="Select Location"
-                            size="sm"
-                          />
+                          <div
+                            className="app-input"
+                            aria-label={`Picked location: ${prePickLabel}`}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              minHeight: "34px",
+                              padding: "6px 10px",
+                              fontSize: "var(--text-caption)",
+                              lineHeight: 1.2,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              opacity: prePickLocation ? 1 : 0.72,
+                            }}
+                          >
+                            {prePickLabel}
+                          </div>
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
                           <button
@@ -8287,7 +8271,6 @@ export default function VhcDetailsPanel({
     );
   }, [
     bookedPartNumbers,
-    handlePrePickLocationChange,
     handleAddToJobClick,
     readOnly,
     handlePartArrived,

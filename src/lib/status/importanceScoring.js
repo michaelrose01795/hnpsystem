@@ -12,7 +12,7 @@ export const IMPORTANCE_LEVELS = {
 
 // Statuses that represent milestone lifecycle events.
 const MILESTONE_STATUSES = new Set([
-  "booked", "checked_in", "in_progress", "invoiced", "released", // Main status transitions
+  "job_created", "booked", "checked_in", "in_progress", "invoiced", "released", // Job creation + main status transitions
   "technician_work_completed", "wash_complete", // Key completion events
 ]);
 

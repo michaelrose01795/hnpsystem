@@ -63,7 +63,10 @@ const segmentStyle = {
   flex: "1 1 20px",
   minWidth: "18px",
   maxWidth: "44px",
-  height: "22px",
+  height: "32px",
+  // Override the global `button:not(.app-btn)` min-height (var(--control-height),
+  // the 44px control floor) in staffglobal.css so the gauge segments honour 32px.
+  minHeight: "32px",
   padding: 0,
   border: 0,
   borderRadius: "var(--radius-sm)",
@@ -95,7 +98,7 @@ export default function FuelGauge({ value, onChange, disabled = false }) {
   };
 
   return (
-    <div style={containerStyle} role="group" aria-label={`Fuel level ${activeLabel}`} title={activeLabel}>
+    <div style={containerStyle} role="group" aria-label={`Fuel level ${activeLabel}`}>
       <span style={{ color: "var(--text-1)", display: "inline-flex" }} aria-hidden="true">
         <FuelPumpIcon />
       </span>
@@ -116,7 +119,8 @@ export default function FuelGauge({ value, onChange, disabled = false }) {
               onMouseEnter={() => setHovered(segmentLevel)}
               onFocus={() => setHovered(segmentLevel)}
               onBlur={() => setHovered(null)}
-              title={segLabel}
+              className="app-hover-tooltip"
+              data-tooltip={segLabel}
               aria-label={`Set fuel to ${segLabel}`}
               style={{
                 ...segmentStyle,

@@ -2315,6 +2315,17 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     gap: "10px"
   };
 
+  // "Selected for job" is its own --theme section, separate from "Available to select".
+  const selectedSectionStyle = {
+    background: "var(--theme)",
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    padding: "12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  };
+
   const jobCardStyle = (isSelected) => ({
     width: "100%",
     textAlign: "left",
@@ -2323,8 +2334,9 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     padding: "12px",
     marginBottom: "8px",
     cursor: "pointer",
-    background: isSelected ? "var(--surface)" : "var(--surface)",
-    color: "var(--text-1)"
+    background: "var(--theme)",
+    color: "var(--text-1)",
+    boxShadow: isSelected ? "0 0 0 1px var(--accentMain)" : "none"
   });
 
   const formatJobType = (value = "") => {
@@ -2395,6 +2407,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             }
           </div>
           <div style={modalSectionStyle}>
+            <div style={selectedSectionStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <label style={labelStyle}>Selected for job</label>
               <div style={{ display: "flex", gap: "8px" }}>
@@ -2468,6 +2481,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                 </table>
               </div>
             }
+            </div>
             <div style={availableSectionStyle}>
               <div style={{ fontWeight: 600 }}>Available to select</div>
               {remainingRows.length === 0 ?

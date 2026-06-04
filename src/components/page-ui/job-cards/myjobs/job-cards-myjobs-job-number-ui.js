@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 
 export default function TechJobDetailPageUi(props) {
   const {
@@ -139,6 +140,25 @@ export default function TechJobDetailPageUi(props) {
     };
   })();
 
+  // Pre-pick location resolves from the allocated/linked part(s) — the single
+  // source of truth on parts_job_items — with the legacy job_requests value kept
+  // only as a read fallback. This mirrors the main job-card page so every screen
+  // shows the same location (see project_pre_pick_location).
+  const linkedPrePickPartsSource = [
+    ...(Array.isArray(jobCard?.partsAllocations) ? jobCard.partsAllocations : []),
+    ...(Array.isArray(jobCard?.parts_job_items) ? jobCard.parts_job_items : [])
+  ];
+  const resolveRowPrePickLocation = (row) =>
+    resolveLinkedPrePickLocation({
+      linkedPartRows: collectLinkedPartRows({
+        parts: linkedPrePickPartsSource,
+        requestId: row?.requestId ?? row?.request_id ?? null,
+        vhcItemId: row?.vhcItemId ?? row?.vhc_item_id ?? row?.vhc_id ?? null,
+        resolveCanonicalVhcId: (value) => (value === null || value === undefined ? "" : String(value))
+      }),
+      fallbackValues: [row?.prePickLocation, row?.pre_pick_location]
+    });
+
   const overviewCustomerRequests = (() => {
     const structuredRows = Array.isArray(jobCard?.jobRequests) && jobCard.jobRequests.length > 0 ?
     jobCard.jobRequests :
@@ -154,7 +174,7 @@ export default function TechJobDetailPageUi(props) {
         hours: row?.hours ?? row?.time ?? "",
         jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
         status: row?.status ?? null,
-        prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+        prePickLocation: resolveRowPrePickLocation(row),
         sortOrder: row?.sortOrder ?? row?.sort_order ?? index + 1,
         original: row
       })).
@@ -196,7 +216,7 @@ export default function TechJobDetailPageUi(props) {
       hours: row?.labourHours ?? row?.labour_hours ?? row?.hours ?? row?.time ?? "",
       jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
       status: row?.status ?? row?.approvalStatus ?? row?.approval_status ?? row?.authorizationState ?? row?.authorization_state ?? "authorized",
-      prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+      prePickLocation: resolveRowPrePickLocation(row),
       sortOrder: row?.sortOrder ?? row?.sort_order ?? index + 1
     }));
 
@@ -217,7 +237,7 @@ export default function TechJobDetailPageUi(props) {
       hours: row?.labourHours ?? row?.labour_hours ?? row?.hours ?? "",
       jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
       status: row?.status ?? row?.approvalStatus ?? row?.approval_status ?? row?.authorizationState ?? row?.authorization_state ?? "authorized",
-      prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+      prePickLocation: resolveRowPrePickLocation(row),
       sortOrder: index + 1
     }));
   })();

@@ -1073,13 +1073,18 @@ html.staff-scope .app-hover-tooltip {
   position: relative;
 }
 
-html.staff-scope .app-hover-tooltip[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + var(--space-sm));
-  transform: translate(-50%, 4px);
-  z-index: var(--hover-surface-z);
+/* Global hover/focus tooltip.
+   Rendered by <GlobalTooltip/> (src/components/ui/GlobalTooltip.js) as a single
+   fixed-position node on <body>, so it is NEVER clipped by a card/table/panel
+   with overflow:hidden — it always floats above the page content. This replaces
+   the browser's native `title` tooltip and the legacy `.app-hover-tooltip
+   [data-tooltip]::after` pseudo-element (disabled below), which was confined to
+   its trigger's overflow context and got hidden inside cards. */
+html.staff-scope .app-global-tooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-toast); /* tooltips sit above modals/popovers — always topmost */
   max-width: min(300px, 80vw);
   width: max-content;
   /* 44px floor (= --control-height); grows taller as longer text wraps. */
@@ -1089,8 +1094,6 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   background: var(--primary-hover);
   color: var(--onAccentText);
   box-shadow: var(--dropdown-menu-shadow), 0 12px 28px rgba(0, 0, 0, 0.18);
-  opacity: 0;
-  pointer-events: none;
   /* Flex-centre so the text sits in the vertical middle at any height. */
   display: flex;
   align-items: center;
@@ -1100,13 +1103,21 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   line-height: 1.2;
   font-size: var(--control-font-size);
   font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-html.staff-scope .app-hover-tooltip[data-tooltip]:hover::after,
-html.staff-scope .app-hover-tooltip[data-tooltip]:focus-visible::after {
+html.staff-scope .app-global-tooltip.is-visible {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
+}
+
+/* Legacy pseudo-element tooltip — superseded by <GlobalTooltip/>, which is not
+   clipped by overflow. Disabled so the two never render at once. */
+html.staff-scope .app-hover-tooltip[data-tooltip]::after {
+  content: none;
 }
 
 /* Inputs, Textareas & Selects — base resets only; sizing handled by Shared Field Surface below */

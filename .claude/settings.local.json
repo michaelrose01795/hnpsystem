@@ -194,7 +194,16 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -Recurse -Directory | Where-Object { $_.Name -match \"build|assets\" } | Select-Object -ExpandProperty FullName)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -File | Where-Object { $_.Name -match \"\\\\.env|electron|config\" } | Select-Object -ExpandProperty FullName)",
       "Bash(echo \"EXIT:$?\")",
-      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId, @{N='Cmd';E={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-Table -AutoSize -Wrap)"
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId, @{N='Cmd';E={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-Table -AutoSize -Wrap)",
+      "Bash(node tmp-overlay-diag.js)",
+      "Bash(node tmp-overlay-diag2.js)",
+      "Bash(netstat -ano)",
+      "Bash(powershell.exe -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"name='node.exe'\\\\\" | Select-Object ProcessId, CommandLine | Format-List\")",
+      "Bash(sed -i 's/crScan: window.__overlayCrScan || null,/crScan: window.__overlayCrScan || null,\\\\n    crRender: window.__overlayCrRender || null,/' tmp-overlay-diag6.js)",
+      "Bash(node tmp-overlay-diag6.js)",
+      "Bash(node tmp-tracker-shot.js)",
+      "Bash(echo \"=== exit $? \\(no error lines above = clean\\) ===\")",
+      "Bash(node tmp-tracker-measure.js)"
     ],
     "deny": [],
     "ask": [],

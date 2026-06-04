@@ -4,14 +4,15 @@
 
 import React, { useMemo, useState, useCallback } from "react"; // React core + hooks
 import { DropdownField } from "@/components/ui/dropdownAPI"; // Dropdown filter component
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const COLORS = {
-  current: "var(--danger)", // Current status node colour
-  complete: "var(--danger)", // Completed status node colour
+  current: "var(--accentText)", // Current status node colour
+  complete: "var(--text-1)", // Completed status node colour
   base: "var(--surface)", // Default node colour for unknown statuses
-  panelBg: "var(--secondary)", // Theme-colour panel background
-  textDark: "var(--info-dark)", // Primary text colour
-  textMuted: "var(--info)", // Muted/secondary text colour
+  textDark: "var(--text-1)", // Primary text colour
+  textMuted: "var(--text-1)", // Muted/secondary text colour
   connector: "var(--accent-purple)", // Timeline connector line colour
 };
 
@@ -26,6 +27,21 @@ const formatTimestamp = (timestamp) => {
     hour: "2-digit", // Two-digit hour
     minute: "2-digit", // Two-digit minute
   });
+};
+
+// Resolve an entry's most-recent timestamp (ms). For groups, use the newest
+// child so a phase group sorts by its latest activity, not its first.
+const getEntryNewestTime = (item) => {
+  const times = []; // Collected valid timestamps in ms
+  const push = (value) => {
+    const ms = new Date(value).getTime(); // Parse candidate timestamp
+    if (!Number.isNaN(ms)) times.push(ms); // Keep only valid dates
+  };
+  if (item?.group?.items?.length) {
+    item.group.items.forEach((child) => push(child?.timestamp)); // Consider every child
+  }
+  push(item?.timestamp); // Always consider the entry's own timestamp
+  return times.length ? Math.max(...times) : 0; // Newest wins; 0 sinks undated entries
 };
 
 // Check if a status value represents tech/VHC completion.
@@ -104,7 +120,7 @@ const flattenForFilter = (entries) => {
 const IMPORTANCE_OPACITY = { 5: 1.0, 4: 1.0, 3: 0.9, 2: 0.7, 1: 0.5 }; // milestone/major/normal/minor/noise
 
 // Render a single timeline entry card (used for both individual and group-child entries).
-function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, performer, isGroupChild }) {
+function TimelineCard({ item, isCompact, isEvent, isHighlighted, performer, isGroupChild }) {
   const isTechComplete = isTechCompleteStatus(item?.status) || isTechCompleteStatus(item?.label); // Check tech complete
   const displayTitle = item?.displayTitle || item?.label || item?.status || "Status"; // Use enhanced title
   const badgeLabel = item?.badgeLabel || (isEvent ? item?.department || "Action" : item?.department || "Status"); // Category badge
@@ -132,17 +148,13 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
     : (isHighlighted === false ? 0.7 : 1); // Fallback to highlight-based
 
   return (
-    <div
+    <LayerSurface
+      radius="var(--radius-xs)"
+      padding="10px 12px"
+      gap="6px"
       style={{
         width: "100%",
-        backgroundColor: "var(--surface)",
-        borderRadius: isCompact ? "var(--radius-sm)" : "var(--radius-xs)",
-        border: "none",
         boxShadow: isMilestone ? "inset 3px 0 0 0 var(--accent-purple)" : "none",
-        padding: "10px 12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
         fontFamily: "var(--font-family)",
         minHeight: isGroupChild ? "auto" : isCompact ? "52px" : "60px",
         opacity: cardOpacity,
@@ -166,15 +178,9 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
         >
           {displayTitle}
           <span
+            className={`app-badge ${isEvent ? "app-badge--accent-soft" : "app-badge--neutral"}`}
             style={{
-              fontSize: "10px", // Reduced badge font size
-              fontWeight: 600, // Slightly lighter badge weight
               textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              backgroundColor: "var(--surface)", // Subtle badge background
-              borderRadius: "var(--radius-pill)", // Pill-shaped badge
-              padding: "3px 8px", // Tighter badge padding
-              color: isEvent ? "var(--accent-orange)" : "var(--grey-accent)", // Event vs status colour
               whiteSpace: "nowrap",
             }}
           >
@@ -229,7 +235,7 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
                 lineHeight: 1.4,
                 whiteSpace: "normal",
                 wordBreak: "break-word",
-                backgroundColor: "var(--surface)", // Subtle background
+                backgroundColor: "var(--surface)", // Subtle inline highlight, not a surface wrapper
                 borderRadius: "var(--radius-xs)",
                 padding: "5px 8px", // Tighter padding
                 display: "inline-block",
@@ -240,12 +246,12 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
           </div>
         )}
       </div>
-    </div>
+    </LayerSurface>
   );
 }
 
 // Render a collapsible group header with child entries.
-function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, connectorColor, showTopConnector, showBottomConnector, chronologicalStatuses, normalizedCurrent, currentIndex }) {
+function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, connectorColor, showTopConnector, showBottomConnector }) {
   const group = entry.group; // Group metadata
   if (!group) return null; // Guard against non-group entries
 
@@ -306,21 +312,14 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
       {/* Group header — clickable to expand/collapse */}
       <button
         onClick={onToggle}
-        className="app-btn app-btn--sm"
+        className="app-btn app-btn--sm app-btn--secondary"
         style={{
           width: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: "8px",
-          backgroundColor: "var(--surface)",
-          border: "none",
           boxShadow: group.phaseColor ? `inset 3px 0 0 0 ${group.phaseColor}` : "none",
-          borderRadius: "var(--radius-xs)",
-          padding: "8px 12px",
-          fontSize: "13px",
-          fontWeight: 600,
-          color: COLORS.textDark,
           fontFamily: "var(--font-family)",
           textAlign: "left",
         }}
@@ -375,8 +374,6 @@ export default function JobProgressTracker({
   statuses = [],
   currentStatus,
   currentStatusId = null,
-  currentStatusMeta = null,
-  isWide = false,
   isCompact = false,
   flags = {},
 }) {
@@ -386,7 +383,7 @@ export default function JobProgressTracker({
 
   const normalizedCurrent =
     typeof currentStatus === "string" ? currentStatus.toLowerCase() : currentStatusId || null; // Normalise current status for comparison
-  const orderedStatuses = Array.isArray(statuses) ? statuses : []; // Guard against non-array input
+  const orderedStatuses = useMemo(() => (Array.isArray(statuses) ? statuses : []), [statuses]); // Guard against non-array input
 
   // Tag each entry with its chronological index for current/complete determination.
   const chronologicalStatuses = useMemo(
@@ -466,11 +463,28 @@ export default function JobProgressTracker({
     });
   }, [chronologicalStatuses, selectedUser, selectedAction]);
 
-  // Reverse for newest-first display order.
-  const displayStatuses = useMemo(
-    () => [...filteredStatuses].reverse(),
-    [filteredStatuses]
-  );
+  // Newest-first display order: sort top-level entries by their most-recent
+  // timestamp (descending) and reverse children inside groups too, so the
+  // newest change is always at the top and the oldest at the bottom.
+  const displayStatuses = useMemo(() => {
+    const sorted = [...filteredStatuses].sort(
+      (a, b) => getEntryNewestTime(b) - getEntryNewestTime(a)
+    );
+    return sorted.map((item) => {
+      if (item.group && Array.isArray(item.group.items)) {
+        return {
+          ...item,
+          group: {
+            ...item.group,
+            items: [...item.group.items].sort(
+              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            ),
+          },
+        };
+      }
+      return item;
+    });
+  }, [filteredStatuses]);
 
   // Toggle a group's expanded/collapsed state.
   const toggleGroup = useCallback((groupId) => {
@@ -487,20 +501,16 @@ export default function JobProgressTracker({
 
   return (
     // Outer wrapper keeps the card styling consistent with the rest of the UI shell
-    <div
+    <LayerTheme
+      radius="var(--radius-md)"
+      padding={isCompact ? "var(--section-card-padding-sm, 16px)" : "12px"}
+      gap="12px"
       style={{
-        backgroundColor: COLORS.panelBg,
-        borderRadius: isCompact ? "var(--section-card-radius, var(--radius-md))" : "var(--radius-md)",
-        border: "none",
-        padding: isCompact ? "var(--section-card-padding-sm, 16px)" : "12px",
-        boxShadow: "none",
         height: "auto",
-        display: "flex",
-        flexDirection: "column",
         minHeight: 0,
       }}
     >
-      {/* Header row with title and current status badge */}
+      {/* Header row: title with the user/action filters inline on the same row */}
       <div
         style={{
           display: "flex",
@@ -522,88 +532,54 @@ export default function JobProgressTracker({
         >
           Timeline
         </h3>
-        {currentStatusMeta && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              padding: "8px 12px",
-              minWidth: isCompact ? "100%" : isWide ? "240px" : "100%",
-            }}
-          >
-            <span
-              style={{
-                width: "10px",
-                height: "10px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: currentStatusMeta?.color || COLORS.base,
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontWeight: 700, fontSize: "13px", color: COLORS.textDark }}>
-                Current Status
-              </span>
-              <span style={{ fontSize: "12px", color: COLORS.textMuted }}>
-                {currentStatusMeta?.label || currentStatus || "Unknown"}
-                {currentStatusMeta?.department ? ` · ${currentStatusMeta.department}` : ""}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Filter controls */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : isWide ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: isCompact ? "var(--page-stack-gap-mobile, 16px)" : "10px",
-          marginBottom: "12px",
-          padding: isCompact ? "var(--section-card-padding-sm, 16px)" : "10px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          backgroundColor: "var(--surface)",
-        }}
-      >
-        <DropdownField
-          id="timeline-filter-user"
-          label="Users"
-          options={userOptions}
-          value={selectedUser}
-          onChange={(event) => setSelectedUser(event.target.value)}
-          size="sm"
-          usePortal={false}
-          menuStyle={{
-            position: "relative",
-            top: "auto",
-            left: "auto",
-            maxHeight: "none",
-            overflow: "visible",
-            overflowY: "visible",
+        {/* Compact filters — app-autowidth sizes each control to its longest
+            option, and the menu grows to max-content so no option is clipped. */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            alignItems: "flex-end",
           }}
-        />
-        <DropdownField
-          id="timeline-filter-action"
-          label="Actions"
-          options={actionOptions}
-          value={selectedAction}
-          onChange={(event) => setSelectedAction(event.target.value)}
-          size="sm"
-          usePortal={false}
-          menuStyle={{
-            position: "relative",
-            top: "auto",
-            left: "auto",
-            maxHeight: "none",
-            overflow: "visible",
-            overflowY: "visible",
-          }}
-        />
+        >
+          <DropdownField
+            id="timeline-filter-user"
+            label="Users"
+            className="app-autowidth"
+            options={userOptions}
+            value={selectedUser}
+            onChange={(event) => setSelectedUser(event.target.value)}
+            size="sm"
+            usePortal={false}
+            style={{ width: "fit-content" }}
+            menuStyle={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: "auto",
+              right: 0,
+              minWidth: "max-content",
+            }}
+          />
+          <DropdownField
+            id="timeline-filter-action"
+            label="Actions"
+            className="app-autowidth"
+            options={actionOptions}
+            value={selectedAction}
+            onChange={(event) => setSelectedAction(event.target.value)}
+            size="sm"
+            usePortal={false}
+            style={{ width: "fit-content" }}
+            menuStyle={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: "auto",
+              right: 0,
+              minWidth: "max-content",
+            }}
+          />
+        </div>
       </div>
 
       {/* Timeline content grows naturally; the Job Tracker sidebar owns scrolling. */}
@@ -653,9 +629,6 @@ export default function JobProgressTracker({
                 connectorColor={connectorColor}
                 showTopConnector={showTopConnector}
                 showBottomConnector={showBottomConnector}
-                chronologicalStatuses={chronologicalStatuses}
-                normalizedCurrent={normalizedCurrent}
-                currentIndex={currentIndex}
               />
             );
           }
@@ -739,14 +712,13 @@ export default function JobProgressTracker({
 
       {/* Debug mode: show raw entry data */}
       {flags.debug_mode_enabled && (
-        <div
+        <LayerSurface
+          radius="var(--radius-xs)"
+          padding="8px"
           style={{
             marginTop: "12px",
-            padding: "8px",
             fontSize: "10px",
             fontFamily: "var(--font-family-mono)",
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-xs)",
             maxHeight: "200px",
             overflowY: "auto",
             color: "var(--grey-accent)",
@@ -774,8 +746,8 @@ export default function JobProgressTracker({
               2
             )}
           </pre>
-        </div>
+        </LayerSurface>
       )}
-    </div>
+    </LayerTheme>
   );
 }

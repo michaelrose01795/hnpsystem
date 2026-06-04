@@ -347,7 +347,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const jobQuery = db
     .from("jobs")
     .select(
-      `id, job_number, vehicle_reg, status, tech_completion_status, waiting_status, updated_at, created_at, status_updated_at, status_updated_by, checked_in_at, workshop_started_at, maintenance_info, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
+      `id, job_number, vehicle_reg, status, tech_completion_status, waiting_status, updated_at, created_at, status_updated_at, status_updated_by, checked_in_at, checked_in_by, booked_by, appointment_window_start, workshop_started_at, maintenance_info, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
     )
     .limit(1);
 
@@ -410,7 +410,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .eq("job_id", jobIdValue),
     db
       .from("job_booking_requests")
-      .select("status, updated_at, submitted_at, submitted_by, submitted_by_name, approved_at, approved_by, approved_by_name")
+      .select("status, updated_at, submitted_at, submitted_by, submitted_by_name, approved_at, approved_by, approved_by_name, estimated_completion")
       .eq("job_id", jobIdValue)
       .maybeSingle(),
     db
@@ -468,6 +468,8 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
 
   (historyRes.data || []).forEach((row) => collectUserId(row.changed_by));
   collectUserId(jobRow.status_updated_by);
+  collectUserId(jobRow.booked_by);
+  collectUserId(jobRow.checked_in_by);
   collectUserId(bookingRes?.data?.submitted_by);
   collectUserId(bookingRes?.data?.approved_by);
 
@@ -670,6 +672,118 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const normalizedStatusEntries = statusEntries.map(inferMissingActor);
   const normalizedSubStatusEntries = subStatusEntries.map(inferMissingActor);
 
+  // ── Lifecycle milestone events ──────────────────────────────────────────
+  // Surface job creation, booking (with the day the job was booked for) and
+  // check-in as explicit timeline entries derived from authoritative columns
+  // on the jobs row / booking request. Where a matching status-history row
+  // already exists we enrich it (actor + booked-for day) rather than emit a
+  // duplicate; otherwise we synthesise the milestone so the tracker always
+  // reports who created/booked/checked-in the job and the day it was booked
+  // for — alongside the clocking and change events surfaced further below.
+  const formatBookedForDay = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleString("en-GB", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const milestoneEntries = [];
+
+  // Job created — the jobs table has no created_by, so attribute creation to
+  // whoever booked it (booking submitter / booked_by) when available.
+  if (jobRow.created_at) {
+    const creatorName =
+      bookingRequest?.submitted_by_name ||
+      resolveHistoryUserName(jobRow.booked_by) ||
+      resolveHistoryUserName(bookingRequest?.submitted_by) ||
+      null;
+    milestoneEntries.push({
+      id: `created-${jobIdValue}`,
+      kind: "event",
+      eventType: "job_created",
+      status: "job_created",
+      label: "Job Created",
+      timestamp: ensureIsoString(jobRow.created_at),
+      userId: jobRow.booked_by || bookingRequest?.submitted_by || null,
+      userName: creatorName,
+      description: null,
+      color: "var(--info)",
+      department: "Admin",
+      icon: "🆕",
+      meta: { userName: creatorName },
+    });
+  }
+
+  // Booked in — when it was booked, by who, and the day it was booked for.
+  const bookedForDay = formatBookedForDay(
+    jobRow.appointment_window_start || bookingRequest?.estimated_completion
+  );
+  const bookedAt = bookingRequest?.submitted_at || null;
+  const bookedByName =
+    bookingRequest?.submitted_by_name ||
+    resolveHistoryUserName(jobRow.booked_by) ||
+    resolveHistoryUserName(bookingRequest?.submitted_by) ||
+    null;
+  const bookedStatusEntry = normalizedStatusEntries.find((entry) => entry.status === "booked");
+  if (bookedStatusEntry) {
+    if (bookedForDay && !bookedStatusEntry.description) {
+      bookedStatusEntry.description = `Booked in for ${bookedForDay}`;
+    }
+    if (!bookedStatusEntry.userName && bookedByName) {
+      bookedStatusEntry.userName = bookedByName;
+      bookedStatusEntry.userId =
+        bookedStatusEntry.userId || jobRow.booked_by || bookingRequest?.submitted_by || null;
+    }
+  } else if (bookedAt || bookedForDay) {
+    milestoneEntries.push({
+      id: `booked-${jobIdValue}`,
+      kind: "event",
+      eventType: "job_booked",
+      status: "booked",
+      label: "Booked In",
+      timestamp: ensureIsoString(bookedAt || jobRow.created_at),
+      userId: jobRow.booked_by || bookingRequest?.submitted_by || null,
+      userName: bookedByName,
+      description: bookedForDay ? `Booked in for ${bookedForDay}` : null,
+      color: "var(--info)",
+      department: "Booking",
+      icon: "📅",
+      meta: { userName: bookedByName, bookedForDay },
+    });
+  }
+
+  // Checked in — the checked_in_by/checked_in_at columns are the authoritative
+  // source for who checked the vehicle in, so prefer them over tracking events.
+  const checkedInByName = resolveHistoryUserName(jobRow.checked_in_by);
+  const checkedInStatusEntry = normalizedStatusEntries.find((entry) => entry.status === "checked_in");
+  if (checkedInStatusEntry) {
+    if (!checkedInStatusEntry.userName && checkedInByName) {
+      checkedInStatusEntry.userName = checkedInByName;
+      checkedInStatusEntry.userId = checkedInStatusEntry.userId || jobRow.checked_in_by || null;
+    }
+  } else if (jobRow.checked_in_at) {
+    milestoneEntries.push({
+      id: `checkedin-${jobIdValue}`,
+      kind: "event",
+      eventType: "job_checked_in",
+      status: "checked_in",
+      label: "Checked In",
+      timestamp: ensureIsoString(jobRow.checked_in_at),
+      userId: jobRow.checked_in_by || null,
+      userName: checkedInByName,
+      description: null,
+      color: "var(--info)",
+      department: "Front of House",
+      icon: "✅",
+      meta: { userName: checkedInByName },
+    });
+  }
+
   const actionEntries = [];
   if (keyRes.error) {
     console.error("Failed to load key tracking events", keyRes.error);
@@ -776,6 +890,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       health_check: { dept: "Health Check",  color: "var(--accent-purple)", icon: "🧰" },
       files:        { dept: "Documents",     color: "var(--accent-orange)", icon: "📎" },
       parts:        { dept: "Parts",         color: "var(--info)",          icon: "🧩" },
+      job:          { dept: "Job Card",      color: "var(--info)",          icon: "✏️" },
     };
     (activityRes.data || []).forEach((row) => {
       if (!row?.occurred_at) return;
@@ -811,7 +926,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     });
   }
 
-  const timelineEntries = [...normalizedStatusEntries, ...normalizedSubStatusEntries, ...actionEntries]
+  const timelineEntries = [...normalizedStatusEntries, ...normalizedSubStatusEntries, ...actionEntries, ...milestoneEntries]
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .map((entry) => ({
       id: entry.id,
@@ -897,6 +1012,8 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         pausesTime: Boolean(jobStatusMeta?.pausesTime),
       },
       waitingStatus: jobRow.waiting_status || null,
+      createdAt: jobRow.created_at || null,
+      lastUpdatedAt: jobRow.updated_at || null,
       updatedAt:
         latestMainStatusEntry?.timestamp ||
         jobRow.status_updated_at ||

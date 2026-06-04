@@ -3221,6 +3221,16 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   };
 
   const handleUpdateRequestPrePickLocation = async (requestRow, prePickLocation) => {
+    // DEPRECATED / RETIRED. Pre-pick location is now a single source of truth on
+    // parts_job_items.pre_pick_location, set per-part from the Parts tab "Part
+    // Details" popup (/api/parts/update-status). Request rows are read-only
+    // mirrors, so this request-level writer (which used to fan out to
+    // job_requests / vhc_checks via /api/vhc/pre-pick-location) is no longer
+    // wired to any UI. Kept as a no-op to preserve the prop contract through the
+    // page shell without reintroducing a second write path. The original
+    // request-level fan-out below is retained (unreachable) for reference only.
+    return;
+
     if (!canEdit || !jobData?.id) return;
 
     const requestId = requestRow?.requestId ?? requestRow?.request_id ?? null;
@@ -3777,8 +3787,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     const pageStackStyle = {
       display: "flex",
       flexDirection: "column",
-      gap: "16px",
-      rowGap: "16px"
+      gap: "10px",
+      rowGap: "10px"
     };
     const sharedJobCardShellBackground = "var(--tab-container-bg)";
     const summaryPrimaryTextStyle = {
@@ -4935,7 +4945,6 @@ function CustomerRequestsTab({
   const [editableAuthorisedRows, setEditableAuthorisedRows] = useState([]);
   const [editing, setEditing] = useState(false);
   const [moreEditRequestIndex, setMoreEditRequestIndex] = useState(null);
-  const [savingRequestPrePickId, setSavingRequestPrePickId] = useState(null);
   const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
   const indentedNoteStyle = {
     ...smallPrintStyle,
@@ -4981,6 +4990,22 @@ function CustomerRequestsTab({
     justifyContent: "center",
     lineHeight: 1,
     whiteSpace: "nowrap"
+  };
+  // Read-only pre-pick display, styled as a staffglobal `.app-input` text field.
+  // Pre-pick is now set per-part from the Parts tab "Part Details" popup; these
+  // request rows only mirror the linked part's saved location, so they render a
+  // label rather than an editable dropdown (single source of truth).
+  const prePickLabelStyle = {
+    height: "var(--control-height)",
+    minHeight: "var(--control-height)",
+    padding: "var(--control-padding)",
+    display: "flex",
+    alignItems: "center",
+    fontSize: "var(--control-font-size)",
+    lineHeight: 1.2,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
   };
   const requestColumnGridStyle = {
     display: "grid",
@@ -5071,17 +5096,6 @@ function CustomerRequestsTab({
     const safe = Number.isFinite(numeric) ? numeric : 0;
     return `${safe.toFixed(1)}h`;
   };
-  const getPrePickRowKey = useCallback((row) => {
-    const requestId = row?.requestId ?? row?.request_id ?? null;
-    if (requestId !== null && requestId !== undefined && requestId !== "") {
-      return `request:${requestId}`;
-    }
-    const vhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
-    if (vhcItemId !== null && vhcItemId !== undefined && vhcItemId !== "") {
-      return `vhc:${vhcItemId}`;
-    }
-    return "";
-  }, []);
   const unifiedRequests = useMemo(() => {
     const source = Array.isArray(jobData?.jobRequests) ?
     jobData.jobRequests :
@@ -5834,41 +5848,11 @@ function CustomerRequestsTab({
     setEditableAuthorisedRows(updated);
   };
 
-  const prePickLocationOptions = useMemo(
-    () => [
-    { value: "", label: "Not assigned" },
-    { value: "service_rack_1", label: "Service Rack 1" },
-    { value: "service_rack_2", label: "Service Rack 2" },
-    { value: "service_rack_3", label: "Service Rack 3" },
-    { value: "service_rack_4", label: "Service Rack 4" },
-    { value: "sales_rack_1", label: "Sales Rack 1" },
-    { value: "sales_rack_2", label: "Sales Rack 2" },
-    { value: "sales_rack_3", label: "Sales Rack 3" },
-    { value: "sales_rack_4", label: "Sales Rack 4" },
-    { value: "tyre_shed", label: "Tyre Shed" },
-    { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
-    { value: "no_pick", label: "No Pick" },
-    { value: "on_order", label: "On Order" }],
-
-    []
-  );
-
-  const handleCustomerRequestPrePickLocationChange = useCallback(
-    async (requestRow, nextValue) => {
-      const key = getPrePickRowKey(requestRow);
-      if (!canEdit || !key) return;
-      setSavingRequestPrePickId(key);
-      try {
-        await onUpdateRequestPrePickLocation(requestRow, nextValue || null);
-      } catch (error) {
-        console.error("Failed to update request pre-pick location:", error);
-        alert(`Failed to update pre-pick location: ${error?.message || "Unknown error"}`);
-      } finally {
-        setSavingRequestPrePickId((current) => current === key ? null : current);
-      }
-    },
-    [canEdit, getPrePickRowKey, onUpdateRequestPrePickLocation]
-  );
+  // Pre-pick is set per-part from the Parts tab "Part Details" popup (writes
+  // parts_job_items.pre_pick_location via /api/parts/update-status). The request
+  // rows here are read-only mirrors of that location, so the previous editable
+  // dropdown, its options list, and the /api/vhc/pre-pick-location writer have
+  // been retired in favour of a single source of truth.
 
   return (
     <div>
@@ -6309,7 +6293,17 @@ function CustomerRequestsTab({
         <>
             {customerRequestRows.map((req, index) => {
             const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
-            const prePickRowKey = getPrePickRowKey(req);
+            // Resolve pre-pick from the linked part(s) — the canonical store —
+            // falling back to any legacy job_requests value for older data.
+            const resolvedRequestPrePick = resolveLinkedPrePickLocation({
+              linkedPartRows: collectLinkedPartRows({
+                parts: linkedPrePickPartsSource,
+                requestId: req.requestId ?? req.request_id ?? null,
+                vhcItemId: req.vhcItemId ?? req.vhc_item_id ?? null,
+                resolveCanonicalVhcId
+              }),
+              fallbackValues: [req.prePickLocation, req.pre_pick_location]
+            });
             // Per-row override: if this customer request has a matching ticked
             // task in the write-up checklist, show Completed for this row even
             // when the bulk write-up status hasn't been flipped yet.
@@ -6362,26 +6356,14 @@ function CustomerRequestsTab({
                     }
                   </div>
                   <div style={requestValueColumnStyle}>
-                    {prePickRowKey ?
-                    <DropdownField
-                      value={req.prePickLocation || ""}
-                      placeholder="Pre-Pick Location"
-                      onChange={(event) =>
-                      handleCustomerRequestPrePickLocationChange(req, event.target.value)
-                      }
-                      options={prePickLocationOptions}
-                      className="customer-request-prepick-dropdown"
-                      disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
-                      size="sm"
-                      style={requestFullWidthValueStyle} /> :
-
-
-                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
-                        {req.prePickLocation ?
-                      `Pre-picked: ${formatPrePickLabel(req.prePickLocation)}` :
+                    <div
+                      className="app-input"
+                      aria-label={`Pre-pick location: ${resolvedRequestPrePick ? formatPrePickLabel(resolvedRequestPrePick) : "Not set"}`}
+                      style={{ ...prePickLabelStyle, ...requestFullWidthValueStyle, opacity: resolvedRequestPrePick ? 1 : 0.72 }}>
+                      {resolvedRequestPrePick ?
+                      `Pre-picked: ${formatPrePickLabel(resolvedRequestPrePick)}` :
                       "Pre-pick not set"}
-                      </span>
-                    }
+                    </div>
                   </div>
                   <div style={requestValueColumnStyle}>
                     <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
@@ -6404,7 +6386,6 @@ function CustomerRequestsTab({
           })}
             {authorisedRows.map((row, index) => {
             const rowKey = row.requestId || row.vhcItemId || `authorized-row-${index}`;
-            const prePickRowKey = getPrePickRowKey(row);
             const linkedParts = getLinkedPartsForRequestRow(row);
             const hasActiveLinkedPart = linkedParts.some((item) => !isRemovedPartsRow(item));
             const hasOnlyRemovedLinkedParts = linkedParts.length > 0 && linkedParts.every((item) => isRemovedPartsRow(item));
@@ -6476,26 +6457,14 @@ function CustomerRequestsTab({
                     }
                     </div>
                     <div style={requestValueColumnStyle}>
-                      {prePickRowKey ?
-                    <DropdownField
-                      value={row.prePickLocation || ""}
-                      placeholder="Pre-Pick Location"
-                      onChange={(event) =>
-                      handleCustomerRequestPrePickLocationChange(row, event.target.value)
-                      }
-                      options={prePickLocationOptions}
-                      className="customer-request-prepick-dropdown"
-                      disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
-                      size="sm"
-                      style={requestFullWidthValueStyle} /> :
-
-
-                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
-                          {row.prePickLocation ?
+                      <div
+                      className="app-input"
+                      aria-label={`Pre-pick location: ${row.prePickLocation ? formatPrePickLabel(row.prePickLocation) : "Not set"}`}
+                      style={{ ...prePickLabelStyle, ...requestFullWidthValueStyle, opacity: row.prePickLocation ? 1 : 0.72 }}>
+                        {row.prePickLocation ?
                       `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}` :
                       "Pre-pick not set"}
-                        </span>
-                    }
+                      </div>
                     </div>
                     <div style={requestValueColumnStyle}>
                       <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
@@ -7112,7 +7081,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
             disabled={customerSaving} /> :
 
 
-          <div style={{ ...readOnlyStyle, color: "var(--info)" }}>
+          <div style={{ ...readOnlyStyle, color: "var(--text-1)" }}>
               {jobData.customerEmail || "N/A"}
             </div>
           }
@@ -10801,7 +10770,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label
               htmlFor="clocking-request-selector"
-              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}>
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}>
 
               Job / Request
             </label>
@@ -10819,7 +10788,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label
               htmlFor="clocking-tech-selector"
-              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}>
+              style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}>
 
               Technician
             </label>
