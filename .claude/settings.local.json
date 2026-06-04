@@ -203,7 +203,14 @@
       "Bash(node tmp-overlay-diag6.js)",
       "Bash(node tmp-tracker-shot.js)",
       "Bash(echo \"=== exit $? \\(no error lines above = clean\\) ===\")",
-      "Bash(node tmp-tracker-measure.js)"
+      "Bash(node tmp-tracker-measure.js)",
+      "Read(//c/Users/micha/.claude/**)",
+      "Read(//c/Users/micha/AppData/Local/Temp/claude/bundled-skills/2.1.162/**)",
+      "Bash(node tmp-parts-shot.mjs)",
+      "Bash(sed -i \"s/const USER_ID = '5';.*/const USER_ID = '40'; \\\\/\\\\/ Owner - full access, no invoice 403/\" tmp-parts-shot.mjs)",
+      "Bash(perl -0pi -e \"s/\\(  \\\\/\\\\/ Screenshot the parts workspace\\)/  await page.keyboard.press\\('Escape'\\).catch\\(\\(\\)=>{}\\);\\\\n  await page.evaluate\\(\\(\\) => { document.querySelectorAll\\('nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast]'\\).forEach\\(e => e.remove\\(\\)\\); }\\);\\\\n  await page.waitForTimeout\\(300\\);\\\\n\\\\1/\" tmp-parts-shot.mjs)",
+      "Bash(sed -i \"s/const USER_ID = '40';.*/const USER_ID = '5'; \\\\/\\\\/ Parts Manager - parts tables present/\" tmp-parts-shot.mjs)",
+      "Bash(perl -0pi -e \"s/  await page.evaluate\\\\\\(\\\\\\(\\\\\\) => \\\\{ document.querySelectorAll\\\\\\('nextjs-portal.*?\\\\}\\\\\\);/  await page.addStyleTag\\({ content: 'nextjs-portal,[data-nextjs-dialog-overlay],[data-nextjs-toast]{display:none!important}' }\\);/s\" tmp-parts-shot.mjs)"
     ],
     "deny": [],
     "ask": [],

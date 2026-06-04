@@ -1376,6 +1376,26 @@ html.staff-scope .app-data-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+/* Rounded data-table corners — opt-in modifier (add alongside .app-data-table).
+   The base .app-data-table sets border-radius on the <table>, but
+   `.app-data-table:has(thead)` forces overflow:visible so a sticky <thead> can
+   escape the scroll-clip. With overflow visible the square-cornered header and
+   last-row cells paint over the rounded table edge, so the corners read square.
+   Rounding the four real corner cells restores a single rounded surface without
+   re-clipping the sticky header. */
+html.staff-scope .app-data-table--rounded thead tr:first-child th:first-child {
+  border-top-left-radius: var(--radius-md);
+}
+html.staff-scope .app-data-table--rounded thead tr:first-child th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+html.staff-scope .app-data-table--rounded tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-md);
+}
+html.staff-scope .app-data-table--rounded tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-md);
+}
+
 /* Canonical in-row action button (Edit / Delete / etc.). Driven by
    --table-action-btn-height. Use this class on every <button> that lives
    inside an .app-data-table or row-list cell so heights stay aligned with

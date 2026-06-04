@@ -8,6 +8,10 @@ Table style in parts
 
 
 
+ANOTHER DAY!!!!
+TODO
+have it so rows and the rows within the "Jobcard Parts Allocate Customer Requests · 1.2.2.1.1.4.1.1.2.1 key: jobcard-parts-allocate-customer-requests source: src/components/PartsTab.js:2404 route: /job-cards/00080 parent jobcard-parts-allocate-panel (1.2.2.1.1.4.1.1.2) · 3 children" section as well are set to "--theme" colour background. as well the "" text is hiden due to being close to invisible card etc. 
+
 TODO
 have it so the rows wihin the "apple carplay not connecting Major Service Replace both front tyres" rows within the "Allocate Parts All parts allocated Customer Requests" section are set the "--theme" colour background
 

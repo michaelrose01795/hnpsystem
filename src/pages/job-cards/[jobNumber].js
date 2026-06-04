@@ -11426,7 +11426,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         }}>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-          <h3 style={{ margin: 0, fontSize: "16px", color: "var(--accent-base)" }}>
+          <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>
             Shared VHC Source
           </h3>
           {!isHostJob &&
@@ -11442,7 +11442,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             </span>
           }
         </div>
-        <p style={{ margin: "0 0 6px 0", color: "var(--accent-base)", fontSize: "14px" }}>
+        <p style={{ margin: "0 0 6px 0", color: "var(--text-1)", fontSize: "14px" }}>
           VHC checklist hosted on Job #{sharedVhcJobNumber}
           {!isHostJob &&
           <span style={{ marginLeft: "6px", fontSize: "12px", color: "var(--text-1)", fontWeight: "400" }}>

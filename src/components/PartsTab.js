@@ -2058,7 +2058,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   padding: "20px",
                   textAlign: "center",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   fontSize: "var(--text-label)",
                   borderRadius: "var(--radius-xs)",
                 }}
@@ -2075,7 +2075,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }}
               >
                 <table
-                  className="app-data-table"
+                  className="app-data-table app-data-table--rounded"
                   data-dev-section="1"
                   data-dev-section-key="jobcard-parts-added-table"
                   data-dev-section-type="data-table"
@@ -2241,7 +2241,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             </div>
                             <div style={{
                               fontSize: "var(--text-body-sm)",
-                              color: isRemoved ? "var(--text-2)" : "var(--info-dark)",
+                              color: isRemoved ? "var(--text-2)" : "var(--text-1)",
                               textDecoration: isRemoved ? "line-through" : "none",
                             }}>
                               {part.description || part.name}
@@ -2250,7 +2250,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               <div style={{
                                 marginTop: "4px",
                                 fontSize: "var(--text-caption)",
-                                color: isRemoved ? "var(--text-2)" : "var(--accentText)",
+                                color: isRemoved ? "var(--text-2)" : "var(--text-1)",
                                 fontWeight: 600,
                                 textDecoration: isRemoved ? "line-through" : "none",
                               }}>
@@ -2339,7 +2339,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 Allocate Parts
               </div>
               {assignMode ? (
-                <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--info)" }}>
+                <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
                   {!assignTargetRequestId
                     ? "Select a row in 'Allocate Parts' first."
                     : !selectedAssignablePart
@@ -2419,7 +2419,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   padding: "20px",
                   textAlign: "center",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   fontSize: "var(--text-label)",
                   borderRadius: "var(--radius-xs)",
                 }}
@@ -2438,11 +2438,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       parentKey="jobcard-parts-allocate-panel"
                       style={{ display: "flex", flexDirection: "column", gap: "8px" }}
                     >
-                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         Customer Requests
                       </div>
                       {customerRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--text-1)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No customer requests reported.
                         </div>
                       ) : (
@@ -2475,7 +2475,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                 <div>
-                                  <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
+                                  <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                                   {request.description}
                                   </div>
                                   {assignMode && String(assignTargetRequestId) === String(request.id) && (
@@ -2519,7 +2519,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}`}
                                     data-dev-section-type="data-table"
                                     data-dev-section-parent={`jobcard-parts-customer-request-${request.id}`}
-                                    className="parts-allocate-subtable app-data-table"
+                                    className="parts-allocate-subtable app-data-table app-data-table--rounded"
                                     style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
                                   >
                                     <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
@@ -2540,7 +2540,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                               {part.partNumber}
                                             </span>
                                           </td>
-                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>
+                                          <td style={{ padding: "6px", color: "var(--text-1)" }}>
                                             <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
                                               {part.description || part.name}
                                             </span>
@@ -2610,11 +2610,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       parentKey="jobcard-parts-allocate-panel"
                       style={{ display: "flex", flexDirection: "column", gap: "8px" }}
                     >
-                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         VHC Requests
                       </div>
                       {vhcRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--text-1)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No VHC requests reported.
                         </div>
                       ) : (
@@ -2659,7 +2659,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 >
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
-                                      <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
+                                      <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                                         {request.displayText || request.description}
                                       </div>
                                     {assignMode && String(assignTargetRequestId) === String(request.id) && (
@@ -2668,7 +2668,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       </div>
                                     )}
                                       {request.detailText && (
-                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
+                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
                                           {request.detailText}
                                         </div>
                                       )}
@@ -2708,7 +2708,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}`}
                                         data-dev-section-type="data-table"
                                         data-dev-section-parent={`jobcard-parts-vhc-request-${request.id}`}
-                                        className="parts-allocate-subtable app-data-table"
+                                        className="parts-allocate-subtable app-data-table app-data-table--rounded"
                                         style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
                                       >
                                         <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
@@ -2729,7 +2729,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                   {part.partNumber}
                                                 </span>
                                               </td>
-                                              <td style={{ padding: "6px", color: "var(--info-dark)" }}>
+                                              <td style={{ padding: "6px", color: "var(--text-1)" }}>
                                                 <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
                                                   {part.description || part.name}
                                                 </span>
@@ -2826,7 +2826,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }}
               >
                 <table
-                  className="on-order-table app-data-table"
+                  className="on-order-table app-data-table app-data-table--rounded"
                   data-dev-section="1"
                   data-dev-section-key="jobcard-parts-on-order-table"
                   data-dev-section-type="data-table"
@@ -2847,7 +2847,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
                     {partsOnOrderFromDB.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--info)" }}>
+                        <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--text-1)" }}>
                           No parts currently on order for this job.
                         </td>
                       </tr>
@@ -2866,7 +2866,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               opacity: isRemoved ? 0.8 : 1,
                             }}
                           >
-                            <td style={{ color: "var(--info-dark)" }}>
+                            <td style={{ color: "var(--text-1)" }}>
                               <span
                                 className="part-name-cell on-order-cell-scroll"
                                 onMouseDown={handlePartNameDragStart}

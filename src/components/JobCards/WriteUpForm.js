@@ -2698,7 +2698,7 @@ function WriteUpForm({
                             </button>
                           )}
                         </div>
-                        <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                        <div style={{ fontSize: "12px", color: "var(--text-1)" }}>
                           {slotMeta?.kind === "request"
                             ? `Request ${slotMeta.index}`
                             : `Added item ${slotMeta?.index || index + 1}`}
