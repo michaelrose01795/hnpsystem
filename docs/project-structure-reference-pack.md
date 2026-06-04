@@ -8456,7 +8456,7 @@ export default function TechDashboard() {
 ### `src/components/dev-layout-overlay/DevLayoutOverlay.js`
 
 ```js
-Ôªø// file location: src/components/dev-layout-overlay/DevLayoutOverlay.js
+// file location: src/components/dev-layout-overlay/DevLayoutOverlay.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
@@ -8465,19 +8465,8 @@ import {
   DEV_OVERLAY_FALLBACK_GROUPS,
   getCategoryById,
   getCategoryIdForSectionType,
-  getFamilyForCategoryId,
 } from "@/lib/dev-layout/categories";
-import {
-  UI_FAMILIES,
-  AUDIT_STATUS_OPTIONS,
-  getFamilyById,
-} from "@/components/ui/variants";
-import {
-  buildAuditKey,
-  getAuditTag,
-  setAuditTag,
-  clearAuditTag,
-} from "@/lib/dev-layout/auditTags";
+import { findDevLayoutSectionSources } from "@/lib/dev-layout/sectionSourceMap";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
 // Default visibility thresholds (match the original overlay behaviour). Small
@@ -8493,13 +8482,13 @@ const px = (value) => {
 };
 
 // Short, human-readable snippet of a section's own text content. Used on the
-// floating labels and the panel title so an inspector can identify a section
-// by what it says on screen, not just by its auto-generated index ‚Äî those
-// indexes reshuffle whenever a sibling is added or removed.
+// floating labels so a section can be identified by what it says on screen,
+// not just by its auto-generated index ó those indexes reshuffle whenever a
+// sibling is added or removed.
 const truncateLabel = (text, max = 36) => {
   const cleaned = String(text || "").replace(/\s+/g, " ").trim();
   if (!cleaned) return "";
-  return cleaned.length > max ? `${cleaned.slice(0, max - 1)}‚Ä¶` : cleaned;
+  return cleaned.length > max ? `${cleaned.slice(0, max - 1)}Ö` : cleaned;
 };
 
 const sanitizeKey = (value) =>
@@ -8620,12 +8609,12 @@ const getSectionTextPreview = (node) => {
     if (!text) continue;
     // Skip if this fragment exactly repeats the immediately previous fragment
     // (e.g. a section heading "Appointments today" sitting directly above a
-    // tile labelled "Appointments today" ‚Äî without this, the overlay preview
-    // reads "Appointments today Appointments today 0 ‚Ä¶").
+    // tile labelled "Appointments today" ó without this, the overlay preview
+    // reads "Appointments today Appointments today 0 Ö").
     const previous = parts.length ? parts[parts.length - 1] : "";
     if (previous && previous.toLowerCase() === text.toLowerCase()) continue;
     // Also skip if the new fragment is fully contained within the previous
-    // fragment (or vice versa) when both are short ‚Äî guards repeats where the
+    // fragment (or vice versa) when both are short ó guards repeats where the
     // wrapping span/heading text is re-rendered inside a child element.
     if (previous && text.length <= 40) {
       const a = previous.toLowerCase();
@@ -8828,54 +8817,6 @@ const inferIssueTags = (section, parent, previousSibling, sectionByKey) => {
   return Array.from(new Set(tags));
 };
 
-const buildPrompts = (section) => {
-  const childSummary = section.childNumbers.length
-    ? `Children ${section.childNumbers.join(", ")} (${section.childKeys.join(", ")}).`
-    : "No child sections.";
-
-  const metadata = `Type ${section.type}, wrapper ${section.wrapperClass}, background token ${section.backgroundToken}, background class ${section.backgroundClass || "none"}, computed background ${section.backgroundColor}, padding ${section.padding}, margin ${section.margin}, radius ${section.radius}, bounds ${section.width}x${section.height} at (${section.left}, ${section.top}).`;
-  const issues = section.issueTags.length ? `Likely issues: ${section.issueTags.join(", ")}.` : "No obvious issues flagged.";
-  const suggestedAction = section.issueTags.length
-    ? `Suggested actions: ${section.issueTags
-        .map((tag) => {
-          if (tag === "rogue-wrapper" || tag === "extra-wrapper") return "remove redundant wrapper shells";
-          if (tag === "duplicate-surface") return "flatten duplicate surface/background layers";
-          if (tag === "nested-shell") return "collapse nested shells into one structural wrapper";
-          if (tag === "misaligned-start") return "align left edge to parent content start";
-          if (tag === "over-padded") return "reduce outer padding to shared spacing tokens";
-          if (tag === "nonstandard-radius") return "replace radius with approved token";
-          if (tag === "inconsistent-gap") return "normalize vertical rhythm to shared section gap";
-          return `review ${tag}`;
-        })
-        .join("; ")}.`
-    : "Suggested actions: standardize with nearest shared layout primitives only if mismatch is confirmed.";
-  const prefix = `On ${section.route}, section ${section.number} (${section.key})`;
-
-  const previewForRef = truncateLabel(section.textPreview, 60);
-  return {
-    reference: previewForRef
-      ? `${section.route} :: ${section.number} (${section.key}) ‚Äî ‚Äú${previewForRef}‚Äù`
-      : `${section.route} :: ${section.number} (${section.key})`,
-    debug: `${prefix}. Parent ${section.parentNumber || "none"} (${section.parentKey || "none"}). ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
-    codex: `${prefix}, standardise this section using existing page-shell/section/card primitives while preserving current business behaviour. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
-    claude: `${prefix}, refactor layout structure for consistency and wrapper cleanup, keeping logic and data flow unchanged. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
-  };
-};
-
-const copyText = async (text) => {
-  if (!text) return;
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-  }
-};
-
-const tagToneClass = (tag) => {
-  if (tag === "no-issues-detected") return styles.tagSuccess;
-  if (["rogue-wrapper", "extra-wrapper", "nested-shell", "duplicate-surface"].includes(tag)) return styles.tagDanger;
-  if (["misaligned-start", "over-padded", "inconsistent-gap", "off-grid", "accent-overuse", "nonstandard-radius"].includes(tag)) return styles.tagWarn;
-  return "";
-};
-
 const getCreateSectionLabel = (section, mode) => {
   const shortKey = String(section?.key || "")
     .replace(/^job-cards-create-/, "")
@@ -8962,7 +8903,7 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
 
   // Fallback detection for non-registered structures. The selectors + size
   // thresholds are declared per category in src/lib/dev-layout/categories.js.
-  // We only scan categories that are currently active ‚Äî this prevents runaway
+  // We only scan categories that are currently active ó this prevents runaway
   // work and, critically, stops the overlay from recursively detecting its
   // own buttons/inputs/dialogs when those categories are toggled off.
   let fallbackIndex = 0;
@@ -9050,24 +8991,6 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
   return sections;
 };
 
-const buildGuide = (section, sections) => {
-  if (!section) return null;
-  const parent = sections.find((item) => item.key === section.parentKey) || null;
-  const siblings = sections
-    .filter((item) => item.parentKey === section.parentKey)
-    .sort((a, b) => a.order - b.order);
-  const currentIndex = siblings.findIndex((item) => item.key === section.key);
-  const previous = currentIndex > 0 ? siblings[currentIndex - 1] : null;
-
-  return {
-    parent,
-    previous,
-    leftGap: parent ? Math.max(0, Math.round(section.rect.left - parent.rect.left)) : 0,
-    topGap: previous ? Math.max(0, Math.round(section.rect.top - previous.rect.bottom)) : 0,
-    width: Math.round(section.rect.width),
-  };
-};
-
 const isSidebarSection = (section) => {
   const key = String(section?.key || "");
   const classData = String(section?.classData || "");
@@ -9102,20 +9025,9 @@ const isSidebarColumnSection = (section) => {
   return key === "app-layout-sidebar-rail";
 };
 
-const resolveOverlayBounds = (sections, selectedKey = "") => {
+const resolveOverlayBounds = (sections) => {
   const pageShells = (sections || []).filter((section) => section.type === "page-shell");
   if (!pageShells.length) return null;
-
-  const selectedSection = selectedKey ? sections.find((section) => section.key === selectedKey) : null;
-  if (selectedSection) {
-    let parentKey = selectedSection.parentKey || "";
-    while (parentKey) {
-      const parent = sections.find((section) => section.key === parentKey) || null;
-      if (!parent) break;
-      if (parent.type === "page-shell") return parent.rect;
-      parentKey = parent.parentKey || "";
-    }
-  }
 
   const rankedPageShells = [...pageShells].sort((left, right) => {
     const leftExplicit = left.source !== "fallback" && !String(left.key || "").startsWith("app-");
@@ -9144,6 +9056,47 @@ const getViewportBounds = () => {
   };
 };
 
+const copyText = async (text) => {
+  if (!text) return false;
+  if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
+  await navigator.clipboard.writeText(text);
+  return true;
+};
+
+const formatSourceEntry = (entry) => {
+  if (!entry) return "source: unknown";
+  const dynamic = entry.dynamic ? " (dynamic pattern)" : "";
+  return `${entry.file}:${entry.line}${dynamic}`;
+};
+
+const buildSectionLocatorText = (section, route) => {
+  const sourceEntries = findDevLayoutSectionSources(section.key);
+  const sourceLines = sourceEntries.length
+    ? sourceEntries.slice(0, 4).map(formatSourceEntry)
+    : ["source: not mapped; search for sectionKey/data-dev-section-key below"];
+  const parentLine = section.parentKey ? `parent: ${section.parentNumber || "unknown"} (${section.parentKey})` : "parent: none";
+  const childrenLine = section.childKeys.length
+    ? `children: ${section.childNumbers.join(", ")} (${section.childKeys.join(", ")})`
+    : "children: none";
+  const preview = truncateLabel(section.textPreview, 120);
+
+  return [
+    "HNP dev layout section locator",
+    `route: ${section.route || route}`,
+    `source: ${sourceLines.join(" | ")}`,
+    `section: ${section.number || "unknown"} (${section.key})`,
+    parentLine,
+    childrenLine,
+    `type: ${section.type}`,
+    `dom: <${section.tagName || "unknown"}> ${section.wrapperClass}`,
+    `bounds: ${section.width}x${section.height} at (${section.left}, ${section.top})`,
+    `background: ${section.backgroundToken || "unknown"}`,
+    preview ? `text: ${preview}` : "text: none",
+    "",
+    "Use this locator to edit the clicked card/section directly. Do not search the whole repo first unless the source line is dynamic or unmapped.",
+  ].join("\n");
+};
+
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
@@ -9169,14 +9122,11 @@ export default function DevLayoutOverlay() {
     setPanelOpen,
   } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
-  const [selectedKey, setSelectedKey] = useState("");
-  const [copiedAction, setCopiedAction] = useState("");
-  const [auditDraft, setAuditDraft] = useState({ family: "", variant: "", status: "", notes: "" });
-  const [auditKey, setAuditKeyState] = useState("");
-  const [auditSavedAt, setAuditSavedAt] = useState(0);
+  const [copiedSectionKey, setCopiedSectionKey] = useState("");
   const rafRef = useRef(null);
+  const panelRef = useRef(null);
 
-  // Stable set of active category ids for the scanner ‚Äî rebuilt only when
+  // Stable set of active category ids for the scanner ó rebuilt only when
   // filters change. Prevents scanning categories the user has turned off
   // (which also prevents the overlay from detecting its own internal DOM
   // when those element types are disabled).
@@ -9195,7 +9145,6 @@ export default function DevLayoutOverlay() {
   useEffect(() => {
     if (!canAccess || !enabled || typeof window === "undefined") {
       setSections([]);
-      setSelectedKey("");
       return;
     }
 
@@ -9242,8 +9191,8 @@ export default function DevLayoutOverlay() {
     if (fullScreen) {
       return getViewportBounds();
     }
-    return resolveOverlayBounds(sections, selectedKey);
-  }, [fullScreen, sections, selectedKey]);
+    return resolveOverlayBounds(sections);
+  }, [fullScreen, sections]);
   const scopedSections = useMemo(() => {
     const withinBounds = (section) => {
       if (!overlayBounds) return true;
@@ -9263,11 +9212,6 @@ export default function DevLayoutOverlay() {
       return true;
     });
   }, [sections, overlayBounds, fullScreen, isCategoryActive]);
-  const scopedSelected = useMemo(
-    () => scopedSections.find((section) => section.key === selectedKey) || null,
-    [scopedSections, selectedKey]
-  );
-  const scopedGuide = useMemo(() => buildGuide(scopedSelected, scopedSections), [scopedSelected, scopedSections]);
   const stats = useMemo(() => {
     const issueCount = scopedSections.filter((section) => section.issueTags.length > 0).length;
     const shellCount = scopedSections.filter((section) => section.isShell).length;
@@ -9281,84 +9225,15 @@ export default function DevLayoutOverlay() {
   }, [scopedSections]);
 
   useEffect(() => {
-    if (!selectedKey) return;
-    if (!scopedSections.some((entry) => entry.key === selectedKey)) {
-      setSelectedKey("");
-    }
-  }, [scopedSections, selectedKey]);
-
-  useEffect(() => {
-    if (!copiedAction) return undefined;
-    const timer = window.setTimeout(() => setCopiedAction(""), 1600);
+    if (!copiedSectionKey || typeof window === "undefined") return undefined;
+    const timer = window.setTimeout(() => setCopiedSectionKey(""), 1400);
     return () => window.clearTimeout(timer);
-  }, [copiedAction]);
-
-  // Load (or reset) the audit classification draft whenever the selected
-  // section changes. The draft is pre-filled from the persisted tag, falling
-  // back to the family the dev-overlay has already inferred from the
-  // section's category.
-  const scopedSelectedForAudit = useMemo(
-    () => scopedSections.find((section) => section.key === selectedKey) || null,
-    [scopedSections, selectedKey]
-  );
-
-  useEffect(() => {
-    if (!scopedSelectedForAudit?.node) {
-      setAuditDraft({ family: "", variant: "", status: "", notes: "" });
-      setAuditKeyState("");
-      return;
-    }
-    const key = buildAuditKey({
-      route: scopedSelectedForAudit.route,
-      node: scopedSelectedForAudit.node,
-    });
-    setAuditKeyState(key);
-    const existing = getAuditTag(key);
-    const categoryId = getCategoryIdForSectionType(scopedSelectedForAudit.type);
-    const defaultFamily = getFamilyForCategoryId(categoryId) || "";
-    setAuditDraft({
-      family: existing?.family || defaultFamily,
-      variant: existing?.variant || "",
-      status: existing?.status || "needs-review",
-      notes: existing?.notes || "",
-    });
-  }, [scopedSelectedForAudit]);
-
-  const applyAuditPatch = (patch) => {
-    setAuditDraft((prev) => {
-      const next = { ...prev, ...patch };
-      if (auditKey) {
-        setAuditTag(auditKey, next);
-        setAuditSavedAt(Date.now());
-      }
-      return next;
-    });
-  };
-
-  const handleClearAuditTag = () => {
-    if (!auditKey) return;
-    clearAuditTag(auditKey);
-    setAuditDraft({ family: "", variant: "", status: "", notes: "" });
-    setAuditSavedAt(Date.now());
-  };
+  }, [copiedSectionKey]);
 
   if (!canAccess || !hydrated) return null;
 
   const currentRoute = router.asPath || router.pathname || "/";
   const isJobCardsCreateRoute = currentRoute.startsWith("/job-cards/create");
-  const canInspectClick = true;
-  const handleCopy = async (type, text) => {
-    await copyText(text);
-    setCopiedAction(type);
-  };
-  const handleInspectClick = async (sectionKey) => {
-    setSelectedKey(sectionKey);
-    setPanelOpen(true);
-    const section = scopedSections.find((entry) => entry.key === sectionKey);
-    if (!section) return;
-    const prompts = buildPrompts(section);
-    await handleCopy("reference", prompts.reference);
-  };
 
   const overlayStyle = overlayBounds
     ? {
@@ -9374,74 +9249,59 @@ export default function DevLayoutOverlay() {
     0
   );
 
-  const selectedPrompts = scopedSelected ? buildPrompts(scopedSelected) : null;
+  const handleSectionCopy = async (section) => {
+    const copied = await copyText(buildSectionLocatorText(section, currentRoute));
+    if (copied) {
+      setCopiedSectionKey(section.key);
+    }
+  };
 
   const renderUnifiedPanel = () => {
-    if (!panelOpen) return null;
+    if (!panelOpen) {
+      return null;
+    }
 
     return (
+      <>
       <aside
+        ref={panelRef}
         className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()}
         data-dev-overlay-internal="1"
+        data-dev-section-key="dev-overlay-controls-panel"
+        data-dev-section-type="page-shell"
         role="dialog"
-        aria-label="Dev layout inspector"
+        aria-label="Dev layout overlay controls"
       >
         <div className={styles.panelScroll}>
-          <div className={styles.panelHeader}>
+          <div className={styles.panelHeader} data-dev-section-key="dev-overlay-controls-header" data-dev-section-type="section-shell">
             <div className={styles.panelTitleBlock}>
               <div className={styles.kickerRow}>
-                <p className={styles.kicker}>Dev Layout Inspector</p>
+                <p className={styles.kicker}>Dev Layout Overlay</p>
                 <button
                   type="button"
-                  className={`${styles.iconBtn} ${styles.iconBtnSm}`.trim()}
+                  className="app-btn app-btn--ghost app-btn--xs"
                   onClick={() => setPanelOpen(false)}
                   aria-label="Minimise dev overlay panel"
                   title="Minimise"
                 >
-                  ‚àí
+                  -
                 </button>
               </div>
               <h3 className={styles.title}>
-                {scopedSelected
-                  ? `${scopedSelected.route} :: ${scopedSelected.number} (${scopedSelected.key})`
-                  : enabled
-                  ? "Overlay controls"
-                  : "Overlay disabled"}
+                {enabled ? "Overlay controls" : "Overlay disabled"}
               </h3>
               <p className={styles.subtitle}>
-                {scopedSelected
-                  ? [
-                      truncateLabel(scopedSelected.textPreview, 80) ? `‚Äú${truncateLabel(scopedSelected.textPreview, 80)}‚Äù` : null,
-                      scopedSelected.type,
-                      scopedSelected.source,
-                    ]
-                      .filter(Boolean)
-                      .join(" ¬∑ ")
-                  : `Route ${currentRoute} ¬∑ ${stats.total} section${stats.total === 1 ? "" : "s"} detected`}
+                Route {currentRoute} ∑ {stats.total} section{stats.total === 1 ? "" : "s"} detected
               </p>
             </div>
           </div>
 
-          {scopedSelected && (
-            <div className={styles.backgroundBlock}>
-              <p className={styles.blockTitle}>Background</p>
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Name</span>
-                <span className={styles.value}>{scopedSelected.key}</span>
-                <span className={styles.labelKey}>Colour token</span>
-                <span className={`${styles.value} ${styles.codeValue}`.trim()}>
-                  {scopedSelected.backgroundToken || "‚Äî"}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.controlsBlock}>
+          <div className={styles.controlsBlock} data-dev-section-key="dev-overlay-controls" data-dev-section-type="section-card">
             <div className={styles.controlRow}>
               <label className={styles.controlLabel}>
                 <span>Overlay enabled</span>
                 <span className={styles.controlHint}>
-                  {enabled ? "Rendering on the page" : "Hidden ‚Äî no boxes or outlines"}
+                  {enabled ? "Rendering on the page" : "Hidden ó no boxes or outlines"}
                 </span>
               </label>
               <button
@@ -9463,7 +9323,7 @@ export default function DevLayoutOverlay() {
                   <button
                     key={value}
                     type="button"
-                    className={`${styles.modeBtn} ${mode === value ? styles.modeBtnActive : ""}`.trim()}
+                    className={`app-btn app-btn--xs ${mode === value ? "is-active" : ""}`.trim()}
                     onClick={() => setMode(value)}
                     aria-pressed={mode === value}
                     disabled={!enabled}
@@ -9507,7 +9367,7 @@ export default function DevLayoutOverlay() {
             </div>
           </div>
 
-          <div className={styles.controlsBlock}>
+          <div className={styles.controlsBlock} data-dev-section-key="dev-overlay-categories" data-dev-section-type="section-card">
             <div className={styles.controlsHead}>
               <p className={styles.blockTitle}>
                 Categories <span className={styles.countChip}>{activeCategoryCount}/{categories.length}</span>
@@ -9515,7 +9375,7 @@ export default function DevLayoutOverlay() {
               <div className={styles.bulkRow}>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={() => setAllCategoryFilters(true)}
                   disabled={!enabled}
                 >
@@ -9523,7 +9383,7 @@ export default function DevLayoutOverlay() {
                 </button>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={() => setAllCategoryFilters(false)}
                   disabled={!enabled}
                 >
@@ -9531,7 +9391,7 @@ export default function DevLayoutOverlay() {
                 </button>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={resetCategoryFilters}
                   disabled={!enabled}
                   title="Reset to defaults"
@@ -9551,8 +9411,8 @@ export default function DevLayoutOverlay() {
                     aria-checked={active}
                     className={`${styles.categoryPill} ${active ? styles.categoryPillActive : ""}`.trim()}
                     onClick={(event) => {
-                      // Shift-click ‚Üí solo this category (isolate it, hide everything else).
-                      // Plain click ‚Üí regular toggle.
+                      // Shift-click ? solo this category (isolate it, hide everything else).
+                      // Plain click ? regular toggle.
                       if (event.shiftKey) {
                         soloCategory(cat.id);
                       } else {
@@ -9560,13 +9420,13 @@ export default function DevLayoutOverlay() {
                       }
                     }}
                     disabled={!enabled}
-                    title={`${cat.description || cat.label} ‚Äî Shift+click to solo this family`}
+                    title={`${cat.description || cat.label} ó Shift+click to solo this family`}
                   >
                     <span
                       className={`${styles.categoryCheck} ${active ? styles.categoryCheckOn : ""}`.trim()}
                       aria-hidden="true"
                     >
-                      ‚úì
+                      ?
                     </span>
                     <span
                       className={styles.categorySwatch}
@@ -9579,179 +9439,17 @@ export default function DevLayoutOverlay() {
               })}
             </div>
           </div>
-
-          {scopedSelected && selectedPrompts && (
-            <div className={styles.selectedBlock}>
-              <div className={styles.selectedHead}>
-                <p className={styles.blockTitle}>Selected section</p>
-                <button
-                  type="button"
-                  className={styles.ghostBtn}
-                  onClick={() => setSelectedKey("")}
-                >
-                  Clear
-                </button>
-              </div>
-
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Element</span>
-                <span className={styles.value}>{scopedSelected.tagName || "unknown"} ¬∑ {scopedSelected.wrapperClass}</span>
-                <span className={styles.labelKey}>Parent</span>
-                <span className={styles.value}>{scopedSelected.parentNumber || "none"} ({scopedSelected.parentKey || "none"})</span>
-                <span className={styles.labelKey}>Children</span>
-                <span className={styles.value}>{scopedSelected.childNumbers.join(", ") || "none"}</span>
-                <span className={styles.labelKey}>Padding</span>
-                <span className={styles.value}>{scopedSelected.padding}</span>
-                <span className={styles.labelKey}>Radius</span>
-                <span className={styles.value}>{scopedSelected.radius}</span>
-                <span className={styles.labelKey}>Bounds</span>
-                <span className={styles.value}>{scopedSelected.width}√ó{scopedSelected.height} at ({scopedSelected.left}, {scopedSelected.top})</span>
-                <span className={styles.labelKey}>Gap / Offset</span>
-                <span className={styles.value}>
-                  gap {scopedSelected.computedGapFromPrevious ?? "n/a"}px ¬∑ left {scopedSelected.computedLeftOffsetFromParent ?? "n/a"}px
-                </span>
-                <span className={styles.labelKey}>Background</span>
-                <span className={styles.value}>{scopedSelected.backgroundToken}</span>
-              </div>
-
-              {scopedSelected.textPreview ? (
-                <p className={styles.previewText}>{scopedSelected.textPreview}</p>
-              ) : null}
-
-              <div className={styles.row}>
-                {scopedSelected.issueTags.length === 0 && (
-                  <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>
-                )}
-                {scopedSelected.issueTags.map((tag) => (
-                  <span key={tag} className={`${styles.tag} ${tagToneClass(tag)}`.trim()}>{tag}</span>
-                ))}
-              </div>
-
-              <div className={styles.row}>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("reference", selectedPrompts.reference)}>Copy ref</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("debug", selectedPrompts.debug)}>Copy debug</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("codex", selectedPrompts.codex)}>Copy Codex prompt</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("claude", selectedPrompts.claude)}>Copy Claude prompt</button>
-              </div>
-              <p className={styles.copyStatus}>
-                {copiedAction ? `Copied ${copiedAction}` : "Pick a copy action to export context for this section."}
-              </p>
-
-              {/* Classification form ‚Äî persists to localStorage via auditTags.js. */}
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: 12,
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.04)",
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Classification
-                  </strong>
-                  <span style={{ fontSize: 10, opacity: 0.7 }}>
-                    {auditSavedAt ? "Saved to localStorage" : "Edits save automatically"}
-                  </span>
-                </div>
-
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Family</span>
-                  <select
-                    value={auditDraft.family}
-                    onChange={(event) => applyAuditPatch({ family: event.target.value, variant: "" })}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
-                  >
-                    <option value="">‚Äî</option>
-                    {UI_FAMILIES.map((fam) => (
-                      <option key={fam.id} value={fam.id}>{fam.label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Variant</span>
-                  <select
-                    value={auditDraft.variant}
-                    onChange={(event) => applyAuditPatch({ variant: event.target.value })}
-                    disabled={!auditDraft.family}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
-                  >
-                    <option value="">‚Äî</option>
-                    {(getFamilyById(auditDraft.family)?.variants || []).map((variant) => (
-                      <option key={variant.id} value={variant.id}>{variant.id}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Status</span>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                    {AUDIT_STATUS_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => applyAuditPatch({ status: option.id })}
-                        style={{
-                          padding: "4px 8px",
-                          fontSize: 11,
-                          borderRadius: 999,
-                          border: "1px solid var(--ghostbutton-ring)",
-                          background: auditDraft.status === option.id ? "var(--primary)" : "transparent",
-                          color: auditDraft.status === option.id ? "var(--onAccentText)" : "inherit",
-                          cursor: "pointer",
-                        }}
-                        title={option.description}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Notes</span>
-                  <textarea
-                    value={auditDraft.notes}
-                    onChange={(event) => applyAuditPatch({ notes: event.target.value })}
-                    placeholder="Optional review notes ‚Äî what's off, what to keep custom, etc."
-                    rows={2}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6, resize: "vertical" }}
-                  />
-                </label>
-
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    type="button"
-                    onClick={handleClearAuditTag}
-                    style={{
-                      padding: "4px 10px",
-                      fontSize: 11,
-                      background: "transparent",
-                      color: "inherit",
-                      border: "1px solid var(--ghostbutton-ring)",
-                      borderRadius: 6,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Clear tag
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        <p className={styles.footerHint}>
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle ¬∑{" "}
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode ¬∑{" "}
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> trace mode ¬∑{" "}
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> this panel ¬∑{" "}
+        <p className={styles.footerHint} data-dev-section-key="dev-overlay-controls-footer" data-dev-section-type="section-card">
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle ∑{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode ∑{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> trace mode ∑{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> this panel ∑{" "}
           <kbd>Shift</kbd>+click a category to solo it
         </p>
       </aside>
+      </>
     );
   };
 
@@ -9768,7 +9466,6 @@ export default function DevLayoutOverlay() {
         style={overlayStyle}
       >
         {scopedSections.map((section) => {
-        const selectedClass = scopedSelected?.key === section.key ? styles.boxSelected : "";
         const sidebarSection = fullScreen && isSidebarSection(section);
         const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
         const sidebarColumnSection = fullScreen && isSidebarColumnSection(section);
@@ -9776,12 +9473,12 @@ export default function DevLayoutOverlay() {
         const labelText = mode === "labels"
           ? section.number
           : isJobCardsCreateRoute
-            ? [section.number, previewSnippet ? `‚Äú${previewSnippet}‚Äù` : null, section.type]
+            ? [section.number, previewSnippet ? `ì${previewSnippet}î` : null, section.type]
                 .filter(Boolean)
-                .join(" ¬∑ ")
-            : [section.number, previewSnippet ? `‚Äú${previewSnippet}‚Äù` : null, section.type, section.backgroundToken]
+                .join(" ∑ ")
+            : [section.number, previewSnippet ? `ì${previewSnippet}î` : null, section.type, section.backgroundToken]
                 .filter(Boolean)
-                .join(" ¬∑ ");
+                .join(" ∑ ");
         const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
         const labelStyle = isJobCardsCreateRoute
           ? {
@@ -9814,35 +9511,25 @@ export default function DevLayoutOverlay() {
 
         return (
           <React.Fragment key={section.key}>
-            {canInspectClick && (
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label={`Inspect section ${section.number} (${section.key})`}
-                className={styles.inspectButton}
-                onClick={async (event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  await handleInspectClick(section.key);
-                }}
-                onKeyDown={async (event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    await handleInspectClick(section.key);
-                  }
-                }}
-                style={{
-                  left: localRect.left,
-                  top: localRect.top,
-                  width: localRect.width,
-                  height: localRect.height,
-                }}
-                title={`${section.number} (${section.key})`}
-              />
-            )}
+            <button
+              type="button"
+              aria-label={`Copy locator for section ${section.number} (${section.key})`}
+              className={styles.copyTarget}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleSectionCopy(section);
+              }}
+              style={{
+                left: localRect.left,
+                top: localRect.top,
+                width: localRect.width,
+                height: localRect.height,
+              }}
+              title="Copy source locator"
+            />
             <div
-              className={`${styles.box} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""} ${selectedClass}`.trim()}
+              className={`${styles.box} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""}`.trim()}
               style={{
                 left: localRect.left,
                 top: localRect.top,
@@ -9854,62 +9541,15 @@ export default function DevLayoutOverlay() {
               className={`${styles.label} ${isJobCardsCreateRoute ? styles.labelCreate : ""} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" && !isJobCardsCreateRoute ? styles.labelDetails : ""}`}
               style={labelStyle}
             >
-              {isJobCardsCreateRoute ? getCreateSectionLabel(section, mode) : labelText}
+              {copiedSectionKey === section.key
+                ? "Copied locator"
+                : isJobCardsCreateRoute
+                ? getCreateSectionLabel(section, mode)
+                : labelText}
             </div>
           </React.Fragment>
         );
       })}
-
-      {scopedSelected && scopedGuide && (
-        <>
-          {scopedGuide.parent && overlayBounds && (
-            <>
-              <div
-                className={styles.guideLine}
-                style={{
-                  left: scopedGuide.parent.rect.left - overlayBounds.left,
-                  top: scopedSelected.rect.top - overlayBounds.top - 12,
-                  width: Math.max(1, scopedSelected.rect.left - scopedGuide.parent.rect.left),
-                  height: 1,
-                }}
-              />
-              <div className={styles.guideLabel} style={{ left: scopedGuide.parent.rect.left - overlayBounds.left + 4, top: scopedSelected.rect.top - overlayBounds.top - 24 }}>
-                left {scopedGuide.leftGap}px
-              </div>
-            </>
-          )}
-
-          {scopedGuide.previous && overlayBounds && (
-            <>
-              <div
-                className={styles.guideLine}
-                style={{
-                  left: scopedSelected.rect.left - overlayBounds.left - 10,
-                  top: scopedGuide.previous.rect.bottom - overlayBounds.top,
-                  width: 1,
-                  height: Math.max(1, scopedSelected.rect.top - scopedGuide.previous.rect.bottom),
-                }}
-              />
-              <div className={styles.guideLabel} style={{ left: scopedSelected.rect.left - overlayBounds.left + 2, top: scopedGuide.previous.rect.bottom - overlayBounds.top + 4 }}>
-                gap {scopedGuide.topGap}px
-              </div>
-            </>
-          )}
-
-          <div
-            className={styles.guideLine}
-            style={{
-              left: overlayBounds ? scopedSelected.rect.left - overlayBounds.left : scopedSelected.rect.left,
-              top: overlayBounds ? scopedSelected.rect.bottom - overlayBounds.top + 6 : scopedSelected.rect.bottom + 6,
-              width: scopedSelected.rect.width,
-              height: 1,
-            }}
-          />
-          <div className={styles.guideLabel} style={{ left: overlayBounds ? scopedSelected.rect.left - overlayBounds.left + 8 : scopedSelected.rect.left + 8, top: overlayBounds ? scopedSelected.rect.bottom - overlayBounds.top + 8 : scopedSelected.rect.bottom + 8 }}>
-            width {scopedGuide.width}px
-          </div>
-        </>
-      )}
 
       </div>
       {renderUnifiedPanel()}
@@ -9934,9 +9574,9 @@ export default function DevLayoutOverlayRoot() {
     return null;
   }
 
-  // DevLayoutOverlay now owns both the visual overlay and the unified
-  // control/inspector panel. When the master toggle is off it renders just
-  // the launcher, when on it renders the visual layer plus the panel.
+  // DevLayoutOverlay owns the visual overlay and its controls. When the master
+  // toggle is off it renders just the launcher; when on it renders the visual
+  // layer plus the controls panel.
   return <DevLayoutOverlay />;
 }
 

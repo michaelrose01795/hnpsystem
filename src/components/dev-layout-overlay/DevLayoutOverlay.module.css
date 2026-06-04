@@ -56,14 +56,30 @@
     0 0 0 1px rgba(var(--warning-rgb), 0.12);
 }
 
-.boxSelected {
-  border: 3px solid var(--accent-strong);
+.copyTarget {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  border: none;
+  border-radius: 10px;
   background: transparent;
-  box-shadow: 0 0 0 1px rgba(var(--surface-rgb), 0.45);
+  color: inherit;
+  cursor: copy;
+  font: inherit;
+  pointer-events: auto;
+}
+
+.copyTarget:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .label {
   position: absolute;
+  z-index: 2;
   min-width: 24px;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
@@ -136,26 +152,6 @@
   font-weight: 600;
   background: rgba(var(--text-1-rgb), 0.94);
   color: var(--text-2);
-}
-
-.inspectButton {
-  position: absolute;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: auto;
-  padding: 0;
-  margin: 0;
-  min-height: 0;
-  border-radius: 0;
-  color: inherit;
-  font: inherit;
-  outline: none;
-}
-
-.inspectButton:focus-visible {
-  outline: 2px solid rgba(var(--accent-base-rgb), 0.6);
-  outline-offset: 2px;
 }
 
 .panel {
@@ -242,15 +238,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-}
-
-.backgroundBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--layout-card-gap);
-  padding: var(--section-card-padding);
-  border-radius: var(--section-card-radius);
-  background: var(--theme);
 }
 
 .controlsBlock {
@@ -352,16 +339,6 @@
   background: rgba(var(--text-1-rgb), 0.08);
 }
 
-.onOffRow {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-  width: min(140px, 100%);
-  padding: 4px;
-  border-radius: 12px;
-  background: rgba(var(--text-1-rgb), 0.08);
-}
-
 .countChip {
   display: inline-block;
   padding: 3px 8px;
@@ -456,22 +433,6 @@
   flex: 1 1 auto;
 }
 
-.selectedBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--layout-card-gap);
-  padding: var(--section-card-padding);
-  border-radius: var(--section-card-radius);
-  background: var(--theme);
-}
-
-.selectedHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .footerHint {
   margin: 0;
   padding: 12px 14px;
@@ -536,15 +497,6 @@
   flex: 1 1 200px;
 }
 
-.panelHeaderActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-  align-items: center;
-  flex: 1 1 260px;
-}
-
 .kicker {
   margin: 0;
   font-size: 0.68rem;
@@ -569,15 +521,6 @@
   opacity: 0.74;
 }
 
-.sectionBlock {
-  border-radius: 14px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(var(--surface-rgb), 0.35);
-}
-
 .blockTitle {
   margin: 0;
   font-size: 0.72rem;
@@ -585,195 +528,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-1);
-}
-
-/* Classification fields — caption stacked over an .app-input/.app-btn control.
-   Rendered as a <div> (not <label>) on purpose: the global
-   `html.staff-scope label { display: block }` rule outranks a module class and
-   would flatten this grid. */
-.field {
-  display: grid;
-  gap: 6px;
-}
-
-.field > span {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-1);
-  opacity: 0.75;
-}
-
-.fieldActions {
-  justify-content: flex-end;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 108px 1fr;
-  gap: 4px 10px;
-  font-size: 0.74rem;
-}
-
-.labelKey {
-  color: var(--text-1);
-}
-
-.value {
-  color: var(--text-1);
-  word-break: break-word;
-}
-
-.previewText {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--text-1);
-  white-space: pre-wrap;
-}
-
-.codeValue {
-  font-family: var(--font-family-mono);
-  font-size: 0.74rem;
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.legendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--text-1);
-}
-
-.legendSwatch {
-  /* Diagram primitive — legend colour swatch */
-  width: 18px;
-  height: 18px;
-  border-width: 2px;
-  border-radius: 6px;
-  border-style: solid;
-  background: transparent;
-  flex-shrink: 0;
-}
-
-.summaryRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.summaryCard {
-  border-radius: 12px;
-  background: var(--theme);
-  padding: 8px 10px;
-  display: grid;
-  gap: 2px;
-}
-
-.panelCreate .summaryCard,
-.panelCreate .sectionBlock {
-  background: rgba(var(--surface-rgb), 0.38);
-}
-
-.summaryLabel {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-1);
-}
-
-.summaryValue {
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: var(--text-1);
-}
-
-.tag {
-  border-radius: var(--radius-pill);
-  padding: 4px 9px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: var(--theme);
-  color: var(--text-1);
-}
-
-.tagWarn {
-  background: rgba(var(--warning-rgb), 0.14);
-  color: var(--warning-dark);
-}
-
-.tagDanger {
-  background: rgba(var(--danger-rgb), 0.14);
-  color: var(--danger-dark);
-}
-
-.tagSuccess {
-  background: rgba(var(--success-rgb), 0.14);
-  color: var(--success-dark);
-}
-
-.copyStatus {
-  margin: 0;
-  min-height: 14px;
-  font-size: 0.7rem;
-  color: var(--text-1);
-}
-
-.emptyHint {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-1);
-}
-
-.guideLine {
-  position: absolute;
-  background: rgba(var(--accent-base-rgb), 0.8);
-  pointer-events: none;
-}
-
-.guideLabel {
-  position: absolute;
-  border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: rgba(var(--text-1-rgb), 0.92);
-  color: var(--text-2);
-  pointer-events: none;
-}
-
-/* Self-inspect layer — sits ABOVE the panel (which is above the page overlay)
-   so its boxes/labels are visible over the inspector's own cards. Entirely
-   non-interactive so the panel underneath, including the ON/OFF control, stays
-   usable while the overlay is shown. */
-.selfRoot {
-  position: fixed;
-  inset: 0;
-  z-index: 2960;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.selfBox {
-  /* Distinct colour (success/green) so a panel self-inspect box never reads as
-     a page-overlay (accent/red) box. Diagram primitive — overlay outline. */
-  border-color: rgba(var(--success-rgb), 0.85);
-  background: rgba(var(--success-rgb), 0.04);
-  box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.5);
-}
-
-.selfLabel {
-  background: rgba(var(--success-rgb), 0.96);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(var(--success-rgb), 0.28);
 }
 
 @media (max-width: 900px) {
@@ -784,10 +538,6 @@
     width: auto;
     max-height: min(72vh, 760px);
   }
-
-  .summaryRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 720px) {
@@ -795,29 +545,7 @@
     max-height: calc(100vh - 24px);
   }
 
-  .summaryRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .label {
     max-width: calc(100vw - 28px);
-  }
-}
-
-@media (max-width: 640px) {
-  .panelHeaderActions {
-    justify-content: flex-start;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .summaryRow {
-    grid-template-columns: 1fr;
   }
 }

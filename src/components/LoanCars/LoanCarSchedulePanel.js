@@ -21,6 +21,11 @@ import {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LOOK_BACK_DAYS = 14;
 const LOOK_AHEAD_DAYS = 35;
+// Tracking view shows 15 days ahead of today. Today is auto-scrolled to the
+// top so it reads as the first row by default, but past days are still rendered
+// above it so the user can scroll back up to previous days.
+const TRACKING_LOOK_BACK_DAYS = 14;
+const TRACKING_LOOK_AHEAD_DAYS = 15;
 const LOAN_CAR_MODAL_Z_INDEX = 4000;
 const LOAN_CAR_STATUS_Z_INDEX = LOAN_CAR_MODAL_Z_INDEX + 1;
 
@@ -69,12 +74,12 @@ const toDateKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const buildDateRows = () => {
+const buildDateRows = (lookBackDays = LOOK_BACK_DAYS, lookAheadDays = LOOK_AHEAD_DAYS) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return Array.from({ length: LOOK_BACK_DAYS + LOOK_AHEAD_DAYS + 1 }, (_, index) => {
-    const offset = index - LOOK_BACK_DAYS;
+  return Array.from({ length: lookBackDays + lookAheadDays + 1 }, (_, index) => {
+    const offset = index - lookBackDays;
     const date = new Date(today.getTime() + offset * MS_PER_DAY);
     return {
       key: toDateKey(date),
@@ -1529,7 +1534,13 @@ export default function LoanCarSchedulePanel({
   const [selectedCell, setSelectedCell] = useState(null);
   const [selectedLoanCar, setSelectedLoanCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const dateRows = useMemo(() => buildDateRows(), []);
+  const dateRows = useMemo(
+    () =>
+      mode === "tracking"
+        ? buildDateRows(TRACKING_LOOK_BACK_DAYS, TRACKING_LOOK_AHEAD_DAYS)
+        : buildDateRows(),
+    [mode]
+  );
   const jobDraft = buildJobBookingDraft({ jobData, highlightedJobNumber, highlightedReg });
   const highlightedJob = String(highlightedJobNumber || jobData?.jobNumber || "").trim().toLowerCase();
   const highlightedVehicle = String(highlightedReg || jobData?.reg || "").trim().toLowerCase();
@@ -1661,11 +1672,13 @@ export default function LoanCarSchedulePanel({
       {isTrackingMode ? (
         <style jsx global>{`
           html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll {
-            scrollbar-width: thin !important;
-            scrollbar-color: var(--scrollbar-thumb) transparent !important;
-            -ms-overflow-style: auto !important;
+            /* Firefox/standard has no per-axis scrollbar control, so hide the
+               native bar entirely. Vertical + horizontal scrolling still work;
+               Chromium re-adds a horizontal bar below via ::-webkit-scrollbar. */
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
             overflow-x: auto !important;
-            overflow-y: hidden !important;
+            overflow-y: auto !important;
           }
 
           html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll::-webkit-scrollbar {
@@ -1709,10 +1722,10 @@ export default function LoanCarSchedulePanel({
             width: "100%",
             maxWidth: "100%",
             overflowX: "auto",
-            overflowY: isTrackingMode ? "hidden" : "auto",
+            overflowY: "auto",
             WebkitOverflowScrolling: "touch",
             backgroundColor: "var(--theme)",
-            maxHeight: isTrackingMode ? undefined : "560px",
+            maxHeight: "560px",
             borderRadius: "var(--radius-md)",
             "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
           }}>

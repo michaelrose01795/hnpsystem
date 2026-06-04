@@ -1489,12 +1489,11 @@ export default function NextJobsPage() {
             flex: 1,
             minHeight: JOB_LIST_MAX_HEIGHT_PX,
             maxHeight: JOB_LIST_MAX_HEIGHT_PX,
+            width: "100%",
+            boxSizing: "border-box",
             overflowY: "auto",
-            // Extend into the panel's right padding so the scrollbar sits in
-            // that zone rather than shrinking the card content. Cards stay the
-            // same width as the clocking section above.
-            marginRight: "-16px",
-            paddingRight: "16px"
+            marginRight: 0,
+            paddingRight: 0
           }}>
             {assignee.jobs.length === 0 ?
           <p style={{
@@ -1514,7 +1513,9 @@ export default function NextJobsPage() {
                   height: "3px",
                   backgroundColor: "var(--primary)",
                   marginBottom: "8px",
-                  borderRadius: "var(--radius-xs)"
+                  borderRadius: "var(--radius-xs)",
+                  width: "100%",
+                  boxSizing: "border-box"
                 }} />
                 }
 
@@ -1530,9 +1531,18 @@ export default function NextJobsPage() {
                   data-dnd-job-number={job.jobNumber}
                   onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                   style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                    minHeight: "44px",
+                    maxHeight: "44px",
+                    height: "44px",
                     border: "none",
                     borderRadius: "var(--radius-xs)",
-                    padding: "10px",
+                    padding: "0 10px",
                     marginBottom: "8px",
                     backgroundColor:
                     draggingJob?.jobNumber === job.jobNumber ?
@@ -1569,14 +1579,20 @@ export default function NextJobsPage() {
                     fontSize: "14px",
                     fontWeight: "600",
                     color: "var(--primary)",
-                    margin: "0 0 4px 0"
+                    margin: 0,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
                   }}>
                   {job.jobNumber} – {job.reg}
                 </p>
                 <p style={{
                     fontSize: "12px",
                     color: "var(--accent-purple)",
-                    margin: 0
+                    margin: 0,
+                    flexShrink: 0,
+                    whiteSpace: "nowrap"
                   }}>
                   {job.status}
                 </p>
@@ -1587,7 +1603,9 @@ export default function NextJobsPage() {
                   height: "3px",
                   backgroundColor: "var(--primary)",
                   marginBottom: "8px",
-                  borderRadius: "var(--radius-xs)"
+                  borderRadius: "var(--radius-xs)",
+                  width: "100%",
+                  boxSizing: "border-box"
                 }} />
                 }
             </React.Fragment>);
@@ -1603,7 +1621,9 @@ export default function NextJobsPage() {
             height: "3px",
             backgroundColor: "var(--primary)",
             borderRadius: "var(--radius-xs)",
-            marginTop: "4px"
+            marginTop: "4px",
+            width: "100%",
+            boxSizing: "border-box"
           }} />
           }
 
@@ -1614,7 +1634,9 @@ export default function NextJobsPage() {
             height: "3px",
             backgroundColor: "var(--primary)",
             borderRadius: "var(--radius-xs)",
-            marginTop: "12px"
+            marginTop: "12px",
+            width: "100%",
+            boxSizing: "border-box"
           }} />
           }
       </div>

@@ -10,8 +10,8 @@ export default function DevLayoutOverlayRoot() {
     return null;
   }
 
-  // DevLayoutOverlay now owns both the visual overlay and the unified
-  // control/inspector panel. When the master toggle is off it renders just
-  // the launcher, when on it renders the visual layer plus the panel.
+  // DevLayoutOverlay owns the visual overlay and its controls. When the master
+  // toggle is off it renders just the launcher; when on it renders the visual
+  // layer plus the controls panel.
   return <DevLayoutOverlay />;
 }
