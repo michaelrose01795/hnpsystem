@@ -83,7 +83,10 @@ function AppWrapper({ Component, pageProps }) {
   const isPresentationRoute = pathname.startsWith("/presentation");
   if (typeof window !== "undefined") setPresentationMode(isPresentationRoute);
   const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
-  const isCustomerRoute = pathname.startsWith("/customer");
+  // Customer PORTAL route only (singular "/customer"). Must not match the
+  // staff-side "/customers" (plural) pages — those are normal staff pages and
+  // should keep the floating notes widget like any other staff page.
+  const isCustomerRoute = pathname === "/customer" || pathname.startsWith("/customer/");
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
   const hideNotesWidget =
     isPresentationRoute ||

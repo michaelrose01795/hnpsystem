@@ -5,6 +5,7 @@
 
 import { getCustomerSessionFromReq } from "@/lib/auth/customerSession";
 import { updateCustomerProfile } from "@/lib/database/customerAuth";
+import { normalizeContactPreference } from "@/lib/customers/contactPreference";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -23,7 +24,10 @@ export default async function handler(req, res) {
     telephone: body.telephone,
     address: body.address,
     postcode: body.postcode,
-    contact_preference: body.contact_preference,
+    contact_preference:
+      body.contact_preference === undefined
+        ? undefined
+        : normalizeContactPreference(body.contact_preference) || null,
   };
   const updated = await updateCustomerProfile(session.customerId, patch);
   if (!updated) {

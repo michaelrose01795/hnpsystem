@@ -3,6 +3,7 @@
 // Keeps customer credentials isolated from the staff `users` table.
 
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
+import { buildSlugKeyFromNames } from "@/lib/customers/slug";
 
 const TABLE = "customer_auth";
 const SELECT_FIELDS =
@@ -140,6 +141,25 @@ export async function updateCustomerProfile(customerId, patch) {
     if (patch[key] !== undefined) next[key] = patch[key];
   }
   if (Object.keys(next).length === 0) return null;
+
+  // Keep slug_key in sync when the name changes. The column is only computed as
+  // a column DEFAULT at insert time (no trigger), so a rename would otherwise
+  // leave it stale and force the staff page to fall back to a name search.
+  if (next.firstname !== undefined || next.lastname !== undefined) {
+    let firstname = next.firstname;
+    let lastname = next.lastname;
+    if (firstname === undefined || lastname === undefined) {
+      const { data: current } = await db()
+        .from("customers")
+        .select("firstname, lastname")
+        .eq("id", customerId)
+        .maybeSingle();
+      if (firstname === undefined) firstname = current?.firstname || "";
+      if (lastname === undefined) lastname = current?.lastname || "";
+    }
+    next.slug_key = buildSlugKeyFromNames(firstname, lastname);
+  }
+
   next.updated_at = new Date().toISOString();
   const { data, error } = await db()
     .from("customers")

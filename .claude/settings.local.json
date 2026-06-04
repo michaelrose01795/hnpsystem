@@ -210,7 +210,12 @@
       "Bash(sed -i \"s/const USER_ID = '5';.*/const USER_ID = '40'; \\\\/\\\\/ Owner - full access, no invoice 403/\" tmp-parts-shot.mjs)",
       "Bash(perl -0pi -e \"s/\\(  \\\\/\\\\/ Screenshot the parts workspace\\)/  await page.keyboard.press\\('Escape'\\).catch\\(\\(\\)=>{}\\);\\\\n  await page.evaluate\\(\\(\\) => { document.querySelectorAll\\('nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast]'\\).forEach\\(e => e.remove\\(\\)\\); }\\);\\\\n  await page.waitForTimeout\\(300\\);\\\\n\\\\1/\" tmp-parts-shot.mjs)",
       "Bash(sed -i \"s/const USER_ID = '40';.*/const USER_ID = '5'; \\\\/\\\\/ Parts Manager - parts tables present/\" tmp-parts-shot.mjs)",
-      "Bash(perl -0pi -e \"s/  await page.evaluate\\\\\\(\\\\\\(\\\\\\) => \\\\{ document.querySelectorAll\\\\\\('nextjs-portal.*?\\\\}\\\\\\);/  await page.addStyleTag\\({ content: 'nextjs-portal,[data-nextjs-dialog-overlay],[data-nextjs-toast]{display:none!important}' }\\);/s\" tmp-parts-shot.mjs)"
+      "Bash(perl -0pi -e \"s/  await page.evaluate\\\\\\(\\\\\\(\\\\\\) => \\\\{ document.querySelectorAll\\\\\\('nextjs-portal.*?\\\\}\\\\\\);/  await page.addStyleTag\\({ content: 'nextjs-portal,[data-nextjs-dialog-overlay],[data-nextjs-toast]{display:none!important}' }\\);/s\" tmp-parts-shot.mjs)",
+      "Bash(sed -n '3270,3285p' src/pages/website/profile.js)",
+      "Bash(sed -n '2210,2280p' src/pages/website/profile.js)",
+      "Bash(sed -n '860,875p' src/pages/website/profile.js)",
+      "Bash(sed -n '1770,1780p' src/pages/website/profile.js)",
+      "Bash(echo \"exit_borders=$?\")"
     ],
     "deny": [],
     "ask": [],

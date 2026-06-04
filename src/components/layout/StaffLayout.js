@@ -86,7 +86,13 @@ export default function Layout({
   // We deliberately do NOT use this to swap the page content for a skeleton —
   // the destination page renders its own shell instead (see showPageSkeleton).
   const [pendingHref, setPendingHref] = useState(null);
-  const isCustomerRoute = (router.pathname || "").startsWith("/customer");
+  // Customer PORTAL route (singular "/customer"). Must NOT match the staff-side
+  // customer pages at "/customers" (plural) — those are normal staff pages that
+  // need the full staff chrome. A bare startsWith("/customer") wrongly matched
+  // "/customers/[slug]" and stripped its sidebar/topbar.
+  const customerPortalPath = router.pathname || "";
+  const isCustomerRoute =
+    customerPortalPath === "/customer" || customerPortalPath.startsWith("/customer/");
   const hideSidebar =
     (router.pathname === "/login" && !showLoginShellLoading) ||
     router.pathname === "/loginPresentation";

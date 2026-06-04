@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/customers.js
 import { supabase } from "@/lib/database/supabaseClient"; // import Supabase client
-import { normalizeCustomerSlug, splitCustomerSlugParts } from "@/lib/customers/slug";
+import { normalizeCustomerSlug, splitCustomerSlugParts, buildSlugKeyFromNames } from "@/lib/customers/slug";
 
 const CUSTOMER_SELECT_FIELDS = `
   id,
@@ -496,6 +496,23 @@ export const updateCustomer = async (customerId, customerData) => {
       ...customerData,
       updated_at: new Date().toISOString(),
     };
+
+    // Keep slug_key in sync when the name changes (the column is only a DEFAULT
+    // at insert time, with no trigger) so the page URL keeps resolving by slug.
+    if (customerData.firstname !== undefined || customerData.lastname !== undefined) {
+      let firstname = customerData.firstname;
+      let lastname = customerData.lastname;
+      if (firstname === undefined || lastname === undefined) {
+        const { data: current } = await supabase
+          .from("customers")
+          .select("firstname, lastname")
+          .eq("id", customerId)
+          .maybeSingle();
+        if (firstname === undefined) firstname = current?.firstname || "";
+        if (lastname === undefined) lastname = current?.lastname || "";
+      }
+      updateData.slug_key = buildSlugKeyFromNames(firstname, lastname);
+    }
 
     const { data, error } = await supabase
       .from("customers")

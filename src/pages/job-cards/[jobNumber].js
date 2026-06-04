@@ -6947,7 +6947,8 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     fontSize: "var(--control-font-size)",
     color: "var(--text-1)",
     fontWeight: "500",
-    minHeight: "var(--control-height)"
+    minHeight: "var(--control-height)",
+    overflowWrap: "anywhere" // long emails wrap inside the cell instead of breaking the single-row layout
   };
   const panelStyle = {
     background: "var(--surface)",
@@ -7030,7 +7031,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         sectionKey="jobcard-tab-contact-fields"
         sectionType="form-grid"
         parentKey="jobcard-tab-contact-panel"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+        style={{ display: "grid", width: "100%", gridTemplateColumns: "minmax(150px, 1fr) minmax(240px, 1.7fr) minmax(150px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr)", gap: "16px" }}>
 
         <div>
           <label style={labelStyle}>
@@ -8112,14 +8113,6 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
     letterSpacing: "0.08em",
     textTransform: "uppercase"
   };
-  const requestListScrollStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    maxHeight: "212px",
-    overflowY: "auto",
-    paddingRight: "4px"
-  };
 
   return (
     <DevLayoutSection
@@ -8198,35 +8191,11 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                     </td>
                     <td style={tableCellStyle}>
                       {combinedRequests.length > 0 ?
-                    <div style={requestListScrollStyle}>
-                          {combinedRequests.map((item, index) => {
-                        const isVhcApproved = item?.kind === "vhc_authorized";
-                        const requestText = item?.text || item?.description || "Request";
-                        const detailText =
-                        isVhcApproved && item?.detail && item.detail !== requestText ? item.detail : "";
-                        return (
-                          <div
-                            key={`${job.id || job.jobNumber}-request-${index}`}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "2px",
-                              padding: "6px 10px",
-                              borderRadius: "var(--radius-xs)",
-                              backgroundColor: isVhcApproved ? "var(--success-surface)" : "var(--surface)"
-                            }}>
-
-                                <span style={rowLabelStyle}>
-                                  {isVhcApproved ? "VHC Approved Request" : `Customer Request ${index + 1}`}
-                                </span>
-                                <span style={{ color: "var(--text-1)", lineHeight: "1.25", overflowWrap: "anywhere" }}>{requestText}</span>
-                                {detailText ?
-                            <span style={{ color: "var(--text-1)", fontSize: "11px", lineHeight: "1.25", overflowWrap: "anywhere" }}>{detailText}</span> :
-                            null}
-                              </div>);
-
-                      })}
-                        </div> :
+                    <span style={{ color: "var(--text-1)", lineHeight: "1.35", overflowWrap: "anywhere" }}>
+                          {combinedRequests.
+                      map((item) => item?.text || item?.description || "Request").
+                      join(" | ")}
+                        </span> :
 
                     <span style={{ color: "var(--grey-accent)" }}>No requests recorded</span>
                     }

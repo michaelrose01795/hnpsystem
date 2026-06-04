@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { isInactiveJobStatus } from "@/lib/status/statusHelpers";
@@ -11,8 +12,10 @@ import {
   getCustomerPaymentMethods,
   getCustomerVehicles,
   getCustomerJobs,
+  getCustomerActivityEvents,
   updateCustomer } from
 "@/lib/database/customers";
+import { normalizeContactPreference } from "@/lib/customers/contactPreference";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
@@ -38,6 +41,7 @@ const TAB_DEFINITIONS = [
 { id: "insights", label: "Insights" },
 { id: "history", label: "History" },
 { id: "payment", label: "Payment" },
+{ id: "activity", label: "Activity" },
 { id: "messages", label: "Messages" }];
 
 
@@ -542,7 +546,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           "Vehicle";
 
           return (
-            <LayerSurface as="div"
+            <LayerTheme as="div"
             key={vehicle.vehicle_id}
 
             data-dev-section="1"
@@ -551,70 +555,67 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             data-dev-section-parent="customer-profile-insights-vehicle-grid"
             data-dev-background-token="theme"
             style={{
-
-
-
-              background: "var(--theme)",
               padding: "20px",
-              display: "grid",
               gap: "16px",
-              gridTemplateColumns: "minmax(220px, 0.85fr) minmax(0, 1.4fr)",
-              alignItems: "stretch",
               width: "100%"
             }}>
 
+                {/* Header row: number-plate reg block + make / model + year */}
                 <div
                 style={{
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--surface)",
-                  padding: "14px",
-                  display: "grid",
-                  gap: "12px",
-                  gridTemplateColumns: "minmax(0, 1fr)",
-                  alignItems: "center"
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "16px"
                 }}>
 
-                  <div>
-                    <p
-                    style={{
-                      fontSize: "0.68rem",
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      color: "var(--grey-accent)",
-                      margin: "0 0 6px"
-                    }}>
+                  <LayerSurface as="div"
+                  radius="var(--radius-sm)"
+                  style={{
+                    padding: "8px 16px",
+                    minHeight: "48px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
 
-                      Registration
-                    </p>
-                    <p
+                    <span
                     style={{
-                      margin: 0,
-                      fontSize: "1.35rem",
+                      fontSize: "1.45rem",
                       fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
                       color: "var(--info-dark)",
-                      lineHeight: 1.1,
+                      lineHeight: 1,
                       overflowWrap: "anywhere"
                     }}>
 
                       {registration}
-                    </p>
-                  </div>
+                    </span>
+                  </LayerSurface>
 
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: "var(--text-1)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                    <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-1)", overflowWrap: "anywhere" }}>
                       {makeModel}
-                    </p>
-                    <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.85rem" }}>
+                    </span>
+                    <span style={{ fontSize: "0.85rem", color: "var(--grey-accent)" }}>
                       {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
+                {/* Hairline divider between header and detail fields (--separating-line: the one allowed list rule) */}
+                <div
+                aria-hidden="true"
+                style={{ height: "1px", width: "100%", background: "var(--separating-line)" }} />
+
+                {/* Detail fields — evenly aligned responsive grid */}
                 <div
                 style={{
                   display: "grid",
-                  gap: "12px",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))"
+                  gap: "16px 20px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))"
                 }}>
 
                   <VehicleField label="Colour" value={vehicle.colour} />
@@ -627,7 +628,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                   <VehicleField label="Transmission" value={vehicle.transmission} />
                   <VehicleField label="MOT due" value={formatDate(vehicle.mot_due)} />
                 </div>
-              </LayerSurface>);
+              </LayerTheme>);
 
         })}
         </>
@@ -1319,7 +1320,182 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
 
 };
 
-// Activity and Accounts tabs removed per latest requirements.
+// Accounts tab removed per latest requirements. The Activity tab below surfaces
+// customer_activity_events so portal requests + self-service actions made on
+// /website/profile are visible to staff on the same customer record.
+
+const ACTIVITY_TYPE_LABELS = {
+  vehicle_added: "Vehicle added",
+  mileage_self_reported: "Mileage reading submitted",
+  notification_prefs_updated: "Notification preferences updated",
+  booking_request: "Service booking requested",
+  message_customer: "Message sent from portal",
+  payment_link_requested: "Payment link requested",
+  statement_requested: "Statement requested",
+  invoice_pdf_requested: "Invoice PDF requested",
+  service_history_requested: "Service history pack requested",
+  data_export_requested: "Data export requested",
+  account_deletion_requested: "Account deletion requested",
+  valuation_request: "Valuation requested",
+  body_repair_request: "Body repair quote requested",
+  smart_repair_request: "SMART repair quote requested",
+  valet_request: "Valet requested",
+  parts_enquiry: "Parts enquiry",
+  vehicle_callback_request: "Callback requested",
+  finance_quote_request: "Finance quote requested",
+  test_drive_request: "Test drive requested",
+  motability_enquiry: "Motability enquiry",
+  warranty_claim: "Warranty claim",
+  vehicle_add_request: "Vehicle add request",
+  vhc_reauthorise_request: "VHC re-authorisation requested",
+  referral: "Friend referral"
+};
+
+const ACTIVITY_SOURCE_LABELS = {
+  customer_portal: "Customer portal",
+  staff: "Staff"
+};
+
+// Requests staff still need to action (vs passive log entries) carry a badge so
+// they don't get lost in the feed.
+const ACTIONABLE_ACTIVITY_TYPES = new Set([
+  "booking_request",
+  "message_customer",
+  "payment_link_requested",
+  "statement_requested",
+  "invoice_pdf_requested",
+  "service_history_requested",
+  "data_export_requested",
+  "account_deletion_requested",
+  "valuation_request",
+  "body_repair_request",
+  "smart_repair_request",
+  "valet_request",
+  "parts_enquiry",
+  "vehicle_callback_request",
+  "finance_quote_request",
+  "test_drive_request",
+  "motability_enquiry",
+  "warranty_claim",
+  "vehicle_add_request",
+  "vhc_reauthorise_request",
+  "referral"]
+);
+
+const formatActivityType = (type) =>
+ACTIVITY_TYPE_LABELS[type] ||
+String(type || "Activity").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+const formatActivitySource = (source) =>
+ACTIVITY_SOURCE_LABELS[source] || (source ? String(source).replace(/_/g, " ") : "System");
+
+const summarizeActivityPayload = (payload) => {
+  if (!payload || typeof payload !== "object") return [];
+  return Object.entries(payload).
+  filter(
+    ([key, value]) =>
+    value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    key !== "job_id" &&
+    key !== "vehicle_id"
+  ).
+  map(([key, value]) => ({
+    label: key.replace(/_/g, " "),
+    value:
+    typeof value === "boolean" ?
+    value ? "Yes" : "No" :
+    typeof value === "object" ?
+    JSON.stringify(value) :
+    String(value)
+  }));
+};
+
+const ActivityTab = ({ events, vehicles }) => {
+  const regByVehicleId = useMemo(() => {
+    const map = new Map();
+    (vehicles || []).forEach((vehicle) => {
+      if (vehicle?.vehicle_id != null) {
+        map.set(String(vehicle.vehicle_id), getVehicleRegistration(vehicle, ""));
+      }
+    });
+    return map;
+  }, [vehicles]);
+
+  if (!events?.length) {
+    return (
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-activity-empty"
+      data-dev-section-type="content-card"
+      data-dev-section-parent="customer-profile-tab-activity"
+      data-dev-background-token="accent-surface"
+      style={{ padding: "24px", textAlign: "center", color: "var(--grey-accent)" }}>
+
+        No portal activity or requests recorded for this customer yet.
+      </LayerSurface>);
+
+  }
+
+  return (
+    <div
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-activity-list"
+      data-dev-section-type="section-shell"
+      data-dev-section-parent="customer-profile-tab-activity"
+      data-dev-background-token="transparent"
+      style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+
+      {events.map((event) => {
+        const fields = summarizeActivityPayload(event.activity_payload);
+        const reg = event.vehicle_id != null ? regByVehicleId.get(String(event.vehicle_id)) : "";
+        const actionable = ACTIONABLE_ACTIVITY_TYPES.has(event.activity_type);
+        return (
+          <LayerSurface as="article"
+          key={event.event_id}
+
+          data-dev-section="1"
+          data-dev-section-key={`customer-profile-activity-${event.event_id}`}
+          data-dev-section-type="content-card"
+          data-dev-section-parent="customer-profile-activity-list"
+          data-dev-background-token="surface"
+          style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <strong style={{ color: "var(--text-1)", fontSize: "0.98rem" }}>
+                  {formatActivityType(event.activity_type)}
+                </strong>
+                {actionable &&
+                <span style={{ borderRadius: "var(--radius-pill)", padding: "2px 10px", background: "var(--surface)", color: "var(--accentText)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    Action needed
+                  </span>
+                }
+              </div>
+              <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
+                {formatActivitySource(event.activity_source)} · {formatDateTime(event.occurred_at)}
+              </span>
+            </div>
+            {reg &&
+            <span style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: 600 }}>{reg}</span>
+            }
+            {fields.length > 0 &&
+            <div style={{ display: "grid", gap: "8px 16px", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+                {fields.map((field) =>
+              <div key={field.label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.18em", color: "var(--grey-accent)" }}>{field.label}</span>
+                    <span style={{ fontWeight: 600, color: "var(--text-1)", overflowWrap: "anywhere" }}>{field.value}</span>
+                  </div>
+              )}
+              </div>
+            }
+          </LayerSurface>);
+
+      })}
+    </div>);
+
+};
 
 const getSlugParam = (rawSlug) => {
   if (!rawSlug) return "";
@@ -1342,6 +1518,7 @@ export default function CustomerDetailWorkspace() {
   const [vehicles, setVehicles] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [activityEvents, setActivityEvents] = useState([]);
   const [activeTab, setActiveTab] = useState(TAB_DEFINITIONS[0].id);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1375,20 +1552,23 @@ export default function CustomerDetailWorkspace() {
           setCustomer(null);
           setVehicles([]);
           setJobs([]);
+          setActivityEvents([]);
           setError("Customer record was not found.");
           return;
         }
 
-        const [vehiclesForCustomer, jobsForCustomer, methodsForCustomer] = await Promise.all([
+        const [vehiclesForCustomer, jobsForCustomer, methodsForCustomer, activityForCustomer] = await Promise.all([
         getCustomerVehicles(customerRecord.id),
         getCustomerJobs(customerRecord.id),
-        getCustomerPaymentMethods(customerRecord.id)]
+        getCustomerPaymentMethods(customerRecord.id),
+        getCustomerActivityEvents(customerRecord.id)]
         );
 
         setCustomer(customerRecord);
         setVehicles(vehiclesForCustomer || []);
         setJobs(jobsForCustomer || []);
         setPaymentMethods(methodsForCustomer || []);
+        setActivityEvents(activityForCustomer || []);
       } catch (err) {
         console.error("Failed to load customer detail view:", err);
         setError("Unable to load customer data right now.");
@@ -1427,79 +1607,69 @@ export default function CustomerDetailWorkspace() {
     return { totalJobs: total, activeJobs: active };
   }, [jobs]);
 
+  // Normalise the stored contact_preference through the shared vocabulary so a
+  // value set on the /website portal (email/phone/sms/post) maps onto the staff
+  // toggles (email/mobile/telephone/sms/post) and stays in sync both ways.
+  const contactPref = normalizeContactPreference(customer?.contact_preference);
+
   const profileGridItems = useMemo(
-    () => [
-    {
-      key: "email",
-      label: "Email",
-      value: customer?.email,
-      href: customer?.email ? `mailto:${customer.email}` : undefined,
-      preference: {
-        label: "Email contacting",
-        checked: customer?.contact_preference === "email",
-        disabled: savingPreference === "email",
+    () => {
+      // contact_preference is a single mutually-exclusive value; each toggle sets
+      // (or clears) it. One factory keeps all five channels consistent.
+      const makeContactPreference = (value, label) => ({
+        label,
+        checked: contactPref === value,
+        disabled: savingPreference === value,
         onChange: async (checked) => {
           if (!customer?.id) return;
-          const nextPreference = checked ? "email" : "";
-          setSavingPreference("email");
-          const result = await updateCustomer(customer.id, { contact_preference: nextPreference || null });
-          if (result.success) {
-            setCustomer(result.data);
-          }
-          setSavingPreference("");
-        }
-      }
-    },
-    {
-      key: "contact-number",
-      label: "Contact numbers",
-      type: "list",
-      items: contactNumbers,
-      preferences: [
-      {
-        label: "Mobile",
-        checked: customer?.contact_preference === "mobile",
-        disabled: savingPreference === "mobile",
-        onChange: async (checked) => {
-          if (!customer?.id) return;
-          setSavingPreference("mobile");
-          const result = await updateCustomer(customer.id, { contact_preference: checked ? "mobile" : null });
+          setSavingPreference(value);
+          const result = await updateCustomer(customer.id, {
+            contact_preference: checked ? value : null
+          });
           if (result.success) setCustomer(result.data);
           setSavingPreference("");
         }
+      });
+
+      return [
+      {
+        key: "email",
+        label: "Email",
+        value: customer?.email,
+        href: customer?.email ? `mailto:${customer.email}` : undefined,
+        preference: makeContactPreference("email", "Email contacting")
       },
       {
-        label: "Telephone",
-        checked: customer?.contact_preference === "telephone",
-        disabled: savingPreference === "telephone",
-        onChange: async (checked) => {
-          if (!customer?.id) return;
-          setSavingPreference("telephone");
-          const result = await updateCustomer(customer.id, { contact_preference: checked ? "telephone" : null });
-          if (result.success) setCustomer(result.data);
-          setSavingPreference("");
-        }
-      }]
+        key: "contact-number",
+        label: "Contact numbers",
+        type: "list",
+        items: contactNumbers,
+        preferences: [
+        makeContactPreference("mobile", "Mobile"),
+        makeContactPreference("telephone", "Telephone"),
+        makeContactPreference("sms", "SMS")]
 
+      },
+      {
+        key: "address",
+        label: "Address",
+        value: formattedAddress || customer?.address || "",
+        ...buildMapLink(formattedAddress || customer?.address),
+        preference: makeContactPreference("post", "Post")
+      },
+      {
+        key: "summary",
+        label: "Customer file",
+        type: "stats",
+        stats: [
+        { label: "Vehicles", value: vehicles.length },
+        { label: "Total jobs", value: totalJobs },
+        { label: "Open jobs", value: activeJobs }]
+
+      }];
     },
-    {
-      key: "address",
-      label: "Address",
-      value: formattedAddress || customer?.address || "",
-      ...buildMapLink(formattedAddress || customer?.address)
-    },
-    {
-      key: "summary",
-      label: "Customer file",
-      type: "stats",
-      stats: [
-      { label: "Vehicles", value: vehicles.length },
-      { label: "Total jobs", value: totalJobs },
-      { label: "Open jobs", value: activeJobs }]
 
-    }],
-
-    [customer?.email, customer?.id, customer?.contact_preference, contactNumbers, formattedAddress, vehicles.length, totalJobs, activeJobs, savingPreference]
+    [customer?.email, customer?.id, customer?.address, contactPref, contactNumbers, formattedAddress, vehicles.length, totalJobs, activeJobs, savingPreference]
   );
 
   const renderTabContent = () => {
@@ -1523,13 +1693,16 @@ export default function CustomerDetailWorkspace() {
     if (activeTab === "payment") {
       return <PaymentTab paymentMethods={paymentMethods} jobs={jobs} />;
     }
+    if (activeTab === "activity") {
+      return <ActivityTab events={activityEvents} vehicles={vehicles} />;
+    }
     if (activeTab === "messages") {
       return <CustomerMessagesTab customerName={customerName} customerEmail={customer?.email} dbUserId={dbUserId} />;
     }
     return null;
   };
 
-  return <CustomerDetailWorkspaceUi view="section1" ContactPreferenceToggle={ContactPreferenceToggle} PageSkeleton={PageSkeleton} activeTab={activeTab} customer={customer} customerName={customerName} detailCardStyles={detailCardStyles} detailGridStyles={detailGridStyles} error={error} isLoading={isLoading} jobs={jobs} profileGridItems={profileGridItems} renderTabContent={renderTabContent} setActiveTab={setActiveTab} TAB_DEFINITIONS={TAB_DEFINITIONS} TabGroup={TabGroup} tabPanelStyles={tabPanelStyles} vehicles={vehicles} />;
+  return <CustomerDetailWorkspaceUi view="section1" ContactPreferenceToggle={ContactPreferenceToggle} PageSkeleton={PageSkeleton} activeTab={activeTab} activityEvents={activityEvents} customer={customer} customerName={customerName} detailCardStyles={detailCardStyles} detailGridStyles={detailGridStyles} error={error} isLoading={isLoading} jobs={jobs} profileGridItems={profileGridItems} renderTabContent={renderTabContent} setActiveTab={setActiveTab} TAB_DEFINITIONS={TAB_DEFINITIONS} TabGroup={TabGroup} tabPanelStyles={tabPanelStyles} vehicles={vehicles} />;
 
 
 

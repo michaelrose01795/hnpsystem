@@ -2246,17 +2246,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               {part.description || part.name}
                             </div>
-                            {part.prePickLocation ? (
-                              <div style={{
-                                marginTop: "4px",
-                                fontSize: "var(--text-caption)",
-                                color: isRemoved ? "var(--text-2)" : "var(--text-1)",
-                                fontWeight: 600,
-                                textDecoration: isRemoved ? "line-through" : "none",
-                              }}>
-                                Picked: {formatPickedLocationLabel(part.prePickLocation)}
-                              </div>
-                            ) : null}
                           </td>
 
                           {/* Pre-pick Column */}
@@ -2427,7 +2416,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 No customer requests or authorised work found for this job.
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", flex: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", flex: 1, paddingTop: "2px" /* keep first heading caps clear of the scroll clip edge */ }}>
                 {/* Customer Requests - always shown at the top */}
                 {(() => {
                   const customerRequests = allRequests.filter((r) => r.type === "customer");
@@ -2438,7 +2427,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       parentKey="jobcard-parts-allocate-panel"
                       style={{ display: "flex", flexDirection: "column", gap: "8px" }}
                     >
-                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.5 }}>
                         Customer Requests
                       </div>
                       {customerRequests.length === 0 ? (
@@ -2465,7 +2454,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               style={{
                                 padding: "12px",
                                 borderRadius: "var(--radius-sm)",
-                                background: "var(--surface)",
+                                background: "var(--theme)",
                                 cursor: assignMode && request.canAllocate ? "pointer" : "default",
                                 boxShadow:
                                   assignMode && String(assignTargetRequestId) === String(request.id)

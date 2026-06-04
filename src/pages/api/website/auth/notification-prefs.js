@@ -7,10 +7,9 @@
 
 import { getCustomerSessionFromReq } from "@/lib/auth/customerSession";
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
+import { normalizeContactPreference } from "@/lib/customers/contactPreference";
 
 const db = () => supabaseService || supabase;
-
-const ALLOWED_CHANNELS = new Set(["email", "phone", "sms", "post"]);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -22,10 +21,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ success: false, message: "Not signed in." });
   }
 
-  const channel = String(req.body?.contact_preference ?? "").trim().toLowerCase();
+  const channel = normalizeContactPreference(req.body?.contact_preference);
   const optIns = req.body?.optIns || {};
   const next = {};
-  if (ALLOWED_CHANNELS.has(channel)) next.contact_preference = channel;
+  if (channel) next.contact_preference = channel;
   next.updated_at = new Date().toISOString();
 
   const client = db();

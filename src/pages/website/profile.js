@@ -28,6 +28,11 @@ import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
 import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import {
+  CONTACT_PREFERENCE_OPTIONS,
+  normalizeContactPreference,
+  contactPreferenceLabel,
+} from "@/lib/customers/contactPreference";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -867,8 +872,8 @@ function OwnershipDashboardCard({ vehicles = [] }) {
 
 function LiveProgressTrackerCard({ jobs = [], customer }) {
   const active = (jobs || []).find(portalIsOpenJob);
-  const contactPreference = String(customer?.contact_preference || "").toLowerCase();
-  const smsEnabled = ["sms", "text", "phone"].includes(contactPreference) || Boolean(customer?.mobile);
+  const contactPreference = normalizeContactPreference(customer?.contact_preference);
+  const smsEnabled = ["sms", "mobile"].includes(contactPreference) || Boolean(customer?.mobile);
   const emailEnabled = contactPreference === "email" || Boolean(customer?.email);
 
   return (
@@ -1772,7 +1777,8 @@ export default function CustomerProfilePage() {
           telephone: payload.customer.telephone || "",
           address: payload.customer.address || "",
           postcode: payload.customer.postcode || "",
-          contact_preference: payload.customer.contact_preference || "email",
+          contact_preference:
+            normalizeContactPreference(payload.customer.contact_preference) || "email",
         });
         setStatus("ready");
       })
@@ -2225,12 +2231,7 @@ export default function CustomerProfilePage() {
                               onChange={(value) =>
                                 setEditForm({ ...editForm, contact_preference: value })
                               }
-                              options={[
-                                { value: "email", label: "Email" },
-                                { value: "phone", label: "Phone" },
-                                { value: "sms", label: "SMS" },
-                                { value: "post", label: "Post" },
-                              ]}
+                              options={CONTACT_PREFERENCE_OPTIONS}
                             />
                           </div>
                         </div>
@@ -2264,7 +2265,7 @@ export default function CustomerProfilePage() {
                         <DetailField label="Postcode" value={customer.postcode} />
                         <DetailField
                           label="Preferred contact"
-                          value={customer.contact_preference}
+                          value={contactPreferenceLabel(customer.contact_preference) || customer.contact_preference}
                         />
                       </div>
                     )}
@@ -3257,7 +3258,9 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
 }
 
 function NotificationPrefsRow({ initial, onSuccess, flash }) {
-  const [channel, setChannel] = useState(initial.contact_preference || "email");
+  const [channel, setChannel] = useState(
+    normalizeContactPreference(initial.contact_preference) || "email"
+  );
   const [marketingEmail, setMarketingEmail] = useState(false);
   const [marketingSms, setMarketingSms] = useState(false);
   const [serviceReminders, setServiceReminders] = useState(true);
@@ -3276,12 +3279,7 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
         <WebsiteNativeSelect
           value={channel}
           onChange={setChannel}
-          options={[
-            { value: "email", label: "Email" },
-            { value: "phone", label: "Phone" },
-            { value: "sms", label: "SMS" },
-            { value: "post", label: "Post" },
-          ]}
+          options={CONTACT_PREFERENCE_OPTIONS}
         />
       </div>
       <Toggle

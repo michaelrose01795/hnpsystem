@@ -19,6 +19,7 @@ export default function CustomerDetailWorkspaceUi(props) {
     ContactPreferenceToggle,
     PageSkeleton,
     activeTab,
+    activityEvents,
     customer,
     customerName,
     detailCardStyles,
@@ -221,6 +222,8 @@ export default function CustomerDetailWorkspaceUi(props) {
                   `${tab.label} (${vehicles.length})` :
                   tab.id === "history" ?
                   `${tab.label} (${jobs.length})` :
+                  tab.id === "activity" ?
+                  `${tab.label} (${(activityEvents || []).length})` :
                   tab.label,
                   value: tab.id,
                   devSectionKey: `customer-profile-tab-button-${tab.id}`
