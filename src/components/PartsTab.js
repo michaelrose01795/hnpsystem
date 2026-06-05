@@ -5,6 +5,9 @@ import { usePolling } from "@/hooks/usePolling";
 import CalendarField from "@/components/ui/calendarAPI/CalendarField";
 import TimePickerField from "@/components/ui/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
@@ -2073,7 +2076,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   data-dev-section-parent="jobcard-parts-added-panel"
                   data-dev-disable-table-subsections="1"
                   style={{
-                    width: "100%",
+                    width: "min(100%, 860px)",
+                    minWidth: "680px",
+                    tableLayout: "fixed",
                     borderCollapse: "separate",
                     borderSpacing: 0,
                     fontSize: "var(--text-caption)",
@@ -2086,9 +2091,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           Select
                         </th>
                       )}
-                      <th style={{ textAlign: "left" }}>Part</th>
-                      <th style={{ textAlign: "right" }}>Pre-pick</th>
-                      <th style={{ textAlign: "right" }}>Qty</th>
+                      <th style={{ textAlign: "left", width: assignMode ? "59%" : "64%" }}>Part</th>
+                      <th style={{ textAlign: "center", width: "26%" }}>Pre-pick</th>
+                      <th style={{ textAlign: "right", width: "10%" }}>Qty</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2161,81 +2166,108 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <td style={{
                             padding: "9px 12px",
                             verticalAlign: "middle",
+                            width: assignMode ? "59%" : "64%",
                             }}>
                             <div style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: "6px",
-                              flexWrap: "wrap",
+                              gap: "10px",
+                              minHeight: "44px",
                             }}>
-                              <span style={{
-                                fontWeight: 600,
-                                color: isRemoved ? "var(--text-2)" : "var(--accent-purple)",
-                                textDecoration: isRemoved ? "line-through" : "none",
+                              <div style={{
+                                minWidth: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
                               }}>
-                                {part.partNumber}
-                              </span>
+                                <div style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  flexWrap: "wrap",
+                                }}>
+                                  <span style={{
+                                    fontWeight: 600,
+                                    color: isRemoved ? "var(--text-2)" : "var(--accent-purple)",
+                                    textDecoration: isRemoved ? "line-through" : "none",
+                                  }}>
+                                    {part.partNumber}
+                                  </span>
+                                  {assignMode && isSelected && (
+                                    <span
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        padding: "2px 8px",
+                                        borderRadius: "var(--radius-pill)",
+                                        background: "var(--accent-purple)",
+                                        color: "var(--text-2)",
+                                        fontSize: "var(--text-caption)",
+                                        fontWeight: 700,
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.06em",
+                                      }}
+                                    >
+                                      Selected
+                                    </span>
+                                  )}
+                                  {part.authorised && (
+                                    <span
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        padding: "2px 8px",
+                                        borderRadius: "var(--radius-pill)",
+                                        background: "var(--theme)",
+                                        color: "var(--info-dark)",
+                                        fontSize: "var(--text-caption)",
+                                        fontWeight: 700,
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.06em",
+                                      }}
+                                    >
+                                      Authorised
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{
+                                  fontSize: "var(--text-body-sm)",
+                                  color: isRemoved ? "var(--text-2)" : "var(--text-1)",
+                                  textDecoration: isRemoved ? "line-through" : "none",
+                                }}>
+                                  {part.description || part.name}
+                                </div>
+                              </div>
                               {isAllocated && (
-                                <span
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    if (!assignMode) {
+                                      setPartPopup({ open: true, part });
+                                    }
+                                  }}
+                                  aria-label={`Allocated part ${part.partNumber}`}
+                                  className="app-btn app-btn--xs"
                                   style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "2px 8px",
-                                    borderRadius: "var(--radius-pill)",
+                                    minHeight: "auto",
+                                    flex: "0 0 auto",
+                                    alignSelf: "center",
+                                    padding: "4px 8px",
+                                    borderRadius: "var(--radius-xs)",
+                                    border: "none",
                                     background: "var(--success-surface)",
-                                    color: "var(--success)",
+                                    color: "var(--success-dark)",
                                     fontSize: "var(--text-caption)",
-                                    fontWeight: 700,
+                                    fontWeight: 600,
+                                    cursor: assignMode ? "not-allowed" : "pointer",
                                     textTransform: "uppercase",
                                     letterSpacing: "0.06em",
                                   }}
                                 >
                                   Allocated
-                                </span>
+                                </button>
                               )}
-                              {assignMode && isSelected && (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "2px 8px",
-                                    borderRadius: "var(--radius-pill)",
-                                    background: "var(--accent-purple)",
-                                    color: "var(--text-2)",
-                                    fontSize: "var(--text-caption)",
-                                    fontWeight: 700,
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                  }}
-                                >
-                                  Selected
-                                </span>
-                              )}
-                              {part.authorised && (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "2px 8px",
-                                    borderRadius: "var(--radius-pill)",
-                                    background: "var(--theme)",
-                                    color: "var(--info-dark)",
-                                    fontSize: "var(--text-caption)",
-                                    fontWeight: 700,
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                  }}
-                                >
-                                  Authorised
-                                </span>
-                              )}
-                            </div>
-                            <div style={{
-                              fontSize: "var(--text-body-sm)",
-                              color: isRemoved ? "var(--text-2)" : "var(--text-1)",
-                              textDecoration: isRemoved ? "line-through" : "none",
-                            }}>
-                              {part.description || part.name}
                             </div>
                           </td>
 
@@ -2244,6 +2276,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             style={{
                               padding: "9px 12px",
                               verticalAlign: "middle",
+                              textAlign: "center",
+                              width: "26%",
                               minWidth: "150px",
                             }}
                           >
@@ -2361,13 +2395,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background:
-                    !canEdit || !hasAssignableParts || allocatingSelection
+                    !hasAssignableParts
+                      ? "var(--success-surface)"
+                      : !canEdit || allocatingSelection
                       ? "var(--surface)"
                       : assignMode
                       ? "var(--success)"
                       : "var(--accent-purple)",
                   color:
-                    !canEdit || !hasAssignableParts || allocatingSelection
+                    !hasAssignableParts
+                      ? "var(--success-dark)"
+                      : !canEdit || allocatingSelection
                       ? "var(--text-1)"
                       : "var(--text-2)",
                   fontSize: "var(--text-caption)",
@@ -2417,7 +2455,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       sectionKey="jobcard-parts-allocate-customer-requests"
                       sectionType="list"
                       parentKey="jobcard-parts-allocate-panel"
-                      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        paddingLeft: "6px", // Keeps the section edge from clipping the heading's leading cap.
+                      }}
                     >
                       <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.5 }}>
                         Customer Requests
@@ -3034,155 +3077,218 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             }}
             onClick={() => setPartPopup({ open: false, part: null })}
           >
-            <div
+            <LayerSurface
+              radius="var(--radius-sm)"
+              padding="var(--section-card-padding)"
+              gap="var(--layout-card-gap)"
               style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                padding: "24px",
                 width: "min(92vw, 680px)",
                 maxWidth: "680px",
+                maxHeight: "calc(100dvh - 48px)",
+                overflowY: "auto",
                 boxShadow: "var(--shadow-xl)",
+                color: "var(--text-1)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            <div style={{ marginBottom: "16px" }}>
               <div
                 style={{
-                  fontSize: "var(--text-body)",
-                  fontWeight: 600,
-                  color: "var(--primary)",
-                  marginBottom: "8px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: "var(--layout-card-gap)",
+                  flexWrap: "wrap",
                 }}
               >
-                Part Details
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "var(--text-h3)",
+                      fontWeight: 700,
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    Part Details
+                  </div>
+                  <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.78 }}>
+                    Review pre-pick location or remove stock from this job.
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setPartPopup({ open: false, part: null })}
+                >
+                  Close
+                </Button>
               </div>
-              <div
-                style={{
-                  padding: "12px",
-                  background: "var(--theme)",
-                  borderRadius: "var(--radius-xs)",
-                }}
-              >
-                <div style={{ fontWeight: 600, color: "var(--accent-purple)", marginBottom: "4px" }}>
-                  {partPopup.part.partNumber}
-                </div>
-                <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)", marginBottom: "4px" }}>
-                  {partPopup.part.description || partPopup.part.name}
-                </div>
-                <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
-                  Quantity: {partPopup.part.quantity}
-                </div>
-              </div>
-            </div>
-            <div style={{ marginBottom: "16px" }}>
-              <DropdownField
-                label="Pre-pick"
-                placeholder={
-                  savingPrePickPartId === String(partPopup.part.id)
-                    ? "Saving..."
-                    : "Select pre-pick location"
-                }
-                value={partPopup.part.prePickLocation || ""}
-                onChange={(event) => handlePartPrePickLocationChange(partPopup.part, event.target.value)}
-                options={prePickLocationOptions}
-                disabled={
-                  !canEdit ||
-                  partPopup.part.source === "goods-in" ||
-                  normalizePartStatus(partPopup.part.status) === "removed" ||
-                  savingPrePickPartId === String(partPopup.part.id)
-                }
-              />
-            </div>
-            {Number(partPopup.part.quantity || 0) > 1 && (
-              <div style={{ marginBottom: "12px" }}>
-                <label
+
+              <LayerTheme radius="var(--radius-xs)" padding="14px" gap="8px">
+                <div
                   style={{
-                    fontSize: "var(--text-caption)",
-                    color: "var(--info-dark)",
-                    fontWeight: 600,
-                    display: "block",
-                    marginBottom: "6px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    gap: "var(--layout-card-gap)",
+                    flexWrap: "wrap",
                   }}
                 >
-                  Quantity to remove
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={partRemoveQuantity}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    if (next === "" || /^\d+$/.test(next)) {
-                      setPartRemoveQuantity(next);
-                    }
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: "var(--text-1)", overflowWrap: "anywhere" }}>
+                      {partPopup.part.partNumber}
+                    </div>
+                    <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)", opacity: 0.78, overflowWrap: "anywhere" }}>
+                      {partPopup.part.description || partPopup.part.name}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      minHeight: "32px",
+                      padding: "4px 10px",
+                      borderRadius: "var(--radius-pill)",
+                      background: "var(--surface)",
+                      color: "var(--text-1)",
+                      fontSize: "var(--text-caption)",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Qty {partPopup.part.quantity}
+                  </div>
+                </div>
+              </LayerTheme>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    Number(partPopup.part.quantity || 0) > 1
+                      ? "repeat(auto-fit, minmax(220px, 1fr))"
+                      : "1fr",
+                  gap: "var(--layout-card-gap)",
+                  alignItems: "end",
+                }}
+              >
+                <DropdownField
+                  className="parts-part-details-prepick-dropdown"
+                  menuClassName="parts-part-details-prepick-menu"
+                  menuStyle={{
+                    maxHeight: "136px",
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    overscrollBehavior: "contain",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
+                    touchAction: "pan-y",
                   }}
-                  placeholder="1"
-                  style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    fontSize: "var(--text-label)",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                  }}
+                  label="Pre-pick"
+                  placeholder={
+                    savingPrePickPartId === String(partPopup.part.id)
+                      ? "Saving..."
+                      : "Select pre-pick location"
+                  }
+                  value={partPopup.part.prePickLocation || ""}
+                  onChange={(event) => handlePartPrePickLocationChange(partPopup.part, event.target.value)}
+                  options={prePickLocationOptions}
+                  disabled={
+                    !canEdit ||
+                    partPopup.part.source === "goods-in" ||
+                    normalizePartStatus(partPopup.part.status) === "removed" ||
+                    savingPrePickPartId === String(partPopup.part.id)
+                  }
                 />
+                {Number(partPopup.part.quantity || 0) > 1 && (
+                  <div>
+                    <label
+                      style={{
+                        fontSize: "var(--control-label-size)",
+                        color: "var(--text-1)",
+                        fontWeight: "var(--control-label-weight)",
+                        display: "block",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Quantity to remove
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={partRemoveQuantity}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d+$/.test(next)) {
+                          setPartRemoveQuantity(next);
+                        }
+                      }}
+                      placeholder="1"
+                      style={{
+                        width: "100%",
+                        padding: "var(--control-padding)",
+                        borderRadius: "var(--control-radius)",
+                        border: "none",
+                        minHeight: "var(--control-height)",
+                        fontSize: "var(--control-font-size)",
+                        background: "var(--surface)",
+                        color: "var(--text-1)",
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between", alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={() => setPartPopup({ open: false, part: null })}
+
+              <style jsx global>{`
+                html.staff-scope .parts-part-details-prepick-menu::-webkit-scrollbar {
+                  width: 0;
+                  height: 0;
+                }
+              `}</style>
+
+              <div
                 style={{
-                  padding: "10px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  background: "var(--surface)",
-                  color: "var(--info-dark)",
-                  fontSize: "var(--text-label)",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  display: "flex",
+                  gap: "10px",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
                 }}
               >
-                Close
-              </button>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  type="button"
-                  onClick={() => handleRemovePartFromPopup("partial")}
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.74 }}>
+                  {canEdit ? "Changes apply to this job item only." : "Read-only: editing is unavailable."}
+                </div>
+                <div
                   style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    background: "var(--danger-surface)",
-                    color: "var(--danger)",
-                    fontSize: "var(--text-label)",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    display: "flex",
+                    gap: "10px",
+                    justifyContent: "flex-end",
+                    flexWrap: "wrap",
                   }}
                 >
-                  Remove
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRemovePartFromPopup("all")}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    background: "var(--danger)",
-                    color: "white",
-                    fontSize: "var(--text-label)",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Remove All
-                </button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleRemovePartFromPopup("partial")}
+                    disabled={!canEdit}
+                  >
+                    Remove
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleRemovePartFromPopup("all")}
+                    disabled={!canEdit}
+                  >
+                    Remove All
+                  </Button>
+                </div>
               </div>
-            </div>
-            </div>
+            </LayerSurface>
           </div>
         </ModalPortal>
       )}

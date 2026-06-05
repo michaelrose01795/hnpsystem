@@ -60,6 +60,11 @@ const MENU_LAYOUT_STYLE_KEYS = [
   "overflow",
   "overflowY",
   "overflowX",
+  "overscrollBehavior",
+  "scrollbarWidth",
+  "msOverflowStyle",
+  "WebkitOverflowScrolling",
+  "touchAction",
   "zIndex",
 ];
 const OPTION_LAYOUT_STYLE_KEYS = ["minHeight"];
@@ -100,6 +105,7 @@ export default function Dropdown({
   style,
   controlStyle,
   labelStyle,
+  menuClassName = "",
   menuStyle,
   optionStyle,
   valueStyle,
@@ -121,6 +127,7 @@ export default function Dropdown({
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const searchInputRef = useRef(null);
+  const touchYRef = useRef(null);
 
   const normalizedOptions = useMemo(
     () => normalizeOptions(options, { includeDescription: true }),
@@ -162,6 +169,43 @@ export default function Dropdown({
     if (disabled || option?.disabled) return;
     onChange?.(option.raw ?? option.value ?? null, option);
     setIsOpen(false);
+  };
+
+  const scrollMenuBy = (deltaY) => {
+    const menuNode = menuRef.current;
+    if (!menuNode) return false;
+    const maxScrollTop = menuNode.scrollHeight - menuNode.clientHeight;
+    if (maxScrollTop <= 0) return false;
+    const nextScrollTop = Math.max(0, Math.min(maxScrollTop, menuNode.scrollTop + deltaY));
+    if (nextScrollTop === menuNode.scrollTop) return false;
+    menuNode.scrollTop = nextScrollTop;
+    return true;
+  };
+
+  const handleMenuWheel = (event) => {
+    if (scrollMenuBy(event.deltaY)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  const handleMenuTouchStart = (event) => {
+    touchYRef.current = event.touches?.[0]?.clientY ?? null;
+  };
+
+  const handleMenuTouchMove = (event) => {
+    const nextY = event.touches?.[0]?.clientY ?? null;
+    const previousY = touchYRef.current;
+    if (nextY === null || previousY === null) return;
+    if (scrollMenuBy(previousY - nextY)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    touchYRef.current = nextY;
+  };
+
+  const handleMenuTouchEnd = () => {
+    touchYRef.current = null;
   };
 
   const handleControlKeyDown = (event) => {
@@ -352,10 +396,15 @@ export default function Dropdown({
         (() => {
           const menuNode = (
             <div
-              className="dropdown-api__menu"
+              className={`dropdown-api__menu ${menuClassName}`.trim()}
               role="listbox"
               aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
               ref={menuRef}
+              onWheel={handleMenuWheel}
+              onTouchStart={handleMenuTouchStart}
+              onTouchMove={handleMenuTouchMove}
+              onTouchEnd={handleMenuTouchEnd}
+              onTouchCancel={handleMenuTouchEnd}
               style={
                 usePortal
                   ? (menuPosition ? { ...(mergedMenuStyle || {}), ...menuPosition } : mergedMenuStyle)
