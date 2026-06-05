@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
 import { normalizeRequests } from "@/lib/jobCards/utils";
 import { useConfirmation } from "@/context/ConfirmationContext";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function NotesTabNew({
   jobData,
@@ -12,7 +13,8 @@ export default function NotesTabNew({
   actingUserNumericId,
   onNotesChange,
   onNoteAdded,
-  highlightNoteIds = []
+  highlightNoteIds = [],
+  noteHistoryJobs = []
 }) {
   const jobId = jobData?.id;
   const { confirm } = useConfirmation();
@@ -21,6 +23,7 @@ export default function NotesTabNew({
   const [newNoteText, setNewNoteText] = useState("");
   const [newNoteHidden, setNewNoteHidden] = useState(true); // Default: hidden from customer
   const [showAddNote, setShowAddNote] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [savingNewNote, setSavingNewNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState("");
@@ -54,6 +57,44 @@ export default function NotesTabNew({
     () => new Set(Array.isArray(highlightNoteIds) ? highlightNoteIds : []),
     [highlightNoteIds]
   );
+  const historyJobsWithNotes = useMemo(() => {
+    const historyJobs = Array.isArray(noteHistoryJobs) ? noteHistoryJobs : [];
+    const currentJobId = jobData?.id ?? jobId ?? null;
+    const currentJobNumber = jobData?.jobNumber || jobData?.job_number || "";
+    const seenJobKeys = new Set();
+    const withCurrentNotes = historyJobs.map((job) => {
+      const jobKey = String(job.id ?? job.jobId ?? job.jobNumber ?? "");
+      if (jobKey) seenJobKeys.add(jobKey);
+      const matchesCurrent =
+        (currentJobId && Number(job.id ?? job.jobId) === Number(currentJobId)) ||
+        (currentJobNumber && String(job.jobNumber || "").trim() === String(currentJobNumber).trim());
+
+      return {
+        ...job,
+        notes: matchesCurrent ? notes : Array.isArray(job.notes) ? job.notes : [],
+      };
+    });
+
+    if (currentJobId && !seenJobKeys.has(String(currentJobId))) {
+      withCurrentNotes.unshift({
+        id: currentJobId,
+        jobNumber: currentJobNumber,
+        serviceDate: jobData?.appointment?.date || jobData?.createdAt || null,
+        serviceDateFormatted: jobData?.appointment?.date || "Current jobcard",
+        mileage: jobData?.mileage || jobData?.milage || "",
+        notes,
+      });
+    }
+
+    return withCurrentNotes
+      .map((job) => ({
+        ...job,
+        notes: Array.isArray(job.notes)
+          ? job.notes.filter((note) => String(note.noteText || note.note_text || "").trim())
+          : [],
+      }))
+      .filter((job) => job.notes.length > 0);
+  }, [jobData, jobId, noteHistoryJobs, notes]);
 
   // Load notes
   useEffect(() => {
@@ -392,19 +433,39 @@ export default function NotesTabNew({
         </div>
       )}
 
-      {/* Add New Note */}
-      {canEdit && (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showAddNote ? "12px" : "20px" }}>
-            <div style={{ fontSize: "13px", color: "var(--text-1)" }}>
-              {notes.length} note{notes.length === 1 ? "" : "s"}
-            </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: showAddNote ? "12px" : "20px" }}>
+        <div style={{ fontSize: "13px", color: "var(--text-1)" }}>
+          {notes.length} note{notes.length === 1 ? "" : "s"}
+        </div>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => setShowHistory((current) => !current)}
+            style={{
+              minHeight: "44px",
+              padding: "10px 18px",
+              backgroundColor: showHistory ? "var(--surface)" : "var(--control-bg)",
+              color: showHistory ? "var(--accentText)" : "var(--text-1)",
+              border: "none",
+              borderRadius: "var(--radius-xs)",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            {showHistory ? "hide history" : "show history"}
+          </button>
+          {canEdit && (
             <button
               onClick={() => setShowAddNote(true)}
               style={{
+                minHeight: "44px",
                 padding: "10px 20px",
                 backgroundColor: "var(--primary)",
                 color: "var(--text-2)",
+                border: "none",
                 borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -414,8 +475,13 @@ export default function NotesTabNew({
             >
               Add New Note
             </button>
-          </div>
+          )}
+        </div>
+      </div>
 
+      {/* Add New Note */}
+      {canEdit && (
+        <>
           {showAddNote && (
             <div
               style={{
@@ -757,6 +823,103 @@ export default function NotesTabNew({
         )}
         </div>
       </div>
+      {showHistory && (
+        <LayerTheme
+          sectionKey="jobcard-tab-notes-history"
+          sectionType="content-card"
+          parentKey="jobcard-tab-notes"
+          radius="var(--radius-md)"
+          padding="var(--section-card-padding)"
+          gap="var(--layout-card-gap)"
+          style={{ marginTop: "20px" }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accentText)" }}>
+                History Notes
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>
+                Notes grouped by jobcard for this vehicle history.
+              </div>
+            </div>
+            <span
+              style={{
+                padding: "4px 10px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: "var(--control-bg)",
+                color: "var(--text-1)",
+                fontSize: "11px",
+                fontWeight: 700,
+              }}
+            >
+              {historyJobsWithNotes.length} jobcard{historyJobsWithNotes.length === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          {historyJobsWithNotes.length === 0 ? (
+            <div
+              style={{
+                padding: "24px",
+                textAlign: "center",
+                color: "var(--text-1)",
+              }}
+            >
+              No history notes have been added for this vehicle yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {historyJobsWithNotes.map((job) => (
+                <div
+                  key={job.id || job.jobNumber}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)" }}>
+                      Jobcard {job.jobNumber || "Unknown"}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-1)" }}>
+                      {job.serviceDateFormatted || "Date unknown"}
+                      {job.mileage ? ` | ${job.mileage} miles` : ""}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {job.notes.map((note, index) => (
+                      <div
+                        key={note.noteId || `${job.id || job.jobNumber}-note-${index}`}
+                        style={{
+                          padding: "10px 0",
+                          borderBottom: index === job.notes.length - 1 ? "none" : "var(--separating-line)",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                          gap: "12px",
+                          alignItems: "start",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-1)" }}>
+                            {formatDateTime(note.createdAt || note.created_at)}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "2px", overflowWrap: "anywhere" }}>
+                            {note.createdBy || "Unknown"}
+                            {note.createdByEmail ? ` (${note.createdByEmail})` : ""}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "var(--text-1)", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                          {note.noteText || note.note_text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </LayerTheme>
+      )}
       {linkingNote && typeof document !== "undefined" &&
         createPortal(
           <div

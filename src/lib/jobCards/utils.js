@@ -22,6 +22,24 @@ const buildHistoryText = (...values) =>
     .map((value) => String(value || "").trim())
     .find(Boolean) || "";
 
+const mapHistoryNote = (note = {}) => {
+  const creatorName = note.user
+    ? `${note.user.first_name || ""} ${note.user.last_name || ""}`.trim()
+    : "";
+
+  return {
+    noteId: note.note_id ?? note.noteId ?? null,
+    jobId: note.job_id ?? note.jobId ?? null,
+    noteText: note.note_text ?? note.noteText ?? "",
+    hiddenFromCustomer:
+      note.hidden_from_customer ?? note.hiddenFromCustomer ?? true,
+    createdAt: note.created_at ?? note.createdAt ?? null,
+    updatedAt: note.updated_at ?? note.updatedAt ?? null,
+    createdBy: creatorName || note.createdBy || "Unknown",
+    createdByEmail: note.user?.email || note.createdByEmail || "",
+  };
+};
+
 const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
   const normalizedReg = vehicleReg ? vehicleReg.trim().toUpperCase() : "";
 
@@ -109,6 +127,11 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
         invoiceName: invoiceFile?.file_name || "",
         invoiceAvailable: Boolean(invoiceFile),
         invoicePaymentStatus: invoiceRecord?.payment_status || "",
+        notes: Array.isArray(job.job_notes)
+          ? job.job_notes.map(mapHistoryNote)
+          : Array.isArray(job.notes)
+          ? job.notes.map(mapHistoryNote)
+          : [],
       };
     });
 };

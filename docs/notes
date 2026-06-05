@@ -1,12 +1,16 @@
-
-
-CHECK 7
-have it so "Jobcard Tab Contact Fields · 1.2.2.1.1.4.1.1.1 key: jobcard-tab-contact-fields source: src/pages/job-cards/[jobNumber].js:7061 route: /job-cards/00080 parent jobcard-tab-contact-panel (1.2.2.1.1.4.1.1)" section uses the full width of the card, keep "CUSTOMER NAME Daisy Hamond EMAIL ADDRESS daisyhamond2020@yahoo.co.uk MOBILE PHONE 07407895712 LANDLINE PHONE N/A CONTACT PREFERENCE" section wihtin one row. make sure all sections are wide enough to fit all of the detaisl within the section. 
-
+check notes history
 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
 
+CHECK
+have it so within the "Jobcard Parts Customer Request 161 · 1.2.1.1.1.4.1.1.2.1.3 key: jobcard-parts-customer-request-161 source: src/components/PartsTab.js:2425 (dynamic pattern) route: /job-cards/00080 parent jobcard-parts-allocate-customer-requests (1.2.1.1.1.4.1.1.2.1) · 1 child" section for example if the table is showing have it os the table uses the full width of the section, atm there is a bigger gap on the left tahn the right, make both the gaps the same size as on the right. 
+
+TODO
+within "Jobcard Parts Allocate Customer Table 161 Rows · 1.2.1.1.1.4.1.1.2.1.3.1.2 key: jobcard-parts-allocate-customer-table-161-rows source: src/components/PartsTab.js:2503 (dynamic pattern) src/components/PartsTab.js:2487 (dynamic pattern) src/components/profile/ProfileWorkTab.js:2046 (dynamic pattern) route: /job-cards/00080 parent jobcard-parts-allocate-customer-table-161 (1.2.1.1.1.4.1.1.2.1.3.1)" table for example have it so the description column is in the same coloumn as the Part number coloum, have it so the part number is above the description follows the layout style of the "Jobcard Parts Added Table · 1.2.1.1.1.4.1.1.1.1 key: jobcard-parts-added-table source: src/components/PartsTab.js:2043 route: /job-cards/00080 parent jobcard-parts-added-panel (1.2.1.1.1.4.1.1.1)" parts column etc 
+
+TODO
+deep dive to make sure "Jobcard Parts Added Panel · 1.2.1.1.1.4.1.1.1 key: jobcard-parts-added-panel source: src/components/PartsTab.js:1941 route: /job-cards/00080 parent jobcard-parts-workspace (1.2.1.1.1.4.1.1) · 1 child" and "Jobcard Parts Allocate Panel · 1.2.1.1.1.4.1.1.2 key: jobcard-parts-allocate-panel source: src/components/PartsTab.js:2284 route: /job-cards/00080 parent jobcard-parts-workspace (1.2.1.1.1.4.1.1) · 2 children" are the same widths within the "Jobcard Parts Workspace · 1.2.1.1.1.4.1.1 key: jobcard-parts-workspace source: src/components/PartsTab.js:1927 route: /job-cards/00080 parent jobcard-tab-parts (1.2.1.1.1.4.1) · 2 children" section
 
 
 

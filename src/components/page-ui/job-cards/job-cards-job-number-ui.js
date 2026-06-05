@@ -772,7 +772,7 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Notes</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <NotesTabNew jobData={jobData} canEdit={canEdit} actingUserNumericId={actingUserNumericId} onNotesChange={handleNotesChange} onNoteAdded={handleNoteAdded} highlightNoteIds={highlightedNoteIds} />
+            <NotesTabNew jobData={jobData} canEdit={canEdit} actingUserNumericId={actingUserNumericId} onNotesChange={handleNotesChange} onNoteAdded={handleNoteAdded} highlightNoteIds={highlightedNoteIds} noteHistoryJobs={vehicleJobHistory} />
           </div>
 
           {/* Write-up keeps its inner full-height flex column because the form
