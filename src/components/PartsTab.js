@@ -1589,25 +1589,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
         .parts-allocate-subtable th:nth-child(1),
         .parts-allocate-subtable td:nth-child(1) {
-          width: 22%;
+          width: 46%;
         }
 
         .parts-allocate-subtable th:nth-child(2),
-        .parts-allocate-subtable td:nth-child(2) {
-          width: 24%;
-        }
-
+        .parts-allocate-subtable td:nth-child(2),
         .parts-allocate-subtable th:nth-child(3),
         .parts-allocate-subtable td:nth-child(3),
         .parts-allocate-subtable th:nth-child(4),
-        .parts-allocate-subtable td:nth-child(4),
-        .parts-allocate-subtable th:nth-child(5),
-        .parts-allocate-subtable td:nth-child(5) {
+        .parts-allocate-subtable td:nth-child(4) {
           width: 12%;
         }
 
-        .parts-allocate-subtable th:nth-child(6),
-        .parts-allocate-subtable td:nth-child(6) {
+        .parts-allocate-subtable th:nth-child(5),
+        .parts-allocate-subtable td:nth-child(5) {
           width: 18%;
         }
 
@@ -1634,25 +1629,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         @media (min-width: 1100px) {
           .parts-allocate-subtable th:nth-child(1),
           .parts-allocate-subtable td:nth-child(1) {
-            width: 24%;
+            width: 52%;
           }
 
           .parts-allocate-subtable th:nth-child(2),
-          .parts-allocate-subtable td:nth-child(2) {
-            width: 28%;
-          }
-
+          .parts-allocate-subtable td:nth-child(2),
           .parts-allocate-subtable th:nth-child(3),
           .parts-allocate-subtable td:nth-child(3),
           .parts-allocate-subtable th:nth-child(4),
-          .parts-allocate-subtable td:nth-child(4),
-          .parts-allocate-subtable th:nth-child(5),
-          .parts-allocate-subtable td:nth-child(5) {
+          .parts-allocate-subtable td:nth-child(4) {
             width: 10%;
           }
 
-          .parts-allocate-subtable th:nth-child(6),
-          .parts-allocate-subtable td:nth-child(6) {
+          .parts-allocate-subtable th:nth-child(5),
+          .parts-allocate-subtable td:nth-child(5) {
             width: 18%;
           }
         }
@@ -1958,7 +1948,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </DevLayoutSection>
       )}
 
-      {/* Layout: Parts List (Left) and Requests (Right) - Right side wider for better content fit */}
+      {/* Layout: Parts List (Left) and Requests (Right) */}
       <DevLayoutSection
         sectionKey="jobcard-parts-workspace"
         sectionType="section-shell"
@@ -1967,7 +1957,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         shell
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 3fr",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: "16px",
           // gap to the search panel is now owned by the parent stack (10px); no extra margin needed
         }}
@@ -1983,6 +1973,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             minHeight: "400px",
+            minWidth: 0,
             overflow: "hidden",
           }}
         >
@@ -2311,6 +2302,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
+              minWidth: 0,
               overflow: "hidden",
             }}
           >
@@ -2499,8 +2491,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 <div
                                   style={{
                                     marginTop: "10px",
-                                    marginLeft: "14px",
-                                    paddingLeft: "12px",
                                   }}
                                 >
                                   <table
@@ -2513,8 +2503,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   >
                                     <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       <tr>
-                                        <th style={{ textAlign: "left" }}>Part number</th>
-                                        <th style={{ textAlign: "left" }}>Description</th>
+                                        <th style={{ textAlign: "left" }}>Part</th>
                                         <th style={{ textAlign: "right" }}>Qty</th>
                                         <th style={{ textAlign: "right" }}>Retail</th>
                                         <th style={{ textAlign: "right" }}>Cost</th>
@@ -2524,13 +2513,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       {allocatedParts.map((part) => (
                                         <tr key={part.id} style={{ background: "var(--theme)" }}>
-                                          <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                            <span className="parts-allocate-cell-scroll">
+                                          <td style={{ padding: "6px", verticalAlign: "middle" }}>
+                                            <span className="parts-allocate-cell-scroll" style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
                                               {part.partNumber}
                                             </span>
-                                          </td>
-                                          <td style={{ padding: "6px", color: "var(--text-1)" }}>
-                                            <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
+                                            <span className="parts-allocate-cell-scroll parts-allocate-description-cell" style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
                                               {part.description || part.name}
                                             </span>
                                           </td>
@@ -2688,9 +2675,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     <div
                                       style={{
                                         marginTop: "10px",
-                                        marginLeft: "14px",
-                                        paddingLeft: "12px",
-                                          }}
+                                      }}
                                     >
                                       <table
                                         data-dev-section="1"
@@ -2702,8 +2687,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       >
                                         <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           <tr>
-                                            <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
-                                            <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
+                                            <th style={{ textAlign: "left", padding: "6px" }}>Part</th>
                                             <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
                                             <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
                                             <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
@@ -2713,13 +2697,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           {allocatedParts.map((part) => (
                                             <tr key={part.id} style={{ background: "var(--theme)" }}>
-                                              <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                                <span className="parts-allocate-cell-scroll">
+                                              <td style={{ padding: "6px", verticalAlign: "middle" }}>
+                                                <span className="parts-allocate-cell-scroll" style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
                                                   {part.partNumber}
                                                 </span>
-                                              </td>
-                                              <td style={{ padding: "6px", color: "var(--text-1)" }}>
-                                                <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
+                                                <span className="parts-allocate-cell-scroll parts-allocate-description-cell" style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
                                                   {part.description || part.name}
                                                 </span>
                                               </td>
@@ -2782,6 +2764,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
+              minWidth: 0,
               overflow: "hidden",
             }}
           >
