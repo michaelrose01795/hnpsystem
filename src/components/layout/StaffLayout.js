@@ -828,7 +828,7 @@ export default function Layout({
     maxWidth: "100%",
     minWidth: 0,
     fontFamily: "var(--font-family)",
-    background: colors.background || colors.mainBg,
+    background: "transparent",
     color: colors.text,
     justifyContent: hideSidebar ? "center" : "flex-start",
     alignItems: hideSidebar ? "center" : "stretch",

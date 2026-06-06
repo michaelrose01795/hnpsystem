@@ -1896,17 +1896,18 @@ function GlobalUiShowcase() {
   join(" ");
 
   return (
-    <DevLayoutSection as="aside" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-      width: "min(100%, 440px)",
-      flex: "0 1 440px",
+    <DevLayoutSection as="section" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="" backgroundToken="" style={{
+      width: "100%",
+      flex: "1 1 100%",
       maxWidth: "100%",
-      paddingRight: "4px"
+      paddingRight: 0
     }}>
       
       <style jsx global>{`
         .user-diagnostic-showcase {
           background: #fdf2f8 !important;
           box-shadow: none;
+          min-width: 0;
         }
         :root[data-theme="dark"] .user-diagnostic-showcase {
           background: #4a2737 !important;
@@ -2393,8 +2394,8 @@ function GlobalUiShowcase() {
       {isSectionVisible("buttons-app-btn") &&
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-          <Button variant="primary">Primary</Button>
-          <Button variant="secondary">Secondary</Button>
+          <Button variant="primary">Action Glass</Button>
+          <Button variant="secondary">Glass</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
         </div>
@@ -3274,7 +3275,11 @@ function GlobalUiShowcase() {
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>
-          Canonical card hierarchy from staffglobal.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers.
+          Canonical card hierarchy from staffglobal.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers. All card surfaces now use the Liquid Glass treatment (<strong>.glass-card</strong>).
+        </div>
+        <div className="glass-card" style={{ padding: "var(--section-card-padding)", marginBottom: "12px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>Glass Card (.glass-card)</div>
+          <div style={{ fontSize: "11px", color: "var(--text-1)" }}>Reusable Liquid Glass / glassmorphism surface — accent tint via --accent-rgb, frosted backdrop blur, soft elevation shadow. Works in light and dark mode.</div>
         </div>
         <div className="app-page-shell" style={{ padding: "8px" }}>
           <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-shell</div>

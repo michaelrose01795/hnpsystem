@@ -219,7 +219,7 @@ function buildClientRuntimeExpression() {
     var accentSurfaceHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.24)" : "rgba(" + accentRgb + ", 0.14)";
     var themeColour = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.18)" : "rgba(" + accentRgb + ", 0.1)";
     var themeColourHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.26)" : "rgba(" + accentRgb + ", 0.16)";
-    var shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
+    var shellBackground = resolvedMode === "dark" ? "#08090d" : "#f8fafc";
     var surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
     var surfaceHover = resolvedMode === "dark" ? "#23232b" : "#f7f7f7";
     var surfaceMuted = resolvedMode === "dark" ? "#1d1d24" : "#f3f3f3";
@@ -236,6 +236,7 @@ function buildClientRuntimeExpression() {
         "--primary-pressed": accentPressed,
         "--primary-selected": accentPressed,
         "--accentMainRgb": accentRgb,
+        "--accent-rgb": accentRgb,
         "--accentText": resolvedAccent,
         "--text-accent": resolvedAccent,
         "--onAccentText": onAccentText,
@@ -256,6 +257,7 @@ function buildClientRuntimeExpression() {
         "--text-2-rgb": hexToRgbString(onAccentText),
         "--overlay": overlayBackdrop,
         "--overlay-muted": overlayMuted,
+        "--app-background-base": shellBackground,
         "--page-shell-bg": shellBackground,
         "--nav-shell-bg": accentSurface,
         "--page-card-bg": surfaceMain,

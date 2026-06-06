@@ -60,6 +60,8 @@ html.staff-scope div {
 }
 
 html.staff-scope #__next {
+  position: relative;
+  z-index: 1;
   width: 100%;
   overflow-x: clip;
 }
@@ -88,7 +90,7 @@ html.staff-scope #__next {
 }
 
 html.staff-scope {
-  background: var(--page-shell-bg);
+  background: var(--app-background-base, var(--page-shell-bg));
   overflow-x: clip;
   overscroll-behavior-y: none;
   /* Smooth the shell colour change on soft navigations (e.g. login <-> app)
@@ -99,14 +101,100 @@ html.staff-scope {
 
 html.staff-scope body {
   font-family: var(--font-family);
-  background: var(--page-shell-bg);
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      ellipse 78% 64% at -4% 94%,
+      rgba(var(--accentMainRgb), 0.34) 0%,
+      rgba(var(--accentMainRgb), 0.18) 30%,
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 72% 60% at 104% 4%,
+      rgba(var(--accentMainRgb), 0.3) 0%,
+      rgba(var(--accentMainRgb), 0.15) 30%,
+      transparent 66%
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      rgba(var(--surface-rgb), 0) 26%,
+      rgba(var(--surface-rgb), 0.86) 44%,
+      rgba(var(--surface-rgb), 0.54) 55%,
+      rgba(var(--surface-rgb), 0) 72%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 92% 48% at 48% 112%,
+      rgba(var(--accentMainRgb), 0.14) 0%,
+      transparent 66%
+    ),
+    var(--app-background-base, var(--page-shell-bg));
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-repeat: no-repeat;
+  background-size: 150% 150%, 142% 142%, 140% 100%, 128% 90%, auto;
+  background-position: left bottom, right top, center center, center bottom, center;
   color: var(--surfaceText);
   line-height: 1.35;
   min-height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: none;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background 0.3s ease, color 0.3s;
+}
+
+html.staff-scope[data-theme="dark"] body {
+  background:
+    radial-gradient(
+      ellipse 76% 62% at -16% 104%,
+      rgba(var(--accentMainRgb), 0.26) 0%,
+      rgba(var(--accentMainRgb), 0.13) 30%,
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 114% -14%,
+      rgba(var(--accentMainRgb), 0.22) 0%,
+      rgba(var(--accentMainRgb), 0.12) 32%,
+      transparent 68%
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      rgba(var(--surface-rgb), 0) 24%,
+      rgba(var(--surface-rgb), 0.26) 42%,
+      rgba(var(--surface-rgb), 0.12) 56%,
+      rgba(var(--surface-rgb), 0) 74%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 90% 44% at 50% 108%,
+      rgba(var(--accentMainRgb), 0.12) 0%,
+      transparent 68%
+    ),
+    var(--app-background-base, var(--page-shell-bg));
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-repeat: no-repeat;
+  background-size: 152% 152%, 144% 144%, 142% 100%, 130% 92%, auto;
+  background-position: left bottom, right top, center center, center bottom, center;
+}
+
+html.staff-scope body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.016;
+  background-image:
+    radial-gradient(circle at 25% 20%, rgba(var(--surface-rgb), 0.95) 0, rgba(var(--surface-rgb), 0.95) 1px, transparent 1px),
+    radial-gradient(circle at 75% 70%, rgba(var(--accentMainRgb), 0.55) 0, rgba(var(--accentMainRgb), 0.55) 1px, transparent 1px);
+  background-size: 42px 42px, 58px 58px;
+  mix-blend-mode: soft-light;
+}
+
+html.staff-scope[data-theme="dark"] body::after {
+  opacity: 0.012;
 }
 
 /* Force form controls to inherit the app font. Browsers don't inherit
@@ -204,7 +292,11 @@ html.staff-scope .app-layout-main-column {
 }
 
 html.staff-scope .app-topbar-shell {
-  background: var(--nav-shell-bg);
+  /* Liquid Glass — shares the system glass tokens (see theme.css). */
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
   border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
   padding: 0 var(--space-5);
@@ -267,12 +359,16 @@ html.staff-scope .app-page-card {
   width: 100%;
   min-height: 100%;
   min-width: 0;
-  background: var(--page-card-bg);
+  /* Liquid Glass surface — shares the system glass tokens (see theme.css). */
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--page-card-radius);
   border: var(--page-card-border);
   padding: var(--page-card-padding);
   overflow: visible;
-  box-shadow: none;
+  /* Borderless per CLAUDE.md §3.0a — the top rim is an inset highlight, not a border. */
+  box-shadow: var(--glass-shadow);
 }
 
 html.staff-scope .app-page-card--bare {
@@ -296,17 +392,39 @@ html.staff-scope .app-page-stack {
 }
 
 html.staff-scope .app-section-card {
-  background: var(--section-card-bg);
+  /* Liquid Glass surface — shares the system glass tokens (see theme.css). */
+  background: var(--glass-surface);
   border: var(--section-card-border);
   border-radius: var(--section-card-radius);
   padding: var(--section-card-padding);
   display: flex;
   flex-direction: column;
   gap: var(--layout-card-gap);
-  box-shadow: none;
-  background-image: none;
-  backdrop-filter: none;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   filter: none;
+}
+
+/* ========================================================= */
+/* === Reusable Liquid Glass card (.glass-card)            === */
+/* ========================================================= */
+/* Opt-in glassmorphism surface for any element that should read as frosted
+   glass. The four canonical card classes (.app-page-card, .app-section-card,
+   div.card, div.news-card) now share this exact treatment; apply .glass-card
+   to anything else (e.g. a one-off wrapper) that should match.
+   - Accent tint driven by --accent-rgb so it follows the active theme; the
+     lighter half uses --surface-rgb so it stays readable in
+     light AND dark mode.
+   - Borderless per CLAUDE.md §3.0a — the top "rim" is an inset box-shadow
+     highlight, not a border.
+   - Radius uses the design-system --radius-card token. */
+html.staff-scope .glass-card {
+  background: var(--glass-surface);
+  border-radius: var(--radius-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
 }
 
 html.staff-scope .app-layout-page-shell {
@@ -591,20 +709,26 @@ html.staff-scope .app-header-row {
    2026-04 UI audit. */
 
 html.staff-scope .app-sidebar {
-  background: var(--nav-shell-bg);
+  /* Liquid Glass — shares the system glass tokens (see theme.css). */
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
   border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
 }
 
+/* Header/body sit on the glass sidebar shell — keep them transparent so the
+   single frosted surface reads as one pane (no double-blur, no seams). */
 html.staff-scope .app-sidebar__header {
-  background: var(--surface);
+  background: transparent;
   padding: var(--space-md) var(--space-5);
   color: var(--text-1);
   border-bottom: none;
 }
 
 html.staff-scope .app-sidebar__body {
-  background: var(--surface);
+  background: transparent;
   padding: var(--space-5);
 }
 
@@ -1719,8 +1843,12 @@ html.staff-scope div.news-card {
   border-radius: var(--radius-card);
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
-  background: var(--surface);
+  /* Liquid Glass surface — shares the system glass tokens (see theme.css). */
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: none;
+  box-shadow: var(--glass-shadow);
   transition: all 0.2s ease;
   position: relative;
   overflow: visible;
@@ -1731,6 +1859,14 @@ html.staff-scope div.card:hover,
 html.staff-scope div.news-card:hover {
   transform: translateY(-2px);
   z-index: var(--hover-surface-z);
+}
+/* Existing hover already lifts the card; deepen the glass shadow to match the
+   lift. Scoped to the glass card classes so the bare <section> rule is untouched. */
+html.staff-scope div.card:hover,
+html.staff-scope div.news-card:hover {
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 /* Hover layering contract for future UI surfaces. */

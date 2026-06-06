@@ -161,8 +161,9 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
   // Build a stronger accent border for selected and focused states.
   const accentBorderStrong = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.42)` : `rgba(${accentRgb}, 0.32)`;
 
-  // Derive the app shell colour from the accent, matching the sidebar-led shell treatment.
-  const shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
+  // Keep the application shell neutral; the accent now appears in the fixed
+  // atmospheric background layers instead of tinting the whole viewport.
+  const shellBackground = resolvedMode === "dark" ? "#08090d" : "#f8fafc";
 
   // Define the neutral surface colours used for cards, panels, and inputs.
   const surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
@@ -222,6 +223,7 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--primary-pressed": accentPressed,
       "--primary-selected": accentPressed,
       "--accentMainRgb": accentRgb,
+      "--accent-rgb": accentRgb,
       "--accentText": accentText,
       "--text-accent": accentText,
       "--onAccentText": onAccentText,
@@ -242,6 +244,7 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--text-2-rgb": hexToRgbString(onAccentText),
       "--overlay": overlayBackdrop,
       "--overlay-muted": overlayMuted,
+      "--app-background-base": shellBackground,
       "--page-shell-bg": shellBackground,
       "--nav-shell-bg": accentSurface,
       "--page-card-bg": surfaceMain,

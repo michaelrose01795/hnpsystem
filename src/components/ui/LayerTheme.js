@@ -28,7 +28,13 @@ export default function LayerTheme({
   ...rest
 }) {
   const themeStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — nested theme layer. Uses --glass-theme (stronger accent
+    // tint than --glass-surface) so the surface/theme alternation stays legible
+    // when cards nest. Shares the system glass tokens (theme.css).
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     borderRadius: radius,
     padding,
     display: "flex",

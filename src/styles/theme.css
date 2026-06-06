@@ -39,6 +39,31 @@
   --primary-pressed: #7e1313;
   --primary-selected: var(--primary-pressed);
   --accentMainRgb: 185, 28, 28;
+  --accent-rgb: var(--accentMainRgb);
+  /* Liquid Glass system tokens — single source of truth for the glassmorphism
+     treatment shared by .glass-card, the page/section cards, div.card,
+     div.news-card, the sidebar, the top bar, and the LayerSurface / LayerTheme
+     primitives. They reference --accent-rgb and --surface-rgb (both themed), so
+     this one definition covers light AND dark mode automatically.
+       --glass-surface : base layer (lighter, less accent) — LayerSurface / --surface
+       --glass-theme   : nested layer (stronger accent tint) — LayerTheme / --theme
+     The two differ so the surface/theme alternation stays legible when nested. */
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --glass-surface:
+    linear-gradient(
+      135deg,
+      rgba(var(--accent-rgb), 0.08),
+      rgba(var(--surface-rgb), 0.55)
+    );
+  --glass-theme:
+    linear-gradient(
+      135deg,
+      rgba(var(--accent-rgb), 0.16),
+      rgba(var(--surface-rgb), 0.45)
+    );
   --accentText: var(--primary);
   --text-accent: var(--accentText);
   --onAccentText: #ffffff;
@@ -188,6 +213,7 @@
   --search-text: var(--primary-pressed);
   --overlay: rgba(15, 23, 42, 0.4);
   --overlay-muted: rgba(15, 23, 42, 0.24);
+  --app-background-base: #f8fafc;
   --layer-section-level-3: var(--theme);
   --layer-section-level-4: var(--primary);
   --row-background: var(--surface);
@@ -229,7 +255,7 @@
   --page-card-border: none;
   --page-card-bg: var(--surface);
   --page-accent-layer: var(--secondary);
-  --page-shell-bg: var(--secondary);
+  --page-shell-bg: var(--app-background-base);
   --nav-shell-bg: var(--secondary);
   --nav-shell-border: none;
   --tab-container-bg: var(--secondary);
@@ -448,6 +474,7 @@
   --primary-hover: #fa9393;
   --primary-pressed: #fcb1b1;
   --primary-selected: var(--primary-pressed);
+  --accent-rgb: var(--accentMainRgb);
   --secondary: rgba(var(--accentMainRgb), 0.16);
   --secondary-hover: rgba(var(--accentMainRgb), 0.24);
   --secondary-pressed: rgba(var(--accentMainRgb), 0.32);
@@ -581,6 +608,7 @@
   --search-text: var(--primary-pressed);
   --overlay: rgba(2, 6, 23, 0.72);
   --overlay-muted: rgba(2, 6, 23, 0.5);
+  --app-background-base: #08090d;
   --layer-section-level-3: var(--theme);
   --layer-section-level-4: var(--primary);
   --row-background: var(--surface);

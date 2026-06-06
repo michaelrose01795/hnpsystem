@@ -326,6 +326,7 @@ export default function UserDiagnosticDevPageUi(props) {
   );
   const [whySpeechSaving, setWhySpeechSaving] = useState(false);
   const [whySpeechStatus, setWhySpeechStatus] = useState("");
+  const [diagnosticResultsOpen, setDiagnosticResultsOpen] = useState(false);
 
   const openWhySpeechEditor = () => {
     setWhySpeechDraftGroups(whySpeechGroups.map((group) => group.join("\n\n")));
@@ -394,23 +395,19 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>; // render extracted page section.
 
     case "section2":
-      return <DevLayoutSection className="user-diagnostic-page" sectionKey="user-diagnostic" sectionType="page-shell" backgroundToken="surface" widthMode="constrained" shell style={{
-  padding: "clamp(14px, 4vw, 32px)",
+      return <div className="user-diagnostic-page" style={{
+  padding: "8px 0",
   display: "flex",
-  gap: "24px",
+  flexDirection: "column",
+  gap: "var(--page-stack-gap)",
   alignItems: "flex-start",
-  flexWrap: "wrap",
-  maxWidth: "1500px",
+  width: "100%",
+  maxWidth: "100%",
   minHeight: "100dvh",
   overflow: "visible",
   boxSizing: "border-box"
 }}>
-      <DevLayoutSection className="user-diagnostic-diagnostics" sectionKey="user-diagnostic/diagnostics-panel" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-    flex: "1 1 620px",
-    minWidth: 0,
-    maxWidth: "min(100%, 900px)"
-      }}>
-      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
+      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="" backgroundToken="">
       <div className="user-diagnostic-toolbar" style={{
         display: "flex",
         gap: "10px",
@@ -426,6 +423,15 @@ export default function UserDiagnosticDevPageUi(props) {
         </Button>
         <Button type="button" variant="primary" size="sm" onClick={runAllTests} disabled={running || userLoading}>
           {userLoading ? "Waiting for user context..." : running ? "Running deep diagnostic…" : "Run Deep Diagnostic"}
+        </Button>
+        <Button
+          type="button"
+          variant={diagnosticResultsOpen ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => setDiagnosticResultsOpen((open) => !open)}
+          disabled={!results}
+          aria-expanded={diagnosticResultsOpen}>
+          {diagnosticResultsOpen ? "Hide Results" : results ? `Show Results (${passCount}/${totalCount})` : "Show Results"}
         </Button>
         {results && results.some(r => !r.pass) && <button type="button" onClick={() => {
           const failed = results.filter(r => !r.pass);
@@ -473,7 +479,22 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>
       </DevLayoutSection>
 
-      <DevLayoutSection sectionKey="user-diagnostic/results" sectionType="content-card" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
+      {results && diagnosticResultsOpen && <DevLayoutSection className="user-diagnostic-results" sectionKey="user-diagnostic/results" sectionType="content-card" parentKey="" backgroundToken="" style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0
+      }}>
+      <div style={{
+        marginBottom: "24px",
+        padding: "16px",
+        background: passCount === totalCount ? "var(--success)" : "var(--danger)",
+        color: "var(--text-2)",
+        borderRadius: "var(--radius-xs)",
+        fontWeight: 600,
+        fontSize: "16px"
+      }}>
+        {passCount}/{totalCount} tests passed
+      </div>
       {groupedResults.map(group => <div key={group.section} style={{
         marginBottom: "24px"
       }}>
@@ -558,22 +579,9 @@ export default function UserDiagnosticDevPageUi(props) {
               </div>)}
           </div>
         </div>)}
-      </DevLayoutSection>
+      </DevLayoutSection>}
 
-      {results && <DevLayoutSection sectionKey="user-diagnostic/summary" sectionType="stat-card" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
-        <div style={{
-        marginTop: "24px",
-        padding: "16px",
-        background: passCount === totalCount ? "var(--success)" : "var(--danger)",
-        color: "var(--text-2)",
-        borderRadius: "var(--radius-xs)",
-        fontWeight: 600,
-        fontSize: "16px"
-      }}>
-          {passCount}/{totalCount} tests passed
-        </div>
-        </DevLayoutSection>}
-      </DevLayoutSection>
+      <GlobalUiShowcase />
       <style jsx global>{`
         @media (max-width: 700px) {
           .user-diagnostic-page {
@@ -1015,8 +1023,7 @@ export default function UserDiagnosticDevPageUi(props) {
           </div>
         </div>
       </PopupModal>}
-      <GlobalUiShowcase />
-    </DevLayoutSection>; // render extracted page section.
+    </div>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
   }

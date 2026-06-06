@@ -28,7 +28,12 @@ export default function LayerSurface({
   ...rest
 }) {
   const surfaceStyle = {
-    background: "var(--surface)",
+    // Liquid Glass — base surface layer. Shares the system glass tokens
+    // (theme.css) so it stays in sync with .glass-card and adapts in dark mode.
+    background: "var(--glass-surface)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     borderRadius: radius,
     padding,
     display: "flex",
