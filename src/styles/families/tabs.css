@@ -24,20 +24,23 @@ html.staff-scope .app-tab {
   cursor: pointer;
   font-weight: 600;
   line-height: 1;
-  background: var(--tab-item-bg);
+  height: var(--control-height);
+  background: rgba(var(--accent-rgb), 0.10);
   color: var(--tab-item-text);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   transition: var(--control-transition);
   white-space: nowrap;
 }
 
 html.staff-scope .app-tab:hover:not([aria-disabled="true"]) {
-  background: var(--tab-item-bg-hover);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 html.staff-scope .app-tab[aria-selected="true"],
 html.staff-scope .app-tab.is-active {
-  background: var(--primary);
-  color: var(--onAccentText);
+  background: rgba(var(--accent-rgb), 0.22);
+  color: var(--accentText);
 }
 
 html.staff-scope .app-tab[aria-disabled="true"] {
@@ -47,41 +50,41 @@ html.staff-scope .app-tab[aria-disabled="true"] {
 
 /* Variants */
 html.staff-scope .app-tab--page {
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 8px 18px;
   font-size: 0.95rem;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--control-radius);
 }
 
 html.staff-scope .app-tab--inner {
-  min-height: 32px;
+  min-height: var(--control-height);
   padding: 6px 14px;
   font-size: 0.88rem;
-  border-radius: var(--radius-xs);
+  border-radius: var(--control-radius);
 }
 
 html.staff-scope .app-tab--pill {
-  min-height: 32px;
+  min-height: var(--control-height);
   padding: 6px 16px;
   font-size: 0.88rem;
-  border-radius: var(--radius-pill);
+  border-radius: var(--control-radius);
 }
 
 html.staff-scope .app-tab--segmented {
-  min-height: 34px;
+  min-height: var(--control-height);
   padding: 6px 14px;
   font-size: 0.88rem;
   border-radius: 0;
 }
 
 html.staff-scope .app-tab--segmented:first-child {
-  border-top-left-radius: var(--radius-xs);
-  border-bottom-left-radius: var(--radius-xs);
+  border-top-left-radius: var(--control-radius);
+  border-bottom-left-radius: var(--control-radius);
 }
 
 html.staff-scope .app-tab--segmented:last-child {
-  border-top-right-radius: var(--radius-xs);
-  border-bottom-right-radius: var(--radius-xs);
+  border-top-right-radius: var(--control-radius);
+  border-bottom-right-radius: var(--control-radius);
 }
 
 /* -------------------------------------------------------------------------- */

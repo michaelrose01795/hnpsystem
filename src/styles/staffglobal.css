@@ -36,7 +36,106 @@ html.staff-scope input[type="number"] {
 /* === Reset & Base Styles === */
 /* ========================================================= */
 html.staff-scope {
+  --control-height: 48px;
+  --control-radius: 24px;
+  --close-button-size: 48px;
+  --close-button-radius: 24px;
   --hover-surface-z: 80;
+  /* Accent-dominant flowing background (light). Big saturated red glows on the
+     edges + a bright white/silver diagonal sweep through the middle, keeping a
+     light centre for content. Red comes from the accent token; the sweep and
+     base wash use neutral white. */
+  --app-background-scene:
+    /* bright silver/white diagonal sweep — the signature swoosh */
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 26%,
+      rgba(255, 255, 255, 0.35) 40%,
+      rgba(255, 255, 255, 0.78) 50%,
+      rgba(255, 255, 255, 0.35) 60%,
+      transparent 74%,
+      transparent 100%
+    ),
+    /* dominant red glow — right side */
+    radial-gradient(
+      ellipse 80% 95% at 104% 30%,
+      rgba(var(--accentMainRgb), 0.85) 0%,
+      rgba(var(--accentMainRgb), 0.5) 30%,
+      rgba(var(--accentMainRgb), 0.16) 58%,
+      transparent 76%
+    ),
+    /* red glow — lower left */
+    radial-gradient(
+      ellipse 70% 82% at -6% 94%,
+      rgba(var(--accentMainRgb), 0.8) 0%,
+      rgba(var(--accentMainRgb), 0.4) 32%,
+      transparent 70%
+    ),
+    /* red wash spreading across the top */
+    radial-gradient(
+      ellipse 130% 62% at 60% -8%,
+      rgba(var(--accentMainRgb), 0.42) 0%,
+      transparent 58%
+    ),
+    /* light wash so the centre stays bright behind content */
+    radial-gradient(
+      ellipse 120% 120% at 45% 40%,
+      rgba(var(--surface-rgb), 0.92) 28%,
+      rgba(var(--surface-rgb), 0.25) 72%,
+      transparent 100%
+    ),
+    var(--app-background-base, var(--page-shell-bg));
+  --app-background-size: cover, cover, cover, cover, cover, auto;
+  --app-background-position: center, center, center, center, center, center;
+}
+
+html.staff-scope[data-theme="dark"] {
+  /* Accent-dominant flowing background (dark). Deep black corners with strong
+     red glows on top-right + lower-left and a bright silver swoosh cutting
+     through the middle. */
+  --app-background-scene:
+    /* bright silver/white diagonal sweep — the signature swoosh */
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(255, 255, 255, 0.08) 40%,
+      rgba(255, 255, 255, 0.55) 49%,
+      rgba(255, 255, 255, 0.1) 59%,
+      transparent 72%,
+      transparent 100%
+    ),
+    /* dominant red glow — top / right */
+    radial-gradient(
+      ellipse 95% 88% at 80% 0%,
+      rgba(var(--accentMainRgb), 0.98) 0%,
+      rgba(var(--accentMainRgb), 0.62) 32%,
+      rgba(var(--accentMainRgb), 0.2) 58%,
+      transparent 80%
+    ),
+    /* red glow — lower left */
+    radial-gradient(
+      ellipse 82% 80% at 4% 98%,
+      rgba(var(--accentMainRgb), 0.92) 0%,
+      rgba(var(--accentMainRgb), 0.46) 34%,
+      transparent 72%
+    ),
+    /* red wash spreading across the top */
+    radial-gradient(
+      ellipse 145% 72% at 52% -12%,
+      rgba(var(--accentMainRgb), 0.58) 0%,
+      transparent 60%
+    ),
+    /* corner vignette to deepen the black opposite the red */
+    radial-gradient(
+      ellipse 125% 125% at 50% 42%,
+      transparent 36%,
+      rgba(0, 0, 0, 0.6) 100%
+    ),
+    var(--app-background-base, var(--page-shell-bg));
+  --app-background-size: cover, cover, cover, cover, cover, auto;
+  --app-background-position: center, center, center, center, center, center;
 }
 
 html.staff-scope * {
@@ -90,7 +189,11 @@ html.staff-scope #__next {
 }
 
 html.staff-scope {
-  background: var(--app-background-base, var(--page-shell-bg));
+  background: var(--app-background-scene);
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-repeat: no-repeat;
+  background-size: var(--app-background-size);
+  background-position: var(--app-background-position);
   overflow-x: clip;
   overscroll-behavior-y: none;
   /* Smooth the shell colour change on soft navigations (e.g. login <-> app)
@@ -103,38 +206,11 @@ html.staff-scope body {
   font-family: var(--font-family);
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(
-      ellipse 78% 64% at -4% 94%,
-      rgba(var(--accentMainRgb), 0.34) 0%,
-      rgba(var(--accentMainRgb), 0.18) 30%,
-      transparent 66%
-    ),
-    radial-gradient(
-      ellipse 72% 60% at 104% 4%,
-      rgba(var(--accentMainRgb), 0.3) 0%,
-      rgba(var(--accentMainRgb), 0.15) 30%,
-      transparent 66%
-    ),
-    linear-gradient(
-      118deg,
-      transparent 0%,
-      rgba(var(--surface-rgb), 0) 26%,
-      rgba(var(--surface-rgb), 0.86) 44%,
-      rgba(var(--surface-rgb), 0.54) 55%,
-      rgba(var(--surface-rgb), 0) 72%,
-      transparent 100%
-    ),
-    radial-gradient(
-      ellipse 92% 48% at 48% 112%,
-      rgba(var(--accentMainRgb), 0.14) 0%,
-      transparent 66%
-    ),
-    var(--app-background-base, var(--page-shell-bg));
+  background: var(--app-background-scene);
   background-attachment: fixed, fixed, fixed, fixed, fixed;
   background-repeat: no-repeat;
-  background-size: 150% 150%, 142% 142%, 140% 100%, 128% 90%, auto;
-  background-position: left bottom, right top, center center, center bottom, center;
+  background-size: var(--app-background-size);
+  background-position: var(--app-background-position);
   color: var(--surfaceText);
   line-height: 1.35;
   min-height: 100dvh;
@@ -142,59 +218,6 @@ html.staff-scope body {
   overflow-y: auto;
   overscroll-behavior-y: none;
   transition: background 0.3s ease, color 0.3s;
-}
-
-html.staff-scope[data-theme="dark"] body {
-  background:
-    radial-gradient(
-      ellipse 76% 62% at -16% 104%,
-      rgba(var(--accentMainRgb), 0.26) 0%,
-      rgba(var(--accentMainRgb), 0.13) 30%,
-      transparent 66%
-    ),
-    radial-gradient(
-      ellipse 70% 58% at 114% -14%,
-      rgba(var(--accentMainRgb), 0.22) 0%,
-      rgba(var(--accentMainRgb), 0.12) 32%,
-      transparent 68%
-    ),
-    linear-gradient(
-      118deg,
-      transparent 0%,
-      rgba(var(--surface-rgb), 0) 24%,
-      rgba(var(--surface-rgb), 0.26) 42%,
-      rgba(var(--surface-rgb), 0.12) 56%,
-      rgba(var(--surface-rgb), 0) 74%,
-      transparent 100%
-    ),
-    radial-gradient(
-      ellipse 90% 44% at 50% 108%,
-      rgba(var(--accentMainRgb), 0.12) 0%,
-      transparent 68%
-    ),
-    var(--app-background-base, var(--page-shell-bg));
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
-  background-repeat: no-repeat;
-  background-size: 152% 152%, 144% 144%, 142% 100%, 130% 92%, auto;
-  background-position: left bottom, right top, center center, center bottom, center;
-}
-
-html.staff-scope body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.016;
-  background-image:
-    radial-gradient(circle at 25% 20%, rgba(var(--surface-rgb), 0.95) 0, rgba(var(--surface-rgb), 0.95) 1px, transparent 1px),
-    radial-gradient(circle at 75% 70%, rgba(var(--accentMainRgb), 0.55) 0, rgba(var(--accentMainRgb), 0.55) 1px, transparent 1px);
-  background-size: 42px 42px, 58px 58px;
-  mix-blend-mode: soft-light;
-}
-
-html.staff-scope[data-theme="dark"] body::after {
-  opacity: 0.012;
 }
 
 /* Force form controls to inherit the app font. Browsers don't inherit
@@ -291,13 +314,29 @@ html.staff-scope .app-layout-main-column {
   overflow-x: hidden;
 }
 
+/* Hairline outline + soft float shadow that makes the transparent layout
+   shells (topbar / page card / sidebar) read as three distinct sections.
+   Drawn as a RING via box-shadow, NOT a CSS `border` (Border Sweep §3.0a:
+   outlines use a ring, not a border), so it stays compliant while looking like
+   a border around each section — and without re-adding a fill or backdrop blur. */
+html.staff-scope {
+  --shell-section-ring:
+    inset 0 0 0 1px rgba(var(--accentMainRgb), 0.22),
+    0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
 html.staff-scope .app-topbar-shell {
-  /* Liquid Glass — shares the system glass tokens (see theme.css). */
-  background: var(--glass-surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
-  border: var(--nav-shell-border);
+  /* Transparent shell: the app background scene shows straight through the
+     topbar — NO fill and NO backdrop blur. A section-defining ring (see
+     --shell-section-ring) keeps it reading as its own outlined panel. The
+     frosted-glass depth comes from the controls/buttons inside, not the bar.
+     (The matching inline background in StaffTopbar.js is also set to
+     transparent so the inline style doesn't re-introduce a fill.) */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--shell-section-ring);
+  border: none;
   border-radius: var(--page-card-radius);
   padding: 0 var(--space-5);
   position: relative;
@@ -359,16 +398,20 @@ html.staff-scope .app-page-card {
   width: 100%;
   min-height: 100%;
   min-width: 0;
-  /* Liquid Glass surface — shares the system glass tokens (see theme.css). */
-  background: var(--glass-surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  /* Transparent page shell: the app background scene is visible through it,
+     with NO backdrop blur. A section-defining ring (see --shell-section-ring)
+     keeps it reading as its own outlined panel. The Liquid Glass effect belongs
+     to the section cards / buttons nested inside, which float on the live
+     background. Pages that pass an explicit `contentBackground` override the
+     fill inline (the ring still applies). */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-radius: var(--page-card-radius);
-  border: var(--page-card-border);
+  border: none;
   padding: var(--page-card-padding);
   overflow: visible;
-  /* Borderless per CLAUDE.md §3.0a — the top rim is an inset highlight, not a border. */
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--shell-section-ring);
 }
 
 html.staff-scope .app-page-card--bare {
@@ -381,6 +424,16 @@ html.staff-scope .app-page-card--bare {
 html.staff-scope .app-page-card.app-page-card--no-hover:hover {
   transform: none;
   z-index: 0;
+}
+
+/* The three layout shells are transparent (no fill / no blur), so they must not
+   lift on hover — otherwise the whole page, topbar or sidebar would jiggle with
+   no visible surface. They keep their section-defining ring on hover, though. */
+html.staff-scope .app-topbar-shell:hover,
+html.staff-scope .app-page-card:hover,
+html.staff-scope .app-sidebar:hover {
+  transform: none;
+  box-shadow: var(--shell-section-ring);
 }
 
 html.staff-scope .app-page-stack {
@@ -425,6 +478,14 @@ html.staff-scope .glass-card {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
+}
+
+/* Theme-tinted variant — same glass treatment, stronger --glass-theme tint.
+   Use on nested rows / inner panels (the "theme" layer) so they stay distinct
+   from the surface-level card they sit inside. Combine: class="glass-card
+   glass-card--theme". */
+html.staff-scope .glass-card--theme {
+  background: var(--glass-theme);
 }
 
 html.staff-scope .app-layout-page-shell {
@@ -518,7 +579,7 @@ html.staff-scope .app-layout-tab-row {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  min-height: 44px;
+  min-height: var(--control-height);
   padding: 4px;
   border-radius: var(--control-radius);
   background: var(--tab-container-bg);
@@ -709,12 +770,15 @@ html.staff-scope .app-header-row {
    2026-04 UI audit. */
 
 html.staff-scope .app-sidebar {
-  /* Liquid Glass — shares the system glass tokens (see theme.css). */
-  background: var(--glass-surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
-  border: var(--nav-shell-border);
+  /* Transparent shell: the app background shows through the sidebar — NO fill
+     and NO backdrop blur. A section-defining ring (see --shell-section-ring)
+     keeps the rail reading as its own outlined panel; the nav buttons inside
+     carry the frosted-glass look over the live background. */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--shell-section-ring);
+  border: none;
   border-radius: var(--page-card-radius);
 }
 
@@ -1172,25 +1236,59 @@ html.staff-scope a.tab-api__item:active {
 }
 
 html.staff-scope button:not(.app-btn) {
-  background: var(--accent-strong);
-  color: var(--text-2);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accentText);
   border: none;
   border-radius: var(--control-radius);
+  height: var(--control-height);
   min-height: var(--control-height);
   padding: var(--control-padding);
   font-size: var(--control-font-size);
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    0 4px 14px rgba(var(--accent-rgb), 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
   position: relative;
   z-index: 0;
 }
 html.staff-scope button:not(.app-btn):hover {
-  filter: brightness(1.06);
+  background: rgba(var(--accent-rgb), 0.18);
+  filter: none;
+}
+html.staff-scope button:not(.app-btn):focus-visible {
+  outline: none;
+  background: rgba(var(--accent-rgb), 0.18);
+  box-shadow: var(--focus-ring);
 }
 html.staff-scope button:not(.app-btn):disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+html.staff-scope :where(
+  button[aria-label="Close"],
+  button[aria-label="close"],
+  button[aria-label*="Close "],
+  button[aria-label*="close "],
+  button[aria-label*="Dismiss"],
+  button[aria-label*="dismiss"],
+  .modal-close,
+  .popup-close,
+  .drawer-close,
+  .panel-close,
+  .flyout-close,
+  .app-close-button
+) {
+  width: var(--close-button-size) !important;
+  height: var(--close-button-size) !important;
+  min-width: var(--close-button-size) !important;
+  min-height: var(--close-button-size) !important;
+  border-radius: var(--close-button-radius) !important;
+  padding: 0 !important;
 }
 
 html.staff-scope .app-hover-tooltip {
@@ -1262,6 +1360,7 @@ html.staff-scope select {
 html.staff-scope input[type="search"] {
   -webkit-appearance: none;
   appearance: none;
+  height: var(--control-height);
   min-height: var(--control-height);
   border-radius: var(--control-radius);
   border: none;
@@ -1308,11 +1407,12 @@ html.staff-scope .employee-form textarea::placeholder {
 /* ========================================================= */
 html.staff-scope .app-input {
   width: 100%;
+  height: var(--control-height);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--input-radius);
   border: none;
-  background: var(--input-bg);
+  background: var(--glass-control-bg, var(--input-bg));
   font-family: inherit;
   font-size: var(--control-font-size);
   /* Value text stays in the surface body-text tone (black in light mode,
@@ -1320,17 +1420,126 @@ html.staff-scope .app-input {
      page-level cascade can tint the value red. */
   color: var(--text-1) !important;
   outline: none;
+  box-shadow: var(--glass-control-shadow, none);
+  backdrop-filter: var(--glass-control-backdrop, blur(22px) saturate(170%));
+  -webkit-backdrop-filter: var(--glass-control-backdrop, blur(22px) saturate(170%));
   transition: var(--control-transition);
 }
 html.staff-scope .app-input:hover {
-  background: var(--control-bg-hover);
+  background: var(--glass-control-hover-bg, var(--control-bg-hover));
+  box-shadow: var(--glass-control-hover-shadow, var(--glass-control-shadow, none));
 }
 html.staff-scope .app-input:focus {
-  background: var(--control-bg-hover);
-  box-shadow: var(--control-ring);
+  background: var(--glass-control-focus-bg, var(--control-bg-hover));
+  box-shadow: var(--glass-control-focus-shadow, var(--control-ring));
 }
 html.staff-scope .app-input::placeholder {
-  color: var(--textfieldbackground);
+  color: var(--glass-control-placeholder, var(--textfieldbackground));
+}
+
+/* ========================================================= */
+/* === Liquid Glass Form Controls                         === */
+/* ========================================================= */
+html.staff-scope {
+  /* === Glass Button — SINGLE SOURCE OF TRUTH ============================
+     The secondary "Glass" button look lives here as tokens. Both
+     .glass-button / .app-btn--secondary (families/buttons.css) AND every form
+     control below (dropdowns, calendar / month / time pickers, search bars,
+     text fields, native selects/inputs/textareas) read from these — so editing
+     the glass button here restyles every control to match, in one move.
+     The Action Glass (primary) button is the ONLY thing that does NOT follow
+     this: it keeps its own accent-gradient design (--glass-action-* below feed
+     only .app-btn--primary / .glass-action-button). */
+  --glass-button-bg: rgba(var(--accent-rgb), 0.1);
+  --glass-button-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --glass-button-active-bg: rgba(var(--accent-rgb), 0.22);
+  --glass-button-blur: blur(14px) saturate(160%);
+  --glass-button-shadow: var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.18);
+  --glass-button-hover-shadow: var(--btn-glow-hover), inset 0 0 0 1px rgba(var(--accent-rgb), 0.26);
+  --glass-button-active-shadow: var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.22);
+
+  /* Form controls ALIAS the glass button so they always track it. */
+  --glass-control-backdrop: var(--glass-button-blur);
+  --glass-menu-backdrop: var(--glass-button-blur);
+  --glass-action-backdrop: blur(18px) saturate(180%);
+  --glass-control-bg: var(--glass-button-bg);
+  --glass-control-hover-bg: var(--glass-button-hover-bg);
+  --glass-control-focus-bg: var(--glass-button-active-bg);
+  --glass-item-bg: var(--glass-button-bg);
+  --glass-item-hover-bg: var(--glass-button-hover-bg);
+  --glass-control-shadow: var(--glass-button-shadow);
+  --glass-control-hover-shadow: var(--glass-button-hover-shadow);
+  /* Focus keeps an accent focus ring (accessibility) on top of the glass look. */
+  --glass-control-focus-shadow:
+    0 0 0 3px rgba(var(--accent-rgb), 0.3),
+    var(--glass-button-active-shadow);
+  /* Floating menus track the glass button (deeper hover variant for separation). */
+  --glass-menu-shadow: var(--glass-button-hover-shadow);
+  /* Menu/popover CONTAINER stays a readable frosted surface (it floats over
+     arbitrary content); its blur + shadow still track the glass button above. */
+  --glass-menu-bg: rgba(var(--surface-rgb), 0.8);
+
+  /* Action Glass (primary) — SEPARATE; feeds only .app-btn--primary /
+     .glass-action-button. Left as the accent gradient on purpose. */
+  --glass-action-bg:
+    linear-gradient(
+      135deg,
+      rgba(var(--accent-rgb, 255, 45, 45), 0.95),
+      rgba(var(--accent-rgb, 255, 45, 45), 0.72)
+    );
+  --glass-action-shadow:
+    0 12px 30px rgba(var(--accent-rgb, 255, 45, 45), 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --glass-control-placeholder: rgba(var(--text-1-rgb, 17, 24, 39), 0.58);
+  --glass-control-text: var(--staff-text, var(--text-1));
+}
+
+html.staff-scope [data-theme="dark"],
+html.staff-scope[data-theme="dark"] {
+  /* Controls inherit the mode-aware glass-button aliases above: --accent-rgb,
+     --surface-rgb and --btn-glow are all themed, so the glass-button tokens
+     already resolve to the right dark values. The only control token that must
+     differ in dark is the placeholder colour. */
+  --glass-control-placeholder: rgba(var(--text-1-rgb, 255, 255, 255), 0.56);
+}
+
+html.staff-scope .glass-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+html.staff-scope .glass-field-label {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--control-label-size);
+  font-weight: var(--control-label-weight);
+}
+
+html.staff-scope .glass-field-helper {
+  margin: 0;
+  color: var(--control-muted-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+html.staff-scope .glass-field-error {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+html.staff-scope .glass-input::placeholder,
+html.staff-scope .glass-search::placeholder,
+html.staff-scope .glass-date-picker::placeholder,
+html.staff-scope .glass-time-picker::placeholder,
+html.staff-scope textarea::placeholder,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"])::placeholder {
+  color: var(--glass-control-placeholder) !important;
+  opacity: 1;
 }
 
 /* Labels */
@@ -1864,9 +2073,11 @@ html.staff-scope div.news-card:hover {
    lift. Scoped to the glass card classes so the bare <section> rule is untouched. */
 html.staff-scope div.card:hover,
 html.staff-scope div.news-card:hover {
+  /* Slightly deeper GREY glow on hover, still tight (stays inside the stack gap)
+     and keeping the full-perimeter inset ring — never bleeds onto a neighbour. */
   box-shadow:
-    0 24px 55px rgba(0, 0, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    0 6px 18px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 /* Hover layering contract for future UI surfaces. */
@@ -2649,25 +2860,38 @@ html.staff-scope .timepicker-api__label {
 
 html.staff-scope .dropdown-api__control,
 html.staff-scope .calendar-api__control,
+html.staff-scope .monthpicker-api__control,
 html.staff-scope .timepicker-api__control,
 html.staff-scope .searchbar-api,
+html.staff-scope .glass-input,
+html.staff-scope .glass-search,
+html.staff-scope .glass-select,
+html.staff-scope .glass-date-picker,
+html.staff-scope .glass-time-picker,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input),
 html.staff-scope select,
 html.staff-scope textarea {
+  /* Inputs/selects/triggers take a fixed control height, but textareas must
+     grow with their content. (Glass-sweep regression fix: a fixed `height`
+     here clipped multi-line + auto-grow textareas to a single row.) The
+     textarea-specific min/max height + field-sizing live in their own rules. */
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
   border: none !important;
-  background: var(--input-bg) !important;
-  color: var(--text-1) !important;
+  background: var(--glass-control-bg) !important;
+  color: var(--glass-control-text) !important;
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   line-height: 1.2;
-  box-shadow: none;
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
   transition:
-    background-color 0.18s ease,
+    background 0.18s ease,
     color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 html.staff-scope .dropdown-api__control,
@@ -2734,21 +2958,41 @@ html.staff-scope .app-autowidth .timepicker-api__control {
 
 html.staff-scope .dropdown-api__control:hover:not(:disabled),
 html.staff-scope .calendar-api__control:hover:not(:disabled),
+html.staff-scope .monthpicker-api__control:hover:not(:disabled),
 html.staff-scope .timepicker-api__control:hover:not(:disabled),
 html.staff-scope .searchbar-api:hover,
+html.staff-scope .glass-input:hover,
+html.staff-scope .glass-search:hover,
+html.staff-scope .glass-select:hover,
+html.staff-scope .glass-date-picker:hover,
+html.staff-scope .glass-time-picker:hover,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
 html.staff-scope select:hover,
 html.staff-scope textarea:hover {
-  background: var(--control-bg-hover) !important;
+  background: var(--glass-control-hover-bg) !important;
+  box-shadow: var(--glass-control-hover-shadow);
+  transform: translateY(-1px);
 }
 
 html.staff-scope .dropdown-api.is-open .dropdown-api__control,
 html.staff-scope .dropdown-api__control:focus-visible,
 html.staff-scope .calendar-api__control:focus,
 html.staff-scope .calendar-api__control:focus-visible,
+html.staff-scope .monthpicker-api__control:focus,
+html.staff-scope .monthpicker-api__control:focus-visible,
 html.staff-scope .timepicker-api__control:focus,
 html.staff-scope .timepicker-api__control:focus-visible,
 html.staff-scope .searchbar-api:focus-within,
+html.staff-scope .glass-input:focus,
+html.staff-scope .glass-input:focus-visible,
+html.staff-scope .glass-search:focus,
+html.staff-scope .glass-search:focus-visible,
+html.staff-scope .glass-select:focus,
+html.staff-scope .glass-select:focus-visible,
+html.staff-scope .glass-date-picker:focus,
+html.staff-scope .glass-date-picker:focus-visible,
+html.staff-scope .glass-time-picker:focus,
+html.staff-scope .glass-time-picker:focus-visible,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus-visible,
 html.staff-scope select:focus,
@@ -2756,18 +3000,27 @@ html.staff-scope select:focus-visible,
 html.staff-scope textarea:focus,
 html.staff-scope textarea:focus-visible {
   outline: none;
-  background: var(--control-bg-hover) !important;
-  box-shadow: var(--control-ring) !important;
+  background: var(--glass-control-focus-bg) !important;
+  box-shadow: var(--glass-control-focus-shadow) !important;
+  transform: translateY(-1px);
 }
 
 html.staff-scope .dropdown-api__control:disabled,
 html.staff-scope .calendar-api__control:disabled,
+html.staff-scope .monthpicker-api__control:disabled,
 html.staff-scope .timepicker-api__control:disabled,
+html.staff-scope .glass-input:disabled,
+html.staff-scope .glass-search:disabled,
+html.staff-scope .glass-select:disabled,
+html.staff-scope .glass-date-picker:disabled,
+html.staff-scope .glass-time-picker:disabled,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):disabled,
 html.staff-scope select:disabled,
 html.staff-scope textarea:disabled {
-  opacity: 0.5;
+  opacity: 0.58;
   cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
 }
 
 html.staff-scope .tab-api__item:disabled {
@@ -2790,11 +3043,12 @@ html.staff-scope .timepicker-api__control,
 html.staff-scope .searchbar-api {
   /* Trigger wears the Primary-button look via dropdown-dedicated tokens so
      the dropdown stays stable if Primary or --input-bg are later reskinned. */
-  background: var(--dropdown-trigger-bg) !important;
-  background-image: none !important;
-  color: var(--dropdown-trigger-color) !important;
+  background: var(--glass-control-bg) !important;
+  color: var(--glass-control-text) !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: var(--glass-control-shadow) !important;
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
 }
 
 /* Search bar is locked to the standard 44px control height. Width is
@@ -2810,7 +3064,7 @@ html.staff-scope .searchbar-api:hover,
 html.staff-scope .searchbar-api:focus-within {
   height: var(--control-height) !important;
   padding: 0 !important;
-  background: var(--theme) !important;
+  background: var(--glass-control-bg) !important;
 }
 
 html.staff-scope .dropdown-api.is-open .dropdown-api__control,
@@ -2820,28 +3074,33 @@ html.staff-scope .calendar-api__control:focus-visible,
 html.staff-scope .timepicker-api__control:focus,
 html.staff-scope .timepicker-api__control:focus-visible,
 html.staff-scope .searchbar-api:focus-within {
-  background: var(--dropdown-trigger-hover-bg) !important;
-  box-shadow: var(--control-ring) !important;
+  background: var(--glass-control-focus-bg) !important;
+  box-shadow: var(--glass-control-focus-shadow) !important;
 }
 
 html.staff-scope .dropdown-api__control:hover:not(:disabled),
 html.staff-scope .calendar-api__control:hover:not(:disabled),
 html.staff-scope .timepicker-api__control:hover:not(:disabled),
 html.staff-scope .searchbar-api:hover {
-  background: var(--dropdown-trigger-hover-bg) !important;
+  background: var(--glass-control-hover-bg) !important;
+  box-shadow: var(--glass-control-hover-shadow) !important;
 }
 
 html.staff-scope .dropdown-api__value,
 html.staff-scope .calendar-api__value,
 html.staff-scope .timepicker-api__value {
-  color: var(--dropdown-trigger-color) !important;
+  color: var(--glass-control-text) !important;
 }
 
 html.staff-scope .dropdown-api__chevron,
 html.staff-scope .calendar-api__icon,
 html.staff-scope .timepicker-api__icon,
 html.staff-scope .searchbar-api__icon {
-  color: var(--dropdown-trigger-color) !important;
+  color: var(--control-muted-text) !important;
+}
+
+html.staff-scope .searchbar-api:focus-within .searchbar-api__icon {
+  color: var(--accentText) !important;
 }
 
 /* .app-btn variant locks moved to src/styles/families/buttons.css. */
@@ -2936,14 +3195,26 @@ html.staff-scope .status-sidebar__search-result:focus-visible {
 
 html.staff-scope .dropdown-api__menu,
 html.staff-scope .calendar-api__menu,
+html.staff-scope .monthpicker-api__menu,
 html.staff-scope .timepicker-api__menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   border-radius: var(--control-menu-radius);
   border: none;
-  background: var(--dropdown-menu-bg);
-  box-shadow: var(--dropdown-menu-shadow);
+  background: var(--glass-menu-bg) !important;
+  box-shadow: var(--glass-menu-shadow);
+  backdrop-filter: var(--glass-menu-backdrop);
+  -webkit-backdrop-filter: var(--glass-menu-backdrop);
+}
+
+html.staff-scope .glass-dropdown,
+html.staff-scope .glass-dropdown-menu {
+  border-radius: var(--control-menu-radius);
+  background: var(--glass-menu-bg) !important;
+  box-shadow: var(--glass-menu-shadow);
+  backdrop-filter: var(--glass-menu-backdrop);
+  -webkit-backdrop-filter: var(--glass-menu-backdrop);
 }
 
 html.staff-scope .dropdown-api__menu {
@@ -2974,20 +3245,24 @@ html.staff-scope .dropdown-api__search {
 
 html.staff-scope .dropdown-api__search-input {
   width: 100%;
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
-  border-radius: var(--control-radius-sm);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
   border: none;
-  background: var(--control-bg);
+  background: var(--glass-control-bg);
   color: var(--text-1);
   font-size: var(--control-font-size);
   line-height: 1.2;
   outline: none;
-  box-shadow: none;
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
 }
 
 html.staff-scope .dropdown-api__search-input:focus-visible {
-  box-shadow: var(--control-ring);
+  background: var(--glass-control-focus-bg);
+  box-shadow: var(--glass-control-focus-shadow);
 }
 
 html.staff-scope .dropdown-api__menu[hidden] {
@@ -2998,26 +3273,27 @@ html.staff-scope .dropdown-api__menu[hidden] {
    `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
    staffglobal.css has higher specificity than a bare .dropdown-api__option
    selector. Prefixing keeps specificity in parity so these rules win. */
-/* The `button.` prefix is deliberate — the base reset
-   `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
-   staffglobal.css has higher specificity than a bare .dropdown-api__option
-   selector. Prefixing keeps specificity in parity so these rules win. */
-html.staff-scope button.dropdown-api__option {
+html.staff-scope button.dropdown-api__option,
+html.staff-scope button.glass-dropdown-item,
+html.staff-scope button.dropdown-item,
+html.staff-scope .glass-dropdown-item,
+html.staff-scope .dropdown-item {
   /* Inset from the menu edges via the menu's own padding (8px) and the
      menu's flex-gap (8px between options). Options keep width:100% of the
      padded content area, so they stop short of the menu edge on every
      side — matching the "buttons aren't full width" spec. */
   width: 100%;
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: var(--control-padding);
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   /* Non-selected row wears the Primary-style look via dropdown-dedicated
      tokens — decoupled from .app-btn--primary / --input-bg / --control-bg
      so Primary can be reskinned without changing dropdown rows. */
-  background: var(--dropdown-option-bg);
+  background: var(--glass-item-bg);
   text-align: left;
-  color: var(--dropdown-option-color);
+  color: var(--glass-control-text);
   font-size: 0.9rem;
   display: flex;
   flex-direction: column;
@@ -3025,23 +3301,54 @@ html.staff-scope button.dropdown-api__option {
   gap: 4px;
   line-height: 1.2;
   flex-shrink: 0;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
 }
 
 html.staff-scope button.dropdown-api__option:hover,
-html.staff-scope button.dropdown-api__option:focus-visible {
-  background: var(--dropdown-option-hover-bg);
-  color: var(--dropdown-option-color);
+html.staff-scope button.dropdown-api__option:focus-visible,
+html.staff-scope button.glass-dropdown-item:hover,
+html.staff-scope button.glass-dropdown-item:focus-visible,
+html.staff-scope button.dropdown-item:hover,
+html.staff-scope button.dropdown-item:focus-visible,
+html.staff-scope .glass-dropdown-item:hover,
+html.staff-scope .glass-dropdown-item:focus-visible,
+html.staff-scope .dropdown-item:hover,
+html.staff-scope .dropdown-item:focus-visible {
+  background: var(--glass-item-hover-bg);
+  color: var(--glass-control-text);
+  box-shadow: var(--glass-control-hover-shadow);
   outline: none;
 }
 
 html.staff-scope button.dropdown-api__option.is-selected,
 html.staff-scope button.dropdown-api__option.is-selected:hover,
-html.staff-scope button.dropdown-api__option.is-selected:focus-visible {
+html.staff-scope button.dropdown-api__option.is-selected:focus-visible,
+html.staff-scope button.glass-dropdown-item[aria-selected="true"],
+html.staff-scope button.glass-dropdown-item.is-selected,
+html.staff-scope button.glass-dropdown-item.active,
+html.staff-scope button.glass-dropdown-item.selected,
+html.staff-scope button.dropdown-item[aria-selected="true"],
+html.staff-scope button.dropdown-item.is-selected,
+html.staff-scope button.dropdown-item.active,
+html.staff-scope button.dropdown-item.selected,
+html.staff-scope .glass-dropdown-item[aria-selected="true"],
+html.staff-scope .glass-dropdown-item.is-selected,
+html.staff-scope .glass-dropdown-item.active,
+html.staff-scope .glass-dropdown-item.selected,
+html.staff-scope .dropdown-item[aria-selected="true"],
+html.staff-scope .dropdown-item.is-selected,
+html.staff-scope .dropdown-item.active,
+html.staff-scope .dropdown-item.selected,
+html.staff-scope .multiselect-dropdown-api__option.is-selected {
   /* Selected row permanently wears the Secondary-style treatment (via
      dropdown-dedicated tokens), visible without needing to hover. */
-  background: var(--dropdown-option-selected-bg);
-  color: var(--dropdown-option-selected-color);
+  background: var(--glass-action-bg) !important;
+  color: white !important;
+  box-shadow: var(--glass-action-shadow);
+  backdrop-filter: var(--glass-action-backdrop);
+  -webkit-backdrop-filter: var(--glass-action-backdrop);
   outline: none;
 }
 
@@ -3411,6 +3718,8 @@ html.staff-scope button.calendar-api__picker-cell {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   flex-shrink: 0;
 }
 
@@ -3663,7 +3972,7 @@ html.staff-scope button.calendar-api__today-button:active {
 }
 
 /* `button.` prefix beats the global `button:not(.app-btn)` reset so the
-   dedicated --timepicker-now-* tokens win. Locked at 44px. */
+   dedicated --timepicker-now-* tokens win. Locked to --control-height. */
 html.staff-scope button.timepicker-api__now-button {
   height: var(--control-height);
   max-height: var(--control-height);
@@ -3724,7 +4033,7 @@ html.staff-scope button.calendar-api__day {
   min-height: 0;
   padding: 0;
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   /* Unselected day wears the current Primary-button look via dedicated
      tokens. Reskinning Primary later won't ripple in. */
   background: var(--calendar-day-bg);
@@ -3733,6 +4042,8 @@ html.staff-scope button.calendar-api__day {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 
 html.staff-scope button.calendar-api__day--empty {
@@ -3748,8 +4059,7 @@ html.staff-scope button.calendar-api__day:focus-visible:not(:disabled):not(.is-s
 }
 
 html.staff-scope button.calendar-api__day.is-selected {
-  /* Selected day is tinted with the warning token to mark the active pick. */
-  background: var(--warning);
+  background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   font-weight: 600;
 }
@@ -3768,9 +4078,8 @@ html.staff-scope a.tab-api__item.is-active:focus-visible {
 }
 
 html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
-  /* "Today" is tinted with the success token so it stands out from other
-     days; the warning/selected treatment takes over once it's picked. */
-  background: var(--success);
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accentText);
   font-weight: 600;
 }
 
@@ -3876,7 +4185,7 @@ html.staff-scope button.timepicker-api__option {
   min-height: var(--control-height);
   padding: 0 8px;
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   /* Resting state wears the Primary-button look via dedicated tokens. */
   background: var(--timepicker-option-bg);
   color: var(--timepicker-option-color);
@@ -3885,6 +4194,8 @@ html.staff-scope button.timepicker-api__option {
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color 0.18s ease, color 0.18s ease;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 
 html.staff-scope button.timepicker-api__option:hover:not(.is-selected),
@@ -3902,6 +4213,154 @@ html.staff-scope button.timepicker-api__option.is-selected:focus-visible {
   color: var(--timepicker-option-selected-color);
   font-weight: 600;
   outline: none;
+}
+
+/* Liquid Glass final pass for date, month, time, and dropdown internals. */
+html.staff-scope .monthpicker-api__control,
+html.staff-scope .monthpicker-api__control:hover,
+html.staff-scope .monthpicker-api.is-open .monthpicker-api__control {
+  background: var(--glass-control-bg) !important;
+  color: var(--glass-control-text) !important;
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
+}
+
+html.staff-scope .monthpicker-api.is-open .monthpicker-api__control {
+  background: var(--glass-control-focus-bg) !important;
+  box-shadow: var(--glass-control-focus-shadow);
+}
+
+html.staff-scope .calendar-api__menu,
+html.staff-scope .monthpicker-api__menu,
+html.staff-scope .timepicker-api__menu {
+  background: var(--glass-menu-bg) !important;
+  box-shadow: var(--glass-menu-shadow) !important;
+  backdrop-filter: var(--glass-menu-backdrop);
+  -webkit-backdrop-filter: var(--glass-menu-backdrop);
+}
+
+html.staff-scope .calendar-api__header,
+html.staff-scope button.calendar-api__today-button,
+html.staff-scope button.calendar-api__picker-cell,
+html.staff-scope button.monthpicker-api__picker-cell,
+html.staff-scope button.timepicker-api__now-button,
+html.staff-scope button.timepicker-api__option,
+html.staff-scope button.calendar-api__day {
+  background: var(--glass-item-bg) !important;
+  color: var(--glass-control-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+html.staff-scope button.calendar-api__nav-button:hover,
+html.staff-scope button.calendar-api__nav-button:focus-visible,
+html.staff-scope button.calendar-api__month-year:hover,
+html.staff-scope button.calendar-api__month-year:focus-visible,
+html.staff-scope button.calendar-api__month-year[aria-expanded="true"],
+html.staff-scope button.monthpicker-api__nav-button:hover,
+html.staff-scope button.monthpicker-api__nav-button:focus-visible,
+html.staff-scope button.monthpicker-api__month-year:hover,
+html.staff-scope button.monthpicker-api__month-year:focus-visible,
+html.staff-scope button.monthpicker-api__month-year[aria-expanded="true"],
+html.staff-scope button.calendar-api__today-button:hover,
+html.staff-scope button.calendar-api__today-button:focus-visible,
+html.staff-scope button.calendar-api__picker-cell:hover:not(.is-selected),
+html.staff-scope button.calendar-api__picker-cell:focus-visible:not(.is-selected),
+html.staff-scope button.monthpicker-api__picker-cell:hover:not(.is-selected),
+html.staff-scope button.monthpicker-api__picker-cell:focus-visible:not(.is-selected),
+html.staff-scope button.timepicker-api__now-button:hover,
+html.staff-scope button.timepicker-api__now-button:focus-visible,
+html.staff-scope button.timepicker-api__option:hover:not(.is-selected),
+html.staff-scope button.timepicker-api__option:focus-visible:not(.is-selected),
+html.staff-scope button.calendar-api__day:hover:not(:disabled):not(.is-selected),
+html.staff-scope button.calendar-api__day:focus-visible:not(:disabled):not(.is-selected),
+html.staff-scope button.calendar-api__day.is-highlighted:not(.is-selected) {
+  background: var(--glass-item-hover-bg) !important;
+  color: var(--glass-control-text) !important;
+  box-shadow: var(--glass-control-hover-shadow);
+  outline: none;
+}
+
+html.staff-scope button.calendar-api__picker-cell.is-selected,
+html.staff-scope button.monthpicker-api__picker-cell.is-selected,
+html.staff-scope button.timepicker-api__option.is-selected,
+html.staff-scope button.timepicker-api__option.is-selected:hover,
+html.staff-scope button.timepicker-api__option.is-selected:focus-visible,
+html.staff-scope button.calendar-api__day.is-selected,
+html.staff-scope button.calendar-api__day.is-selected:hover,
+html.staff-scope button.calendar-api__day.is-selected:focus-visible {
+  background: var(--glass-action-bg) !important;
+  color: white !important;
+  box-shadow: var(--glass-action-shadow);
+  backdrop-filter: var(--glass-action-backdrop);
+  -webkit-backdrop-filter: var(--glass-action-backdrop);
+  font-weight: 700;
+  outline: none;
+}
+
+html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
+  background: var(--glass-item-hover-bg) !important;
+  color: var(--accentText) !important;
+  box-shadow:
+    inset 0 -2px 0 rgba(var(--accent-rgb, 255, 45, 45), 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  font-weight: 700;
+}
+
+html.staff-scope button.calendar-api__day:disabled,
+html.staff-scope button.calendar-api__day.is-disabled,
+html.staff-scope button.monthpicker-api__picker-cell:disabled,
+html.staff-scope button.timepicker-api__option:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Calendar day cells live in a tight 7-column grid. Keep them FLAT so the
+   glass treatment can't break the layout: drop the per-cell backdrop blur,
+   tighten the corners, and replace the large outer hover glow with a soft
+   inset highlight. Without this, each raised chip's outer shadow spilled past
+   the 16px panel padding ("background isn't wide enough") and made the day
+   columns read as misaligned with the weekday header. Selected (Action Glass)
+   and Today keep their accent treatment from the rules above. */
+html.staff-scope button.calendar-api__day {
+  border-radius: var(--control-radius-sm) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.staff-scope button.calendar-api__day:not(.is-selected):not(.is-today),
+html.staff-scope button.calendar-api__day:hover:not(:disabled):not(.is-selected):not(.is-today),
+html.staff-scope button.calendar-api__day:focus-visible:not(:disabled):not(.is-selected):not(.is-today) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+html.staff-scope .glass-action-button,
+html.staff-scope button.glass-dropdown-item[aria-selected="true"],
+html.staff-scope button.glass-dropdown-item.is-selected,
+html.staff-scope button.glass-dropdown-item.active,
+html.staff-scope button.glass-dropdown-item.selected,
+html.staff-scope button.dropdown-item[aria-selected="true"],
+html.staff-scope button.dropdown-item.is-selected,
+html.staff-scope button.dropdown-item.active,
+html.staff-scope button.dropdown-item.selected,
+html.staff-scope .glass-dropdown-item[aria-selected="true"],
+html.staff-scope .glass-dropdown-item.is-selected,
+html.staff-scope .glass-dropdown-item.active,
+html.staff-scope .glass-dropdown-item.selected,
+html.staff-scope .dropdown-item[aria-selected="true"],
+html.staff-scope .dropdown-item.is-selected,
+html.staff-scope .dropdown-item.active,
+html.staff-scope .dropdown-item.selected {
+  background: var(--glass-action-bg) !important;
+  color: white !important;
+  box-shadow: var(--glass-action-shadow);
+  backdrop-filter: var(--glass-action-backdrop);
+  -webkit-backdrop-filter: var(--glass-action-backdrop);
 }
 
 /* ========================================================= */
@@ -3994,9 +4453,9 @@ html.staff-scope button.searchbar-api__clear {
   min-width: 0;
   padding: 0;
   border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-1);
+  border-radius: var(--control-radius);
+  background: var(--glass-item-bg);
+  color: var(--control-muted-text);
   font-size: 1.15rem;
   font-weight: 500;
   line-height: 1;
@@ -4004,7 +4463,10 @@ html.staff-scope button.searchbar-api__clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.18s ease, color 0.18s ease;
+  transition: background 0.18s ease, opacity 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: var(--glass-action-backdrop);
+  -webkit-backdrop-filter: var(--glass-action-backdrop);
 }
 
 html.staff-scope button.searchbar-api__clear:disabled {
@@ -4014,8 +4476,9 @@ html.staff-scope button.searchbar-api__clear:disabled {
 
 html.staff-scope button.searchbar-api__clear:hover:not(:disabled),
 html.staff-scope button.searchbar-api__clear:focus-visible {
-  background: transparent;
+  background: var(--glass-item-hover-bg);
   color: var(--accentText);
+  box-shadow: var(--glass-control-hover-shadow);
   outline: none;
 }
 
@@ -4125,8 +4588,8 @@ html.staff-scope [class*="bg-black/"] {
 html.staff-scope .tab-api {
   display: flex;
   flex-wrap: wrap;
-  /* 4px padding + 35px tab + 4px padding keeps the strip inside the 44px
-     tab background while leaving a little breathing room around the buttons. */
+  /* Padding keeps the strip inside the shared control-height tab background
+     while leaving a little breathing room around the buttons. */
   gap: 6px;
   padding: 4px;
   box-sizing: border-box;
@@ -4135,7 +4598,7 @@ html.staff-scope .tab-api {
   width: fit-content;
   max-width: 100%;
   height: auto;
-  min-height: 44px;
+  min-height: var(--control-height);
   align-items: center;
   border-radius: var(--control-radius);
   background: var(--tab-container-bg);
@@ -5876,7 +6339,7 @@ html.staff-scope .video-editor-timeline__legend {
 }
 
 html.staff-scope .video-editor-timeline__switch {
-  width: 44px;
+  width: var(--control-height);
   height: var(--control-height);
   border-radius: var(--control-radius);
   border: 1px solid var(--primary-border);

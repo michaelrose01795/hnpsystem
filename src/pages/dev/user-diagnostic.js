@@ -978,7 +978,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
       as="section"
       sectionKey={itemKey ? `showcase-${itemKey}` : undefined}
       sectionType="content-card"
-      parentKey="user-diagnostic/showcase"
+      parentKey="app-layout-page-card"
       backgroundToken="surface"
       className={`app-section-card showcase-section-card${bordersAllowed ? " showcase-section-card--borders-allowed" : ""}`}>
       
@@ -1896,7 +1896,7 @@ function GlobalUiShowcase() {
   join(" ");
 
   return (
-    <DevLayoutSection as="section" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="" backgroundToken="" style={{
+    <div className="user-diagnostic-showcase" style={{
       width: "100%",
       flex: "1 1 100%",
       maxWidth: "100%",
@@ -2058,6 +2058,31 @@ function GlobalUiShowcase() {
           flex-direction: column;
           gap: var(--space-sm);
         }
+        .showcase-liquid-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: var(--space-sm);
+        }
+        .showcase-liquid-menu-demo {
+          position: static;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          width: min(100%, 360px);
+          padding: 8px;
+        }
+        .showcase-liquid-calendar-demo {
+          display: grid;
+          grid-template-columns: repeat(7, minmax(34px, 1fr));
+          gap: 4px;
+          width: min(100%, 320px);
+        }
+        .showcase-liquid-time-demo {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+          gap: 6px;
+          width: min(100%, 320px);
+        }
         .showcase-inline-meta {
           display: flex;
           flex-wrap: wrap;
@@ -2148,7 +2173,7 @@ function GlobalUiShowcase() {
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-filters"
         sectionType="filter-row"
-        parentKey="user-diagnostic/showcase"
+        parentKey="app-layout-page-card"
         backgroundToken="surface"
         className="app-section-card showcase-filter-card">
         <div className="showcase-filter-tabs">
@@ -2197,7 +2222,7 @@ function GlobalUiShowcase() {
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-height-compare"
         sectionType="content-card"
-        parentKey="user-diagnostic/showcase"
+        parentKey="app-layout-page-card"
         backgroundToken="surface"
         className="app-section-card showcase-comparison-card">
         <div className="showcase-comparison-head">
@@ -2461,6 +2486,27 @@ function GlobalUiShowcase() {
             disabled={inputState.disabled}
             className={inputToneClass}
             onChange={(event) => setInputState((current) => ({ ...current, value: event.target.value }))} />
+          <div className="showcase-liquid-grid">
+            <div className="glass-field">
+              <label className="glass-field-label" htmlFor="showcase-liquid-text">Glass text input</label>
+              <input id="showcase-liquid-text" className="glass-input" placeholder="Customer name" />
+              <p className="glass-field-helper">Accent tint, blur, readable placeholder.</p>
+            </div>
+            <div className="glass-field">
+              <label className="glass-field-label" htmlFor="showcase-liquid-textarea">Glass textarea</label>
+              <textarea id="showcase-liquid-textarea" className="glass-input" rows={3} placeholder="Add workshop notes" />
+              <p className="glass-field-helper">Textarea inherits the same liquid surface.</p>
+            </div>
+            <div className="glass-field">
+              <label className="glass-field-label" htmlFor="showcase-liquid-select">Glass native select</label>
+              <select id="showcase-liquid-select" className="glass-select" defaultValue="service">
+                <option value="sales">Sales</option>
+                <option value="service">Service</option>
+                <option value="parts">Parts</option>
+              </select>
+              <p className="glass-field-helper">Native selects map to the same form control surface.</p>
+            </div>
+          </div>
           
           {(inputState.error || inputState.success) &&
           <p className="showcase-card-note" style={{ color: inputState.error ? "var(--danger-text)" : "var(--success-text)" }}>
@@ -2623,6 +2669,15 @@ function GlobalUiShowcase() {
             placeholder={dropdownState.placeholder}
             disabled={dropdownState.disabled}
             helperText={dropdownState.error ? "Error preview: selection is required." : `${dropdownState.optionCount} options loaded.`} />
+          <div className="glass-field">
+            <p className="glass-field-label">Open dropdown selected state</p>
+            <div className="glass-dropdown-menu showcase-liquid-menu-demo">
+              <button type="button" className="glass-dropdown-item">Available option</button>
+              <button type="button" className="glass-dropdown-item is-selected">Selected action glass option</button>
+              <button type="button" className="glass-dropdown-item">Hovered option preview</button>
+            </div>
+            <p className="glass-field-helper">Selected list items use the accent action-glass treatment.</p>
+          </div>
           
         </div>
       </ShowcaseSection>
@@ -2767,6 +2822,19 @@ function GlobalUiShowcase() {
             helperText={calendarState.rangeSelection ? "Range mode is not supported by CalendarField yet. This toggle helps surface the gap." : "CalendarField is running in single-date mode."}
             highlightedDates={calendarHighlightedDates}
             disabledDates={calendarDisabledDates} />
+          <div className="glass-field">
+            <p className="glass-field-label">Calendar cell states</p>
+            <div className="showcase-liquid-calendar-demo">
+              <button type="button" className="calendar-api__day">14</button>
+              <button type="button" className="calendar-api__day is-today">15</button>
+              <button type="button" className="calendar-api__day">16</button>
+              <button type="button" className="calendar-api__day is-selected">17</button>
+              <button type="button" className="calendar-api__day">18</button>
+              <button type="button" className="calendar-api__day is-disabled" disabled>19</button>
+              <button type="button" className="calendar-api__day">20</button>
+            </div>
+            <p className="glass-field-helper">Today is accented softly; selected date uses action glass.</p>
+          </div>
           
           <div className="showcase-status-tones">
             {(calendarState.tonePreview === "both" || calendarState.tonePreview === "amber") &&
@@ -2850,7 +2918,16 @@ function GlobalUiShowcase() {
             minuteStep={timePickerState.minuteStep}
             disabled={timePickerState.disabled}
             helperText={`12-hour format · ${timePickerState.minuteStep}-minute interval`} />
-          
+          <div className="glass-field">
+            <p className="glass-field-label">Time option states</p>
+            <div className="showcase-liquid-time-demo">
+              <button type="button" className="timepicker-api__option">09:00</button>
+              <button type="button" className="timepicker-api__option is-selected">09:30</button>
+              <button type="button" className="timepicker-api__option">10:00</button>
+            </div>
+            <p className="glass-field-helper">Selected time options use the same accent action glass.</p>
+          </div>
+
         </div>
       </ShowcaseSection>
       }
@@ -2903,6 +2980,11 @@ function GlobalUiShowcase() {
             placeholder={searchState.placeholder}
             onClear={searchState.showClear ? () => setSearchState((current) => ({ ...current, value: "" })) : undefined}
             disabled={searchState.disabled} />
+          <div className="glass-field">
+            <label className="glass-field-label" htmlFor="showcase-liquid-search">Glass search input</label>
+            <input id="showcase-liquid-search" type="search" className="glass-search" placeholder="Search vehicles, customers, jobs" />
+            <p className="glass-field-helper">Search inputs inherit the liquid glass background and focus glow.</p>
+          </div>
           
         </div>
       </ShowcaseSection>
@@ -3571,7 +3653,7 @@ function GlobalUiShowcase() {
         onClose={closeUsage} />
 
       }
-    </DevLayoutSection>);
+    </div>);
 
 }
 

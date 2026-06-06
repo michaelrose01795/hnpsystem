@@ -89,9 +89,13 @@ export default function UserClockingHistoryUi(props) {
             sectionType="section-shell"
             shell
             backgroundToken="theme"
+            className="glass-card glass-card--theme"
             style={{
               ...basePanelStyle,
-              background: "var(--theme)"
+              background: "var(--glass-theme)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)"
             }}>
             <div style={{
             display: "flex",
@@ -190,9 +194,13 @@ export default function UserClockingHistoryUi(props) {
             sectionType="section-shell"
             shell
             backgroundToken="theme"
+            className="glass-card glass-card--theme"
             style={{
               ...basePanelStyle,
-              background: "var(--theme)"
+              background: "var(--glass-theme)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)"
             }}>
               <header style={{
             display: "flex",

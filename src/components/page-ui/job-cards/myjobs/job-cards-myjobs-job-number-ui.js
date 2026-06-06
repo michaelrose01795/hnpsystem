@@ -835,9 +835,12 @@ export default function TechJobDetailPageUi(props) {
                 {authorisedVhcItems.length > 0 ? <div style={{
               marginTop: "24px"
             }}>
-                  <div style={{
+                  <div className="glass-card glass-card--theme" style={{
                 padding: "16px",
-                backgroundColor: "var(--theme)",
+                background: "var(--glass-theme)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)",
                 borderRadius: "var(--radius-sm)"
               }}>
                     <div style={{
@@ -1594,10 +1597,13 @@ export default function TechJobDetailPageUi(props) {
                 const partLabel = request.part ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}` : `Custom request #${request.request_id}`;
                 const requesterName = request.requester ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim() : "";
                 const sourceLabel = request.requested_by ? `Tech${requesterName ? ` (${requesterName})` : ""}` : "VHC";
-                return <div key={request.request_id} style={{
+                return <div key={request.request_id} className="glass-card glass-card--theme" style={{
                   padding: "16px",
                   borderRadius: "var(--control-radius-xs)",
-                  backgroundColor: "var(--theme)",
+                  background: "var(--glass-theme)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "var(--glass-shadow)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "6px"
@@ -2083,10 +2089,13 @@ export default function TechJobDetailPageUi(props) {
             display: "grid",
             gap: "10px"
           }}>
-                  {detectedJobTypes.map((jobType, index) => <div key={`${jobType}-${index}`} style={{
+                  {detectedJobTypes.map((jobType, index) => <div key={`${jobType}-${index}`} className="glass-card" style={{
               border: "none",
               borderRadius: "var(--radius-sm)",
-              backgroundColor: "var(--surface)",
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)",
               padding: "12px 14px",
               display: "flex",
               justifyContent: "space-between",

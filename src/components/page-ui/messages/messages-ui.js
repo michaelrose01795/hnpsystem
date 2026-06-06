@@ -183,9 +183,9 @@ export default function MessagesPageUi(props) {
           height: "100%"
         } : {})
       }}>
-            <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{
+            <DevLayoutSection className="glass-card glass-card--theme" sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{
           ...cardStyle,
-          background: "var(--theme)",
+          background: "var(--glass-theme)",
           flex: 1,
           minHeight: 0,
           overflow: "hidden"
@@ -458,9 +458,9 @@ export default function MessagesPageUi(props) {
             </DevLayoutSection>
           </DevLayoutSection>
 
-          <DevLayoutSection data-presentation="messages-conversation" sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
+          <DevLayoutSection className="glass-card glass-card--theme" data-presentation="messages-conversation" sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
         ...cardStyle,
-        background: "var(--theme)",
+        background: "var(--glass-theme)",
         flex: 1,
         minHeight: 0,
         flexDirection: "column",

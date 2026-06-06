@@ -60,10 +60,15 @@ export default function StaffTopbar({
       className="app-topbar-shell"
       {...lockChromeInteraction}
       style={{
-        background: "var(--surface)",
+        // Transparent topbar: let the app background scene show through. The
+        // frosted-glass look comes from the buttons/controls inside the bar,
+        // not the bar itself (matches .app-topbar-shell in staffglobal.css).
+        background: "transparent",
         borderRadius: "var(--radius-md)",
         border: "none",
-        boxShadow: "none",
+        // Section-defining ring (matches .app-topbar-shell) so the transparent
+        // bar still reads as its own outlined panel.
+        boxShadow: "var(--shell-section-ring)",
         padding: isMobile ? "10px 12px" : "0 16px",
         display: "flex",
         flexDirection: "column",
@@ -168,8 +173,15 @@ export default function StaffTopbar({
               maxWidth: "100%",
               zIndex: 2,
               justifySelf: "center",
-              overflowX: isVerticalPhone ? "auto" : "hidden",
-              overflowY: "hidden",
+              // Desktop: `clip` keeps the row from overflowing horizontally
+              // (no scrollbar) while letting the buttons' liquid-glass focus/
+              // hover glow bleed vertically instead of being shaved off by an
+              // invisible clipping box. overflow-clip-margin gives the end
+              // buttons' glow a little horizontal room too. Vertical phone keeps
+              // its horizontal scroll behaviour unchanged.
+              overflowX: isVerticalPhone ? "auto" : "clip",
+              overflowY: isVerticalPhone ? "hidden" : "visible",
+              overflowClipMargin: isVerticalPhone ? undefined : "24px",
             }}
           >
             {isTech && (

@@ -591,9 +591,12 @@ export default function CreateJobCardPageUi(props) {
                 }}>
                         {labelMap[key]}
                       </label>
-                      <div style={{
+                      <div className="glass-card" style={{
                   padding: "10px 12px",
-                  backgroundColor: "var(--surface)",
+                  background: "var(--glass-surface)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "var(--glass-shadow)",
                   borderRadius: "var(--radius-xs)",
                   fontSize: "14px",
                   color: vehicle[key] ? "var(--text-1)" : "var(--text-1)",
@@ -782,11 +785,14 @@ export default function CreateJobCardPageUi(props) {
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: "8px"
             }}>
-                      {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} style={{
+                      {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} className="glass-card" style={{
                 gridColumn: input.field === "firstName" || input.field === "lastName" || input.field === "mobile" || input.field === "telephone" ? "auto" : "1 / -1",
                 padding: input.field === "email" ? "12px 14px" : input.field === "mobile" || input.field === "telephone" ? "12px 14px" : "10px 12px",
                 borderRadius: "var(--radius-sm)",
-                background: "var(--surface)",
+                background: "var(--glass-surface)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)",
                 minWidth: 0
               }}>
                             <div style={{
@@ -1357,10 +1363,13 @@ export default function CreateJobCardPageUi(props) {
           }}>
                   {populatedRequests.map(request => {
               const requestDetections = visibleJobDetections.filter(detection => Number(detection.requestIndex) === request.index);
-              return <div key={`detected-request-popup-${request.index}`} style={{
+              return <div key={`detected-request-popup-${request.index}`} className="glass-card" style={{
                 border: "none",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--surface)",
+                background: "var(--glass-surface)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)",
                 padding: "14px 16px",
                 display: "grid",
                 gap: "10px"

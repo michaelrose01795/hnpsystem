@@ -463,10 +463,13 @@ export default function NextJobsPageUi(props) {
               }, {
                 label: "Customer",
                 value: selectedJob.customer || "Unknown customer"
-              }].map(item => <div key={item.label} style={{
+              }].map(item => <div key={item.label} className="glass-card glass-card--theme" style={{
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--theme)"
+                background: "var(--glass-theme)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)"
               }}>
                       <div style={{
                   fontSize: "11px",
@@ -503,10 +506,13 @@ export default function NextJobsPageUi(props) {
               }, {
                 label: "Assigned To",
                 value: assignedToName
-              }].map(item => <div key={item.label} style={{
+              }].map(item => <div key={item.label} className="glass-card glass-card--theme" style={{
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--theme)"
+                background: "var(--glass-theme)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)"
               }}>
                       <div style={{
                   fontSize: "11px",
@@ -528,10 +534,13 @@ export default function NextJobsPageUi(props) {
                     </div>)}
                 </div>
 
-                <div style={{
+                <div className="glass-card glass-card--theme" style={{
               padding: "14px",
               borderRadius: "var(--radius-sm)",
-              backgroundColor: "var(--theme)"
+              background: "var(--glass-theme)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)"
             }}>
                   <div style={{
                 fontSize: "11px",
@@ -551,14 +560,17 @@ export default function NextJobsPageUi(props) {
                 overflowY: hasScrollableDetails ? "auto" : "visible",
                 paddingRight: hasScrollableDetails ? "4px" : 0
               }}>
-                      {detailsRows.map(row => <div key={row.id} style={{
+                      {detailsRows.map(row => <div key={row.id} className="glass-card" style={{
                   display: "grid",
                   gridTemplateColumns: "120px minmax(0, 1fr)",
                   gap: "10px",
                   alignItems: "start",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  backgroundColor: "var(--surface)"
+                  background: "var(--glass-surface)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "var(--glass-shadow)"
                 }}>
                           <div style={{
                     fontSize: "12px",

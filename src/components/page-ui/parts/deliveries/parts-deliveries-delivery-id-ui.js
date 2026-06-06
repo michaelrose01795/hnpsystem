@@ -280,8 +280,11 @@ export default function DeliveryRoutePageUi(props) {
         zIndex: 40,
         padding: "24px"
       }}>
-              <div style={{
-          background: "var(--surface)",
+              <div className="glass-card" style={{
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           borderRadius: "var(--radius-md)",
           width: "min(540px, 100%)",
           maxHeight: "90vh",

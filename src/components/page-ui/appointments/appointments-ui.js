@@ -120,14 +120,17 @@ export default function AppointmentsUi(props) {
 
         {/* Calendar Table Container — mirrors the .app-table-shell-* visual design inline so this table can be edited freely without fighting global !important rules. data-app-table-shell="off" opts the table out of the GlobalTableShells auto-classifier. */}
         {/* Outer wrapper owns the card visuals (border, radius, surface fallback) and clips the rounded corners. The inner scroller is transparent and gutter-free so row backgrounds paint behind the scrollbar thumb instead of being cut off by a reserved gutter. */}
-        <div data-presentation="appointments-capacity-table" data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
+        <div className="glass-card" data-presentation="appointments-capacity-table" data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
             flex: "1 1 auto",
             minHeight: 0,
             marginBottom: "12px",
             display: "flex",
             flexDirection: "column",
             borderRadius: "var(--radius-md)",
-            background: "var(--surface)",
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             overflow: "hidden"
           }}>
           <div className="appointments-calendar-table-scroll" style={{
@@ -425,10 +428,13 @@ export default function AppointmentsUi(props) {
           </div>
 
           {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
-          <div data-presentation="appointments-day-jobs" style={{
+          <div className="glass-card glass-card--theme" data-presentation="appointments-day-jobs" style={{
               overflowX: "auto",
               borderRadius: "var(--radius-md)",
-              background: "var(--theme)"
+              background: "var(--glass-theme)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)"
             }}>
                 <table id="appointments-auto-data-table-3" data-dev-section-key="appointments-auto-data-table-3" data-dev-section-type="data-table" style={{
                 width: "100%",
@@ -785,13 +791,16 @@ export default function AppointmentsUi(props) {
                     text: "var(--text-1)"
                   };
                   const initial = (entry.name || "?").charAt(0).toUpperCase();
-                  return <div key={`${entry.id}-${index}`} style={{
+                  return <div key={`${entry.id}-${index}`} className="glass-card" style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--section-card-bg)"
+                    background: "var(--glass-surface)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)"
                   }}>
                     {/* Avatar initial */}
                     <div style={{

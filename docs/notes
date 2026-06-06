@@ -1,3 +1,23 @@
+TODO
+have it os the "Overlay" section does use liquid glass effect or glow around any of the border colours, have it so all border colours are bright bright pink and visible around each cards with all card content visible as well. also fix the "App Layout Page Card · 1.2.1.1 key: app-layout-page-card source: src/components/layout/StaffLayout.js:1085 route: /dev/user-diagnostic parent app-layout-main-shell (1.2.1) · 4 children" card to not shjow as pink anymore but to act the same as the "App Layout Page Card · 1.2.1.1 key: app-layout-page-card source: src/components/layout/StaffLayout.js:1085 route: /dev/user-diagnostic parent app-layout-main-shell (1.2.1) · 4 children" card. 
+
+TODO
+make sure the topbar and sidebar also follows the galss card effect. atm the left and rigth side of the car has a small maybe 10px section going down the edge of the left and right side of the page, this needs to just flow as one same background screen in the back. it moves bigger on the left side when the sidebar is clicked open and moves out etc. make sure the global search bar follows the same style as the standarg seach bar, have it so these doens thave a gradent within then but a light "--theme" colour tint. 
+
+TODO
+make sure the calendar picker with the days within is showing section the whole card is above every other card, this is beucase the card atm is hiden just behind the other cards within the page. 
+
+TODO
+have it so the button which closes the sidebar (navigator and tracking sidebar) is the same style as the button which opens the sidebars. 
+
+TODO
+have it so the backgroun dof the calendar picker, dropbar list etc is 100% solid and not transparent and is shown above everything within the card section etc. 
+
+TDDO
+deep dive to fix cards like the ones wihtin "Nextjobs Outstanding Scroll · 1.2.2.1.1.2 key: nextjobs-outstanding-scroll source: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js:122 route: /job-cards/waiting/nextjobs parent nextjobs-outstanding (1.2.2.1.1)" seciton as these are still using "--surface" colour without the glass effect. 
+
+TODO
+MICHAEL REFINE THE GLASS EFFECT A BIT SO ITS NOT AS TRANSPARENT. 
 
 
 

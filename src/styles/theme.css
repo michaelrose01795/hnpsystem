@@ -34,12 +34,32 @@
   --surfaceMutedToken: #f3f3f3;
   --surfaceText: #0f0f0f;
   --surfaceTextMuted: #1f1f1f;
-  --primary: #b91c1c;
-  --primary-hover: #981717;
-  --primary-pressed: #7e1313;
+  /* Premium muted accent palette (calm pass) — softened, desaturated tones for
+     frosted glass. Kept in sync with ACCENT_PALETTES in themeRuntime.js; these
+     are the static / SSR defaults applied before the JS runtime resolves the
+     stored profile accent. Glass tint alpha held at 0.10 to reduce accent
+     bleed into frosted surfaces. */
+  --red-glass: rgba(194, 86, 74, 0.10);
+  --blue-glass: rgba(95, 130, 166, 0.10);
+  --green-glass: rgba(125, 155, 118, 0.10);
+  --pink-glass: rgba(192, 135, 154, 0.10);
+  --orange-glass: rgba(217, 152, 115, 0.10);
+  --purple-glass: rgba(144, 128, 173, 0.10);
+  --grey-glass: rgba(140, 130, 121, 0.10);
+  --red-rgb: 194, 86, 74;
+  --blue-rgb: 95, 130, 166;
+  --green-rgb: 125, 155, 118;
+  --pink-rgb: 192, 135, 154;
+  --orange-rgb: 217, 152, 115;
+  --purple-rgb: 144, 128, 173;
+  --grey-rgb: 140, 130, 121;
+  --primary: #c2564a; /* muted terracotta red — matches ACCENT_PALETTES.red */
+  --primary-hover: #9f473d;
+  --primary-pressed: #843a32;
   --primary-selected: var(--primary-pressed);
-  --accentMainRgb: 185, 28, 28;
+  --accentMainRgb: var(--red-rgb);
   --accent-rgb: var(--accentMainRgb);
+  --theme-rgb: var(--accentMainRgb);
   /* Liquid Glass system tokens — single source of truth for the glassmorphism
      treatment shared by .glass-card, the page/section cards, div.card,
      div.news-card, the sidebar, the top bar, and the LayerSurface / LayerTheme
@@ -49,28 +69,35 @@
        --glass-theme   : nested layer (stronger accent tint) — LayerTheme / --theme
      The two differ so the surface/theme alternation stays legible when nested. */
   --glass-blur: blur(24px) saturate(180%);
+  /* Shadow = GREY (never accent) + a full-perimeter outline ring (inset, so it
+     traces the whole edge, not just the top). The drop shadow is deliberately
+     tight (offset+blur ≈ 14px) so it stays INSIDE the 20px --page-stack-gap and
+     never bleeds onto / through the next card in a stack. Dark mode overrides
+     the colours to a light grey (see the [data-theme="dark"] block). */
   --glass-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  --glass-surface:
-    linear-gradient(
-      135deg,
-      rgba(var(--accent-rgb), 0.08),
-      rgba(var(--surface-rgb), 0.55)
-    );
-  --glass-theme:
-    linear-gradient(
-      135deg,
-      rgba(var(--accent-rgb), 0.16),
-      rgba(var(--surface-rgb), 0.45)
-    );
+    0 2px 12px rgba(0, 0, 0, 0.16),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  /* Flat tints — NO gradient. Surface cards get a slight surface tint; theme
+     cards a slight accent tint, one even colour across the card. Kept low-opacity
+     ON PURPOSE: the app background (--app-background-scene) is fixed to the
+     viewport, so as cards scroll over it the frosted blur reveals the gradient
+     shifting through them. Don't raise these much or the effect is lost; the
+     tight --glass-shadow (not opacity) is what stops shadow bleed. */
+  --glass-surface: rgba(var(--surface-rgb), 0.5);
+  --glass-theme: rgba(var(--accent-rgb), 0.12);
+  /* Button glow = GREY (never accent), theme-aware (light grey in dark mode).
+     Tight so it doesn't bleed onto neighbouring controls. Pair with an inset
+     rim for the full-perimeter outline (see families/buttons.css). */
+  --btn-glow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  --btn-glow-hover: 0 5px 16px rgba(0, 0, 0, 0.24);
   --accentText: var(--primary);
   --text-accent: var(--accentText);
   --onAccentText: #ffffff;
-  --secondary: rgba(var(--accentMainRgb), 0.08);
-  --secondary-hover: rgba(var(--accentMainRgb), 0.14);
+  --accent: var(--red-glass);
+  --secondary: rgba(var(--accentMainRgb), 0.10);
+  --secondary-hover: rgba(var(--accentMainRgb), 0.18);
   --secondary-pressed: rgba(var(--accentMainRgb), 0.2);
-  --theme: rgba(var(--accentMainRgb), 0.1);
+  --theme: var(--red-glass);
   /* DEPRECATED — borders are now banned everywhere except table row separators
      (use --separating-line), inputs (--input-ring), checkboxes (--checkbox-ring),
      ghost buttons (--ghostbutton-ring) and focus rings (--focus-ring). All other
@@ -109,7 +136,7 @@
   --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
   --accent-base-hover: var(--secondary-hover);
-  --theme-hover: rgba(var(--accentMainRgb), 0.16);
+  --theme-hover: rgba(var(--accentMainRgb), 0.18);
   --accent-strong: var(--primary);
   --primary-rgb: var(--accentMainRgb);
   --grey-accent: var(--text-1);
@@ -267,9 +294,11 @@
   --nav-link-bg-active: var(--primary);
   --nav-link-border: none; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
   --nav-link-border-active: none; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
-  --control-height: 44px;
-  --control-height-sm: 40px;
-  --control-height-xs: 34px;
+  --control-height: 48px;
+  --control-height-sm: var(--control-height);
+  --control-height-xs: var(--control-height);
+  --close-button-size: 48px;
+  --close-button-radius: 24px;
   /* Control width floors, character-based so they scale with the font. These
      are OPT-IN: they only apply to controls (or wrappers) carrying the
      `app-autowidth` class — see the opt-in block in staffglobal.css. Existing
@@ -285,9 +314,9 @@
   --datetime-control-width: 12ch;
   --dropdown-trigger-height: var(--control-height);
   --dropdown-trigger-height-sm: var(--control-height);
-  --control-radius: 14px;
-  --control-radius-sm: var(--radius-sm);
-  --control-radius-xs: 10px;
+  --control-radius: 24px;
+  --control-radius-sm: var(--control-radius);
+  --control-radius-xs: var(--control-radius);
   --dropdown-trigger-radius: var(--control-radius);
   --dropdown-trigger-radius-sm: var(--control-radius-sm);
   --control-menu-radius: var(--radius-md);
@@ -312,41 +341,43 @@
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
-  --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
+  /* Menu glow = GREY (never accent) + full-perimeter outline ring. */
+  --control-menu-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 2px 18px rgba(0, 0, 0, 0.18), 0 0 8px rgba(0, 0, 0, 0.1);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
   --dropdown-trigger-bg: var(--secondary);
   --dropdown-trigger-color: var(--text-1);
   --dropdown-trigger-hover-bg: var(--secondary-hover);
   --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
-    0 0 36px rgba(0, 0, 0, 0.18),
-    0 0 12px rgba(0, 0, 0, 0.10);
-  --dropdown-option-bg: var(--secondary);
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 8px 28px rgba(0, 0, 0, 0.18),
+    0 0 12px rgba(0, 0, 0, 0.1);
+  --dropdown-option-bg: rgba(var(--accent-rgb), 0.10);
   --dropdown-option-color: var(--text-1);
-  --dropdown-option-hover-bg: var(--secondary-hover);
-  --dropdown-option-selected-bg: var(--secondary-hover);
+  --dropdown-option-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --dropdown-option-selected-bg: rgba(var(--accent-rgb), 0.22);
   --dropdown-option-selected-color: var(--accentText);
-  --calendar-day-bg: var(--secondary);
+  --calendar-day-bg: rgba(var(--accent-rgb), 0.10);
   --calendar-day-color: var(--text-1);
-  --calendar-day-hover-bg: var(--secondary-hover);
-  --calendar-day-selected-bg: var(--secondary-hover);
+  --calendar-day-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --calendar-day-selected-bg: rgba(var(--accent-rgb), 0.22);
   --calendar-day-selected-color: var(--accentText);
-  --timepicker-option-bg: var(--secondary);
+  --timepicker-option-bg: rgba(var(--accent-rgb), 0.10);
   --timepicker-option-color: var(--text-1);
-  --timepicker-option-hover-bg: var(--secondary-hover);
-  --timepicker-option-selected-bg: var(--secondary-hover);
+  --timepicker-option-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --timepicker-option-selected-bg: rgba(var(--accent-rgb), 0.22);
   --timepicker-option-selected-color: var(--accentText);
-  --timepicker-now-bg: var(--secondary);
+  --timepicker-now-bg: rgba(var(--accent-rgb), 0.10);
   --timepicker-now-color: var(--text-1);
-  --timepicker-now-hover-bg: var(--secondary-hover);
+  --timepicker-now-hover-bg: rgba(var(--accent-rgb), 0.18);
   --searchbar-clear-bg: var(--secondary);
   --searchbar-clear-color: var(--text-1);
   --searchbar-clear-hover-bg: var(--secondary-hover);
   --tab-button-bg: var(--theme);
   --tab-button-color: var(--text-1);
-  --tab-button-hover-bg: var(--secondary-hover);
-  --tab-button-selected-bg: var(--primary-selected);
-  --tab-button-selected-color: var(--onAccentText);
+  --tab-button-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --tab-button-selected-bg: rgba(var(--accent-rgb), 0.22);
+  --tab-button-selected-color: var(--accentText);
   --control-transition:
     background-color 0.18s ease,
     border-color 0.18s ease,
@@ -470,15 +501,30 @@
   --surfaceMutedToken: #1d1d24;
   --surfaceText: #f8f7ff;
   --surfaceTextMuted: #f2f2ff;
-  --primary: #f87171;
-  --primary-hover: #fa9393;
-  --primary-pressed: #fcb1b1;
+  --primary: #c2564a; /* muted terracotta red — matches ACCENT_PALETTES.red */
+  --primary-hover: #cd746b;
+  --primary-pressed: #d78f88;
   --primary-selected: var(--primary-pressed);
+  --accentMainRgb: var(--red-rgb);
   --accent-rgb: var(--accentMainRgb);
-  --secondary: rgba(var(--accentMainRgb), 0.16);
-  --secondary-hover: rgba(var(--accentMainRgb), 0.24);
+  --theme-rgb: var(--accentMainRgb);
+  --accent: var(--red-glass);
+  --secondary: rgba(var(--accentMainRgb), 0.14);
+  --secondary-hover: rgba(var(--accentMainRgb), 0.22);
   --secondary-pressed: rgba(var(--accentMainRgb), 0.32);
-  --theme: rgba(var(--accentMainRgb), 0.18);
+  --theme: var(--red-glass);
+  /* Liquid Glass dark overrides. Shadow uses a LIGHT GREY (not pure white) so
+     the glow reads on the dark surface; the outline ring is a faint light hair.
+     Kept tight so it stays inside --page-stack-gap (no bleed). Tints stay flat
+     (no gradient): a darker translucent surface, a slightly stronger accent. */
+  --glass-shadow:
+    0 2px 12px rgba(200, 200, 200, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --glass-surface: rgba(var(--surface-rgb), 0.45);
+  --glass-theme: rgba(var(--accent-rgb), 0.18);
+  /* Dark button glow = LIGHT GREY (not white). */
+  --btn-glow: 0 2px 10px rgba(200, 200, 200, 0.12);
+  --btn-glow-hover: 0 5px 16px rgba(200, 200, 200, 0.16);
   --surface-rgb: 22, 22, 26;
   --surface-gradient: var(--surface);
   --skeleton-base: #23232c;
@@ -504,7 +550,7 @@
   --legacy-marker-red-rgb: var(--accentMainRgb);
   --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
-  --theme-hover: rgba(var(--accentMainRgb), 0.26);
+  --theme-hover: rgba(var(--accentMainRgb), 0.22);
   --accent-strong: var(--primary);
   --primary-rgb: var(--accentMainRgb);
   --grey-accent: var(--text-1);
@@ -630,42 +676,43 @@
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
-  --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
+  /* Dark menu glow = LIGHT GREY (not white) + faint light outline ring. */
+  --control-menu-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 18px rgba(200, 200, 200, 0.12), 0 0 10px rgba(0, 0, 0, 0.4);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
   --dropdown-trigger-bg: var(--secondary);
   --dropdown-trigger-color: var(--text-1);
   --dropdown-trigger-hover-bg: var(--secondary-hover);
   --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
-    0 0 40px rgba(0, 0, 0, 0.65),
-    0 0 16px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --dropdown-option-bg: var(--secondary);
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 28px rgba(200, 200, 200, 0.1),
+    0 0 16px rgba(0, 0, 0, 0.4);
+  --dropdown-option-bg: rgba(var(--accent-rgb), 0.10);
   --dropdown-option-color: var(--text-1);
-  --dropdown-option-hover-bg: var(--secondary-hover);
-  --dropdown-option-selected-bg: var(--secondary-hover);
+  --dropdown-option-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --dropdown-option-selected-bg: rgba(var(--accent-rgb), 0.22);
   --dropdown-option-selected-color: var(--accentText);
-  --calendar-day-bg: var(--secondary);
+  --calendar-day-bg: rgba(var(--accent-rgb), 0.10);
   --calendar-day-color: var(--text-1);
-  --calendar-day-hover-bg: var(--secondary-hover);
-  --calendar-day-selected-bg: var(--secondary-hover);
+  --calendar-day-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --calendar-day-selected-bg: rgba(var(--accent-rgb), 0.22);
   --calendar-day-selected-color: var(--accentText);
-  --timepicker-option-bg: var(--secondary);
+  --timepicker-option-bg: rgba(var(--accent-rgb), 0.10);
   --timepicker-option-color: var(--text-1);
-  --timepicker-option-hover-bg: var(--secondary-hover);
-  --timepicker-option-selected-bg: var(--secondary-hover);
+  --timepicker-option-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --timepicker-option-selected-bg: rgba(var(--accent-rgb), 0.22);
   --timepicker-option-selected-color: var(--accentText);
-  --timepicker-now-bg: var(--secondary);
+  --timepicker-now-bg: rgba(var(--accent-rgb), 0.10);
   --timepicker-now-color: var(--text-1);
-  --timepicker-now-hover-bg: var(--secondary-hover);
+  --timepicker-now-hover-bg: rgba(var(--accent-rgb), 0.18);
   --searchbar-clear-bg: var(--secondary);
   --searchbar-clear-color: var(--text-1);
   --searchbar-clear-hover-bg: var(--secondary-hover);
   --tab-button-bg: var(--theme);
   --tab-button-color: var(--text-1);
-  --tab-button-hover-bg: var(--secondary-hover);
-  --tab-button-selected-bg: var(--primary-selected);
-  --tab-button-selected-color: var(--onAccentText);
+  --tab-button-hover-bg: rgba(var(--accent-rgb), 0.18);
+  --tab-button-selected-bg: rgba(var(--accent-rgb), 0.22);
+  --tab-button-selected-color: var(--accentText);
   --page-card-border: none;
   --page-card-bg: var(--surface);
   --page-accent-layer: var(--secondary);

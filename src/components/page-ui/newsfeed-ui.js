@@ -72,10 +72,14 @@ export default function NewsFeedUi(props) {
               </div>)}
           </div>}
 
-        {!loading && accessibleUpdates.length === 0 && <div className="text-center py-16" style={{
+        {!loading && accessibleUpdates.length === 0 && <div className="text-center py-16 glass-card" style={{
       border: "none",
       borderRadius: "var(--radius-md)",
-      backgroundColor: "var(--surface)"
+      // Liquid Glass surface — pulls from the global --glass-* tokens (theme.css).
+      background: "var(--glass-surface)",
+      backdropFilter: "var(--glass-blur)",
+      WebkitBackdropFilter: "var(--glass-blur)",
+      boxShadow: "var(--glass-shadow)"
     }}>
             <p className="text-sm" style={{
         color: "var(--text-1)",
@@ -90,11 +94,15 @@ export default function NewsFeedUi(props) {
       flexDirection: "column",
       gap: "20px"
     }}>
-          {accessibleUpdates.map(update => <article key={update.id ?? update.title} style={{
+          {accessibleUpdates.map(update => <article key={update.id ?? update.title} className="glass-card glass-card--theme" style={{
         padding: "20px 24px",
         border: "none",
         borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--theme)",
+        // Liquid Glass row — pulls from the global --glass-* tokens (theme.css).
+        background: "var(--glass-theme)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         cursor: "pointer",
         transition: "transform 0.3s ease, box-shadow 0.3s ease",
         maxWidth: "100%",
@@ -103,10 +111,11 @@ export default function NewsFeedUi(props) {
         e.currentTarget.style.position = "relative";
         e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         e.currentTarget.style.transform = "translateY(-8px)";
-        e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+        e.currentTarget.style.boxShadow = "0 6px 18px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.1)";
       }} onMouseLeave={e => {
         e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
+        // Restore the resting glass shadow (not "none").
+        e.currentTarget.style.boxShadow = "var(--glass-shadow)";
         e.currentTarget.style.zIndex = "0";
       }}>
               {/* Title */}

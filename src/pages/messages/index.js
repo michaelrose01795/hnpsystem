@@ -102,8 +102,14 @@ const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;
 const shadows = appShellTheme.shadows;
 
+// Liquid Glass card base shared across the messages page. Pulls from the
+// global --glass-* tokens (theme.css) so "change card design" stays a
+// single-lever edit. Pair with className="glass-card" on the element.
 const cardStyle = {
-  background: "var(--section-card-bg)",
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
   borderRadius: "var(--radius-lg)",
   padding: "var(--section-card-padding)",
   display: "flex",

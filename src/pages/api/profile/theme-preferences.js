@@ -4,7 +4,7 @@ import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 
 const VALID_MODES = new Set(["light", "dark", "system"]);
-const VALID_ACCENTS = new Set(["red", "beige", "grey", "blue", "green", "yellow", "pink", "orange", "purple"]);
+const VALID_ACCENTS = new Set(["red", "blue", "green", "pink", "orange", "purple", "grey"]);
 
 const normalizeMode = (value) => {
   if (typeof value !== "string") return null;

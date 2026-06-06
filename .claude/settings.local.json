@@ -215,7 +215,14 @@
       "Bash(sed -n '2210,2280p' src/pages/website/profile.js)",
       "Bash(sed -n '860,875p' src/pages/website/profile.js)",
       "Bash(sed -n '1770,1780p' src/pages/website/profile.js)",
-      "Bash(echo \"exit_borders=$?\")"
+      "Bash(echo \"exit_borders=$?\")",
+      "Bash(node C:/hnpsystem/_parsecheck.js)",
+      "Bash(echo \"DONE_$?\")",
+      "Bash(node C:/hnpsystem/_pc.js)",
+      "Bash(cat)",
+      "Bash(node /tmp/check.js)",
+      "Read(//c/hnpsystem/**)",
+      "Bash(for i *)"
     ],
     "deny": [],
     "ask": [],

@@ -19,6 +19,7 @@
 /* === Base rule                                           === */
 /* ========================================================= */
 html.staff-scope .app-btn {
+  height: var(--control-height);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
@@ -44,7 +45,7 @@ html.staff-scope .app-btn:disabled {
 
 /* ========================================================= */
 /* === Size modifiers — padding / font-size only           === */
-/* === Height stays locked to --control-height (44px)      === */
+/* === Height stays locked to --control-height             === */
 /* === so every button aligns on the same baseline.        === */
 /* ========================================================= */
 html.staff-scope .app-btn--sm {
@@ -88,24 +89,25 @@ html.staff-scope .app-btn--nav {
    with a frosted backdrop blur and a glow + inner-highlight shadow. Reusable
    anywhere via the standalone .glass-action-button class (which carries the
    .app-btn base props below so it works without .app-btn too).
-   Accent is driven by --accentMainRgb (the canonical accent RGB triplet; the
-   theme has no --accent-rgb token), so it follows the user's chosen theme in
-   both light and dark mode. */
+   Accent is driven by --accent-rgb so it follows the profile accent in both
+   light and dark mode. */
 html.staff-scope .app-btn--primary,
 html.staff-scope .glass-action-button {
   background:
     linear-gradient(
       135deg,
-      rgba(var(--accentMainRgb), 0.95),
-      rgba(var(--accentMainRgb), 0.72)
+      rgba(var(--accent-rgb), 0.95),
+      rgba(var(--accent-rgb), 0.72)
     ) !important;
   color: #fff !important;
   border: none !important;
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
+  /* GREY glow (via --btn-glow) + full-perimeter inset rim (all four edges, not
+     just the top). Grey never accent; light grey in dark mode. */
   box-shadow:
-    0 12px 30px rgba(var(--accentMainRgb), 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    var(--btn-glow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3);
 }
 html.staff-scope .app-btn--primary:hover,
 html.staff-scope .app-btn--primary:focus-visible,
@@ -114,24 +116,24 @@ html.staff-scope .glass-action-button:focus-visible {
   background:
     linear-gradient(
       135deg,
-      rgba(var(--accentMainRgb), 1),
-      rgba(var(--accentMainRgb), 0.82)
+      rgba(var(--accent-rgb), 1),
+      rgba(var(--accent-rgb), 0.82)
     ) !important;
   box-shadow:
-    0 16px 38px rgba(var(--accentMainRgb), 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    var(--btn-glow-hover),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42);
 }
 html.staff-scope .app-btn--primary:active,
 html.staff-scope .glass-action-button:active {
   background:
     linear-gradient(
       135deg,
-      rgba(var(--accentMainRgb), 0.92),
-      rgba(var(--accentMainRgb), 0.7)
+      rgba(var(--accent-rgb), 0.92),
+      rgba(var(--accent-rgb), 0.7)
     ) !important;
   box-shadow:
-    0 6px 16px rgba(var(--accentMainRgb), 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    var(--btn-glow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22);
   transform: translateY(1px);
 }
 html.staff-scope .app-btn--primary:disabled,
@@ -141,35 +143,35 @@ html.staff-scope .glass-action-button:disabled {
 }
 
 /* === Glass (secondary) ====================================================
-   The secondary "Glass" treatment: a softer frosted-glass surface with a very
-   light accent tint, accent-coloured text/icon, a subtle shadow, and backdrop
-   blur. The tint strengthens on hover/active. Reusable via .glass-button. */
+   The secondary "Glass" treatment: a softer frosted-glass surface with a light
+   accent tint, accent-coloured text/icon, a grey glow + full-perimeter rim, and
+   backdrop blur. Reusable via .glass-button.
+
+   SINGLE SOURCE OF TRUTH: the look is defined by the --glass-button-* tokens in
+   src/styles/staffglobal.css. Those same tokens drive every form control
+   (dropdowns, calendar / month / time pickers, search bars, text fields), so
+   editing them there restyles this button AND all controls together. Fallbacks
+   below keep this button correct even if the tokens are ever absent. */
 html.staff-scope .app-btn--secondary,
 html.staff-scope .glass-button {
-  background: rgba(var(--accentMainRgb), 0.1) !important;
+  background: var(--glass-button-bg, rgba(var(--accent-rgb), 0.1)) !important;
   color: var(--text-accent) !important;
   border: none !important;
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow:
-    0 4px 14px rgba(var(--accentMainRgb), 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: var(--glass-button-blur, blur(14px) saturate(160%));
+  -webkit-backdrop-filter: var(--glass-button-blur, blur(14px) saturate(160%));
+  box-shadow: var(--glass-button-shadow, var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.18));
 }
 html.staff-scope .app-btn--secondary:hover,
 html.staff-scope .app-btn--secondary:focus-visible,
 html.staff-scope .glass-button:hover,
 html.staff-scope .glass-button:focus-visible {
-  background: rgba(var(--accentMainRgb), 0.18) !important;
-  box-shadow:
-    0 6px 18px rgba(var(--accentMainRgb), 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  background: var(--glass-button-hover-bg, rgba(var(--accent-rgb), 0.18)) !important;
+  box-shadow: var(--glass-button-hover-shadow, var(--btn-glow-hover), inset 0 0 0 1px rgba(var(--accent-rgb), 0.26));
 }
 html.staff-scope .app-btn--secondary:active,
 html.staff-scope .glass-button:active {
-  background: rgba(var(--accentMainRgb), 0.24) !important;
-  box-shadow:
-    0 3px 10px rgba(var(--accentMainRgb), 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: var(--glass-button-active-bg, rgba(var(--accent-rgb), 0.22)) !important;
+  box-shadow: var(--glass-button-active-shadow, var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.22));
   transform: translateY(1px);
 }
 html.staff-scope .app-btn--secondary:disabled,
@@ -187,6 +189,7 @@ html.staff-scope .glass-button:disabled {
    swap and press-shift animate smoothly. */
 html.staff-scope .glass-action-button,
 html.staff-scope .glass-button {
+  height: var(--control-height);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);

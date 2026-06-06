@@ -439,13 +439,17 @@ export default function Sidebar({
         display: "flex",
         flexDirection: "column",
         borderRadius: "var(--page-card-radius)",
-        boxShadow: "none",
+        // Section-defining ring (matches .app-sidebar) so the transparent rail
+        // still reads as its own outlined panel.
+        boxShadow: "var(--shell-section-ring)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "0",
         overflowX: "hidden",
         overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
-        background: "var(--surface)",
+        // Transparent sidebar shell: app background shows through; the nav
+        // buttons inside carry the frosted-glass look (matches .app-sidebar).
+        background: "transparent",
       }}
     >
       {/* Header */}
@@ -501,7 +505,8 @@ export default function Sidebar({
         sectionType="content-card"
         backgroundToken="app-sidebar-body"
         style={{
-          background: "var(--surface)",
+          // Transparent so the sidebar reads as one see-through pane.
+          background: "transparent",
           flex: 1,
           minHeight: 0,
         }}
