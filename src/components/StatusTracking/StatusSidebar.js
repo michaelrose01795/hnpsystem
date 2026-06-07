@@ -470,12 +470,20 @@ export default function StatusSidebar({
       <div className="app-page-card app-page-card--no-hover" style={panelStyle}>
         {/* Header */}
         <LayerSurface
-          radius={isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0'}
+          radius={compactMode ? '0' : 'var(--radius-md)'}
           padding={compactMode ? '10px 12px' : '0 16px'}
           gap="0"
           style={{
           color: 'var(--text-1)',
           minHeight: compactMode ? '64px' : '75px',
+          // Desktop (both the docked variant used by StaffLayout AND the fixed overlay):
+          // inset the header so it floats over the page-card scrim as a rounded glass
+          // tile — matching the section cards below — instead of a flush band whose
+          // --glass-shadow rim gets clipped by the panel edge / overflow:hidden. Sides
+          // use 20px to line up with the content area padding; bottom is 0 since the
+          // content area's own 20px top padding supplies the gap. Only compact
+          // (full-bleed mobile bar) stays flush.
+          margin: compactMode ? 0 : '20px 20px 0',
           alignItems: 'center',
           justifyContent: 'center', // .app-section-card is column-flex; center the header content vertically so it lines up with the absolutely-centred Clear Job/Close buttons
           position: 'relative',
@@ -559,6 +567,8 @@ export default function StatusSidebar({
                     setSearchError('');
                   }}
                   placeholder="Enter job number..."
+                  className="status-sidebar__searchbar"
+                  inputClassName="status-sidebar__searchbar-input"
                   style={{ width: '100%' }}
                 />
               </form>

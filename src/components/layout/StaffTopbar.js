@@ -47,19 +47,40 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
+  overlay = false,
 }) {
   const router = useRouter();
 
   // Auto-hide / float-on-scroll is a desktop-only affordance. On tablet/mobile
   // the topbar keeps its existing in-flow behaviour (and the portrait z-index
-  // rules in staffglobal.css), so we gate the hook to desktop widths.
-  const enableAutoHide = !isTablet;
+  // rules in staffglobal.css), so we gate the hook to desktop widths. In the
+  // fixed-card model (`overlay`) the page no longer scrolls, so we disable the
+  // window-scroll hook and instead pin the bar as an always-visible overlay over
+  // the card's top — the card's inner content scrolls up behind it.
+  const enableAutoHide = !isTablet && !overlay;
   const { wrapperRef, barRef, wrapperStyle, barStyle } = useAutoHideTopbar({
     enabled: enableAutoHide,
   });
 
+  // Fixed-card scroll model: the bar overlays the top of the page card (aligned
+  // to the card's gutters) and stays put while the card's content scrolls behind
+  // it. Outside that model it keeps its in-flow / window-scroll-float behaviour.
+  const overlayStyle = overlay
+    ? {
+        position: "absolute",
+        top: "var(--page-gutter-y)",
+        left: "var(--page-gutter-x)",
+        right: "var(--page-gutter-x)",
+        zIndex: 3300,
+      }
+    : {};
+
   return (
-    <div ref={wrapperRef} className="app-topbar-dock" style={wrapperStyle}>
+    <div
+      ref={wrapperRef}
+      className="app-topbar-dock"
+      style={{ ...wrapperStyle, ...overlayStyle }}
+    >
     <DevLayoutSection
       as="section"
       ref={barRef}

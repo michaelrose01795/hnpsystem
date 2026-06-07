@@ -1,11 +1,7 @@
-CHECK CODEX
-when the content gets to the top of the page have it fade out/in and the same with the bottom of the page etc, make it suttle but effectiive. 
+TODO CODEX
+the page has a default posisiton which is scrolled all the way to the top, this means the boittom stays the same thoughout, the thing which changes is the top of the page location and the topbar behaviour, to start lets adjust the resting point of the main page section, this is the same gap size which is around between the sideabr and main page section gap which needs to be between the topbar and mian page as well. when the user starts to scroll, the main page scrolls up behind the topbar and then finsihed at the top of the topbar, anythign apst that point goes behind the mian page section and isnt visble, after the user has stop scrolling after 2 seconds the topbar hides with the folding animation, when the user starts scrolling again the topbar folds down from the top and is visible agian etc. make this change, dont change anything else
 
-CEHCK CLAUDE
-have it so inside the sidebar its a seperate section to the main scroll section, the sideabr will have its own independent sidebar scroll. have it so when the main page scrolls the sidebar doesnt scroll as well. have it os the height of the sidebar goes to the bottom of the last cotnetn but finished in the page view at the same gap as the "Job Tracker" sideabar does. 
-
-CHECK CHAT
-have it sot he "Job Tracker" and search bar section within the "Job Tracker" sidebar all follows the gloass card background effect. 
+TODO fix the dev overlay so when click in a section it copy the same liek it did before. 
 
 
 TDDO
@@ -20,7 +16,8 @@ have it so the columns of the to and from date filled wihtin "Tracking Loan Car 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
 
-
+TODO
+update the appointment page table so match the photo style one so it looks more modern. 
 
 
 - /website/profile (CHECK)

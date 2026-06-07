@@ -464,7 +464,18 @@ export default function Sidebar({
         sectionType="content-card"
         backgroundToken="app-sidebar-header"
         style={{
-          position: "relative",
+          // Sticky so the brand logo stays pinned to the top of the sidebar's
+          // own scroll while the nav list slides up behind it. The shell glass
+          // (--shell-glass-bg = 0.70 alpha) let the scrolling text/buttons show
+          // through, so use a near-opaque surface tint to fully hide them while
+          // the blur keeps it reading as a frosted logo panel. One-off alpha:
+          // no token exists for a "solid-but-frosted" sidebar header fill.
+          position: "sticky",
+          top: 0,
+          zIndex: 3,
+          background: "rgba(var(--surface-rgb), 0.98)",
+          backdropFilter: "var(--shell-glass-blur)",
+          WebkitBackdropFilter: "var(--shell-glass-blur)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -494,6 +505,11 @@ export default function Sidebar({
       <div
         aria-hidden="true"
         style={{
+          // Stick the hairline directly beneath the pinned logo header so the
+          // separator stays with the logo as the nav list scrolls behind it.
+          position: "sticky",
+          top: isCondensed ? "60px" : "75px",
+          zIndex: 3,
           height: "1px",
           background: "var(--theme)",
           flexShrink: 0,
@@ -787,6 +803,11 @@ export default function Sidebar({
             })}
           </>
         )}
+
+        {/* Bottom scroll spacer: gives the last nav control (e.g. Vision) a 10px
+            gap to the sidebar's bottom edge so it isn't flush, and lets the list
+            scroll up slightly further. */}
+        <div aria-hidden="true" style={{ height: "10px", flexShrink: 0 }} />
       </DevLayoutSection>
     </DevLayoutSection>
   );

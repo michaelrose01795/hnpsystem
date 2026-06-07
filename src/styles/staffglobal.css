@@ -77,11 +77,13 @@ html.staff-scope {
       rgba(var(--accentMainRgb), 0.18) 0%,
       transparent 58%
     ),
-    /* light wash so the centre stays bright behind content */
+    /* Centre wash — surface nudged ~12% toward the theme colour (--theme-rgb)
+       so the light area reads as a faint accent tint, not flat page-surface
+       white. color-mix keeps it mostly surface with just a hint of theme. */
     radial-gradient(
       ellipse 120% 120% at 45% 40%,
-      rgba(var(--surface-rgb), 0.96) 28%,
-      rgba(var(--surface-rgb), 0.35) 72%,
+      color-mix(in srgb, rgba(var(--surface-rgb), 0.96) 88%, rgba(var(--theme-rgb), 0.96) 12%) 28%,
+      color-mix(in srgb, rgba(var(--surface-rgb), 0.35) 88%, rgba(var(--theme-rgb), 0.35) 12%) 72%,
       transparent 100%
     ),
     var(--app-background-base, var(--page-shell-bg));

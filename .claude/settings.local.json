@@ -222,7 +222,9 @@
       "Bash(cat)",
       "Bash(node /tmp/check.js)",
       "Read(//c/hnpsystem/**)",
-      "Bash(for i *)"
+      "Bash(for i *)",
+      "Bash(echo \"=== EXIT $? ===\")",
+      "Bash(echo \"=== done \\($?\\) ===\")"
     ],
     "deny": [],
     "ask": [],
