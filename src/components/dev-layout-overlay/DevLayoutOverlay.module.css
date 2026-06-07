@@ -11,47 +11,66 @@
 }
 
 .box {
-  /* Diagram primitive — solid outline only, fully transparent fill so the
-     underlying card is unchanged. The outline alone tells the user which
-     section the click targets. */
+  --overlay-pink: rgb(255 0 204);
+  /* Diagram primitive: transparent, pointer-free outline only. It must not
+     tint, blur, shadow, or otherwise alter the card underneath. */
   position: absolute;
-  border: 2px solid rgba(var(--accent-base-rgb), 0.85);
+  border: 3px solid var(--overlay-pink);
   background: transparent;
   border-radius: 10px;
   pointer-events: none;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .boxCreate {
   border-style: solid;
-  border-width: 2px;
-  border-color: rgba(var(--accent-base-rgb), 0.85);
+  border-width: 3px;
+  border-color: var(--overlay-pink);
   background: transparent;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.boxStructural {
+  border-width: 2px;
+  border-color: rgba(var(--text-1-rgb), 0.42);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .boxSidebar {
   border-style: solid;
-  border-width: 2px;
-  border-color: rgba(var(--warning-rgb), 0.85);
+  border-width: 3px;
+  border-color: var(--overlay-pink);
   background: transparent;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .boxSidebarColumn {
   border-style: solid;
-  border-width: 2px;
-  border-color: rgba(var(--accent-base-rgb), 0.95);
+  border-width: 3px;
+  border-color: var(--overlay-pink);
   background: transparent;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .boxSidebarPrimary {
   border-style: solid;
   border-width: 3px;
-  border-color: rgba(var(--warning-rgb), 0.85);
+  border-color: var(--overlay-pink);
   background: transparent;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .copyTarget {
@@ -73,15 +92,29 @@
   border-radius: 10px;
   background: transparent !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   color: inherit;
   cursor: copy;
+  filter: none !important;
   font: inherit;
   pointer-events: auto;
+  transition: none !important;
+}
+
+.copyTarget:hover,
+.copyTarget:active,
+.copyTarget:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
 }
 
 .copyTarget:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  box-shadow: none !important;
 }
 
 .label {

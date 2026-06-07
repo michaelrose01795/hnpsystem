@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useId, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -62,6 +63,7 @@ export default function Calendar({
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [pickerMode, setPickerMode] = useState("days"); // "days" | "month-year"
+  const [menuPosition, setMenuPosition] = useState(null);
   const calendarRef = useRef(null);
   const menuRef = useRef(null);
   const controlRef = useRef(null);
@@ -97,7 +99,12 @@ export default function Calendar({
   // Close calendar when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+      const target = event.target;
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -107,6 +114,63 @@ export default function Calendar({
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const updateMenuPosition = () => {
+      const controlNode = controlRef.current;
+      const menuNode = menuRef.current;
+      if (!controlNode || !menuNode) return;
+
+      if (window.innerWidth <= 480) {
+        setMenuPosition({
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: "var(--z-popover)",
+        });
+        return;
+      }
+
+      const rect = controlNode.getBoundingClientRect();
+      const gap = 10;
+      const viewportGap = 10;
+      const menuWidth = menuNode.offsetWidth || 340;
+      const menuHeight = menuNode.offsetHeight || 0;
+      let top = rect.bottom + gap;
+      let left = rect.left;
+
+      if (menuHeight && top + menuHeight > window.innerHeight - viewportGap) {
+        top = Math.max(viewportGap, rect.top - menuHeight - gap);
+      }
+
+      left = Math.max(
+        viewportGap,
+        Math.min(left, window.innerWidth - menuWidth - viewportGap)
+      );
+
+      setMenuPosition({
+        position: "fixed",
+        top,
+        left,
+        zIndex: "var(--z-popover)",
+      });
+    };
+
+    const frame = window.requestAnimationFrame(updateMenuPosition);
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [isOpen, currentMonth, pickerMode]);
 
   // Keyboard navigation
   const handleKeyDown = (e) => {
@@ -303,6 +367,177 @@ export default function Calendar({
     .filter(Boolean)
     .join(" ");
 
+  const menuNode = isOpen ? (
+    <div
+      ref={menuRef}
+      className="calendar-api__menu"
+      role="dialog"
+      aria-modal="false"
+      style={menuPosition || { position: "fixed", visibility: "hidden" }}
+    >
+      <div className="calendar-api__header">
+        <button
+          type="button"
+          className="calendar-api__nav-button"
+          onClick={handlePrevMonth}
+          aria-label="Previous month"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M10 12L6 8L10 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          className="calendar-api__month-year"
+          onClick={handleMonthYearHeaderClick}
+          aria-expanded={pickerMode === "month-year"}
+          aria-label="Select month and year"
+        >
+          {monthYearDisplay}
+        </button>
+
+        <button
+          type="button"
+          className="calendar-api__nav-button"
+          onClick={handleNextMonth}
+          aria-label="Next month"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 4L10 8L6 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <button
+        type="button"
+        className="calendar-api__today-button"
+        onClick={handleToday}
+      >
+        Today
+      </button>
+
+      {pickerMode === "month-year" ? (
+        <div className="calendar-api__month-year-picker">
+          <div className="calendar-api__month-grid">
+            {pickerMonths.map((m, i) => {
+              const isSelected = currentMonth.getMonth() === i;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
+                  onClick={() => handlePickMonth(i)}
+                >
+                  {m}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            className="calendar-api__year-scroll"
+            ref={yearScrollRef}
+            role="listbox"
+            aria-label="Year"
+          >
+            {pickerYears.map((y) => {
+              const isSelected = currentMonth.getFullYear() === y;
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  ref={isSelected ? selectedYearRef : null}
+                  className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
+                  onClick={() => handlePickYear(y)}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  {y}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="calendar-api__weekdays">
+            {weekDays.map((day, index) => {
+              // Match the header label to the actual weekday it represents,
+              // accounting for firstDayOfWeek rotation, so Sun/Sat tint.
+              const realWeekday = (firstDayOfWeek + index) % 7;
+              const weekdayClass = [
+                "calendar-api__weekday",
+                realWeekday === 0 && "is-sunday",
+                realWeekday === 6 && "is-saturday",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <div key={index} className={weekdayClass}>
+                  {day}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="calendar-api__days">
+            {calendarDays.map((date, index) => {
+              if (!date) {
+                return <div key={`empty-${index}`} className="calendar-api__day calendar-api__day--empty" />;
+              }
+
+              const disabled = isDateDisabled(date);
+              const selected = isDateSelected(date);
+              const highlighted = isDateHighlighted(date);
+              const today = isToday(date);
+              const weekday = date.getDay(); // 0=Sun, 6=Sat
+              const holiday = isBankHoliday(date);
+
+              const dayClassName = [
+                "calendar-api__day",
+                disabled && "is-disabled",
+                selected && "is-selected",
+                highlighted && "is-highlighted",
+                today && "is-today",
+                weekday === 0 && "is-sunday",
+                weekday === 6 && "is-saturday",
+                holiday && "is-bank-holiday",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  className={dayClassName}
+                  onClick={() => handleDateSelect(date)}
+                  disabled={disabled}
+                  aria-label={formatDate(date)}
+                  aria-selected={selected}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div ref={calendarRef} className={containerClassName} style={wrapperStyle} {...rest}>
       {label && (
@@ -345,170 +580,7 @@ export default function Calendar({
         </svg>
       </button>
 
-      {isOpen && (
-        <div ref={menuRef} className="calendar-api__menu" role="dialog" aria-modal="false">
-          <div className="calendar-api__header">
-            <button
-              type="button"
-              className="calendar-api__nav-button"
-              onClick={handlePrevMonth}
-              aria-label="Previous month"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M10 12L6 8L10 4"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="calendar-api__month-year"
-              onClick={handleMonthYearHeaderClick}
-              aria-expanded={pickerMode === "month-year"}
-              aria-label="Select month and year"
-            >
-              {monthYearDisplay}
-            </button>
-
-            <button
-              type="button"
-              className="calendar-api__nav-button"
-              onClick={handleNextMonth}
-              aria-label="Next month"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M6 4L10 8L6 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="calendar-api__today-button"
-            onClick={handleToday}
-          >
-            Today
-          </button>
-
-          {pickerMode === "month-year" ? (
-            <div className="calendar-api__month-year-picker">
-              <div className="calendar-api__month-grid">
-                {pickerMonths.map((m, i) => {
-                  const isSelected = currentMonth.getMonth() === i;
-                  return (
-                    <button
-                      key={m}
-                      type="button"
-                      className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
-                      onClick={() => handlePickMonth(i)}
-                    >
-                      {m}
-                    </button>
-                  );
-                })}
-              </div>
-              <div
-                className="calendar-api__year-scroll"
-                ref={yearScrollRef}
-                role="listbox"
-                aria-label="Year"
-              >
-                {pickerYears.map((y) => {
-                  const isSelected = currentMonth.getFullYear() === y;
-                  return (
-                    <button
-                      key={y}
-                      type="button"
-                      ref={isSelected ? selectedYearRef : null}
-                      className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
-                      onClick={() => handlePickYear(y)}
-                      role="option"
-                      aria-selected={isSelected}
-                    >
-                      {y}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="calendar-api__weekdays">
-                {weekDays.map((day, index) => {
-                  // Match the header label to the actual weekday it represents,
-                  // accounting for firstDayOfWeek rotation, so Sun/Sat tint.
-                  const realWeekday = (firstDayOfWeek + index) % 7;
-                  const weekdayClass = [
-                    "calendar-api__weekday",
-                    realWeekday === 0 && "is-sunday",
-                    realWeekday === 6 && "is-saturday",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  return (
-                    <div key={index} className={weekdayClass}>
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="calendar-api__days">
-                {calendarDays.map((date, index) => {
-                  if (!date) {
-                    return <div key={`empty-${index}`} className="calendar-api__day calendar-api__day--empty" />;
-                  }
-
-                  const disabled = isDateDisabled(date);
-                  const selected = isDateSelected(date);
-                  const highlighted = isDateHighlighted(date);
-                  const today = isToday(date);
-                  const weekday = date.getDay(); // 0=Sun, 6=Sat
-                  const holiday = isBankHoliday(date);
-
-                  const dayClassName = [
-                    "calendar-api__day",
-                    disabled && "is-disabled",
-                    selected && "is-selected",
-                    highlighted && "is-highlighted",
-                    today && "is-today",
-                    weekday === 0 && "is-sunday",
-                    weekday === 6 && "is-saturday",
-                    holiday && "is-bank-holiday",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      className={dayClassName}
-                      onClick={() => handleDateSelect(date)}
-                      disabled={disabled}
-                      aria-label={formatDate(date)}
-                      aria-selected={selected}
-                    >
-                      {date.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {menuNode ? createPortal(menuNode, document.body) : null}
 
       {helperText && <div className="calendar-api__helper">{helperText}</div>}
 

@@ -212,14 +212,16 @@ export default function Sidebar({
   const inPresentationRoute = pathname.startsWith("/presentation");
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
   const ghostControlStyle = {
-    background: "transparent",
+    background: "var(--theme)",
+    backgroundImage: "none",
     color: "var(--accentText)",
-    border: "var(--ghostbutton-ring)",
+    border: "none",
   };
   const successGhostControlStyle = {
-    background: "transparent",
+    background: "var(--theme-hover)",
+    backgroundImage: "none",
     color: "var(--success-text)",
-    border: "1px solid var(--success)",
+    border: "none",
   };
   const successControlStyle = {
     background: "var(--success-surface)",
@@ -439,17 +441,18 @@ export default function Sidebar({
         display: "flex",
         flexDirection: "column",
         borderRadius: "var(--page-card-radius)",
-        // Section-defining ring (matches .app-sidebar) so the transparent rail
-        // still reads as its own outlined panel.
+        // Section-defining ring (matches .app-sidebar) — a soft frosted edge.
         boxShadow: "var(--shell-section-ring)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "0",
         overflowX: "hidden",
         overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
-        // Transparent sidebar shell: app background shows through; the nav
-        // buttons inside carry the frosted-glass look (matches .app-sidebar).
-        background: "transparent",
+        // Frosted-glass sidebar shell: a soft white scrim + backdrop blur so
+        // navigation stays easy to scan (matches .app-sidebar in staffglobal.css).
+        background: "var(--shell-glass-bg)",
+        backdropFilter: "var(--shell-glass-blur)",
+        WebkitBackdropFilter: "var(--shell-glass-blur)",
       }}
     >
       {/* Header */}

@@ -1905,12 +1905,8 @@ function GlobalUiShowcase() {
       
       <style jsx global>{`
         .user-diagnostic-showcase {
-          background: #fdf2f8 !important;
           box-shadow: none;
           min-width: 0;
-        }
-        :root[data-theme="dark"] .user-diagnostic-showcase {
-          background: #4a2737 !important;
         }
         .showcase-controls {
           display: flex;
@@ -1920,9 +1916,6 @@ function GlobalUiShowcase() {
         }
         .user-diagnostic-showcase .app-section-card,
         .showcase-section-card {
-          background: #fdf2f8 !important;
-          box-shadow: none;
-          border: none;
           margin-bottom: var(--page-stack-gap);
         }
         /* Default = NO border around showcase demo wrappers.
@@ -1945,18 +1938,11 @@ function GlobalUiShowcase() {
         .user-diagnostic-showcase textarea {
           border: none !important;
         }
-        :root[data-theme="dark"] .user-diagnostic-showcase .app-section-card,
-        :root[data-theme="dark"] .user-diagnostic-showcase .showcase-section-card,
-        :root[data-theme="dark"] .user-diagnostic-showcase .showcase-filter-card {
-          background: #4a2737 !important;
-        }
         .showcase-filter-card {
-          background: #fdf2f8 !important;
           position: sticky;
           top: 0;
           z-index: 10;
           margin-bottom: var(--space-sm);
-          border-bottom: none;
         }
         .showcase-filter-tabs {
           display: flex;

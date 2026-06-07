@@ -41,48 +41,47 @@ html.staff-scope {
   --close-button-size: 48px;
   --close-button-radius: 24px;
   --hover-surface-z: 80;
-  /* Accent-dominant flowing background (light). Big saturated red glows on the
-     edges + a bright white/silver diagonal sweep through the middle, keeping a
-     light centre for content. Red comes from the accent token; the sweep and
-     base wash use neutral white. */
+  /* Accent-dominant flowing background (light). Soft red glows on the edges + a
+     theme-coloured diagonal sweep through the middle (--theme-rgb), keeping a
+     light centre for content. The base wash uses neutral white. */
   --app-background-scene:
-    /* bright silver/white diagonal sweep — the signature swoosh */
+    /* theme-coloured diagonal sweep — the signature swoosh (uses --theme-rgb) */
     linear-gradient(
       115deg,
       transparent 0%,
       transparent 26%,
-      rgba(255, 255, 255, 0.35) 40%,
-      rgba(255, 255, 255, 0.78) 50%,
-      rgba(255, 255, 255, 0.35) 60%,
+      rgba(var(--theme-rgb), 0.35) 40%,
+      rgba(var(--theme-rgb), 0.78) 50%,
+      rgba(var(--theme-rgb), 0.35) 60%,
       transparent 74%,
       transparent 100%
     ),
-    /* dominant red glow — right side */
+    /* atmospheric red glow — right side (softened: accent now supports, not dominates) */
     radial-gradient(
       ellipse 80% 95% at 104% 30%,
-      rgba(var(--accentMainRgb), 0.85) 0%,
-      rgba(var(--accentMainRgb), 0.5) 30%,
-      rgba(var(--accentMainRgb), 0.16) 58%,
+      rgba(var(--accentMainRgb), 0.42) 0%,
+      rgba(var(--accentMainRgb), 0.22) 30%,
+      rgba(var(--accentMainRgb), 0.07) 58%,
       transparent 76%
     ),
-    /* red glow — lower left */
+    /* atmospheric red glow — lower left */
     radial-gradient(
       ellipse 70% 82% at -6% 94%,
-      rgba(var(--accentMainRgb), 0.8) 0%,
-      rgba(var(--accentMainRgb), 0.4) 32%,
+      rgba(var(--accentMainRgb), 0.38) 0%,
+      rgba(var(--accentMainRgb), 0.18) 32%,
       transparent 70%
     ),
-    /* red wash spreading across the top */
+    /* faint red wash across the top */
     radial-gradient(
       ellipse 130% 62% at 60% -8%,
-      rgba(var(--accentMainRgb), 0.42) 0%,
+      rgba(var(--accentMainRgb), 0.18) 0%,
       transparent 58%
     ),
     /* light wash so the centre stays bright behind content */
     radial-gradient(
       ellipse 120% 120% at 45% 40%,
-      rgba(var(--surface-rgb), 0.92) 28%,
-      rgba(var(--surface-rgb), 0.25) 72%,
+      rgba(var(--surface-rgb), 0.96) 28%,
+      rgba(var(--surface-rgb), 0.35) 72%,
       transparent 100%
     ),
     var(--app-background-base, var(--page-shell-bg));
@@ -91,40 +90,40 @@ html.staff-scope {
 }
 
 html.staff-scope[data-theme="dark"] {
-  /* Accent-dominant flowing background (dark). Deep black corners with strong
-     red glows on top-right + lower-left and a bright silver swoosh cutting
-     through the middle. */
+  /* Accent-dominant flowing background (dark). Deep black corners with soft
+     red glows on top-right + lower-left and a theme-coloured swoosh
+     (--theme-rgb) cutting through the middle. */
   --app-background-scene:
-    /* bright silver/white diagonal sweep — the signature swoosh */
+    /* theme-coloured diagonal sweep — the signature swoosh (uses --theme-rgb) */
     linear-gradient(
       115deg,
       transparent 0%,
       transparent 28%,
-      rgba(255, 255, 255, 0.08) 40%,
-      rgba(255, 255, 255, 0.55) 49%,
-      rgba(255, 255, 255, 0.1) 59%,
+      rgba(var(--theme-rgb), 0.08) 40%,
+      rgba(var(--theme-rgb), 0.55) 49%,
+      rgba(var(--theme-rgb), 0.1) 59%,
       transparent 72%,
       transparent 100%
     ),
-    /* dominant red glow — top / right */
+    /* atmospheric red glow — top / right (softened: accent supports, not dominates) */
     radial-gradient(
       ellipse 95% 88% at 80% 0%,
-      rgba(var(--accentMainRgb), 0.98) 0%,
-      rgba(var(--accentMainRgb), 0.62) 32%,
-      rgba(var(--accentMainRgb), 0.2) 58%,
+      rgba(var(--accentMainRgb), 0.50) 0%,
+      rgba(var(--accentMainRgb), 0.30) 32%,
+      rgba(var(--accentMainRgb), 0.10) 58%,
       transparent 80%
     ),
-    /* red glow — lower left */
+    /* atmospheric red glow — lower left */
     radial-gradient(
       ellipse 82% 80% at 4% 98%,
-      rgba(var(--accentMainRgb), 0.92) 0%,
-      rgba(var(--accentMainRgb), 0.46) 34%,
+      rgba(var(--accentMainRgb), 0.46) 0%,
+      rgba(var(--accentMainRgb), 0.22) 34%,
       transparent 72%
     ),
-    /* red wash spreading across the top */
+    /* faint red wash across the top */
     radial-gradient(
       ellipse 145% 72% at 52% -12%,
-      rgba(var(--accentMainRgb), 0.58) 0%,
+      rgba(var(--accentMainRgb), 0.26) 0%,
       transparent 60%
     ),
     /* corner vignette to deepen the black opposite the red */
@@ -314,27 +313,36 @@ html.staff-scope .app-layout-main-column {
   overflow-x: hidden;
 }
 
-/* Hairline outline + soft float shadow that makes the transparent layout
-   shells (topbar / page card / sidebar) read as three distinct sections.
-   Drawn as a RING via box-shadow, NOT a CSS `border` (Border Sweep §3.0a:
-   outlines use a ring, not a border), so it stays compliant while looking like
-   a border around each section — and without re-adding a fill or backdrop blur. */
+/* Section-defining ring + soft float shadow for the layout shells (topbar /
+   page card / sidebar). Readability pass (2026-06): the shells now also carry a
+   frosted-white scrim (see the rules below), so this ring is a soft WHITE rim +
+   premium drop shadow rather than the old accent hairline. Drawn as a RING via
+   box-shadow, NOT a CSS `border` (Border Sweep §3.0a), so each shell reads as a
+   frosted panel with a soft edge while staying compliant. Dark mode overrides
+   the rim/shadow colours below. */
 html.staff-scope {
   --shell-section-ring:
-    inset 0 0 0 1px rgba(var(--accentMainRgb), 0.22),
-    0 10px 28px rgba(0, 0, 0, 0.08);
+    0 8px 26px rgba(15, 23, 42, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.50),
+    inset 0 1px 0 rgba(255, 255, 255, 0.70);
+}
+
+html.staff-scope[data-theme="dark"] {
+  --shell-section-ring:
+    0 8px 26px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 html.staff-scope .app-topbar-shell {
-  /* Transparent shell: the app background scene shows straight through the
-     topbar — NO fill and NO backdrop blur. A section-defining ring (see
-     --shell-section-ring) keeps it reading as its own outlined panel. The
-     frosted-glass depth comes from the controls/buttons inside, not the bar.
-     (The matching inline background in StaffTopbar.js is also set to
-     transparent so the inline style doesn't re-introduce a fill.) */
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* Frosted-glass shell: a soft white scrim (--shell-glass-bg) + backdrop blur
+     so the topbar's search / controls never sit on the raw background gradient.
+     The section-defining ring (--shell-section-ring) gives it a soft frosted
+     edge. (The matching inline background in StaffTopbar.js is set to the same
+     token so the inline style stays in sync.) */
+  background: var(--shell-glass-bg);
+  backdrop-filter: var(--shell-glass-blur);
+  -webkit-backdrop-filter: var(--shell-glass-blur);
   box-shadow: var(--shell-section-ring);
   border: none;
   border-radius: var(--page-card-radius);
@@ -398,15 +406,15 @@ html.staff-scope .app-page-card {
   width: 100%;
   min-height: 100%;
   min-width: 0;
-  /* Transparent page shell: the app background scene is visible through it,
-     with NO backdrop blur. A section-defining ring (see --shell-section-ring)
-     keeps it reading as its own outlined panel. The Liquid Glass effect belongs
-     to the section cards / buttons nested inside, which float on the live
-     background. Pages that pass an explicit `contentBackground` override the
-     fill inline (the ring still applies). */
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* Content scrim: a soft frosted-white backing (--page-scrim-bg) + backdrop
+     blur so the background gradient becomes atmosphere only and never competes
+     with content. Kept lighter than --glass-surface on purpose, so the section
+     cards nested inside still float clearly above it. A section-defining ring
+     (--shell-section-ring) gives the scrim a soft frosted edge. Pages that pass
+     an explicit `contentBackground` override the fill inline (ring still applies). */
+  background: var(--page-scrim-bg);
+  backdrop-filter: var(--shell-glass-blur);
+  -webkit-backdrop-filter: var(--shell-glass-blur);
   border-radius: var(--page-card-radius);
   border: none;
   padding: var(--page-card-padding);
@@ -770,13 +778,15 @@ html.staff-scope .app-header-row {
    2026-04 UI audit. */
 
 html.staff-scope .app-sidebar {
-  /* Transparent shell: the app background shows through the sidebar — NO fill
-     and NO backdrop blur. A section-defining ring (see --shell-section-ring)
-     keeps the rail reading as its own outlined panel; the nav buttons inside
-     carry the frosted-glass look over the live background. */
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* Frosted-glass rail: a soft white scrim (--shell-glass-bg) + backdrop blur
+     so navigation is easy to scan and never sits on the raw background gradient.
+     A section-defining ring (--shell-section-ring) gives the rail a soft frosted
+     edge; the nav buttons inside still carry their own glass treatment, with the
+     active item reading as the strongest, most elevated state. (The matching
+     inline background in StaffSidebar.js is set to the same token.) */
+  background: var(--shell-glass-bg);
+  backdrop-filter: var(--shell-glass-blur);
+  -webkit-backdrop-filter: var(--shell-glass-blur);
   box-shadow: var(--shell-section-ring);
   border: none;
   border-radius: var(--page-card-radius);
@@ -1236,7 +1246,8 @@ html.staff-scope a.tab-api__item:active {
 }
 
 html.staff-scope button:not(.app-btn) {
-  background: rgba(var(--accent-rgb), 0.14);
+  background: var(--theme);
+  background-image: none;
   color: var(--accentText);
   border: none;
   border-radius: var(--control-radius);
@@ -1246,22 +1257,24 @@ html.staff-scope button:not(.app-btn) {
   font-size: var(--control-font-size);
   font-weight: 600;
   cursor: pointer;
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow:
-    0 4px 14px rgba(var(--accent-rgb), 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    var(--btn-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
   position: relative;
   z-index: 0;
 }
 html.staff-scope button:not(.app-btn):hover {
-  background: rgba(var(--accent-rgb), 0.18);
+  background: var(--theme-hover);
+  background-image: none;
   filter: none;
 }
 html.staff-scope button:not(.app-btn):focus-visible {
   outline: none;
-  background: rgba(var(--accent-rgb), 0.18);
+  background: var(--theme-hover);
+  background-image: none;
   box-shadow: var(--focus-ring);
 }
 html.staff-scope button:not(.app-btn):disabled {
@@ -1269,6 +1282,10 @@ html.staff-scope button:not(.app-btn):disabled {
   cursor: not-allowed;
 }
 
+/* `:not(.app-sidebar-edge-toggle)` exempts the sliding sidebar edge-toggles
+   (navigator + job tracker) — they carry "Close …" aria-labels for screen
+   readers but are NOT square dismiss/X buttons, so they must keep their own
+   clipped-nub geometry instead of being forced to --close-button-size. */
 html.staff-scope :where(
   button[aria-label="Close"],
   button[aria-label="close"],
@@ -1282,7 +1299,7 @@ html.staff-scope :where(
   .panel-close,
   .flyout-close,
   .app-close-button
-) {
+):not(.app-sidebar-edge-toggle) {
   width: var(--close-button-size) !important;
   height: var(--close-button-size) !important;
   min-width: var(--close-button-size) !important;
@@ -1447,21 +1464,20 @@ html.staff-scope {
      control below (dropdowns, calendar / month / time pickers, search bars,
      text fields, native selects/inputs/textareas) read from these — so editing
      the glass button here restyles every control to match, in one move.
-     The Action Glass (primary) button is the ONLY thing that does NOT follow
-     this: it keeps its own accent-gradient design (--glass-action-* below feed
-     only .app-btn--primary / .glass-action-button). */
-  --glass-button-bg: rgba(var(--accent-rgb), 0.1);
-  --glass-button-hover-bg: rgba(var(--accent-rgb), 0.18);
-  --glass-button-active-bg: rgba(var(--accent-rgb), 0.22);
-  --glass-button-blur: blur(14px) saturate(160%);
-  --glass-button-shadow: var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.18);
-  --glass-button-hover-shadow: var(--btn-glow-hover), inset 0 0 0 1px rgba(var(--accent-rgb), 0.26);
-  --glass-button-active-shadow: var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.22);
+     Primary/action buttons now share this same tint through the
+     --glass-action-* aliases below. */
+  --glass-button-bg: var(--theme);
+  --glass-button-hover-bg: var(--theme-hover);
+  --glass-button-active-bg: var(--theme-hover);
+  --glass-button-blur: none;
+  --glass-button-shadow: var(--btn-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glass-button-hover-shadow: var(--btn-glow-hover), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --glass-button-active-shadow: var(--btn-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 
   /* Form controls ALIAS the glass button so they always track it. */
   --glass-control-backdrop: var(--glass-button-blur);
   --glass-menu-backdrop: var(--glass-button-blur);
-  --glass-action-backdrop: blur(18px) saturate(180%);
+  --glass-action-backdrop: none;
   --glass-control-bg: var(--glass-button-bg);
   --glass-control-hover-bg: var(--glass-button-hover-bg);
   --glass-control-focus-bg: var(--glass-button-active-bg);
@@ -1479,17 +1495,9 @@ html.staff-scope {
      arbitrary content); its blur + shadow still track the glass button above. */
   --glass-menu-bg: rgba(var(--surface-rgb), 0.8);
 
-  /* Action Glass (primary) — SEPARATE; feeds only .app-btn--primary /
-     .glass-action-button. Left as the accent gradient on purpose. */
-  --glass-action-bg:
-    linear-gradient(
-      135deg,
-      rgba(var(--accent-rgb, 255, 45, 45), 0.95),
-      rgba(var(--accent-rgb, 255, 45, 45), 0.72)
-    );
-  --glass-action-shadow:
-    0 12px 30px rgba(var(--accent-rgb, 255, 45, 45), 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  /* Primary/action aliases feed .app-btn--primary and .glass-action-button. */
+  --glass-action-bg: var(--theme);
+  --glass-action-shadow: var(--glass-button-shadow);
   --glass-control-placeholder: rgba(var(--text-1-rgb, 17, 24, 39), 0.58);
   --glass-control-text: var(--staff-text, var(--text-1));
 }
@@ -2848,6 +2856,14 @@ html.staff-scope .monthpicker-api.is-open {
   z-index: 1200;
 }
 
+html.staff-scope .calendar-api.is-open {
+  z-index: var(--z-popover);
+}
+
+html.staff-scope .timepicker-api.is-open {
+  z-index: var(--z-popover);
+}
+
 html.staff-scope .dropdown-api__label,
 html.staff-scope .calendar-api__label,
 html.staff-scope .monthpicker-api__label,
@@ -2880,6 +2896,7 @@ html.staff-scope textarea {
   border-radius: var(--control-radius);
   border: none !important;
   background: var(--glass-control-bg) !important;
+  background-image: none !important;
   color: var(--glass-control-text) !important;
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
@@ -2970,6 +2987,7 @@ html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="ran
 html.staff-scope select:hover,
 html.staff-scope textarea:hover {
   background: var(--glass-control-hover-bg) !important;
+  background-image: none !important;
   box-shadow: var(--glass-control-hover-shadow);
   transform: translateY(-1px);
 }
@@ -3001,6 +3019,7 @@ html.staff-scope textarea:focus,
 html.staff-scope textarea:focus-visible {
   outline: none;
   background: var(--glass-control-focus-bg) !important;
+  background-image: none !important;
   box-shadow: var(--glass-control-focus-shadow) !important;
   transform: translateY(-1px);
 }
@@ -3044,6 +3063,7 @@ html.staff-scope .searchbar-api {
   /* Trigger wears the Primary-button look via dropdown-dedicated tokens so
      the dropdown stays stable if Primary or --input-bg are later reskinned. */
   background: var(--glass-control-bg) !important;
+  background-image: none !important;
   color: var(--glass-control-text) !important;
   border: none !important;
   box-shadow: var(--glass-control-shadow) !important;
@@ -3065,6 +3085,7 @@ html.staff-scope .searchbar-api:focus-within {
   height: var(--control-height) !important;
   padding: 0 !important;
   background: var(--glass-control-bg) !important;
+  background-image: none !important;
 }
 
 html.staff-scope .dropdown-api.is-open .dropdown-api__control,
@@ -3075,6 +3096,7 @@ html.staff-scope .timepicker-api__control:focus,
 html.staff-scope .timepicker-api__control:focus-visible,
 html.staff-scope .searchbar-api:focus-within {
   background: var(--glass-control-focus-bg) !important;
+  background-image: none !important;
   box-shadow: var(--glass-control-focus-shadow) !important;
 }
 
@@ -3083,6 +3105,7 @@ html.staff-scope .calendar-api__control:hover:not(:disabled),
 html.staff-scope .timepicker-api__control:hover:not(:disabled),
 html.staff-scope .searchbar-api:hover {
   background: var(--glass-control-hover-bg) !important;
+  background-image: none !important;
   box-shadow: var(--glass-control-hover-shadow) !important;
 }
 
@@ -3202,19 +3225,21 @@ html.staff-scope .timepicker-api__menu {
   left: 0;
   border-radius: var(--control-menu-radius);
   border: none;
-  background: var(--glass-menu-bg) !important;
+  background: var(--surface) !important;
+  background-image: none !important;
   box-shadow: var(--glass-menu-shadow);
-  backdrop-filter: var(--glass-menu-backdrop);
-  -webkit-backdrop-filter: var(--glass-menu-backdrop);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html.staff-scope .glass-dropdown,
 html.staff-scope .glass-dropdown-menu {
   border-radius: var(--control-menu-radius);
-  background: var(--glass-menu-bg) !important;
+  background: var(--surface) !important;
+  background-image: none !important;
   box-shadow: var(--glass-menu-shadow);
-  backdrop-filter: var(--glass-menu-backdrop);
-  -webkit-backdrop-filter: var(--glass-menu-backdrop);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html.staff-scope .dropdown-api__menu {
@@ -3236,7 +3261,7 @@ html.staff-scope .dropdown-api__menu {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  z-index: 1250;
+  z-index: var(--z-popover);
 }
 
 html.staff-scope .dropdown-api__search {
@@ -3345,11 +3370,17 @@ html.staff-scope .multiselect-dropdown-api__option.is-selected {
   /* Selected row permanently wears the Secondary-style treatment (via
      dropdown-dedicated tokens), visible without needing to hover. */
   background: var(--glass-action-bg) !important;
-  color: white !important;
+  color: var(--dropdown-option-selected-color) !important;
   box-shadow: var(--glass-action-shadow);
   backdrop-filter: var(--glass-action-backdrop);
   -webkit-backdrop-filter: var(--glass-action-backdrop);
   outline: none;
+}
+
+html.staff-scope button.dropdown-api__option.is-selected .dropdown-api__option-description,
+html.staff-scope button.dropdown-api__option.is-selected:hover .dropdown-api__option-description,
+html.staff-scope button.dropdown-api__option.is-selected:focus-visible .dropdown-api__option-description {
+  color: var(--dropdown-option-selected-color) !important;
 }
 
 html.staff-scope .dropdown-api__option.is-disabled {
@@ -3536,8 +3567,9 @@ html.staff-scope .timepicker-api__required {
 }
 
 html.staff-scope .calendar-api__menu {
-  z-index: 1000;
-  width: 320px;
+  z-index: var(--z-popover);
+  width: 348px;
+  max-width: calc(100vw - 20px);
   padding: 16px;
   animation: calendar-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -3561,9 +3593,9 @@ html.staff-scope .calendar-api__menu {
     left: 50%;
     transform: translate(-50%, -50%);
     width: calc(100vw - 32px);
-    max-width: 320px;
+    max-width: 348px;
     animation: none;
-    z-index: 1250;
+    z-index: var(--z-popover);
   }
 }
 
@@ -3826,7 +3858,7 @@ html.staff-scope .monthpicker-api__menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  z-index: 1000;
+  z-index: var(--z-popover);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -3835,8 +3867,11 @@ html.staff-scope .monthpicker-api__menu {
   padding: 16px;
   border: none;
   border-radius: var(--control-menu-radius);
-  background: var(--dropdown-menu-bg);
+  background: var(--surface);
+  background-image: none;
   box-shadow: var(--dropdown-menu-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   animation: calendar-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -4017,6 +4052,7 @@ html.staff-scope .calendar-api__days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  justify-items: center;
 }
 
 /* The `button.` prefix is deliberate — the base reset
@@ -4029,7 +4065,9 @@ html.staff-scope button.calendar-api__day {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: auto;
   min-height: 0;
   padding: 0;
   border: none;
@@ -4079,7 +4117,7 @@ html.staff-scope a.tab-api__item.is-active:focus-visible {
 
 html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
   background: rgba(var(--accent-rgb), 0.18);
-  color: var(--accentText);
+  color: var(--calendar-day-color);
   font-weight: 600;
 }
 
@@ -4124,7 +4162,7 @@ html.staff-scope [data-theme="dark"] .calendar-api__today-button {
 /* ========================================================= */
 
 html.staff-scope .timepicker-api__menu {
-  z-index: 1000;
+  z-index: var(--z-popover);
   width: 280px;
   padding: 16px;
   animation: timepicker-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -4234,10 +4272,11 @@ html.staff-scope .monthpicker-api.is-open .monthpicker-api__control {
 html.staff-scope .calendar-api__menu,
 html.staff-scope .monthpicker-api__menu,
 html.staff-scope .timepicker-api__menu {
-  background: var(--glass-menu-bg) !important;
+  background: var(--surface) !important;
+  background-image: none !important;
   box-shadow: var(--glass-menu-shadow) !important;
-  backdrop-filter: var(--glass-menu-backdrop);
-  -webkit-backdrop-filter: var(--glass-menu-backdrop);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html.staff-scope .calendar-api__header,
@@ -4287,14 +4326,23 @@ html.staff-scope button.calendar-api__day.is-highlighted:not(.is-selected) {
 
 html.staff-scope button.calendar-api__picker-cell.is-selected,
 html.staff-scope button.monthpicker-api__picker-cell.is-selected,
-html.staff-scope button.timepicker-api__option.is-selected,
-html.staff-scope button.timepicker-api__option.is-selected:hover,
-html.staff-scope button.timepicker-api__option.is-selected:focus-visible,
 html.staff-scope button.calendar-api__day.is-selected,
 html.staff-scope button.calendar-api__day.is-selected:hover,
 html.staff-scope button.calendar-api__day.is-selected:focus-visible {
   background: var(--glass-action-bg) !important;
-  color: white !important;
+  color: var(--calendar-day-selected-color) !important;
+  box-shadow: var(--glass-action-shadow);
+  backdrop-filter: var(--glass-action-backdrop);
+  -webkit-backdrop-filter: var(--glass-action-backdrop);
+  font-weight: 700;
+  outline: none;
+}
+
+html.staff-scope button.timepicker-api__option.is-selected,
+html.staff-scope button.timepicker-api__option.is-selected:hover,
+html.staff-scope button.timepicker-api__option.is-selected:focus-visible {
+  background: var(--glass-action-bg) !important;
+  color: var(--timepicker-option-selected-color) !important;
   box-shadow: var(--glass-action-shadow);
   backdrop-filter: var(--glass-action-backdrop);
   -webkit-backdrop-filter: var(--glass-action-backdrop);
@@ -4304,7 +4352,7 @@ html.staff-scope button.calendar-api__day.is-selected:focus-visible {
 
 html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
   background: var(--glass-item-hover-bg) !important;
-  color: var(--accentText) !important;
+  color: var(--calendar-day-color) !important;
   box-shadow:
     inset 0 -2px 0 rgba(var(--accent-rgb, 255, 45, 45), 0.58),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -4357,7 +4405,7 @@ html.staff-scope .dropdown-item.is-selected,
 html.staff-scope .dropdown-item.active,
 html.staff-scope .dropdown-item.selected {
   background: var(--glass-action-bg) !important;
-  color: white !important;
+  color: var(--dropdown-option-selected-color) !important;
   box-shadow: var(--glass-action-shadow);
   backdrop-filter: var(--glass-action-backdrop);
   -webkit-backdrop-filter: var(--glass-action-backdrop);
@@ -4455,6 +4503,7 @@ html.staff-scope button.searchbar-api__clear {
   border: none;
   border-radius: var(--control-radius);
   background: var(--glass-item-bg);
+  background-image: none;
   color: var(--control-muted-text);
   font-size: 1.15rem;
   font-weight: 500;
@@ -4465,8 +4514,8 @@ html.staff-scope button.searchbar-api__clear {
   justify-content: center;
   transition: background 0.18s ease, opacity 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  backdrop-filter: var(--glass-action-backdrop);
-  -webkit-backdrop-filter: var(--glass-action-backdrop);
+  backdrop-filter: var(--glass-control-backdrop);
+  -webkit-backdrop-filter: var(--glass-control-backdrop);
 }
 
 html.staff-scope button.searchbar-api__clear:disabled {
@@ -4477,6 +4526,7 @@ html.staff-scope button.searchbar-api__clear:disabled {
 html.staff-scope button.searchbar-api__clear:hover:not(:disabled),
 html.staff-scope button.searchbar-api__clear:focus-visible {
   background: var(--glass-item-hover-bg);
+  background-image: none;
   color: var(--accentText);
   box-shadow: var(--glass-control-hover-shadow);
   outline: none;
@@ -5280,7 +5330,7 @@ html.staff-scope .calendar-api.leave-modal-field .calendar-api__menu {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1250;
+  z-index: var(--z-popover);
 }
 
 html.staff-scope .dropdown-api.job-request-payment-dropdown {

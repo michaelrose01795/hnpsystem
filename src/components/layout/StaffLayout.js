@@ -844,11 +844,22 @@ export default function Layout({
   const showMobileStatusSidebar = !hideSidebar && canViewStatusSidebar && isTablet && isStatusSidebarOpen;
   const mobileDrawerWidth = Math.min(420, viewportWidth);
   const navDrawerTargetWidth = isTablet ? mobileDrawerWidth : NAV_DRAWER_WIDTH;
+  // +16 compensates for the chrome's 16px left padding so the open-state toggle
+  // anchors to the sidebar's right edge.
   const navButtonPaddingOffset = !isTablet && !hideSidebar ? 16 : 0;
-  const navToggleButtonLeft = isSidebarOpen
-    ? `${navDrawerTargetWidth + navButtonPaddingOffset}px`
-    : "0px";
+  // The toggle's flat side anchors to the screen edge when closed and to the
+  // sidebar's right edge when open.
+  const navToggleAnchor = isSidebarOpen ? navDrawerTargetWidth + navButtonPaddingOffset : 0;
   const showNavToggleButton = !hideSidebar && !isTablet; // Hide on tablet/mobile since we use tab-style buttons
+  // Sidebar toggle geometry. The button is drawn double-width and then clipped
+  // back to its outer half, so only a clean semicircular nub protrudes past the
+  // anchor edge. This makes the close ("‹") nub identical to the open ("›") nub:
+  // the flat back is removed by the clip exactly the way the viewport edge hides
+  // it in the closed state — instead of the nub floating as a full oval beside
+  // the translucent panel.
+  const toggleNub = isMobile ? 16 : isTablet ? 18 : 20; // visible protrusion + corner radius
+  const toggleHeight = isMobile ? 48 : isTablet ? 52 : 56;
+  const toggleFontSize = isMobile ? "14px" : isTablet ? "16px" : "18px";
   const fixedMessagesPageHeight = isTablet
     ? "calc(100vh - 75px - 12px - (var(--page-gutter-y-mobile) * 2))"
     : "calc(100vh - 75px - 12px - (var(--page-gutter-y) * 2))";
@@ -1132,25 +1143,36 @@ export default function Layout({
         <button
           type="button"
           onClick={toggleSidebar}
+          // Edge-toggle, not a square dismiss button — class exempts it from the
+          // global `[aria-label*="Close "]` close-button sizing rule.
+          className="app-sidebar-edge-toggle"
           style={{
             position: "fixed",
             top: "50%",
-            left: navToggleButtonLeft,
+            // Drawn double-width starting one nub to the left of the anchor; the
+            // clip below hides that left half so the flat back never shows.
+            left: `${navToggleAnchor - toggleNub}px`,
             transform: "translateY(-50%)",
-            width: isMobile ? "16px" : isTablet ? "18px" : "20px",
-            height: isMobile ? "48px" : isTablet ? "52px" : "56px",
+            width: `${toggleNub * 2}px`,
+            height: `${toggleHeight}px`,
             borderRadius: "0 var(--radius-pill) var(--radius-pill) 0",
+            clipPath: `inset(0 0 0 ${toggleNub}px)`, // reveal only the rounded outer half
+            // Full shorthand overrides the global --control-padding so the arrow
+            // centres in the visible nub; left pad = nub offsets the clipped half.
+            padding: `0 0 0 ${toggleNub}px`,
+            boxSizing: "border-box",
             border: "none",
-            background: isSidebarOpen
-              ? "var(--primary)"
-              : "var(--primary)",
+            background: "var(--primary)",
             color: "var(--surface)",
-            fontSize: isMobile ? "14px" : isTablet ? "16px" : "18px",
+            fontSize: toggleFontSize,
             fontWeight: 700,
             boxShadow: "none",
             cursor: "pointer",
             zIndex: 3600,
-            transition: "left 0.25s ease, width 0.2s ease, height 0.2s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center", // centre the arrow within the visible half-circle nub
+            transition: "left 0.25s ease",
           }}
           aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
         >
@@ -1164,25 +1186,36 @@ export default function Layout({
           <button
             type="button"
             onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
+            // Edge-toggle, not a square dismiss button — class exempts it from the
+            // global `[aria-label*="Close "]` close-button sizing rule.
+            className="app-sidebar-edge-toggle"
             style={{
               position: "fixed",
               top: "50%",
-              right: isStatusSidebarOpen ? `${STATUS_DRAWER_WIDTH}px` : "0",
+              // Mirror of the nav toggle: drawn double-width starting one nub to
+              // the right of the anchor; the clip hides that right half.
+              right: `${(isStatusSidebarOpen ? STATUS_DRAWER_WIDTH : 0) - toggleNub}px`,
               transform: "translateY(-50%)",
-              width: isMobile ? "16px" : isTablet ? "18px" : "20px",
-              height: isMobile ? "48px" : isTablet ? "52px" : "56px",
+              width: `${toggleNub * 2}px`,
+              height: `${toggleHeight}px`,
               borderRadius: "var(--radius-pill) 0 0 var(--radius-pill)",
+              clipPath: `inset(0 ${toggleNub}px 0 0)`, // reveal only the rounded outer half
+              // Full shorthand overrides the global --control-padding so the arrow
+              // centres in the visible nub; right pad = nub offsets the clipped half.
+              padding: `0 ${toggleNub}px 0 0`,
+              boxSizing: "border-box",
               border: "none",
-              background: isStatusSidebarOpen
-                ? "var(--primary)"
-                : "var(--primary)",
+              background: "var(--primary)",
               color: "var(--surface)",
-              fontSize: isMobile ? "14px" : isTablet ? "16px" : "18px",
+              fontSize: toggleFontSize,
               fontWeight: 700,
               boxShadow: "none",
               cursor: "pointer",
               zIndex: 3400,
-              transition: "right 0.35s ease, width 0.2s ease, height 0.2s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center", // centre the arrow within the visible half-circle nub
+              transition: "right 0.35s ease",
             }}
             aria-label={isStatusSidebarOpen ? "Close status sidebar" : "Open status sidebar"}
           >

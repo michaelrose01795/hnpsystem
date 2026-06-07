@@ -1,23 +1,19 @@
-TODO
-have it os the "Overlay" section does use liquid glass effect or glow around any of the border colours, have it so all border colours are bright bright pink and visible around each cards with all card content visible as well. also fix the "App Layout Page Card · 1.2.1.1 key: app-layout-page-card source: src/components/layout/StaffLayout.js:1085 route: /dev/user-diagnostic parent app-layout-main-shell (1.2.1) · 4 children" card to not shjow as pink anymore but to act the same as the "App Layout Page Card · 1.2.1.1 key: app-layout-page-card source: src/components/layout/StaffLayout.js:1085 route: /dev/user-diagnostic parent app-layout-main-shell (1.2.1) · 4 children" card. 
+CHECK CODEX
+when the content gets to the top of the page have it fade out/in and the same with the bottom of the page etc, make it suttle but effectiive. 
 
-TODO
-make sure the topbar and sidebar also follows the galss card effect. atm the left and rigth side of the car has a small maybe 10px section going down the edge of the left and right side of the page, this needs to just flow as one same background screen in the back. it moves bigger on the left side when the sidebar is clicked open and moves out etc. make sure the global search bar follows the same style as the standarg seach bar, have it so these doens thave a gradent within then but a light "--theme" colour tint. 
+CEHCK CLAUDE
+have it so inside the sidebar its a seperate section to the main scroll section, the sideabr will have its own independent sidebar scroll. have it so when the main page scrolls the sidebar doesnt scroll as well. have it os the height of the sidebar goes to the bottom of the last cotnetn but finished in the page view at the same gap as the "Job Tracker" sideabar does. 
 
-TODO
-make sure the calendar picker with the days within is showing section the whole card is above every other card, this is beucase the card atm is hiden just behind the other cards within the page. 
+CHECK CHAT
+have it sot he "Job Tracker" and search bar section within the "Job Tracker" sidebar all follows the gloass card background effect. 
 
-TODO
-have it so the button which closes the sidebar (navigator and tracking sidebar) is the same style as the button which opens the sidebars. 
-
-TODO
-have it so the backgroun dof the calendar picker, dropbar list etc is 100% solid and not transparent and is shown above everything within the card section etc. 
 
 TDDO
-deep dive to fix cards like the ones wihtin "Nextjobs Outstanding Scroll · 1.2.2.1.1.2 key: nextjobs-outstanding-scroll source: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js:122 route: /job-cards/waiting/nextjobs parent nextjobs-outstanding (1.2.2.1.1)" seciton as these are still using "--surface" colour without the glass effect. 
+deep dive to fix cards like the ones wihtin "Nextjobs Outstanding Scroll · 1.2.2.1.1.2 key: nextjobs-outstanding-scroll source: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js:122 route: /job-cards/waiting/nextjobs parent nextjobs-outstanding (1.2.2.1.1)" seciton as these are still using "--surface" colour without the glass effect. there are more sections like this within the app do a deep sweep using multiple agents to get this done. 
 
-TODO
-MICHAEL REFINE THE GLASS EFFECT A BIT SO ITS NOT AS TRANSPARENT. 
+
+TODO CODEX
+have it so the columns of the to and from date filled wihtin "Tracking Loan Car Appointments Table Scroll · 1.2.1.1.1.1.2 key: tracking-loan-car-appointments-table-scroll source: src/components/LoanCars/LoanCarSchedulePanel.js:1707 (dynamic pattern) route: /tracking parent tracking-page-body (1.2.1.1.1.1) · 2 children" section are filled 1px smaller width than the column, have it so that 1px is a gap which shows the table row background etc like normal 
 
 
 

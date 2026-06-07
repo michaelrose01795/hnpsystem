@@ -12,6 +12,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 
 // Topbar-only quick-action links (previously module constants in Layout.js).
 const SERVICE_ACTION_LINKS = [
@@ -49,9 +50,19 @@ export default function StaffTopbar({
 }) {
   const router = useRouter();
 
+  // Auto-hide / float-on-scroll is a desktop-only affordance. On tablet/mobile
+  // the topbar keeps its existing in-flow behaviour (and the portrait z-index
+  // rules in staffglobal.css), so we gate the hook to desktop widths.
+  const enableAutoHide = !isTablet;
+  const { wrapperRef, barRef, wrapperStyle, barStyle } = useAutoHideTopbar({
+    enabled: enableAutoHide,
+  });
+
   return (
+    <div ref={wrapperRef} className="app-topbar-dock" style={wrapperStyle}>
     <DevLayoutSection
       as="section"
+      ref={barRef}
       sectionKey="app-layout-topbar"
       parentKey="app-layout-main-column"
       sectionType="toolbar"
@@ -60,14 +71,15 @@ export default function StaffTopbar({
       className="app-topbar-shell"
       {...lockChromeInteraction}
       style={{
-        // Transparent topbar: let the app background scene show through. The
-        // frosted-glass look comes from the buttons/controls inside the bar,
-        // not the bar itself (matches .app-topbar-shell in staffglobal.css).
-        background: "transparent",
+        // Frosted-glass topbar: a soft white scrim + backdrop blur so the
+        // search / controls never sit on the raw background gradient (matches
+        // .app-topbar-shell in staffglobal.css).
+        background: "var(--shell-glass-bg)",
+        backdropFilter: "var(--shell-glass-blur)",
+        WebkitBackdropFilter: "var(--shell-glass-blur)",
         borderRadius: "var(--radius-md)",
         border: "none",
-        // Section-defining ring (matches .app-topbar-shell) so the transparent
-        // bar still reads as its own outlined panel.
+        // Section-defining ring (matches .app-topbar-shell) — a soft frosted edge.
         boxShadow: "var(--shell-section-ring)",
         padding: isMobile ? "10px 12px" : "0 16px",
         display: "flex",
@@ -75,6 +87,10 @@ export default function StaffTopbar({
         gap: isMobile ? "8px" : "12px",
         minHeight: isMobile ? "auto" : "75px",
         justifyContent: "center",
+        // Float-on-scroll positioning (desktop): fixes the bar in place, mirrors
+        // the in-flow spacer's geometry and drives the fold-away animation.
+        // Empty (undefined) while docked, so the bar keeps its normal flow.
+        ...(barStyle || {}),
       }}
     >
       <div
@@ -350,5 +366,6 @@ export default function StaffTopbar({
         )}
       </div>
     </DevLayoutSection>
+    </div>
   );
 }
