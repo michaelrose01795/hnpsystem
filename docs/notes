@@ -1,19 +1,13 @@
-TODO CODEX
-the page has a default posisiton which is scrolled all the way to the top, this means the boittom stays the same thoughout, the thing which changes is the top of the page location and the topbar behaviour, to start lets adjust the resting point of the main page section, this is the same gap size which is around between the sideabr and main page section gap which needs to be between the topbar and mian page as well. when the user starts to scroll, the main page scrolls up behind the topbar and then finsihed at the top of the topbar, anythign apst that point goes behind the mian page section and isnt visble, after the user has stop scrolling after 2 seconds the topbar hides with the folding animation, when the user starts scrolling again the topbar folds down from the top and is visible agian etc. make this change, dont change anything else
-
-TODO fix the dev overlay so when click in a section it copy the same liek it did before. 
-
-
-TDDO
+CHECK CLAUDE
 deep dive to fix cards like the ones wihtin "Nextjobs Outstanding Scroll · 1.2.2.1.1.2 key: nextjobs-outstanding-scroll source: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js:122 route: /job-cards/waiting/nextjobs parent nextjobs-outstanding (1.2.2.1.1)" seciton as these are still using "--surface" colour without the glass effect. there are more sections like this within the app do a deep sweep using multiple agents to get this done. 
 
 
-TODO CODEX
+CHECK CODEX
 have it so the columns of the to and from date filled wihtin "Tracking Loan Car Appointments Table Scroll · 1.2.1.1.1.1.2 key: tracking-loan-car-appointments-table-scroll source: src/components/LoanCars/LoanCarSchedulePanel.js:1707 (dynamic pattern) route: /tracking parent tracking-page-body (1.2.1.1.1.1) · 2 children" section are filled 1px smaller width than the column, have it so that 1px is a gap which shows the table row background etc like normal 
 
 
 ---------------------------------------
-
+TODO CLAUDE
 Update the scrollbar styling in `src/styles/staffglobal.css`.
 
 Goal:
@@ -88,7 +82,8 @@ After making the change, check the showcase section and any shared scroll exampl
 ---------------------------------------
 
 
-
+TODO
+chgeck buttons, not following shap and style is this becuase they arent following staffglobal.css settings deep dive into this across all pages
 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 

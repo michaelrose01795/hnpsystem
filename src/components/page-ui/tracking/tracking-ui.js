@@ -60,7 +60,8 @@ export default function TrackingDashboardUi(props) {
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
-    padding: "8px 0"
+    padding: "8px 0",
+    overflow: "visible"
   }}>
         <DevLayoutSection sectionKey="tracking-page-body" parentKey="tracking-page" sectionType="section-shell" style={{
       display: "flex",
@@ -68,7 +69,8 @@ export default function TrackingDashboardUi(props) {
       gap: isMobileView ? "16px" : "18px",
       width: "100%",
       maxWidth: "100%",
-      minWidth: 0
+      minWidth: 0,
+      overflow: "visible"
     }}>
           <div style={{
         display: "flex",
@@ -76,7 +78,10 @@ export default function TrackingDashboardUi(props) {
         alignItems: "center",
         gap: "12px",
         flexWrap: "wrap",
-        width: "100%"
+        width: "100%",
+        position: "relative",
+        zIndex: 2,
+        overflow: "visible"
       }}>
               {tabs.length > 1 && (
               <DevLayoutSection sectionKey="tracking-page-tabs" parentKey="tracking-page-body" sectionType="toolbar" style={{
@@ -84,7 +89,8 @@ export default function TrackingDashboardUi(props) {
           width: "fit-content",
           maxWidth: "100%",
           background: "transparent",
-          padding: 0
+          padding: 0,
+          overflow: "visible"
         }}>
                 <TabGroup items={tabs.map(tab => ({
             label: tab.label,
@@ -99,7 +105,8 @@ export default function TrackingDashboardUi(props) {
           alignItems: "center",
           flex: "1 1 auto",
           minWidth: 0,
-          justifyContent: "center"
+          justifyContent: "center",
+          overflow: "visible"
         }}>
                   <SearchBar
             value={sharedSearchValue}
@@ -118,7 +125,10 @@ export default function TrackingDashboardUi(props) {
           gap: "var(--space-sm)",
           flexWrap: "wrap",
           alignItems: "center",
-          marginLeft: "auto"
+          marginLeft: "auto",
+          position: "relative",
+          zIndex: 3,
+          overflow: "visible"
         }}>
                   <Button variant="secondary" size="sm" onClick={loadActiveTab}>
                     Refresh

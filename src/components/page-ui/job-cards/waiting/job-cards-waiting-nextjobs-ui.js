@@ -167,18 +167,20 @@ export default function NextJobsPageUi(props) {
                   } else if (jobCardRefs.current[job.jobNumber]) {
                     delete jobCardRefs.current[job.jobNumber];
                   }
-                }} data-dnd-job-card="true" data-dnd-job-number={job.jobNumber} onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))} style={{
+                }} data-dnd-job-card="true" data-dnd-job-number={job.jobNumber} className="glass-card" onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))} style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: "8px",
                   padding: "14px",
                   position: "relative",
                   borderRadius: "var(--radius-md)",
-                  backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "var(--surface)" : isSearchHighlighted ? "var(--success-surface)" : "var(--surface)",
+                  background: isSearchHighlighted ? "var(--success-surface)" : "var(--glass-surface)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                   touchAction: "none",
-                  boxShadow: isSearchHighlighted ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)" : "none"
+                  boxShadow: isSearchHighlighted ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)" : "var(--glass-shadow)"
                 }} title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}>
                           <div style={{
                     display: "flex",
@@ -221,7 +223,7 @@ export default function NextJobsPageUi(props) {
                           </div>
                           {showRequestsHover ? <div onPointerDown={event => event.stopPropagation()} onMouseEnter={() => setHoveredRequestJobNumber(job.jobNumber)} onMouseLeave={() => {
                     setHoveredRequestJobNumber(current => current === job.jobNumber ? null : current);
-                  }} style={{
+                  }} className="glass-card" style={{
                     position: "absolute",
                     top: "48px",
                     right: "14px",
@@ -230,8 +232,10 @@ export default function NextJobsPageUi(props) {
                     overflowY: "auto",
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--surface)",
-                    boxShadow: "0 12px 28px rgba(var(--shadow-rgb), 0.18)",
+                    background: "var(--glass-surface)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)",
                     zIndex: 3
                   }}>
                               <div style={{

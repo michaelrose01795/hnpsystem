@@ -1852,16 +1852,20 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           
         </div>
         <div
+          className="glass-card"
           style={{
             border: "none",
             borderRadius: "var(--radius-md)",
-            background: "var(--surface)",
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             padding: "10px",
             minHeight: "392px",
             maxHeight: "392px",
             overflowY: "auto"
           }}>
-          
+
           {!query.trim() ?
           loading ?
           <div style={{ padding: "24px", textAlign: "center" }}>Loading suppliers...</div> :
@@ -2296,7 +2300,10 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   };
 
   const modalSectionStyle = {
-    background: "var(--surface)",
+    background: "var(--glass-surface)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
     borderRadius: "var(--radius-md)",
     padding: "16px",
@@ -2306,7 +2313,10 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   };
 
   const availableSectionStyle = {
-    background: "var(--theme)",
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
     borderRadius: "var(--radius-md)",
     padding: "12px",
@@ -2317,7 +2327,10 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 
   // "Selected for job" is its own --theme section, separate from "Available to select".
   const selectedSectionStyle = {
-    background: "var(--theme)",
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
     borderRadius: "var(--radius-md)",
     padding: "12px",

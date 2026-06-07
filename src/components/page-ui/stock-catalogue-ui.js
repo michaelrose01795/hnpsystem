@@ -549,20 +549,22 @@ export default function StockCataloguePageUi(props) {
                   <input className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
               document.getElementById('location-dropdown').style.display = 'block';
             }} style={{ minWidth: "140px", width: "auto" }} />
-                  <div id="location-dropdown" style={{
+                  <div id="location-dropdown" className="glass-card" style={{
               display: "none",
               position: "absolute",
               top: "100%",
               left: 0,
               right: 0,
               marginTop: "4px",
-              background: "var(--surface)",
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               maxHeight: "300px",
               overflowY: "auto",
               zIndex: 1000,
-              boxShadow: "var(--shadow-md)"
+              boxShadow: "var(--glass-shadow)"
             }}>
                     <div onClick={() => {
                 setLocationFilter("all");
@@ -1393,11 +1395,14 @@ export default function StockCataloguePageUi(props) {
                   })}
                         </tbody>
                       </table>
-                    </div> : <div style={{
+                    </div> : <div className="glass-card" style={{
               padding: "24px",
               textAlign: "center",
               color: "var(--text-1)",
-              background: "var(--surface)",
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)",
               borderRadius: "var(--radius-xs)",
               fontSize: "var(--text-body)"
             }}>

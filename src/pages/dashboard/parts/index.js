@@ -11,7 +11,11 @@ import PartsDashboardUi from "@/components/page-ui/dashboard/parts/dashboard-par
 // MetricCard — single stat tile. Lives inside a themed section (LayerTheme)
 // on this dashboard, so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
+  <LayerSurface
+    className="glass-card"
+    radius="var(--radius-sm)"
+    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 180 }}
+  >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
@@ -54,7 +58,13 @@ const humanizeStatusLabel = (value) => {
 
 // ListBlock — list block inside a themed section (LayerTheme), renders as LayerSurface.
 const ListBlock = ({ title, items }) => (
-  <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+  <LayerSurface
+    className="glass-card"
+    radius="var(--radius-sm)"
+    padding="12px"
+    gap="8px"
+    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
+  >
     <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {(items || []).length === 0 ?
       <p style={{ margin: 0, color: "var(--text-2)" }}>No records yet.</p> :

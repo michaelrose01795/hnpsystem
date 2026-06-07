@@ -17,13 +17,17 @@ import WorkshopDashboardUi from "@/components/page-ui/dashboard/workshop/dashboa
 // so per the strict alternation rule it renders as a LayerTheme.
 const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
   <LayerTheme
+    className="glass-card"
     sectionKey={sectionKey}
     parentKey={parentKey}
     sectionType="stat-card"
     backgroundToken="surface"
     radius="var(--radius-sm)"
     style={{
-      background: "var(--surface)",
+      background: "var(--glass-surface)",
+      backdropFilter: "var(--glass-blur)",
+      WebkitBackdropFilter: "var(--glass-blur)",
+      boxShadow: "var(--glass-shadow)",
       minWidth: "140px",
       flex: "1 1 140px",
     }}
@@ -41,12 +45,19 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
 const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) => (
   <LayerSurface
     as="section"
+    className="glass-card glass-card--theme"
     sectionKey={sectionKey}
     parentKey={parentKey}
     sectionType="section-shell"
     backgroundToken="theme"
     gap="12px"
-    style={{ background: "var(--theme)", ...style }}
+    style={{
+      background: "var(--glass-theme)",
+      backdropFilter: "var(--glass-blur)",
+      WebkitBackdropFilter: "var(--glass-blur)",
+      boxShadow: "var(--glass-shadow)",
+      ...style,
+    }}
   >
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2>
@@ -63,13 +74,20 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
   const total = (data || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
   return (
     <LayerTheme
+      className="glass-card"
       sectionKey={sectionKey}
       parentKey={parentKey}
       backgroundToken="surface"
       radius="var(--radius-sm)"
       padding="16px"
       gap="10px"
-      style={{ background: "var(--surface)", flex: 1 }}
+      style={{
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
+        flex: 1,
+      }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
         <p style={{ margin: 0, textTransform: "uppercase", color: "var(--accentText)", fontSize: "0.75rem" }}>{title}</p>
@@ -115,7 +133,7 @@ const ProgressBar = ({ completed, target }) => {
           ["Scheduled", target],
           ["Rate", `${percentage}%`],
         ].map(([label, value]) => (
-          <div key={label} style={{ background: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "10px" }}>
+          <div key={label} className="glass-card" style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", borderRadius: "var(--radius-sm)", padding: "10px" }}>
             <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
             <strong style={{ display: "block", marginTop: "4px", color: "var(--accentText)", fontSize: "1.15rem" }}>{value}</strong>
           </div>

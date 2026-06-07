@@ -25,11 +25,17 @@
 // rather than set on the wrapper.
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const HIDE_DELAY_MS = 3000; // idle time after scrolling stops before folding away
+const HIDE_DELAY_MS = 2000; // idle time after scrolling stops before folding away
 const TOP_THRESHOLD_PX = 2; // treat this close to the top as "at the top"
 const FALLBACK_TOP_GAP = 18; // matches --page-gutter-y in theme.css
 
-export default function useAutoHideTopbar({ enabled = true } = {}) {
+// `overlay` mode: used by the fixed-card (locked-viewport) layout. The page no
+// longer scrolls — an inner scroller (passed via `scrollRef`) does — and the bar
+// is already positioned as an absolute overlay by the caller. In that mode this
+// hook does NOT reposition the bar; it only drives the fold-away animation off
+// the inner scroller's scrollTop: visible at the top, visible while scrolling,
+// folds 2s after scrolling stops, unfolds the moment scrolling resumes.
+export default function useAutoHideTopbar({ enabled = true, overlay = false, scrollRef = null } = {}) {
   const wrapperRef = useRef(null);
   const barRef = useRef(null);
   const hideTimerRef = useRef(null);
@@ -74,7 +80,10 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
   // goes fixed. Observing the wrapper too catches main-column width changes
   // (e.g. sidebar toggling) so the fixed bar re-aligns horizontally.
   useEffect(() => {
-    if (!enabled || typeof window === "undefined") return undefined;
+    // Geometry mirroring only matters in window-scroll mode (the bar goes fixed
+    // and a spacer holds its place). Overlay mode keeps the caller's absolute
+    // positioning, so there is nothing to measure.
+    if (!enabled || overlay || typeof window === "undefined") return undefined;
     const bar = barRef.current;
     const wrapper = wrapperRef.current;
     if (!bar || !wrapper || typeof ResizeObserver === "undefined") return undefined;
@@ -87,7 +96,7 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
     ro.observe(bar);
     ro.observe(wrapper);
     return () => ro.disconnect();
-  }, [enabled, measureGeom]);
+  }, [enabled, overlay, measureGeom]);
 
   useEffect(() => {
     if (!enabled) {
@@ -97,6 +106,12 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
       return undefined;
     }
     if (typeof window === "undefined") return undefined;
+
+    // Overlay mode watches the inner page scroller; window mode watches the
+    // document scroll. Bail (bar stays visible) if overlay is on but the inner
+    // scroller isn't mounted yet.
+    const scroller = overlay ? scrollRef?.current : null;
+    if (overlay && !scroller) return undefined;
 
     const clearHideTimer = () => {
       if (hideTimerRef.current) {
@@ -108,18 +123,23 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
       clearHideTimer();
       hideTimerRef.current = setTimeout(() => setHidden(true), HIDE_DELAY_MS);
     };
-    // The page scroll lives on body in this app, but read defensively so we work
-    // whichever element ends up being the document scroller.
+    // Overlay mode reads the inner scroller; window mode reads the document
+    // scroll (lives on body in this app, but read defensively).
     const readScrollTop = () =>
-      Math.max(
-        window.scrollY || 0,
-        document.documentElement?.scrollTop || 0,
-        document.body?.scrollTop || 0
-      );
+      overlay
+        ? scroller.scrollTop || 0
+        : Math.max(
+            window.scrollY || 0,
+            document.documentElement?.scrollTop || 0,
+            document.body?.scrollTop || 0
+          );
 
     const update = () => {
       const atTop = readScrollTop() <= TOP_THRESHOLD_PX;
       if (atTop) {
+        // `floating` = "scrolled away from the top". Window mode also uses it to
+        // drive the fixed positioning; overlay mode exposes it so the page card
+        // can rise behind the bar the moment scrolling starts.
         if (floatingRef.current) {
           floatingRef.current = false;
           setFloating(false);
@@ -131,15 +151,25 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
       if (!floatingRef.current) {
         floatingRef.current = true;
         setFloating(true);
-        measureGeom(); // measure before paint so the first fixed frame is aligned
+        if (!overlay) measureGeom(); // window mode: measure before the first fixed frame
       }
-      setHidden(false); // any scroll activity reveals the bar
-      scheduleHide(); // ...and (re)arms the 3s fold-away timer
+      if (overlay) {
+        // Locked model: fold the bar away the instant scrolling starts so the
+        // page card (which rises into the bar's slot) is revealed taking the
+        // shape of the bar's top. The bar comes back only at the very top.
+        clearHideTimer();
+        setHidden(true);
+        return;
+      }
+      setHidden(false); // window mode: any scroll activity reveals the bar...
+      scheduleHide(); // ...and (re)arms the fold-away timer
     };
 
     const onScrollOrResize = (event) => {
-      // Only the main page scroll drives the bar — ignore inner scroll areas.
-      if (event && event.type === "scroll") {
+      // Window mode: only the main page scroll drives the bar — ignore inner
+      // scroll areas. Overlay mode listens directly on the inner scroller, so
+      // every scroll event from it is relevant.
+      if (!overlay && event && event.type === "scroll") {
         const t = event.target;
         const isPageScroll =
           t === document ||
@@ -151,19 +181,27 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
       if (rafRef.current) return;
       rafRef.current = window.requestAnimationFrame(() => {
         rafRef.current = 0;
-        measureGeom();
+        if (!overlay) measureGeom();
         update();
       });
     };
 
-    // Capture phase so we still catch the scroll even though it fires on body.
-    window.addEventListener("scroll", onScrollOrResize, true);
+    if (overlay) {
+      scroller.addEventListener("scroll", onScrollOrResize, { passive: true });
+    } else {
+      // Capture phase so we still catch the scroll even though it fires on body.
+      window.addEventListener("scroll", onScrollOrResize, true);
+    }
     window.addEventListener("resize", onScrollOrResize, { passive: true });
     update();
-    measureGeom();
+    if (!overlay) measureGeom();
 
     return () => {
-      window.removeEventListener("scroll", onScrollOrResize, true);
+      if (overlay) {
+        scroller.removeEventListener("scroll", onScrollOrResize);
+      } else {
+        window.removeEventListener("scroll", onScrollOrResize, true);
+      }
       window.removeEventListener("resize", onScrollOrResize);
       clearHideTimer();
       if (rafRef.current) {
@@ -171,9 +209,35 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
         rafRef.current = 0;
       }
     };
-  }, [enabled, measureGeom]);
+  }, [enabled, overlay, scrollRef, measureGeom]);
 
   // ---- derived styles ----------------------------------------------------
+  const foldedTransform = reducedMotion
+    ? "translateY(-110%)"
+    : "perspective(1400px) rotateX(-92deg) translateY(-14px)";
+  const openTransform = reducedMotion
+    ? "translateY(0)"
+    : "perspective(1400px) rotateX(0deg) translateY(0)";
+  const foldTransition = reducedMotion
+    ? "opacity 0.25s ease, transform 0.25s ease"
+    : "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
+
+  // Overlay mode: the caller owns positioning (absolute overlay over the page
+  // card). We contribute only the fold-away animation — no fixed repositioning,
+  // no spacer (the page card layout never shifts; the bar folds over content
+  // that has already scrolled behind it).
+  if (enabled && overlay) {
+    const barStyle = {
+      transformOrigin: "top center",
+      transform: hidden ? foldedTransform : openTransform,
+      opacity: hidden ? 0 : 1,
+      pointerEvents: hidden ? "none" : "auto",
+      transition: foldTransition,
+      willChange: "transform, opacity",
+    };
+    return { wrapperRef, barRef, wrapperStyle: undefined, barStyle, floating, hidden };
+  }
+
   const wrapperStyle = enabled
     ? {
         position: "relative",
@@ -184,13 +248,6 @@ export default function useAutoHideTopbar({ enabled = true } = {}) {
         zIndex: 3300,
       }
     : undefined;
-
-  const foldedTransform = reducedMotion
-    ? "translateY(-110%)"
-    : "perspective(1400px) rotateX(-92deg) translateY(-14px)";
-  const openTransform = reducedMotion
-    ? "translateY(0)"
-    : "perspective(1400px) rotateX(0deg) translateY(0)";
 
   const barStyle =
     enabled && floating

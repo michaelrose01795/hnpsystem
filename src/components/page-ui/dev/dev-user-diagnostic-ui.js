@@ -514,8 +514,11 @@ export default function UserDiagnosticDevPageUi(props) {
           flexDirection: "column",
           gap: "10px"
         }}>
-            {group.items.map(result => <div key={result._index} style={{
-            background: "var(--surface)",
+            {group.items.map(result => <div key={result._index} className="glass-card" style={{
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             border: "none",
             borderRadius: "var(--radius-xs)",
             padding: "14px 16px",

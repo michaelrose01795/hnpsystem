@@ -1,13 +1,13 @@
 /* file location: src/components/dev-layout-overlay/DevLayoutOverlay.module.css */
 .root {
   position: fixed;
-  z-index: 2800;
+  z-index: 3400;
   pointer-events: none;
   overflow: visible;
 }
 
 .rootCreate {
-  z-index: 2900;
+  z-index: 3450;
 }
 
 .box {
@@ -198,7 +198,7 @@
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 2850;
+  z-index: 3600;
   width: min(480px, calc(100vw - 24px));
   max-height: min(82vh, 760px);
   overflow: hidden;
@@ -223,7 +223,7 @@
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 2850;
+  z-index: 3600;
   pointer-events: auto;
 }
 

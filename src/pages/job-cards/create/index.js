@@ -708,7 +708,10 @@ export default function CreateJobCardPage() {
   }; // append new empty request
 
   const sectionCardStyle = {
-    background: "var(--theme)",
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none"
   };
 

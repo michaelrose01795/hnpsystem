@@ -17,7 +17,8 @@ const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
     backgroundToken="surface"
     radius="var(--radius-sm)"
     data-dev-text-preview={label}
-    style={{ minWidth: 0 }}
+    className="glass-card"
+    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
@@ -47,7 +48,12 @@ const TrendBlock = ({ data, parentKey }) => {
           data-dev-text-preview={`${point.label} ${point.count}`}
           radius="var(--radius-sm)"
           padding="8px 12px"
+          className="glass-card"
           style={{
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             flexDirection: "row",
             alignItems: "center",
             gap: "8px",
@@ -90,7 +96,8 @@ const QueueList = ({ queue, parentKey }) => (
         radius="var(--radius-sm)"
         padding="16px"
         data-dev-text-preview="No painting jobs in queue"
-        style={{ color: "var(--text-1)" }}
+        className="glass-card"
+        style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", color: "var(--text-1)" }}
       >
         No painting jobs in queue.
       </LayerSurface>
@@ -105,7 +112,12 @@ const QueueList = ({ queue, parentKey }) => (
           data-dev-text-preview={`${job.job_number || "Job"} ${job.vehicle_reg || "Plate"} ${job.status || "In progress"}`}
           radius="var(--radius-sm)"
           padding="14px 16px"
+          className="glass-card"
           style={{
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",

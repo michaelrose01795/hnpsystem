@@ -12,7 +12,6 @@ import GlobalSearch from "@/components/GlobalSearch";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 
 // Topbar-only quick-action links (previously module constants in Layout.js).
 const SERVICE_ACTION_LINKS = [
@@ -48,19 +47,15 @@ export default function StaffTopbar({
   navigationItems,
   userRoles = [],
   overlay = false,
+  // Auto-hide/fold geometry is owned by StaffLayout (via useAutoHideTopbar) so
+  // the page card can react to the bar's folded state. The refs + computed
+  // styles arrive here as props; this component is purely presentational.
+  wrapperRef = null,
+  barRef = null,
+  wrapperStyle = undefined,
+  barStyle = undefined,
 }) {
   const router = useRouter();
-
-  // Auto-hide / float-on-scroll is a desktop-only affordance. On tablet/mobile
-  // the topbar keeps its existing in-flow behaviour (and the portrait z-index
-  // rules in staffglobal.css), so we gate the hook to desktop widths. In the
-  // fixed-card model (`overlay`) the page no longer scrolls, so we disable the
-  // window-scroll hook and instead pin the bar as an always-visible overlay over
-  // the card's top — the card's inner content scrolls up behind it.
-  const enableAutoHide = !isTablet && !overlay;
-  const { wrapperRef, barRef, wrapperStyle, barStyle } = useAutoHideTopbar({
-    enabled: enableAutoHide,
-  });
 
   // Fixed-card scroll model: the bar overlays the top of the page card (aligned
   // to the card's gutters) and stays put while the card's content scrolls behind
@@ -79,7 +74,7 @@ export default function StaffTopbar({
     <div
       ref={wrapperRef}
       className="app-topbar-dock"
-      style={{ ...wrapperStyle, ...overlayStyle }}
+      style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
     <DevLayoutSection
       as="section"
@@ -108,6 +103,7 @@ export default function StaffTopbar({
         gap: isMobile ? "8px" : "12px",
         minHeight: isMobile ? "auto" : "75px",
         justifyContent: "center",
+        overflow: "visible",
         // Float-on-scroll positioning (desktop): fixes the bar in place, mirrors
         // the in-flow spacer's geometry and drives the fold-away animation.
         // Empty (undefined) while docked, so the bar keeps its normal flow.
@@ -210,15 +206,11 @@ export default function StaffTopbar({
               maxWidth: "100%",
               zIndex: 2,
               justifySelf: "center",
-              // Desktop: `clip` keeps the row from overflowing horizontally
-              // (no scrollbar) while letting the buttons' liquid-glass focus/
-              // hover glow bleed vertically instead of being shaved off by an
-              // invisible clipping box. overflow-clip-margin gives the end
-              // buttons' glow a little horizontal room too. Vertical phone keeps
-              // its horizontal scroll behaviour unchanged.
-              overflowX: isVerticalPhone ? "auto" : "clip",
+              // Desktop/tablet controls need visible overflow so their
+              // liquid-glass hover/focus glow is not shaved off by the action
+              // strip. Vertical phone keeps its horizontal scroll behaviour.
+              overflowX: isVerticalPhone ? "auto" : "visible",
               overflowY: isVerticalPhone ? "hidden" : "visible",
-              overflowClipMargin: isVerticalPhone ? undefined : "24px",
             }}
           >
             {isTech && (

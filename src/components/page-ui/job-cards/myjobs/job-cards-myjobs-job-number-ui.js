@@ -2027,10 +2027,13 @@ export default function TechJobDetailPageUi(props) {
           borderRadius: 0,
           border: "none"
         }}>
-              <DevLayoutSection as="div" sectionKey="myjob-documents-browser" sectionType="content-card" parentKey="myjob-tab-documents" backgroundToken="surface" style={{
+              <DevLayoutSection as="div" className="glass-card" sectionKey="myjob-documents-browser" sectionType="content-card" parentKey="myjob-tab-documents" backgroundToken="surface" style={{
             borderRadius: "var(--radius-sm)",
             overflow: "hidden",
-            backgroundColor: "var(--surface)"
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)"
           }}>
                 <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
               </DevLayoutSection>

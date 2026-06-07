@@ -635,6 +635,8 @@ function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle, fix
         lineHeight: fixedHeight ? 0 : 1.1,
         fontWeight: booking ? 600 : 700,
         overflow: fixedHeight ? "hidden" : undefined,
+        position: "relative",
+        zIndex: 2,
         boxShadow: !fixedHeight && isHighlighted ? "inset 0 0 0 2px var(--primary-selected)" : "none",
       }}>
       {fixedHeight ? null : (
@@ -1937,15 +1939,15 @@ export default function LoanCarSchedulePanel({
                     // In tracking mode a booking is a vertical run of warning
                     // cells from startDate to endDate. Curve the top corners on
                     // the "from" row and the bottom corners on the "to" row, and
-                    // suppress the row rule between cells in the same booking so
-                    // the run reads as one rounded section rather than slices.
+                    // suppress row rules under booked cells so the fill sits
+                    // cleanly above the table rows rather than being sliced.
                     const isBookingStart = booking && day.key === booking.startDate;
                     const isBookingEnd = booking && day.key === booking.endDate;
                     const bookedRadius =
                       isTrackingMode && booking
                         ? `${isBookingStart ? "var(--radius-sm)" : "0"} ${isBookingStart ? "var(--radius-sm)" : "0"} ${isBookingEnd ? "var(--radius-sm)" : "0"} ${isBookingEnd ? "var(--radius-sm)" : "0"}`
                         : undefined;
-                    const cellBottomRule = isTrackingMode && booking && !isBookingEnd ? "none" : rowBottomRule;
+                    const cellBottomRule = isTrackingMode && booking ? "none" : rowBottomRule;
                     return (
                     <td
                       key={`${day.key}-${car.loanCarId || car.id}`}
@@ -1959,7 +1961,7 @@ export default function LoanCarSchedulePanel({
                         minHeight: "44px",
                         maxHeight: "44px",
                         boxSizing: "border-box",
-                        padding: isTrackingMode ? "0 0 0 1px" : 0,
+                        padding: 0,
                         verticalAlign: "middle",
                         lineHeight: 0,
                         overflow: "hidden",
@@ -1973,22 +1975,21 @@ export default function LoanCarSchedulePanel({
                         backgroundImage: isTrackingMode ? todayRowOverlay : undefined,
                       }}>
                         {isTrackingMode && booking ? (
-                          // Absolutely-positioned warning fill: spans the full
-                          // cell height (top/bottom: 0) so a multi-day booking
-                          // reads as one solid section with no gaps between rows,
-                          // inset 1px on the left to keep the column separator,
-                          // and rounded only at the run's start/end corners.
+                          // Absolutely-positioned warning fill: sits above the
+                          // row rules, keeps a 1px right-side column gap, and
+                          // leaves a small gap only at the booking start/end.
                           <div
                             aria-hidden="true"
                             style={{
                               position: "absolute",
-                              top: 0,
-                              right: 0,
-                              bottom: 0,
-                              left: "1px",
+                              top: isBookingStart ? "1px" : 0,
+                              right: "1px",
+                              bottom: isBookingEnd ? "1px" : 0,
+                              left: 0,
                               backgroundColor: "var(--warning-strong)",
                               borderRadius: bookedRadius,
                               pointerEvents: "none",
+                              zIndex: 1,
                             }}
                           />
                         ) : null}

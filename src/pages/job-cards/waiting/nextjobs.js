@@ -1375,8 +1375,11 @@ export default function NextJobsPage() {
         data-dev-background-token="surface"
         data-dnd-target-type="assignee"
         data-dnd-target-key={panelKey}
+        className="glass-card"
         style={{
-          background: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           display: "flex",

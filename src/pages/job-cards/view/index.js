@@ -1260,7 +1260,7 @@ export default function ViewJobCards() {
 
 const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) => {
   // top-layer
-  const rowBackground = "var(--surface)";
+  const rowBackground = "var(--glass-surface)";
   const jobType = deriveJobType(job);
   const appointmentLabel = getAppointmentDisplay(job);
   const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
@@ -1288,11 +1288,15 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       parentKey={parentKey}
       sectionType="list-row"
       onClick={onNavigate}
+      className="glass-card"
       style={{
         padding: "0.75rem 0.9rem",
         borderRadius: "var(--radius-sm)",
         overflow: "hidden",
-        backgroundColor: rowBackground,
+        background: rowBackground,
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         color: "var(--text-2)",
         display: "flex",
         flexDirection: "column",
@@ -1305,11 +1309,11 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         event.currentTarget.style.position = "relative";
         event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = "var(--glass-shadow)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = "var(--glass-shadow)";
         event.currentTarget.style.zIndex = "0";
       }}>
 
@@ -1431,7 +1435,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
 
 const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
   // top-layer
-  const rowBackground = "var(--surface)";
+  const rowBackground = "var(--glass-surface)";
   const items = order.requests || order.items || [];
   const totalItems = items.length;
   const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
@@ -1451,11 +1455,15 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       parentKey={parentKey}
       sectionType="list-row"
       onClick={onNavigate}
+      className="glass-card"
       style={{
         padding: "0.75rem 0.9rem",
         borderRadius: "var(--radius-sm)",
         overflow: "hidden",
-        backgroundColor: rowBackground,
+        background: rowBackground,
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         color: "var(--text-2)",
         display: "flex",
         flexDirection: "column",
@@ -1467,11 +1475,11 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         event.currentTarget.style.position = "relative";
         event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = "var(--glass-shadow)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = "var(--glass-shadow)";
         event.currentTarget.style.zIndex = "0";
       }}>
 

@@ -398,10 +398,12 @@ const MessageBubble = ({
   const bubbleStyles = {
     padding: "10px 14px",
     borderRadius: radiusValue,
-    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--surface)",
+    background: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--glass-surface)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
     color: palette.textPrimary,
     maxWidth: "100%",
-    boxShadow: "var(--shadow-md)",
+    boxShadow: "var(--glass-shadow)",
     lineHeight: 1.45,
     cursor: "pointer",
     position: "relative"
@@ -491,6 +493,7 @@ const MessageBubble = ({
             </div>
           }
           <div
+            className="glass-card"
             style={bubbleStyles}
             onClick={() => setActionsOpen((v) => !v)}
             role="button"

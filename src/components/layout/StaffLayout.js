@@ -22,6 +22,7 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
 import StaffTopbar from "@/components/layout/StaffTopbar";
+import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
@@ -128,6 +129,25 @@ export default function Layout({
   // tucks behind the card's frame at the bottom/sides, so the content slides
   // behind the panel edges instead of butting against the border.
   const pageScrollRef = useRef(null);
+
+  // Auto-hide topbar (desktop). Lifted here — rather than owned inside
+  // StaffTopbar — so the page card can react to the bar's folded state: when the
+  // bar folds away the card rises up into its vacated slot (top moves up, bottom
+  // stays pinned); when the bar is shown the card rests below it with a gap. In
+  // the locked model the bar is an absolute overlay and the page itself does not
+  // scroll, so the hook watches the inner page scroller (pageScrollRef).
+  const enableTopbarAutoHide = !isTablet && !hideSidebar;
+  const {
+    wrapperRef: topbarWrapperRef,
+    barRef: topbarBarRef,
+    wrapperStyle: topbarWrapperStyle,
+    barStyle: topbarBarStyle,
+    floating: topbarScrolled,
+  } = useAutoHideTopbar({
+    enabled: enableTopbarAutoHide,
+    overlay: lockViewport,
+    scrollRef: pageScrollRef,
+  });
 
   const urlJobId =
     router.query.id ||
@@ -888,14 +908,24 @@ export default function Layout({
     : "calc(100vh - 75px - 12px - (var(--page-gutter-y) * 2))";
 
   // Fixed-card model: the page card is a frosted *frame* that clips (overflow
-  // hidden); paddingTop is dropped so the inner scroller runs up behind the
-  // overlay topbar, while the inherited left/right/bottom padding stays as the
-  // frame content tucks behind. The inner scroller (see JSX) carries the actual
-  // overflow + a top spacer that clears the topbar (75px bar + 12px gap).
+  // hidden) and scrolls its content internally. It sits BELOW the overlay topbar
+  // with a clean gap (see lockedCardTopOffset) and keeps its normal padding all
+  // round, so the card reads as its own panel — like the sidebar beside it —
+  // rather than tucking up behind the bar.
   const lockedCardFrameStyle = lockViewport
-    ? { height: "100%", minHeight: 0, overflow: "hidden", paddingTop: 0 }
+    ? { height: "100%", minHeight: 0, overflow: "hidden" }
     : null;
-  const lockedScrollerTopGap = "calc(75px + 12px)"; // topbar height + gap
+  // Two resting heights for the card's top edge in the locked model:
+  //  • at top      → card sits BELOW the bar: gutter + 75px bar + 12px gap (the
+  //    12px matches the sidebar-to-main-column chrome gap, so both gaps read
+  //    alike).
+  //  • scrolled    → the moment scrolling starts the bar folds away and the card
+  //    RISES into the bar's slot, its top edge landing at the TOP OF THE TOPBAR
+  //    (the bar's top edge), so the card takes the shape of where the bar's top
+  //    was. The two animate together. The bar (and the gap) come back only when
+  //    scrolled all the way back to the top. Bottom stays pinned throughout.
+  const lockedCardTopOffset = "calc(var(--page-gutter-y) + 75px + 12px)"; // gutter + topbar height + gap
+  const lockedCardScrolledOffset = "var(--page-gutter-y)"; // card top rises to the topbar's top edge once scrolled
 
 
   // Customer portal owns its own shell (CustomerLayout). Bypass the staff app
@@ -1116,6 +1146,10 @@ export default function Layout({
             navigationItems={navigationItems}
             userRoles={userRoles}
             overlay={lockViewport}
+            wrapperRef={topbarWrapperRef}
+            barRef={topbarBarRef}
+            wrapperStyle={topbarWrapperStyle}
+            barStyle={topbarBarStyle}
           />
         )}
 
@@ -1130,6 +1164,20 @@ export default function Layout({
           style={{
             flex: 1,
             minHeight: 0,
+            // Locked model: the card frame rests below the overlay topbar (gap)
+            // at the top, and rises into the bar's slot (top edge to the bar's
+            // top) the moment scrolling starts, as the bar folds away — bottom
+            // stays pinned, only the top edge moves. Animated.
+            marginTop:
+              lockViewport && !hideSidebar
+                ? topbarScrolled
+                  ? lockedCardScrolledOffset
+                  : lockedCardTopOffset
+                : undefined,
+            transition:
+              lockViewport && !hideSidebar
+                ? "margin-top 0.45s cubic-bezier(0.4, 0, 0.2, 1)"
+                : undefined,
             height: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
             maxHeight: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
             overflow: (isMessagesRoute || lockViewport) && !hideSidebar ? "hidden" : undefined,
@@ -1175,10 +1223,8 @@ export default function Layout({
               }
             >
               {/* In the fixed-card model this wrapper is the inner scroller: it
-                  runs edge-to-edge inside the card frame, scrolls the content, and
-                  carries a top spacer so the content clears the overlay topbar (it
-                  scrolls up behind the bar at the top and behind the card's frame
-                  at the bottom/sides). */}
+                  fills the card frame (which already sits below the overlay topbar)
+                  and scrolls the content internally. */}
               <div
                 ref={lockViewport ? pageScrollRef : undefined}
                 style={
@@ -1200,9 +1246,6 @@ export default function Layout({
                       }
                 }
               >
-                {lockViewport && (
-                  <div aria-hidden="true" style={{ height: lockedScrollerTopGap, flex: "0 0 auto" }} />
-                )}
                 <div className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
                   {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}

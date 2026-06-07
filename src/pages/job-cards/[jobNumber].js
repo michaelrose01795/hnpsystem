@@ -6484,11 +6484,15 @@ function CustomerRequestsTab({
                   </div>
                   {linkedParts.length > 0 &&
                 <div
+                  className="glass-card glass-card--theme"
                   style={{
                     marginTop: "10px",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--theme)"
+                    background: "var(--glass-theme)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)"
                   }}>
 
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -6951,7 +6955,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     overflowWrap: "anywhere" // long emails wrap inside the cell instead of breaking the single-row layout
   };
   const panelStyle = {
-    background: "var(--surface)",
+    background: "var(--glass-surface)",
     border: "none",
     borderRadius: "var(--radius-md)",
     padding: "18px",
@@ -7014,7 +7018,8 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
       parentKey="jobcard-tab-contact"
       backgroundToken="surface"
       shell
-      style={panelStyle}>
+      className="glass-card"
+      style={{ ...panelStyle, backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
 
       <DevLayoutSection
         sectionKey="jobcard-tab-contact-header"
@@ -7184,10 +7189,14 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         sectionKey="jobcard-tab-contact-approval"
         sectionType="content-card"
         parentKey="jobcard-tab-contact-panel"
+        className="glass-card"
         style={{
           marginTop: "20px",
           padding: "16px",
-          backgroundColor: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           borderRadius: "var(--radius-sm)",
           border: "none"
         }}>
@@ -7560,13 +7569,13 @@ function SchedulingTab({
   };
   const cardStyle = {
     padding: "18px",
-    backgroundColor: "var(--surface)",
+    background: "var(--glass-surface)",
     borderRadius: "var(--radius-md)",
     border: "none"
   };
   const subPanelStyle = {
     padding: "12px",
-    backgroundColor: "var(--surface)",
+    background: "var(--glass-surface)",
     borderRadius: "var(--radius-sm)",
     border: "none"
   };
@@ -7611,7 +7620,10 @@ function SchedulingTab({
   };
   const reportedIssueRowStyle = {
     padding: "10px 12px",
-    backgroundColor: "var(--theme)",
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     borderRadius: "var(--control-radius)"
   };
 
@@ -7625,7 +7637,8 @@ function SchedulingTab({
           sectionType="content-card"
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
-          style={sectionCardStyle}>
+          className="glass-card"
+          style={{ ...sectionCardStyle, backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
 
           <div style={sectionTitleRow}>
             <div style={{ flex: 1 }}>
@@ -7749,14 +7762,19 @@ function SchedulingTab({
           sectionType="content-card"
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
-          style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
+          className="glass-card"
+          style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
 
           <div style={sectionTitleRow}>
             <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
           </div>
           <div
+            className="glass-card"
             style={{
               ...subPanelStyle,
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)",
               flex: 1,
               minHeight: "120px",
               maxHeight: bookingRequestLines.length >= 5 ? "292px" : "none",
@@ -7771,6 +7789,7 @@ function SchedulingTab({
                 {bookingRequestLines.map((line, index) =>
               <div
                 key={`${index}-${line}`}
+                className="glass-card glass-card--theme"
                 style={{
                   ...reportedIssueRowStyle,
                   marginBottom: 0
@@ -7795,7 +7814,8 @@ function SchedulingTab({
           sectionType="content-card"
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
-          style={{ ...sectionCardStyle, marginBottom: 0 }}>
+          className="glass-card"
+          style={{ ...sectionCardStyle, marginBottom: 0, backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
 
           <div style={{
             display: "flex",
@@ -7943,17 +7963,22 @@ function SchedulingTab({
         sectionType="toolbar"
         parentKey="jobcard-tab-scheduling"
         backgroundToken="surface"
-        style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "14px", marginBottom: 0 }}>
+        className="glass-card"
+        style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "14px", marginBottom: 0, backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
 
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-confirmation"
           sectionType="content-card"
           parentKey="jobcard-tab-scheduling-actions"
+          className="glass-card"
           style={{
             flex: "1 1 360px",
             minWidth: "280px",
             padding: "14px",
-            backgroundColor: "var(--surface)",
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             borderRadius: "var(--radius-sm)",
             border: "none"
           }}>
@@ -8127,9 +8152,13 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
         sectionKey="jobcard-tab-service-history-list"
         sectionType="table"
         parentKey="jobcard-tab-service-history-panel"
+        className="glass-card"
         style={{
           borderRadius: "var(--radius-md)",
-          backgroundColor: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           overflow: "hidden"
         }}>
 
@@ -8211,10 +8240,14 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
         sectionKey="jobcard-tab-service-history-empty"
         sectionType="empty-state"
         parentKey="jobcard-tab-service-history-panel"
+        className="glass-card"
         style={{
           padding: "40px",
           textAlign: "center",
-          backgroundColor: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           borderRadius: "var(--control-radius)"
         }}>
 
@@ -8289,10 +8322,14 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
       </div>
       {!hasParts ?
       <div
+        className="glass-card"
         style={{
           padding: "20px",
           borderRadius: "var(--radius-sm)",
-          background: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           color: "var(--text-1)",
           fontSize: "14px",
           textAlign: "center"
@@ -8302,10 +8339,14 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
         </div> :
 
       <div
+        className="glass-card"
         style={{
           borderRadius: "var(--radius-md)",
           border: "none",
-          background: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           overflowX: "auto",
           overflowY: "auto",
           maxHeight: "300px"
@@ -8631,8 +8672,12 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div
+        className="glass-card"
         style={{
-          background: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           border: "none",
           borderRadius: "var(--control-radius)",
           padding: "16px",
@@ -8727,11 +8772,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
         }
         {selectedCatalogPart &&
         <div
+          className="glass-card glass-card--theme"
           style={{
             border: "none",
             borderRadius: "var(--radius-sm)",
             padding: "12px",
-            background: "var(--theme)"
+            background: "var(--glass-theme)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)"
           }}>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
@@ -8842,8 +8891,12 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
       {hasParts ?
       <>
           <div
+          className="glass-card"
           style={{
-            background: "var(--surface)",
+            background: "var(--glass-surface)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             border: "none",
             borderRadius: "var(--control-radius)",
             padding: "16px"
@@ -8871,11 +8924,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               {pipelineStages.map((stage) =>
             <div
               key={stage.id}
+              className="glass-card"
               style={{
                 padding: "10px",
                 borderRadius: "var(--radius-sm)",
                 border: "none",
-                background: stage.count > 0 ? "var(--surface)" : "var(--theme)"
+                background: stage.count > 0 ? "var(--glass-surface)" : "var(--glass-theme)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)"
               }}>
 
                   <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--primary)" }}>
@@ -8898,11 +8955,16 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               VHC Linked Parts
             </h2>
             {vhcParts.length === 0 ?
-          <div style={{
+          <div
+          className="glass-card glass-card--theme"
+          style={{
             padding: "20px",
             borderRadius: "var(--radius-sm)",
             border: "none",
-            backgroundColor: "var(--theme)",
+            background: "var(--glass-theme)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             fontSize: "14px",
             color: "var(--info)"
           }}>
@@ -8915,11 +8977,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               return (
                 <div
                   key={part.id}
+                  className="glass-card"
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-sm)",
                     border: "none",
-                    backgroundColor: "var(--surface)"
+                    background: "var(--glass-surface)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)"
                   }}>
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -9010,11 +9076,16 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               Manual Requests (Write-up)
             </h2>
             {manualRequests.length === 0 ?
-          <div style={{
+          <div
+          className="glass-card glass-card--theme"
+          style={{
             padding: "20px",
             borderRadius: "var(--radius-sm)",
             border: "none",
-            backgroundColor: "var(--theme)",
+            background: "var(--glass-theme)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
             fontSize: "14px",
             color: "var(--info)"
           }}>
@@ -9027,10 +9098,14 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               return (
                 <div
                   key={request.requestId}
+                  className="glass-card"
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-sm)",
-                                        backgroundColor: "var(--surface)"
+                    background: "var(--glass-surface)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)"
                   }}>
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -9098,10 +9173,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-1)" }}>
             Parts Overview
           </h2>
-          <div style={{
+          <div
+          className="glass-card glass-card--theme"
+          style={{
           padding: "40px",
           textAlign: "center",
-          backgroundColor: "var(--theme)",
+          background: "var(--glass-theme)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           borderRadius: "var(--radius-sm)",
         }}>
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
@@ -9136,9 +9216,14 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
   return (
     <div>
-      <div style={{
+      <div
+        className="glass-card"
+        style={{
         padding: "20px",
-        backgroundColor: "var(--surface)",
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         borderRadius: "var(--radius-sm)",
       }}>
         <textarea
@@ -9606,6 +9691,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
         sectionType="section-shell"
         shell
         backgroundToken="theme"
+        className="glass-card glass-card--theme"
         style={{
           flex: 1,
           minHeight: "300px",
@@ -9616,7 +9702,10 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
           gap: "14px",
           padding: "18px 12px",
           borderRadius: "var(--radius-md)",
-          background: "var(--theme)"
+          background: "var(--glass-theme)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)"
         }}>
         {chatLoading && chatMessages.length === 0 &&
         <p style={{ margin: 0, color: "var(--grey-accent)", textAlign: "center" }}>
@@ -10595,10 +10684,14 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       sectionType="content-card"
       parentKey="jobcard-tab-clocking"
       data-dev-text-preview="Clocking entry form and history"
+      className="glass-card"
       style={{
         padding: "20px",
         borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--surface)",
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         display: "flex",
         flexDirection: "column",
         gap: "18px"
@@ -11341,11 +11434,15 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         sectionKey="jobcard-tab-warranty-linked-job"
         sectionType="content-card"
         parentKey="jobcard-tab-warranty-panel"
+        className="glass-card"
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
           border: "none",
-          backgroundColor: "var(--surface)",
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           marginBottom: "16px"
         }}>
 
@@ -11387,11 +11484,15 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         sectionKey="jobcard-tab-warranty-shared-vhc"
         sectionType="content-card"
         parentKey="jobcard-tab-warranty-panel"
+        className="glass-card"
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
           border: "none",
-          backgroundColor: "var(--surface)"
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)"
         }}>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
@@ -11771,8 +11872,11 @@ function DocumentsTab({
 
           <div
             onClick={(e) => e.stopPropagation()}
+            className="glass-card"
             style={{
-              backgroundColor: "var(--surface)",
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
               borderRadius: "var(--radius-xl)",
               overflow: "hidden",
               position: "relative",
@@ -11781,7 +11885,7 @@ function DocumentsTab({
               maxWidth: "min(92vw, 1000px)",
               maxHeight: "90vh",
               width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
+              boxShadow: "var(--glass-shadow)"
             }}>
 
             {/* Header */}
@@ -11939,10 +12043,14 @@ function DocumentsTab({
       {/* Valet upload strip */}
       {valetMode &&
       <div
+        className="glass-card glass-card--theme"
         style={{
           padding: "14px",
           borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--theme)",
+          background: "var(--glass-theme)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           marginBottom: "16px"
         }}>
 
@@ -12037,16 +12145,20 @@ function DocumentsTab({
           return (
             <div
               key={doc.id || doc.file_id || docUrl}
+              className="glass-card"
               style={{
                 borderRadius: "var(--radius-md)",
                 overflow: "hidden",
-                backgroundColor: "var(--surface)",
+                background: "var(--glass-surface)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)",
                 display: "flex",
                 flexDirection: "column",
                 transition: "box-shadow 0.15s ease"
               }}
               onMouseEnter={(e) => {e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";}}
-              onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}>
+              onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "var(--glass-shadow)";}}>
 
                 {/* Thumbnail / type icon */}
                 <button

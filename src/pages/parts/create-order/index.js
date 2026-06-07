@@ -66,7 +66,10 @@ const partLookupOverlayStyle = {
 };
 
 const partLookupContentStyle = {
-  background: "var(--surface)",
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
   borderRadius: "var(--radius-md)",
   padding: "var(--section-card-padding)",
   width: "min(640px, 100%)",

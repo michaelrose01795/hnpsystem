@@ -56,7 +56,10 @@ const orderHistoryContainerStyle = {
   marginTop: "12px",
   borderRadius: "var(--radius-sm)",
   border: "none",
-  background: "var(--surface)",
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
   padding: "12px",
   maxHeight: "190px",
   overflowY: "auto"
@@ -372,7 +375,7 @@ function ConsumablesTrackerPage() {
   const themedOrderHistoryContainerStyle = useMemo(
     () => ({
       ...orderHistoryContainerStyle,
-      background: isDark ? "var(--surface)" : orderHistoryContainerStyle.background
+      background: isDark ? "var(--glass-surface)" : orderHistoryContainerStyle.background
     }),
     [isDark]
   );

@@ -50,8 +50,11 @@ export default function NewsFeedUi(props) {
             <SkeletonKeyframes />
             {Array.from({
         length: 3
-      }).map((_, i) => <div key={i} style={{
-        background: "var(--surface)",
+      }).map((_, i) => <div key={i} className="glass-card" style={{
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         borderRadius: "var(--radius-md)",
         padding: 18,
         display: "flex",

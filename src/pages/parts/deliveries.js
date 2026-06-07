@@ -46,7 +46,10 @@ const pageStyles = {
     display: "flex",
     flexDirection: "column",
     gap: "12px",
-    background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.08)" : "var(--surface)",
+    background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.08)" : "var(--glass-surface)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     width: "100%"
   }),
   jobInfoButton: {
@@ -104,7 +107,10 @@ const modalOverlayStyle = {
 };
 
 const modalContentStyle = {
-  background: "var(--surface)",
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
   borderRadius: "var(--radius-lg)",
   padding: "var(--page-card-padding)",
   width: "min(780px, 100%)",

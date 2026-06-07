@@ -558,11 +558,13 @@ export default function MessagesPageUi(props) {
                     backgroundColor: palette.border
                   }} />
                             </div>}
-                          <article data-dev-section="1" data-dev-section-key={`messages-system-note-${note.notification_id}`} data-dev-section-type="content-card" data-dev-section-parent="messages-system-feed" data-dev-background-token="messages-system-note" style={{
+                          <article data-dev-section="1" data-dev-section-key={`messages-system-note-${note.notification_id}`} data-dev-section-type="content-card" data-dev-section-parent="messages-system-feed" data-dev-background-token="messages-system-note" className="glass-card" style={{
                   borderRadius: "var(--radius-md)",
                   padding: "12px 14px",
-                  backgroundColor: "var(--surface)",
-                  boxShadow: "none",
+                  background: "var(--glass-surface)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "var(--glass-shadow)",
                   minHeight: "44px",
                   display: "flex",
                   flexDirection: note.kind === "customer_request" ? "row" : "row",
@@ -842,7 +844,7 @@ export default function MessagesPageUi(props) {
             position: "relative"
           }}>
                   {/* Command suggestions dropdown */}
-                  {showCommandSuggestions && commandSuggestions.length > 0 && <div data-dev-section="1" data-dev-section-key="messages-command-suggestions" data-dev-section-type="floating-action" data-dev-section-parent="messages-thread-composer" data-dev-background-token="messages-command-suggestions" style={{
+                  {showCommandSuggestions && commandSuggestions.length > 0 && <div data-dev-section="1" data-dev-section-key="messages-command-suggestions" data-dev-section-type="floating-action" data-dev-section-parent="messages-thread-composer" data-dev-background-token="messages-command-suggestions" className="glass-card" style={{
               position: "absolute",
               bottom: "100%",
               left: 0,
@@ -850,9 +852,11 @@ export default function MessagesPageUi(props) {
               marginBottom: "8px",
               maxHeight: "240px",
               overflowY: "auto",
-              backgroundColor: "var(--surface)",
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
               borderRadius: radii.lg,
-              boxShadow: shadows.lg,
+              boxShadow: "var(--glass-shadow)",
               zIndex: 1000
             }}>
                       {commandSuggestions.map((cmd, index) => <div key={index} role="button" tabIndex={0} onClick={() => handleSelectCommand(cmd)} onKeyDown={event => {
@@ -983,11 +987,13 @@ export default function MessagesPageUi(props) {
       padding: "20px",
       zIndex: 1200
     }}>
-            <div style={{
+            <div className="glass-card" style={{
         width: "min(520px, 100%)",
-        backgroundColor: "var(--surface)",
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-lg)",
-        boxShadow: shadows.lg,
+        boxShadow: "var(--glass-shadow)",
         padding: "24px",
         display: "flex",
         flexDirection: "column",
@@ -1051,13 +1057,15 @@ export default function MessagesPageUi(props) {
       padding: "20px",
       zIndex: 1100
     }}>
-            <div style={{
+            <div className="glass-card" style={{
         width: "min(560px, 100%)",
         maxHeight: "90vh",
         overflowY: "auto",
-        backgroundColor: "var(--surface)",
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-lg)",
-        boxShadow: shadows.lg,
+        boxShadow: "var(--glass-shadow)",
         padding: "24px",
         display: "flex",
         flexDirection: "column",
