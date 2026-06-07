@@ -12,6 +12,83 @@ TODO CODEX
 have it so the columns of the to and from date filled wihtin "Tracking Loan Car Appointments Table Scroll · 1.2.1.1.1.1.2 key: tracking-loan-car-appointments-table-scroll source: src/components/LoanCars/LoanCarSchedulePanel.js:1707 (dynamic pattern) route: /tracking parent tracking-page-body (1.2.1.1.1.1) · 2 children" section are filled 1px smaller width than the column, have it so that 1px is a gap which shows the table row background etc like normal 
 
 
+---------------------------------------
+
+Update the scrollbar styling in `src/styles/staffglobal.css`.
+
+Goal:
+Fix scrollable card sections so vertical and horizontal scrollbars do not push the content left, up, or off-centre when scrolling appears.
+
+Requirements:
+1. Find all shared scrollable card, table, panel, modal, dropdown, page, and content wrapper styles in `staffglobal.css`.
+2. Add a stable scrollbar layout system using:
+
+scrollbar-gutter: stable both-edges;
+
+3. Apply this only to elements that use:
+- overflow: auto;
+- overflow: scroll;
+- overflow-x: auto;
+- overflow-y: auto;
+
+4. Keep the content visually centred inside cards, even when both horizontal and vertical scrollbars are active.
+5. Add box-sizing: border-box where needed so scrollbar spacing does not break widths/heights.
+6. Do not change routes, API files, database logic, React components, or authentication.
+7. Keep the change inside `staffglobal.css` only.
+8. Make the scrollbar styling match the current Apple-style liquid glass UI.
+
+Add or update scrollbar styling like this where suitable:
+
+.card-scroll-section,
+.scroll-panel,
+.table-scroll,
+.dropdown-scroll,
+.modal-scroll,
+.staff-scroll-area {
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+.card-scroll-section::-webkit-scrollbar,
+.scroll-panel::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,
+.dropdown-scroll::-webkit-scrollbar,
+.modal-scroll::-webkit-scrollbar,
+.staff-scroll-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.card-scroll-section::-webkit-scrollbar-thumb,
+.scroll-panel::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb,
+.dropdown-scroll::-webkit-scrollbar-thumb,
+.modal-scroll::-webkit-scrollbar-thumb,
+.staff-scroll-area::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb, 120, 120, 120), 0.28);
+}
+
+.card-scroll-section::-webkit-scrollbar-track,
+.scroll-panel::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track,
+.dropdown-scroll::-webkit-scrollbar-track,
+.modal-scroll::-webkit-scrollbar-track,
+.staff-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+Important:
+Use the real class names already inside `staffglobal.css`, do not create unused CSS unless a shared class is already needed.
+Make sure both vertical and horizontal scrollbars can exist together without shifting card content.
+After making the change, check the showcase section and any shared scroll examples in `staffglobal.css` so the scrollbar behaviour is shown there too.
+
+---------------------------------------
+
+
+
 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
