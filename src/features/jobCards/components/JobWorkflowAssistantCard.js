@@ -28,7 +28,11 @@ export default function JobWorkflowAssistantCard({
         padding: "14px 16px",
         borderRadius: "var(--radius-sm)",
         border: "none",
-        backgroundColor: "var(--surface)",
+        // Liquid Glass — workflow assistant card.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         display: "flex",
         flexDirection: "column",
         gap: "10px",

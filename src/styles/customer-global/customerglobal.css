@@ -1,0 +1,10 @@
+/* file location: src/styles/customer-global/customerglobal.css
+   Customer-global UI component family imports. */
+@import "./customer-buttons.css";
+@import "./customer-cards.css";
+@import "./customer-layout.css";
+@import "./customer-forms.css";
+@import "./customer-tabs.css";
+@import "./customer-tables.css";
+@import "./customer-modals.css";
+@import "./customer-badges.css";

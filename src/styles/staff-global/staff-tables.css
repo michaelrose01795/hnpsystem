@@ -1,0 +1,11 @@
+/* file location: src/styles/staff-global/staff-tables.css
+   Staff-global table wrappers. Row rules use the approved separating-line token. */
+html.staff-scope .staff-table,
+html.staff-scope .staff-table-scroll,
+html.staff-scope .staff-table-element {
+  width: 100%;
+}
+
+html.staff-scope .staff-table-element tbody tr:not(:last-child) td {
+  border-bottom: var(--separating-line);
+}

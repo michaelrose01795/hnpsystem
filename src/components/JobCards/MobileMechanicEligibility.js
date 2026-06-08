@@ -176,7 +176,11 @@ export default function MobileMechanicEligibility({
           gap: "10px",
           padding: "10px 12px",
           borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--surface)",
+          // Liquid Glass — eligibility status card.
+          backgroundColor: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
+          boxShadow: "var(--glass-shadow)",
           marginBottom: "10px",
           flexWrap: "wrap",
         }}

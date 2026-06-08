@@ -511,7 +511,10 @@ export default function StaffVehiclesCard({
         >
           <div
             style={{
-              background: "var(--section-card-bg)",
+              // Liquid Glass — confirm-remove dialog card.
+              background: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
               borderRadius: "var(--radius-md)",
               padding: "var(--section-card-padding)",
               width: "100%",
@@ -519,7 +522,7 @@ export default function StaffVehiclesCard({
               display: "flex",
               flexDirection: "column",
               gap: "12px",
-              boxShadow: "none",
+              boxShadow: "var(--glass-shadow)",
             }}
           >
             <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
@@ -620,7 +623,11 @@ export default function StaffVehiclesCard({
                 padding: "16px",
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                background: "var(--theme)",
+                // Liquid Glass — theme-tinted vehicle card.
+                background: "var(--glass-theme)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)",
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
@@ -989,7 +996,11 @@ export default function StaffVehiclesCard({
             overflowY: "auto",
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
-            background: "var(--theme)",
+            // Liquid Glass — theme-tinted history table shell.
+            background: "var(--glass-theme)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
           }}
         >
           {historyEntries.length === 0 ? (
@@ -1121,7 +1132,11 @@ export default function StaffVehiclesCard({
             marginTop: "22px",
             padding: "16px",
             borderRadius: "var(--radius-sm)",
-            background: "var(--theme)",
+            // Liquid Glass — theme-tinted add-vehicle form block.
+            background: "var(--glass-theme)",
+            backdropFilter: "var(--glass-blur)",
+            WebkitBackdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--glass-shadow)",
           }}
         >
           <div style={{ fontWeight: 700, color: "var(--text-1)", marginBottom: "12px" }}>
@@ -1290,7 +1305,11 @@ const dangerActionButton = {
 };
 
 const staffVehiclesCardStyle = {
-  background: "var(--surface)",
+  // Liquid Glass — staff vehicles card surface.
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
 };
 
 function VehicleInfo({ label, value }) {

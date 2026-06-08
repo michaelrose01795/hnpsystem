@@ -87,11 +87,14 @@ export default function VhcCustomerDescriptionModal({
         style={{
           width: "100%",
           maxWidth: 640,
-          background: "var(--page-card-bg, var(--surface))",
+          // Liquid Glass — dialog card.
+          background: "var(--glass-surface)",
+          backdropFilter: "var(--glass-blur)",
+          WebkitBackdropFilter: "var(--glass-blur)",
           color: "var(--text-1)",
           border: "none",
           borderRadius: "var(--radius-sm)",
-          boxShadow: "0 24px 60px rgba(15, 23, 42, 0.24)",
+          boxShadow: "var(--glass-shadow)",
           padding: 0,
           display: "flex",
           flexDirection: "column",

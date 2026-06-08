@@ -1371,8 +1371,11 @@ function EmployeeDetailsFields({
     return {
       borderRadius: "var(--radius-sm)",
       padding: "12px",
-      background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface)",
-      boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "none",
+      // Liquid Glass — frosted section shell (error state keeps the danger tint + ring).
+      background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--glass-surface)",
+      backdropFilter: "var(--glass-blur)",
+      WebkitBackdropFilter: "var(--glass-blur)",
+      boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "var(--glass-shadow)",
     };
   };
   const gridStyle = {

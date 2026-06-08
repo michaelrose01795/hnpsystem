@@ -46,6 +46,20 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import ScrollArea from "@/components/ui/scrollAPI/ScrollArea";
 import { SkeletonBlock, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import {
+  StaffBadge,
+  StaffButton,
+  StaffCard,
+  StaffInput,
+  StaffModal,
+  StaffPageShell,
+  StaffSearchBar,
+  StaffSection,
+  StaffSelect,
+  StaffTable,
+  StaffTabs,
+  StaffToolbar,
+} from "@/components/staff-global";
 
 // ── Section: Core Data ──────────────────────────────────────────
 import UserDiagnosticDevPageUi from "@/components/page-ui/dev/dev-user-diagnostic-ui"; // Extracted presentation layer.
@@ -1602,6 +1616,7 @@ const SHOWCASE_CATALOG = {
   "popup-unified-proposal": { category: "Popups & Modals", scope: "global", terms: "popup unified proposal replace consolidate modal dialog" },
   "confirm-dialogs": { category: "Popups & Modals", scope: "global", terms: "confirmation dialog confirm cancel action destructive preview" },
   // ── Cards & Sections ──
+  "staff-global-components": { category: "Cards & Sections", scope: "global", terms: "staff global components staff-button staff-card staff-section staff-tabs staff-input staff-select staff-search staff-table staff-modal staff-badge staff-toolbar flattened layout" },
   "global-cards": { category: "Cards & Sections", scope: "global", terms: "card section panel app-page-card app-section-card app-page-stack app-page-shell Section global canonical hierarchy" },
   "non-global-cards": { category: "Cards & Sections", scope: "non-global", terms: "card section panel container box per-module custom" },
   // ── Feedback & Status ──
@@ -1812,6 +1827,9 @@ function GlobalUiShowcase() {
   const [inputState, setInputState] = useState(() => getInputShowcaseState());
   const [tabsState, setTabsState] = useState(() => getTabsShowcaseState());
   const [searchState, setSearchState] = useState(() => getSearchShowcaseState());
+  const [staffGlobalTab, setStaffGlobalTab] = useState("overview");
+  const [staffGlobalSearch, setStaffGlobalSearch] = useState("VHC");
+  const [staffGlobalModalOpen, setStaffGlobalModalOpen] = useState(false);
 
   // ── Showcase notes (persisted to database) ──
   const [showcaseNotes, setShowcaseNotes] = useState({});
@@ -3340,6 +3358,111 @@ function GlobalUiShowcase() {
       }
 
       <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")} />
+      {isSectionVisible("staff-global-components") &&
+      <ShowcaseSection title="Staff Global Components" itemKey="staff-global-components" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
+        <StaffPageShell
+          className="staff-global-showcase"
+          title="Staff Global UI"
+          subtitle="Reusable staff wrappers backed by the split staff-global CSS family."
+          actions={
+            <StaffToolbar variant="header">
+              <StaffButton type="button" variant="secondary" size="sm">Secondary</StaffButton>
+              <StaffButton type="button" variant="primary" size="sm" onClick={() => setStaffGlobalModalOpen(true)}>Open modal</StaffButton>
+            </StaffToolbar>
+          }
+        >
+          <StaffSection
+            title="Controls"
+            subtitle="Buttons, tabs, filters, inputs, selects, search and badges share staff-global classes."
+            action={<StaffBadge tone="success" control>Global</StaffBadge>}
+          >
+            <StaffToolbar>
+              <StaffButton type="button" variant="primary">Primary</StaffButton>
+              <StaffButton type="button" variant="secondary">Secondary</StaffButton>
+              <StaffButton type="button" variant="ghost">Ghost</StaffButton>
+              <StaffButton type="button" variant="danger">Danger</StaffButton>
+            </StaffToolbar>
+            <StaffTabs
+              tabs={[
+                { key: "overview", label: "Overview" },
+                { key: "jobs", label: "Jobs" },
+                { key: "customers", label: "Customers" },
+              ]}
+              activeKey={staffGlobalTab}
+              onChange={setStaffGlobalTab}
+            />
+            <StaffToolbar>
+              <StaffInput label="Technician" name="staff-global-technician" defaultValue="Michael Rose" />
+              <StaffSelect
+                label="Department"
+                name="staff-global-department"
+                defaultValue="workshop"
+                options={[
+                  { value: "workshop", label: "Workshop" },
+                  { value: "parts", label: "Parts" },
+                  { value: "service", label: "Service" },
+                ]}
+              />
+              <StaffSearchBar
+                value={staffGlobalSearch}
+                onChange={(event) => setStaffGlobalSearch(event.target.value)}
+                onClear={() => setStaffGlobalSearch("")}
+                placeholder="Search staff UI"
+              />
+            </StaffToolbar>
+            <div className="staff-showcase-row">
+              <StaffBadge tone="neutral">Neutral</StaffBadge>
+              <StaffBadge tone="warning">Warning</StaffBadge>
+              <StaffBadge tone="danger">Danger</StaffBadge>
+              <StaffBadge tone="accent-strong">Accent</StaffBadge>
+            </div>
+          </StaffSection>
+
+          <div className="staff-showcase-grid">
+            <StaffCard title="Flattened card" subtitle="Direct child of the page stack.">
+              This card demonstrates the flatter page shell to card grid pattern.
+            </StaffCard>
+            <StaffCard title="Second card" subtitle="No extra wrapper card needed.">
+              Related summaries can sit side by side without card-inside-card nesting.
+            </StaffCard>
+            <StaffCard title="Third card" subtitle="Responsive by default.">
+              The grid uses auto-fit/minmax so desktop, tablet and mobile stay tidy.
+            </StaffCard>
+          </div>
+
+          <StaffCard title="Nested layout example" subtitle="Surface to theme alternation.">
+            <StaffSection layer="theme" title="Nested section" subtitle="Uses LayerTheme inside the outer StaffCard.">
+              <StaffTable
+                columns={[
+                  { key: "item", label: "Item" },
+                  { key: "className", label: "Global class" },
+                  { key: "status", label: "Status", render: (row) => <StaffBadge tone={row.tone}>{row.status}</StaffBadge> },
+                ]}
+                rows={[
+                  { id: "button", item: "Button", className: ".staff-button", status: "Ready", tone: "success" },
+                  { id: "card", item: "Card", className: ".staff-card", status: "Ready", tone: "success" },
+                  { id: "modal", item: "Modal", className: ".staff-modal", status: "Previewed", tone: "warning" },
+                ]}
+              />
+            </StaffSection>
+          </StaffCard>
+
+          <StaffModal
+            open={staffGlobalModalOpen}
+            title="Staff global modal"
+            onClose={() => setStaffGlobalModalOpen(false)}
+            actions={
+              <>
+                <StaffButton type="button" variant="ghost" onClick={() => setStaffGlobalModalOpen(false)}>Cancel</StaffButton>
+                <StaffButton type="button" variant="primary" onClick={() => setStaffGlobalModalOpen(false)}>Save</StaffButton>
+              </>
+            }
+          >
+            Modal chrome is centralised through StaffModal, popup classes, and staff-modals.css.
+          </StaffModal>
+        </StaffPageShell>
+      </ShowcaseSection>
+      }
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>

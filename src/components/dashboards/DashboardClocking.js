@@ -67,7 +67,11 @@ export default function DashboardClocking() {
             // Prefer a stable id over array index — falls back to user name.
             key={tech.userId || tech.id || tech.user}
             style={{
-              backgroundColor: "var(--surface)",
+              // Liquid Glass — technician tile card.
+              backgroundColor: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)",
               borderRadius: "var(--radius-xs)",
               padding: "var(--space-4)",
               textAlign: "center",

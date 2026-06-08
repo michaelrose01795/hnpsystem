@@ -1,0 +1,30 @@
+/* file location: src/styles/customer-global/customer-modals.css
+   Customer-global modal structure. */
+html.website-scope .customer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: var(--website-field-gap);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+html.website-scope .customer-modal-panel {
+  width: min(720px, calc(100vw - var(--website-field-gap)));
+  max-height: calc(100vh - var(--website-field-gap));
+  overflow: auto;
+}
+
+html.website-scope .customer-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--website-field-gap);
+}
+
+html.website-scope .customer-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--website-field-gap);
+  flex-wrap: wrap;
+}

@@ -1,0 +1,21 @@
+/* file location: src/styles/customer-global/customer-tables.css
+   Customer-global table wrappers. */
+html.website-scope .customer-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+html.website-scope .customer-table-element {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+html.website-scope .customer-table-element th,
+html.website-scope .customer-table-element td {
+  padding: var(--website-field-gap);
+  text-align: left;
+}
+
+html.website-scope .customer-table-element tbody tr:not(:last-child) td {
+  border-bottom: var(--separating-line);
+}

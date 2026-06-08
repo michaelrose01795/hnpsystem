@@ -62,7 +62,11 @@ function InlineValuePair({ leftLabel, leftValue, rightLabel, rightValue }) {
         gridTemplateColumns: "1fr 1fr",
         padding: "8px 10px",
         borderRadius: "10px",
-        background: "var(--surface)",
+        // Liquid Glass — frosted inner tile.
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         border: "none",
       }}
     >
@@ -209,7 +213,11 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
   const year = finance.model.yearTotals || {};
   const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
   const incomeSectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -341,7 +349,11 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const totalWorkedHours = Number(month.pay.totalWorkedHours ?? month.pay.hoursWorked ?? 0);
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -420,7 +432,11 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const creditCards = buildDisplayRowsNewestFirst(month.monthState.creditCards || []);
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -518,7 +534,11 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
   const accounts = finance.financeState.savingsAccounts || [];
   const totalBalance = accountBalances.reduce((sum, a) => sum + a.currentBalance, 0);
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -562,7 +582,11 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       gap: "8px",
                       padding: "8px 10px",
                       borderRadius: "10px",
-                      background: "var(--surface)",
+                      // Liquid Glass — frosted inner tile.
+                      background: "var(--glass-surface)",
+                      backdropFilter: "var(--glass-blur)",
+                      WebkitBackdropFilter: "var(--glass-blur)",
+                      boxShadow: "var(--glass-shadow)",
                       border: "none",
                     }}
                   >
@@ -608,7 +632,11 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       gap: "4px",
                       padding: "8px 10px",
                       borderRadius: "10px",
-                      background: "var(--surface)",
+                      // Liquid Glass — frosted inner tile.
+                      background: "var(--glass-surface)",
+                      backdropFilter: "var(--glass-blur)",
+                      WebkitBackdropFilter: "var(--glass-blur)",
+                      boxShadow: "var(--glass-shadow)",
                       border: "none",
                     }}
                   >
@@ -708,7 +736,11 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
   const afterTaxIncome = Number(month?.pay?.afterTaxIncome || 0);
   const moneyLeftAfterPayments = afterTaxIncome - totalPayments;
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -760,7 +792,11 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const fuelEntries = buildDisplayRowsNewestFirst(month.monthState.fuelEntries || [], 5);
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -902,7 +938,11 @@ export function MortgageWidget({
   );
 
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1045,7 +1085,11 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
   }, {});
   const linkedHolidayRows = Object.values(linkedHolidayGroups);
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1131,7 +1175,11 @@ export function CustomWidget({ widget, widgetData, onOpenSettings }) {
   const target = Number(settings.customTarget ?? widget?.config?.target ?? 0);
   const note = settings.customNote ?? widget?.config?.note ?? "";
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1175,7 +1223,11 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
   const year = finance.model.yearTotals;
   const positive = month.totals.difference >= 0;
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1346,7 +1398,11 @@ export function ChartWidget({
   }, [datasets, source, widgetData, widgetDataMap, widgetMonthKey]);
 
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1401,7 +1457,11 @@ export function NotesWidget({ widget, datasets, actions }) {
   };
 
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1494,7 +1554,11 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
   };
 
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 
@@ -1620,7 +1684,11 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
   const hiddenCount = visibleNonCardAccounts.length - OVERVIEW_MAX_VISIBLE_ACCOUNTS;
 
   const sectionStyle = {
-    background: "var(--theme)",
+    // Liquid Glass — theme-tinted widget section card.
+    background: "var(--glass-theme)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
     border: "none",
   };
 

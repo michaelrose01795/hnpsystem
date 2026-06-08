@@ -1,0 +1,14 @@
+/* file location: src/styles/staff-global/staff-showcase.css
+   Staff-global showcase helpers. */
+html.staff-scope .staff-global-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+}
+
+html.staff-scope .staff-showcase-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}

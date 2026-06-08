@@ -56,7 +56,11 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
         border: "none",
         borderRadius: "var(--radius-md, 12px)",
         overflow: "hidden",
-        background: "var(--surface)",
+        // Liquid Glass — frosted surface + blur + glass shadow.
+        background: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
       }}
     >
       <div

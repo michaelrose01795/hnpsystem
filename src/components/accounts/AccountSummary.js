@@ -40,7 +40,11 @@ export default function AccountSummary({ summary }) {
               style={{
                 borderRadius: "var(--control-radius)",
                 padding: "16px",
-                background: card.emphasize ? "var(--theme)" : "var(--surface-2, var(--surface))"
+                // Liquid Glass stat tile — frosted surface/theme + blur + glass shadow.
+                background: card.emphasize ? "var(--glass-theme)" : "var(--glass-surface)",
+                backdropFilter: "var(--glass-blur)",
+                WebkitBackdropFilter: "var(--glass-blur)",
+                boxShadow: "var(--glass-shadow)"
               }}>
 
             <p

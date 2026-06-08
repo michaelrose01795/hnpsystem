@@ -15,7 +15,8 @@ export default function AccountsSettingsModal({ isOpen, onClose }) {
         overflow: "hidden",
       }}
     >
-      <div style={{ maxHeight: "90vh", overflowY: "auto", background: "var(--theme)" }}>
+      {/* Flush inner fill inside the glass PopupModal card — translucent theme tint so the glass shows through. */}
+      <div style={{ maxHeight: "90vh", overflowY: "auto", background: "var(--glass-theme)" }}>
         <AccountsSettingsPanel embedded onClose={onClose} />
       </div>
     </PopupModal>

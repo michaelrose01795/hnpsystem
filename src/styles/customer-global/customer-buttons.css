@@ -1,0 +1,11 @@
+/* file location: src/styles/customer-global/customer-buttons.css
+   Customer-global button classes. */
+html.website-scope .customer-button {
+  min-height: var(--website-control-height);
+  border-radius: var(--website-control-radius);
+  text-decoration: none;
+}
+
+html.website-scope .customer-button-secondary {
+  border: var(--ghostbutton-ring);
+}

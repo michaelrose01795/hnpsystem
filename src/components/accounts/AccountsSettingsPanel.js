@@ -129,7 +129,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
   };
 
   const settingRow = (label, description, control) => (
-    <div style={{ borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", background: embedded ? "var(--surface)" : "transparent" }}>
+    <div style={{ borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", background: embedded ? "var(--glass-theme)" : "transparent", backdropFilter: embedded ? "var(--glass-blur)" : undefined, WebkitBackdropFilter: embedded ? "var(--glass-blur)" : undefined }}>
       <div style={{ flex: "1 1 280px" }}>
         <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>{label}</h3>
         <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.9rem" }}>{description}</p>
@@ -150,7 +150,11 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
     gap: "16px",
     padding: "20px",
     borderRadius: "var(--radius-lg)",
-    background: "var(--surface)",
+    // Liquid Glass section card — frosted surface + blur + glass shadow.
+    background: "var(--glass-surface)",
+    backdropFilter: "var(--glass-blur)",
+    WebkitBackdropFilter: "var(--glass-blur)",
+    boxShadow: "var(--glass-shadow)",
   };
 
   return (

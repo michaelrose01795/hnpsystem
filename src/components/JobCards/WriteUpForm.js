@@ -585,7 +585,11 @@ const sectionBoxStyle = {
 
 const darkSectionBoxStyle = {
   ...sectionBoxStyle,
-  backgroundColor: "var(--surface)",
+  // Liquid Glass — frosted surface + blur + glass shadow.
+  backgroundColor: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
+  boxShadow: "var(--glass-shadow)",
 };
 
 const sectionScrollerStyle = {
@@ -2721,7 +2725,11 @@ function WriteUpForm({
                 <div
                   style={{
                     ...sectionBoxStyle,
-                    backgroundColor: "var(--surface)",
+                    // Liquid Glass — frosted surface + blur + glass shadow.
+                    backgroundColor: "var(--glass-surface)",
+                    backdropFilter: "var(--glass-blur)",
+                    WebkitBackdropFilter: "var(--glass-blur)",
+                    boxShadow: "var(--glass-shadow)",
                   }}
                 >
                   <div style={sectionHeaderStyle}>

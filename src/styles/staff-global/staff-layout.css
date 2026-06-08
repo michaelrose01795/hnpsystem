@@ -1,0 +1,55 @@
+/* file location: src/styles/staff-global/staff-layout.css
+   Staff-global page shell and toolbar structure. */
+html.staff-scope .staff-page-shell {
+  width: 100%;
+  padding: 8px 8px 32px;
+}
+
+html.staff-scope .staff-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  margin-bottom: var(--page-stack-gap);
+}
+
+html.staff-scope .staff-page-title {
+  margin: 0;
+  color: var(--accentText);
+  font-size: var(--text-h1);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+html.staff-scope .staff-page-subtitle {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-body);
+}
+
+html.staff-scope .staff-page-actions,
+html.staff-scope .staff-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .staff-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .staff-page-header {
+    flex-direction: column;
+  }
+
+  html.staff-scope .staff-page-actions,
+  html.staff-scope .staff-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -62,10 +62,13 @@ export default function TyresSection({
         display: "flex", // Use flex layout for vertical alignment
         flexDirection: "column", // Stack children vertically
         gap: "12px", // Provide spacing between sections
-        backgroundColor: palette.surface, // Match dashboard surface colour
+        // Liquid Glass — frosted surface + blur + glass shadow.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-md)", // Match rounded card styling
         padding: "16px", // Add internal spacing
-        boxShadow: "none", // Apply soft for elevation
+        boxShadow: "var(--glass-shadow)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

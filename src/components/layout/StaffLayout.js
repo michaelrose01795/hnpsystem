@@ -920,12 +920,13 @@ export default function Layout({
   //    12px matches the sidebar-to-main-column chrome gap, so both gaps read
   //    alike).
   //  • scrolled    → the moment scrolling starts the bar folds away and the card
-  //    RISES into the bar's slot, its top edge landing at the TOP OF THE TOPBAR
-  //    (the bar's top edge), so the card takes the shape of where the bar's top
-  //    was. The two animate together. The bar (and the gap) come back only when
+  //    RISES into the bar's slot, its top edge landing at the topbar's top edge.
+  //    The main column already contributes the page gutter, so the scrolled
+  //    offset is zero; adding the gutter here created a visible ~20px drop.
+  //    The two animate together. The bar (and the gap) come back only when
   //    scrolled all the way back to the top. Bottom stays pinned throughout.
   const lockedCardTopOffset = "calc(var(--page-gutter-y) + 75px + 12px)"; // gutter + topbar height + gap
-  const lockedCardScrolledOffset = "var(--page-gutter-y)"; // card top rises to the topbar's top edge once scrolled
+  const lockedCardScrolledOffset = "0"; // card top rises to the topbar's top edge once scrolled
 
 
   // Customer portal owns its own shell (CustomerLayout). Bypass the staff app

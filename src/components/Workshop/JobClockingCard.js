@@ -241,10 +241,13 @@ export default function JobClockingCard() {
     }}>
       {/* ✅ Daily Summary Card */}
       <div style={{
-        backgroundColor: "var(--surface)",
+        // Liquid Glass — section card.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-md)",
         padding: "24px",
-        boxShadow: "none",
+        boxShadow: "var(--glass-shadow)",
         border: "none"
       }}>
         <div style={{
@@ -337,10 +340,13 @@ export default function JobClockingCard() {
 
       {/* ✅ Currently Clocked In Jobs */}
       <div style={{
-        backgroundColor: "var(--surface)",
+        // Liquid Glass — section card.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-md)",
         padding: "24px",
-        boxShadow: "none",
+        boxShadow: "var(--glass-shadow)",
         border: "none"
       }}>
         <h3 style={{
@@ -438,10 +444,13 @@ export default function JobClockingCard() {
 
       {/* ✅ Clock Into New Job Section */}
       <div style={{
-        backgroundColor: "var(--surface)",
+        // Liquid Glass — section card.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRadius: "var(--radius-md)",
         padding: "24px",
-        boxShadow: "none",
+        boxShadow: "var(--glass-shadow)",
         border: "none"
       }}>
         <div style={{

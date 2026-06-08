@@ -1,0 +1,10 @@
+/* file location: src/styles/staff-global/staff-tabs.css
+   Staff-global tabs. Base chrome is inherited from .tab-api. */
+html.staff-scope .staff-tabs {
+  width: fit-content;
+  max-width: 100%;
+}
+
+html.staff-scope .staff-tab {
+  min-height: var(--control-height);
+}

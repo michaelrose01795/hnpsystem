@@ -17,6 +17,7 @@
  *      during the UI cleanup pass.
  */
 @import "./families/index.css";
+@import "./staff-global/staffglobal.css";
 @import "./features/vhc.css";
 
 /* ========================================================= */
@@ -36,105 +37,83 @@ html.staff-scope input[type="number"] {
 /* === Reset & Base Styles === */
 /* ========================================================= */
 html.staff-scope {
-  --control-height: 48px;
+  --control-height: 44px;
   --control-radius: 24px;
-  --close-button-size: 48px;
+  --close-button-size: 44px;
   --close-button-radius: 24px;
   --hover-surface-z: 80;
-  /* Accent-dominant flowing background (light). Soft red glows on the edges + a
-     theme-coloured diagonal sweep through the middle (--theme-rgb), keeping a
-     light centre for content. The base wash uses neutral white. */
+  /* Patchy theme wash (light). No single dominant gradient — instead a handful
+     of soft, irregularly-placed theme blobs (--theme-rgb) at low opacity drift
+     across a base that is --surface nudged slightly toward --theme. The effect
+     is a mottled "wash" with gentle patches of variation, light enough that the
+     glass section cards stay clearly readable above it. */
   --app-background-scene:
-    /* theme-coloured diagonal sweep — the signature swoosh (uses --theme-rgb) */
-    linear-gradient(
-      115deg,
-      transparent 0%,
-      transparent 26%,
-      rgba(var(--theme-rgb), 0.35) 40%,
-      rgba(var(--theme-rgb), 0.78) 50%,
-      rgba(var(--theme-rgb), 0.35) 60%,
-      transparent 74%,
-      transparent 100%
-    ),
-    /* atmospheric red glow — right side (softened: accent now supports, not dominates) */
+    /* patchy theme blobs — soft, no hard edges, scattered for a mottled feel */
     radial-gradient(
-      ellipse 80% 95% at 104% 30%,
-      rgba(var(--accentMainRgb), 0.42) 0%,
-      rgba(var(--accentMainRgb), 0.22) 30%,
-      rgba(var(--accentMainRgb), 0.07) 58%,
-      transparent 76%
+      ellipse 58% 54% at 16% 22%,
+      rgba(var(--theme-rgb), 0.40) 0%,
+      transparent 62%
     ),
-    /* atmospheric red glow — lower left */
     radial-gradient(
-      ellipse 70% 82% at -6% 94%,
-      rgba(var(--accentMainRgb), 0.38) 0%,
-      rgba(var(--accentMainRgb), 0.18) 32%,
-      transparent 70%
+      ellipse 50% 46% at 84% 28%,
+      rgba(var(--theme-rgb), 0.32) 0%,
+      transparent 60%
     ),
-    /* faint red wash across the top */
     radial-gradient(
-      ellipse 130% 62% at 60% -8%,
-      rgba(var(--accentMainRgb), 0.18) 0%,
-      transparent 58%
+      ellipse 64% 58% at 72% 80%,
+      rgba(var(--theme-rgb), 0.37) 0%,
+      transparent 62%
     ),
-    /* Centre wash — surface nudged ~12% toward the theme colour (--theme-rgb)
-       so the light area reads as a faint accent tint, not flat page-surface
-       white. color-mix keeps it mostly surface with just a hint of theme. */
     radial-gradient(
-      ellipse 120% 120% at 45% 40%,
-      color-mix(in srgb, rgba(var(--surface-rgb), 0.96) 88%, rgba(var(--theme-rgb), 0.96) 12%) 28%,
-      color-mix(in srgb, rgba(var(--surface-rgb), 0.35) 88%, rgba(var(--theme-rgb), 0.35) 12%) 72%,
-      transparent 100%
+      ellipse 46% 50% at 28% 86%,
+      rgba(var(--theme-rgb), 0.28) 0%,
+      transparent 60%
     ),
-    var(--app-background-base, var(--page-shell-bg));
+    radial-gradient(
+      ellipse 40% 38% at 50% 50%,
+      rgba(var(--theme-rgb), 0.20) 0%,
+      transparent 64%
+    ),
+    /* base wash — essentially all --theme, only a whisper of --surface. */
+    color-mix(in srgb, var(--surface) 3%, var(--theme) 97%);
   --app-background-size: cover, cover, cover, cover, cover, auto;
   --app-background-position: center, center, center, center, center, center;
 }
 
 html.staff-scope[data-theme="dark"] {
-  /* Accent-dominant flowing background (dark). Deep black corners with soft
-     red glows on top-right + lower-left and a theme-coloured swoosh
-     (--theme-rgb) cutting through the middle. */
+  /* Patchy theme wash (dark). Same mottled approach as light: soft, scattered
+     theme blobs (--theme-rgb) at low opacity over a base that is the dark
+     --surface nudged slightly toward --theme. No dominant swoosh — just gentle
+     patches so sections read clearly against a quietly tinted backdrop. */
   --app-background-scene:
-    /* theme-coloured diagonal sweep — the signature swoosh (uses --theme-rgb) */
-    linear-gradient(
-      115deg,
-      transparent 0%,
-      transparent 28%,
-      rgba(var(--theme-rgb), 0.08) 40%,
-      rgba(var(--theme-rgb), 0.55) 49%,
-      rgba(var(--theme-rgb), 0.1) 59%,
-      transparent 72%,
-      transparent 100%
-    ),
-    /* atmospheric red glow — top / right (softened: accent supports, not dominates) */
+    /* patchy theme blobs — soft, no hard edges, scattered for a mottled feel */
     radial-gradient(
-      ellipse 95% 88% at 80% 0%,
-      rgba(var(--accentMainRgb), 0.50) 0%,
-      rgba(var(--accentMainRgb), 0.30) 32%,
-      rgba(var(--accentMainRgb), 0.10) 58%,
-      transparent 80%
+      ellipse 58% 54% at 18% 24%,
+      rgba(var(--theme-rgb), 0.42) 0%,
+      transparent 62%
     ),
-    /* atmospheric red glow — lower left */
     radial-gradient(
-      ellipse 82% 80% at 4% 98%,
-      rgba(var(--accentMainRgb), 0.46) 0%,
-      rgba(var(--accentMainRgb), 0.22) 34%,
-      transparent 72%
-    ),
-    /* faint red wash across the top */
-    radial-gradient(
-      ellipse 145% 72% at 52% -12%,
-      rgba(var(--accentMainRgb), 0.26) 0%,
+      ellipse 50% 46% at 82% 30%,
+      rgba(var(--theme-rgb), 0.32) 0%,
       transparent 60%
     ),
-    /* corner vignette to deepen the black opposite the red */
     radial-gradient(
-      ellipse 125% 125% at 50% 42%,
-      transparent 36%,
-      rgba(0, 0, 0, 0.6) 100%
+      ellipse 64% 58% at 74% 80%,
+      rgba(var(--theme-rgb), 0.38) 0%,
+      transparent 62%
     ),
-    var(--app-background-base, var(--page-shell-bg));
+    radial-gradient(
+      ellipse 46% 50% at 26% 84%,
+      rgba(var(--theme-rgb), 0.28) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 40% 38% at 50% 52%,
+      rgba(var(--theme-rgb), 0.22) 0%,
+      transparent 64%
+    ),
+    /* base wash — essentially all --theme, only a whisper of dark --surface. */
+    color-mix(in srgb, var(--surface) 3%, var(--theme) 97%);
   --app-background-size: cover, cover, cover, cover, cover, auto;
   --app-background-position: center, center, center, center, center, center;
 }
@@ -336,6 +315,120 @@ html.staff-scope[data-theme="dark"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
+/* =========================================================================
+   === LIQUID GLASS SYSTEM (staff scope)                                 ===
+   =========================================================================
+   One consistent premium frosted-glass language for the whole staff app.
+
+   Design rule (set by product):
+     • Normal cards / surfaces / controls = NEUTRAL frosted glass — they take
+       their translucency from --surface-rgb only, never the accent. No theme
+       colour wash on a resting card.
+     • ONLY action elements get a soft accent tint: primary/action buttons and
+       the ACTIVE tab / SELECTED pill. The tint stays gentle and calm — layered
+       glass, never a flat solid fill.
+
+   These --lg-* tokens are the single, reusable source of truth. The blocks
+   further down (and the existing --glass-* aliases) read from them, so retuning
+   the look is a one-place edit. Both light and dark are defined here; every
+   value is theme-aware via --surface-rgb / --accent-rgb. */
+html.staff-scope {
+  /* Blur + saturation — the frosted depth. Controls get a slightly lighter
+     blur than panels so text inside them stays crisp. */
+  --lg-blur: blur(28px) saturate(165%);
+  --lg-control-blur: blur(20px) saturate(160%);
+
+  /* Neutral glass fills — NO accent. Resting / hover / active / nested. */
+  --lg-neutral-bg: rgba(var(--surface-rgb), 0.55);
+  --lg-neutral-bg-hover: rgba(var(--surface-rgb), 0.68);
+  --lg-neutral-bg-active: rgba(var(--surface-rgb), 0.74);
+  --lg-nested-bg: rgba(var(--surface-rgb), 0.40);
+
+  /* Fine borders + inner highlight — drawn as inset box-shadows (Border Sweep
+     §3.0a compliant), white opacity in light mode. Keeps layers separated
+     without a heavy white panel or a hard hairline. */
+  --lg-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+  --lg-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --lg-soft-shadow: 0 6px 20px rgba(15, 23, 42, 0.09);
+  --lg-nested-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+
+  /* Accent glass — action buttons + active tab/selected pill ONLY. A gentle
+     top-to-bottom accent gradient (so it reads as layered glass, not a flat
+     solid), a soft controlled glow and a faint accent rim. */
+  --lg-accent-bg:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.22), rgba(var(--accent-rgb), 0.13));
+  --lg-accent-bg-hover:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.30), rgba(var(--accent-rgb), 0.19));
+  --lg-accent-bg-active:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.26), rgba(var(--accent-rgb), 0.17));
+  --lg-accent-glow: 0 4px 16px rgba(var(--accent-rgb), 0.20);
+  --lg-accent-glow-hover: 0 8px 24px rgba(var(--accent-rgb), 0.28);
+  --lg-accent-rim: inset 0 0 0 1px rgba(var(--accent-rgb), 0.30);
+
+  /* Liquid shine — a soft diagonal reflection swept across interactive controls
+     on hover (opacity + background-position only). Motion is gated behind
+     prefers-reduced-motion further down. */
+  --lg-shine:
+    linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.28) 47%, transparent 64%);
+  --lg-lift: -1px; /* hover lift */
+  --lg-press: 1px; /* active press */
+
+  /* ---- Repoint the shared design tokens onto the neutral glass above ----
+     These tokens are consumed app-wide; overriding them here (higher
+     specificity than theme.css :root) neutralises nested cards, tab strips and
+     the card shadow in one move, without editing the protected theme.css. */
+  /* Nested "theme" layer (LayerTheme / .glass-card--theme / inner cards) — was
+     an accent wash (rgba(accent,0.12)); now a neutral recessed glass so inner
+     cards read as glass, not coloured glass. */
+  --glass-theme: var(--lg-nested-bg);
+  /* Card shadow — softer, less "heavy white" than the theme.css default. */
+  --glass-shadow: var(--lg-soft-shadow), var(--lg-rim), var(--lg-highlight);
+  /* Card surface — nudged a touch clearer so it reads as frosted glass rather
+     than a near-opaque white panel (still readable above the page scrim). */
+  --glass-surface: rgba(var(--surface-rgb), 0.78);
+  /* Tabs — neutral container + transparent inactive items; the active item keeps
+     its accent tint (--tab-button-selected-bg, left accent on purpose). */
+  --tab-container-bg: var(--lg-neutral-bg);
+  --tab-button-bg: transparent;
+  --tab-button-hover-bg: var(--lg-neutral-bg-hover);
+}
+
+html.staff-scope[data-theme="dark"] {
+  --lg-blur: blur(28px) saturate(150%);
+  --lg-control-blur: blur(20px) saturate(150%);
+
+  --lg-neutral-bg: rgba(var(--surface-rgb), 0.46);
+  --lg-neutral-bg-hover: rgba(var(--surface-rgb), 0.58);
+  --lg-neutral-bg-active: rgba(var(--surface-rgb), 0.64);
+  --lg-nested-bg: rgba(var(--surface-rgb), 0.32);
+
+  /* Light-opacity rim/highlight in dark mode so the edge reads without glare. */
+  --lg-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --lg-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --lg-soft-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+  --lg-nested-shadow: 0 3px 12px rgba(0, 0, 0, 0.32);
+
+  --lg-accent-bg:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.30), rgba(var(--accent-rgb), 0.18));
+  --lg-accent-bg-hover:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.38), rgba(var(--accent-rgb), 0.24));
+  --lg-accent-bg-active:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.34), rgba(var(--accent-rgb), 0.22));
+  --lg-accent-glow: 0 4px 16px rgba(var(--accent-rgb), 0.26);
+  --lg-accent-glow-hover: 0 8px 24px rgba(var(--accent-rgb), 0.34);
+  --lg-accent-rim: inset 0 0 0 1px rgba(var(--accent-rgb), 0.38);
+
+  --lg-shine:
+    linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.14) 47%, transparent 64%);
+
+  --glass-theme: var(--lg-nested-bg);
+  --glass-shadow: var(--lg-soft-shadow), var(--lg-rim), var(--lg-highlight);
+  --glass-surface: rgba(var(--surface-rgb), 0.74);
+  --tab-container-bg: var(--lg-neutral-bg);
+  --tab-button-bg: transparent;
+  --tab-button-hover-bg: var(--lg-neutral-bg-hover);
+}
+
 html.staff-scope .app-topbar-shell {
   /* Frosted-glass shell: a soft white scrim (--shell-glass-bg) + backdrop blur
      so the topbar's search / controls never sit on the raw background gradient.
@@ -522,11 +615,13 @@ html.staff-scope .app-layout-section-shell {
   gap: var(--space-4);
   padding: var(--section-card-padding);
   border-radius: var(--section-card-radius);
-  background: var(--theme);
+  /* Liquid Glass: neutral frosted surface (was a --theme accent wash). */
+  background: var(--lg-neutral-bg);
   border: var(--section-card-border);
-  box-shadow: none;
+  box-shadow: var(--glass-shadow);
   background-image: none;
-  backdrop-filter: none;
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
   filter: none;
 }
 
@@ -536,11 +631,13 @@ html.staff-scope .app-layout-card {
   gap: var(--space-3);
   padding: var(--section-card-padding);
   border-radius: var(--section-card-radius);
-  background: var(--section-card-bg);
+  /* Liquid Glass: neutral frosted surface. */
+  background: var(--lg-neutral-bg);
   border: var(--section-card-border);
-  box-shadow: none;
+  box-shadow: var(--glass-shadow);
   background-image: none;
-  backdrop-filter: none;
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
   filter: none;
 }
 
@@ -550,16 +647,21 @@ html.staff-scope .app-layout-surface-subtle {
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--theme);
+  /* Liquid Glass: recessed NESTED neutral glass (was a --theme accent wash) so
+     inner panels read as glass, lighter than the card they sit inside. */
+  background: var(--lg-nested-bg);
   border: none;
-  box-shadow: none;
+  box-shadow: var(--lg-nested-shadow), var(--lg-rim);
   background-image: none;
-  backdrop-filter: none;
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
   filter: none;
 }
 
 html.staff-scope .app-layout-surface-accent {
-  --profile-card-bg: var(--theme);
+  /* This surface is intentionally the ACCENT variant — keep a SOFT accent glass
+     tint (layered, calm) rather than the old flat --theme wash. */
+  --profile-card-bg: var(--lg-accent-bg);
   --profile-card-border: none;
   display: flex;
   flex-direction: column;
@@ -567,15 +669,17 @@ html.staff-scope .app-layout-surface-accent {
   padding: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--profile-card-bg);
-  background-image: none;
+  background-image: var(--lg-accent-bg);
   border: none;
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: var(--lg-soft-shadow), var(--lg-accent-rim), var(--lg-highlight);
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
   filter: none;
 }
 
 html.staff-scope .app-profile-accent-card {
-  --profile-card-bg: var(--theme);
+  /* Soft accent glass (intentional accent variant), not the old flat wash. */
+  --profile-card-bg: var(--lg-accent-bg);
   --profile-card-border: none;
 }
 
@@ -609,8 +713,12 @@ html.staff-scope .app-layout-stat-card {
   min-height: 110px;
   padding: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--theme);
+  /* Liquid Glass: dashboard stat cards are neutral frosted glass (was --theme). */
+  background: var(--lg-neutral-bg);
   border: none;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
 }
 
 html.staff-scope .app-layout-header-row {
@@ -1025,6 +1133,27 @@ html.staff-scope .timepicker-api__options::-webkit-scrollbar-thumb:hover {
 }
 
 /* ========================================================= */
+/* === Stable scrollbar gutters (no content shift) ========= */
+/* ========================================================= */
+/* These are the real shared scrollable surfaces in the app: tables, modal  */
+/* cards, and the media-editor body. Because the global show-on-scroll       */
+/* handler in _app.js toggles the scrollbar thumb on/off, a classic          */
+/* scrollbar appearing would otherwise nudge content left/up. Reserving the  */
+/* gutter on BOTH edges keeps the content visually centred whether or not a  */
+/* vertical and/or horizontal bar is present, matching the liquid-glass look */
+/* (the thumb itself is still the slim, translucent overlay defined above).  */
+/* Dropdowns / pickers are intentionally excluded — they already solve this  */
+/* via `overflow: overlay` + manual padding-right.                           */
+html.staff-scope .app-table-shell-scroll,
+html.staff-scope .popup-card,
+html.staff-scope .popup-backdrop > *,
+html.staff-scope .video-editor-popup__body {
+  scrollbar-gutter: stable both-edges;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+/* ========================================================= */
 /* === Global: hide front-end scrollbar on tables & tabs === */
 /* ========================================================= */
 /* Scroll still works (wheel, trackpad, keyboard); only the visual track and */
@@ -1261,9 +1390,7 @@ html.staff-scope button:not(.app-btn) {
   cursor: pointer;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  box-shadow:
-    var(--btn-glow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
   position: relative;
   z-index: 0;
@@ -1383,8 +1510,11 @@ html.staff-scope input[type="search"] {
   min-height: var(--control-height);
   border-radius: var(--control-radius);
   border: none;
-  background: var(--control-bg);
-  box-shadow: none;
+  /* Liquid Glass: neutral frosted control surface (was an accent --control-bg). */
+  background: var(--glass-control-bg, var(--lg-neutral-bg));
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
   color: var(--text-1);
 }
 
@@ -1468,18 +1598,22 @@ html.staff-scope {
      the glass button here restyles every control to match, in one move.
      Primary/action buttons now share this same tint through the
      --glass-action-* aliases below. */
-  --glass-button-bg: var(--theme);
-  --glass-button-hover-bg: var(--theme-hover);
-  --glass-button-active-bg: var(--theme-hover);
-  --glass-button-blur: none;
-  --glass-button-shadow: var(--btn-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  --glass-button-hover-shadow: var(--btn-glow-hover), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  --glass-button-active-shadow: var(--btn-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  /* Liquid Glass v2: the glass (secondary) button + every form control are now
+     NEUTRAL frosted glass — they read from the --lg-* neutral tokens, so no
+     accent wash sits on a resting control. (Accent stays on action buttons +
+     active tabs only — see --glass-action-* below.) */
+  --glass-button-bg: var(--lg-neutral-bg);
+  --glass-button-hover-bg: var(--lg-neutral-bg-hover);
+  --glass-button-active-bg: var(--lg-neutral-bg-active);
+  --glass-button-blur: var(--lg-control-blur);
+  --glass-button-shadow: var(--lg-soft-shadow), var(--lg-rim), var(--lg-highlight);
+  --glass-button-hover-shadow: var(--lg-soft-shadow), var(--lg-rim), var(--lg-highlight);
+  --glass-button-active-shadow: var(--lg-rim), var(--lg-highlight);
 
   /* Form controls ALIAS the glass button so they always track it. */
   --glass-control-backdrop: var(--glass-button-blur);
   --glass-menu-backdrop: var(--glass-button-blur);
-  --glass-action-backdrop: none;
+  --glass-action-backdrop: var(--lg-control-blur);
   --glass-control-bg: var(--glass-button-bg);
   --glass-control-hover-bg: var(--glass-button-hover-bg);
   --glass-control-focus-bg: var(--glass-button-active-bg);
@@ -1497,9 +1631,11 @@ html.staff-scope {
      arbitrary content); its blur + shadow still track the glass button above. */
   --glass-menu-bg: rgba(var(--surface-rgb), 0.8);
 
-  /* Primary/action aliases feed .app-btn--primary and .glass-action-button. */
-  --glass-action-bg: var(--theme);
-  --glass-action-shadow: var(--glass-button-shadow);
+  /* Primary/action aliases feed .app-btn--primary and .glass-action-button.
+     These keep the soft ACCENT glass tint (the only buttons that do) — layered
+     accent gradient + controlled glow + highlight, never a flat solid fill. */
+  --glass-action-bg: var(--lg-accent-bg);
+  --glass-action-shadow: var(--lg-accent-glow), var(--lg-highlight), var(--lg-accent-rim);
   --glass-control-placeholder: rgba(var(--text-1-rgb, 17, 24, 39), 0.58);
   --glass-control-text: var(--staff-text, var(--text-1));
 }
@@ -4870,8 +5006,12 @@ html.staff-scope .hr-employees-directory-card {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  background: var(--theme);
+  /* Liquid Glass: neutral frosted card (was a --theme accent wash). */
+  background: var(--lg-neutral-bg);
   border: none;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
 }
 
 html.staff-scope .hr-employees-directory-toolbar {
@@ -4903,7 +5043,11 @@ html.staff-scope .hr-employees-search-input {
   padding: 11px 126px 11px 14px;
   border-radius: var(--input-radius);
   border: none;
-  background: var(--theme);
+  /* Liquid Glass: neutral frosted control surface (was a --theme accent wash). */
+  background: var(--glass-control-bg, var(--lg-neutral-bg));
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
   color: var(--text-1);
   font-size: 0.92rem;
   outline: none;
@@ -4937,7 +5081,11 @@ html.staff-scope .hr-employees-summary-card {
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--theme);
+  /* Liquid Glass: neutral frosted stat/summary card (was a --theme accent wash). */
+  background: var(--lg-neutral-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
 }
 
 html.staff-scope .hr-employees-summary-label {
@@ -7174,3 +7322,164 @@ html.staff-scope .app-staff-tabs {
   width: 100%;
   min-width: 0;
 }
+
+/* =========================================================================
+   === LIQUID GLASS — interactive polish (appended last so it wins cascade) ===
+   =========================================================================
+   Action buttons + active tabs keep the soft accent glass; everything else is
+   neutral. A subtle liquid shine + lift/press is added to interactive controls
+   only, and disabled entirely under prefers-reduced-motion. Static cards never
+   animate. Popups / modals / toasts / dropdown menus are deliberately untouched
+   here — they keep their own readable surfaces above the glass UI. */
+
+/* ---- Primary / action buttons: layered soft-accent glass ---------------- */
+/* Re-stated here (after families/buttons.css) because the primary button's
+   hover/active in that file reference --glass-button-* which are now neutral;
+   these rules pin the accent glass + a gentle hover lift / active press. */
+html.staff-scope .app-btn--primary,
+html.staff-scope .glass-action-button {
+  background-color: transparent !important;
+  background-image: var(--lg-accent-bg) !important;
+  color: var(--accentText) !important;
+  box-shadow: var(--lg-accent-glow), var(--lg-highlight), var(--lg-accent-rim);
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
+}
+html.staff-scope .app-btn--primary:hover,
+html.staff-scope .app-btn--primary:focus-visible,
+html.staff-scope .glass-action-button:hover,
+html.staff-scope .glass-action-button:focus-visible {
+  background-color: transparent !important;
+  background-image: var(--lg-accent-bg-hover) !important;
+  box-shadow: var(--lg-accent-glow-hover), var(--lg-highlight), var(--lg-accent-rim);
+  transform: translateY(var(--lg-lift));
+}
+html.staff-scope .app-btn--primary:active,
+html.staff-scope .glass-action-button:active {
+  background-color: transparent !important;
+  background-image: var(--lg-accent-bg-active) !important;
+  box-shadow: var(--lg-accent-glow), var(--lg-accent-rim);
+  transform: translateY(var(--lg-press));
+}
+html.staff-scope .app-btn--primary:disabled,
+html.staff-scope .glass-action-button:disabled {
+  background-color: transparent !important;
+  background-image: none !important;
+  background: var(--lg-neutral-bg) !important;
+  box-shadow: var(--lg-rim);
+  opacity: 0.55;
+  transform: none;
+}
+
+/* ---- Tab strips: neutral frosted containers ----------------------------- */
+html.staff-scope .tab-api,
+html.staff-scope .app-layout-tab-row {
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
+  box-shadow: var(--lg-rim);
+}
+
+/* ---- .app-tab family: neutral inactive, soft-accent active -------------- */
+/* The .app-tab base in families/tabs.css hard-codes an accent fill on EVERY
+   tab; override so inactive tabs are neutral glass and only the selected tab
+   carries the accent tint. */
+html.staff-scope .app-tab {
+  background: transparent;
+  backdrop-filter: var(--lg-control-blur);
+  -webkit-backdrop-filter: var(--lg-control-blur);
+  color: var(--text-1);
+}
+html.staff-scope .app-tab:hover:not([aria-disabled="true"]):not([aria-selected="true"]):not(.is-active) {
+  background: var(--lg-neutral-bg-hover);
+}
+html.staff-scope .app-tab[aria-selected="true"],
+html.staff-scope .app-tab.is-active {
+  background-image: var(--lg-accent-bg);
+  color: var(--accentText);
+  box-shadow: var(--lg-accent-rim), var(--lg-highlight);
+}
+
+/* ---- .tab-api active item: subtle accent rim so the state reads clearly -- */
+html.staff-scope button.tab-api__item.is-active,
+html.staff-scope a.tab-api__item.is-active {
+  box-shadow: var(--lg-accent-rim), var(--lg-highlight);
+}
+
+/* ---- Press feedback for tab-style controls ------------------------------ */
+html.staff-scope button.tab-api__item:active,
+html.staff-scope a.tab-api__item:active,
+html.staff-scope .app-tab:active:not([aria-disabled="true"]) {
+  transform: translateY(var(--lg-press));
+}
+
+/* =========================================================================
+   === Liquid shine — hover reflection on interactive controls ONLY        ===
+   =========================================================================
+   A soft diagonal highlight sweeps across the control on hover using only
+   opacity + background-position (no layout, no paint-heavy filters). Drawn on
+   ::after at z-index:-1 (with isolation) so it sits above the control's own
+   background but below its label. Disabled wholesale under reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html.staff-scope .app-btn,
+  html.staff-scope .glass-action-button,
+  html.staff-scope .glass-button,
+  html.staff-scope button.tab-api__item,
+  html.staff-scope a.tab-api__item,
+  html.staff-scope .app-tab {
+    position: relative;
+    isolation: isolate;
+  }
+
+  html.staff-scope .app-btn::after,
+  html.staff-scope .glass-action-button::after,
+  html.staff-scope .glass-button::after,
+  html.staff-scope button.tab-api__item::after,
+  html.staff-scope a.tab-api__item::after,
+  html.staff-scope .app-tab::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--lg-shine);
+    background-size: 220% 100%;
+    background-position: 175% 0;
+    background-repeat: no-repeat;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, background-position 0.6s ease;
+  }
+
+  html.staff-scope .app-btn:hover::after,
+  html.staff-scope .glass-action-button:hover::after,
+  html.staff-scope .glass-button:hover::after,
+  html.staff-scope button.tab-api__item:hover::after,
+  html.staff-scope a.tab-api__item:hover::after,
+  html.staff-scope .app-tab:hover::after {
+    opacity: 1;
+    background-position: -45% 0;
+  }
+
+  /* Disabled controls never shine. */
+  html.staff-scope .app-btn:disabled::after,
+  html.staff-scope .glass-action-button:disabled::after,
+  html.staff-scope .glass-button:disabled::after,
+  html.staff-scope button.tab-api__item:disabled::after,
+  html.staff-scope .app-tab[aria-disabled="true"]::after {
+    display: none;
+  }
+}
+
+/* =========================================================================
+   === Liquid Glass — showcase reference                                    ===
+   =========================================================================
+   There is no standalone showcase markup in this stylesheet — the live
+   showcase lives at /dev/user-diagnostic and renders the very same shared
+   classes upgraded above (.app-section-card, .glass-card, .glass-card--theme,
+   .app-btn--primary / --secondary / --ghost, .app-tab*, .tab-api, .app-input,
+   .dropdown-api, .calendar-api, .timepicker-api, .searchbar-api, .app-badge*,
+   .app-empty-state, .app-data-table, .app-layout-stat-card). Because every one
+   of those reads from the --lg-* / --glass-* tokens defined here, the showcase
+   reflects the new Liquid Glass system automatically — no demo-only CSS needed.
+   To preview a one-off surface, apply .glass-card (neutral) or
+   .glass-card .glass-card--theme (neutral nested) to any wrapper. */

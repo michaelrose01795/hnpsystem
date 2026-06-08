@@ -7,7 +7,7 @@
 //   • As soon as the page scrolls away from the top, the topbar switches to a
 //     fixed overlay that floats in the SAME on-screen position, so page content
 //     scrolls behind it (frosted-glass "floating above the content" look).
-//   • While the user keeps scrolling it stays visible; 3s after scrolling stops
+//   • While the user keeps scrolling it stays visible; 1.5s after scrolling stops
 //     it folds up out of view from the top edge. Any further scroll unfolds it.
 //
 // Why position:fixed (not sticky): `.app-layout-main-column` sets
@@ -25,7 +25,7 @@
 // rather than set on the wrapper.
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const HIDE_DELAY_MS = 2000; // idle time after scrolling stops before folding away
+const HIDE_DELAY_MS = 1500; // idle time after scrolling stops before folding away
 const TOP_THRESHOLD_PX = 2; // treat this close to the top as "at the top"
 const FALLBACK_TOP_GAP = 18; // matches --page-gutter-y in theme.css
 
@@ -34,7 +34,7 @@ const FALLBACK_TOP_GAP = 18; // matches --page-gutter-y in theme.css
 // is already positioned as an absolute overlay by the caller. In that mode this
 // hook does NOT reposition the bar; it only drives the fold-away animation off
 // the inner scroller's scrollTop: visible at the top, visible while scrolling,
-// folds 2s after scrolling stops, unfolds the moment scrolling resumes.
+// folds 1.5s after scrolling stops, unfolds the moment scrolling resumes.
 export default function useAutoHideTopbar({ enabled = true, overlay = false, scrollRef = null } = {}) {
   const wrapperRef = useRef(null);
   const barRef = useRef(null);
@@ -153,15 +153,7 @@ export default function useAutoHideTopbar({ enabled = true, overlay = false, scr
         setFloating(true);
         if (!overlay) measureGeom(); // window mode: measure before the first fixed frame
       }
-      if (overlay) {
-        // Locked model: fold the bar away the instant scrolling starts so the
-        // page card (which rises into the bar's slot) is revealed taking the
-        // shape of the bar's top. The bar comes back only at the very top.
-        clearHideTimer();
-        setHidden(true);
-        return;
-      }
-      setHidden(false); // window mode: any scroll activity reveals the bar...
+      setHidden(false); // any scroll activity reveals the bar...
       scheduleHide(); // ...and (re)arms the fold-away timer
     };
 

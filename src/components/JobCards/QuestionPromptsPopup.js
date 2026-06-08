@@ -173,7 +173,11 @@ export default function QuestionPromptsPopup({
                 style={{
                   border: "none",
                   borderRadius: "var(--radius-sm)",
-                  backgroundColor: "var(--surface)",
+                  // Liquid Glass — question group card.
+                  backgroundColor: "var(--glass-surface)",
+                  backdropFilter: "var(--glass-blur)",
+                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "var(--glass-shadow)",
                   padding: "14px 16px",
                   display: "grid",
                   gap: "10px",

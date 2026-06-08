@@ -224,7 +224,16 @@
       "Read(//c/hnpsystem/**)",
       "Bash(for i *)",
       "Bash(echo \"=== EXIT $? ===\")",
-      "Bash(echo \"=== done \\($?\\) ===\")"
+      "Bash(echo \"=== done \\($?\\) ===\")",
+      "Bash(echo \"HEAD violations:\"; git show HEAD:src/styles/staffglobal.css > /tmp/head_staff.css 2>/dev/null && node -e \"const s=require\\('fs'\\).readFileSync\\('/tmp/head_staff.css','utf8'\\); const m=s.match\\(/border\\(-top|-bottom|-left|-right\\)?:\\\\s*\\(?!none|transparent|0|var\\\\\\(--\\(input-ring|checkbox-ring|ghostbutton-ring|focus-ring|separating-line\\)\\\\\\)\\)[^;]*/g\\)||[]; console.log\\(m.length\\);\"; echo \"WORKING violations:\"; node -e \"const s=require\\('fs'\\).readFileSync\\('src/styles/staffglobal.css','utf8'\\); const m=s.match\\(/border\\(-top|-bottom|-left|-right\\)?:\\\\s*\\(?!none|transparent|0|var\\\\\\(--\\(input-ring|checkbox-ring|ghostbutton-ring|focus-ring|separating-line\\)\\\\\\)\\)[^;]*/g\\)||[]; console.log\\(m.length\\);\")",
+      "Bash(sed -n '1894,1912p' src/components/profile/ProfileWorkTab.js)",
+      "Bash(sed -n '2744,2760p' src/components/profile/ProfileWorkTab.js)",
+      "Bash(sed -n '1525,1545p' src/components/HR/tabs/EmployeesTab.js)",
+      "Bash(sed -n '784,792p;828,834p' src/components/profile/ProfilePersonalTab.js)",
+      "Bash(sed -n '47,55p' src/components/Consumables/StockCheckPopup.js)",
+      "Bash(sed -n '808,820p' src/components/Clocking/EfficiencyTab.js)",
+      "Bash(sed -n '2722,2732p' src/components/JobCards/WriteUpForm.js)",
+      "Bash(npm view *)"
     ],
     "deny": [],
     "ask": [],

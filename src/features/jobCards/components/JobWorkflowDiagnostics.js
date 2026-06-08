@@ -14,8 +14,12 @@ export default function JobWorkflowDiagnostics({ diagnostics = null }) {
     <details
       style={{
         borderRadius: "var(--radius-sm)",
-        border: "1px dashed var(--accent-purple)",
-        backgroundColor: "var(--surface)",
+        border: "1px dashed var(--accent-purple)", // dev-only marker, kept intentionally
+        // Liquid Glass — frosted surface + blur + glass shadow.
+        backgroundColor: "var(--glass-surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
+        boxShadow: "var(--glass-shadow)",
         padding: "10px 12px",
       }}
     >

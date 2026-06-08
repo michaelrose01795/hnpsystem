@@ -21,11 +21,14 @@ const modalStyle = {
 };
 
 const sectionCardStyle = {
-  background: "var(--surface)",
+  // Liquid Glass — section card.
+  background: "var(--glass-surface)",
+  backdropFilter: "var(--glass-blur)",
+  WebkitBackdropFilter: "var(--glass-blur)",
   border: "none",
   borderRadius: "var(--radius-md)",
   padding: "16px",
-  boxShadow: "none",
+  boxShadow: "var(--glass-shadow)",
 };
 
 const checkboxLabelStyle = {
@@ -46,7 +49,8 @@ const inputFieldStyle = {
 
 const subtleSectionStyle = {
   ...sectionCardStyle,
-  background: "var(--theme)",
+  // Liquid Glass — theme tint (inherits blur/shadow from sectionCardStyle).
+  background: "var(--glass-theme)",
 };
 
 const sectionHeadingStyle = {

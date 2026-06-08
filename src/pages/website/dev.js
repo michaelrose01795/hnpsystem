@@ -41,6 +41,20 @@ import { canShowDevPages } from "@/lib/dev-tools/config";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
 import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
+import {
+  CustomerBadge,
+  CustomerButton,
+  CustomerCard,
+  CustomerInput,
+  CustomerModal,
+  CustomerPageShell,
+  CustomerSearchBar,
+  CustomerSection,
+  CustomerSelect,
+  CustomerTable,
+  CustomerTabs,
+  CustomerToolbar,
+} from "@/components/customer-global";
 
 // /website light/dark/system theme cycle (mirrors src/pages/website/
 // profile.js). The choice is persisted to localStorage and applied by
@@ -199,6 +213,9 @@ export default function WebsiteDevShowcasePage() {
   const [dateValue, setDateValue] = useState("2026-05-21");
   const [timeValue, setTimeValue] = useState("09:30");
   const [radio, setRadio] = useState("standard");
+  const [customerGlobalTab, setCustomerGlobalTab] = useState("profile");
+  const [customerGlobalSearch, setCustomerGlobalSearch] = useState("Defender");
+  const [customerGlobalModalOpen, setCustomerGlobalModalOpen] = useState(false);
 
   // Theme cycle preference: "light" | "dark" | "system". Defaults to
   // dark until the stored choice loads on mount.
@@ -615,6 +632,100 @@ export default function WebsiteDevShowcasePage() {
         </ShowcaseSection>
 
         {/* ── Scrollable container (red scrollbar) ───────────────── */}
+        <ShowcaseSection
+          id="customer-global"
+          title="Customer Global Components"
+          wide
+        >
+          <CustomerPageShell
+            title="Customer Global UI"
+            subtitle="Reusable customer wrappers backed by the split customer-global CSS family."
+            actions={
+              <CustomerToolbar>
+                <CustomerButton type="button" variant="secondary">Secondary</CustomerButton>
+                <CustomerButton type="button" onClick={() => setCustomerGlobalModalOpen(true)}>Open modal</CustomerButton>
+              </CustomerToolbar>
+            }
+          >
+            <CustomerSection
+              title="Controls"
+              subtitle="Buttons, tabs, fields, search and badges stay under customer-global classes."
+              action={<CustomerBadge tone="success">Global</CustomerBadge>}
+            >
+              <CustomerToolbar>
+                <CustomerButton type="button">Primary</CustomerButton>
+                <CustomerButton type="button" variant="secondary">Secondary</CustomerButton>
+              </CustomerToolbar>
+              <CustomerTabs
+                tabs={[
+                  { key: "profile", label: "Profile" },
+                  { key: "vehicles", label: "Vehicles" },
+                  { key: "bookings", label: "Bookings" },
+                ]}
+                activeKey={customerGlobalTab}
+                onChange={setCustomerGlobalTab}
+              />
+              <CustomerToolbar>
+                <CustomerInput label="Customer" name="customer-global-name" defaultValue="Alex Humphries" />
+                <CustomerSelect
+                  label="Request"
+                  name="customer-global-request"
+                  defaultValue="service"
+                  options={[
+                    { value: "service", label: "Service" },
+                    { value: "mot", label: "MOT" },
+                    { value: "repair", label: "Repair" },
+                  ]}
+                />
+                <CustomerSearchBar
+                  value={customerGlobalSearch}
+                  onChange={(event) => setCustomerGlobalSearch(event.target.value)}
+                  onClear={() => setCustomerGlobalSearch("")}
+                  placeholder="Search customer UI"
+                />
+              </CustomerToolbar>
+              <CustomerToolbar>
+                <CustomerBadge tone="neutral">Neutral</CustomerBadge>
+                <CustomerBadge tone="warning">Warning</CustomerBadge>
+                <CustomerBadge tone="danger">Danger</CustomerBadge>
+              </CustomerToolbar>
+            </CustomerSection>
+
+            <CustomerCard title="Flattened customer card" subtitle="Direct child of the customer page stack.">
+              Customer screens can use this central wrapper without a page-specific card recipe.
+            </CustomerCard>
+
+            <CustomerSection layer="theme" title="Customer table" subtitle="Rows are rendered by the page; table chrome is global.">
+              <CustomerTable
+                columns={[
+                  { key: "item", label: "Item" },
+                  { key: "className", label: "Global class" },
+                  { key: "status", label: "Status", render: (row) => <CustomerBadge tone={row.tone}>{row.status}</CustomerBadge> },
+                ]}
+                rows={[
+                  { id: "button", item: "Button", className: ".customer-button", status: "Ready", tone: "success" },
+                  { id: "card", item: "Card", className: ".customer-card", status: "Ready", tone: "success" },
+                  { id: "modal", item: "Modal", className: ".customer-modal", status: "Previewed", tone: "warning" },
+                ]}
+              />
+            </CustomerSection>
+
+            <CustomerModal
+              open={customerGlobalModalOpen}
+              title="Customer global modal"
+              onClose={() => setCustomerGlobalModalOpen(false)}
+              actions={
+                <>
+                  <CustomerButton type="button" variant="secondary" onClick={() => setCustomerGlobalModalOpen(false)}>Cancel</CustomerButton>
+                  <CustomerButton type="button" onClick={() => setCustomerGlobalModalOpen(false)}>Save</CustomerButton>
+                </>
+              }
+            >
+              Modal chrome is centralised through CustomerModal and customer-modals.css.
+            </CustomerModal>
+          </CustomerPageShell>
+        </ShowcaseSection>
+
         <ShowcaseSection
           id="scrollbar"
           title="Scrollbar"

@@ -525,7 +525,11 @@ export default function ClockingHistorySection({
             style={{
               width: "100%",
               maxWidth: "420px",
-              backgroundColor: "var(--surface)",
+              // Liquid Glass — dialog card.
+              backgroundColor: "var(--glass-surface)",
+              backdropFilter: "var(--glass-blur)",
+              WebkitBackdropFilter: "var(--glass-blur)",
+              boxShadow: "var(--glass-shadow)",
               borderRadius: "var(--radius-lg)",
               padding: "24px",
               display: "flex",

@@ -72,7 +72,10 @@
        --glass-surface : base layer (lighter, less accent) — LayerSurface / --surface
        --glass-theme   : nested layer (stronger accent tint) — LayerTheme / --theme
      The two differ so the surface/theme alternation stays legible when nested. */
-  --glass-blur: blur(30px) saturate(160%);
+  /* Content cards use a LIGHT blur so they read as clear, see-through glass
+     (not frosty). The frosty look is reserved for the shells — top bar, sidebar
+     and main page scrim — which use the separate --shell-glass-blur (28px). */
+  --glass-blur: blur(10px) saturate(135%);
   /* Premium frosted-glass shadow (Liquid Glass readability pass, 2026-06):
      a soft GREY drop shadow for depth + a full-perimeter white rim and a
      brighter top inner-highlight. The rim is an INSET box-shadow, not a CSS
@@ -81,17 +84,17 @@
      reads as depth without bleeding through the stack gap. Dark mode overrides
      the colours (see the [data-theme="dark"] block). */
   --glass-shadow:
-    0 6px 20px rgba(15, 23, 42, 0.10),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  /* Flat frosted tints — NO gradient. Surface cards are a near-opaque white
-     frosted panel (readability pass: raised from 0.5 → 0.84 so content no
-     longer competes with the background scene); theme cards keep a light
-     accent tint so the surface/theme alternation stays legible when nested.
-     The blur still reveals the background scene shifting subtly behind the
-     frosting, but content stays the primary focus. */
-  --glass-surface: rgba(var(--surface-rgb), 0.84);
-  --glass-theme: rgba(var(--accent-rgb), 0.12);
+    0 10px 30px rgba(15, 23, 42, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  /* Flat tints — NO gradient. Clear-glass pass (2026-06-08): content cards are
+     deliberately MORE transparent (0.50) and use a light blur so they read as
+     clear glass floating on the frosted page scrim — NOT frosty themselves. The
+     frosty treatment stays on the shells (--shell-glass-bg / --page-scrim-bg).
+     Cards stay readable because the page scrim behind them is already a calm
+     frosted white. If body copy loses contrast, nudge --glass-surface up. */
+  --glass-surface: rgba(var(--surface-rgb), 0.62);
+  --glass-theme: rgba(var(--accent-rgb), 0.14);
   /* Layout-shell frosted scrim (topbar / sidebar / page card). These shells
      used to be fully transparent, so the background gradient showed straight
      through and competed with content. They now carry a soft frosted-white
@@ -538,11 +541,13 @@
      Kept tight so it stays inside --page-stack-gap (no bleed). Tints stay flat
      (no gradient): a darker translucent surface, a slightly stronger accent. */
   --glass-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.40),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  --glass-surface: rgba(var(--surface-rgb), 0.80);
-  --glass-theme: rgba(var(--accent-rgb), 0.20);
+    0 10px 30px rgba(0, 0, 0, 0.52),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  /* Clear-glass pass (2026-06-08): content cards more transparent on dark too
+     (surface 0.44, theme 0.22) — clear glass on the frosted shells, not frosty. */
+  --glass-surface: rgba(var(--surface-rgb), 0.56);
+  --glass-theme: rgba(var(--accent-rgb), 0.22);
   /* Layout-shell frosted scrim (dark) — see the light-theme note. */
   --shell-glass-bg: rgba(var(--surface-rgb), 0.66);
   --shell-glass-blur: blur(28px) saturate(150%);
