@@ -4,6 +4,14 @@ import React from "react"; // support extracted fragments.
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical "theme" layer primitive (alternates with LayerSurface)
 
+const toDevSectionKey = (value) =>
+String(value || "unknown").
+trim().
+toLowerCase().
+replace(/[^a-z0-9-]/g, "-").
+replace(/-+/g, "-").
+replace(/^-|-$/g, "") || "unknown";
+
 export default function NextJobsPageUi(props) {
   const {
     DRAG_PREVIEW_OFFSET_PX,
@@ -167,7 +175,7 @@ export default function NextJobsPageUi(props) {
                   } else if (jobCardRefs.current[job.jobNumber]) {
                     delete jobCardRefs.current[job.jobNumber];
                   }
-                }} data-dnd-job-card="true" data-dnd-job-number={job.jobNumber} onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))} style={{
+                }} data-dnd-job-card="true" data-dnd-job-number={job.jobNumber} data-dev-section-key={`nextjobs-outstanding-job-${toDevSectionKey(job.jobNumber)}`} data-dev-section-parent="nextjobs-outstanding-scroll" data-dev-section-type="content-card" data-dev-background-token="surface" data-dev-text-preview={`${job.jobNumber || "Job"} ${job.reg || ""} ${job.customer || ""}`} onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))} style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: "8px",

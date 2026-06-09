@@ -7,7 +7,22 @@
 import React from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import styles from "./WorkshopQueuePlanner.module.css";
-import { getStatusMeta } from "./workshopQueueHelpers";
+import { getStatusMeta, formatClock } from "./workshopQueueHelpers";
+
+// Date + time for the checked-in timestamp; falls back gracefully.
+const formatCheckedIn = (value) => {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return formatClock(value);
+  }
+};
 
 // Let the shared buttons grow to fill the action row evenly.
 const btnFlex = { flex: "1 1 auto", minWidth: "120px" };
@@ -87,6 +102,7 @@ export default function WorkshopJobModal({
             <Field label="Customer" value={job.customer || "Unknown customer"} />
             <Field label="Phone" value={job.customerPhone} />
             <Field label="Booking Time" value={bookingTime && bookingTime !== "No appointment" ? bookingTime : "—"} />
+            <Field label="Checked In" value={formatCheckedIn(job.checkedInAt)} />
             <Field label="Estimated Time" value={estHours ? `${estHours.toFixed(estHours % 1 === 0 ? 0 : 1)} hrs` : "—"} />
             <Field label="Service Type" value={deriveJobTypeLabel ? deriveJobTypeLabel(job) : job.type} />
             <Field label="Status" value={statusMeta.label} />

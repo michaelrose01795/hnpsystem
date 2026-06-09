@@ -1,0 +1,1325 @@
+{
+  "createdAt": "2026-06-09T13:00:30.572Z",
+  "baseUrl": "http://localhost:3000",
+  "outputDir": "Screenshots\\2026-06-09",
+  "samples": {
+    "accountId": "CA3606",
+    "invoiceId": "8b88ec0a-8fbb-4f55-9f56-b5e587705f0e",
+    "accountNumber": "CA1497",
+    "customerSlug": "daisyhamond",
+    "technicianSlug": "AdminM1-1",
+    "jobNumber": "00055",
+    "orderNumber": "P00004",
+    "deliveryId": "46f898c4-6300-4088-8b93-17dd8a634ce1",
+    "goodsInNumber": "GIN-00028",
+    "linkCode": "OSD7Ds_cq_77",
+    "uiKey": "legacy",
+    "role": "general",
+    "pageSlug": "messages",
+    "slide": "0",
+    "linkJobNumber": "00076"
+  },
+  "routeCount": 129,
+  "captured": [
+    {
+      "type": "page",
+      "route": "",
+      "captureRoute": "",
+      "finalUrl": "http://localhost:3000/newsfeed",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\page.png"
+    },
+    {
+      "type": "page",
+      "route": "/3Dwebsite",
+      "captureRoute": "/3Dwebsite",
+      "finalUrl": "http://localhost:3000/newsfeed",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\3Dwebsite.png"
+    },
+    {
+      "type": "page",
+      "route": "/account/security",
+      "captureRoute": "/presentation/admin-manager/account-security/9",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/account-security/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\account-security.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts",
+      "captureRoute": "/presentation/accounts-manager/accounts/1",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/create",
+      "captureRoute": "/presentation/accounts-manager/accounts-create/2",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-create/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-create.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/edit/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-edit-accountId/3",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-edit-accountId/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-edit-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/invoices",
+      "captureRoute": "/presentation/accounts-manager/accounts-invoices/6",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-invoices/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-invoices.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/invoices/8b88ec0a-8fbb-4f55-9f56-b5e587705f0e",
+      "captureRoute": "/presentation/accounts-manager/accounts-invoices-invoiceId/7",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-invoices-invoiceId/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-invoices-8b88ec0a-8fbb-4f55-9f56-b5e587705f0e.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/payslips",
+      "captureRoute": "/presentation/accounts-manager/accounts-payslips/8",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-payslips/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-payslips.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/reports",
+      "captureRoute": "/presentation/accounts-manager/accounts-reports/9",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-reports/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-reports.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/settings",
+      "captureRoute": "/presentation/accounts-manager/accounts-settings/10",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-settings/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-settings.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/transactions/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-transactions-accountId/5",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-transactions-accountId/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-transactions-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/view/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-view-accountId/4",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/accounts-view-accountId/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\accounts-view-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance",
+      "captureRoute": "/presentation/admin-manager/admin-compliance/2",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/breaches",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-breaches/4",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance-breaches/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance-breaches.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/dpias",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-dpias/5",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance-dpias/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance-dpias.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/retention",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-retention/7",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance-retention/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance-retention.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/ropa",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-ropa/6",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance-ropa/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance-ropa.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/sars",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-sars/3",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-compliance-sars/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-compliance-sars.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/users",
+      "captureRoute": "/presentation/admin-manager/admin-users/1",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/admin-users/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\admin-users.png"
+    },
+    {
+      "type": "page",
+      "route": "/appointments",
+      "captureRoute": "/presentation/workshop-manager/appointments/14",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/appointments/14#slide=14&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\appointments.png"
+    },
+    {
+      "type": "page",
+      "route": "/clocking",
+      "captureRoute": "/presentation/workshop-manager/clocking/5",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/clocking/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\clocking.png"
+    },
+    {
+      "type": "page",
+      "route": "/clocking/AdminM1-1",
+      "captureRoute": "/presentation/workshop-manager/clocking-technicianSlug/6",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/clocking-technicianSlug/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\clocking-AdminM1-1.png"
+    },
+    {
+      "type": "page",
+      "route": "/company-accounts",
+      "captureRoute": "/presentation/accounts-manager/company-accounts/11",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/company-accounts/11#slide=11&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\company-accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/company-accounts/CA1497",
+      "captureRoute": "/presentation/accounts-manager/company-accounts-accountNumber/12",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/company-accounts-accountNumber/12#slide=12&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\company-accounts-CA1497.png"
+    },
+    {
+      "type": "page",
+      "route": "/customers",
+      "captureRoute": "/customers",
+      "finalUrl": "http://localhost:3000/customer",
+      "status": 404,
+      "file": "Screenshots\\2026-06-09\\customers.png"
+    },
+    {
+      "type": "page",
+      "route": "/customers/daisyhamond",
+      "captureRoute": "/presentation/workshop-manager/customers-customerSlug/13",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/customers-customerSlug/13#slide=13&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\customers-daisyhamond.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/accounts",
+      "captureRoute": "/presentation/accounts-manager/dashboard-accounts/0",
+      "finalUrl": "http://localhost:3000/presentation/accounts-manager/dashboard-accounts/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/admin",
+      "captureRoute": "/presentation/admin-manager/dashboard-admin/0",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/dashboard-admin/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-admin.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/managers",
+      "captureRoute": "/presentation/owner/dashboard-managers/0",
+      "finalUrl": "http://localhost:3000/presentation/owner/dashboard-managers/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-managers.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/mot",
+      "captureRoute": "/presentation/mot-tester/dashboard-mot/0",
+      "finalUrl": "http://localhost:3000/presentation/mot-tester/dashboard-mot/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-mot.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/painting",
+      "captureRoute": "/dashboard/painting",
+      "finalUrl": "http://localhost:3000/dashboard/painting",
+      "status": null,
+      "file": "Screenshots\\2026-06-09\\dashboard-painting.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/parts",
+      "captureRoute": "/presentation/parts-manager/dashboard-parts/0",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/dashboard-parts/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-parts.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/service",
+      "captureRoute": "/dashboard/service",
+      "finalUrl": "http://localhost:3000/dashboard/service",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-service.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/valeting",
+      "captureRoute": "/presentation/valet-service/dashboard-valeting/0",
+      "finalUrl": "http://localhost:3000/presentation/valet-service/dashboard-valeting/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-valeting.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/workshop",
+      "captureRoute": "/presentation/techs/dashboard-workshop/0",
+      "finalUrl": "http://localhost:3000/presentation/techs/dashboard-workshop/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dashboard-workshop.png"
+    },
+    {
+      "type": "page",
+      "route": "/dev/status-snapshot",
+      "captureRoute": "/dev/status-snapshot",
+      "finalUrl": "http://localhost:3000/dev/status-snapshot",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dev-status-snapshot.png"
+    },
+    {
+      "type": "page",
+      "route": "/dev/ui",
+      "captureRoute": "/dev/ui",
+      "finalUrl": "http://localhost:3000/dev/ui",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dev-ui.png"
+    },
+    {
+      "type": "page",
+      "route": "/dev/ui/legacy",
+      "captureRoute": "/dev/ui/legacy",
+      "finalUrl": "http://localhost:3000/loginPresentation",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dev-ui-legacy.png"
+    },
+    {
+      "type": "page",
+      "route": "/dev/user-diagnostic",
+      "captureRoute": "/dev/user-diagnostic",
+      "finalUrl": "http://localhost:3000/dev/user-diagnostic",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\dev-user-diagnostic.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr",
+      "captureRoute": "/presentation/hr-manager/hr/0",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/attendance",
+      "captureRoute": "/presentation/hr-manager/hr-attendance/2",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-attendance/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-attendance.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/disciplinary",
+      "captureRoute": "/presentation/hr-manager/hr-disciplinary/3",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-disciplinary/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-disciplinary.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/employees",
+      "captureRoute": "/presentation/hr-manager/hr-employees/4",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-employees/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-employees.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/leave",
+      "captureRoute": "/presentation/hr-manager/hr-leave/5",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-leave/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-leave.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/manager",
+      "captureRoute": "/presentation/hr-manager/hr-manager/1",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-manager/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-manager.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/payroll",
+      "captureRoute": "/presentation/hr-manager/hr-payroll/6",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-payroll/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-payroll.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/performance",
+      "captureRoute": "/presentation/hr-manager/hr-performance/7",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-performance/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-performance.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/recruitment",
+      "captureRoute": "/presentation/hr-manager/hr-recruitment/8",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-recruitment/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-recruitment.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/reports",
+      "captureRoute": "/presentation/hr-manager/hr-reports/9",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-reports/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-reports.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/settings",
+      "captureRoute": "/presentation/hr-manager/hr-settings/10",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-settings/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-settings.png"
+    },
+    {
+      "type": "page",
+      "route": "/hr/training",
+      "captureRoute": "/presentation/hr-manager/hr-training/11",
+      "finalUrl": "http://localhost:3000/presentation/hr-manager/hr-training/11#slide=11&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\hr-training.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards",
+      "captureRoute": "/presentation/workshop-manager/job-cards/9",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/job-cards/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/00055",
+      "captureRoute": "/presentation/techs/job-cards-jobNumber/4",
+      "finalUrl": "http://localhost:3000/presentation/techs/job-cards-jobNumber/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-00055.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/appointments",
+      "captureRoute": "/presentation/workshop-manager/job-cards-appointments/12",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/job-cards-appointments/12#slide=12&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-appointments.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/archive",
+      "captureRoute": "/presentation/workshop-manager/job-cards-archive/11",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/job-cards-archive/11#slide=11&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-archive.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/create",
+      "captureRoute": "/presentation/workshop-manager/job-cards-create/10",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/job-cards-create/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-create.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/myjobs",
+      "captureRoute": "/presentation/techs/job-cards-myjobs/2",
+      "finalUrl": "http://localhost:3000/presentation/techs/job-cards-myjobs/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-myjobs.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/myjobs/00055",
+      "captureRoute": "/presentation/techs/job-cards-myjobs-jobNumber/3",
+      "finalUrl": "http://localhost:3000/presentation/techs/job-cards-myjobs-jobNumber/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-myjobs-00055.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/valet/00055",
+      "captureRoute": "/presentation/valet-service/job-cards-valet-jobnumber/2",
+      "finalUrl": "http://localhost:3000/presentation/valet-service/job-cards-valet-jobnumber/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-valet-00055.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/view",
+      "captureRoute": "/presentation/parts-manager/job-cards-view/3",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/job-cards-view/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-view.png"
+    },
+    {
+      "type": "page",
+      "route": "/job-cards/waiting/nextjobs",
+      "captureRoute": "/presentation/workshop-manager/job-cards-waiting-nextjobs/2",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/job-cards-waiting-nextjobs/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\job-cards-waiting-nextjobs.png"
+    },
+    {
+      "type": "page",
+      "route": "/login",
+      "captureRoute": "/presentation/general/login/4",
+      "finalUrl": "http://localhost:3000/presentation/general/login/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\login.png"
+    },
+    {
+      "type": "page",
+      "route": "/loginPresentation",
+      "captureRoute": "/loginPresentation",
+      "finalUrl": "http://localhost:3000/loginPresentation",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\loginPresentation.png"
+    },
+    {
+      "type": "page",
+      "route": "/messages",
+      "captureRoute": "/presentation/general/messages/0",
+      "finalUrl": "http://localhost:3000/presentation/general/messages/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\messages.png"
+    },
+    {
+      "type": "page",
+      "route": "/mobile/dashboard",
+      "captureRoute": "/presentation/mobile-technician/mobile-dashboard/0",
+      "finalUrl": "http://localhost:3000/presentation/mobile-technician/mobile-dashboard/0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\mobile-dashboard.png"
+    },
+    {
+      "type": "page",
+      "route": "/mobile/delivery/00055",
+      "captureRoute": "/presentation/mobile-technician/mobile-delivery-jobNumber/1",
+      "finalUrl": "http://localhost:3000/presentation/mobile-technician/mobile-delivery-jobNumber/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\mobile-delivery-00055.png"
+    },
+    {
+      "type": "page",
+      "route": "/newpage",
+      "captureRoute": "/newpage",
+      "finalUrl": "http://localhost:3000/newpage",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\newpage.png"
+    },
+    {
+      "type": "page",
+      "route": "/newsfeed",
+      "captureRoute": "/presentation/general/newsfeed/1",
+      "finalUrl": "http://localhost:3000/presentation/general/newsfeed/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\newsfeed.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts",
+      "captureRoute": "/presentation/parts-manager/parts/1",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/create-order",
+      "captureRoute": "/presentation/parts-manager/parts-create-order/5",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-create-order/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-create-order.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/create-order/P00004",
+      "captureRoute": "/presentation/parts-manager/parts-create-order-orderNumber/6",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-create-order-orderNumber/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-create-order-P00004.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/deliveries",
+      "captureRoute": "/presentation/parts-manager/parts-deliveries/7",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-deliveries/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-deliveries.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/deliveries/46f898c4-6300-4088-8b93-17dd8a634ce1",
+      "captureRoute": "/presentation/parts-manager/parts-deliveries-deliveryId/8",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-deliveries-deliveryId/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-deliveries-46f898c4-6300-4088-8b93-17dd8a634ce1.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/delivery-planner",
+      "captureRoute": "/presentation/parts-manager/parts-delivery-planner/9",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-delivery-planner/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-delivery-planner.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/goods-in",
+      "captureRoute": "/presentation/parts-manager/parts-goods-in/10",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-goods-in/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-goods-in.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/goods-in/GIN-00028",
+      "captureRoute": "/presentation/parts-manager/parts-goods-in-goodsInNumber/11",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-goods-in-goodsInNumber/11#slide=11&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-goods-in-GIN-00028.png"
+    },
+    {
+      "type": "page",
+      "route": "/parts/manager",
+      "captureRoute": "/presentation/parts-manager/parts-manager/2",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/parts-manager/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\parts-manager.png"
+    },
+    {
+      "type": "page",
+      "route": "/password-reset/new",
+      "captureRoute": "/presentation/general/password-reset-new/5",
+      "finalUrl": "http://localhost:3000/presentation/general/password-reset-new/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\password-reset-new.png"
+    },
+    {
+      "type": "page",
+      "route": "/presentation",
+      "captureRoute": "/presentation",
+      "finalUrl": "http://localhost:3000/loginPresentation",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\presentation.png"
+    },
+    {
+      "type": "page",
+      "route": "/profile",
+      "captureRoute": "/presentation/general/profile/2",
+      "finalUrl": "http://localhost:3000/presentation/general/profile/2#slide=2&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\profile.png"
+    },
+    {
+      "type": "page",
+      "route": "/profile?tab=personal",
+      "captureRoute": "/presentation/general/profile-tab-personal/3",
+      "finalUrl": "http://localhost:3000/presentation/general/profile-tab-personal/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\profile-tab-personal.png"
+    },
+    {
+      "type": "page",
+      "route": "/profile/privacy",
+      "captureRoute": "/presentation/admin-manager/profile-privacy/8",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/profile-privacy/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\profile-privacy.png"
+    },
+    {
+      "type": "page",
+      "route": "/slideshow",
+      "captureRoute": "/slideshow",
+      "finalUrl": "http://localhost:3000/slideshow",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\slideshow.png"
+    },
+    {
+      "type": "page",
+      "route": "/staff/website-manager",
+      "captureRoute": "/presentation/admin-manager/staff-website-manager/10",
+      "finalUrl": "http://localhost:3000/presentation/admin-manager/staff-website-manager/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\staff-website-manager.png"
+    },
+    {
+      "type": "page",
+      "route": "/stock-catalogue",
+      "captureRoute": "/presentation/parts-manager/stock-catalogue/4",
+      "finalUrl": "http://localhost:3000/presentation/parts-manager/stock-catalogue/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\stock-catalogue.png"
+    },
+    {
+      "type": "page",
+      "route": "/tech/consumables-request",
+      "captureRoute": "/presentation/techs/tech-consumables-request/5",
+      "finalUrl": "http://localhost:3000/presentation/techs/tech-consumables-request/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\tech-consumables-request.png"
+    },
+    {
+      "type": "page",
+      "route": "/tech/dashboard",
+      "captureRoute": "/presentation/techs/tech-dashboard/1",
+      "finalUrl": "http://localhost:3000/presentation/techs/tech-dashboard/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\tech-dashboard.png"
+    },
+    {
+      "type": "page",
+      "route": "/tech/efficiency",
+      "captureRoute": "/presentation/techs/tech-efficiency/6",
+      "finalUrl": "http://localhost:3000/presentation/techs/tech-efficiency/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\tech-efficiency.png"
+    },
+    {
+      "type": "page",
+      "route": "/tracking",
+      "captureRoute": "/presentation/techs/tracking/8",
+      "finalUrl": "http://localhost:3000/presentation/techs/tracking/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\tracking.png"
+    },
+    {
+      "type": "page",
+      "route": "/unauthorized",
+      "captureRoute": "/unauthorized",
+      "finalUrl": "http://localhost:3000/login",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\unauthorized.png"
+    },
+    {
+      "type": "page",
+      "route": "/valet",
+      "captureRoute": "/presentation/valet-service/valet/1",
+      "finalUrl": "http://localhost:3000/presentation/valet-service/valet/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\valet.png"
+    },
+    {
+      "type": "page",
+      "route": "/vhc",
+      "captureRoute": "/presentation/techs/vhc/7",
+      "finalUrl": "http://localhost:3000/presentation/techs/vhc/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vhc.png"
+    },
+    {
+      "type": "page",
+      "route": "/vhc/customer-preview/00076",
+      "captureRoute": "/presentation/customer/vhc-customer-preview-jobNumber/8",
+      "finalUrl": "http://localhost:3000/presentation/customer/vhc-customer-preview-jobNumber/8#slide=8&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vhc-customer-preview-00076.png"
+    },
+    {
+      "type": "page",
+      "route": "/vhc/customer-view/00076",
+      "captureRoute": "/presentation/customer/vhc-customer-view-jobNumber/9",
+      "finalUrl": "http://localhost:3000/presentation/customer/vhc-customer-view-jobNumber/9#slide=9&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vhc-customer-view-00076.png"
+    },
+    {
+      "type": "page",
+      "route": "/vhc/customer/00076/OSD7Ds_cq_77",
+      "captureRoute": "/presentation/customer/vhc-customer-jobNumber-linkCode/11",
+      "finalUrl": "http://localhost:3000/presentation/customer/vhc-customer-jobNumber-linkCode/11#slide=11&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vhc-customer-00076-OSD7Ds_cq_77.png"
+    },
+    {
+      "type": "page",
+      "route": "/vhc/share/00076/OSD7Ds_cq_77",
+      "captureRoute": "/presentation/customer/vhc-share-jobNumber-linkCode/10",
+      "finalUrl": "http://localhost:3000/presentation/customer/vhc-share-jobNumber-linkCode/10#slide=10&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vhc-share-00076-OSD7Ds_cq_77.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision",
+      "captureRoute": "/vision",
+      "finalUrl": "http://localhost:3000/vision",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/communication-layer",
+      "captureRoute": "/vision/communication-layer",
+      "finalUrl": "http://localhost:3000/vision/communication-layer",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-communication-layer.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/finance",
+      "captureRoute": "/vision/finance",
+      "finalUrl": "http://localhost:3000/vision/finance",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-finance.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/future-platform",
+      "captureRoute": "/vision/future-platform",
+      "finalUrl": "http://localhost:3000/vision/future-platform",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-future-platform.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/management",
+      "captureRoute": "/vision/management",
+      "finalUrl": "http://localhost:3000/vision/management",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-management.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/mobile-technician",
+      "captureRoute": "/vision/mobile-technician",
+      "finalUrl": "http://localhost:3000/vision/mobile-technician",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-mobile-technician.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/mot",
+      "captureRoute": "/vision/mot",
+      "finalUrl": "http://localhost:3000/vision/mot",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-mot.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/operational-intelligence",
+      "captureRoute": "/vision/operational-intelligence",
+      "finalUrl": "http://localhost:3000/vision/operational-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-operational-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/parts-intelligence",
+      "captureRoute": "/vision/parts-intelligence",
+      "finalUrl": "http://localhost:3000/vision/parts-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-parts-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/roadmap",
+      "captureRoute": "/vision/roadmap",
+      "finalUrl": "http://localhost:3000/vision/roadmap",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-roadmap.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/role-tree-demo",
+      "captureRoute": "/vision/role-tree-demo",
+      "finalUrl": "http://localhost:3000/vision/role-tree-demo",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-role-tree-demo.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/sales-intelligence",
+      "captureRoute": "/vision/sales-intelligence",
+      "finalUrl": "http://localhost:3000/vision/sales-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-sales-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/service-advisor-intelligence",
+      "captureRoute": "/vision/service-advisor-intelligence",
+      "finalUrl": "http://localhost:3000/vision/service-advisor-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-service-advisor-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/site-operations",
+      "captureRoute": "/vision/site-operations",
+      "finalUrl": "http://localhost:3000/vision/site-operations",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-site-operations.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/smart-repair",
+      "captureRoute": "/vision/smart-repair",
+      "finalUrl": "http://localhost:3000/vision/smart-repair",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-smart-repair.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/system-map",
+      "captureRoute": "/vision/system-map",
+      "finalUrl": "http://localhost:3000/vision/system-map",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-system-map.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/valet",
+      "captureRoute": "/vision/valet",
+      "finalUrl": "http://localhost:3000/vision/valet",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-valet.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/vehicle-prep",
+      "captureRoute": "/vision/vehicle-prep",
+      "finalUrl": "http://localhost:3000/vision/vehicle-prep",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-vehicle-prep.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/vhc-intelligence",
+      "captureRoute": "/vision/vhc-intelligence",
+      "finalUrl": "http://localhost:3000/vision/vhc-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-vhc-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/workflow-coordination",
+      "captureRoute": "/vision/workflow-coordination",
+      "finalUrl": "http://localhost:3000/vision/workflow-coordination",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-workflow-coordination.png"
+    },
+    {
+      "type": "page",
+      "route": "/vision/workshop-intelligence",
+      "captureRoute": "/vision/workshop-intelligence",
+      "finalUrl": "http://localhost:3000/vision/workshop-intelligence",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\vision-workshop-intelligence.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/shop/cancel",
+      "captureRoute": "/presentation/customer/website-shop-cancel/7",
+      "finalUrl": "http://localhost:3000/presentation/customer/website-shop-cancel/7#slide=7&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-shop-cancel.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/shop/cart",
+      "captureRoute": "/presentation/customer/website-shop-cart/4",
+      "finalUrl": "http://localhost:3000/presentation/customer/website-shop-cart/4#slide=4&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-shop-cart.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/shop/checkout",
+      "captureRoute": "/presentation/customer/website-shop-checkout/5",
+      "finalUrl": "http://localhost:3000/presentation/customer/website-shop-checkout/5#slide=5&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-shop-checkout.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/shop/success",
+      "captureRoute": "/presentation/customer/website-shop-success/6",
+      "finalUrl": "http://localhost:3000/presentation/customer/website-shop-success/6#slide=6&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-shop-success.png"
+    },
+    {
+      "type": "page",
+      "route": "/website#shop",
+      "captureRoute": "/presentation/customer/website-shop/3",
+      "finalUrl": "http://localhost:3000/presentation/customer/website-shop/3#slide=3&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-shop.png"
+    },
+    {
+      "type": "page",
+      "route": "/workshop",
+      "captureRoute": "/workshop",
+      "finalUrl": "http://localhost:3000/workshop/consumables-tracker",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\workshop.png"
+    },
+    {
+      "type": "page",
+      "route": "/workshop/consumables-tracker",
+      "captureRoute": "/presentation/workshop-manager/workshop-consumables-tracker/1",
+      "finalUrl": "http://localhost:3000/presentation/workshop-manager/workshop-consumables-tracker/1#slide=1&step=0",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\workshop-consumables-tracker.png"
+    },
+    {
+      "type": "page",
+      "route": "/website",
+      "captureRoute": "/website",
+      "finalUrl": "http://localhost:3000/website",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/dev",
+      "captureRoute": "/website/dev",
+      "finalUrl": "http://localhost:3000/website/dev",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-dev.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/login",
+      "captureRoute": "/website/login",
+      "finalUrl": "http://localhost:3000/website/login",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-login.png"
+    },
+    {
+      "type": "page",
+      "route": "/website/profile",
+      "captureRoute": "/website/profile",
+      "finalUrl": "http://localhost:3000/website/login",
+      "status": 200,
+      "file": "Screenshots\\2026-06-09\\website-profile.png"
+    },
+    {
+      "type": "popup",
+      "route": "/login",
+      "popup": "Reset password",
+      "file": "Screenshots\\2026-06-09\\login--popup--reset-password.png"
+    }
+  ],
+  "skipped": [
+    {
+      "type": "page",
+      "route": "",
+      "captureRoute": "",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\page.png"
+    },
+    {
+      "type": "page",
+      "route": "/3Dwebsite",
+      "captureRoute": "/3Dwebsite",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\3Dwebsite.png"
+    },
+    {
+      "type": "page",
+      "route": "/account/security",
+      "captureRoute": "/presentation/admin-manager/account-security/9",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\account-security.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts",
+      "captureRoute": "/presentation/accounts-manager/accounts/1",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/create",
+      "captureRoute": "/presentation/accounts-manager/accounts-create/2",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-create.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/edit/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-edit-accountId/3",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-edit-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/invoices",
+      "captureRoute": "/presentation/accounts-manager/accounts-invoices/6",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-invoices.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/invoices/8b88ec0a-8fbb-4f55-9f56-b5e587705f0e",
+      "captureRoute": "/presentation/accounts-manager/accounts-invoices-invoiceId/7",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-invoices-8b88ec0a-8fbb-4f55-9f56-b5e587705f0e.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/payslips",
+      "captureRoute": "/presentation/accounts-manager/accounts-payslips/8",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-payslips.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/reports",
+      "captureRoute": "/presentation/accounts-manager/accounts-reports/9",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-reports.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/settings",
+      "captureRoute": "/presentation/accounts-manager/accounts-settings/10",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-settings.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/transactions/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-transactions-accountId/5",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-transactions-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/accounts/view/CA3606",
+      "captureRoute": "/presentation/accounts-manager/accounts-view-accountId/4",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\accounts-view-CA3606.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance",
+      "captureRoute": "/presentation/admin-manager/admin-compliance/2",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/breaches",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-breaches/4",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance-breaches.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/dpias",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-dpias/5",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance-dpias.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/retention",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-retention/7",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance-retention.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/ropa",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-ropa/6",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance-ropa.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/compliance/sars",
+      "captureRoute": "/presentation/admin-manager/admin-compliance-sars/3",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-compliance-sars.png"
+    },
+    {
+      "type": "page",
+      "route": "/admin/users",
+      "captureRoute": "/presentation/admin-manager/admin-users/1",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\admin-users.png"
+    },
+    {
+      "type": "page",
+      "route": "/appointments",
+      "captureRoute": "/presentation/workshop-manager/appointments/14",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\appointments.png"
+    },
+    {
+      "type": "page",
+      "route": "/clocking",
+      "captureRoute": "/presentation/workshop-manager/clocking/5",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\clocking.png"
+    },
+    {
+      "type": "page",
+      "route": "/clocking/AdminM1-1",
+      "captureRoute": "/presentation/workshop-manager/clocking-technicianSlug/6",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\clocking-AdminM1-1.png"
+    },
+    {
+      "type": "page",
+      "route": "/company-accounts",
+      "captureRoute": "/presentation/accounts-manager/company-accounts/11",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\company-accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/company-accounts/CA1497",
+      "captureRoute": "/presentation/accounts-manager/company-accounts-accountNumber/12",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\company-accounts-CA1497.png"
+    },
+    {
+      "type": "page",
+      "route": "/customers",
+      "captureRoute": "/customers",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\customers.png"
+    },
+    {
+      "type": "page",
+      "route": "/customers/daisyhamond",
+      "captureRoute": "/presentation/workshop-manager/customers-customerSlug/13",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\customers-daisyhamond.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/accounts",
+      "captureRoute": "/presentation/accounts-manager/dashboard-accounts/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-accounts.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/admin",
+      "captureRoute": "/presentation/admin-manager/dashboard-admin/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-admin.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/managers",
+      "captureRoute": "/presentation/owner/dashboard-managers/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-managers.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/mot",
+      "captureRoute": "/presentation/mot-tester/dashboard-mot/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-mot.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/painting",
+      "captureRoute": "/dashboard/painting",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-painting.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/parts",
+      "captureRoute": "/presentation/parts-manager/dashboard-parts/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-parts.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/service",
+      "captureRoute": "/dashboard/service",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-service.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/valeting",
+      "captureRoute": "/presentation/valet-service/dashboard-valeting/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-valeting.png"
+    },
+    {
+      "type": "page",
+      "route": "/dashboard/workshop",
+      "captureRoute": "/presentation/techs/dashboard-workshop/0",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dashboard-workshop.png"
+    },
+    {
+      "type": "page",
+      "route": "/dev/status-snapshot",
+      "captureRoute": "/dev/status-snapshot",
+      "reason": "existing screenshot",
+      "file": "Screenshots\\2026-06-09\\dev-status-snapshot.png"
+    }
+  ],
+  "errors": []
+}

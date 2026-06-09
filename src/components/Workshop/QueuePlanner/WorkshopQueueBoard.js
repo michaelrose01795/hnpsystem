@@ -10,30 +10,20 @@
 // so cards stay draggable between technicians / MOT users / the unassigned queue.
 import React from "react";
 import styles from "./WorkshopQueuePlanner.module.css";
-import {
-  getStatusMeta,
-  getInitials,
-  getCapacity,
-} from "./workshopQueueHelpers";
-
-// Small dotted drag-grip icon — signals a card / row is draggable.
-export function DragGrip({ height = 12 }) {
-  return (
-    <svg width={height * 0.6} height={height} viewBox="0 0 6 10" aria-hidden="true" fill="currentColor">
-      <circle cx="1.5" cy="1.5" r="1" />
-      <circle cx="4.5" cy="1.5" r="1" />
-      <circle cx="1.5" cy="5" r="1" />
-      <circle cx="4.5" cy="5" r="1" />
-      <circle cx="1.5" cy="8.5" r="1" />
-      <circle cx="4.5" cy="8.5" r="1" />
-    </svg>
-  );
-}
+import { getStatusMeta, getCapacity } from "./workshopQueueHelpers";
 
 const shortHours = (hours) => {
   const value = Number(hours) || 0;
   return `${value % 1 === 0 ? value : value.toFixed(1)}h`;
 };
+
+const toDevSectionKey = (value) =>
+  String(value || "unknown")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "unknown";
 
 // ---------------------------------------------------------------- Job card ----
 export function WorkshopQueueCard({
@@ -46,6 +36,8 @@ export function WorkshopQueueCard({
   formatAppointmentTime,
   estimateJobHours,
   className = "",
+  devSectionParent = "",
+  devSectionPrefix = "workshop-queue-job",
 }) {
   const statusMeta = getStatusMeta(job.status);
   const vehicle = [job.make, job.model].filter(Boolean).join(" ") || job.makeModel || "Vehicle TBC";
@@ -68,14 +60,17 @@ export function WorkshopQueueCard({
       ref={refCallback}
       data-dnd-job-card="true"
       data-dnd-job-number={job.jobNumber}
+      data-dev-section="1"
+      data-dev-section-key={`${devSectionPrefix}-${toDevSectionKey(job.jobNumber)}`}
+      data-dev-section-parent={devSectionParent}
+      data-dev-section-type="content-card"
+      data-dev-background-token="theme"
+      data-dev-text-preview={`${job.jobNumber || "Job"} ${job.reg || ""} ${vehicle} ${customer} ${statusMeta.label}`}
       onPointerDown={onPointerDown}
       className={classes}
       title={`#${job.jobNumber} · ${vehicle} · ${customer}`}
     >
       <div className={styles.jobCardHead}>
-        <span className={styles.jobGrip}>
-          <DragGrip height={11} />
-        </span>
         <span className={styles.jobNo}>#{job.jobNumber}</span>
         <span className={styles.jobReg}>{job.reg || "—"}</span>
       </div>
@@ -91,7 +86,7 @@ export function WorkshopQueueCard({
       </div>
       <div className={styles.jobCardFoot}>
         <span className={styles.jobTime}>
-          {bookingTime && bookingTime !== "No appointment" ? `🕑 ${bookingTime}` : "🕑 —"}
+          {bookingTime && bookingTime !== "No appointment" ? bookingTime : "—"}
         </span>
         <span className={styles.jobTime}>~{shortHours(estHours)}</span>
       </div>
@@ -120,9 +115,27 @@ export function WorkshopQueueDropZone({
     .join(" ");
 
   return (
-    <div className={classes} data-dnd-target-type="assignee" data-dnd-target-key={panelKey}>
+    <div
+      className={classes}
+      data-dnd-target-type="assignee"
+      data-dnd-target-key={panelKey}
+      data-dev-section="1"
+      data-dev-section-key={`workshop-queue-dropzone-${toDevSectionKey(panelKey)}`}
+      data-dev-section-parent={`workshop-queue-row-${toDevSectionKey(panelKey)}`}
+      data-dev-section-type="section-shell"
+      data-dev-background-token="theme"
+      data-dev-text-preview={`Drop zone for ${panelKey}`}
+    >
       {jobs.length === 0 ? (
-        <div className={`${styles.emptyRow} ${isActive ? styles.emptyRowActive : ""}`}>
+        <div
+          className={`${styles.emptyRow} ${isActive ? styles.emptyRowActive : ""}`}
+          data-dev-section="1"
+          data-dev-section-key={`workshop-queue-empty-${toDevSectionKey(panelKey)}`}
+          data-dev-section-parent={`workshop-queue-dropzone-${toDevSectionKey(panelKey)}`}
+          data-dev-section-type="content-card"
+          data-dev-background-token="theme"
+          data-dev-text-preview={`No next job assigned for ${panelKey}`}
+        >
           {isActive && draggingJob ? "Drop job here" : "No next job assigned"}
         </div>
       ) : (
@@ -147,6 +160,8 @@ export function WorkshopQueueDropZone({
                 deriveJobTypeLabel={deriveJobTypeLabel}
                 formatAppointmentTime={formatAppointmentTime}
                 estimateJobHours={estimateJobHours}
+                devSectionParent={`workshop-queue-dropzone-${toDevSectionKey(panelKey)}`}
+                devSectionPrefix={`workshop-queue-assigned-job-${toDevSectionKey(panelKey)}`}
               />
               {matchesDropIndicator("assignee", panelKey, job.jobNumber, "after") && (
                 <div className={styles.dropBar} />
@@ -171,14 +186,17 @@ export function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
 
   return (
     <React.Fragment>
-      <div className={styles.userCell}>
-        <span className={styles.dragHandle} title="Drag to reorder">
-          <DragGrip height={16} />
-        </span>
-        <span className={styles.avatar}>{getInitials(row.name)}</span>
+      <div
+        className={styles.userCell}
+        data-dev-section="1"
+        data-dev-section-key={`workshop-queue-user-${toDevSectionKey(row.panelKey)}`}
+        data-dev-section-parent={`workshop-queue-row-${toDevSectionKey(row.panelKey)}`}
+        data-dev-section-type="content-card"
+        data-dev-background-token="theme"
+        data-dev-text-preview={`${row.name} ${row.role} ${row.jobs.length} ${unit}`}
+      >
         <div className={styles.userMeta}>
           <span className={styles.userName}>{row.name}</span>
-          <span className={styles.userRole}>{row.role}</span>
           <span className={styles.workload} title={capacity.label}>
             <span className={`${styles.workloadDot} ${capacity.dot}`} />
             {row.jobs.length} {unit} • {shortHours(totalHours)}
@@ -199,10 +217,18 @@ export function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
 }
 
 // --------------------------------------------------------------- Group head ----
-export function WorkshopQueueHeader({ icon, title, count }) {
+export function WorkshopQueueHeader({ title, count }) {
+  const key = title.toLowerCase().includes("mot") ? "mot" : "technicians";
   return (
-    <div className={styles.groupHead}>
-      {icon && <span className={styles.groupHeadIcon}>{icon}</span>}
+    <div
+      className={styles.groupHead}
+      data-dev-section="1"
+      data-dev-section-key={`workshop-queue-header-${key}`}
+      data-dev-section-parent="workshop-queue-board-grid"
+      data-dev-section-type="toolbar"
+      data-dev-background-token="theme"
+      data-dev-text-preview={`${title} ${count}`}
+    >
       <span className={styles.groupHeadTitle}>{title}</span>
       <span className={styles.groupHeadCount}>({count})</span>
     </div>
@@ -212,21 +238,55 @@ export function WorkshopQueueHeader({ icon, title, count }) {
 // ------------------------------------------------------------------- Board ----
 export default function WorkshopQueueBoard({ techRows, motRows, activeDropTarget, ...shared }) {
   const renderRow = (row) => (
-    <WorkshopQueueRow
-      key={row.panelKey}
-      row={row}
-      isActive={activeDropTarget === row.panelKey}
-      {...shared}
-    />
+    <div
+      key={`${row.panelKey}-row-shell`}
+      data-dev-section="1"
+      data-dev-section-key={`workshop-queue-row-${toDevSectionKey(row.panelKey)}`}
+      data-dev-section-parent="workshop-queue-board-grid"
+      data-dev-section-type="section-shell"
+      data-dev-background-token="transparent"
+      data-dev-text-preview={`${row.name} queue row`}
+      style={{ display: "contents" }}
+    >
+      <WorkshopQueueRow
+        row={row}
+        isActive={activeDropTarget === row.panelKey}
+        {...shared}
+      />
+    </div>
   );
 
   return (
-    <div className={`${styles.glass} ${styles.board}`} data-presentation="workshop-queue-board">
-      <div className={styles.boardScroll}>
-        <div className={styles.boardGrid} role="grid">
-          <WorkshopQueueHeader icon="🔧" title="Technicians" count={techRows.length} />
+    <div
+      className={`${styles.themeSurface} ${styles.board}`}
+      data-presentation="workshop-queue-board"
+      data-dev-section="1"
+      data-dev-section-key="workshop-queue-board"
+      data-dev-section-parent="workshop-queue-planner"
+      data-dev-section-type="content-card"
+      data-dev-background-token="theme"
+      data-dev-text-preview={`Workshop queue board ${techRows.length} technicians ${motRows.length} MOT users`}
+    >
+      <div
+        className={styles.boardScroll}
+        data-dev-section="1"
+        data-dev-section-key="workshop-queue-board-scroll"
+        data-dev-section-parent="workshop-queue-board"
+        data-dev-section-type="section-shell"
+        data-dev-background-token="transparent"
+      >
+        <div
+          className={styles.boardGrid}
+          role="grid"
+          data-dev-section="1"
+          data-dev-section-key="workshop-queue-board-grid"
+          data-dev-section-parent="workshop-queue-board-scroll"
+          data-dev-section-type="data-table"
+          data-dev-background-token="transparent"
+        >
+          <WorkshopQueueHeader title="Technicians" count={techRows.length} />
           {techRows.map(renderRow)}
-          {motRows.length > 0 && <WorkshopQueueHeader icon="🚗" title="MOT Users" count={motRows.length} />}
+          {motRows.length > 0 && <WorkshopQueueHeader title="MOT Users" count={motRows.length} />}
           {motRows.map(renderRow)}
         </div>
       </div>

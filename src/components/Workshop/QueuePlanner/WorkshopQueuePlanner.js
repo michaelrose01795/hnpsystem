@@ -16,44 +16,36 @@
 // canonical shared `.app-btn` family so they match every other staff control.
 import React, { useCallback, useMemo, useState } from "react";
 import styles from "./WorkshopQueuePlanner.module.css";
+import { Dropdown } from "@/components/ui/dropdownAPI";
 import WorkshopQueueBoard, { WorkshopQueueCard } from "./WorkshopQueueBoard";
 import WorkshopJobModal from "./WorkshopJobModal";
 import { getStatusMeta, formatClock } from "./workshopQueueHelpers";
 
-const DATE_RANGES = [
-  { key: "today", label: "Today" },
-  { key: "tomorrow", label: "Tomorrow" },
-  { key: "week", label: "This Week" },
-  { key: "all", label: "All" },
+// Single job-type filter (one dropdown). "all" = no type filtering.
+const TYPE_FILTER_OPTIONS = [
+  { label: "All Types", value: "all" },
+  { label: "Technician", value: "technician" },
+  { label: "MOT", value: "mot" },
+  { label: "Service", value: "service" },
+  { label: "Diagnostic", value: "diagnostic" },
+  { label: "Retail", value: "retail" },
+  { label: "Warranty", value: "warranty" },
 ];
 
-const TYPE_OPTIONS = [
-  { key: "technician", label: "Technician" },
-  { key: "mot", label: "MOT" },
-  { key: "service", label: "Service" },
-  { key: "diagnostic", label: "Diagnostic" },
-  { key: "retail", label: "Retail" },
-  { key: "warranty", label: "Warranty" },
-];
-
-const startOfDay = (value) => {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
-// Shared staff button family — secondary control, pill, small. `.is-active` paints
-// the selected (brand) state. We never invent a new button style here.
-const filterBtnClass = (active) =>
-  `app-btn app-btn--secondary app-btn--sm app-btn--pill${active ? " is-active" : ""}`;
+const toDevSectionKey = (value) =>
+  String(value || "unknown")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "unknown";
 
 export default function WorkshopQueuePlanner({
   // data
   techRows,
   motRows,
   outstandingJobs,
-  clockedInJobs,
+  checkedInJobs,
   // helpers
   estimateJobHours,
   deriveJobTypeLabel,
@@ -75,7 +67,6 @@ export default function WorkshopQueuePlanner({
   DRAG_PREVIEW_OFFSET_PX,
   // interactions
   handleOpenJobDetails,
-  handleOpenCurrentClocking,
   selectedJob,
   feedbackMessage,
   setFeedbackMessage,
@@ -83,62 +74,25 @@ export default function WorkshopQueuePlanner({
   handleViewSelectedJobCard,
   unassignTechFromJob,
 }) {
-  const [dateRange, setDateRange] = useState("today");
-  const [typeFilters, setTypeFilters] = useState(() => new Set());
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  const toggleType = (key) => {
-    setTypeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  // ---- client-side filters (date range + job type) ----
+  // ---- client-side job-type filter (single dropdown; "all" = no filtering) ----
   // Search is handled by the page (it highlights + scrolls to matches), so it is
   // intentionally NOT a hard filter here — that keeps the existing behaviour.
-  const inDateRange = useMemo(() => {
-    return (job) => {
-      if (dateRange === "all") return true;
-      const iso = job?.appointment?.scheduledTime || job?.appointment?.scheduled_time;
-      // Jobs with no appointment (active / walk-in work) always stay visible.
-      if (!iso) return true;
-      const day = startOfDay(iso);
-      if (!day) return true;
-      const today = startOfDay(new Date());
-      if (dateRange === "today") return day.getTime() === today.getTime();
-      if (dateRange === "tomorrow") {
-        const t = new Date(today);
-        t.setDate(t.getDate() + 1);
-        return day.getTime() === t.getTime();
-      }
-      if (dateRange === "week") {
-        const end = new Date(today);
-        end.setDate(end.getDate() + 7);
-        return day >= today && day <= end;
-      }
-      return true;
-    };
-  }, [dateRange]);
-
   const matchesType = useMemo(() => {
     return (job) => {
-      if (typeFilters.size === 0) return true;
+      if (typeFilter === "all") return true;
       const hay = [job.type, deriveJobTypeLabel ? deriveJobTypeLabel(job) : "", ...(job.jobCategories || [])]
         .join(" ")
         .toLowerCase();
-      for (const key of typeFilters) {
-        if (key === "diagnostic" && hay.includes("diag")) return true;
-        if (hay.includes(key)) return true;
-      }
-      return false;
+      if (typeFilter === "diagnostic") return hay.includes("diag");
+      return hay.includes(typeFilter);
     };
-  }, [typeFilters, deriveJobTypeLabel]);
+  }, [typeFilter, deriveJobTypeLabel]);
 
   const filterJobs = useCallback(
-    (list) => (list || []).filter((job) => inDateRange(job) && matchesType(job)),
-    [inDateRange, matchesType]
+    (list) => (list || []).filter((job) => matchesType(job)),
+    [matchesType]
   );
 
   const filteredTechRows = useMemo(
@@ -179,68 +133,86 @@ export default function WorkshopQueuePlanner({
     }
   };
 
-  const technicianCount = filteredTechRows.length + filteredMotRows.length;
-
   return (
-    <div className={styles.shell} data-presentation="workshop-queue-planner">
-      {/* ============================ 1 · Page header ======================= */}
-      <header className={`${styles.glass} ${styles.pageHeader}`}>
-        <div className={styles.pageHeaderText}>
-          <h1 className={styles.pageTitle}>Workshop Controller Board</h1>
-          <p className={styles.pageSubtitle}>
-            Live job allocation &amp; technician queue planner · checked-in vehicles, next jobs and workload at a glance
-          </p>
-        </div>
-        <div className={styles.pageHeaderMeta}>
-          <div className={styles.headerStat}>
-            <span className={styles.headerStatValue}>{clockedInJobs.length}</span>
-            <span className={styles.headerStatLabel}>Checked In</span>
-          </div>
-          <div className={styles.headerStat}>
-            <span className={styles.headerStatValue}>{technicianCount}</span>
-            <span className={styles.headerStatLabel}>On Board</span>
-          </div>
-          <div className={styles.headerStat}>
-            <span className={styles.headerStatValue}>{filteredOutstanding.length}</span>
-            <span className={styles.headerStatLabel}>Unassigned</span>
-          </div>
-        </div>
-      </header>
-
-      {/* ============================ 2 · Checked In Jobs =================== */}
-      <section className={`${styles.glass} ${styles.section}`}>
-        <div className={styles.sectionHead}>
+    <div
+      className={styles.shell}
+      data-presentation="workshop-queue-planner"
+      data-dev-section="1"
+      data-dev-section-key="workshop-queue-planner"
+      data-dev-section-parent="app-layout-page-card"
+      data-dev-section-type="page-shell"
+      data-dev-background-token="transparent"
+      data-dev-text-preview="Workshop queue planner"
+    >
+      {/* ============================ 1 · Checked In Jobs =================== */}
+      <section
+        className={`${styles.themeSurface} ${styles.section}`}
+        data-dev-section="1"
+        data-dev-section-key="workshop-checked-in-section"
+        data-dev-section-parent="workshop-queue-planner"
+        data-dev-section-type="content-card"
+        data-dev-background-token="theme"
+        data-dev-text-preview={`Checked In Jobs ${checkedInJobs.length} checked in`}
+      >
+        <div
+          className={styles.sectionHead}
+          data-dev-section="1"
+          data-dev-section-key="workshop-checked-in-header"
+          data-dev-section-parent="workshop-checked-in-section"
+          data-dev-section-type="toolbar"
+          data-dev-background-token="transparent"
+        >
           <h2 className={styles.sectionTitle}>Checked In Jobs</h2>
-          <span className={styles.sectionMeta}>{clockedInJobs.length} in the workshop</span>
+          <span className={styles.sectionMeta}>{checkedInJobs.length} checked in</span>
         </div>
-        {clockedInJobs.length === 0 ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>🅿️</span>
+        {checkedInJobs.length === 0 ? (
+          <div
+            className={styles.emptyState}
+            data-dev-section="1"
+            data-dev-section-key="workshop-checked-in-empty"
+            data-dev-section-parent="workshop-checked-in-section"
+            data-dev-section-type="content-card"
+            data-dev-background-token="surface"
+            data-dev-text-preview="No checked-in jobs"
+          >
             <p className={styles.emptyTitle}>No checked-in jobs yet.</p>
             <p className={styles.emptyBody}>Jobs will appear here once a vehicle has been checked in.</p>
           </div>
         ) : (
-          <div className={styles.checkedStrip}>
-            {clockedInJobs.map((entry) => {
-              const statusMeta = getStatusMeta(entry.status);
-              const vehicle = entry.makeModel || "Vehicle TBC";
-              const checkedTime = formatClock(entry.checkedInAt || entry.clockIn);
+          <div
+            className={styles.checkedStrip}
+            data-dev-section="1"
+            data-dev-section-key="workshop-checked-in-strip"
+            data-dev-section-parent="workshop-checked-in-section"
+            data-dev-section-type="section-shell"
+            data-dev-background-token="transparent"
+          >
+            {checkedInJobs.map((job) => {
+              const statusMeta = getStatusMeta(job.status);
+              const vehicle = [job.make, job.model].filter(Boolean).join(" ") || job.makeModel || "Vehicle TBC";
+              const checkedTime = formatClock(job.checkedInAt);
               return (
                 <button
-                  key={`${entry.userId}-${entry.jobNumber}`}
+                  key={job.jobNumber}
                   type="button"
                   className={styles.checkedCard}
-                  onClick={() => handleOpenCurrentClocking(entry, entry.technicianName)}
-                  title={`#${entry.jobNumber} · ${vehicle}`}
+                  data-dev-section="1"
+                  data-dev-section-key={`workshop-checked-in-job-${toDevSectionKey(job.jobNumber)}`}
+                  data-dev-section-parent="workshop-checked-in-strip"
+                  data-dev-section-type="content-card"
+                  data-dev-background-token="theme"
+                  data-dev-text-preview={`${job.jobNumber || "Job"} ${job.reg || ""} ${vehicle} ${job.customer || ""} ${statusMeta.label}`}
+                  onClick={() => handleOpenJobDetails(job)}
+                  title={`#${job.jobNumber} · ${vehicle}`}
                 >
                   <div className={styles.checkedCardTop}>
-                    <span className={styles.checkedJob}>#{entry.jobNumber || "Pending"}</span>
-                    <span className={styles.checkedReg}>{entry.reg || "—"}</span>
+                    <span className={styles.checkedJob}>#{job.jobNumber || "Pending"}</span>
+                    <span className={styles.checkedReg}>{job.reg || "—"}</span>
                   </div>
                   <span className={styles.checkedVehicle}>{vehicle}</span>
-                  <span className={styles.checkedSub}>{entry.customer || "Unknown customer"}</span>
+                  <span className={styles.checkedSub}>{job.customer || "Unknown customer"}</span>
                   <div className={styles.checkedFoot}>
-                    <span className={styles.checkedTime}>🕑 Checked In {checkedTime}</span>
+                    <span className={styles.checkedTime}>Checked In {checkedTime}</span>
                     <span className={`${styles.statusPill} ${statusMeta.pill}`}>
                       <span className={styles.statusDot} style={{ background: statusMeta.dot }} />
                       {statusMeta.label}
@@ -253,36 +225,43 @@ export default function WorkshopQueuePlanner({
         )}
       </section>
 
-      {/* ============================ 3 · Filter bar ======================= */}
-      <div className={`${styles.glass} ${styles.toolbar}`}>
-        <div className={styles.filterGroup}>
-          {DATE_RANGES.map((range) => (
-            <button
-              key={range.key}
-              type="button"
-              className={filterBtnClass(dateRange === range.key)}
-              onClick={() => setDateRange(range.key)}
-            >
-              {range.label}
-            </button>
-          ))}
-        </div>
-        <span className={styles.filterDivider} />
-        <div className={styles.filterGroup}>
+      {/* ============================ 2 · Filter bar ======================= */}
+      <div
+        className={`${styles.glass} ${styles.toolbar}`}
+        data-dev-section="1"
+        data-dev-section-key="workshop-filter-toolbar"
+        data-dev-section-parent="workshop-queue-planner"
+        data-dev-section-type="filter-row"
+        data-dev-background-token="surface"
+        data-dev-text-preview="Type filter and search"
+      >
+        <div
+          className={styles.filterGroup}
+          data-dev-section="1"
+          data-dev-section-key="workshop-type-filter-group"
+          data-dev-section-parent="workshop-filter-toolbar"
+          data-dev-section-type="toolbar"
+          data-dev-background-token="transparent"
+        >
           <span className={styles.toolbarLabel}>Type</span>
-          {TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              className={filterBtnClass(typeFilters.has(opt.key))}
-              onClick={() => toggleType(opt.key)}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <Dropdown
+            options={TYPE_FILTER_OPTIONS}
+            value={typeFilter}
+            onChange={(_raw, option) => setTypeFilter(option?.value ?? "all")}
+            ariaLabel="Filter by job type"
+            size="sm"
+            style={{ minWidth: "190px" }}
+          />
         </div>
         {SearchBar && (
-          <div className={styles.searchWrap}>
+          <div
+            className={styles.searchWrap}
+            data-dev-section="1"
+            data-dev-section-key="workshop-search-filter"
+            data-dev-section-parent="workshop-filter-toolbar"
+            data-dev-section-type="filter-row"
+            data-dev-background-token="transparent"
+          >
             <SearchBar
               placeholder="Search job, reg, or customer"
               value={searchTerm}
@@ -293,36 +272,60 @@ export default function WorkshopQueuePlanner({
         )}
       </div>
 
-      {/* ===================== 4 + 5 · Next jobs board ===================== */}
-      <WorkshopQueueBoard
-        techRows={filteredTechRows}
-        motRows={filteredMotRows}
-        activeDropTarget={activeDropTarget}
-        {...sharedDropProps}
-      />
-
-      {/* ============================ Unassigned jobs ====================== */}
+      {/* ====================== Unassigned jobs (drop tray) ================ */}
+      {/* Sits above the board so controllers can drag work straight down onto a
+          technician / MOT row. Stays mounted (even when empty) so it remains a
+          valid drop target for returning a job to the pool. */}
       <section
-        className={`${styles.glass} ${styles.section} ${styles.unassignedDrop} ${
+        className={`${styles.themeSurface} ${styles.section} ${styles.unassignedDrop} ${
           activeDropTarget === "outstanding" ? styles.unassignedActive : ""
         }`}
         data-dnd-target-type="outstanding"
         data-dnd-target-key="outstanding"
+        data-dev-section="1"
+        data-dev-section-key="workshop-unassigned-section"
+        data-dev-section-parent="workshop-queue-planner"
+        data-dev-section-type="content-card"
+        data-dev-background-token="theme"
+        data-dev-text-preview={`Unassigned Jobs ${filteredOutstanding.length} waiting to allocate`}
       >
-        <div className={styles.sectionHead}>
+        <div
+          className={styles.sectionHead}
+          data-dev-section="1"
+          data-dev-section-key="workshop-unassigned-header"
+          data-dev-section-parent="workshop-unassigned-section"
+          data-dev-section-type="toolbar"
+          data-dev-background-token="transparent"
+        >
           <h2 className={styles.sectionTitle}>Unassigned Jobs</h2>
           <span className={styles.sectionMeta}>{filteredOutstanding.length} waiting to allocate</span>
         </div>
         {filteredOutstanding.length === 0 ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>✅</span>
-            <p className={styles.emptyTitle}>
-              {searchTerm?.trim() ? "No matching unassigned jobs." : "Everything is allocated."}
-            </p>
-            <p className={styles.emptyBody}>Unassigned jobs will appear here ready to drag onto a technician.</p>
+          <div
+            className={`${styles.emptyRow} ${activeDropTarget === "outstanding" ? styles.emptyRowActive : ""}`}
+            style={{ marginTop: 12 }}
+            data-dev-section="1"
+            data-dev-section-key="workshop-unassigned-empty"
+            data-dev-section-parent="workshop-unassigned-section"
+            data-dev-section-type="content-card"
+            data-dev-background-token="theme"
+            data-dev-text-preview="Everything is allocated"
+          >
+            {activeDropTarget === "outstanding" && draggingJob
+              ? "Drop job here to unassign"
+              : searchTerm?.trim()
+              ? "No matching unassigned jobs."
+              : "Everything is allocated — drag a job here to return it to the pool."}
           </div>
         ) : (
-          <div className={styles.unassignedGrid}>
+          <div
+            className={styles.unassignedGrid}
+            data-dev-section="1"
+            data-dev-section-key="workshop-unassigned-grid"
+            data-dev-section-parent="workshop-unassigned-section"
+            data-dev-section-type="section-shell"
+            data-dev-background-token="transparent"
+          >
             {filteredOutstanding.map((job) => (
               <React.Fragment key={job.jobNumber}>
                 {matchesDropIndicator("outstanding", "outstanding", job.jobNumber, "before") && (
@@ -341,6 +344,8 @@ export default function WorkshopQueuePlanner({
                   deriveJobTypeLabel={deriveJobTypeLabel}
                   formatAppointmentTime={formatAppointmentTime}
                   estimateJobHours={estimateJobHours}
+                  devSectionParent="workshop-unassigned-grid"
+                  devSectionPrefix="workshop-unassigned-job"
                 />
                 {matchesDropIndicator("outstanding", "outstanding", job.jobNumber, "after") && (
                   <div className={styles.dropBarH} />
@@ -350,6 +355,14 @@ export default function WorkshopQueuePlanner({
           </div>
         )}
       </section>
+
+      {/* ===================== 4 + 5 · Next jobs board ===================== */}
+      <WorkshopQueueBoard
+        techRows={filteredTechRows}
+        motRows={filteredMotRows}
+        activeDropTarget={activeDropTarget}
+        {...sharedDropProps}
+      />
 
       {/* ============================ Drag ghost ============================ */}
       {isDragActive && draggingJob && (

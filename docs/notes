@@ -1,3 +1,13 @@
+NExt job
+TODO
+remove the "Technician" text from the "Tech 5 Technician 1 job • 1h" sections. but make the "Technician" heading bigger. also make it so the vertical filled theme colour line wihtin the "Tech 5 Technician 1 job • 1h" section is removed as well. also remove the "Today Tomorrow This Week All" filter and just have the section to show "All" filter always and then remove all of those buttons from the seciton. move the "Types" into one filter dropdown. 
+
+
+TODO
+remove the horizontal and vertical borders from the tech and mot section full
+
+card backgrounds
+
 
 TODO
 chgeck buttons, not following shap and style is this becuase they arent following staffglobal.css settings deep dive into this across all pages

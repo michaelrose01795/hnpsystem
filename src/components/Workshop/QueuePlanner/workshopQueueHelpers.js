@@ -10,19 +10,24 @@ import styles from "./WorkshopQueuePlanner.module.css";
 export const DAILY_CAPACITY_HOURS = 7.5;
 
 // ---- status → soft visual treatment ----
+// Calm tints only — no harsh / bright colours (per the status design spec).
 const STATUS_META = {
   waiting: { label: "Waiting", pill: styles.stWaiting, dot: "var(--warning)" },
   progress: { label: "In Progress", pill: styles.stProgress, dot: "#3b82f6" },
   complete: { label: "Completed", pill: styles.stComplete, dot: "var(--success)" },
   ready: { label: "Ready", pill: styles.stReady, dot: "var(--success)" },
-  hold: { label: "On Hold", pill: styles.stHold, dot: "var(--danger)" },
+  parts: { label: "Parts Waiting", pill: styles.stParts, dot: "#e0a458" },
+  mot: { label: "MOT Required", pill: styles.stMot, dot: "#6366f1" },
+  cancelled: { label: "Cancelled", pill: styles.stCancelled, dot: "var(--surfaceTextMuted)" },
 };
 
 // Map any job/clocking status string onto one of the soft status buckets.
 export const deriveStatusKey = (status) => {
   const raw = String(status || "").toLowerCase();
   if (!raw) return "waiting";
-  if (raw.includes("hold") || raw.includes("await part") || raw.includes("cancel")) return "hold";
+  if (raw.includes("cancel")) return "cancelled";
+  if (raw.includes("part")) return "parts";
+  if (raw.includes("mot")) return "mot";
   if (raw.includes("ready") || raw.includes("wash")) return "ready";
   if (
     raw.includes("complete") ||

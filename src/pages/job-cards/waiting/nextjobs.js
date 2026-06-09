@@ -99,6 +99,14 @@ const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING
 const DRAG_START_THRESHOLD_PX = 8;
 const DRAG_PREVIEW_OFFSET_PX = 16;
 
+const toDevSectionKey = (value) =>
+String(value || "unknown").
+trim().
+toLowerCase().
+replace(/[^a-z0-9-]/g, "-").
+replace(/-+/g, "-").
+replace(/^-|-$/g, "") || "unknown";
+
 const formatCheckedInTime = (value) => {
   if (!value) return "Not recorded";
   try {
@@ -451,10 +459,9 @@ export default function NextJobsPage() {
   const isTechPanelJob = useCallback(
     (job) => {
       if (!job) return false;
-      const statusKey = toStatusKey(job.status);
-      if (STATUS_COMPLETED.has(statusKey)) return false;
-      if (STATUS_EXCLUDED_TECH_PANEL.has(statusKey)) return false;
-      return true;
+      // Live-workshop view: only "In Progress" jobs appear on the board. Checked-in
+      // jobs have their own section; every other status is hidden from this page.
+      return toStatusKey(job.status) === "IN PROGRESS";
     },
     []
   );
@@ -893,22 +900,10 @@ export default function NextJobsPage() {
   const outstandingJobs = useMemo(
     () =>
     jobs.filter((job) => {
-      // Engine-driven reappearance: a job whose tech-side status is
-      // "authorised_items" must show in outstanding regardless of assignment,
-      // because the customer authorised extra work that hasn't been done yet.
-      // We trust the persisted value (survives reload) but cross-check the
-      // current vhc_checks projection so a stale flag does not surface a job
-      // whose authorised items have all since been completed.
-      const techStatus = String(job?.techCompletionStatus || "").trim().toLowerCase();
-      if (techStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS) {
-        const projected = projectVhcItems(job?.vhcChecks || [], { job });
-        if (hasOutstandingAuthorisedVhcWork(projected)) return true;
-      }
-
-      const assignedToStaff = isAssignedToKnownStaff(job);
-      const statusKey = toStatusKey(job.status);
-      const isCheckedIn = Boolean(job.checkedInAt) || statusKey === "CHECKED IN";
-      return isCheckedIn && !assignedToStaff;
+      // Unassigned tray = "In Progress" jobs not yet allocated to a technician /
+      // MOT user. Anything with another status (or already assigned) is excluded.
+      if (toStatusKey(job.status) !== "IN PROGRESS") return false;
+      return !isAssignedToKnownStaff(job);
     }).sort(compareJobsForBoard),
     [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
   );
@@ -985,24 +980,11 @@ export default function NextJobsPage() {
     return map;
   }, [assignedJobs, assignedMotJobs]);
 
-  // Lookup of staff display name by user id — used to label clocked-in cards.
-  const userNameById = useMemo(() => {
-    const map = new Map();
-    staffDirectory.forEach((person) => {
-      const key = toUserIdKey(person.id);
-      if (key) map.set(key, person.name);
-    });
-    return map;
-  }, [staffDirectory]);
-
-  // Section 1 — jobs currently being worked on (one active clocking per user).
-  const clockedInJobs = useMemo(
+  // Section 1 — every job whose status is "Checked In".
+  const checkedInJobs = useMemo(
     () =>
-    Object.values(activeClockingsByUser).map((entry) => ({
-      ...entry,
-      technicianName: userNameById.get(toUserIdKey(entry.userId)) || ""
-    })),
-    [activeClockingsByUser, userNameById]
+    jobs.filter((job) => toStatusKey(job.status) === "CHECKED IN").sort(compareJobsForBoard),
+    [jobs]
   );
 
   // Board rows — every technician / MOT user (no hard cap, supports large rosters).
@@ -1628,6 +1610,11 @@ export default function NextJobsPage() {
                   }}
                   data-dnd-job-card="true"
                   data-dnd-job-number={job.jobNumber}
+                  data-dev-section-key={`nextjobs-assigned-job-${panelKey}-${toDevSectionKey(job.jobNumber)}`}
+                  data-dev-section-parent={`nextjobs-joblist-${panelKey}`}
+                  data-dev-section-type="content-card"
+                  data-dev-background-token="theme"
+                  data-dev-text-preview={`${job.jobNumber || "Job"} ${job.reg || ""} ${job.status || ""}`}
                   onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                   style={{
                     width: "100%",
@@ -1773,7 +1760,7 @@ export default function NextJobsPage() {
       techRows={techRows}
       motRows={motRows}
       outstandingJobs={filteredOutstandingJobs}
-      clockedInJobs={clockedInJobs}
+      checkedInJobs={checkedInJobs}
       estimateJobHours={estimateJobHours}
       deriveJobTypeLabel={deriveJobTypeLabel}
       formatAppointmentTime={formatAppointmentTime}
@@ -1792,7 +1779,6 @@ export default function NextJobsPage() {
       DRAG_PREVIEW_OFFSET_PX={DRAG_PREVIEW_OFFSET_PX}
       hasAccess={hasAccess}
       handleOpenJobDetails={handleOpenJobDetails}
-      handleOpenCurrentClocking={handleOpenCurrentClocking}
       selectedJob={selectedJob}
       feedbackMessage={feedbackMessage}
       setFeedbackMessage={setFeedbackMessage}
