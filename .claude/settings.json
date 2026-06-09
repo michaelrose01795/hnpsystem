@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(git branch *)",
+      "Bash(echo \"=== build exit code: $? ===\")"
     ]
   }
 }

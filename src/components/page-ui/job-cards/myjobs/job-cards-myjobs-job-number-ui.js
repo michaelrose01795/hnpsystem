@@ -835,12 +835,9 @@ export default function TechJobDetailPageUi(props) {
                 {authorisedVhcItems.length > 0 ? <div style={{
               marginTop: "24px"
             }}>
-                  <div className="glass-card glass-card--theme" style={{
+                  <div style={{
                 padding: "16px",
-                background: "var(--glass-theme)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                backgroundColor: "var(--theme)",
                 borderRadius: "var(--radius-sm)"
               }}>
                     <div style={{
@@ -1597,13 +1594,10 @@ export default function TechJobDetailPageUi(props) {
                 const partLabel = request.part ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}` : `Custom request #${request.request_id}`;
                 const requesterName = request.requester ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim() : "";
                 const sourceLabel = request.requested_by ? `Tech${requesterName ? ` (${requesterName})` : ""}` : "VHC";
-                return <div key={request.request_id} className="glass-card glass-card--theme" style={{
+                return <div key={request.request_id} style={{
                   padding: "16px",
                   borderRadius: "var(--control-radius-xs)",
-                  background: "var(--glass-theme)",
-                  backdropFilter: "var(--glass-blur)",
-                  WebkitBackdropFilter: "var(--glass-blur)",
-                  boxShadow: "var(--glass-shadow)",
+                  backgroundColor: "var(--theme)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "6px"
@@ -2027,13 +2021,10 @@ export default function TechJobDetailPageUi(props) {
           borderRadius: 0,
           border: "none"
         }}>
-              <DevLayoutSection as="div" className="glass-card" sectionKey="myjob-documents-browser" sectionType="content-card" parentKey="myjob-tab-documents" backgroundToken="surface" style={{
+              <DevLayoutSection as="div" sectionKey="myjob-documents-browser" sectionType="content-card" parentKey="myjob-tab-documents" backgroundToken="surface" style={{
             borderRadius: "var(--radius-sm)",
             overflow: "hidden",
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)"
+            backgroundColor: "var(--surface)"
           }}>
                 <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
               </DevLayoutSection>
@@ -2092,13 +2083,10 @@ export default function TechJobDetailPageUi(props) {
             display: "grid",
             gap: "10px"
           }}>
-                  {detectedJobTypes.map((jobType, index) => <div key={`${jobType}-${index}`} className="glass-card" style={{
+                  {detectedJobTypes.map((jobType, index) => <div key={`${jobType}-${index}`} style={{
               border: "none",
               borderRadius: "var(--radius-sm)",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              backgroundColor: "var(--surface)",
               padding: "12px 14px",
               display: "flex",
               justifyContent: "space-between",

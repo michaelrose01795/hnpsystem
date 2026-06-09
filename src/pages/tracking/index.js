@@ -336,15 +336,12 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
   return (
     <div
       onClick={onClick}
-      className="glass-card glass-card--theme"
       style={{
         padding: "16px 18px",
         borderRadius: "var(--radius-sm)",
         border: "none",
-        background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--glass-theme)",
-        backdropFilter: "var(--glass-blur)",
-        WebkitBackdropFilter: "var(--glass-blur)",
-        boxShadow: "var(--glass-shadow)",
+        background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--theme)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
@@ -356,11 +353,10 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
       }}>
 
       <LayerSurface
-        className="glass-card"
         radius="var(--radius-sm)"
         padding="10px 12px"
         gap="4px"
-        style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}>
+        style={{ minWidth: 0 }}>
 
         <strong
           style={{
@@ -413,11 +409,10 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         }}>
 
         <LayerSurface
-          className="glass-card"
           radius="var(--radius-sm)"
           padding="10px 12px"
           gap="2px"
-          style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}>
+          style={{ minWidth: 0 }}>
 
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Key location</p>
           <strong
@@ -434,11 +429,10 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           </strong>
         </LayerSurface>
         <LayerSurface
-          className="glass-card"
           radius="var(--radius-sm)"
           padding="10px 12px"
           gap="2px"
-          style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}>
+          style={{ minWidth: 0 }}>
 
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Car location</p>
           <strong
@@ -1030,16 +1024,12 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         </div>
 
         <div
-          className="glass-card"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: "var(--space-3)",
             padding: "var(--space-md)",
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)"
           }}>
 
@@ -2129,15 +2119,12 @@ export default function TrackingDashboard() {
                 setEquipmentModal({ open: true, item: check });
               }
             }}
-            className="glass-card glass-card--theme"
             style={{
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: "var(--glass-theme)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              background: "var(--theme)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "10px",
@@ -2291,15 +2278,12 @@ export default function TrackingDashboard() {
                 setOilStockModal({ open: true, item });
               }
             }}
-            className="glass-card glass-card--theme"
             style={{
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: "var(--glass-theme)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              background: "var(--theme)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "10px",

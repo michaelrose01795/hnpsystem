@@ -7,11 +7,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
 const mainCardStyle = {
   borderRadius: "var(--radius-md)",
-  // Liquid Glass — outer theme-tinted card.
-  background: "var(--glass-theme)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--theme)",
   padding: "20px",
   display: "flex",
   flexDirection: "column",
@@ -21,11 +17,7 @@ const mainCardStyle = {
 const subCardStyle = {
   borderRadius: "var(--radius-md)",
   border: "none",
-  // Liquid Glass — inner surface card.
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--surface)",
   padding: "16px",
   display: "flex",
   flexDirection: "column",
@@ -231,11 +223,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                // Liquid Glass — theme-tinted stat card.
-                background: "var(--glass-theme)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                background: "var(--theme)",
                 padding: "14px",
               }}
             >

@@ -7,7 +7,7 @@ const SAFE_ACCENT_PALETTES =
 ACCENT_PALETTES && typeof ACCENT_PALETTES === "object" ?
 ACCENT_PALETTES :
 {
-  red: { label: "Red", light: "#dc2626", dark: "#dc2626", rgb: "220, 38, 38", glass: "rgba(220, 38, 38, 0.12)" }
+  red: { label: "Red", light: "#b91c1c", dark: "#f87171" }
 };
 
 function AccentOptionContent({ label, light, dark }) {

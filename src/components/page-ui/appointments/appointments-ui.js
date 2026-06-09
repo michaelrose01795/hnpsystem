@@ -1,26 +1,19 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // file location: src/components/page-ui/appointments/appointments-ui.js
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // data-area skeletons while jobs load
+import SchedulerBoard from "@/components/Appointments/SchedulerBoard"; // one-off workshop scheduling board (replaces the old availability table)
 
 export default function AppointmentsUi(props) {
   const {
-    CALENDAR_SEVERITY_STYLES,
-    DEFAULT_RETAIL_TECH_COUNT,
-    DEFAULT_RETAIL_TECH_HOURS,
     DropdownField,
     Popup,
-    SATURDAY_SEVERITY_STYLES,
     SearchBar,
     checkingInJobId,
     currentNote,
-    dates,
     formatDate,
     formatDateNoYear,
-    getBookingSeverity,
     getCustomerStatusBadgeColors,
-    getDayTechSummary,
     getDetectedJobTypeLabels,
     getEstimatedFinishTime,
-    getJobCounts,
     getJobGroupBadge,
     getJobTypeBadgeStyle,
     getVehicleDisplay,
@@ -29,15 +22,15 @@ export default function AppointmentsUi(props) {
     handleJobNumberInputChange,
     handleJobRowClick,
     handleJobRowHover,
-    handleShowStaffOff,
     highlightJob,
     isCompactMobile,
     isJobActuallyCheckedIn,
     isLoading,
-    isSameDate,
     jobNumber,
     jobsLoading,
     saveNote,
+    schedulerGetFinish,
+    schedulerJobs,
     searchQuery,
     selectedDay,
     setCurrentNote,
@@ -49,7 +42,6 @@ export default function AppointmentsUi(props) {
     showNotePopup,
     showStaffOffPopup,
     sortedJobs,
-    staffAbsences,
     staffOffPopupDate,
     staffOffPopupDetails,
     time,
@@ -118,275 +110,16 @@ export default function AppointmentsUi(props) {
             </button>
         </LayerSurface>
 
-        {/* Calendar Table Container — mirrors the .app-table-shell-* visual design inline so this table can be edited freely without fighting global !important rules. data-app-table-shell="off" opts the table out of the GlobalTableShells auto-classifier. */}
-        {/* Outer wrapper owns the card visuals (border, radius, surface fallback) and clips the rounded corners. The inner scroller is transparent and gutter-free so row backgrounds paint behind the scrollbar thumb instead of being cut off by a reserved gutter. */}
-        <div className="glass-card" data-presentation="appointments-capacity-table" data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
-            flex: "1 1 auto",
-            minHeight: 0,
-            marginBottom: "12px",
-            display: "flex",
-            flexDirection: "column",
-            borderRadius: "var(--radius-md)",
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)",
-            overflow: "hidden"
-          }}>
-          <div className="appointments-calendar-table-scroll" style={{
-              flex: "1 1 auto",
-              minHeight: 0,
-              maxHeight: "418px",
-              overflowY: "auto",
-              overflowX: "hidden",
-              background: "transparent"
-            }}>
-            <table id="appointments-auto-data-table-2" data-dev-section-key="appointments-auto-data-table-2" data-dev-section-type="data-table" data-app-table-shell="off" style={{
-                width: "100%",
-                minWidth: "100%",
-                tableLayout: "fixed",
-                color: "var(--text-1)",
-                background: "var(--surface)",
-                borderCollapse: "separate",
-                borderSpacing: 0
-              }}>
-              <colgroup>
-                <col style={{
-                    width: "15%"
-                  }} />
-                <col style={{
-                    width: "19%"
-                  }} />
-                <col style={{
-                    width: "8%"
-                  }} />
-                <col style={{
-                    width: "7%"
-                  }} />
-                <col style={{
-                    width: "9%"
-                  }} />
-                <col style={{
-                    width: "9%"
-                  }} />
-                <col style={{
-                    width: "7%"
-                  }} />
-                <col style={{
-                    width: "10%"
-                  }} />
-                <col style={{
-                    width: "8%"
-                  }} />
-                <col style={{
-                    width: "8%"
-                  }} />
-              </colgroup>
-              <thead data-dev-section-key="appointments-auto-data-table-2-headings" data-dev-section-type="table-headings" data-dev-section-parent="appointments-auto-data-table-2" style={{
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1
-                }}>
-                <tr>
-                  {[{
-                      label: "Date",
-                      align: "left"
-                    }, {
-                      label: "Availability",
-                      align: "left"
-                    }, {
-                      label: "Hours",
-                      align: "center"
-                    }, {
-                      label: "Jobs",
-                      align: "center"
-                    }, {
-                      label: "Finish",
-                      align: "center"
-                    }, {
-                      label: "Services",
-                      align: "center"
-                    }, {
-                      label: "MOT",
-                      align: "center"
-                    }, {
-                      label: "Diagnosis",
-                      align: "center"
-                    }, {
-                      label: "Other",
-                      align: "center"
-                    }, {
-                      label: "Staff Off",
-                      align: "center"
-                    }].map(({
-                      label,
-                      align
-                    }, idx, arr) => <th key={label} style={{
-                      textAlign: align,
-                      whiteSpace: "nowrap",
-                      padding: idx === 0 ? "12px 10px 12px 14px" : idx === arr.length - 1 ? "12px 14px 12px 10px" : "12px 10px",
-                      background: "var(--page-shell-bg)",
-                      color: "var(--text-1)",
-                      fontSize: "0.72rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                      lineHeight: 1.2,
-                      borderBottom: "none"
-                    }}>
-                      {label}
-                    </th>)}
-                </tr>
-              </thead>
-              <tbody data-dev-section-key="appointments-auto-data-table-2-rows" data-dev-section-type="table-rows" data-dev-section-parent="appointments-auto-data-table-2">
-                {dates.map((date, index) => {
-                    const dateKey = date.toDateString();
-                    const counts = getJobCounts(date);
-                    const staffEntries = staffAbsences[dateKey] || [];
-                    const isSelected = selectedDay.toDateString() === dateKey;
-                    const dayTechSummary = getDayTechSummary(date);
-                    const bookedHours = parseFloat(counts.totalHours) || 0;
-                    const totalAvailableHours = dayTechSummary.totalAvailableHours ?? DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
-                    const bookingPercent = totalAvailableHours > 0 ? bookedHours / totalAvailableHours * 100 : 0;
-                    const severity = getBookingSeverity(bookingPercent);
-                    const isWeekendSaturday = date.getDay() === 6;
-                    const severityStyleSource = isWeekendSaturday ? SATURDAY_SEVERITY_STYLES : CALENDAR_SEVERITY_STYLES;
-                    const severityStyle = severityStyleSource[severity];
-                    const isCalmDay = severity === "green" || !severityStyle;
-                    const isToday = isSameDate(date, new Date());
-                    const bookingPercentDisplay = Number.isFinite(bookingPercent) ? bookingPercent.toFixed(0) : "0";
-                    const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-1)";
-
-                    // Row background — alternating like the global .app-table-shell--with-headings, with overrides for Saturday / selected / today.
-                    let rowBg = "var(--surface)";
-                    if (isWeekendSaturday) rowBg = "var(--warning-surface)";
-                    if (isSelected) rowBg = "rgba(var(--primary-rgb), 0.25)";
-                    if (isToday) rowBg = "var(--success-surface)";
-                    if (isSelected && isWeekendSaturday) rowBg = "var(--warning-text)";
-                    if (isSelected && isToday) rowBg = "var(--success-text)";
-
-                    // Shared cell padding rhythm (12px 10px, with first/last getting 14px outer padding) — matches global table feel.
-                    const tdBase = {
-                      padding: "12px 10px",
-                      borderTop: index === 0 ? "none" : "var(--separating-line)",
-                      fontSize: "0.85rem",
-                      lineHeight: 1.35,
-                      verticalAlign: "middle"
-                    };
-                    const tdFirst = { ...tdBase, paddingLeft: "14px" };
-                    const tdLast = { ...tdBase, paddingRight: "14px" };
-
-                    return <tr key={dateKey} className={[isWeekendSaturday ? "appt-sat-row" : "", isToday ? "appt-today-row" : "", isSelected ? "appt-selected-row" : ""].filter(Boolean).join(" ") || undefined} onClick={() => setSelectedDay(date)} style={{
-                      cursor: "pointer",
-                      backgroundColor: rowBg,
-                      transition: "background-color 0.2s ease"
-                    }}>
-                    <td style={{
-                        ...tdFirst,
-                        fontWeight: isSelected ? "700" : "600"
-                      }}>
-                      <span style={{
-                          color: "var(--accent-strong)",
-                          whiteSpace: "nowrap"
-                        }}>{formatDate(date)}</span>
-                    </td>
-                    <td style={tdBase}>
-                      <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          whiteSpace: "nowrap"
-                        }}>
-                        <span style={{
-                            fontWeight: "700",
-                            color: availabilityLabelColor
-                          }}>
-                          {dayTechSummary.availableTechs} tech{dayTechSummary.availableTechs !== 1 ? "s" : ""}
-                        </span>
-                        <span style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            padding: "2px 6px",
-                            borderRadius: "var(--radius-pill)",
-                            background: isCalmDay ? "rgba(var(--success-rgb), 0.15)" : severityStyle.backgroundColor,
-                            color: availabilityLabelColor,
-                            fontSize: "11px",
-                            fontWeight: "700"
-                          }}>
-                          {bookingPercentDisplay}%
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        color: counts.totalHours > 0 ? "var(--text-1)" : "var(--grey-accent-light)",
-                        fontWeight: counts.totalHours > 0 ? "700" : "500",
-                        whiteSpace: "nowrap",
-                        textAlign: "center"
-                      }}>
-                      {counts.totalHours}h
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        fontWeight: counts.totalJobs > 0 ? "700" : "500",
-                        textAlign: "center"
-                      }}>
-                      {counts.totalJobs}
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        fontWeight: "600",
-                        whiteSpace: "nowrap",
-                        textAlign: "center"
-                      }}>
-                      {counts.finishTime || "-"}
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        textAlign: "center",
-                        fontWeight: counts.services > 0 ? "700" : "500"
-                      }}>
-                      {counts.services || "-"}
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        textAlign: "center",
-                        fontWeight: counts.mot > 0 ? "700" : "500"
-                      }}>
-                      {counts.mot || "-"}
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        textAlign: "center",
-                        fontWeight: counts.diagnosis > 0 ? "700" : "500"
-                      }}>
-                      {counts.diagnosis || "-"}
-                    </td>
-                    <td style={{
-                        ...tdBase,
-                        textAlign: "center",
-                        fontWeight: counts.other > 0 ? "700" : "500"
-                      }}>
-                      {counts.other || "-"}
-                    </td>
-                    <td style={{
-                        ...tdLast,
-                        textAlign: "center"
-                      }}>
-                      {staffEntries.length > 0 ? <span role="button" tabIndex={0} onClick={(event) => handleShowStaffOff(event, date, staffEntries)} onKeyDown={(e) => e.key === "Enter" && handleShowStaffOff(e, date, staffEntries)} style={{
-                          cursor: "pointer",
-                          fontWeight: "700",
-                          color: "var(--danger)"
-                        }}>
-                          {staffEntries.length}
-                        </span> : "-"}
-                    </td>
-                  </tr>;
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Workshop Scheduler — one-off CSS-Grid planning board that replaces the
+            former availability table. Self-contained styling (SchedulerBoard.module.css);
+            does NOT use the staffglobal.css table system. */}
+        <SchedulerBoard
+          jobs={schedulerJobs}
+          selectedDay={selectedDay}
+          onSelectDay={setSelectedDay}
+          onOpenJob={handleJobRowClick}
+          getFinishTime={schedulerGetFinish}
+        />
 
         {/* Jobs for Selected Day Section */}
         <LayerSurface as="div" style={{
@@ -428,13 +161,10 @@ export default function AppointmentsUi(props) {
           </div>
 
           {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
-          <div className="glass-card glass-card--theme" data-presentation="appointments-day-jobs" style={{
+          <div data-presentation="appointments-day-jobs" style={{
               overflowX: "auto",
               borderRadius: "var(--radius-md)",
-              background: "var(--glass-theme)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)"
+              background: "var(--theme)"
             }}>
                 <table id="appointments-auto-data-table-3" data-dev-section-key="appointments-auto-data-table-3" data-dev-section-type="data-table" style={{
                 width: "100%",
@@ -791,16 +521,13 @@ export default function AppointmentsUi(props) {
                     text: "var(--text-1)"
                   };
                   const initial = (entry.name || "?").charAt(0).toUpperCase();
-                  return <div key={`${entry.id}-${index}`} className="glass-card" style={{
+                  return <div key={`${entry.id}-${index}`} style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--glass-surface)",
-                    backdropFilter: "var(--glass-blur)",
-                    WebkitBackdropFilter: "var(--glass-blur)",
-                    boxShadow: "var(--glass-shadow)"
+                    background: "var(--section-card-bg)"
                   }}>
                     {/* Avatar initial */}
                     <div style={{

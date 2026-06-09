@@ -17,8 +17,7 @@ const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
     backgroundToken="surface"
     radius="var(--radius-sm)"
     data-dev-text-preview={label}
-    className="glass-card"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}
+    style={{ minWidth: 0 }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
@@ -50,12 +49,7 @@ const TrendBlock = ({ data }) => {
         data-dev-text-preview={`${point.label} ${point.count}`}
         radius="var(--radius-sm)"
         padding="8px 12px"
-        className="glass-card"
         style={{
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
           flexDirection: "row",
           alignItems: "center",
           gap: "8px"
@@ -97,8 +91,7 @@ const QueueBoard = ({ queue }) =>
     radius="var(--radius-sm)"
     padding="16px"
     data-dev-text-preview="No cars waiting"
-    className="glass-card"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", color: "var(--text-1)" }}
+    style={{ color: "var(--text-1)" }}
   >
         No cars waiting.
       </LayerSurface> :
@@ -147,17 +140,13 @@ const QueueBoard = ({ queue }) =>
         data-dev-text-preview={`${job.job_number || "Job"} ${job.vehicle_reg || "Plate"} ${job.waiting_status || "Ready"}`}
         radius="var(--radius-sm)"
         padding="14px 16px"
-        className="glass-card"
         style={{
           display: "grid", // override flex column from LayerTheme default for grid row layout
           gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto",
           gap: "12px",
           alignItems: "center",
           minHeight: "66px",
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)"
+          boxShadow: "0 1px 0 rgba(var(--primary-rgb), 0.04)" // subtle lift, non-surface concern
         }}>
               <div style={{ minWidth: 0 }}>
                 <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "—"}</strong>

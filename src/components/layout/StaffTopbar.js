@@ -87,16 +87,11 @@ export default function StaffTopbar({
       className="app-topbar-shell"
       {...lockChromeInteraction}
       style={{
-        // Frosted-glass topbar: a soft white scrim + backdrop blur so the
-        // search / controls never sit on the raw background gradient (matches
-        // .app-topbar-shell in staffglobal.css).
-        background: "var(--shell-glass-bg)",
-        backdropFilter: "var(--shell-glass-blur)",
-        WebkitBackdropFilter: "var(--shell-glass-blur)",
+        // Solid surface topbar shell (pre-glass design).
+        background: "var(--surface)",
         borderRadius: "var(--radius-md)",
         border: "none",
-        // Section-defining ring (matches .app-topbar-shell) — a soft frosted edge.
-        boxShadow: "var(--shell-section-ring)",
+        boxShadow: "none",
         padding: isMobile ? "10px 12px" : "0 16px",
         display: "flex",
         flexDirection: "column",
@@ -207,8 +202,8 @@ export default function StaffTopbar({
               zIndex: 2,
               justifySelf: "center",
               // Desktop/tablet controls need visible overflow so their
-              // liquid-glass hover/focus glow is not shaved off by the action
-              // strip. Vertical phone keeps its horizontal scroll behaviour.
+              // dropdowns/menus are not shaved off by the action strip.
+              // Vertical phone keeps its horizontal scroll behaviour.
               overflowX: isVerticalPhone ? "auto" : "visible",
               overflowY: isVerticalPhone ? "hidden" : "visible",
             }}

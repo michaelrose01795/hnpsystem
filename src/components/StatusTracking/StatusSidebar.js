@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 import SmartSummaryBlock from '@/components/StatusTracking/SmartSummaryBlock'; // Smart Summary panel
 import { SearchBar } from '@/components/ui/searchBarAPI';
-import LayerSurface from '@/components/ui/LayerSurface';
 import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary generation from snapshot
 import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
 import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
@@ -469,24 +468,16 @@ export default function StatusSidebar({
       {/* Sidebar panel - FLOATING */}
       <div className="app-page-card app-page-card--no-hover" style={panelStyle}>
         {/* Header */}
-        <LayerSurface
-          radius={compactMode ? '0' : 'var(--radius-md)'}
-          padding={compactMode ? '10px 12px' : '0 16px'}
-          gap="0"
-          style={{
+        <div className="app-section-card" style={{
           color: 'var(--text-1)',
+          padding: compactMode ? '10px 12px' : '0 16px',
+          borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
           minHeight: compactMode ? '64px' : '75px',
-          // Desktop (both the docked variant used by StaffLayout AND the fixed overlay):
-          // inset the header so it floats over the page-card scrim as a rounded glass
-          // tile — matching the section cards below — instead of a flush band whose
-          // --glass-shadow rim gets clipped by the panel edge / overflow:hidden. Sides
-          // use 20px to line up with the content area padding; bottom is 0 since the
-          // content area's own 20px top padding supplies the gap. Only compact
-          // (full-bleed mobile bar) stays flush.
-          margin: compactMode ? 0 : '20px 20px 0',
+          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center', // .app-section-card is column-flex; center the header content vertically so it lines up with the absolutely-centred Clear Job/Close buttons
           position: 'relative',
+          boxShadow: 'inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14)',
         }}>
           {canClose && onToggle && (
             <button
@@ -544,15 +535,6 @@ export default function StatusSidebar({
                   width: '100%',
                   maxWidth: compactMode ? '100%' : '460px',
                   justifySelf: compactMode ? 'stretch' : 'end',
-                  // SearchBar filters its own style prop to layout keys, so the
-                  // glass control tokens live on this wrapper and inherit in.
-                  '--glass-control-bg': 'var(--glass-surface)',
-                  '--glass-control-hover-bg': 'var(--glass-surface)',
-                  '--glass-control-focus-bg': 'var(--glass-surface)',
-                  '--glass-control-backdrop': 'var(--glass-blur)',
-                  '--glass-control-shadow': 'var(--glass-shadow)',
-                  '--glass-control-hover-shadow': 'var(--glass-shadow)',
-                  '--glass-control-focus-shadow': 'var(--glass-shadow)',
                 }}
               >
                 <SearchBar
@@ -604,13 +586,15 @@ export default function StatusSidebar({
             <>
               {searchInput.trim() && !searchError && (
                 <div
-                  className="glass-card"
                   style={{
                     position: 'absolute',
                     top: compactMode ? 'calc(100% - 8px)' : 'calc(50% + 24px)',
                     right: canClose && onToggle ? (compactMode ? '88px' : '102px') : '16px',
                     left: compactMode ? '12px' : 'auto',
                     width: compactMode ? 'auto' : '460px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--surface)',
+                    boxShadow: 'var(--dropdown-menu-shadow)',
                     overflow: 'hidden',
                     zIndex: 6,
                   }}
@@ -633,7 +617,6 @@ export default function StatusSidebar({
                           type="button"
                           onClick={() => handleSelectSearchResult(result)}
                           className="status-sidebar__search-result"
-                          style={{ color: 'var(--text-1)' }}
                         >
                           <span style={{ fontWeight: '700', fontSize: '13px' }}>
                             Job {result.job_number}
@@ -682,7 +665,7 @@ export default function StatusSidebar({
               )}
             </>
           )}
-        </LayerSurface>
+        </div>
 
         {/* Content area: the overlay panel owns scrolling so page scroll does not move the tracker. */}
         <div className="app-page-stack" style={{

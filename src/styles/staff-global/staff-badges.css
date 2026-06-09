@@ -1,5 +1,0 @@
-/* file location: src/styles/staff-global/staff-badges.css
-   Staff-global badge aliases. Tone styling comes from .app-badge modifiers. */
-html.staff-scope .staff-badge {
-  white-space: nowrap;
-}

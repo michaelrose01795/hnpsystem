@@ -654,11 +654,9 @@ export default function UserClockingHistory() {
   const basePanelStyle = {
     borderRadius: "var(--radius-xl)",
     border: "none",
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    background: "var(--surface)",
     padding: "32px",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     gap: "24px"

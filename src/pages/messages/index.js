@@ -102,14 +102,8 @@ const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;
 const shadows = appShellTheme.shadows;
 
-// Liquid Glass card base shared across the messages page. Pulls from the
-// global --glass-* tokens (theme.css) so "change card design" stays a
-// single-lever edit. Pair with className="glass-card" on the element.
 const cardStyle = {
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--section-card-bg)",
   borderRadius: "var(--radius-lg)",
   padding: "var(--section-card-padding)",
   display: "flex",
@@ -398,12 +392,10 @@ const MessageBubble = ({
   const bubbleStyles = {
     padding: "10px 14px",
     borderRadius: radiusValue,
-    background: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--surface)",
     color: palette.textPrimary,
     maxWidth: "100%",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "var(--shadow-md)",
     lineHeight: 1.45,
     cursor: "pointer",
     position: "relative"
@@ -493,7 +485,6 @@ const MessageBubble = ({
             </div>
           }
           <div
-            className="glass-card"
             style={bubbleStyles}
             onClick={() => setActionsOpen((v) => !v)}
             role="button"

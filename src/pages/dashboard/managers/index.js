@@ -33,8 +33,7 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
     sectionType="stat-card"
     backgroundToken="surface"
     radius="var(--radius-sm)"
-    className="glass-card"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: "140px", flex: "1 1 140px" }}
+    style={{ background: "var(--surface)", minWidth: "140px", flex: "1 1 140px" }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--accentText)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
@@ -52,8 +51,7 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
     sectionType="section-shell"
     backgroundToken="theme"
     gap="12px"
-    className="glass-card glass-card--theme"
-    style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", ...style }}
+    style={{ background: "var(--theme)", ...style }}
   >
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2>
@@ -98,8 +96,7 @@ const TrendBlock = ({ sectionKey, parentKey, data }) => {
       radius="var(--radius-sm)"
       padding="16px"
       gap="10px"
-      className="glass-card"
-      style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
+      style={{ background: "var(--surface)" }}
     >
       {(data || []).length === 0 ? (
         <p style={{ margin: 0, color: "var(--text-1)" }}>No completion data for the past 7 days.</p>
@@ -139,8 +136,7 @@ const EscalationList = ({ sectionKey, parentKey, items }) => (
     radius="var(--radius-sm)"
     padding="14px"
     gap="10px"
-    className="glass-card"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
+    style={{ background: "var(--surface)" }}
   >
     {items.length === 0 ? (
       <p style={{ margin: 0, color: "var(--text-1)" }}>No escalations.</p>
@@ -152,8 +148,7 @@ const EscalationList = ({ sectionKey, parentKey, items }) => (
           radius="var(--radius-sm)"
           padding="12px"
           gap="4px"
-          className="glass-card glass-card--theme"
-          style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
+          style={{ background: "var(--theme)" }}
         >
           <p style={{ margin: 0, color: "var(--text-1)" }}>{formatEscalationMessage(notice.message)}</p>
           <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--accentText)" }}>

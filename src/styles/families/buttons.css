@@ -19,7 +19,6 @@
 /* === Base rule                                           === */
 /* ========================================================= */
 html.staff-scope .app-btn {
-  height: var(--control-height);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
@@ -45,7 +44,7 @@ html.staff-scope .app-btn:disabled {
 
 /* ========================================================= */
 /* === Size modifiers — padding / font-size only           === */
-/* === Height stays locked to --control-height             === */
+/* === Height stays locked to --control-height (44px)      === */
 /* === so every button aligns on the same baseline.        === */
 /* ========================================================= */
 html.staff-scope .app-btn--sm {
@@ -84,116 +83,27 @@ html.staff-scope .app-btn--nav {
 /* === inline keys; Links wearing .app-btn are guarded     === */
 /* === here.                                               === */
 /* ========================================================= */
-/* === Primary ===============================================================
-   Flat --theme tint treatment so primary actions stay aligned with the
-   standard search bar and chrome controls without using gradients. */
-html.staff-scope .app-btn--primary,
-html.staff-scope .glass-action-button {
-  background: var(--glass-action-bg, var(--theme)) !important;
-  background-image: none !important;
-  color: var(--accentText) !important;
+html.staff-scope .app-btn--primary {
+  /* Primary tracks the text-field background so form surfaces (input + CTA)
+     read as one family. --input-bg resolves to --control-bg (pale accent
+     tint in whichever theme colour the user has chosen). */
+  background: var(--input-bg) !important;
+  color: var(--text-1) !important;
   border: none !important;
-  backdrop-filter: var(--glass-action-backdrop, none);
-  -webkit-backdrop-filter: var(--glass-action-backdrop, none);
-  box-shadow: var(--glass-action-shadow, var(--glass-button-shadow));
 }
 html.staff-scope .app-btn--primary:hover,
-html.staff-scope .app-btn--primary:focus-visible,
-html.staff-scope .glass-action-button:hover,
-html.staff-scope .glass-action-button:focus-visible {
-  background: var(--glass-button-hover-bg, var(--theme-hover)) !important;
-  background-image: none !important;
-  box-shadow: var(--glass-button-hover-shadow, var(--btn-glow-hover));
-}
-html.staff-scope .app-btn--primary:active,
-html.staff-scope .glass-action-button:active {
-  background: var(--glass-button-active-bg, var(--theme-hover)) !important;
-  background-image: none !important;
-  box-shadow: var(--glass-button-active-shadow, var(--btn-glow));
-  transform: translateY(1px);
-}
-html.staff-scope .app-btn--primary:disabled,
-html.staff-scope .glass-action-button:disabled {
-  box-shadow: none;
-  transform: none;
+html.staff-scope .app-btn--primary:focus-visible {
+  background: var(--control-bg-hover) !important;
 }
 
-/* === Glass (secondary) ====================================================
-   The secondary "Glass" treatment: a softer frosted-glass surface with a light
-   accent tint, accent-coloured text/icon, a grey glow + full-perimeter rim, and
-   backdrop blur. Reusable via .glass-button.
-
-   SINGLE SOURCE OF TRUTH: the look is defined by the --glass-button-* tokens in
-   src/styles/staffglobal.css. Those same tokens drive every form control
-   (dropdowns, calendar / month / time pickers, search bars, text fields), so
-   editing them there restyles this button AND all controls together. Fallbacks
-   below keep this button correct even if the tokens are ever absent. */
-html.staff-scope .app-btn--secondary,
-html.staff-scope .glass-button {
-  background: var(--glass-button-bg, rgba(var(--accent-rgb), 0.1)) !important;
-  background-image: none !important;
+html.staff-scope .app-btn--secondary {
+  background: var(--control-bg) !important;
   color: var(--text-accent) !important;
   border: none !important;
-  backdrop-filter: var(--glass-button-blur, blur(14px) saturate(160%));
-  -webkit-backdrop-filter: var(--glass-button-blur, blur(14px) saturate(160%));
-  box-shadow: var(--glass-button-shadow, var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.18));
 }
 html.staff-scope .app-btn--secondary:hover,
-html.staff-scope .app-btn--secondary:focus-visible,
-html.staff-scope .glass-button:hover,
-html.staff-scope .glass-button:focus-visible {
-  background: var(--glass-button-hover-bg, rgba(var(--accent-rgb), 0.18)) !important;
-  background-image: none !important;
-  box-shadow: var(--glass-button-hover-shadow, var(--btn-glow-hover), inset 0 0 0 1px rgba(var(--accent-rgb), 0.26));
-}
-html.staff-scope .app-btn--secondary:active,
-html.staff-scope .glass-button:active {
-  background: var(--glass-button-active-bg, rgba(var(--accent-rgb), 0.22)) !important;
-  background-image: none !important;
-  box-shadow: var(--glass-button-active-shadow, var(--btn-glow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.22));
-  transform: translateY(1px);
-}
-html.staff-scope .app-btn--secondary:disabled,
-html.staff-scope .glass-button:disabled {
-  box-shadow: none;
-  transform: none;
-}
-
-/* Standalone base for the reusable glass classes — mirrors the .app-btn base
-   so .glass-action-button / .glass-button look and behave like a button even
-   when used on their own (without the .app-btn class): consistent corner
-   radius, pointer cursor, smooth transition, disabled handling. When combined
-   with .app-btn these simply re-assert the same values. The transition adds
-   background-image + transform on top of --control-transition so flat tint
-   changes and press-shift animate smoothly. */
-html.staff-scope .glass-action-button,
-html.staff-scope .glass-button {
-  height: var(--control-height);
-  min-height: var(--control-height);
-  padding: var(--control-padding);
-  border-radius: var(--control-radius);
-  font-family: inherit;
-  font-size: var(--control-font-size);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  white-space: nowrap;
-  line-height: 1;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    background-image 0.18s ease,
-    box-shadow 0.18s ease,
-    color 0.18s ease,
-    transform 0.12s ease;
-}
-html.staff-scope .glass-action-button:disabled,
-html.staff-scope .glass-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+html.staff-scope .app-btn--secondary:focus-visible {
+  background: var(--control-bg-hover) !important;
 }
 
 html.staff-scope .app-btn--ghost {

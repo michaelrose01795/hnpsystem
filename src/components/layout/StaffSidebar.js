@@ -441,18 +441,14 @@ export default function Sidebar({
         display: "flex",
         flexDirection: "column",
         borderRadius: "var(--page-card-radius)",
-        // Section-defining ring (matches .app-sidebar) — a soft frosted edge.
-        boxShadow: "var(--shell-section-ring)",
+        boxShadow: "none",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "0",
         overflowX: "hidden",
         overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
-        // Frosted-glass sidebar shell: a soft white scrim + backdrop blur so
-        // navigation stays easy to scan (matches .app-sidebar in staffglobal.css).
-        background: "var(--shell-glass-bg)",
-        backdropFilter: "var(--shell-glass-blur)",
-        WebkitBackdropFilter: "var(--shell-glass-blur)",
+        // Solid surface sidebar shell (pre-glass design).
+        background: "var(--surface)",
       }}
     >
       {/* Header */}
@@ -465,17 +461,12 @@ export default function Sidebar({
         backgroundToken="app-sidebar-header"
         style={{
           // Sticky so the brand logo stays pinned to the top of the sidebar's
-          // own scroll while the nav list slides up behind it. The shell glass
-          // (--shell-glass-bg = 0.70 alpha) let the scrolling text/buttons show
-          // through, so use a near-opaque surface tint to fully hide them while
-          // the blur keeps it reading as a frosted logo panel. One-off alpha:
-          // no token exists for a "solid-but-frosted" sidebar header fill.
+          // own scroll while the nav list slides up behind it. Solid surface
+          // fill hides the scrolling nav passing behind the pinned header.
           position: "sticky",
           top: 0,
           zIndex: 3,
-          background: "rgba(var(--surface-rgb), 0.98)",
-          backdropFilter: "var(--shell-glass-blur)",
-          WebkitBackdropFilter: "var(--shell-glass-blur)",
+          background: "var(--surface)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -524,8 +515,7 @@ export default function Sidebar({
         sectionType="content-card"
         backgroundToken="app-sidebar-body"
         style={{
-          // Transparent so the sidebar reads as one see-through pane.
-          background: "transparent",
+          background: "var(--surface)",
           flex: 1,
           minHeight: 0,
         }}

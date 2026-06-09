@@ -26,14 +26,11 @@ export default function WorkshopTabsBar() {
   return (
     <div
       style={{
-        // Liquid Glass — workshop tabs bar surface.
-        background: "var(--glass-surface)",
-        backdropFilter: "var(--glass-blur)",
-        WebkitBackdropFilter: "var(--glass-blur)",
+        background: "var(--surface)",
         borderRadius: "var(--radius-md)",
         padding: "var(--space-5)",
         border: "none",
-        boxShadow: "var(--glass-shadow)",
+        boxShadow: "none",
         marginBottom: "var(--space-lg)",
       }}
     >

@@ -2,20 +2,16 @@
 // Shared runtime helpers for deriving the app's semantic colour tokens from the selected mode and accent.
 
 // Persisted accent choices that users can select from the profile theme controls.
-// Premium muted palette (2026 calm pass): softer, desaturated tones tuned for
-// frosted glass surfaces. Hue is kept clearly distinct between accents while
-// saturation/brightness are pulled back for comfortable long sessions. The
-// glass tint alpha is held at 0.10 so accent bleed into frosted surfaces stays
-// gentle. Every downstream hover/selected/focus/glass token derives from these
-// values in buildThemeRuntime, so changing them here recolours the whole app.
 export const ACCENT_PALETTES = {
-  red: { label: "Red", light: "#c2564a", dark: "#c2564a", rgb: "194, 86, 74", glass: "rgba(194, 86, 74, 0.10)" }, // warm terracotta
-  blue: { label: "Blue", light: "#5f82a6", dark: "#5f82a6", rgb: "95, 130, 166", glass: "rgba(95, 130, 166, 0.10)" }, // muted dusty blue
-  green: { label: "Green", light: "#7d9b76", dark: "#7d9b76", rgb: "125, 155, 118", glass: "rgba(125, 155, 118, 0.10)" }, // soft sage
-  pink: { label: "Pink", light: "#c0879a", dark: "#c0879a", rgb: "192, 135, 154", glass: "rgba(192, 135, 154, 0.10)" }, // dusty rose
-  orange: { label: "Orange", light: "#d99873", dark: "#d99873", rgb: "217, 152, 115", glass: "rgba(217, 152, 115, 0.10)" }, // soft apricot
-  purple: { label: "Purple", light: "#9080ad", dark: "#9080ad", rgb: "144, 128, 173", glass: "rgba(144, 128, 173, 0.10)" }, // muted lavender
-  grey: { label: "Grey", light: "#8c8279", dark: "#8c8279", rgb: "140, 130, 121", glass: "rgba(140, 130, 121, 0.10)" }, // elegant warm grey
+  red: { label: "Red", light: "#b91c1c", dark: "#f87171" },
+  beige: { label: "Stone", light: "#78716c", dark: "#a8a29e" },
+  grey: { label: "Slate", light: "#475569", dark: "#94a3b8" },
+  blue: { label: "Blue", light: "#2563eb", dark: "#60a5fa" },
+  green: { label: "Green", light: "#15803d", dark: "#4ade80" },
+  yellow: { label: "Amber", light: "#b45309", dark: "#fbbf24" },
+  pink: { label: "Pink", light: "#be185d", dark: "#f472b6" },
+  orange: { label: "Orange", light: "#c2410c", dark: "#fb923c" },
+  purple: { label: "Purple", light: "#6d28d9", dark: "#a78bfa" },
 };
 
 // The default accent used when nothing valid has been stored yet.
@@ -29,9 +25,9 @@ export const hexToRgbObject = (hexColor) => {
   // Remove the hash so the parser can work with the raw six-character hex value.
   const hex = String(hexColor || "").replace("#", "");
 
-  // Fall back to the app's default accent red (muted terracotta) when the input is malformed.
+  // Fall back to the app's default accent red when the input is malformed.
   if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
-    return { r: 194, g: 86, b: 74 };
+    return { r: 185, g: 28, b: 28 };
   }
 
   // Return the parsed red, green, and blue channels.
@@ -119,25 +115,23 @@ export const getResolvedAccent = (accentName, resolvedMode) => {
   return resolvedMode === "dark" ? palette.dark : palette.light;
 };
 
-const getAccentPalette = (accentName) =>
-  ACCENT_PALETTES[normalizeAccent(accentName)] || ACCENT_PALETTES[DEFAULT_ACCENT];
-
 // Build the full semantic and legacy token set from the current accent and colour mode.
 export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT_ACCENT } = {}) => {
   // Resolve the concrete accent colour first so every derived value uses the same base.
-  const accentPalette = getAccentPalette(accentName);
   const accentMain = getResolvedAccent(accentName, resolvedMode);
 
   // Convert the accent to RGB for all alpha-based surfaces and rings.
   const accentRgbObject = hexToRgbObject(accentMain);
 
   // Store the accent in CSS rgba() string form too.
-  const accentRgb = accentPalette.rgb || hexToRgbString(accentMain);
-  const accentGlass = accentPalette.glass || `rgba(${accentRgb}, 0.12)`;
+  const accentRgb = hexToRgbString(accentMain);
 
   // Reuse white and black anchors for consistent light/dark derivation.
   const white = { r: 255, g: 255, b: 255 };
   const black = { r: 0, g: 0, b: 0 };
+
+  // Use the real surface colour as the neutral background we blend back towards.
+  const surfaceAnchor = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : white;
 
   // Derive the solid accent hover state from the same behaviour the sidebar/topbar already uses today.
   const accentHover = rgbToHex(
@@ -150,26 +144,25 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
   );
 
   // Keep accent surfaces subtle because they are used for rows, cards, panels, and controls.
-  const accentSurface = `rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.14" : "0.1"})`;
+  const accentSurface = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.16)` : `rgba(${accentRgb}, 0.08)`;
 
   // Use a clearer hover/selected wash without turning large surfaces into solid colour blocks.
-  const accentSurfaceHover = `rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.22" : "0.18"})`;
+  const accentSurfaceHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.24)` : `rgba(${accentRgb}, 0.14)`;
 
   // Keep a lighter accent wash for cards, highlights, and subtle accents.
-  const accentSurfaceSubtle = `rgba(${accentRgb}, 0.1)`;
+  const accentSurfaceSubtle = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.1)` : `rgba(${accentRgb}, 0.05)`;
 
   // Define the reusable theme colour separately from pressed controls; it is the app-wide accent background.
-  const themeColour = accentGlass;
+  const themeColour = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.18)` : `rgba(${accentRgb}, 0.1)`;
 
   // Define the app-wide hover colour for subtle themed surfaces.
-  const themeColourHover = `rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.22" : "0.18"})`;
+  const themeColourHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.26)` : `rgba(${accentRgb}, 0.16)`;
 
   // Build a stronger accent border for selected and focused states.
   const accentBorderStrong = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.42)` : `rgba(${accentRgb}, 0.32)`;
 
-  // Keep the application shell neutral; the accent now appears in the fixed
-  // atmospheric background layers instead of tinting the whole viewport.
-  const shellBackground = resolvedMode === "dark" ? "#08090d" : "#f8fafc";
+  // Derive the app shell colour from the accent, matching the sidebar-led shell treatment.
+  const shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
 
   // Define the neutral surface colours used for cards, panels, and inputs.
   const surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
@@ -229,12 +222,9 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--primary-pressed": accentPressed,
       "--primary-selected": accentPressed,
       "--accentMainRgb": accentRgb,
-      "--accent-rgb": accentRgb,
-      "--theme-rgb": accentRgb,
       "--accentText": accentText,
       "--text-accent": accentText,
       "--onAccentText": onAccentText,
-      "--accent": accentGlass,
       "--secondary": accentSurface,
       "--secondary-hover": accentSurfaceHover,
       "--secondary-pressed": resolvedMode === "dark" ? `rgba(${accentRgb}, 0.32)` : `rgba(${accentRgb}, 0.2)`,
@@ -252,7 +242,6 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--text-2-rgb": hexToRgbString(onAccentText),
       "--overlay": overlayBackdrop,
       "--overlay-muted": overlayMuted,
-      "--app-background-base": shellBackground,
       "--page-shell-bg": shellBackground,
       "--nav-shell-bg": accentSurface,
       "--page-card-bg": surfaceMain,

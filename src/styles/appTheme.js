@@ -104,15 +104,10 @@ export const vhcModalStyles = {
     maxWidth: "calc(100vw - clamp(10px, 2.5vw, 20px) * 2)",
     height,
     maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
-    // Liquid Glass — shared VHC modal container. Frosted surface + blur + glass
-    // shadow so every VHCModalShell reads as glass (matches popupStyleApi.card
-    // and LayerSurface; see theme.css glass tokens).
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    background: palette.modalGradient,
     borderRadius: "var(--section-card-radius)",
     border: "none",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",

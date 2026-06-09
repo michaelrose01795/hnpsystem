@@ -9,11 +9,7 @@ import MotDashboardUi from "@/components/page-ui/dashboard/mot/dashboard-mot-ui"
 // MetricCard - single stat tile. Lives inside a themed MOT section,
 // so it renders on the neutral surface layer.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface
-    className="glass-card"
-    radius="var(--radius-sm)"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 160 }}
-  >
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 160 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)", opacity: 0.7 }}>{helper}</p>}
@@ -46,13 +42,7 @@ const TrendBlock = ({ data }) => {
 
 // CardList - list block inside a themed MOT section, renders as LayerSurface.
 const CardList = ({ title, items }) => (
-  <LayerSurface
-    className="glass-card"
-    radius="var(--radius-sm)"
-    padding="12px"
-    gap="10px"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
-  >
+  <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {items.length === 0 ? (
       <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>No records.</p>

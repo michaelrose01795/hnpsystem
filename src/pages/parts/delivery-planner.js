@@ -125,10 +125,7 @@ const modalOverlayStyle = {
 };
 
 const modalContentStyle = {
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--surface)",
   borderRadius: "var(--radius-md)",
   padding: "24px",
   width: "min(900px, 100%)",

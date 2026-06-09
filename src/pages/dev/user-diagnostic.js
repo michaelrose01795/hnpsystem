@@ -46,20 +46,6 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import ScrollArea from "@/components/ui/scrollAPI/ScrollArea";
 import { SkeletonBlock, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import {
-  StaffBadge,
-  StaffButton,
-  StaffCard,
-  StaffInput,
-  StaffModal,
-  StaffPageShell,
-  StaffSearchBar,
-  StaffSection,
-  StaffSelect,
-  StaffTable,
-  StaffTabs,
-  StaffToolbar,
-} from "@/components/staff-global";
 
 // ── Section: Core Data ──────────────────────────────────────────
 import UserDiagnosticDevPageUi from "@/components/page-ui/dev/dev-user-diagnostic-ui"; // Extracted presentation layer.
@@ -992,7 +978,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
       as="section"
       sectionKey={itemKey ? `showcase-${itemKey}` : undefined}
       sectionType="content-card"
-      parentKey="app-layout-page-card"
+      parentKey="user-diagnostic/showcase"
       backgroundToken="surface"
       className={`app-section-card showcase-section-card${bordersAllowed ? " showcase-section-card--borders-allowed" : ""}`}>
       
@@ -1616,7 +1602,6 @@ const SHOWCASE_CATALOG = {
   "popup-unified-proposal": { category: "Popups & Modals", scope: "global", terms: "popup unified proposal replace consolidate modal dialog" },
   "confirm-dialogs": { category: "Popups & Modals", scope: "global", terms: "confirmation dialog confirm cancel action destructive preview" },
   // ── Cards & Sections ──
-  "staff-global-components": { category: "Cards & Sections", scope: "global", terms: "staff global components staff-button staff-card staff-section staff-tabs staff-input staff-select staff-search staff-table staff-modal staff-badge staff-toolbar flattened layout" },
   "global-cards": { category: "Cards & Sections", scope: "global", terms: "card section panel app-page-card app-section-card app-page-stack app-page-shell Section global canonical hierarchy" },
   "non-global-cards": { category: "Cards & Sections", scope: "non-global", terms: "card section panel container box per-module custom" },
   // ── Feedback & Status ──
@@ -1827,9 +1812,6 @@ function GlobalUiShowcase() {
   const [inputState, setInputState] = useState(() => getInputShowcaseState());
   const [tabsState, setTabsState] = useState(() => getTabsShowcaseState());
   const [searchState, setSearchState] = useState(() => getSearchShowcaseState());
-  const [staffGlobalTab, setStaffGlobalTab] = useState("overview");
-  const [staffGlobalSearch, setStaffGlobalSearch] = useState("VHC");
-  const [staffGlobalModalOpen, setStaffGlobalModalOpen] = useState(false);
 
   // ── Showcase notes (persisted to database) ──
   const [showcaseNotes, setShowcaseNotes] = useState({});
@@ -1914,17 +1896,20 @@ function GlobalUiShowcase() {
   join(" ");
 
   return (
-    <div className="user-diagnostic-showcase" style={{
-      width: "100%",
-      flex: "1 1 100%",
+    <DevLayoutSection as="aside" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
+      width: "min(100%, 440px)",
+      flex: "0 1 440px",
       maxWidth: "100%",
-      paddingRight: 0
+      paddingRight: "4px"
     }}>
       
       <style jsx global>{`
         .user-diagnostic-showcase {
+          background: #fdf2f8 !important;
           box-shadow: none;
-          min-width: 0;
+        }
+        :root[data-theme="dark"] .user-diagnostic-showcase {
+          background: #4a2737 !important;
         }
         .showcase-controls {
           display: flex;
@@ -1934,6 +1919,9 @@ function GlobalUiShowcase() {
         }
         .user-diagnostic-showcase .app-section-card,
         .showcase-section-card {
+          background: #fdf2f8 !important;
+          box-shadow: none;
+          border: none;
           margin-bottom: var(--page-stack-gap);
         }
         /* Default = NO border around showcase demo wrappers.
@@ -1956,11 +1944,18 @@ function GlobalUiShowcase() {
         .user-diagnostic-showcase textarea {
           border: none !important;
         }
+        :root[data-theme="dark"] .user-diagnostic-showcase .app-section-card,
+        :root[data-theme="dark"] .user-diagnostic-showcase .showcase-section-card,
+        :root[data-theme="dark"] .user-diagnostic-showcase .showcase-filter-card {
+          background: #4a2737 !important;
+        }
         .showcase-filter-card {
+          background: #fdf2f8 !important;
           position: sticky;
           top: 0;
           z-index: 10;
           margin-bottom: var(--space-sm);
+          border-bottom: none;
         }
         .showcase-filter-tabs {
           display: flex;
@@ -2062,31 +2057,6 @@ function GlobalUiShowcase() {
           flex-direction: column;
           gap: var(--space-sm);
         }
-        .showcase-liquid-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: var(--space-sm);
-        }
-        .showcase-liquid-menu-demo {
-          position: static;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          width: min(100%, 360px);
-          padding: 8px;
-        }
-        .showcase-liquid-calendar-demo {
-          display: grid;
-          grid-template-columns: repeat(7, minmax(34px, 1fr));
-          gap: 4px;
-          width: min(100%, 320px);
-        }
-        .showcase-liquid-time-demo {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-          gap: 6px;
-          width: min(100%, 320px);
-        }
         .showcase-inline-meta {
           display: flex;
           flex-wrap: wrap;
@@ -2177,7 +2147,7 @@ function GlobalUiShowcase() {
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-filters"
         sectionType="filter-row"
-        parentKey="app-layout-page-card"
+        parentKey="user-diagnostic/showcase"
         backgroundToken="surface"
         className="app-section-card showcase-filter-card">
         <div className="showcase-filter-tabs">
@@ -2226,7 +2196,7 @@ function GlobalUiShowcase() {
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-height-compare"
         sectionType="content-card"
-        parentKey="app-layout-page-card"
+        parentKey="user-diagnostic/showcase"
         backgroundToken="surface"
         className="app-section-card showcase-comparison-card">
         <div className="showcase-comparison-head">
@@ -2423,8 +2393,8 @@ function GlobalUiShowcase() {
       {isSectionVisible("buttons-app-btn") &&
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-          <Button variant="primary">Action Glass</Button>
-          <Button variant="secondary">Glass</Button>
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
         </div>
@@ -2490,27 +2460,6 @@ function GlobalUiShowcase() {
             disabled={inputState.disabled}
             className={inputToneClass}
             onChange={(event) => setInputState((current) => ({ ...current, value: event.target.value }))} />
-          <div className="showcase-liquid-grid">
-            <div className="glass-field">
-              <label className="glass-field-label" htmlFor="showcase-liquid-text">Glass text input</label>
-              <input id="showcase-liquid-text" className="glass-input" placeholder="Customer name" />
-              <p className="glass-field-helper">Accent tint, blur, readable placeholder.</p>
-            </div>
-            <div className="glass-field">
-              <label className="glass-field-label" htmlFor="showcase-liquid-textarea">Glass textarea</label>
-              <textarea id="showcase-liquid-textarea" className="glass-input" rows={3} placeholder="Add workshop notes" />
-              <p className="glass-field-helper">Textarea inherits the same liquid surface.</p>
-            </div>
-            <div className="glass-field">
-              <label className="glass-field-label" htmlFor="showcase-liquid-select">Glass native select</label>
-              <select id="showcase-liquid-select" className="glass-select" defaultValue="service">
-                <option value="sales">Sales</option>
-                <option value="service">Service</option>
-                <option value="parts">Parts</option>
-              </select>
-              <p className="glass-field-helper">Native selects map to the same form control surface.</p>
-            </div>
-          </div>
           
           {(inputState.error || inputState.success) &&
           <p className="showcase-card-note" style={{ color: inputState.error ? "var(--danger-text)" : "var(--success-text)" }}>
@@ -2673,15 +2622,6 @@ function GlobalUiShowcase() {
             placeholder={dropdownState.placeholder}
             disabled={dropdownState.disabled}
             helperText={dropdownState.error ? "Error preview: selection is required." : `${dropdownState.optionCount} options loaded.`} />
-          <div className="glass-field">
-            <p className="glass-field-label">Open dropdown selected state</p>
-            <div className="glass-dropdown-menu showcase-liquid-menu-demo">
-              <button type="button" className="glass-dropdown-item">Available option</button>
-              <button type="button" className="glass-dropdown-item is-selected">Selected action glass option</button>
-              <button type="button" className="glass-dropdown-item">Hovered option preview</button>
-            </div>
-            <p className="glass-field-helper">Selected list items use the accent action-glass treatment.</p>
-          </div>
           
         </div>
       </ShowcaseSection>
@@ -2826,19 +2766,6 @@ function GlobalUiShowcase() {
             helperText={calendarState.rangeSelection ? "Range mode is not supported by CalendarField yet. This toggle helps surface the gap." : "CalendarField is running in single-date mode."}
             highlightedDates={calendarHighlightedDates}
             disabledDates={calendarDisabledDates} />
-          <div className="glass-field">
-            <p className="glass-field-label">Calendar cell states</p>
-            <div className="showcase-liquid-calendar-demo">
-              <button type="button" className="calendar-api__day">14</button>
-              <button type="button" className="calendar-api__day is-today">15</button>
-              <button type="button" className="calendar-api__day">16</button>
-              <button type="button" className="calendar-api__day is-selected">17</button>
-              <button type="button" className="calendar-api__day">18</button>
-              <button type="button" className="calendar-api__day is-disabled" disabled>19</button>
-              <button type="button" className="calendar-api__day">20</button>
-            </div>
-            <p className="glass-field-helper">Today is accented softly; selected date uses action glass.</p>
-          </div>
           
           <div className="showcase-status-tones">
             {(calendarState.tonePreview === "both" || calendarState.tonePreview === "amber") &&
@@ -2922,16 +2849,7 @@ function GlobalUiShowcase() {
             minuteStep={timePickerState.minuteStep}
             disabled={timePickerState.disabled}
             helperText={`12-hour format · ${timePickerState.minuteStep}-minute interval`} />
-          <div className="glass-field">
-            <p className="glass-field-label">Time option states</p>
-            <div className="showcase-liquid-time-demo">
-              <button type="button" className="timepicker-api__option">09:00</button>
-              <button type="button" className="timepicker-api__option is-selected">09:30</button>
-              <button type="button" className="timepicker-api__option">10:00</button>
-            </div>
-            <p className="glass-field-helper">Selected time options use the same accent action glass.</p>
-          </div>
-
+          
         </div>
       </ShowcaseSection>
       }
@@ -2984,11 +2902,6 @@ function GlobalUiShowcase() {
             placeholder={searchState.placeholder}
             onClear={searchState.showClear ? () => setSearchState((current) => ({ ...current, value: "" })) : undefined}
             disabled={searchState.disabled} />
-          <div className="glass-field">
-            <label className="glass-field-label" htmlFor="showcase-liquid-search">Glass search input</label>
-            <input id="showcase-liquid-search" type="search" className="glass-search" placeholder="Search vehicles, customers, jobs" />
-            <p className="glass-field-helper">Search inputs inherit the liquid glass background and focus glow.</p>
-          </div>
           
         </div>
       </ShowcaseSection>
@@ -3358,119 +3271,10 @@ function GlobalUiShowcase() {
       }
 
       <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")} />
-      {isSectionVisible("staff-global-components") &&
-      <ShowcaseSection title="Staff Global Components" itemKey="staff-global-components" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
-        <StaffPageShell
-          className="staff-global-showcase"
-          title="Staff Global UI"
-          subtitle="Reusable staff wrappers backed by the split staff-global CSS family."
-          actions={
-            <StaffToolbar variant="header">
-              <StaffButton type="button" variant="secondary" size="sm">Secondary</StaffButton>
-              <StaffButton type="button" variant="primary" size="sm" onClick={() => setStaffGlobalModalOpen(true)}>Open modal</StaffButton>
-            </StaffToolbar>
-          }
-        >
-          <StaffSection
-            title="Controls"
-            subtitle="Buttons, tabs, filters, inputs, selects, search and badges share staff-global classes."
-            action={<StaffBadge tone="success" control>Global</StaffBadge>}
-          >
-            <StaffToolbar>
-              <StaffButton type="button" variant="primary">Primary</StaffButton>
-              <StaffButton type="button" variant="secondary">Secondary</StaffButton>
-              <StaffButton type="button" variant="ghost">Ghost</StaffButton>
-              <StaffButton type="button" variant="danger">Danger</StaffButton>
-            </StaffToolbar>
-            <StaffTabs
-              tabs={[
-                { key: "overview", label: "Overview" },
-                { key: "jobs", label: "Jobs" },
-                { key: "customers", label: "Customers" },
-              ]}
-              activeKey={staffGlobalTab}
-              onChange={setStaffGlobalTab}
-            />
-            <StaffToolbar>
-              <StaffInput label="Technician" name="staff-global-technician" defaultValue="Michael Rose" />
-              <StaffSelect
-                label="Department"
-                name="staff-global-department"
-                defaultValue="workshop"
-                options={[
-                  { value: "workshop", label: "Workshop" },
-                  { value: "parts", label: "Parts" },
-                  { value: "service", label: "Service" },
-                ]}
-              />
-              <StaffSearchBar
-                value={staffGlobalSearch}
-                onChange={(event) => setStaffGlobalSearch(event.target.value)}
-                onClear={() => setStaffGlobalSearch("")}
-                placeholder="Search staff UI"
-              />
-            </StaffToolbar>
-            <div className="staff-showcase-row">
-              <StaffBadge tone="neutral">Neutral</StaffBadge>
-              <StaffBadge tone="warning">Warning</StaffBadge>
-              <StaffBadge tone="danger">Danger</StaffBadge>
-              <StaffBadge tone="accent-strong">Accent</StaffBadge>
-            </div>
-          </StaffSection>
-
-          <div className="staff-showcase-grid">
-            <StaffCard title="Flattened card" subtitle="Direct child of the page stack.">
-              This card demonstrates the flatter page shell to card grid pattern.
-            </StaffCard>
-            <StaffCard title="Second card" subtitle="No extra wrapper card needed.">
-              Related summaries can sit side by side without card-inside-card nesting.
-            </StaffCard>
-            <StaffCard title="Third card" subtitle="Responsive by default.">
-              The grid uses auto-fit/minmax so desktop, tablet and mobile stay tidy.
-            </StaffCard>
-          </div>
-
-          <StaffCard title="Nested layout example" subtitle="Surface to theme alternation.">
-            <StaffSection layer="theme" title="Nested section" subtitle="Uses LayerTheme inside the outer StaffCard.">
-              <StaffTable
-                columns={[
-                  { key: "item", label: "Item" },
-                  { key: "className", label: "Global class" },
-                  { key: "status", label: "Status", render: (row) => <StaffBadge tone={row.tone}>{row.status}</StaffBadge> },
-                ]}
-                rows={[
-                  { id: "button", item: "Button", className: ".staff-button", status: "Ready", tone: "success" },
-                  { id: "card", item: "Card", className: ".staff-card", status: "Ready", tone: "success" },
-                  { id: "modal", item: "Modal", className: ".staff-modal", status: "Previewed", tone: "warning" },
-                ]}
-              />
-            </StaffSection>
-          </StaffCard>
-
-          <StaffModal
-            open={staffGlobalModalOpen}
-            title="Staff global modal"
-            onClose={() => setStaffGlobalModalOpen(false)}
-            actions={
-              <>
-                <StaffButton type="button" variant="ghost" onClick={() => setStaffGlobalModalOpen(false)}>Cancel</StaffButton>
-                <StaffButton type="button" variant="primary" onClick={() => setStaffGlobalModalOpen(false)}>Save</StaffButton>
-              </>
-            }
-          >
-            Modal chrome is centralised through StaffModal, popup classes, and staff-modals.css.
-          </StaffModal>
-        </StaffPageShell>
-      </ShowcaseSection>
-      }
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>
-          Canonical card hierarchy from staffglobal.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers. All card surfaces now use the Liquid Glass treatment (<strong>.glass-card</strong>).
-        </div>
-        <div className="glass-card" style={{ padding: "var(--section-card-padding)", marginBottom: "12px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>Glass Card (.glass-card)</div>
-          <div style={{ fontSize: "11px", color: "var(--text-1)" }}>Reusable Liquid Glass / glassmorphism surface — accent tint via --accent-rgb, frosted backdrop blur, soft elevation shadow. Works in light and dark mode.</div>
+          Canonical card hierarchy from staffglobal.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers.
         </div>
         <div className="app-page-shell" style={{ padding: "8px" }}>
           <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-shell</div>
@@ -3762,7 +3566,7 @@ function GlobalUiShowcase() {
         onClose={closeUsage} />
 
       }
-    </div>);
+    </DevLayoutSection>);
 
 }
 

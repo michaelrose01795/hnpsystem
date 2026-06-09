@@ -89,7 +89,7 @@ const _p = { // CSS variable token aliases for this layout (matches appTheme pal
 };
 const vhcLayoutStyles = { // page layout style map — only used on this page
   page: { height: "100%", display: "flex", flexDirection: "column", padding: "var(--space-3) var(--space-md)", gap: "var(--space-md)", background: _p.backgroundGradient },
-  headerCard: { background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", borderRadius: _r.xl, padding: "var(--space-lg)", boxShadow: "var(--glass-shadow)", display: "flex", flexDirection: "column", gap: "var(--space-5)" },
+  headerCard: { background: _p.modalGradient, borderRadius: _r.xl, padding: "var(--space-lg)", boxShadow: "none", display: "flex", flexDirection: "column", gap: "var(--space-5)" },
   headerTopRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-lg)" },
   headerTitleBlock: { display: "flex", flexDirection: "column", gap: "var(--space-1)" },
   headerTitle: { fontSize: "28px", fontWeight: "700", color: _p.accent, margin: 0 },
@@ -99,15 +99,15 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   progressTrack: { width: "100%", height: "10px", borderRadius: _r.pill, backgroundColor: _p.accentSoft, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: _r.pill, background: "var(--primary)", transition: "width 0.3s ease" },
   metaRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-md)" },
-  metaItem: { background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", borderRadius: _r.lg, padding: "var(--space-md)", display: "flex", flexDirection: "column", gap: "var(--space-1)" },
+  metaItem: { backgroundColor: _p.accentSurface, borderRadius: _r.lg, padding: "var(--space-md)", display: "flex", flexDirection: "column", gap: "var(--space-1)" },
   metaLabel: { fontSize: "11px", fontWeight: "700", color: "var(--danger-dark)", letterSpacing: "0.4px", textTransform: "uppercase" },
   metaValue: { fontSize: "16px", fontWeight: "600", color: _p.textPrimary },
-  mainCard: { flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-lg)", padding: "var(--space-lg)", borderRadius: _r.xl, background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", overflow: "hidden" },
+  mainCard: { flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-lg)", padding: "var(--space-lg)", borderRadius: _r.xl, background: "var(--surface)", boxShadow: "none", overflow: "hidden" },
   sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   sectionTitle: { fontSize: "18px", fontWeight: "700", color: _p.accent, margin: 0 },
   sectionSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0 },
   sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-md)" },
-  sectionCard: { position: "relative", textAlign: "left", background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "var(--glass-shadow)", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+  sectionCard: { position: "relative", textAlign: "left", backgroundColor: _p.surface, borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "none", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
   sectionCardHover: { transform: "translateY(-3px)", boxShadow: "none" },
   cardTitle: { fontSize: "16px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   cardSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0, lineHeight: 1.4 },
@@ -4903,8 +4903,7 @@ function DocumentsTab({
       sectionType="section-shell"
       parentKey="myjob-tab-documents"
       backgroundToken="layer-section-level-1"
-      className="glass-card"
-      style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
+      style={{ backgroundColor: "var(--surface)" }}>
       
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
@@ -4918,11 +4917,8 @@ function DocumentsTab({
           
           <div
             onClick={(e) => e.stopPropagation()}
-            className="glass-card"
             style={{
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
+              backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-xl)",
               overflow: "hidden",
               position: "relative",

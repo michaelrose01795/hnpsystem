@@ -51,10 +51,7 @@ const detailCardStyles = {
   container: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--glass-theme)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--theme)",
     padding: "var(--page-card-padding)",
     display: "flex",
     flexDirection: "column",
@@ -76,10 +73,7 @@ const detailCardStyles = {
   metaItem: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--surface)",
     padding: "12px 14px",
     display: "flex",
     flexDirection: "column",
@@ -103,10 +97,7 @@ const tabPanelStyles = {
   container: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--glass-theme)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--theme)",
     padding: "24px",
     display: "flex",
     flexDirection: "column",
@@ -123,10 +114,7 @@ const detailGridStyles = {
   item: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--surface)",
     padding: "14px",
     display: "flex",
     flexDirection: "column",
@@ -791,7 +779,7 @@ const CustomerScheduleSection = ({ jobs }) => {
         data-dev-section-type="content-card"
         data-dev-section-parent="customer-profile-insights-schedule-list"
         data-dev-background-token="theme"
-        style={{ background: "var(--glass-theme)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+        style={{ background: "var(--theme)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
 
               <VehicleField label="When" value={formatDateTime(appointment.scheduled_time)} />
               <VehicleField label="Status" value={appointment.status || "Booked"} />
@@ -1178,8 +1166,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section-type="section-shell"
         data-dev-section-parent="customer-profile-tab-messages"
         data-dev-background-token="surface"
-        className="glass-card"
-        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", padding: "12px" }}>
+        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "12px" }}>
 
         {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-1)" }}>No messages yet.</p>}
         {messages.map((message) => {
@@ -1207,8 +1194,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section-type="toolbar"
         data-dev-section-parent="customer-profile-tab-messages"
         data-dev-background-token="surface"
-        className="glass-card"
-        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", outline: "none", borderRadius: "var(--radius-md)", background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", padding: "12px" }}>
+        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", boxShadow: "none", outline: "none", borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "12px" }}>
 
         <textarea
           ref={composerRef}

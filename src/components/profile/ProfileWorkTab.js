@@ -128,16 +128,13 @@ function ProfileCard({
   );
 
   const cardStyle = {
-    // Liquid Glass — frosted surface + blur + glass shadow.
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    background: "var(--profile-card-bg, var(--surface))",
     borderRadius: "var(--radius-md)",
     padding: "16px",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "none",
     ...style,
   };
 
@@ -199,11 +196,7 @@ function KpiCard(props) {
   );
 
   const cardStyle = {
-    // Liquid Glass — frosted surface + blur + glass shadow.
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--profile-card-bg, var(--surface))",
     borderRadius: "var(--radius-md)",
     padding: "14px",
     display: "flex",
@@ -1893,13 +1886,14 @@ export function ProfileWorkTab({
     return fallback;
   }
 
+  const profileSectionShellStyle = {
+    background: "var(--theme)",
+    borderRadius: "var(--radius-lg)",
+    padding: "var(--section-card-padding)",
+  };
 
   const profileSurfaceCardStyle = {
-    // Liquid Glass — frosted surface + blur + glass shadow.
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+    background: "var(--surface)",
   };
 
   // Overtime rows distinguish between recurring-rule-generated ("Auto Log") and user-entered ("Logged") so the user can tell them apart in-table
@@ -1949,11 +1943,7 @@ export function ProfileWorkTab({
                 gap: "8px",
                 padding: "12px 14px",
                 borderRadius: "var(--radius-md)",
-                // Liquid Glass — frosted surface + blur + glass shadow.
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                background: "var(--surface)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
@@ -2013,11 +2003,7 @@ export function ProfileWorkTab({
           marginTop: "10px",
           borderRadius: "var(--radius-md)",
           border: "none",
-          // Liquid Glass — frosted surface + blur + glass shadow.
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
+          background: "var(--surface)",
         }}
       >
         <DevLayoutSection
@@ -2176,8 +2162,16 @@ export function ProfileWorkTab({
         {!isLoading && !error && profile ? (
           <>
             {/* KPI Row: Total Hours | Hourly Rate (admin) | Leave Remaining — side by side */}
-            <div
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-kpi-card-group"
+              parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
+              backgroundToken="theme"
+              shell
               style={{
+                ...profileSectionShellStyle,
+                padding: "10px",
                 display: "grid",
                 gap: isMobile ? "10px" : "14px",
                 gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
@@ -2230,10 +2224,7 @@ export function ProfileWorkTab({
                     alignItems: "center",
                     gap: "6px",
                     padding: "8px 10px",
-                    // Liquid Glass — theme-tinted footer strip inside the surface card.
-                    background: "var(--glass-theme)",
-                    backdropFilter: "var(--glass-blur)",
-                    WebkitBackdropFilter: "var(--glass-blur)",
+                    background: "var(--surface)",
                   }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-1)" }}>Total</span>
                     <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-1)" }}>
@@ -2292,10 +2283,18 @@ export function ProfileWorkTab({
                 }
                 accentColor="var(--danger)"
               />
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-summary-card-group"
+              parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
+              backgroundToken="theme"
+              shell
               style={{
+                ...profileSectionShellStyle,
+                padding: "10px",
                 display: "grid",
                 gap: isMobile ? "12px" : "16px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
@@ -2306,8 +2305,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  // Liquid Glass — translucent so the inherited blur/shadow show.
-                  background: "var(--glass-surface)",
+                  background: "var(--surface)",
                   border: "none",
                 }}
                 title="Leave Summary"
@@ -2345,8 +2343,7 @@ export function ProfileWorkTab({
                       <div
                         style={{
                           ...emergencyInfoCardStyle,
-                          // Liquid Glass — translucent so the inherited blur/shadow show.
-                          background: "var(--glass-theme)",
+                          background: "var(--theme)",
                         }}
                       >
                         <span style={emergencyInfoLabelStyle}>Remaining</span>
@@ -2362,11 +2359,7 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          // Liquid Glass — theme-tinted info tile.
-                          background: "var(--glass-theme)",
-                          backdropFilter: "var(--glass-blur)",
-                          WebkitBackdropFilter: "var(--glass-blur)",
-                          boxShadow: "var(--glass-shadow)",
+                          background: "var(--theme)",
                         }}
                       >
                         <span style={{ fontSize: "0.78rem", color: "var(--text-1)", fontWeight: 700 }}>
@@ -2392,11 +2385,7 @@ export function ProfileWorkTab({
                                 gap: "6px",
                                 padding: "10px 12px",
                                 borderRadius: "var(--radius-sm)",
-                                // Liquid Glass — frosted surface + blur + glass shadow.
-                                background: "var(--glass-surface)",
-                                backdropFilter: "var(--glass-blur)",
-                                WebkitBackdropFilter: "var(--glass-blur)",
-                                boxShadow: "var(--glass-shadow)",
+                                background: "var(--surface)",
                                 border: "none",
                                 textAlign: "left",
                                 cursor: isEditable ? "pointer" : "default",
@@ -2465,8 +2454,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  // Liquid Glass — translucent so the inherited blur/shadow show.
-                  background: "var(--glass-surface)",
+                  background: "var(--surface)",
                   border: "none",
                 }}
                 title="Emergency Contact"
@@ -2579,11 +2567,7 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          // Liquid Glass — theme-tinted info tile.
-                          background: "var(--glass-theme)",
-                          backdropFilter: "var(--glass-blur)",
-                          WebkitBackdropFilter: "var(--glass-blur)",
-                          boxShadow: "var(--glass-shadow)",
+                          background: "var(--theme)",
                         }}
                       >
                         <span
@@ -2614,10 +2598,17 @@ export function ProfileWorkTab({
                     </div>
                   )}
               </ProfileCard>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-attendance-history-group"
+              parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
+              backgroundToken="theme"
+              shell
               style={{
+                ...profileSectionShellStyle,
                 display: "grid",
                 gap: "10px",
                 gridTemplateColumns: "minmax(0, 1fr)",
@@ -2625,11 +2616,10 @@ export function ProfileWorkTab({
             >
               <ProfileCard
                 sectionKey="profile-work-attendance-history"
-                parentKey="profile-active-tab-panel"
+                parentKey="profile-work-attendance-history-group"
                 backgroundToken="accent-surface"
                 style={{
-                  // Liquid Glass — translucent so the inherited blur/shadow show.
-                  background: "var(--glass-surface)",
+                  background: "var(--surface)",
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
               >
@@ -2645,11 +2635,10 @@ export function ProfileWorkTab({
               <div style={{ scrollMarginTop: "80px" }}>
               <ProfileCard
                 sectionKey="profile-work-attendance-overtime-history"
-                parentKey="profile-active-tab-panel"
+                parentKey="profile-work-attendance-history-group"
                 backgroundToken="accent-surface"
                 style={{
-                  // Liquid Glass — translucent so the inherited blur/shadow show.
-                  background: "var(--glass-surface)",
+                  background: "var(--surface)",
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Overtime History</span>}
                 action={
@@ -2677,16 +2666,31 @@ export function ProfileWorkTab({
                 })}
               </ProfileCard>
               </div>
-            </div>
+            </DevLayoutSection>
 
             {profile && (
-              <StaffVehiclesCard
-                userId={profile.userId}
-                vehicles={profileStaffVehicles}
-                sectionKey="profile-work-staff-vehicles"
+              <DevLayoutSection
+                as="section"
+                sectionKey="profile-work-staff-vehicles-group"
                 parentKey="profile-active-tab-panel"
-                backgroundToken="accent-surface"
-              />
+                sectionType="section-shell"
+                backgroundToken="theme"
+                shell
+                style={{
+                  ...profileSectionShellStyle,
+                  display: "grid",
+                  gap: "10px",
+                  gridTemplateColumns: "minmax(0, 1fr)",
+                }}
+              >
+                <StaffVehiclesCard
+                  userId={profile.userId}
+                  vehicles={profileStaffVehicles}
+                  sectionKey="profile-work-staff-vehicles"
+                  parentKey="profile-work-staff-vehicles-group"
+                  backgroundToken="accent-surface"
+                />
+              </DevLayoutSection>
             )}
           </>
         ) : null}
@@ -2740,11 +2744,7 @@ const emergencyInfoCardStyle = {
   padding: "12px 14px",
   borderRadius: "var(--radius-md)",
   border: "none",
-  // Liquid Glass — theme-tinted info tile.
-  background: "var(--glass-theme)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--theme)",
   alignContent: "start",
   minHeight: "78px",
 };

@@ -20,14 +20,14 @@ export const profileSlide = {
     },
     {
       kind: "tooltip",
-      anchor: "[data-dev-section-key=\"profile-work-kpi-total-hours\"]",
+      anchor: "[data-dev-section-key=\"profile-work-kpi-card-group\"]",
       position: "bottom",
       title: "At-a-glance work totals",
       body: "The highlighted summary cards show hours, payslips, estimated pay and leave balance without needing HR to answer routine questions.",
     },
     {
       kind: "tooltip",
-      anchor: "[data-dev-section-key=\"profile-work-leave-summary\"]",
+      anchor: "[data-dev-section-key=\"profile-work-summary-card-group\"]",
       position: "top",
       title: "Staff record sections",
       body: "Leave, emergency contact and related staff information are grouped into clear sections for quick checking and self-service updates.",

@@ -267,10 +267,7 @@ export default function UndersideDetailsModal({
               flexDirection: "column",
               gap: 0,
               overflow: "hidden",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              background: "var(--page-card-bg, var(--surface))",
               borderRadius: "var(--radius-sm)",
             }}
           >

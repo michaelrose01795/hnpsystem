@@ -15,16 +15,15 @@
 /* -------------------------------------------------------------------------- */
 /* Variant modifiers — layered onto the existing .app-input base. */
 /* Form & notes textareas auto-grow with their content (field-sizing —
-   Chromium 123+/Safari 17.4+): they start at one control row, grow
+   Chromium 123+/Safari 17.4+): they start at a single 44px input row, grow
    line-by-line as text wraps, then scroll once past 3 rows. No manual resize
    handle (disabled globally in staffglobal.css). !important on the height
-   bounds locks the control-height start and 3-row cap over any legacy inline minHeight
+   bounds locks the 44px start and 3-row cap over any legacy inline minHeight
    still present in page files. */
 html.staff-scope textarea.app-input,
 html.staff-scope .app-input--textarea {
   field-sizing: content;
-  height: auto !important;
-  /* Row 1 = one standard control row. */
+  /* Row 1 = one standard control row (44px). */
   min-height: var(--control-height) !important;
   /* Row 1 + 2 extra line-boxes (with slack so row 3 isn't clipped) → scrolls
      once content passes 3 rows. */

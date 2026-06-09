@@ -193,8 +193,7 @@ function InsightCard({ insight, onAction }) {
         padding: "10px 12px",
         borderRadius: "10px",
         ...widgetInsetSurfaceStyle,
-        // Liquid Glass — translucent so the inherited blur/shadow show.
-        background: "var(--glass-surface)",
+        background: "var(--surface)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
@@ -443,11 +442,7 @@ function PersonalDashboard({ dashboard, finance }) {
   const isMobile = useIsMobile();
   const neutralPanelStyle = useMemo(
     () => ({
-      // Liquid Glass — frosted surface + blur + glass shadow.
-      background: "var(--glass-surface)",
-      backdropFilter: "var(--glass-blur)",
-      WebkitBackdropFilter: "var(--glass-blur)",
-      boxShadow: "var(--glass-shadow)",
+      background: "var(--surface)",
       border: "none",
       borderRadius: "var(--radius-md)",
     }),
@@ -787,11 +782,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
         sectionType="section-shell"
         shell
         style={{
-          // Liquid Glass — frosted surface + blur + glass shadow.
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
+          background: "var(--surface)",
           borderRadius: "14px",
           padding: "24px",
           color: "var(--text-1)",
@@ -833,11 +824,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           sectionType="section-shell"
           shell
           style={{
-            // Liquid Glass — frosted surface + blur + glass shadow.
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)",
+            background: "var(--surface)",
             borderRadius: "14px",
             padding: "24px",
             display: "grid",

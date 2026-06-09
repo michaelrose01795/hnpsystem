@@ -11,11 +11,7 @@ import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboa
 // MetricCard — single stat tile. Lives inside a dashboard LayerTheme section,
 // so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface
-    className="glass-card"
-    radius="var(--radius-sm)"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 180 }}
-  >
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{helper}</p>}
@@ -25,13 +21,7 @@ const MetricCard = ({ label, value, helper }) => (
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((item) => item.count));
   return (
-    <LayerSurface
-      className="glass-card"
-      radius="var(--radius-sm)"
-      padding="12px"
-      gap="8px"
-      style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
-    >
+    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
       {(data || []).map((point) =>
       <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ width: 35, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{point.label}</span>
@@ -54,13 +44,7 @@ const TrendBlock = ({ data }) => {
 
 // JobList — list block inside a dashboard LayerTheme section, so it renders as LayerSurface.
 const JobList = ({ jobs }) => (
-  <LayerSurface
-    className="glass-card"
-    radius="var(--radius-sm)"
-    padding="12px"
-    gap="10px"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
-  >
+  <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {jobs.length === 0 ?
       <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No outstanding jobs right now.</p> :
       jobs.map((job) =>

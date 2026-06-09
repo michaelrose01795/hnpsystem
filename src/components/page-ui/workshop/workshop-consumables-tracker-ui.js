@@ -507,13 +507,11 @@ export default function ConsumablesTrackerPageUi(props) {
                 gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: "10px"
               }}>
-                <div className="glass-card" data-dev-section-key="workshop-consumables-logs-spend-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
+                <div data-dev-section-key="workshop-consumables-logs-spend-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
-                  boxShadow: "var(--glass-shadow)",
-                  background: "var(--glass-surface)",
-                  backdropFilter: "var(--glass-blur)",
-                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "none",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
@@ -527,13 +525,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={80} height={16} label="Loading spend" /> : formatCurrency(logsSummary.spend)}
                   </strong>
                 </div>
-                <div className="glass-card" data-dev-section-key="workshop-consumables-logs-quantity-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
+                <div data-dev-section-key="workshop-consumables-logs-quantity-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
-                  boxShadow: "var(--glass-shadow)",
-                  background: "var(--glass-surface)",
-                  backdropFilter: "var(--glass-blur)",
-                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "none",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
@@ -547,13 +543,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading quantity" /> : logsSummary.quantity.toLocaleString()}
                   </strong>
                 </div>
-                <div className="glass-card" data-dev-section-key="workshop-consumables-logs-orders-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
+                <div data-dev-section-key="workshop-consumables-logs-orders-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
-                  boxShadow: "var(--glass-shadow)",
-                  background: "var(--glass-surface)",
-                  backdropFilter: "var(--glass-blur)",
-                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "none",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
@@ -567,13 +561,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading orders" /> : logsSummary.orders}
                   </strong>
                 </div>
-                <div className="glass-card" data-dev-section-key="workshop-consumables-logs-suppliers-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
+                <div data-dev-section-key="workshop-consumables-logs-suppliers-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
-                  boxShadow: "var(--glass-shadow)",
-                  background: "var(--glass-surface)",
-                  backdropFilter: "var(--glass-blur)",
-                  WebkitBackdropFilter: "var(--glass-blur)",
+                  boxShadow: "none",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{

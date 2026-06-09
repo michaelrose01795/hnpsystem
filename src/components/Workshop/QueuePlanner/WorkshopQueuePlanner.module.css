@@ -1,0 +1,897 @@
+/* file location: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.module.css
+   Scoped styles for the one-off Workshop Controller Board that replaces the old
+   Next Jobs table/list. Self-contained — does NOT reuse the staffglobal.css TABLE
+   system (this is a dispatch board, not a data grid). Colours, spacing and radii
+   all come from the shared theme tokens so it matches the staff dark theme, and
+   filter controls use the canonical `.app-btn` family directly (see the JSX).
+
+   "Soft borders" are drawn with inset box-shadow hairlines (never a decorative
+   CSS outline rule) to satisfy the CLAUDE.md border law. The Liquid-Glass
+   look is applied with a translucent surface + backdrop blur — scoped to THIS
+   page only (the global card-glass was intentionally disabled), so it never
+   resurrects the reverted global glass system. */
+
+.shell {
+  --wqp-user-col: 248px;
+  --wqp-card-w: 188px;
+  --wqp-gap: 12px;
+  --wqp-row-min-h: 104px;
+
+  /* shared glass recipe — reused by every surface on the board */
+  --wqp-glass-bg: linear-gradient(
+    180deg,
+    rgba(var(--surface-rgb), 0.82),
+    rgba(var(--surface-rgb), 0.62)
+  );
+  --wqp-glass-blur: blur(16px) saturate(140%);
+  --wqp-hairline: inset 0 0 0 1px rgba(var(--accent-base-rgb), 0.16);
+  --wqp-hairline-strong: inset 0 0 0 1px rgba(var(--accent-base-rgb), 0.26);
+  --wqp-lift: 0 10px 26px rgba(0, 0, 0, 0.22);
+  --wqp-lift-sm: 0 4px 12px rgba(0, 0, 0, 0.16);
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+}
+
+/* generic glass surface */
+.glass {
+  background: var(--wqp-glass-bg);
+  backdrop-filter: var(--wqp-glass-blur);
+  -webkit-backdrop-filter: var(--wqp-glass-blur);
+  box-shadow: var(--wqp-hairline), var(--wqp-lift);
+  border-radius: var(--radius-lg, 16px);
+}
+
+/* ============================== Page header ============================== */
+.pageHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px 22px;
+  overflow: hidden;
+}
+
+/* accent glow bar down the left edge of the header */
+.pageHeader::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary), rgba(var(--primary-rgb), 0.35));
+}
+
+.pageHeaderText {
+  min-width: 0;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--text-1);
+}
+
+.pageSubtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+.pageHeaderMeta {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.headerStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(var(--surface-rgb), 0.55);
+  box-shadow: var(--wqp-hairline);
+  min-width: 84px;
+}
+
+.headerStatValue {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-strong);
+}
+
+.headerStatLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* ============================== Section cards ============================== */
+.section {
+  padding: 18px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+/* small accent tab before each section title */
+.sectionTitle::before {
+  content: "";
+  width: 4px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+}
+
+.sectionMeta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* ============================== Empty states ============================== */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 28px 16px;
+  margin-top: 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--wqp-hairline);
+  background: rgba(var(--surface-rgb), 0.35);
+}
+
+.emptyIcon {
+  font-size: 26px;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.emptyBody {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* ============================ Checked-in strip ============================ */
+.checkedStrip {
+  display: flex;
+  gap: var(--wqp-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 14px 2px 6px;
+  scrollbar-width: thin;
+}
+
+.checkedCard {
+  flex: 0 0 auto;
+  width: 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--wqp-glass-bg);
+  backdrop-filter: var(--wqp-glass-blur);
+  -webkit-backdrop-filter: var(--wqp-glass-blur);
+  box-shadow: var(--wqp-hairline), var(--wqp-lift-sm);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.18s ease;
+}
+
+.checkedCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--wqp-hairline-strong), var(--wqp-lift);
+}
+
+.checkedCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.checkedJob {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+.checkedReg {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  background: rgba(var(--accent-base-rgb), 0.1);
+  box-shadow: var(--wqp-hairline);
+}
+
+.checkedVehicle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkedSub {
+  font-size: 12px;
+  color: var(--text-2, var(--grey-accent-light));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkedFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.checkedTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* ============================== Filter bar ============================== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.filterDivider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  box-shadow: 1px 0 0 rgba(var(--accent-base-rgb), 0.2);
+}
+
+.toolbarLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-2, var(--grey-accent-light));
+  margin-right: 2px;
+}
+
+.searchWrap {
+  margin-left: auto;
+  min-width: 220px;
+  max-width: 340px;
+  flex: 1 1 220px;
+}
+
+/* ============================== Queue board ============================== */
+.board {
+  overflow: hidden;
+  padding: 0;
+}
+
+.boardScroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: var(--wqp-user-col) minmax(0, 1fr);
+  min-width: 680px;
+}
+
+/* group sub-header (TECHNICIANS / MOT USERS) spans both columns */
+.groupHead {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(var(--accent-base-rgb), 0.06);
+  box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
+}
+
+.groupHeadIcon {
+  font-size: 13px;
+}
+
+.groupHeadTitle {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.groupHeadCount {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* ---- user (left) cell ---- */
+.userCell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 14px;
+  min-height: var(--wqp-row-min-h);
+  background: var(--wqp-glass-bg);
+  backdrop-filter: var(--wqp-glass-blur);
+  -webkit-backdrop-filter: var(--wqp-glass-blur);
+  box-shadow: inset -1px 0 0 rgba(var(--accent-base-rgb), 0.22),
+    inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14);
+}
+
+.dragHandle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-2, var(--grey-accent-light));
+  opacity: 0.55;
+  cursor: grab;
+}
+
+.userCell:hover .dragHandle {
+  opacity: 0.9;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(140deg, rgba(var(--primary-rgb), 0.28), rgba(var(--primary-rgb), 0.12));
+  box-shadow: var(--wqp-hairline);
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.userMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+.workload {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.workloadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* utilisation bar — soft tints only (no bright red), per spec */
+.capacityTrack {
+  margin-top: 4px;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-base-rgb), 0.14);
+  overflow: hidden;
+}
+
+.capacityFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease;
+}
+
+.capLow {
+  background: rgba(var(--success-rgb), 0.75);
+}
+.capMed {
+  background: rgba(59, 130, 246, 0.65); /* soft blue — no blue token in theme.css */
+}
+.capHigh {
+  background: rgba(var(--warning-rgb), 0.9); /* amber, never danger-red */
+}
+
+.dotLow {
+  background: rgba(var(--success-rgb), 0.95);
+}
+.dotMed {
+  background: rgba(59, 130, 246, 0.95);
+}
+.dotHigh {
+  background: rgba(var(--warning-rgb), 1);
+}
+
+/* ---- queue (right) cell = drop zone ---- */
+.queueCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  min-height: var(--wqp-row-min-h);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14);
+  transition: background-color 0.15s ease;
+}
+
+.queueCellActive {
+  background: rgba(var(--primary-rgb), 0.1);
+  box-shadow: inset 0 0 0 2px var(--primary),
+    inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14);
+}
+
+/* clear empty drop zone (not faint text) */
+.emptyRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 64px;
+  border-radius: var(--radius-md);
+  /* dashed-look outline drawn with box-shadow so no `border:` is used */
+  box-shadow: inset 0 0 0 2px rgba(var(--accent-base-rgb), 0.18);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(var(--accent-base-rgb), 0.03),
+    rgba(var(--accent-base-rgb), 0.03) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+.emptyRowActive {
+  box-shadow: inset 0 0 0 2px var(--primary);
+  color: var(--accent-strong);
+}
+
+/* arrow connector between cards (execution order) */
+.arrow {
+  flex: 0 0 auto;
+  color: var(--text-2, var(--grey-accent-light));
+  font-size: 14px;
+  font-weight: 700;
+  user-select: none;
+  opacity: 0.6;
+}
+
+/* vertical drop indicator between horizontal cards */
+.dropBar {
+  flex: 0 0 auto;
+  width: 3px;
+  align-self: stretch;
+  margin: 8px 1px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+}
+
+/* ============================== Job card ============================== */
+.jobCard {
+  flex: 0 0 auto;
+  width: var(--wqp-card-w);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 11px 9px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--wqp-glass-bg);
+  backdrop-filter: var(--wqp-glass-blur);
+  -webkit-backdrop-filter: var(--wqp-glass-blur);
+  box-shadow: var(--wqp-hairline), var(--wqp-lift-sm);
+  color: var(--text-1);
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.14s ease, box-shadow 0.18s ease;
+}
+
+.jobCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--wqp-hairline-strong), var(--wqp-lift);
+}
+
+.jobCard:active {
+  cursor: grabbing;
+}
+
+.jobCardDragging {
+  opacity: 0.5;
+}
+
+.jobCardHighlight {
+  box-shadow: inset 0 0 0 1px rgba(var(--success-rgb), 0.6),
+    0 0 0 2px rgba(var(--success-rgb), 0.45), var(--wqp-lift);
+}
+
+.jobCardHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jobGrip {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--text-2, var(--grey-accent-light));
+  opacity: 0.5;
+}
+
+.jobNo {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.jobReg {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.jobLine {
+  font-size: 11px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobCardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.jobType {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-base-rgb), 0.1);
+  color: var(--text-2, var(--grey-accent-light));
+  white-space: nowrap;
+}
+
+.jobTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+/* status pill — soft tints */
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stWaiting {
+  background: var(--warning-surface);
+  color: var(--warning-text, var(--warning-dark));
+}
+.stProgress {
+  background: rgba(59, 130, 246, 0.16);
+  color: #2563eb;
+}
+.stComplete {
+  background: var(--success-surface);
+  color: var(--success-dark);
+}
+.stReady {
+  background: var(--success-surface);
+  color: var(--success-dark);
+}
+.stHold {
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+
+/* ============================ Unassigned queue ============================ */
+.unassignedDrop {
+  padding: 18px;
+  transition: box-shadow 0.15s ease;
+}
+
+.unassignedActive {
+  box-shadow: var(--wqp-hairline), var(--wqp-lift), inset 0 0 0 2px var(--primary);
+}
+
+.unassignedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--wqp-gap);
+  margin-top: 14px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.unassignedCard {
+  width: 100%;
+}
+
+.dropBarH {
+  height: 3px;
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+}
+
+/* ============================ Drag preview ghost ============================ */
+.dragGhost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 3200;
+  min-width: 160px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--wqp-glass-bg);
+  backdrop-filter: var(--wqp-glass-blur);
+  -webkit-backdrop-filter: var(--wqp-glass-blur);
+  box-shadow: var(--wqp-hairline-strong), 0 16px 34px rgba(0, 0, 0, 0.34);
+}
+
+.dragGhostJob {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+.dragGhostReg {
+  font-size: 11px;
+  color: var(--text-1);
+}
+
+/* ============================ Details modal ============================ */
+.modalTitle {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+.modalSub {
+  margin: 0 0 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2, var(--grey-accent-light));
+}
+
+.feedback {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedbackInfo {
+  background: rgba(var(--accent-base-rgb), 0.08);
+  color: var(--text-1);
+}
+.feedbackError {
+  background: var(--danger-surface);
+  color: var(--danger);
+}
+.feedbackSuccess {
+  background: var(--success-surface);
+  color: var(--success-dark);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.field {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--surface-rgb), 0.5);
+  box-shadow: var(--wqp-hairline);
+  min-width: 0;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2, var(--grey-accent-light));
+  margin-bottom: 4px;
+}
+
+.fieldValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  word-break: break-word;
+}
+
+.requestList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.requestRow {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-1);
+  line-height: 1.4;
+}
+
+.requestNum {
+  flex-shrink: 0;
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ============================ Responsive ============================ */
+@media (max-width: 1279px) {
+  .shell {
+    --wqp-user-col: 210px;
+    --wqp-card-w: 174px;
+    --wqp-row-min-h: 100px;
+  }
+}
+
+@media (max-width: 767px) {
+  .shell {
+    --wqp-user-col: 158px;
+    --wqp-card-w: 164px;
+    --wqp-row-min-h: 96px;
+  }
+  .searchWrap {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  .pageTitle {
+    font-size: 19px;
+  }
+  .avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+  .fieldGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

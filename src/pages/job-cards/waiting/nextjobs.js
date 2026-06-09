@@ -31,7 +31,8 @@ import {
 } from "@/features/vhc/vhcStatusEngine";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
-import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer.
+import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer (loading / access / empty states).
+import WorkshopQueuePlanner from "@/components/Workshop/QueuePlanner/WorkshopQueuePlanner"; // One-off dispatch board that replaces the old Next Jobs table/list.
 const VISIBLE_JOBS_PER_PANEL = 5;const JOB_CARD_HEIGHT = 68; // px height per job card (including padding)
 const JOB_CARD_VERTICAL_GAP = 8; // px gap between cards
 const JOB_LIST_MAX_HEIGHT =
@@ -326,6 +327,7 @@ const mapActiveClockingRow = (row = {}) => {
     jobId: row.job_id ?? null,
     jobNumber: row.job_number || job.job_number || "",
     clockIn: row.clock_in || null,
+    checkedInAt: job.checked_in_at || null,
     workType: row.work_type || "initial",
     reg,
     makeModel,
@@ -372,6 +374,7 @@ export default function NextJobsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
   const [activeClockingsByUser, setActiveClockingsByUser] = useState({});
+  const [jobHoursByJobId, setJobHoursByJobId] = useState({}); // job_requests hours per job_id, for workload totals
   const [hoveredRequestJobNumber, setHoveredRequestJobNumber] = useState(null);
   const [highlightedSearchJobNumbers, setHighlightedSearchJobNumbers] = useState([]);
   const dragStateRef = useRef(null);
@@ -627,6 +630,7 @@ export default function NextJobsPage() {
             vehicle_reg,
             vehicle_make_model,
             status,
+            checked_in_at,
             customer:customer_id(firstname, lastname, name),
             vehicle:vehicle_id(registration, reg_number, make, model, make_model)
           )
@@ -661,12 +665,62 @@ export default function NextJobsPage() {
     }
   }, []);
 
+  // Estimated labour hours per job (job_requests.hours), summed by job_id. Used
+  // alongside authorised VHC labour to compute each technician's workload total.
+  const fetchJobRequestHours = useCallback(async () => {
+    const jobIds = Array.from(new Set((jobs || []).map((job) => job.id).filter(Boolean)));
+    if (jobIds.length === 0) {
+      setJobHoursByJobId({});
+      return;
+    }
+
+    const { data, error } = await supabase.
+    from("job_requests").
+    select("job_id, hours").
+    in("job_id", jobIds);
+
+    if (error) {
+      console.error("❌ Error fetching job request hours:", error);
+      return;
+    }
+
+    const aggregated = {};
+    (data || []).forEach((row) => {
+      if (!row?.job_id) return;
+      aggregated[row.job_id] = (aggregated[row.job_id] || 0) + (Number(row.hours) || 0);
+    });
+    setJobHoursByJobId(aggregated);
+  }, [jobs]);
+
   // ✅ Fetch jobs and technicians from Supabase on component mount
   useEffect(() => {// Kick off initial data fetch
     fetchJobs(); // Load waiting jobs
     fetchTechnicians(); // Load staff lists
     fetchActiveClockings(); // Load current clocking per technician
   }, [fetchJobs, fetchTechnicians, fetchActiveClockings]);
+
+  useEffect(() => {// Refresh workload hours whenever the job set changes
+    fetchJobRequestHours();
+  }, [fetchJobRequestHours]);
+
+  // Estimated labour hours for a single job: recorded request hours + authorised
+  // VHC labour, falling back to a 1-hour nominal when nothing is recorded yet.
+  const estimateJobHours = useCallback(
+    (job) => {
+      if (!job) return 0;
+      const requestHours = Number(jobHoursByJobId[job.id]) || 0;
+      const vhcHours = (Array.isArray(job.vhcChecks) ? job.vhcChecks : []).reduce((sum, row) => {
+        const status = String(row?.approval_status || "").trim().toLowerCase();
+        if (status === "authorized" || status === "authorised" || status === "completed") {
+          return sum + (Number(row.labour_hours) || 0);
+        }
+        return sum;
+      }, 0);
+      const total = requestHours + vhcHours;
+      return total > 0 ? total : 1;
+    },
+    [jobHoursByJobId]
+  );
 
   useEffect(() => {// Subscribe to Supabase changes for live updates
     const channel = supabase.
@@ -930,6 +984,51 @@ export default function NextJobsPage() {
     });
     return map;
   }, [assignedJobs, assignedMotJobs]);
+
+  // Lookup of staff display name by user id — used to label clocked-in cards.
+  const userNameById = useMemo(() => {
+    const map = new Map();
+    staffDirectory.forEach((person) => {
+      const key = toUserIdKey(person.id);
+      if (key) map.set(key, person.name);
+    });
+    return map;
+  }, [staffDirectory]);
+
+  // Section 1 — jobs currently being worked on (one active clocking per user).
+  const clockedInJobs = useMemo(
+    () =>
+    Object.values(activeClockingsByUser).map((entry) => ({
+      ...entry,
+      technicianName: userNameById.get(toUserIdKey(entry.userId)) || ""
+    })),
+    [activeClockingsByUser, userNameById]
+  );
+
+  // Board rows — every technician / MOT user (no hard cap, supports large rosters).
+  const techRows = useMemo(
+    () =>
+    assignedJobs.map((tech) => ({
+      panelKey: tech.panelKey,
+      name: tech.name,
+      role: "Technician",
+      jobs: tech.jobs,
+      isMot: false
+    })),
+    [assignedJobs]
+  );
+
+  const motRows = useMemo(
+    () =>
+    assignedMotJobs.map((tester) => ({
+      panelKey: tester.panelKey,
+      name: tester.name,
+      role: "MOT Tester",
+      jobs: tester.jobs,
+      isMot: true
+    })),
+    [assignedMotJobs]
+  );
 
   const findAssigneeForJob = useCallback(
     (job) => {
@@ -1375,11 +1474,8 @@ export default function NextJobsPage() {
         data-dev-background-token="surface"
         data-dnd-target-type="assignee"
         data-dnd-target-key={panelKey}
-        className="glass-card"
         style={{
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
+          background: "var(--surface)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           display: "flex",
@@ -1671,8 +1767,38 @@ export default function NextJobsPage() {
     return <NextJobsPageUi view="section3" />;
   }
 
-  // ✅ Page layout
-  return <NextJobsPageUi view="section4" activeDropTarget={activeDropTarget} assignedJobs={assignedJobs} assignedMotJobs={assignedMotJobs} deriveJobTypeLabel={deriveJobTypeLabel} DRAG_PREVIEW_OFFSET_PX={DRAG_PREVIEW_OFFSET_PX} draggingJob={draggingJob} dragState={dragState} dropIndicator={dropIndicator} feedbackMessage={feedbackMessage} filteredOutstandingJobs={filteredOutstandingJobs} formatAppointmentTime={formatAppointmentTime} formatCheckedInTime={formatCheckedInTime} formatCustomerStatus={formatCustomerStatus} getJobDetailsRequestRows={getJobDetailsRequestRows} getJobRequestItems={getJobRequestItems} getJobRequestsCount={getJobRequestsCount} handleCardPointerDown={handleCardPointerDown} handleCloseJobDetails={handleCloseJobDetails} handleOpenJobDetails={handleOpenJobDetails} handleViewSelectedJobCard={handleViewSelectedJobCard} hasAccess={hasAccess} highlightedSearchJobNumbers={highlightedSearchJobNumbers} hoveredRequestJobNumber={hoveredRequestJobNumber} isDragActive={isDragActive} jobCardRefs={jobCardRefs} jobDetailsPopupPrimaryButtonStyle={jobDetailsPopupPrimaryButtonStyle} jobDetailsPopupSecondaryButtonStyle={jobDetailsPopupSecondaryButtonStyle} jobDetailsPopupWarningButtonStyle={jobDetailsPopupWarningButtonStyle} matchesDropIndicator={matchesDropIndicator} motPanelList={motPanelList} OUTSTANDING_GRID_MAX_HEIGHT_PX={OUTSTANDING_GRID_MAX_HEIGHT_PX} outstandingJobs={outstandingJobs} PANEL_HEIGHT_PX={PANEL_HEIGHT_PX} renderAssigneePanel={renderAssigneePanel} SearchBar={SearchBar} searchTerm={searchTerm} selectedJob={selectedJob} setHoveredRequestJobNumber={setHoveredRequestJobNumber} setSearchTerm={setSearchTerm} unassignTechFromJob={unassignTechFromJob} />;
+  // ✅ Page layout — Workshop Queue Planner (replaces the old Next Jobs table/list)
+  return (
+    <WorkshopQueuePlanner
+      techRows={techRows}
+      motRows={motRows}
+      outstandingJobs={filteredOutstandingJobs}
+      clockedInJobs={clockedInJobs}
+      estimateJobHours={estimateJobHours}
+      deriveJobTypeLabel={deriveJobTypeLabel}
+      formatAppointmentTime={formatAppointmentTime}
+      getJobRequestItems={getJobRequestItems}
+      SearchBar={SearchBar}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      highlightedSearchJobNumbers={highlightedSearchJobNumbers}
+      activeDropTarget={activeDropTarget}
+      draggingJob={draggingJob}
+      dragState={dragState}
+      isDragActive={isDragActive}
+      matchesDropIndicator={matchesDropIndicator}
+      jobCardRefs={jobCardRefs}
+      handleCardPointerDown={handleCardPointerDown}
+      DRAG_PREVIEW_OFFSET_PX={DRAG_PREVIEW_OFFSET_PX}
+      hasAccess={hasAccess}
+      handleOpenJobDetails={handleOpenJobDetails}
+      handleOpenCurrentClocking={handleOpenCurrentClocking}
+      selectedJob={selectedJob}
+      feedbackMessage={feedbackMessage}
+      setFeedbackMessage={setFeedbackMessage}
+      handleCloseJobDetails={handleCloseJobDetails}
+      handleViewSelectedJobCard={handleViewSelectedJobCard}
+      unassignTechFromJob={unassignTechFromJob} />);
 
 
 

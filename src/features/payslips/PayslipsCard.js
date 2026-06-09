@@ -23,11 +23,7 @@ import PayslipsListPopup from "./PayslipsListPopup";
 import PayslipDetailPopup from "./PayslipDetailPopup";
 
 const cardSurfaceStyle = {
-  // Liquid Glass — frosted surface + blur + glass shadow.
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--profile-card-bg, var(--surface))",
   borderRadius: "var(--radius-md, 12px)",
   border: "none",
   padding: 0,

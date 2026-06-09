@@ -24,32 +24,32 @@ const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
 
 const SUMMARY_CARD_STYLES = {
   total: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   },
   inProgress: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   },
   onMot: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   },
   teaBreak: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   },
   waiting: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   },
   notClocked: {
-    background: "var(--glass-surface)",
+    background: "var(--surface)",
     border: "none",
     valueColor: "var(--text-accent)"
   }
@@ -547,15 +547,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
         sectionType="section-shell"
         shell
         backgroundToken="accent"
-        className="glass-card glass-card--theme"
         style={{
-          background: "var(--glass-theme)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "10px",
           border: "none",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
+          boxShadow: "none",
           color: "var(--text-2)",
           display: "flex",
           flexDirection: "column",
@@ -638,15 +635,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.total.background,
               border: SUMMARY_CARD_STYLES.total.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -672,15 +666,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.inProgress.background,
               border: SUMMARY_CARD_STYLES.inProgress.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -706,15 +697,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.onMot.background,
               border: SUMMARY_CARD_STYLES.onMot.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -740,15 +728,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.teaBreak.background,
               border: SUMMARY_CARD_STYLES.teaBreak.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -774,15 +759,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.waiting.background,
               border: SUMMARY_CARD_STYLES.waiting.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -808,15 +790,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             parentKey="clocking-overview-stats-grid"
             sectionType="stat-card"
             backgroundToken="layer-section-level-2"
-            className="glass-card"
             style={{
               borderRadius: "var(--radius-md)",
               padding: "16px",
               background: SUMMARY_CARD_STYLES.notClocked.background,
               border: SUMMARY_CARD_STYLES.notClocked.border,
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              boxShadow: "none",
               display: "flex",
               flexDirection: "column",
               gap: "6px"
@@ -864,15 +843,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
         sectionType="section-shell"
         shell
         backgroundToken="accent"
-        className="glass-card glass-card--theme"
         style={{
-          background: "var(--glass-theme)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "10px",
           border: "none",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
+          boxShadow: "none",
           color: "var(--text-2)",
           display: "flex",
           flexDirection: "column",
@@ -965,15 +941,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
                 data-dev-section-type="content-card"
                 data-dev-section-parent="clocking-overview-technician-grid"
-                className="glass-card"
                   style={{
                     borderRadius: "var(--radius-md)",
                     padding: "20px",
-                    background: "var(--glass-surface)",
+                    background: "var(--surface)",
                     border: "none",
-                    backdropFilter: "var(--glass-blur)",
-                    WebkitBackdropFilter: "var(--glass-blur)",
-                    boxShadow: "var(--glass-shadow)",
+                    boxShadow: "none",
                     display: "flex",
                     flexDirection: "column",
                     gap: "14px",
@@ -989,7 +962,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "var(--glass-shadow)";
+                    e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.zIndex = "0";
                   }}>
 
@@ -1023,15 +996,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
                     }}>
 
                     <div
-                      className="glass-card glass-card--theme"
                       style={{
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
-                        background: "var(--glass-theme)",
-                        border: "none",
-                        backdropFilter: "var(--glass-blur)",
-                        WebkitBackdropFilter: "var(--glass-blur)",
-                        boxShadow: "var(--glass-shadow)"
+                        background: "var(--theme)",
+                        border: "none"
                       }}>
 
                       <p
@@ -1060,15 +1029,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
                     </div>
 
                     <div
-                      className="glass-card glass-card--theme"
                       style={{
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
-                        background: "var(--glass-theme)",
-                        border: "none",
-                        backdropFilter: "var(--glass-blur)",
-                        WebkitBackdropFilter: "var(--glass-blur)",
-                        boxShadow: "var(--glass-shadow)"
+                        background: "var(--theme)",
+                        border: "none"
                       }}>
 
                       <p
@@ -1171,14 +1136,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
           aria-labelledby="clocking-modal-title">
 
             <div
-            className="glass-card"
             style={{
               width: "min(460px, 100%)",
               borderRadius: "var(--radius-lg)",
-              background: "var(--glass-surface)",
+              background: "var(--surface)",
               border: "none",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
               boxShadow: "var(--shadow-xl)",
               padding: "24px",
               display: "flex",
@@ -1213,14 +1175,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             {modalTechClockedIn ?
             <div
-              className="glass-card"
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                background: "var(--surface)",
                 padding: "16px",
                 display: "grid",
                 gap: "10px"

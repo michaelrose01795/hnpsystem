@@ -125,16 +125,14 @@ export default function LoginPageUi(props) {
     zIndex: 1400,
     padding: "16px"
   }}>
-          <div className="glass-card" style={{
+          <div style={{
       width: "100%",
       maxWidth: "420px",
-      background: "var(--glass-surface)",
-      backdropFilter: "var(--glass-blur)",
-      WebkitBackdropFilter: "var(--glass-blur)",
+      background: "var(--surface)",
       borderRadius: "var(--radius-md)",
       border: "none",
       padding: "18px",
-      boxShadow: "var(--glass-shadow)"
+      boxShadow: "var(--shadow-xl)"
     }}>
             <h3 style={{
         margin: 0,

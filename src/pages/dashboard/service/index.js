@@ -9,11 +9,7 @@ import ServiceDashboardUi from "@/components/page-ui/dashboard/service/dashboard
 // MetricCard — single stat tile. Lives inside a ThemeCard (LayerTheme),
 // so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface
-    className="glass-card"
-    radius="var(--radius-sm)"
-    style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", minWidth: 0 }}
-  >
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 0 }}>
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.8rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
@@ -62,13 +58,7 @@ const PieChart = ({ breakdown }) => {
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((point) => point.count));
   return (
-    <LayerSurface
-      className="glass-card"
-      radius="var(--radius-sm)"
-      padding="12px"
-      gap="8px"
-      style={{ background: "var(--glass-surface)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}
-    >
+    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
       {(data || []).map((point) => (
         <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-2)" }}>{point.label}</span>
@@ -114,14 +104,9 @@ const ProgressBar = ({ completed, target }) => {
 // QueueItem — list-row card inside a ThemeCard (LayerTheme), renders as LayerSurface.
 const QueueItem = ({ job }) => (
   <LayerSurface
-    className="glass-card"
     radius="var(--radius-sm)"
     padding="12px 14px"
     style={{
-      background: "var(--glass-surface)",
-      backdropFilter: "var(--glass-blur)",
-      WebkitBackdropFilter: "var(--glass-blur)",
-      boxShadow: "var(--glass-shadow)",
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",

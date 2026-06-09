@@ -78,12 +78,9 @@ export default function StockCataloguePageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-        <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" className="glass-card glass-card--theme" style={{
+        <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" style={{
       ...cardStyle,
-      background: "var(--glass-theme)",
-      backdropFilter: "var(--glass-blur)",
-      WebkitBackdropFilter: "var(--glass-blur)",
-      boxShadow: "var(--glass-shadow)",
+      backgroundColor: "var(--theme)",
       marginBottom: "20px"
     }}>
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-header" data-dev-section-type="toolbar" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job Card header" style={{
@@ -131,11 +128,8 @@ export default function StockCataloguePageUi(props) {
             gap: "12px",
             marginBottom: "16px"
           }}>
-                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-job" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job summary card" className="glass-card" style={{
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-job" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job summary card" style={{
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -153,11 +147,8 @@ export default function StockCataloguePageUi(props) {
                       </div>
                       <div>{jobData.description || "No description"}</div>
                     </div>
-                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-vehicle" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Vehicle summary card" className="glass-card" style={{
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-vehicle" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Vehicle summary card" style={{
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -172,11 +163,8 @@ export default function StockCataloguePageUi(props) {
               }}>{jobData.reg}</div>
                       <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                     </div>
-                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-status" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job status summary card" className="glass-card" style={{
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-status" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job status summary card" style={{
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -236,11 +224,8 @@ export default function StockCataloguePageUi(props) {
                       {getPipelineStageMeta(selectedPipelineStage).label}.
                     </div>}
 
-                  {jobParts.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="No parts linked empty state" className="glass-card" style={{
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)",
+                  {jobParts.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="No parts linked empty state" style={{
+            background: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             padding: "16px",
             color: "var(--danger)",
@@ -486,11 +471,8 @@ export default function StockCataloguePageUi(props) {
                       <strong>{pendingJobParts.length} part(s)</strong> awaiting stock or action for
                       this VHC. Ensure orders are raised or picked.
                     </div>}
-                </> : <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job empty state" className="glass-card" style={{
-          background: "var(--glass-surface)",
-          backdropFilter: "var(--glass-blur)",
-          WebkitBackdropFilter: "var(--glass-blur)",
-          boxShadow: "var(--glass-shadow)",
+                </> : <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job empty state" style={{
+          background: "var(--surface)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           color: "var(--danger)",
@@ -500,12 +482,9 @@ export default function StockCataloguePageUi(props) {
                 </div>}
         </div>
 
-        <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" className="glass-card glass-card--theme" style={{
+        <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" style={{
       ...cardStyle,
-      background: "var(--glass-theme)",
-      backdropFilter: "var(--glass-blur)",
-      WebkitBackdropFilter: "var(--glass-blur)",
-      boxShadow: "var(--glass-shadow)",
+      backgroundColor: "var(--theme)",
       marginTop: "20px"
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
@@ -549,22 +528,20 @@ export default function StockCataloguePageUi(props) {
                   <input className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
               document.getElementById('location-dropdown').style.display = 'block';
             }} style={{ minWidth: "140px", width: "auto" }} />
-                  <div id="location-dropdown" className="glass-card" style={{
+                  <div id="location-dropdown" style={{
               display: "none",
               position: "absolute",
               top: "100%",
               left: 0,
               right: 0,
               marginTop: "4px",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
+              background: "var(--surface)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               maxHeight: "300px",
               overflowY: "auto",
               zIndex: 1000,
-              boxShadow: "var(--glass-shadow)"
+              boxShadow: "var(--shadow-md)"
             }}>
                     <div onClick={() => {
                 setLocationFilter("all");
@@ -870,11 +847,8 @@ export default function StockCataloguePageUi(props) {
                   {/* Left Column - Stock & Pricing */}
                   <div>
                     {/* Stock Overview Card */}
-                    <div className="glass-card" style={{
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                    <div style={{
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 marginBottom: "16px",
@@ -1020,11 +994,8 @@ export default function StockCataloguePageUi(props) {
                     </div>
 
                     {/* Pricing Card */}
-                    <div className="glass-card" style={{
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                    <div style={{
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 border: "none"
@@ -1121,11 +1092,8 @@ export default function StockCataloguePageUi(props) {
 
                   {/* Right Column - Part Info */}
                   <div>
-                    <div className="glass-card" style={{
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)",
+                    <div style={{
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 border: "none",
@@ -1270,11 +1238,8 @@ export default function StockCataloguePageUi(props) {
                 </div>
 
                 {/* Linked Jobs Table */}
-                <div className="glass-card" style={{
-            background: "var(--glass-surface)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--glass-shadow)",
+                <div style={{
+            background: "var(--surface)",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             border: "none"
@@ -1395,14 +1360,11 @@ export default function StockCataloguePageUi(props) {
                   })}
                         </tbody>
                       </table>
-                    </div> : <div className="glass-card" style={{
+                    </div> : <div style={{
               padding: "24px",
               textAlign: "center",
               color: "var(--text-1)",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              background: "var(--surface)",
               borderRadius: "var(--radius-xs)",
               fontSize: "var(--text-body)"
             }}>

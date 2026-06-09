@@ -305,6 +305,8 @@ const GlobalSearch = ({
 
   const dropdownBackground = "var(--control-menu-bg)";
   const textColor = isDarkMode ? "var(--search-text)" : "var(--text-1)";
+  const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
+  const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
   const dropdownZIndex = 3700;
   const dropdownContent =
@@ -385,7 +387,7 @@ const GlobalSearch = ({
                       <span
                         style={{
                           fontSize: "0.8rem",
-                          color: "var(--control-muted-text)",
+                          color: isDarkMode ? "var(--primary-border)" : "var(--grey-accent)",
                         }}
                       >
                         {item.subtitle}

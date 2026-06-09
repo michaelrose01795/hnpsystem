@@ -67,8 +67,8 @@ export default function HRManagerDashboardUi(props) {
           parentKey="hr-manager-content"
           sectionType="content-card"
           backgroundToken="theme"
-          className="hr-manager-tab-panel glass-card glass-card--theme"
-          style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)", borderRadius: "var(--radius-md)", padding: "10px" }}
+          className="hr-manager-tab-panel"
+          style={{ background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "10px" }}
         >
           <div className="hr-manager-tab-content">
             <ActiveTabComponent />

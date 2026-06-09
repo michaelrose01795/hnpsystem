@@ -86,17 +86,13 @@ export function UiPreviewIndex({ groups }) {
               <li key={item.key}>
                     <Link
                   href={`/dev/ui/${encodeURIComponent(item.key)}`}
-                  className="glass-card"
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     gap: 4,
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--glass-surface)",
-                    backdropFilter: "var(--glass-blur)",
-                    WebkitBackdropFilter: "var(--glass-blur)",
-                    boxShadow: "var(--glass-shadow)",
+                    background: "var(--surface)",
                     textDecoration: "none",
                     color: "var(--text-1)"
                   }}>

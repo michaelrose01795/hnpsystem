@@ -576,11 +576,6 @@ const isSidebarColumnSection = (section) => {
   return key === "app-layout-sidebar-rail";
 };
 
-const isStructuralLayoutSection = (section) => {
-  const key = String(section?.key || "");
-  return key === "app-layout-main-shell" || key === "app-layout-page-card";
-};
-
 const resolveOverlayBounds = (sections) => {
   const pageShells = (sections || []).filter((section) => section.type === "page-shell");
   if (!pageShells.length) return null;
@@ -1029,7 +1024,6 @@ export default function DevLayoutOverlay() {
         const sidebarSection = fullScreen && isSidebarSection(section);
         const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
         const sidebarColumnSection = fullScreen && isSidebarColumnSection(section);
-        const structuralLayoutSection = isStructuralLayoutSection(section);
         const previewSnippet = truncateLabel(section.textPreview, 36);
         const labelText = mode === "labels"
           ? section.number
@@ -1090,7 +1084,7 @@ export default function DevLayoutOverlay() {
               title="Copy source locator"
             />
             <div
-              className={`${styles.box} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${structuralLayoutSection ? styles.boxStructural : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""}`.trim()}
+              className={`${styles.box} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""}`.trim()}
               style={{
                 left: localRect.left,
                 top: localRect.top,

@@ -111,10 +111,7 @@ const summaryCardStyle = {
   flexDirection: "column",
   justifyContent: "space-between",
   gap: "8px",
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--surface)",
   borderRadius: "var(--radius-md)"
 };
 
@@ -164,10 +161,7 @@ const jobRowStyle = {
   alignItems: "center",
   padding: "12px",
   borderRadius: "var(--radius-sm)",
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--surface)",
   borderBottom: "var(--separating-line)"
 };
 
@@ -246,9 +240,7 @@ function MobileDashboardInner() {
         sectionKey="mobile-dashboard-summary"
         parentKey="mobile-dashboard-page"
         sectionType="content-card"
-        padding="var(--section-card-padding)"
-        className="glass-card glass-card--theme"
-        style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
+        padding="var(--section-card-padding)">
         <DevLayoutSection
           sectionKey="mobile-dashboard-summary-grid"
           parentKey="mobile-dashboard-summary"
@@ -275,9 +267,7 @@ function MobileDashboardInner() {
             sectionKey="mobile-dashboard-today"
             parentKey="mobile-dashboard-workload"
             sectionType="content-card"
-            padding="var(--section-card-padding)"
-            className="glass-card glass-card--theme"
-            style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
+            padding="var(--section-card-padding)">
             <div style={sectionHeaderStyle}>
               <h2 style={sectionHeadingStyle}>Today</h2>
               <span style={countBadgeStyle}>{today.length} visit{today.length === 1 ? "" : "s"}</span>
@@ -298,9 +288,7 @@ function MobileDashboardInner() {
             sectionKey="mobile-dashboard-upcoming"
             parentKey="mobile-dashboard-workload"
             sectionType="content-card"
-            padding="var(--section-card-padding)"
-            className="glass-card glass-card--theme"
-            style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
+            padding="var(--section-card-padding)">
             <div style={sectionHeaderStyle}>
               <h2 style={sectionHeadingStyle}>Upcoming</h2>
               <span style={countBadgeStyle}>{upcoming.length} job{upcoming.length === 1 ? "" : "s"}</span>
@@ -322,9 +310,7 @@ function MobileDashboardInner() {
           sectionKey="mobile-dashboard-quick-actions"
           parentKey="mobile-dashboard-grid"
           sectionType="content-card"
-          padding="var(--section-card-padding)"
-          className="glass-card glass-card--theme"
-          style={{ background: "var(--glass-theme)", backdropFilter: "var(--glass-blur)", WebkitBackdropFilter: "var(--glass-blur)", boxShadow: "var(--glass-shadow)" }}>
+          padding="var(--section-card-padding)">
           <div style={sectionHeaderStyle}>
             <h2 style={sectionHeadingStyle}>Quick actions</h2>
           </div>
@@ -346,7 +332,6 @@ function SummaryCard({ label, value }) {
       sectionKey={`mobile-dashboard-summary-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
       parentKey="mobile-dashboard-summary-grid"
       sectionType="content-card"
-      className="glass-card"
       style={summaryCardStyle}>
       <span style={summaryLabelStyle}>{label}</span>
       <strong style={summaryValueStyle}>{value}</strong>
@@ -360,7 +345,6 @@ function JobRow({ job, parentKey }) {
       sectionKey={`mobile-dashboard-job-row-${job.id}`}
       parentKey={parentKey}
       sectionType="list-row"
-      className="glass-card"
       style={jobRowStyle}>
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>

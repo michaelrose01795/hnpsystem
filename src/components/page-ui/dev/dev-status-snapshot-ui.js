@@ -57,11 +57,8 @@ export default function StatusSnapshotDevPageUi(props) {
     color: "var(--danger)",
     marginBottom: "16px"
   }}>{error}</div>}
-      {snapshot && <pre className="glass-card" style={{
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
-    boxShadow: "var(--glass-shadow)",
+      {snapshot && <pre style={{
+    background: "var(--surface)",
     padding: "16px",
     borderRadius: "var(--radius-xs)",
     overflowX: "auto"

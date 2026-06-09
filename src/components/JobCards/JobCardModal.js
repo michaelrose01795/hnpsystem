@@ -377,11 +377,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             style={{
               marginBottom: "24px", // Space below
               padding: "16px", // Inner padding
-              // Liquid Glass — active clock-ins section card.
-              backgroundColor: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)",
+              backgroundColor: "var(--surface)", // Light red bg
               borderRadius: "var(--radius-xs)", // Rounded
             }}
           >

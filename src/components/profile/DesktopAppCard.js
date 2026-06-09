@@ -107,16 +107,13 @@ function formatDate(value) {
 
 // Card visual contract — mirrors ProfileCard in ProfileWorkTab.js.
 const cardStyle = {
-  // Liquid Glass — frosted surface + blur + glass shadow.
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
+  background: "var(--profile-card-bg, var(--surface))",
   borderRadius: "var(--radius-md)",
   padding: "16px",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
-  boxShadow: "var(--glass-shadow)",
+  boxShadow: "none",
 };
 
 // Inline SVG monitor icon — keeps the component self-contained, no new asset.

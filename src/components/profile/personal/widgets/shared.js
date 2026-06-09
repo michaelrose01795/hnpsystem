@@ -49,21 +49,13 @@ export const widgetTextAreaStyle = {
 };
 
 export const widgetAccentSurfaceStyle = {
-  // Liquid Glass — theme-tinted widget surface.
-  background: "var(--glass-theme)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--theme)",
   border: "none",
   borderRadius: "var(--radius-md)",
 };
 
 export const widgetInsetSurfaceStyle = {
-  // Liquid Glass — frosted inset widget surface.
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  background: "var(--surface)",
   border: "none",
   borderRadius: "var(--radius-sm)",
 };
@@ -84,12 +76,9 @@ export function getWidgetModalCardStyle(isMobile = false, overrides = {}) {
     width: "100%",
     maxWidth: "min(100%, 720px)",
     maxHeight: isMobile ? "calc(100vh - 16px)" : "calc(100vh - 48px)",
-    // Liquid Glass — widget modal card.
-    background: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    background: "rgba(var(--surface-rgb), 0.98)",
     borderRadius: isMobile ? "18px" : "22px",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "var(--shadow-lg)",
     padding: isMobile ? "16px" : "20px",
     display: "flex",
     flexDirection: "column",

@@ -60,8 +60,7 @@ export default function TrackingDashboardUi(props) {
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
-    padding: "8px 0",
-    overflow: "visible"
+    padding: "8px 0"
   }}>
         <DevLayoutSection sectionKey="tracking-page-body" parentKey="tracking-page" sectionType="section-shell" style={{
       display: "flex",
@@ -69,8 +68,7 @@ export default function TrackingDashboardUi(props) {
       gap: isMobileView ? "16px" : "18px",
       width: "100%",
       maxWidth: "100%",
-      minWidth: 0,
-      overflow: "visible"
+      minWidth: 0
     }}>
           <div style={{
         display: "flex",
@@ -78,10 +76,7 @@ export default function TrackingDashboardUi(props) {
         alignItems: "center",
         gap: "12px",
         flexWrap: "wrap",
-        width: "100%",
-        position: "relative",
-        zIndex: 2,
-        overflow: "visible"
+        width: "100%"
       }}>
               {tabs.length > 1 && (
               <DevLayoutSection sectionKey="tracking-page-tabs" parentKey="tracking-page-body" sectionType="toolbar" style={{
@@ -89,8 +84,7 @@ export default function TrackingDashboardUi(props) {
           width: "fit-content",
           maxWidth: "100%",
           background: "transparent",
-          padding: 0,
-          overflow: "visible"
+          padding: 0
         }}>
                 <TabGroup items={tabs.map(tab => ({
             label: tab.label,
@@ -105,8 +99,7 @@ export default function TrackingDashboardUi(props) {
           alignItems: "center",
           flex: "1 1 auto",
           minWidth: 0,
-          justifyContent: "center",
-          overflow: "visible"
+          justifyContent: "center"
         }}>
                   <SearchBar
             value={sharedSearchValue}
@@ -125,10 +118,7 @@ export default function TrackingDashboardUi(props) {
           gap: "var(--space-sm)",
           flexWrap: "wrap",
           alignItems: "center",
-          marginLeft: "auto",
-          position: "relative",
-          zIndex: 3,
-          overflow: "visible"
+          marginLeft: "auto"
         }}>
                   <Button variant="secondary" size="sm" onClick={loadActiveTab}>
                     Refresh

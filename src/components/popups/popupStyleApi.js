@@ -23,12 +23,7 @@ export const popupStyleApi = {
     zIndex: 9999,
   },
   card: {
-    // Liquid Glass — shared popup card. Frosted surface (var(--glass-surface))
-    // + blur + glass shadow so every PopupModal reads as glass, matching
-    // LayerSurface / .glass-card (see theme.css glass tokens).
-    backgroundColor: "var(--glass-surface)",
-    backdropFilter: "var(--glass-blur)",
-    WebkitBackdropFilter: "var(--glass-blur)",
+    backgroundColor: "var(--surface)",
     color: "var(--text-1)",
     border: "none",
     borderRadius: "var(--radius-lg)",
@@ -39,7 +34,7 @@ export const popupStyleApi = {
     overscrollBehavior: "contain",
     position: "relative",
     margin: "auto",
-    boxShadow: "var(--glass-shadow)",
+    boxShadow: "none",
   },
 };
 

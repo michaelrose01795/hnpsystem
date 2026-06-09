@@ -88,10 +88,7 @@ const JOB_PART_STATUSES = [
 
 
 const cardStyle = {
-  background: "var(--glass-surface)",
-  backdropFilter: "var(--glass-blur)",
-  WebkitBackdropFilter: "var(--glass-blur)",
-  boxShadow: "var(--glass-shadow)",
+  backgroundColor: "var(--section-card-bg)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)"
 };
@@ -975,18 +972,14 @@ function StockCataloguePage() {
           </div>
 
           <div
-            className="glass-card"
             style={{
               marginTop: "12px",
               padding: "12px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)"
+              background: "var(--surface)"
             }}>
-
+            
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
             <div style={{ color: "var(--text-1)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
@@ -1039,18 +1032,14 @@ function StockCataloguePage() {
 
             {addToJobResult &&
             <div
-              className="glass-card"
               style={{
                 border: "none",
                 borderRadius: "var(--radius-sm)",
                 padding: "12px",
                 marginBottom: "12px",
-                background: "var(--glass-surface)",
-                backdropFilter: "var(--glass-blur)",
-                WebkitBackdropFilter: "var(--glass-blur)",
-                boxShadow: "var(--glass-shadow)"
+                background: "var(--surface)"
               }}>
-
+              
                 <div style={{ fontWeight: 700, color: "var(--primary)" }}>
                   Job #{addToJobResult.jobNumber}
                 </div>
@@ -1263,18 +1252,14 @@ function StockCataloguePage() {
 
           {showNewPartForm &&
           <div
-            className="glass-card"
             style={{
               border: "none",
               borderRadius: "var(--radius-sm)",
               padding: "16px",
               marginBottom: "12px",
-              background: "var(--glass-surface)",
-              backdropFilter: "var(--glass-blur)",
-              WebkitBackdropFilter: "var(--glass-blur)",
-              boxShadow: "var(--glass-shadow)"
+              background: "var(--surface)"
             }}>
-
+            
               <label style={{ display: "block", marginBottom: "10px" }}>
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Paste Bulk Data
