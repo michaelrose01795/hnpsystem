@@ -1,9 +1,46 @@
-NExt job
+Appontment page
 TODO
-also improve the layout of the "Workshop Queue User 7 Tech 4 | 1.2.1.1.1.2.1.1.10 key: workshop-queue-user-7-tech-4 source: src/components/Workshop/QueuePlanner/WorkshopQueueBoard.js:192 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueueBoard.js:64 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.2.1.1)" sections for example. 
+improve the layout of the and design of the whole table, have it follow the spacing aroiund the edges etc as well as the layout of the text within the "Tue 9 Jun Jobs 0 Booked 0.0h Capacity 40.0h Utilisation 0% " sectiona nd the layouit of the title card within the tables. remove the sunday days from the date column, and make the saturday date set to amber text colour to identify as a saturday. only the "13 Jun" for example. c 
 
 TODO
-have it so the "Workshop Queue User 10 Tech 0 | 1.2.1.1.1.3.1.1.2 key: workshop-queue-user-10-tech-0 source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:325 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.3.1.1)" section is the same colour as the "Workshop Queue Header Technicians | 1.2.1.1.1.3.1.1.1 key: workshop-queue-header-technicians source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:351 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.3.1.1)" section etc
+have it so the "Appointments Scheduler Viewport | 1.2.2.1.1.2.2 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:348 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" card follows round corners liek the staffglobal.css setting. also allow the user to scroll wihtin the "Appointments Scheduler Viewport | 1.2.2.1.1.2.2 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:348 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" section. have it so the have it so the dev overlay within the "Appointments Scheduler Viewport | 1.2.2.1.1.2.1 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:304 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" section is improved. 
+
+TODO
+have it so the tiles within the table are "--surface" colour background. have it so the style of the "Appointments Scheduler Viewport | 1.2.2.1.1.2.1 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:304 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" table is simular to "/job-cards/waiting/nextjobs" table ui style wise with the right side being colour and top and the same with the car style, text size, gaps within the sections etc as well as the tiles to be the same colour etc. 
+
+TODO
+remove the "Appointments Day Jobs | 1.2.2.1.1.3 key: appointments-day-jobs source: src/components/page-ui/appointments/appointments-ui.js:1169 route: /appointments parent appointments-planner (1.2.2.1.1) | 1 child" seciton, have it so the can click within one of the time columns not the date column the time column to open a popup which shows the "Appointments Day Jobs | 1.2.2.1.1.3 key: appointments-day-jobs source: src/components/page-ui/appointments/appointments-ui.js:1169 route: /appointments parent appointments-planner (1.2.2.1.1) | 1 child" table stytle layout with the jobs all in a list view etc.
+
+
+
+
+
+
+NExt job 
+TODO
+have it so withint he "Unassigned Jobs" column when the user searches for soemthing it does filter the other cards out it just highlights the card seaching for exactly like the "Checked In Jobs" section etc
+
+
+
+
+/dev/user-diagnostic
+Restore /dev/user-diagnostic layout to the wide/full-width version from git commit a8c0674f (@ ui update 6) without reverting button styling or bringing back liquid-glass buttons: compare with git show a8c0674f:src/components/page-ui/dev/dev-user-diagnostic-ui.js and git show a8c0674f:src/pages/dev/user-diagnostic.js; locally update only src/components/page-ui/dev/dev-user-diagnostic-ui.js and src/pages/dev/user-diagnostic.js; restore section2 sizing so user-diagnostic-page uses width: "100%", maxWidth: "100%", flexDirection: "column", gap: "var(--page-stack-gap)", padding: "8px 0"; remove the current constrained 1500px page-shell behaviour and remove or neutralise the user-diagnostic-diagnostics maxWidth: "min(100%, 900px)" cap so diagnostics/results span full width again; restore GlobalUiShowcase sizing to width: "100%", flex: "1 1 100%", maxWidth: "100%", paddingRight: 0 instead of the current narrow aside sizing; preserve current button components/variants/labels and non-layout styling; follow AGENTS.md, do not add banned card borders, hardcoded colours, or global design changes, run npm run check:borders, then report changed paths, files reviewed, DB schema checked no because this is layout-only, and scope local.
+
+
+TEST AUDI
+Perform a full audit of the H&P DMS and build a comprehensive automated testing and quality assurance system covering all routes, permissions, workflows, APIs, database relationships, UI components, staff styling, customer styling, responsive layouts, audit logging and role-based access. Automatically identify existing testing coverage, missing coverage, workflow risks, permission issues, broken relationships, UI inconsistencies, performance concerns, accessibility issues, console errors, loading state failures, regression risks and edge cases, then implement a scalable testing solution that continuously validates the entire platform as new features are added, using realistic dealership scenarios and existing system behaviour to maximise bug detection before production use, and produce a prioritised audit report of all issues discovered.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

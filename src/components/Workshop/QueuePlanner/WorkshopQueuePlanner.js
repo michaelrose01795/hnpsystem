@@ -317,6 +317,7 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
   const totalHours = row.jobs.reduce((sum, job) => sum + (estimateJobHours(job) || 0), 0);
   const capacity = getCapacity(totalHours);
   const unit = row.isMot ? (row.jobs.length === 1 ? "MOT" : "MOTs") : row.jobs.length === 1 ? "job" : "jobs";
+  const initial = String(row.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   return (
     <React.Fragment>
@@ -327,13 +328,24 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
         data-dev-section-type="content-card"
         data-dev-background-token="theme"
         data-dev-text-preview={`${row.name} ${row.role} ${row.jobs.length} ${unit}`}
-        style={{ position: "sticky", left: 0, zIndex: 2, display: "flex", alignItems: "center", gap: "11px", padding: "14px", minHeight: "var(--wqp-row-min-h)", background: "var(--theme)", boxShadow: HAIRLINE_BOTTOM }}
+        style={{ position: "sticky", left: 0, zIndex: 2, display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", minHeight: "var(--wqp-row-min-h)", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: HAIRLINE_BOTTOM }}
       >
-        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "3px", flex: "1 1 auto" }}>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "var(--text-1)" }} title={capacity.label}>
+        {/* Technician initial — the frozen label column shares the group-header tint */}
+        <span
+          aria-hidden="true"
+          style={{ flexShrink: 0, width: "var(--wqp-avatar)", height: "var(--wqp-avatar)", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", background: "rgba(var(--accent-base-rgb), 0.16)", color: "var(--accent-strong)", fontSize: "15px", fontWeight: 800 }}
+        >
+          {initial}
+        </span>
+        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 auto" }}>
+          <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0, fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }} title={capacity.label}>
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, background: capacity.dot }} />
-            {row.jobs.length} {unit} • {shortHours(totalHours)}
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.jobs.length} {unit} • {shortHours(totalHours)}</span>
+          </span>
+          {/* Workload bar — visualises total hours against the 7.5h daily target */}
+          <span style={{ position: "relative", display: "block", width: "100%", height: "4px", borderRadius: "var(--radius-pill)", background: "rgba(var(--accent-base-rgb), 0.12)", overflow: "hidden" }} title={`${capacity.pct}% of daily capacity`}>
+            <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${capacity.pct}%`, borderRadius: "var(--radius-pill)", background: capacity.dot }} />
           </span>
         </div>
       </div>
@@ -874,6 +886,7 @@ export default function WorkshopQueuePlanner({
           --wqp-assigned-w: 232px;
           --wqp-gap: 14px;
           --wqp-row-min-h: 104px;
+          --wqp-avatar: 38px;
         }
         @media (max-width: 1279px) {
           .wqp-shell {
@@ -889,6 +902,7 @@ export default function WorkshopQueuePlanner({
             --wqp-card-w: 184px;
             --wqp-assigned-w: 204px;
             --wqp-row-min-h: 96px;
+            --wqp-avatar: 32px;
           }
           .wqp-searchwrap {
             margin-left: 0;

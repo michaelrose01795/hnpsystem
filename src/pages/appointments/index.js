@@ -398,6 +398,7 @@ export default function Appointments() {
   // ---------------- States ----------------
   const [dates, setDates] = useState([]);
   const [selectedDay, setSelectedDay] = useState(new Date());
+  const [scheduleViewMode, setScheduleViewMode] = useState("month"); // scheduler viewport filter: "month" (default) | "day"
   const [notes, setNotes] = useState({});
   const [showNotePopup, setShowNotePopup] = useState(false);
   const [currentNote, setCurrentNote] = useState("");
@@ -738,6 +739,18 @@ export default function Appointments() {
     }
     setJobNumber(event.target.value);
   };
+
+  // Calendar picker (in the booking toolbar) → selected day. Parses the
+  // native date input's "YYYY-MM-DD" value at LOCAL midnight so the scheduler
+  // window, the day-jobs table and the booking date all stay on the same day
+  // regardless of timezone.
+  const handleSelectScheduleDate = useCallback((value) => {
+    if (!value) return;
+    const next = new Date(`${value}T00:00:00`);
+    if (!Number.isNaN(next.getTime())) {
+      setSelectedDay(next);
+    }
+  }, []);
 
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
@@ -1281,6 +1294,13 @@ export default function Appointments() {
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
+  const getSchedulerBookingHours = (job) => {
+    if (!job?.id) return 0;
+    const requestHours = parseHoursValue(jobRequestHours[job.id]) || 0;
+    const vhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
+    return requestHours + vhcHours + 0.5;
+  };
+
   // ---------------- Filtered Jobs for Selected Day ----------------
   const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
   const checkinStatsForSelectedDay = getCheckinStatsForDate(selectedDay);
@@ -1330,7 +1350,7 @@ export default function Appointments() {
   };
 
   // ---------------- Render ----------------
-  return <AppointmentsUi view="section1" CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleShowStaffOff={handleShowStaffOff} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} jobNumber={jobNumber} jobsLoading={jobsLoading} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} schedulerGetFinish={getEstimatedFinishTime} schedulerJobs={jobs} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} time={time} timeSlots={timeSlots} />;
+  return <AppointmentsUi view="section1" CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleSelectScheduleDate={handleSelectScheduleDate} scheduleViewMode={scheduleViewMode} setScheduleViewMode={setScheduleViewMode} handleShowStaffOff={handleShowStaffOff} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} jobNumber={jobNumber} jobsLoading={jobsLoading} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} schedulerGetBookingHours={getSchedulerBookingHours} schedulerGetFinish={getEstimatedFinishTime} schedulerJobs={jobs} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} time={time} timeSlots={timeSlots} />;
 
 
 
