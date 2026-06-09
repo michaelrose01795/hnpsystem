@@ -1,12 +1,13 @@
 NExt job
 TODO
-remove the "Technician" text from the "Tech 5 Technician 1 job • 1h" sections. but make the "Technician" heading bigger. also make it so the vertical filled theme colour line wihtin the "Tech 5 Technician 1 job • 1h" section is removed as well. also remove the "Today Tomorrow This Week All" filter and just have the section to show "All" filter always and then remove all of those buttons from the seciton. move the "Types" into one filter dropdown. 
-
+also improve the layout of the "Workshop Queue User 7 Tech 4 | 1.2.1.1.1.2.1.1.10 key: workshop-queue-user-7-tech-4 source: src/components/Workshop/QueuePlanner/WorkshopQueueBoard.js:192 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueueBoard.js:64 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.2.1.1)" sections for example. 
 
 TODO
-remove the horizontal and vertical borders from the tech and mot section full
+have it so the "Workshop Queue User 10 Tech 0 | 1.2.1.1.1.3.1.1.2 key: workshop-queue-user-10-tech-0 source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:325 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.3.1.1)" section is the same colour as the "Workshop Queue Header Technicians | 1.2.1.1.1.3.1.1.1 key: workshop-queue-header-technicians source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:351 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/waiting/nextjobs parent workshop-queue-board-grid (1.2.1.1.1.3.1.1)" section etc
 
-card backgrounds
+
+
+
 
 
 TODO

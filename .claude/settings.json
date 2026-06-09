@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npm uninstall *)",
       "Bash(git branch *)",
-      "Bash(echo \"=== build exit code: $? ===\")"
+      "Bash(echo \"=== build exit code: $? ===\")",
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if \\($p\\) { Write-Output \"Stopping dev server PID $p\"; Stop-Process -Id $p -Force; Start-Sleep -Seconds 2 } else { Write-Output \"No server on 3000\" }; if \\(Test-Path .next\\) { Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Write-Output \".next cache cleared\" })",
+      "Bash(break)",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(echo \"check:layers exit=$?\")",
+      "Bash(echo \"eslint exit=$?\")"
     ]
   }
 }
