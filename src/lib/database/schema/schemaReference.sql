@@ -1902,6 +1902,7 @@ CREATE TABLE public.users (
   contracted_hours_per_week numeric,
   password_algo text NOT NULL DEFAULT 'plaintext'::text,
   password_updated_at timestamp with time zone,
+  extension text,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );

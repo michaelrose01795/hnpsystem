@@ -31,6 +31,8 @@ export default function GlobalTooltip() {
     let activeEl = null;     // element currently being described
     let restoreTitle = null; // original `title` we stripped (so native tooltip stays suppressed)
     let showTimer = null;
+    let pointerX = 0;        // last known cursor position — the tooltip follows it
+    let pointerY = 0;
 
     const getTip = () => {
       if (tip) return tip;
@@ -53,23 +55,23 @@ export default function GlobalTooltip() {
       return "";
     };
 
-    const position = (el) => {
+    const position = () => {
       if (!tip) return;
-      const rect = el.getBoundingClientRect();
       // Reset before measuring so width/height reflect the new text, not the last position.
       tip.style.left = "0px";
       tip.style.top = "0px";
       const tw = tip.offsetWidth;
       const th = tip.offsetHeight;
 
-      const centreX = rect.left + rect.width / 2;
-      let left = centreX - tw / 2;
+      // Follow the cursor: anchor the tooltip to the pointer rather than the
+      // trigger element, so it shows exactly where the cursor is.
+      let left = pointerX - tw / 2;
       left = Math.max(VIEWPORT_PAD, Math.min(left, window.innerWidth - tw - VIEWPORT_PAD));
 
-      // Prefer below the trigger; flip above only if it would overflow the viewport bottom.
-      let top = rect.bottom + EDGE_GAP;
-      if (top + th > window.innerHeight - VIEWPORT_PAD && rect.top - EDGE_GAP - th > VIEWPORT_PAD) {
-        top = rect.top - EDGE_GAP - th;
+      // Prefer below the cursor; flip above only if it would overflow the viewport bottom.
+      let top = pointerY + EDGE_GAP;
+      if (top + th > window.innerHeight - VIEWPORT_PAD && pointerY - EDGE_GAP - th > VIEWPORT_PAD) {
+        top = pointerY - EDGE_GAP - th;
       }
 
       tip.style.left = `${Math.round(left)}px`;
@@ -86,7 +88,7 @@ export default function GlobalTooltip() {
       node.style.textAlign = multiline ? "left" : "center";
       node.classList.add("is-visible");
       node.setAttribute("aria-hidden", "false");
-      position(el);
+      position();
     };
 
     const hide = () => {
@@ -124,9 +126,18 @@ export default function GlobalTooltip() {
     };
 
     const onOver = (event) => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
       const el = event.target?.closest?.(TRIGGER_SELECTOR);
       if (!el || el.classList?.contains("app-global-tooltip")) return;
       begin(el);
+    };
+
+    // Keep the tooltip pinned to the cursor as it moves across the trigger.
+    const onMove = (event) => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (activeEl && tip && tip.classList.contains("is-visible")) position();
     };
 
     const onOut = (event) => {
@@ -139,7 +150,13 @@ export default function GlobalTooltip() {
 
     const onFocusIn = (event) => {
       const el = event.target?.closest?.(TRIGGER_SELECTOR);
-      if (el && !el.classList?.contains("app-global-tooltip")) begin(el);
+      if (el && !el.classList?.contains("app-global-tooltip")) {
+        // No cursor for keyboard focus — fall back to the centre of the trigger.
+        const rect = el.getBoundingClientRect();
+        pointerX = rect.left + rect.width / 2;
+        pointerY = rect.bottom;
+        begin(el);
+      }
     };
 
     const dismiss = () => hide();
@@ -148,6 +165,7 @@ export default function GlobalTooltip() {
     };
 
     document.addEventListener("pointerover", onOver, true);
+    document.addEventListener("pointermove", onMove, true);
     document.addEventListener("pointerout", onOut, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", dismiss, true);
@@ -157,6 +175,7 @@ export default function GlobalTooltip() {
 
     return () => {
       document.removeEventListener("pointerover", onOver, true);
+      document.removeEventListener("pointermove", onMove, true);
       document.removeEventListener("pointerout", onOut, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", dismiss, true);

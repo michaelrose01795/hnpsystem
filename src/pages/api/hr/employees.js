@@ -129,7 +129,7 @@ async function handleCreateOrUpdate(req, res) {
     const { data: priorRow } = await supabaseService
       .from("users")
       .select(
-        "user_id, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, home_address"
+        "user_id, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, home_address"
       )
       .eq("user_id", payload.userId)
       .maybeSingle();
@@ -233,7 +233,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
 
   let existingUser = null;
   const existingUserSelect =
-    "user_id, name, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, home_address";
+    "user_id, name, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, home_address";
 
   if (payload?.userId) {
     const { data, error } = await supabaseService
@@ -306,6 +306,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
     last_name: lastName,
     email,
     phone: phone || null,
+    extension: payload.extension || null,
     job_title: jobTitle || null,
     ...buildEmployeeFields(),
   };

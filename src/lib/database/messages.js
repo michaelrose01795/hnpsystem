@@ -25,6 +25,7 @@ const formatUserProfile = (user) => {
     lastName: user.last_name || "",
     email: user.email || "",
     role: user.role || "",
+    extension: user.extension || "",
     name: buildFullName(user),
   };
 };
@@ -295,7 +296,7 @@ export const getThreadsForUser = async (userId) => {
         role,
         joined_at,
         last_read_at,
-        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role)
+        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role, extension)
       ),
       recent_messages:messages!messages_thread_id_fkey(
         message_id,
@@ -345,7 +346,7 @@ const fetchThreadRecord = async (threadId) => {
         role,
         joined_at,
         last_read_at,
-        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role)
+        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role, extension)
       ),
       recent_messages:messages!messages_thread_id_fkey(
         message_id,
@@ -574,6 +575,60 @@ export const ensureUserForCustomer = async (customerRow = {}) => {
   }
 
   return inserted.user_id;
+};
+
+// Resolve the contact summary shown in the messages thread header for a
+// customer chat: name, phone, most-recent vehicle, and most-recent job number.
+// The customer thread member exposes the linked email (users row provisioned
+// from the customers row), so we look the customer up by email.
+export const getCustomerMessageDetail = async (email) => {
+  const cleaned = String(email || "").trim();
+  if (!cleaned) return null;
+
+  const { data: customer, error: customerError } = await dbClient
+    .from("customers")
+    .select("id, firstname, lastname, name, email, mobile, telephone")
+    .ilike("email", cleaned)
+    .maybeSingle();
+  if (customerError && customerError.code !== "PGRST116") throw customerError;
+  if (!customer?.id) return null;
+
+  const name =
+    String(customer.name || "").trim() ||
+    [customer.firstname, customer.lastname].filter(Boolean).join(" ").trim() ||
+    cleaned;
+  const phone =
+    String(customer.mobile || "").trim() ||
+    String(customer.telephone || "").trim() ||
+    "";
+
+  // Most recent vehicle linked to this customer.
+  const { data: vehicleRows } = await dbClient
+    .from("vehicles")
+    .select("reg_number, make, model, created_at")
+    .eq("customer_id", customer.id)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const vehicleRow = vehicleRows?.[0] || null;
+  const vehicle = vehicleRow
+    ? [
+        String(vehicleRow.reg_number || "").trim(),
+        [vehicleRow.make, vehicleRow.model].filter(Boolean).join(" ").trim(),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  // Most recent job number for this customer.
+  const { data: jobRows } = await dbClient
+    .from("jobs")
+    .select("job_number, created_at")
+    .eq("customer_id", customer.id)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const jobNumber = String(jobRows?.[0]?.job_number || "").trim();
+
+  return { name, phone, vehicle, jobNumber };
 };
 
 const buildJobCustomerThreadHash = (jobNumber) => {

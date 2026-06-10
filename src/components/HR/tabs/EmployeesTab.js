@@ -89,6 +89,7 @@ const DB_COLUMN_TO_FORM_FIELD = {
   first_name: "firstName",
   last_name: "lastName",
   phone: "phone",
+  extension: "extension",
   role: "role",
   job_title: "jobTitle",
   department: "department",
@@ -111,6 +112,7 @@ const FIELD_SECTION_MAP = {
   lastName: "personal",
   email: "personal",
   phone: "personal",
+  extension: "personal",
   department: "employment",
   jobTitle: "employment",
   role: "employment",
@@ -214,6 +216,7 @@ export default function EmployeesTab() {
       lastName: "",
       email: "",
       phone: "",
+      extension: "",
       department: "",
       jobTitle: "",
       role: "",
@@ -411,6 +414,7 @@ export default function EmployeesTab() {
       lastName,
       email: employee.email || "",
       phone: employee.phone || "",
+      extension: employee.extension || "",
       department: employee.department || "",
       jobTitle: employee.jobTitle || "",
       role: employee.role || "",
@@ -1403,6 +1407,9 @@ function EmployeeDetailsFields({
           <FormField label="Phone" errorMessage={fieldErrors.phone}>
             <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
           </FormField>
+          <FormField label="Extension" errorMessage={fieldErrors.extension}>
+            <input type="text" value={values.extension} onChange={update("extension")} style={applyFieldErrorStyle("extension")} placeholder="212" />
+          </FormField>
         </div>
       </div>
 
@@ -1906,6 +1913,7 @@ function humanizeFieldLabel(field) {
     lastName: "Last name",
     email: "Email",
     phone: "Phone",
+    extension: "Extension",
     department: "Department",
     jobTitle: "Job title",
     role: "Role",

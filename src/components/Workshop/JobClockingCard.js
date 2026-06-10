@@ -569,7 +569,10 @@ export default function JobClockingCard() {
                 <thead style={{
                   position: "sticky",
                   top: 0,
-                  backgroundColor: "var(--theme)",
+                  // Opaque sticky header: --theme is translucent, so composite it over
+                  // opaque --surface to stop scrolling rows reading through the heading.
+                  backgroundColor: "var(--surface)",
+                  backgroundImage: "linear-gradient(var(--theme), var(--theme))",
                   zIndex: 1
                 }}>
                   <tr>
@@ -694,7 +697,11 @@ const tableHeaderStyle = {
   color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
-  borderBottom: "2px solid var(--separating-line)"
+  borderBottom: "2px solid var(--separating-line)",
+  // Opaque header cell (matches the sticky thead) so rows can't show through
+  // behind the heading when the table body scrolls.
+  backgroundColor: "var(--surface)",
+  backgroundImage: "linear-gradient(var(--theme), var(--theme))"
 };
 
 const tableCellStyle = {

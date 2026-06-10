@@ -45,6 +45,17 @@ const getDateKey = (dateInput) => {
   return dateObj.toDateString();
 };
 
+// Local YYYY-MM-DD key. Must use local date parts (NOT toISOString, which is
+// UTC) so it matches the scheduler's isoDateKey and the stored appointment.date.
+// Using toISOString here shifts the key back a day under BST (local midnight =
+// previous-day 23:00 UTC), which made day clicks show the wrong day's jobs.
+const toLocalDateKey = (dateInput) => {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 // Generate list of dates excluding Sundays
 const generateDates = (daysAhead = 60) => {
   const result = [];
@@ -765,7 +776,7 @@ export default function Appointments() {
 
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
-    const appointmentDate = customDate || (selectedDay ? selectedDay.toISOString().split("T")[0] : null);
+    const appointmentDate = customDate || (selectedDay ? toLocalDateKey(selectedDay) : null);
 
     // ✅ Validation
     if (!jobNumber || jobNumber.trim() === "") {
@@ -1178,7 +1189,7 @@ export default function Appointments() {
 
   // ✅ Enhanced job counts with new job categories - FIXED to handle non-array requests
   const getJobCounts = (date) => {
-    const jobsForDate = jobs.filter((j) => j.appointment?.date === date.toISOString().split("T")[0]);
+    const jobsForDate = jobs.filter((j) => j.appointment?.date === toLocalDateKey(date));
     const totals = {
       totalJobs: jobsForDate.length,
       services: 0,
@@ -1225,7 +1236,7 @@ export default function Appointments() {
   };
 
   const getCheckinStatsForDate = (date) => {
-    const targetDateKey = date.toISOString().split("T")[0];
+    const targetDateKey = toLocalDateKey(date);
     const appointmentsForDate = jobs.filter((job) => job.appointment?.date === targetDateKey);
     const total = appointmentsForDate.length;
     const checkedIn = appointmentsForDate.filter((job) => isJobActuallyCheckedIn(job)).length;
@@ -1269,9 +1280,10 @@ export default function Appointments() {
   const getCustomerStatusBadgeColors = (status) => {
     const normalized = (status || "").toLowerCase();
     if (normalized === "waiting") {
+      // Red danger badge — matches staffglobal.css .app-badge--danger theme.
       return {
-        backgroundColor: "var(--surface)",
-        color: "var(--danger)"
+        backgroundColor: "var(--danger-surface)",
+        color: "var(--danger-dark)"
       };
     }
     if (normalized === "loan car") {
@@ -1313,7 +1325,7 @@ export default function Appointments() {
   };
 
   // ---------------- Filtered Jobs for Selected Day ----------------
-  const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
+  const jobsForDay = jobs.filter((j) => j.appointment?.date === toLocalDateKey(selectedDay));
   const checkinStatsForSelectedDay = getCheckinStatsForDate(selectedDay);
 
   const filteredJobs = jobsForDay.filter((job) => {

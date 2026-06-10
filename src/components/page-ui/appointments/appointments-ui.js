@@ -1458,13 +1458,17 @@ export default function AppointmentsUi(props) {
                     position: "sticky",
                     top: 0,
                     zIndex: 1,
-                    background: "var(--theme-hover)"
+                    // Opaque sticky header: --theme-hover is translucent, so on its own the
+                    // scrolling rows show through. Composite the tint over opaque --surface
+                    // so the rows stop cleanly at the header and never read through it.
+                    background: "linear-gradient(var(--theme-hover), var(--theme-hover)), var(--surface)"
                   }}>
                   <tr>
                   {["Time", "Job #", "Reg", "Vehicle", "Customer", "Job Type", "Customer Status", "EST Time", "Check-In"].map((head) => <th key={head} style={{
                         textAlign: head === "Check-In" ? "center" : "left",
                         padding: "12px 14px",
-                        background: "var(--theme-hover)",
+                        // Same opaque tint-over-surface stack as the thead above.
+                        background: "linear-gradient(var(--theme-hover), var(--theme-hover)), var(--surface)",
                         color: "var(--text-1)",
                         fontWeight: "700",
                         fontSize: "11px",

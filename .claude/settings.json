@@ -17,7 +17,9 @@
       "Bash(node tmp_verify.js)",
       "Bash(node tmp_diag.js)",
       "Bash(sed -n '361,373p' src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js)",
-      "Bash(sed -n '268,279p' src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js)"
+      "Bash(sed -n '268,279p' src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js)",
+      "Bash(npm run *)",
+      "Bash(echo \"exit-grep:$?\")"
     ]
   }
 }

@@ -1352,7 +1352,11 @@ html.staff-scope .app-data-table thead th {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: var(--secondary-pressed);
+  /* OPAQUE sticky header: --secondary-pressed is a translucent tint, so on its
+     own the scrolling rows would show through the heading. Layer the tint over
+     an opaque --surface so the same look stays fully solid — rows stop cleanly
+     at the bottom of the header and never read through it. */
+  background: linear-gradient(var(--secondary-pressed), var(--secondary-pressed)), var(--surface);
   background-clip: padding-box;
   color: var(--text-1);
   font-size: var(--text-label);
@@ -1364,7 +1368,8 @@ html.staff-scope .app-data-table thead {
   position: sticky;
   top: 0;
   z-index: 29;
-  background: var(--secondary-pressed);
+  /* Same opaque tint-over-surface stack as the th above. */
+  background: linear-gradient(var(--secondary-pressed), var(--secondary-pressed)), var(--surface);
 }
 
 html.staff-scope .app-data-table tbody {
@@ -3095,6 +3100,9 @@ html.staff-scope .timepicker-api__required {
 html.staff-scope .calendar-api__menu {
   z-index: 1000;
   width: 320px;
+  /* Floor the popup so the 7 weekday columns always have room to sit on one
+     line — never compress narrow enough for the day labels to overlap. */
+  min-width: 320px;
   padding: 16px;
   animation: calendar-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -3118,6 +3126,9 @@ html.staff-scope .calendar-api__menu {
     left: 50%;
     transform: translate(-50%, -50%);
     width: calc(100vw - 32px);
+    /* Let the popup shrink to the phone viewport here — the desktop 320px
+       floor would otherwise overflow narrow screens. */
+    min-width: 0;
     max-width: 320px;
     animation: none;
     z-index: 1250;
@@ -3566,6 +3577,8 @@ html.staff-scope .calendar-api__weekday {
   font-weight: 600;
   color: var(--control-muted-text);
   text-transform: uppercase;
+  /* Keep each weekday label on a single line so they never wrap or overlap. */
+  white-space: nowrap;
 }
 
 html.staff-scope .calendar-api__days {

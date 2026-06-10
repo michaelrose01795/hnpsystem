@@ -372,7 +372,9 @@ export default function TechConsumableRequestPageUi(props) {
           background: "var(--surface)"
         }}>
                 <thead data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-consumables-request-auto-data-table-1" style={{
-            background: "var(--theme-hover)",
+            // Opaque sticky header: --theme-hover is translucent, so composite it over
+            // opaque --surface so scrolling rows never read through the heading.
+            background: "linear-gradient(var(--theme-hover), var(--theme-hover)), var(--surface)",
             position: "sticky",
             top: 0,
             zIndex: 1

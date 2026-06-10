@@ -15,6 +15,7 @@ const USER_COLUMNS = [
   "role",
   "job_title",
   "phone",
+  "extension",
   "created_at",
   "updated_at",
   "dark_mode",

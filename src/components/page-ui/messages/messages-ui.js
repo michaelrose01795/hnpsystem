@@ -35,7 +35,10 @@ export default function MessagesPageUi(props) {
     composeError,
     composeMode,
     conversationError,
+    customerDetail,
     dbUserId,
+    messageFilter = "all",
+    handleSelectMessageFilter,
     directory,
     directoryLoading,
     directorySearch,
@@ -90,7 +93,6 @@ export default function MessagesPageUi(props) {
     newChatModalOpen,
     openBookingsThread,
     openGroupEditModal,
-    openSystemNotificationsThread,
     openThread,
     orderedSystemNotifications,
     handleCreateJobFromRequest,
@@ -144,6 +146,23 @@ export default function MessagesPageUi(props) {
       String(member?.role || "").toLowerCase().includes("customer")
     )
   );
+  // True for any thread that has a customer member, regardless of thread type —
+  // drives the customer summary line in the thread header.
+  const headerHasCustomerMember = Boolean(
+    activeThread?.members?.some((member) =>
+      String(member?.role || member?.profile?.role || "")
+        .toLowerCase()
+        .includes("customer")
+    )
+  );
+  // The 5 left-bar category filters. "system" opens the read-only system view.
+  const MESSAGE_FILTERS = [
+    { key: "all", label: "All" },
+    { key: "unread", label: "Unread" },
+    { key: "customer", label: "Customer" },
+    { key: "team", label: "Team" },
+    { key: "system", label: "System" },
+  ];
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -161,6 +180,93 @@ export default function MessagesPageUi(props) {
     minHeight: isMobileView ? "100%" : 0,
     overflow: "hidden"
   }}>
+        <DevLayoutSection sectionKey="messages-top-bar" parentKey="messages-page-shell" sectionType="filter-row" style={{
+      display: isMobileView && mobilePanelView === "conversation" ? "none" : "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "var(--space-sm)",
+      flexWrap: "wrap",
+      flex: "0 0 auto"
+    }}>
+          {/* Left: category filter pills */}
+          <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-1)",
+        flexWrap: "wrap",
+        minWidth: 0
+      }}>
+            {MESSAGE_FILTERS.map(item => {
+          const active = item.key === "system"
+            ? activeSystemView
+            : messageFilter === item.key && !activeSystemView && !activeBookingsView;
+          return <button key={item.key} type="button" className={`app-btn app-btn--${active ? "primary" : "secondary"} app-btn--pill`} onClick={() => handleSelectMessageFilter?.(item.key)} style={{
+            height: "44px",
+            minWidth: 0
+          }}>
+                {item.label}
+                {item.key === "system" && hasSystemUnread && <span aria-label="Unread system messages" style={{
+              width: "var(--space-sm)",
+              height: "var(--space-sm)",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: "currentColor",
+              display: "inline-block",
+              marginLeft: "var(--space-1)",
+              flex: "0 0 auto"
+            }} />}
+              </button>;
+        })}
+          </div>
+
+          {/* Right: search + select/remove + add */}
+          <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-sm)",
+        flex: "1 1 320px",
+        justifyContent: "flex-end",
+        minWidth: 0
+      }}>
+            <div style={{
+          flex: "1 1 auto",
+          minWidth: 0,
+          maxWidth: "360px"
+        }}>
+              <SearchBar placeholder="Search messages..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
+            width: "100%",
+            margin: 0
+          }} />
+            </div>
+            {threadSelectionMode ? <>
+                <span style={{
+            color: "var(--text-2)",
+            fontSize: "var(--text-small)",
+            fontWeight: 700,
+            whiteSpace: "nowrap"
+          }}>
+                  {selectedThreadIds.length ? `${selectedThreadIds.length} selected` : "Select threads"}
+                </span>
+                <Button type="button" variant="danger" size="sm" pill onClick={handleDeleteSelectedThreads} disabled={threadDeleteBusy || !selectedThreadIds.length}>
+                  {threadDeleteBusy ? "Removing..." : "Remove"}
+                </Button>
+                <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
+                  Close
+                </Button>
+              </> : <>
+                <Button type="button" variant="secondary" size="sm" pill onClick={() => {
+            if (!visibleThreads.length) return;
+            setThreadSelectionMode(true);
+            setSelectedThreadIds([]);
+          }} disabled={!visibleThreads.length}>
+                  Select
+                </Button>
+                <Button type="button" variant="primary" size="sm" pill onClick={handleOpenNewChatModal} aria-label="Start new chat">
+                  +
+                </Button>
+              </>}
+          </div>
+        </DevLayoutSection>
+
         <DevLayoutSection sectionKey="messages-main-layout" parentKey="messages-page-shell" sectionType="section-shell" shell style={{
       flex: 1,
       height: "100%",
@@ -192,63 +298,6 @@ export default function MessagesPageUi(props) {
         }}>
               {threadDeleteError && <StatusMessage tone="danger">{threadDeleteError}</StatusMessage>}
 
-              <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-sm)",
-            width: "100%"
-          }}>
-                <div style={{
-              flex: "1 1 auto",
-              minWidth: 0
-            }}>
-                  <SearchBar placeholder="Search threads..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
-                width: "100%",
-                marginTop: "10px",
-                marginBottom: "0"
-              }} />
-                </div>
-                {threadSelectionMode ? <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-sm)",
-              flex: "0 0 auto",
-              marginTop: "10px"
-            }}>
-                    <span style={{
-                color: "var(--text-2)",
-                fontSize: "var(--text-small)",
-                fontWeight: 700,
-                whiteSpace: "nowrap"
-              }}>
-                      {selectedThreadIds.length ? `${selectedThreadIds.length} selected` : "Select threads"}
-                    </span>
-                    <Button type="button" variant="danger" size="sm" pill onClick={handleDeleteSelectedThreads} disabled={threadDeleteBusy || !selectedThreadIds.length}>
-                      {threadDeleteBusy ? "Deleting..." : "Delete"}
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
-                      Close
-                    </Button>
-                  </div> : <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-sm)",
-              flex: "0 0 auto",
-              marginTop: "10px"
-            }}>
-                    <Button type="button" variant="secondary" size="sm" pill onClick={() => {
-                if (!visibleThreads.length) return;
-                setThreadSelectionMode(true);
-                setSelectedThreadIds([]);
-              }} disabled={!visibleThreads.length}>
-                      Select
-                    </Button>
-                    <Button type="button" variant="primary" size="sm" pill onClick={handleOpenNewChatModal} aria-label="Start new chat">
-                      +
-                    </Button>
-                  </div>}
-              </DevLayoutSection>
-
               <DevLayoutSection data-presentation="messages-thread-list" sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
             flex: 1,
             minHeight: 0,
@@ -271,37 +320,6 @@ export default function MessagesPageUi(props) {
               width: "100%",
               flex: "0 0 auto"
             }}>
-                  {pinnedThreads.length === 0 && <span aria-hidden="true" />}
-                  <button type="button" className={`app-btn app-btn--${activeSystemView ? "primary" : "secondary"} app-btn--pill`} onClick={openSystemNotificationsThread} style={{
-                width: "100%",
-                height: "44px",
-                minWidth: 0,
-                justifyContent: "center",
-                overflow: "hidden"
-              }}>
-                    <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-1)",
-                  minWidth: 0
-                }}>
-                      <span style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
-                  }}>
-                        System
-                      </span>
-                      {hasSystemUnread && <span aria-label="Unread system messages" style={{
-                    width: "var(--space-sm)",
-                    height: "var(--space-sm)",
-                    borderRadius: "var(--radius-full)",
-                    backgroundColor: "currentColor",
-                    display: "inline-block",
-                    flex: "0 0 auto"
-                  }} />}
-                    </span>
-                  </button>
                   {canSeeCustomerRequests && <button type="button" className={`app-btn app-btn--${activeBookingsView ? "primary" : "secondary"} app-btn--pill`} onClick={openBookingsThread} style={{
                 width: "100%",
                 height: "44px",
@@ -357,7 +375,13 @@ export default function MessagesPageUi(props) {
                   marginLeft: "var(--space-1)"
                 }} />}
                     </button>)}
-                  {Array.from({ length: Math.max(0, pinnedThreads.length === 0 ? canSeeCustomerRequests ? 0 : 1 : (canSeeCustomerRequests ? 1 : 2) - pinnedThreads.length) }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />)}
+                  {(() => {
+                // Keep the 3-column grid aligned: pad the final row with spacers.
+                // Quick buttons = optional Bookings + up to 3 pinned chats.
+                const quickCount = (canSeeCustomerRequests ? 1 : 0) + pinnedThreads.length;
+                const spacerCount = quickCount === 0 ? 0 : (3 - (quickCount % 3)) % 3;
+                return Array.from({ length: spacerCount }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />);
+              })()}
                 </DevLayoutSection>
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
@@ -718,6 +742,37 @@ export default function MessagesPageUi(props) {
                 margin: 0,
                 color: systemTitleColor
               }}>{activeThread.title}</h3>}
+                    {headerHasCustomerMember ? (
+                      customerDetail && (customerDetail.phone || customerDetail.vehicle || customerDetail.jobNumber) ? <p style={{
+                  margin: "4px 0 0",
+                  color: palette.textMuted,
+                  fontSize: "var(--text-body-sm)",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "4px 12px"
+                }}>
+                        {customerDetail.phone ? <span>{customerDetail.phone}</span> : null}
+                        {customerDetail.vehicle ? <span>{customerDetail.vehicle}</span> : null}
+                        {customerDetail.jobNumber ? <span>JOB {customerDetail.jobNumber}</span> : null}
+                      </p> : null
+                    ) : (() => {
+                if (isGroupChat) return null;
+                const otherMember = (activeThread.members || []).find(member => member.userId !== dbUserId);
+                const role = otherMember?.profile?.role;
+                const extension = otherMember?.profile?.extension;
+                if (!role && !extension) return null;
+                return <p style={{
+                  margin: "4px 0 0",
+                  color: palette.textMuted,
+                  fontSize: "var(--text-body-sm)",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "4px 12px"
+                }}>
+                        {role ? <span>{role}</span> : null}
+                        {extension ? <span>Ext. {extension}</span> : null}
+                      </p>;
+              })()}
                   </div>
                   {isGroupChat && canEditGroup && !isCustomerChat && <div style={{
               display: "flex",
