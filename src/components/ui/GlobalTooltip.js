@@ -79,6 +79,11 @@ export default function GlobalTooltip() {
     const show = (el, text) => {
       const node = getTip();
       node.textContent = text;
+      // Honour newlines so multi-line tooltips render as a readable list (left-
+      // aligned); single-line tooltips are unaffected and stay centred.
+      const multiline = text.includes("\n");
+      node.style.whiteSpace = "pre-line";
+      node.style.textAlign = multiline ? "left" : "center";
       node.classList.add("is-visible");
       node.setAttribute("aria-hidden", "false");
       position(el);

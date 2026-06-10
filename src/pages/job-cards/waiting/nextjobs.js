@@ -908,12 +908,8 @@ export default function NextJobsPage() {
     [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
   );
 
-  // ✅ Search logic for job cards in the outstanding section
-  const filteredOutstandingJobs = useMemo(() => {
-    if (!searchTerm.trim()) return outstandingJobs;
-    return outstandingJobs.filter((job) => jobMatchesSearchTerm(job, searchTerm));
-  }, [searchTerm, outstandingJobs]);
-
+  // Search highlights matches across every section (it never filters cards out),
+  // so the outstanding tray now renders the full list and lights up matches.
   const matchedSearchJobs = useMemo(() => {
     if (!searchTerm.trim()) return [];
 
@@ -985,6 +981,16 @@ export default function NextJobsPage() {
     () =>
     jobs.filter((job) => toStatusKey(job.status) === "CHECKED IN").sort(compareJobsForBoard),
     [jobs]
+  );
+
+  // Job numbers a technician / MOT user is currently clocked onto — drives the
+  // success-tinted assigned card on the board.
+  const clockedOnJobNumbers = useMemo(
+    () =>
+    Object.values(activeClockingsByUser).
+    map((entry) => String(entry?.jobNumber || "").trim()).
+    filter(Boolean),
+    [activeClockingsByUser]
   );
 
   // Board rows — every technician / MOT user (no hard cap, supports large rosters).
@@ -1759,7 +1765,7 @@ export default function NextJobsPage() {
     <WorkshopQueuePlanner
       techRows={techRows}
       motRows={motRows}
-      outstandingJobs={filteredOutstandingJobs}
+      outstandingJobs={outstandingJobs}
       checkedInJobs={checkedInJobs}
       estimateJobHours={estimateJobHours}
       deriveJobTypeLabel={deriveJobTypeLabel}
@@ -1769,6 +1775,7 @@ export default function NextJobsPage() {
       searchTerm={searchTerm}
       setSearchTerm={setSearchTerm}
       highlightedSearchJobNumbers={highlightedSearchJobNumbers}
+      clockedOnJobNumbers={clockedOnJobNumbers}
       activeDropTarget={activeDropTarget}
       draggingJob={draggingJob}
       dragState={dragState}

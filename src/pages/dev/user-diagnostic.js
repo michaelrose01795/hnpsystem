@@ -1896,11 +1896,11 @@ function GlobalUiShowcase() {
   join(" ");
 
   return (
-    <DevLayoutSection as="aside" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-      width: "min(100%, 440px)",
-      flex: "0 1 440px",
+    <div className="user-diagnostic-showcase" style={{
+      width: "100%",
+      flex: "1 1 100%",
       maxWidth: "100%",
-      paddingRight: "4px"
+      paddingRight: 0
     }}>
       
       <style jsx global>{`
@@ -3566,7 +3566,7 @@ function GlobalUiShowcase() {
         onClose={closeUsage} />
 
       }
-    </DevLayoutSection>);
+    </div>);
 
 }
 

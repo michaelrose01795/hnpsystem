@@ -1,37 +1,21 @@
 Appontment page
-TODO
-improve the layout of the and design of the whole table, have it follow the spacing aroiund the edges etc as well as the layout of the text within the "Tue 9 Jun Jobs 0 Booked 0.0h Capacity 40.0h Utilisation 0% " sectiona nd the layouit of the title card within the tables. remove the sunday days from the date column, and make the saturday date set to amber text colour to identify as a saturday. only the "13 Jun" for example. c 
-
-TODO
-have it so the "Appointments Scheduler Viewport | 1.2.2.1.1.2.2 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:348 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" card follows round corners liek the staffglobal.css setting. also allow the user to scroll wihtin the "Appointments Scheduler Viewport | 1.2.2.1.1.2.2 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:348 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" section. have it so the have it so the dev overlay within the "Appointments Scheduler Viewport | 1.2.2.1.1.2.1 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:304 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" section is improved. 
-
-TODO
-have it so the tiles within the table are "--surface" colour background. have it so the style of the "Appointments Scheduler Viewport | 1.2.2.1.1.2.1 key: appointments-scheduler-viewport source: src/components/page-ui/appointments/appointments-ui.js:304 route: /appointments parent appointments-scheduler (1.2.2.1.1.2)" table is simular to "/job-cards/waiting/nextjobs" table ui style wise with the right side being colour and top and the same with the car style, text size, gaps within the sections etc as well as the tiles to be the same colour etc. 
-
-TODO
-remove the "Appointments Day Jobs | 1.2.2.1.1.3 key: appointments-day-jobs source: src/components/page-ui/appointments/appointments-ui.js:1169 route: /appointments parent appointments-planner (1.2.2.1.1) | 1 child" seciton, have it so the can click within one of the time columns not the date column the time column to open a popup which shows the "Appointments Day Jobs | 1.2.2.1.1.3 key: appointments-day-jobs source: src/components/page-ui/appointments/appointments-ui.js:1169 route: /appointments parent appointments-planner (1.2.2.1.1) | 1 child" table stytle layout with the jobs all in a list view etc.
-
-
-
+CHECK
+popup!!
+have it so with the "Jobs for Wed 17 Jun" popup the topbar is hiden, this popup should follow the staffglobal.css and the popup style should hsow this to have it so when the popup is open the topbar is hiden etc. have it os the popup width is big enough to fit everything within, have it so the "Close" button is in the top right of the popup. haev it so theres a mac height before adding a vertical scroll, this will be whe the table rows reach 10 rows. also have it so every single job wihtin the "Appointments Sched Timeline 2026 06 12 | 1.2.2.1.1.2.1.5.2 key: appointments-sched-timeline-2026-06-12 source: src/components/page-ui/appointments/appointments-ui.js:465 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /appointments parent appointments-sched-row-2026-06-12 (1.2.2.1.1.2.1.5)" section for example is shown wihtin the table view insdie the popup. atm its not showing all of within this popup but within "Mon 22 Jun 16:15 09:47-21:2 #00054GD15XGZ Sam Smith Brake noise investigation, Warranty diagnosis and repair, Steering 11.7h · Released12:15-17:57 #ENR00110 27KSG088 Edward Baker  Software update and road test, Air conditioning service, Diagnostics5.7h · Booke  13:44-18:38 #ENR00003 EA19ZHU Nathan Price Customer reports warning light, Annual service and inspection, Repair 4.9h · Booke 15:00-20:18 #ENR00081 21HXZ059 Florence Morgan Annual service and inspection, Software update and road test, Battery and charging system check 5.3h · Booked 15:40-17:58#ENR00011 WN69HSU Zoe Harrington Annual service and inspection, Battery and charging system check, Warranty 2.3h · Booked 16:15-03:33#ENR00050 22COW028 Freddie Thomas Software update and road test, Battery and charging system check, Air conditioning service 11.3h · Booked Cloe" popup which is a differnt popup which is opened by clicking on "View () jobs" this needs ot be fixed so only the popup with the table within it is opened from clicking the "Appointments Sched Timeline 2026 06 25 | 1.2.2.1.1.2.1.6.2 key: appointments-sched-timeline-2026-06-25 source: src/components/page-ui/appointments/appointments-ui.js:465 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /appointments parent appointments-sched-row-2026-06-25 (1.2.2.1.1.2.1.6)" section row for example. 
 
 
 
 NExt job 
+CHECK
+have it so "Workshop Search Filter | 1.2.2.1.1.1 key: workshop-search-filter source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:653 route: /job-cards/waiting/nextjobs parent workshop-queue-planner (1.2.2.1.1)" is the height of the search bar only, atm its height is a lot larger, fix this 
+
+
+!!!
 TODO
-have it so withint he "Unassigned Jobs" column when the user searches for soemthing it does filter the other cards out it just highlights the card seaching for exactly like the "Checked In Jobs" section etc
+CHange it so the "Tooltips (native title=)" hover state shows where the curser goes, when over that section/button etc. 
 
-
-
-
-/dev/user-diagnostic
-Restore /dev/user-diagnostic layout to the wide/full-width version from git commit a8c0674f (@ ui update 6) without reverting button styling or bringing back liquid-glass buttons: compare with git show a8c0674f:src/components/page-ui/dev/dev-user-diagnostic-ui.js and git show a8c0674f:src/pages/dev/user-diagnostic.js; locally update only src/components/page-ui/dev/dev-user-diagnostic-ui.js and src/pages/dev/user-diagnostic.js; restore section2 sizing so user-diagnostic-page uses width: "100%", maxWidth: "100%", flexDirection: "column", gap: "var(--page-stack-gap)", padding: "8px 0"; remove the current constrained 1500px page-shell behaviour and remove or neutralise the user-diagnostic-diagnostics maxWidth: "min(100%, 900px)" cap so diagnostics/results span full width again; restore GlobalUiShowcase sizing to width: "100%", flex: "1 1 100%", maxWidth: "100%", paddingRight: 0 instead of the current narrow aside sizing; preserve current button components/variants/labels and non-layout styling; follow AGENTS.md, do not add banned card borders, hardcoded colours, or global design changes, run npm run check:borders, then report changed paths, files reviewed, DB schema checked no because this is layout-only, and scope local.
-
-
-TEST AUDI
-Perform a full audit of the H&P DMS and build a comprehensive automated testing and quality assurance system covering all routes, permissions, workflows, APIs, database relationships, UI components, staff styling, customer styling, responsive layouts, audit logging and role-based access. Automatically identify existing testing coverage, missing coverage, workflow risks, permission issues, broken relationships, UI inconsistencies, performance concerns, accessibility issues, console errors, loading state failures, regression risks and edge cases, then implement a scalable testing solution that continuously validates the entire platform as new features are added, using realistic dealership scenarios and existing system behaviour to maximise bug detection before production use, and produce a prioritised audit report of all issues discovered.
-
-
-
+TODO 
+have it so the clanedar picker section where it shows all of the days of the month etc, is set to a min width, this is a width were the days of the week can easily fit within one line and not overlap etc 
 
 
 

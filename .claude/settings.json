@@ -8,7 +8,16 @@
       "Bash(break)",
       "Bash(echo \"=== exit: $? ===\")",
       "Bash(echo \"check:layers exit=$?\")",
-      "Bash(echo \"eslint exit=$?\")"
+      "Bash(echo \"eslint exit=$?\")",
+      "Bash(tasklist)",
+      "Bash(node tmp_appt_shot.js)",
+      "Bash(node tmp_probe.js)",
+      "Bash(node tmp_shot.js)",
+      "Bash(node tmp_audit.js)",
+      "Bash(node tmp_verify.js)",
+      "Bash(node tmp_diag.js)",
+      "Bash(sed -n '361,373p' src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js)",
+      "Bash(sed -n '268,279p' src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js)"
     ]
   }
 }

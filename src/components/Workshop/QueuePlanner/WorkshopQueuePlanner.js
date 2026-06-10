@@ -146,6 +146,7 @@ function WorkshopQueueCard({
   onPointerDown,
   isDragging,
   isHighlighted,
+  isClockedOn = false,
   deriveJobTypeLabel,
   formatAppointmentTime,
   estimateJobHours,
@@ -169,7 +170,8 @@ function WorkshopQueueCard({
     gap: assigned ? "10px" : "7px",
     padding: assigned ? "16px 18px" : "12px 14px 11px",
     borderRadius: "var(--radius-md)",
-    background: "var(--surface)",
+    // Assigned card turns success-tinted once the technician is clocked onto it.
+    background: assigned && isClockedOn ? "var(--success-surface)" : "var(--surface)",
     color: "var(--text-1)",
     textAlign: "left",
     cursor: "grab",
@@ -249,6 +251,7 @@ function WorkshopQueueDropZone({
   handleCardPointerDown,
   handleOpenJobDetails,
   highlightedJobNumbers,
+  clockedOnJobNumbers,
   deriveJobTypeLabel,
   formatAppointmentTime,
   estimateJobHours,
@@ -281,6 +284,7 @@ function WorkshopQueueDropZone({
       {jobs.length > 0 &&
         jobs.map((job, index) => {
           const isHighlighted = highlightedJobNumbers.includes(job.jobNumber);
+          const isClockedOn = (clockedOnJobNumbers || []).includes(job.jobNumber);
           return (
             <React.Fragment key={job.jobNumber}>
               {matchesDropIndicator("assignee", panelKey, job.jobNumber, "before") && dropBar}
@@ -297,6 +301,7 @@ function WorkshopQueueDropZone({
                 onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                 isDragging={draggingJob?.jobNumber === job.jobNumber}
                 isHighlighted={isHighlighted}
+                isClockedOn={isClockedOn}
                 deriveJobTypeLabel={deriveJobTypeLabel}
                 formatAppointmentTime={formatAppointmentTime}
                 estimateJobHours={estimateJobHours}
@@ -317,7 +322,6 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
   const totalHours = row.jobs.reduce((sum, job) => sum + (estimateJobHours(job) || 0), 0);
   const capacity = getCapacity(totalHours);
   const unit = row.isMot ? (row.jobs.length === 1 ? "MOT" : "MOTs") : row.jobs.length === 1 ? "job" : "jobs";
-  const initial = String(row.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   return (
     <React.Fragment>
@@ -330,13 +334,6 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
         data-dev-text-preview={`${row.name} ${row.role} ${row.jobs.length} ${unit}`}
         style={{ position: "sticky", left: 0, zIndex: 2, display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", minHeight: "var(--wqp-row-min-h)", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: HAIRLINE_BOTTOM }}
       >
-        {/* Technician initial — the frozen label column shares the group-header tint */}
-        <span
-          aria-hidden="true"
-          style={{ flexShrink: 0, width: "var(--wqp-avatar)", height: "var(--wqp-avatar)", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", background: "rgba(var(--accent-base-rgb), 0.16)", color: "var(--accent-strong)", fontSize: "15px", fontWeight: 800 }}
-        >
-          {initial}
-        </span>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 auto" }}>
           <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0, fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }} title={capacity.label}>
@@ -558,6 +555,8 @@ export default function WorkshopQueuePlanner({
   searchTerm,
   setSearchTerm,
   highlightedSearchJobNumbers,
+  // job numbers a technician/MOT user is currently clocked onto (success tint)
+  clockedOnJobNumbers,
   // drag-and-drop wiring (from page pointer engine)
   activeDropTarget,
   draggingJob,
@@ -577,12 +576,14 @@ export default function WorkshopQueuePlanner({
   unassignTechFromJob,
 }) {
   // The job-type dropdown was removed — the single search box (page-driven) now
-  // drives all matching across every section. `outstandingJobs` already arrives
-  // search-filtered from the page.
+  // drives all matching across every section. The search only highlights matches
+  // (it never filters cards out), so `outstandingJobs` arrives unfiltered and the
+  // matching job numbers come through `highlightedSearchJobNumbers`.
   const techRowsSafe = techRows || [];
   const motRowsSafe = motRows || [];
   const outstanding = outstandingJobs || [];
   const highlighted = highlightedSearchJobNumbers || [];
+  const clockedOn = clockedOnJobNumbers || [];
 
   const sharedDropProps = {
     draggingJob,
@@ -591,6 +592,7 @@ export default function WorkshopQueuePlanner({
     handleCardPointerDown,
     handleOpenJobDetails,
     highlightedJobNumbers: highlighted,
+    clockedOnJobNumbers: clockedOn,
     deriveJobTypeLabel,
     formatAppointmentTime,
     estimateJobHours,
@@ -636,33 +638,22 @@ export default function WorkshopQueuePlanner({
           every job (checked-in, unassigned and assigned) and feeds back the
           matching job numbers, so a search lights up matches in any section. */}
       {SearchBar && (
-        <LayerTheme
-          sectionKey="workshop-filter-toolbar"
-          parentKey="workshop-queue-planner"
-          sectionType="filter-row"
-          backgroundToken="theme"
-          radius={RADIUS_LG}
-          padding="14px 16px"
-          gap="14px"
+        <div
+          className="wqp-searchwrap"
+          data-dev-section="1"
+          data-dev-section-key="workshop-search-filter"
+          data-dev-section-parent="workshop-queue-planner"
+          data-dev-section-type="filter-row"
+          data-dev-background-token="transparent"
           data-dev-text-preview="Search all sections"
-          style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", boxShadow: LIFT }}
         >
-          <div
-            className="wqp-searchwrap"
-            data-dev-section="1"
-            data-dev-section-key="workshop-search-filter"
-            data-dev-section-parent="workshop-filter-toolbar"
-            data-dev-section-type="filter-row"
-            data-dev-background-token="transparent"
-          >
-            <SearchBar
-              placeholder="Search job, reg, or customer across all sections"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onClear={() => setSearchTerm("")}
-            />
-          </div>
-        </LayerTheme>
+          <SearchBar
+            placeholder="Search job, reg, or customer across all sections"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm("")}
+          />
+        </div>
       )}
 
       {/* ============================ 1 · Checked In Jobs =================== */}
@@ -886,7 +877,6 @@ export default function WorkshopQueuePlanner({
           --wqp-assigned-w: 232px;
           --wqp-gap: 14px;
           --wqp-row-min-h: 104px;
-          --wqp-avatar: 38px;
         }
         @media (max-width: 1279px) {
           .wqp-shell {
@@ -902,10 +892,10 @@ export default function WorkshopQueuePlanner({
             --wqp-card-w: 184px;
             --wqp-assigned-w: 204px;
             --wqp-row-min-h: 96px;
-            --wqp-avatar: 32px;
           }
           .wqp-searchwrap {
-            margin-left: 0;
+            align-self: stretch;
+            width: 100%;
             max-width: 100%;
           }
           .wqp-fieldgrid {
@@ -913,10 +903,13 @@ export default function WorkshopQueuePlanner({
           }
         }
         .wqp-searchwrap {
-          margin-left: auto;
+          align-self: flex-end;
+          width: 340px;
           min-width: 220px;
-          max-width: 340px;
-          flex: 1 1 220px;
+          max-width: 100%;
+          /* Hug the search bar's own height — the shell is a column flex container,
+             so a flex-basis here would stretch the wrapper's height, not its width. */
+          flex: 0 0 auto;
         }
         .wqp-lift {
           transition: transform 0.14s ease, box-shadow 0.18s ease;

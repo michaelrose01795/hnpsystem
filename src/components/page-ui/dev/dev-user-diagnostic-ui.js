@@ -394,23 +394,19 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>; // render extracted page section.
 
     case "section2":
-      return <DevLayoutSection className="user-diagnostic-page" sectionKey="user-diagnostic" sectionType="page-shell" backgroundToken="surface" widthMode="constrained" shell style={{
-  padding: "clamp(14px, 4vw, 32px)",
+      return <div className="user-diagnostic-page" style={{
+  padding: "8px 0",
   display: "flex",
-  gap: "24px",
+  flexDirection: "column",
+  gap: "var(--page-stack-gap)",
   alignItems: "flex-start",
-  flexWrap: "wrap",
-  maxWidth: "1500px",
+  width: "100%",
+  maxWidth: "100%",
   minHeight: "100dvh",
   overflow: "visible",
   boxSizing: "border-box"
 }}>
-      <DevLayoutSection className="user-diagnostic-diagnostics" sectionKey="user-diagnostic/diagnostics-panel" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-    flex: "1 1 620px",
-    minWidth: 0,
-    maxWidth: "min(100%, 900px)"
-      }}>
-      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
+      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="" backgroundToken="">
       <div className="user-diagnostic-toolbar" style={{
         display: "flex",
         gap: "10px",
@@ -473,7 +469,11 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>
       </DevLayoutSection>
 
-      <DevLayoutSection sectionKey="user-diagnostic/results" sectionType="content-card" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
+      <DevLayoutSection className="user-diagnostic-results" sectionKey="user-diagnostic/results" sectionType="content-card" parentKey="" backgroundToken="" style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0
+      }}>
       {groupedResults.map(group => <div key={group.section} style={{
         marginBottom: "24px"
       }}>
@@ -493,7 +493,7 @@ export default function UserDiagnosticDevPageUi(props) {
           flexDirection: "column",
           gap: "10px"
         }}>
-            {group.items.map(result => <div key={result._index} style={{
+            {group.items.map(result => <DevLayoutSection key={result._index} sectionKey={`user-diagnostic/result-${result._index}`} sectionType="content-card" parentKey="user-diagnostic/results" backgroundToken="surface" style={{
             background: "var(--surface)",
             border: "none",
             borderRadius: "var(--radius-xs)",
@@ -555,12 +555,16 @@ export default function UserDiagnosticDevPageUi(props) {
             }}>
                     {JSON.stringify(result.data, null, 2)}
                   </pre>}
-              </div>)}
+              </DevLayoutSection>)}
           </div>
         </div>)}
       </DevLayoutSection>
 
-      {results && <DevLayoutSection sectionKey="user-diagnostic/summary" sectionType="stat-card" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
+      {results && <DevLayoutSection sectionKey="user-diagnostic/summary" sectionType="stat-card" parentKey="" backgroundToken="" style={{
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0
+      }}>
         <div style={{
         marginTop: "24px",
         padding: "16px",
@@ -573,7 +577,6 @@ export default function UserDiagnosticDevPageUi(props) {
           {passCount}/{totalCount} tests passed
         </div>
         </DevLayoutSection>}
-      </DevLayoutSection>
       <style jsx global>{`
         @media (max-width: 700px) {
           .user-diagnostic-page {
@@ -1016,7 +1019,7 @@ export default function UserDiagnosticDevPageUi(props) {
         </div>
       </PopupModal>}
       <GlobalUiShowcase />
-    </DevLayoutSection>; // render extracted page section.
+    </div>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
   }

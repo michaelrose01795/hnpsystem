@@ -18,8 +18,9 @@
 // layout's "app-layout-page-card" (StaffLayout.js). The root page shell here is
 // "appointments-planner"; the booking toolbar, scheduler board and day-jobs
 // table all hang off it, so the overlay reports the real card hierarchy.
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useMemo, useCallback, useEffect, useRef } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical surface layer primitive (CLAUDE.md §3.0)
+import PopupModal from "@/components/popups/popupStyleApi"; // shared staffglobal popup (full-cover backdrop hides the topbar)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // data-area skeletons while jobs load
 import { CalendarField } from "@/components/ui/calendarAPI"; // in-app calendar picker (.calendar-api) — replaces the native date popup
 
@@ -27,17 +28,19 @@ import { CalendarField } from "@/components/ui/calendarAPI"; // in-app calendar 
 // Workshop Scheduler board (inlined — was src/components/Appointments/SchedulerBoard.js)
 // CSS-Grid planning board that replaces the old availability table. Each row is
 // a day; the time axis runs 08:00–17:00 in 15-min columns. The sticky left
-// column is a day summary panel; booking cards sit inside the time grid with two
-// visible overlap lanes per day/time slot and a modal overflow when a slot has
-// more. Styling lives in the appt-sched-* classes in the <style jsx global>
+// column is a day summary panel; booking cards stack in 28px lanes inside the
+// time grid (longest span on top), the row growing to fit the lanes used, with a
+// modal overflow when a slot has more than MAX_VISIBLE_PER_SLOT overlapping
+// jobs. Styling lives in the appt-sched-* classes in the <style jsx global>
 // block at the foot of this file.
 // ===========================================================================
 const DAY_START_MIN = 8 * 60; // 08:00
 const DAY_END_MIN = 17 * 60; // 17:00
 const SLOT_MINUTES = 15;
 const SLOT_COUNT = (DAY_END_MIN - DAY_START_MIN) / SLOT_MINUTES + 1; // 37 columns
-const MAX_VISIBLE_PER_SLOT = 2; // top/bottom split inside the same day/time cell
-const MIN_BAR_SLOTS = 3; // guarantee a bar is wide enough to show #job + reg
+const LAST_END_SLOT = SLOT_COUNT - 1; // 36 = the 17:00 gridline; tiles may end here but never start here
+const MAX_VISIBLE_PER_SLOT = 6; // max stacked tile lanes per day before the overflow button; the row grows to fit the lanes actually used
+const MIN_BAR_SLOTS = 1; // tiles can be as narrow as a single 15-min column
 const DEFAULT_BAR_SLOTS = 4; // fallback span (1h) when no finish time is known
 
 const pad2 = (n) => n.toString().padStart(2, "0");
@@ -78,11 +81,14 @@ const timeToSlotIndex = (time) => {
 };
 
 // ---------------- Workshop status mapping ----------------
+// Mirrors the /job-cards/waiting/nextjobs card treatment: the tile itself is
+// always --surface; status is signalled by a soft tinted pill (pillBg) + dot on
+// the right, never by tinting the whole tile.
 const SCHED_STATUS_META = {
-  waiting: { label: "Waiting", className: "appt-sched-status-waiting", dot: "var(--warning)" },
-  progress: { label: "In Progress", className: "appt-sched-status-progress", dot: "var(--info)" },
-  complete: { label: "Completed", className: "appt-sched-status-complete", dot: "var(--success)" },
-  cancelled: { label: "Cancelled", className: "appt-sched-status-cancelled", dot: "var(--danger)" },
+  waiting: { label: "Waiting", dot: "var(--warning)", pillBg: "var(--warning-surface)" },
+  progress: { label: "In Progress", dot: "#3b82f6", pillBg: "rgba(59, 130, 246, 0.16)" },
+  complete: { label: "Completed", dot: "var(--success)", pillBg: "var(--success-surface)" },
+  cancelled: { label: "Cancelled", dot: "var(--surfaceTextMuted)", pillBg: "rgba(var(--accent-base-rgb), 0.12)" },
 };
 
 const deriveSchedStatusKey = (job) => {
@@ -142,11 +148,6 @@ const getJobItemLabels = (job) => {
   return labels.length ? labels.slice(0, 3).join(", ") : "Job items pending";
 };
 
-const getSlotTimeLabel = (card) => {
-  if (!card) return "";
-  return `${card.time}${card.finish ? `-${card.finish}` : ""}`;
-};
-
 const buildDaySummary = ({ cards, capacityHours }) => {
   const bookedHours = cards.reduce((sum, card) => sum + card.estimatedHours, 0);
   const utilisation =
@@ -163,8 +164,13 @@ const buildDaySummary = ({ cards, capacityHours }) => {
   };
 };
 
+// Greedy lane fill across up to MAX_VISIBLE_PER_SLOT stacked lanes. Cards are
+// pre-sorted longest-span-first within a start time, so the lowest (top) lane
+// goes to the longest tile and the shortest ends up at the bottom. Returns how
+// many lanes were actually used so the row can size its height to the stack.
 const assignVisibleLanes = (cards) => {
   const laneEnds = [];
+  let lanesUsed = 0;
   cards.forEach((card) => {
     let assignedLane = -1;
     for (let lane = 0; lane < MAX_VISIBLE_PER_SLOT; lane += 1) {
@@ -175,7 +181,9 @@ const assignVisibleLanes = (cards) => {
       }
     }
     card.lane = assignedLane;
+    if (assignedLane >= 0) lanesUsed = Math.max(lanesUsed, assignedLane + 1);
   });
+  return lanesUsed;
 };
 
 const buildOverflowSlots = (cards) => {
@@ -195,11 +203,11 @@ const buildOverflowSlots = (cards) => {
 };
 
 function SchedulerBoard({
-  Popup,
   jobs = [],
   selectedDay,
   onSelectDay,
   onOpenJob,
+  onOpenDayJobs,
   getFinishTime,
   getBookingHours,
   getDayTechSummary,
@@ -218,19 +226,22 @@ function SchedulerBoard({
     const year = base.getFullYear();
     const month = base.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
+    // Workshop is closed Sundays — drop them from the date column entirely.
+    return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)).filter(
+      (d) => d.getDay() !== 0
+    );
   }, [selectedDay, isDayMode]);
 
-  // Group bookings by date key and active time slot. Each booking still
-  // carries its start → finish span, but only two bookings per day/time slot are
-  // visible; further overlaps are opened from that slot's overflow button.
+  // Group bookings by date key and active time slot. Each booking carries its
+  // start → finish span and stacks in its own lane; up to MAX_VISIBLE_PER_SLOT
+  // overlap, with further overlaps opened from that slot's overflow button.
   const bookingsByDate = useMemo(() => {
     const map = new Map();
     (jobs || []).forEach((job) => {
       const date = job?.appointment?.date;
       const time = job?.appointment?.time;
       if (!date || !time) return;
-      const startSlot = timeToSlotIndex(time);
+      let startSlot = timeToSlotIndex(time);
       if (startSlot === null) return;
 
       // ETA finish → end slot. Fall back to a default span when unknown.
@@ -239,8 +250,14 @@ function SchedulerBoard({
       const finishIndex = timeToSlotIndex(finish);
       if (finishIndex !== null && finishIndex > startSlot) endSlot = finishIndex;
       if (endSlot === null) endSlot = startSlot + DEFAULT_BAR_SLOTS;
-      // Enforce a minimum width so #job + reg always fit, and clamp to the axis.
-      endSlot = Math.min(Math.max(endSlot, startSlot + MIN_BAR_SLOTS), SLOT_COUNT);
+      // Clamp the span to the visible 08:00–17:00 axis. 17:00 (LAST_END_SLOT) is
+      // the right edge: a tile may END there but never START there, so a job ending
+      // past 17:00 just stops at 17:00, and a job booked AT 17:00 is shown as the
+      // final 16:45–17:00 column (the 15-min minimum width) by growing leftwards.
+      endSlot = Math.min(Math.max(endSlot, startSlot + MIN_BAR_SLOTS), LAST_END_SLOT);
+      if (endSlot - startSlot < MIN_BAR_SLOTS) {
+        startSlot = Math.max(0, endSlot - MIN_BAR_SLOTS);
+      }
 
       const dateKey = date.length > 10 ? isoDateKey(date) : date;
       const estimatedHours =
@@ -268,15 +285,20 @@ function SchedulerBoard({
 
     const result = new Map();
     map.forEach((cards, key) => {
-      cards.sort((a, b) => a.startSlot - b.startSlot || a.endSlot - b.endSlot);
-      assignVisibleLanes(cards);
-      result.set(key, { cards, overflowSlots: buildOverflowSlots(cards) });
+      // Stack overlapping bookings longest-first: longest span on top, shortest
+      // on the bottom. Sorting by start, then duration desc, makes the greedy
+      // lane fill hand the lowest (top) lane to the longest tile.
+      cards.sort(
+        (a, b) =>
+          a.startSlot - b.startSlot ||
+          b.endSlot - b.startSlot - (a.endSlot - a.startSlot) ||
+          a.endSlot - b.endSlot
+      );
+      const laneCount = Math.max(1, assignVisibleLanes(cards));
+      result.set(key, { cards, laneCount, overflowSlots: buildOverflowSlots(cards) });
     });
     return result;
   }, [jobs, getFinishTime, getBookingHours]);
-
-  // Overflow modal state: { dateLabel, timeLabel, bookings } | null
-  const [overflow, setOverflow] = useState(null);
 
   const todayKey = useMemo(() => isoDateKey(new Date()), []);
   const selectedKey = selectedDay ? isoDateKey(selectedDay) : null;
@@ -330,7 +352,14 @@ function SchedulerBoard({
           data-dev-text-preview="Scheduler time grid"
         >
           {/* Sticky time header row */}
-          <div className="appt-sched-header-row">
+          <div
+            className="appt-sched-header-row"
+            data-dev-section-key="appointments-scheduler-header"
+            data-dev-section-parent="appointments-scheduler-viewport"
+            data-dev-section-type="table-headings"
+            data-dev-background-token="surface"
+            data-dev-text-preview="Time axis 08:00–17:00"
+          >
             <div className="appt-sched-corner" />
             <div className="appt-sched-head-track" style={{ gridTemplateColumns: timelineColumns }}>
               {SLOTS.map((label, i) => {
@@ -363,9 +392,11 @@ function SchedulerBoard({
             const dateKey = isoDateKey(date);
             const isToday = dateKey === todayKey;
             const isSelected = dateKey === selectedKey;
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const dayData = bookingsByDate.get(dateKey) || { cards: [], overflowSlots: [] };
+            const isSaturday = date.getDay() === 6;
+            const isWeekend = date.getDay() === 0 || isSaturday;
+            const dayData = bookingsByDate.get(dateKey) || { cards: [], overflowSlots: [], laneCount: 1 };
             const visibleCards = dayData.cards.filter((c) => c.lane >= 0);
+            const laneCount = dayData.laneCount || 1;
             const dayTechSummary =
               typeof getDayTechSummary === "function" ? getDayTechSummary(date) : null;
             const capacityHours = Number(dayTechSummary?.totalAvailableHours || 0);
@@ -376,34 +407,59 @@ function SchedulerBoard({
               isToday ? "appt-sched-date-today" : "",
               isSelected ? "appt-sched-date-selected" : "",
               isWeekend ? "appt-sched-date-weekend" : "",
+              isSaturday ? "appt-sched-date-saturday" : "",
               `appt-sched-capacity-${daySummary.state}`,
             ]
               .filter(Boolean)
               .join(" ");
 
             return (
-              <div className="appt-sched-row" key={dateKey} data-sched-selected={isSelected ? "true" : undefined}>
+              <div
+                className="appt-sched-row"
+                key={dateKey}
+                data-sched-selected={isSelected ? "true" : undefined}
+                data-dev-section-key={`appointments-sched-row-${dateKey}`}
+                data-dev-section-parent="appointments-scheduler-viewport"
+                data-dev-section-type="table-row"
+                data-dev-background-token="theme"
+                data-dev-text-preview={`Day row ${dateKey}`}
+              >
                 {/* Sticky date cell */}
                 <div
                   className={dateCellClasses}
                   role="rowheader"
                   onClick={() => typeof onSelectDay === "function" && onSelectDay(new Date(date.getTime()))}
+                  data-dev-section-key={`appointments-sched-date-${dateKey}`}
+                  data-dev-section-parent={`appointments-sched-row-${dateKey}`}
+                  data-dev-section-type="content-card"
+                  data-dev-background-token="surface"
+                  data-dev-text-preview={`Day summary ${dateKey}`}
                 >
-                  <span className="appt-sched-date-weekday">
-                    {date.toLocaleDateString("en-GB", { weekday: "short" })}
-                  </span>
-                  <span className="appt-sched-date-day">
-                    {date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                  </span>
+                  <div className="appt-sched-date-head">
+                    <span className="appt-sched-date-weekday">
+                      {date.toLocaleDateString("en-GB", { weekday: "short" })}
+                    </span>
+                    <span className="appt-sched-date-day">
+                      {date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </span>
+                  </div>
                   <div className="appt-sched-summary-grid" aria-label="Day capacity summary">
-                    <span>Jobs</span>
-                    <strong>{daySummary.totalJobs}</strong>
-                    <span>Booked</span>
-                    <strong>{formatSchedHours(daySummary.bookedHours)}h</strong>
-                    <span>Capacity</span>
-                    <strong>{formatSchedHours(daySummary.capacityHours)}h</strong>
-                    <span>Utilisation</span>
-                    <strong>{daySummary.utilisation}%</strong>
+                    <div className="appt-sched-summary-cell">
+                      <span>Jobs</span>
+                      <strong>{daySummary.totalJobs}</strong>
+                    </div>
+                    <div className="appt-sched-summary-cell">
+                      <span>Booked</span>
+                      <strong>{formatSchedHours(daySummary.bookedHours)}h</strong>
+                    </div>
+                    <div className="appt-sched-summary-cell">
+                      <span>Capacity</span>
+                      <strong>{formatSchedHours(daySummary.capacityHours)}h</strong>
+                    </div>
+                    <div className="appt-sched-summary-cell">
+                      <span>Utilisation</span>
+                      <strong>{daySummary.utilisation}%</strong>
+                    </div>
                   </div>
                   <div
                     className={`appt-sched-capacity-bar appt-sched-capacity-bar-${daySummary.state}`}
@@ -422,11 +478,29 @@ function SchedulerBoard({
                   ]
                     .filter(Boolean)
                     .join(" ")}
+                  data-dev-section-key={`appointments-sched-timeline-${dateKey}`}
+                  data-dev-section-parent={`appointments-sched-row-${dateKey}`}
+                  data-dev-section-type="section-shell"
+                  data-dev-background-token="theme"
+                  data-dev-text-preview={`Bookings timeline ${dateKey}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="View jobs for this day"
+                  onClick={() =>
+                    typeof onOpenDayJobs === "function" && onOpenDayJobs(new Date(date.getTime()))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      typeof onOpenDayJobs === "function" && onOpenDayJobs(new Date(date.getTime()));
+                    }
+                  }}
                   style={{
+                    cursor: "pointer",
                     gridTemplateColumns: timelineColumns,
                     gridTemplateRows: isDayMode
-                      ? `repeat(${MAX_VISIBLE_PER_SLOT}, minmax(var(--sched-lane-h), 1fr))`
-                      : `repeat(${MAX_VISIBLE_PER_SLOT}, var(--sched-lane-h))`,
+                      ? `repeat(${laneCount}, minmax(var(--sched-lane-h), 1fr))`
+                      : `repeat(${laneCount}, var(--sched-lane-h))`,
                     ...(isDayMode ? { alignContent: "stretch", height: "100%" } : null),
                   }}
                 >
@@ -445,63 +519,96 @@ function SchedulerBoard({
                   {/* booking bars */}
                   {visibleCards.map((card) => {
                     const meta = SCHED_STATUS_META[card.statusKey] || SCHED_STATUS_META.waiting;
+                    // Multi-line tooltip — one fact per line so the full job
+                    // detail is easy to scan at a glance on hover.
+                    const tooltip = [
+                      `#${card.jobNumber}   ${card.reg}`,
+                      card.customer,
+                      `${card.time}${card.finish ? `–${card.finish}` : ""}   ${formatSchedHours(
+                        card.estimatedHours
+                      )}h`,
+                      card.statusLabel,
+                      card.items,
+                    ]
+                      .filter(Boolean)
+                      .join("\n");
                     return (
-                      <button
+                      <div
                         key={card.id}
-                        type="button"
-                        className={`appt-sched-bar ${meta.className}`}
+                        role="button"
+                        tabIndex={0}
+                        className="appt-sched-bar"
                         style={{
                           gridColumn: `${card.startSlot + 1} / ${card.endSlot + 1}`,
                           gridRow: `${card.lane + 1} / ${card.lane + 2}`,
                         }}
-                        onClick={() => handleBookingClick(card.jobNumber)}
-                        title={`#${card.jobNumber} · ${card.reg} · ${card.customer} · ${card.items} · ${formatSchedHours(
-                          card.estimatedHours
-                        )}h · ${card.statusLabel}${card.finish ? ` · ${card.time}-${card.finish}` : ""}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBookingClick(card.jobNumber);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleBookingClick(card.jobNumber);
+                          }
+                        }}
+                        title={tooltip}
                       >
+                        {/* single line: job · reg · customer · status (no time) */}
                         <span className="appt-sched-bar-line">
-                          <span className="appt-sched-status-dot" style={{ background: meta.dot }} />
                           <span className="appt-sched-bar-job">#{card.jobNumber}</span>
                           <span className="appt-sched-bar-reg">{card.reg}</span>
                           <span className="appt-sched-bar-customer">{card.customer}</span>
-                        </span>
-                        <span className="appt-sched-bar-line">
-                          <span className="appt-sched-bar-items">{card.items}</span>
-                          <span className="appt-sched-bar-meta">
-                            {formatSchedHours(card.estimatedHours)}h · {card.statusLabel}
+                          <span
+                            className="appt-sched-bar-status"
+                            style={{ background: meta.pillBg }}
+                          >
+                            <span className="appt-sched-status-dot" style={{ background: meta.dot }} />
+                            <span className="appt-sched-bar-status-label">{card.statusLabel}</span>
                           </span>
                         </span>
-                      </button>
+                      </div>
                     );
                   })}
 
                   {dayData.overflowSlots.map((slotOverflow) => {
                     const slotCards = slotOverflow.cards;
                     const overflowCount = slotCards.length;
+                    // Jobs hidden behind the visible stack at this slot.
+                    const hiddenCount = Math.max(1, overflowCount - MAX_VISIBLE_PER_SLOT);
                     const overflowSlot = slotOverflow.slotIndex;
+                    // Rendered as a div (not <button>) so the global
+                    // "html.staff-scope button:not(.app-btn)" rule can't hijack
+                    // its colour / size — same reason the booking tiles are divs.
+                    // Opens the day-jobs table popup (the single source of truth
+                    // for "every job on this day"), same as clicking the row.
+                    const openOverflow = (e) => {
+                      e.stopPropagation();
+                      if (typeof onOpenDayJobs === "function") {
+                        onOpenDayJobs(new Date(date.getTime()));
+                      }
+                    };
                     return (
-                      <button
+                      <div
                         key={`overflow-${dateKey}-${overflowSlot}`}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         className="appt-sched-slot-overflow-btn"
                         style={{
                           gridColumn: `${overflowSlot + 1} / ${Math.min(overflowSlot + 3, SLOT_COUNT + 1)}`,
                           gridRow: "1 / -1",
                         }}
-                        onClick={() => {
-                          setOverflow({
-                            dateLabel: date.toLocaleDateString("en-GB", {
-                              weekday: "short",
-                              day: "numeric",
-                              month: "short",
-                            }),
-                            timeLabel: slotLabel(overflowSlot),
-                            bookings: slotCards,
-                          });
+                        onClick={openOverflow}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openOverflow(e);
+                          }
                         }}
                       >
-                        View {overflowCount} jobs
-                      </button>
+                        +{hiddenCount} more
+                      </div>
                     );
                   })}
                 </div>
@@ -511,46 +618,6 @@ function SchedulerBoard({
         </div>
       </div>
 
-      {/* Overflow popup — every booking for the clicked day/time */}
-      <Popup isOpen={!!overflow} onClose={() => setOverflow(null)}>
-        {overflow && (
-          <>
-            <h3 className="appt-sched-modal-header">
-              {overflow.dateLabel}
-              <span>{overflow.timeLabel}</span>
-            </h3>
-            <div className="appt-sched-modal-list">
-              {overflow.bookings.map((card) => {
-                const meta = SCHED_STATUS_META[card.statusKey] || SCHED_STATUS_META.waiting;
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    className="appt-sched-modal-row"
-                    onClick={() => {
-                      setOverflow(null);
-                      handleBookingClick(card.jobNumber);
-                    }}
-                  >
-                    <span className="appt-sched-modal-time">{getSlotTimeLabel(card)}</span>
-                    <span className="appt-sched-modal-main">
-                      <span className="appt-sched-modal-job">#{card.jobNumber}</span>
-                      <span className="appt-sched-modal-reg">{card.reg}</span>
-                      <span>{card.customer}</span>
-                    </span>
-                    <span className="appt-sched-modal-details">{card.items}</span>
-                    <span className="appt-sched-modal-status">
-                      <span className="appt-sched-status-dot" style={{ background: meta.dot }} />
-                      {formatSchedHours(card.estimatedHours)}h · {card.statusLabel || meta.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </Popup>
-
       {/* Scheduler styling. Self-contained (appt-sched-* prefix) so it never
           leaks into other pages. global keeps the dynamically-built class names
           (capacity state, status tint) reliable. */}
@@ -558,19 +625,25 @@ function SchedulerBoard({
         .appt-sched-shell {
           --sched-date-col: 236px;
           --sched-header-h: 46px;
-          --sched-lane-h: 48px;
-          --sched-row-min-h: 132px;
-          /* Definite board height so the scheduler is its own scroll region:
-             month view scrolls inside it (today pinned to the top) and day view
-             stretches a single row to fill it exactly with no scroll. */
+          --sched-lane-h: 32px;
+          --sched-row-min-h: 150px;
+          /* Minimum board height (used as the floor). On the desktop locked-
+             viewport layout the shell flex-grows to fill the whole page card;
+             this clamp only kicks in when the parent has no definite height
+             (e.g. tablet / auto-height contexts) so it never collapses. */
           --sched-viewport-h: clamp(380px, 56vh, 760px);
 
           display: flex;
           flex-direction: column;
           width: 100%;
           min-width: 0;
+          /* Fill the visible height of the appointments planner (the page card)
+             below the booking toolbar, keeping its own internal scroll instead of
+             scrolling the whole page. 273px ≈ topbar + page gutters + page-card
+             padding + the 64px booking toolbar + stack gap. Floor at 380px on
+             short screens. */
           flex: 0 0 auto;
-          height: var(--sched-viewport-h);
+          height: max(380px, calc(100dvh - 273px));
           border-radius: var(--radius-md);
           background: var(--surface);
           overflow: hidden;
@@ -603,8 +676,12 @@ function SchedulerBoard({
           min-height: 0;
           width: 100%;
           overflow-x: hidden;
+          /* the day rows always scroll vertically inside the viewport card */
           overflow-y: auto;
           background: var(--theme);
+          /* round the viewport card to match staffglobal section cards; clips the
+             scrolled rows so the corners stay rounded as the user scrolls */
+          border-radius: var(--section-card-radius);
           /* the whole 08:00–17:00 axis fits the card width — no horizontal scroll */
           overscroll-behavior: contain;
         }
@@ -631,6 +708,14 @@ function SchedulerBoard({
           display: flex;
           width: 100%;
           min-width: 0;
+          /* Fully OPAQUE backstop so day rows scrolling up are hidden behind the
+             sticky header instead of showing through it. --theme is only 10%
+             opaque, so we stack it over the opaque --surface; the children then
+             paint their 6% accent tint on top — giving the exact same colour as
+             the date cells (6% accent → 10% theme → surface). */
+          background:
+            linear-gradient(var(--theme), var(--theme)),
+            var(--surface);
         }
         .appt-sched-corner {
           position: sticky;
@@ -639,16 +724,18 @@ function SchedulerBoard({
           flex: 0 0 var(--sched-date-col);
           width: var(--sched-date-col);
           height: var(--sched-header-h);
-          background: var(--surface);
+          /* header: 6% brand-red tint + 0.18 brand-red bottom hairline
+             (matches the nextjobs board group header) */
+          background: rgba(var(--accent-base-rgb), 0.06);
           box-shadow: inset -1px 0 0 var(--separating-line),
-            inset 0 -1px 0 var(--separating-line);
+            inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
         }
         .appt-sched-head-track {
           flex: 1 1 0;
           min-width: 0;
           display: grid;
           height: var(--sched-header-h);
-          background: var(--surface);
+          background: rgba(var(--accent-base-rgb), 0.06);
         }
         .appt-sched-head-cell {
           display: flex;
@@ -659,12 +746,13 @@ function SchedulerBoard({
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.01em;
-          color: var(--surfaceTextMuted);
+          /* match the nextjobs "Technicians" board header colour */
+          color: var(--accent-strong);
           white-space: nowrap;
           /* let the sparse hour/half-hour labels spill into the blank quarter
              columns instead of clipping inside their own narrow cell */
           overflow: visible;
-          box-shadow: inset 0 -1px 0 var(--separating-line);
+          box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
         }
         .appt-sched-head-cell-first {
           justify-content: flex-start;
@@ -674,7 +762,7 @@ function SchedulerBoard({
         }
         .appt-sched-head-cell-hour {
           color: var(--accent-strong);
-          box-shadow: inset 0 -1px 0 var(--separating-line),
+          box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18),
             inset 1px 0 0 var(--separating-line);
         }
 
@@ -693,44 +781,66 @@ function SchedulerBoard({
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 6px;
-          padding: 10px 12px;
-          background: var(--surface);
+          gap: 12px;
+          padding: 16px;
+          /* date column: 6% brand-red tint + 0.18 brand-red bottom hairline */
+          background: rgba(var(--accent-base-rgb), 0.06);
           cursor: pointer;
           box-shadow: inset -1px 0 0 var(--separating-line),
-            inset 0 -1px 0 var(--separating-line);
+            inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
           transition: background-color 0.15s ease;
         }
         .appt-sched-date-cell:hover {
           background: var(--theme-hover);
         }
+        /* Title card — weekday chip + the date, baseline-aligned on one row */
+        .appt-sched-date-head {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          width: 100%;
+        }
         .appt-sched-date-weekday {
-          font-size: 13px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--surfaceTextMuted);
+        }
+        .appt-sched-date-day {
+          font-size: 20px;
+          font-weight: 800;
+          line-height: 1;
+          /* match the nextjobs "Technicians" board header colour */
+          color: var(--accent-strong);
+          white-space: nowrap;
+        }
+        /* 2×2 summary grid — each metric stacks its label over its value */
+        .appt-sched-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          width: 100%;
+        }
+        .appt-sched-summary-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+          min-width: 0;
+        }
+        .appt-sched-summary-cell span {
+          font-size: 10px;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.04em;
           color: var(--surfaceTextMuted);
-        }
-        .appt-sched-date-day {
-          font-size: 19px;
-          font-weight: 700;
-          color: var(--text-1);
           white-space: nowrap;
         }
-        .appt-sched-summary-grid {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 4px 10px;
-          width: 100%;
-          font-size: 12px;
-          line-height: 1.25;
-          color: var(--surfaceTextMuted);
-        }
-        .appt-sched-summary-grid strong {
+        .appt-sched-summary-cell strong {
           color: var(--text-1);
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 800;
-          text-align: right;
+          line-height: 1.1;
           white-space: nowrap;
         }
         .appt-sched-capacity-bar {
@@ -769,6 +879,10 @@ function SchedulerBoard({
         .appt-sched-date-weekend .appt-sched-date-weekday {
           color: var(--warning);
         }
+        /* Saturday is the only weekend day shown — flag its date in amber */
+        .appt-sched-date-saturday .appt-sched-date-day {
+          color: var(--warning);
+        }
         .appt-sched-capacity-green .appt-sched-date-weekday {
           color: var(--success);
         }
@@ -786,7 +900,14 @@ function SchedulerBoard({
           display: grid;
           min-height: var(--sched-row-min-h);
           align-content: start;
-          padding: 3px 0;
+          /* 2px inset at the top of the row + a 2px gap between stacked tile
+             lanes (the horizontal gap between tiles comes from the tile margin). */
+          padding: 2px 0;
+          row-gap: 2px;
+          /* timeline rows: var(--theme) brand-red tint (10% light / 18% dark)
+             + 0.14 brand-red bottom hairline (matches the nextjobs dropzone) */
+          background: var(--theme);
+          box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14);
         }
         .appt-sched-timeline-today {
           background: rgba(var(--success-rgb), 0.05);
@@ -806,38 +927,66 @@ function SchedulerBoard({
             inset 1px 0 0 rgba(var(--accent-base-rgb), 0.22);
         }
 
+        /* Booking tile — mirrors the /job-cards/waiting/nextjobs job card:
+           always --surface, radius-md, soft lift shadow, accent job number, an
+           uppercase reg chip, and a tinted status pill on the right. */
         .appt-sched-bar {
           position: relative;
           z-index: 1;
+          /* 32px lane — content packs onto one line; items that don't fit wrap to
+             a (clipped) second row, so each chip is shown in full or hidden
+             entirely rather than truncated mid-word. */
           display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          justify-content: center;
-          gap: 2px;
-          margin: 1px 2px;
-          padding: 5px 8px;
+          align-items: center;
+          /* query container so the content can switch from centred (snug tile) to
+             left-aligned (tile noticeably wider than the details) — see the
+             @container rule below. */
+          container-type: inline-size;
+          /* vertical gaps come from the timeline (2px inset + row-gap); tiles
+             only add a small horizontal gap so adjacent bookings don't touch. */
+          margin: 0 3px;
+          padding: 0 8px;
           border: none;
-          border-radius: var(--radius-xs);
+          border-radius: var(--radius-md);
           background: var(--surface);
           color: var(--text-1);
-          font-size: 10px;
+          font-size: 11px;
           line-height: 1.2;
           text-align: left;
           cursor: pointer;
           overflow: hidden;
           white-space: nowrap;
-          transition: filter 0.1s ease, box-shadow 0.15s ease;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+          transition: box-shadow 0.18s ease;
         }
         .appt-sched-bar:hover {
-          filter: brightness(0.97);
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
         }
         .appt-sched-bar-line {
           display: flex;
           align-items: center;
-          gap: 5px;
+          flex-wrap: wrap;
+          align-content: flex-start;
+          /* Snug tile (fits 1–4 details with little spare): centre the chips.
+             Once the tile is clearly wider than the details (see @container) the
+             chips left-align instead. */
+          justify-content: center;
+          /* no row-gap: the 2nd (overflow) row butts straight against row 1 so
+             max-height clips it away cleanly. */
+          gap: 0 6px;
           min-width: 0;
           width: 100%;
+          /* one row tall — anything that wraps below is clipped (fully hidden). */
+          max-height: 16px;
+          overflow: hidden;
+        }
+        /* Tile wider than the four details + ~one 15-min column (≈300px): the
+           chips read left-to-right instead of floating centred. Narrower tiles
+           keep the centred default above. */
+        @container (min-width: 300px) {
+          .appt-sched-bar-line {
+            justify-content: flex-start;
+          }
         }
         .appt-sched-status-dot {
           flex-shrink: 0;
@@ -847,51 +996,53 @@ function SchedulerBoard({
         }
         .appt-sched-bar-job {
           flex-shrink: 0;
-          font-weight: 700;
+          font-size: 12px;
+          font-weight: 800;
           color: var(--accent-strong);
         }
         .appt-sched-bar-reg {
           flex-shrink: 0;
-          font-weight: 600;
+          padding: 1px 7px;
+          border-radius: var(--radius-xs);
+          background: rgba(var(--accent-base-rgb), 0.1);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.03em;
           text-transform: uppercase;
+          color: var(--text-1);
         }
-        .appt-sched-bar-customer,
-        .appt-sched-bar-items {
-          flex: 1 1 auto;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        /* status pill — packs inline; shown in full or wrapped away (hidden) */
+        .appt-sched-bar-status {
+          flex: 0 0 auto;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 2px 8px;
+          border-radius: var(--radius-pill);
+          font-size: 10px;
+          font-weight: 800;
+          color: var(--text-1);
+          white-space: nowrap;
+        }
+        .appt-sched-bar-status-label {
+          white-space: nowrap;
         }
         .appt-sched-bar-customer {
+          /* sized to its content so it shows in full or wraps away entirely —
+             never truncated with an ellipsis */
+          flex: 0 0 auto;
+          white-space: nowrap;
           font-weight: 600;
-        }
-        .appt-sched-bar-items {
-          color: var(--surfaceTextMuted);
-        }
-        .appt-sched-bar-meta {
-          flex-shrink: 0;
-          color: var(--surfaceTextMuted);
-          font-weight: 700;
-        }
-
-        /* status tints applied to the soft bar background */
-        .appt-sched-status-waiting {
-          background: var(--warning-surface);
-        }
-        .appt-sched-status-progress {
-          background: var(--theme-status);
-        }
-        .appt-sched-status-complete {
-          background: var(--success-surface);
-        }
-        .appt-sched-status-cancelled {
-          background: var(--danger-surface);
+          color: var(--text-1);
         }
 
         .appt-sched-slot-overflow-btn {
           z-index: 3;
           align-self: end;
           justify-self: stretch;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           margin: 2px;
           min-height: 28px;
           padding: 2px 6px;
@@ -901,6 +1052,7 @@ function SchedulerBoard({
           color: var(--accent-strong);
           font-size: 10px;
           font-weight: 700;
+          text-align: center;
           cursor: pointer;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
         }
@@ -998,29 +1150,29 @@ function SchedulerBoard({
         @media (max-width: 767px) {
           .appt-sched-shell {
             --sched-date-col: 184px;
-            --sched-lane-h: 52px;
+            --sched-lane-h: 32px;
+          }
+          .appt-sched-date-cell {
+            padding: 12px;
+            gap: 10px;
           }
           .appt-sched-date-day {
-            font-size: 16px;
+            font-size: 18px;
           }
           .appt-sched-summary-grid {
-            gap: 3px 8px;
-            font-size: 11px;
+            gap: 6px;
           }
-          .appt-sched-summary-grid strong {
-            font-size: 12px;
+          .appt-sched-summary-cell strong {
+            font-size: 13px;
           }
           .appt-sched-head-cell {
             font-size: 11px;
           }
           .appt-sched-bar {
-            padding: 4px 6px;
+            padding: 0 7px;
           }
           .appt-sched-bar-line {
-            gap: 4px;
-          }
-          .appt-sched-bar-meta {
-            display: none;
+            gap: 0 4px;
           }
           .appt-sched-modal-row {
             grid-template-columns: 1fr;
@@ -1029,6 +1181,29 @@ function SchedulerBoard({
           .appt-sched-modal-details {
             grid-column: auto;
           }
+        }
+
+        /* ───────────────────────────────────────────────────────────────
+           Defeat the global reset. staffglobal.css has
+           "html.staff-scope * { margin: 0; padding: 0 }" (specificity 0,1,1),
+           which outranks the plain .appt-sched-* class rules above (0,1,0) and
+           silently zeroes every padding/margin we set — so tile padding, the
+           date-cell text gap, reg/status pills etc. never render. Re-assert
+           them here scoped under html.staff-scope (0,2,1) so they win. Keep
+           the values in sync with the base rules above.
+           ─────────────────────────────────────────────────────────────── */
+        html.staff-scope .appt-sched-head-cell { padding: 0 2px; }
+        html.staff-scope .appt-sched-date-cell { padding: 16px; }
+        html.staff-scope .appt-sched-timeline { padding: 3px 0; }
+        html.staff-scope .appt-sched-bar { margin: 0 3px; padding: 0 8px; }
+        html.staff-scope .appt-sched-bar-reg { padding: 1px 7px; }
+        html.staff-scope .appt-sched-bar-status { padding: 2px 8px; }
+        html.staff-scope .appt-sched-slot-overflow-btn { margin: 2px; padding: 2px 6px; }
+        html.staff-scope .appt-sched-modal-header { margin: 0 0 14px; }
+        html.staff-scope .appt-sched-modal-row { padding: 9px 11px; }
+        @media (max-width: 767px) {
+          html.staff-scope .appt-sched-date-cell { padding: 12px; }
+          html.staff-scope .appt-sched-bar { padding: 0 7px; }
         }
       `}</style>
     </>
@@ -1059,6 +1234,9 @@ export default function AppointmentsUi(props) {
     handleJobRowClick,
     handleJobRowHover,
     handleSelectScheduleDate,
+    handleOpenDayJobs,
+    showDayJobsPopup,
+    setShowDayJobsPopup,
     highlightJob,
     isCompactMobile,
     isJobActuallyCheckedIn,
@@ -1179,37 +1357,50 @@ export default function AppointmentsUi(props) {
           {/* Workshop Scheduler — inlined CSS-Grid planning board (replaces the
               former availability table). Self-contained appt-sched-* styling. */}
           <SchedulerBoard
-            Popup={Popup}
             jobs={schedulerJobs}
             selectedDay={selectedDay}
             onSelectDay={setSelectedDay}
             onOpenJob={handleJobRowClick}
+            onOpenDayJobs={handleOpenDayJobs}
             getFinishTime={schedulerGetFinish}
             getBookingHours={schedulerGetBookingHours}
             getDayTechSummary={getDayTechSummary}
             viewMode={scheduleViewMode}
           />
 
-          {/* Jobs for Selected Day Section */}
-          <LayerSurface
-            as="div"
-            sectionKey="appointments-day-jobs"
-            parentKey="appointments-planner"
-            sectionType="content-card"
-            backgroundToken="surface"
-            data-presentation="appointments-day-jobs"
-            data-dev-text-preview="Jobs for the selected day"
-            style={{
-              flex: "0 0 40%",
-              marginBottom: "8px",
-              padding: "16px",
-              overflowY: "auto"
-            }}>
+          {/* Day Jobs popup — opened by clicking a scheduler day's time column.
+              Replaces the former always-visible appointments-day-jobs section;
+              shows that day's jobs in the same table/list layout. */}
+          {/* Day-jobs popup uses the shared staffglobal PopupModal directly (not
+              the <Popup> wrapper) so its full-cover 9999 backdrop sits above the
+              3300 topbar — hiding the topbar while open — and so we can place the
+              Close button top-right instead of a forced bottom button. */}
+          <PopupModal
+            isOpen={showDayJobsPopup}
+            onClose={() => setShowDayJobsPopup(false)}
+            ariaLabel="Jobs for the selected day"
+            cardStyle={{
+              width: "min(1100px, 94vw)",
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden"
+            }}
+          >
+            <div
+              data-presentation="appointments-day-jobs"
+              data-dev-section-key="appointments-day-jobs"
+              data-dev-section-parent="appointments-planner"
+              data-dev-section-type="content-card"
+              data-dev-background-token="surface"
+              data-dev-text-preview="Jobs for the selected day"
+              style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             {jobsLoading && <SkeletonKeyframes />}
             <div style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                gap: "12px",
                 marginBottom: "16px"
               }}>
               <h3 style={{
@@ -1221,24 +1412,38 @@ export default function AppointmentsUi(props) {
                     color: "var(--primary)"
                   }}>{formatDateNoYear(selectedDay)}</span>
               </h3>
-              <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "6px 12px",
-                  backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  fontSize: "13px",
-                  fontWeight: "700",
-                  color: "var(--text-1)"
-                }}>
-                {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "6px 12px",
+                    backgroundColor: "var(--surface)",
+                    borderRadius: "var(--radius-xs)",
+                    border: "none",
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    color: "var(--text-1)"
+                  }}>
+                  {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
+                </span>
+                {/* Close — top-right of the popup */}
+                <button
+                  type="button"
+                  className="app-btn app-btn--secondary"
+                  onClick={() => setShowDayJobsPopup(false)}
+                  style={{ minHeight: 0 }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
-            {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
+            {/* ✅ Enhanced Jobs Table — caps at ~10 rows, then scrolls vertically.
+                ~10 × 49px row + the sticky header ≈ 540px. */}
             <div style={{
                 overflowX: "auto",
+                overflowY: "auto",
+                maxHeight: "min(64vh, 540px)",
                 borderRadius: "var(--radius-md)",
                 background: "var(--theme)"
               }}>
@@ -1486,7 +1691,8 @@ export default function AppointmentsUi(props) {
                 </tbody>
               </table>
             </div>
-          </LayerSurface>
+            </div>
+          </PopupModal>
 
           {/* Add Note Popup */}
           <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
