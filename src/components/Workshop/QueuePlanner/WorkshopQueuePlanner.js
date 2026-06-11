@@ -585,6 +585,44 @@ export default function WorkshopQueuePlanner({
   const highlighted = highlightedSearchJobNumbers || [];
   const clockedOn = clockedOnJobNumbers || [];
 
+  // Search bar rests in flow (top-left). The moment it's focused (being used) it
+  // becomes `position: sticky` so it can never scroll out of view — but it looks
+  // identical to its resting self until it's actually pinned. Only once the page
+  // scrolls far enough that the bar reaches the sticky line do we add the elevated
+  // "float" styling (surface + lift), so it doesn't visibly change just from being
+  // focused. A 1px sentinel at the bar's rest spot, watched by an observer, tells
+  // us when it's stuck. Position is gated on focus alone (it must be sticky BEFORE
+  // any scroll); the cosmetic float is gated on focus + stuck. Blur → back to rest.
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const [searchStuck, setSearchStuck] = React.useState(false);
+  const searchSentinelRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const node = searchSentinelRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return undefined;
+    // Find the actual scroll container (nearest vertically-scrollable ancestor) so
+    // the "stuck" detection is measured against the same box position: sticky pins
+    // to — not the viewport, which sits above this card's internal scroller.
+    let root = node.parentElement;
+    while (root && root !== document.body) {
+      const oy = window.getComputedStyle(root).overflowY;
+      if (oy === "auto" || oy === "scroll") break;
+      root = root.parentElement;
+    }
+    const observer = new IntersectionObserver(
+      // Stuck = the rest position has scrolled up out of the container's top, i.e.
+      // the bar has lifted off and is now pinned. At rest the sentinel sits at the
+      // container top (intersecting) → not stuck → no float styling, no movement.
+      ([entry]) => setSearchStuck(!entry.isIntersecting),
+      { root: root && root !== document.body ? root : null, threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const searchSticky = searchFocused; // pinned position while in use
+  const searchFloating = searchFocused && searchStuck; // elevated look only when stuck
+
   const sharedDropProps = {
     draggingJob,
     matchesDropIndicator,
@@ -631,15 +669,20 @@ export default function WorkshopQueuePlanner({
       data-dev-section-type="page-shell"
       data-dev-background-token="transparent"
       data-dev-text-preview="Workshop queue planner"
-      style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", minWidth: 0, minHeight: "100%" }}
+      style={{ position: "relative", display: "flex", flexDirection: "column", gap: "16px", width: "100%", minWidth: 0, minHeight: "100%" }}
     >
+      {/* Sentinel at the search bar's resting position. While it stays in view the
+          bar is at rest (no float styling); once it scrolls past the sticky line
+          the bar is "stuck" and gets its elevated look. */}
+      <div ref={searchSentinelRef} aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, width: "1px", height: "1px", pointerEvents: "none" }} />
+
       {/* ===================== Search (top — all sections) ================= */}
       {/* One search box for the whole page. The page matches the term against
           every job (checked-in, unassigned and assigned) and feeds back the
           matching job numbers, so a search lights up matches in any section. */}
       {SearchBar && (
         <div
-          className="wqp-searchwrap"
+          className={`wqp-searchwrap${searchSticky ? " wqp-searchwrap--sticky" : ""}${searchFloating ? " wqp-searchwrap--stuck" : ""}`}
           data-dev-section="1"
           data-dev-section-key="workshop-search-filter"
           data-dev-section-parent="workshop-queue-planner"
@@ -652,6 +695,8 @@ export default function WorkshopQueuePlanner({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onClear={() => setSearchTerm("")}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
           />
         </div>
       )}
@@ -712,6 +757,12 @@ export default function WorkshopQueuePlanner({
                   key={job.jobNumber}
                   type="button"
                   className="wqp-lift"
+                  // Register the DOM node so a search hit on a checked-in job can be
+                  // scrolled into view (search auto-scroll lives in nextjobs.js).
+                  ref={(node) => {
+                    if (node) jobCardRefs.current[job.jobNumber] = node;
+                    else if (jobCardRefs.current[job.jobNumber]) delete jobCardRefs.current[job.jobNumber];
+                  }}
                   data-dev-section="1"
                   data-dev-section-key={`workshop-checked-in-job-${toDevSectionKey(job.jobNumber)}`}
                   data-dev-section-parent="workshop-checked-in-strip"
@@ -903,13 +954,36 @@ export default function WorkshopQueuePlanner({
           }
         }
         .wqp-searchwrap {
-          align-self: flex-end;
+          /* Rests top-left, on its own line at the top of the page. */
+          align-self: flex-start;
           width: 340px;
           min-width: 220px;
           max-width: 100%;
           /* Hug the search bar's own height — the shell is a column flex container,
              so a flex-basis here would stretch the wrapper's height, not its width. */
           flex: 0 0 auto;
+        }
+        /* While the search is in use it's sticky so it can never scroll out of
+           view. The bar is the first element in the scroll container, so its rest
+           offset is ~0 — top:0 keeps it exactly where it rests (no push-down / no
+           jump into the section below on focus). It only lifts once stuck. */
+        .wqp-searchwrap--sticky {
+          position: sticky;
+          top: 0;
+          /* Above every card / section in the page (they sit at z-index 1–3), but
+             below the job-details modal (3200) so popups still cover it. */
+          z-index: 200;
+          isolation: isolate;
+          transition: top 0.18s ease, box-shadow 0.18s ease;
+        }
+        /* Once actually stuck (scrolled off its rest spot), lift it clear of the
+           topbar and give it the elevated look so content passes cleanly under it. */
+        .wqp-searchwrap--stuck {
+          /* Clear the topbar (≈75px) so it isn't covered when the bar folds down. */
+          top: 88px;
+          background: var(--surface);
+          border-radius: var(--radius-md);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
         }
         .wqp-lift {
           transition: transform 0.14s ease, box-shadow 0.18s ease;

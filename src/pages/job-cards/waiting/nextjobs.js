@@ -1399,11 +1399,18 @@ export default function NextJobsPage() {
 
     setHighlightedSearchJobNumbers(jobNumbers);
 
-    const firstMatch = jobNumbers[0];
-    const firstMatchElement = firstMatch ? jobCardRefs.current[firstMatch] : null;
-    if (firstMatchElement && typeof firstMatchElement.scrollIntoView === "function") {
-      firstMatchElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    // Scroll the matched job into view. Matches arrive in raw `jobs` order, so the
+    // first match may be a section/card that hasn't registered a DOM node — pick the
+    // first match that actually has one rather than silently failing on jobNumbers[0].
+    // Defer to the next frame so the scroll runs after the highlight has painted.
+    const scrollFrame = window.requestAnimationFrame(() => {
+      const target = jobNumbers
+        .map((jobNumber) => jobCardRefs.current[jobNumber])
+        .find((node) => node && typeof node.scrollIntoView === "function");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
 
     searchHighlightTimeoutRef.current = window.setTimeout(() => {
       setHighlightedSearchJobNumbers([]);
@@ -1411,6 +1418,7 @@ export default function NextJobsPage() {
     }, 5000);
 
     return () => {
+      window.cancelAnimationFrame(scrollFrame);
       if (searchHighlightTimeoutRef.current) {
         clearTimeout(searchHighlightTimeoutRef.current);
         searchHighlightTimeoutRef.current = null;

@@ -129,6 +129,20 @@ export default function Layout({
   // tucks behind the card's frame at the bottom/sides, so the content slides
   // behind the panel edges instead of butting against the border.
   const pageScrollRef = useRef(null);
+  // Measured content/scroller geometry for the "in-between zone" fix below.
+  // pageStackRef = the in-flow content stack; availSmallRef caches the card's
+  // at-rest (bar-shown) inner height; topbarScrolledRef mirrors the bar's folded
+  // state for the ResizeObserver callback (which can't read React state directly).
+  const pageStackRef = useRef(null);
+  const availSmallRef = useRef(0);
+  const topbarScrolledRef = useRef(false);
+  // Extra scroll room added to the bottom of the inner scroller ONLY when the
+  // page content is in the in-between zone — tall enough to overflow the card
+  // while the bar is shown, short enough to (nearly) fit once the bar folds.
+  // Without it that zone jitters: folding grows the card, the content fits,
+  // scrollTop snaps to 0, the bar unfolds, it overflows again. The spacer keeps
+  // a little range past the fold so the bar stays folded and all content shows.
+  const [lockedBottomSpacer, setLockedBottomSpacer] = useState(0);
 
   // Auto-hide topbar (desktop). Lifted here — rather than owned inside
   // StaffTopbar — so the page card can react to the bar's folded state: when the
@@ -351,6 +365,63 @@ export default function Layout({
   useEffect(() => {
     if (pageScrollRef.current) pageScrollRef.current.scrollTop = 0;
   }, [router.pathname]);
+
+  // Mirror the bar's folded state into a ref so the ResizeObserver below can read
+  // it without re-subscribing on every fold.
+  useEffect(() => {
+    topbarScrolledRef.current = topbarScrolled;
+  }, [topbarScrolled]);
+
+  // In-between-zone hold (locked-viewport model only). When the page content is
+  // taller than the bar-shown card but fits — or nearly fits — once the bar folds
+  // and the card grows, we add just enough bottom spacing inside the inner
+  // scroller that scrolling can fold the bar AND keep a little range past the
+  // fold. That stops the fold → card-grows → content-fits → snap-to-top → unfold
+  // jitter, so the bar stays folded (the section extends down) and all content
+  // becomes reachable. Short content (no overflow) and tall content (genuine
+  // scroll) both compute a zero spacer and behave exactly as before.
+  useEffect(() => {
+    if (!lockViewport || typeof window === "undefined") {
+      setLockedBottomSpacer(0);
+      return undefined;
+    }
+    const scroller = pageScrollRef.current;
+    const stack = pageStackRef.current;
+    if (!scroller || !stack || typeof ResizeObserver === "undefined") return undefined;
+
+    // Distance the card grows when the bar folds away — mirrors lockedCardTopOffset
+    // (page gutter + 75px topbar + 12px gap). Read the gutter from the same token.
+    const computeCollapseDistance = () => {
+      const parsed = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--page-gutter-y")
+      );
+      const gutter = Number.isFinite(parsed) ? parsed : 18;
+      return gutter + 75 + 12;
+    };
+
+    const HOLD_MARGIN = 12; // keep a little range past the fold so it never snaps back
+
+    const recompute = () => {
+      const collapse = computeCollapseDistance();
+      // The card's height animates as the bar folds, so only trust a reading taken
+      // while the bar is docked; reuse the cached value during/after a fold.
+      if (!topbarScrolledRef.current) {
+        availSmallRef.current = scroller.clientHeight;
+      }
+      const availSmall = availSmallRef.current || scroller.clientHeight;
+      const availBig = availSmall + collapse;
+      const content = stack.getBoundingClientRect().height;
+      const spacer =
+        content > availSmall + 1 ? Math.max(0, availBig + HOLD_MARGIN - content) : 0;
+      setLockedBottomSpacer((prev) => (Math.abs(prev - spacer) < 0.5 ? prev : spacer));
+    };
+
+    const ro = new ResizeObserver(recompute);
+    ro.observe(scroller);
+    ro.observe(stack);
+    recompute();
+    return () => ro.disconnect();
+  }, [lockViewport, router.pathname]);
 
   useEffect(() => {
     if (presentationShell) return;
@@ -1252,10 +1323,17 @@ export default function Layout({
                       }
                 }
               >
-                <div className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
+                <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
                   {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>
+                {/* In-between-zone hold (see lockedBottomSpacer): keeps a little
+                    scroll range past the fold so the bar stays folded and the
+                    section's content extends fully into view. Zero on short and
+                    genuinely-tall pages, so it never adds dead space there. */}
+                {lockViewport && lockedBottomSpacer > 0 && (
+                  <div aria-hidden="true" style={{ height: `${lockedBottomSpacer}px` }} />
+                )}
               </div>
             </DevLayoutSection>
           </div>

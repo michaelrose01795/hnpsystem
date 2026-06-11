@@ -1,3 +1,26 @@
+Finish
+improve url visuals with everypage, lets not have the url like "job-cards/ENR00068" for example but like "/ENR00068" instead for pages like that, a tech can open a page which is simular just doesnt have access to some of the tabs for example but can taht still be "/ENR00068" instead of 
+
+CHECK
+have it so when the user start to type the search bar sits at the point below the topbar when scrolling but above everything within the "/job-cards/waiting/nextjobs" page so this the page can scroll and change but the search bar still be visible within the page, have it os when the search bar isnt being used it in the resting spot on the same line as it is atm but to the top left side of the page, have it so when the autofind starts working it moves to that position which will be in the top left of the screen still just with the style i mention in this prompt already
+
+
+TODO
+deep dive and improve the drag and drop function withint he "Workshop Queue Board Grid | 1.2.1.1.1.2.1.1 key: workshop-queue-board-grid source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:419 route: /job-cards/waiting/nextjobs parent workshop-queue-board-scroll (1.2.1.1.1.2.1) | 11 children" section this isnt changing how it looks visually just the function of it as atm its a bit glitchy etc, make it smooth and consistent and doesnt cause other section to flicker etc, have it easy to use
+
+
+
+what ur describing create an image with the changes within the page for the "Clocking" section only
+
+what ur describing create an image with the changes within the page for the "Messages" section only
+
+what ur describing create an image with the changes within the page for the "Documents" section only
+
+what ur describing create an image with the changes within the page for the "Invoice" section only
+
+
+
+
 
 
 TODO
