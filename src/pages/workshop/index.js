@@ -2,7 +2,7 @@
 import WorkshopIndexRedirectUi from "@/components/page-ui/workshop/workshop-ui"; // Extracted presentation layer.
 export async function getServerSideProps() {return {
     redirect: {
-      destination: "/workshop/consumables-tracker",
+      destination: "/consumables-tracker",
       permanent: false
     }
   };

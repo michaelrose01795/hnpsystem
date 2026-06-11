@@ -1,5 +1,5 @@
-// file location: src/pages/staff/website-manager.js
-// Staff-side Website Manager page — route: /staff/website-manager
+// file location: src/pages/website-manager.js
+// Staff-side Website Manager page — route: /website-manager
 //
 // Access: Admin, Managers and Sales (plus Owner). Two guards apply:
 //   1. PageAccessGuard in _app.js derives accessible routes from the sidebar

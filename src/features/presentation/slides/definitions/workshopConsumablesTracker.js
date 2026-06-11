@@ -1,6 +1,6 @@
 export const workshopConsumablesTrackerSlide = {
   id: "workshop-consumables-tracker",
-  route: "/workshop/consumables-tracker",
+  route: "/consumables-tracker",
   title: "Consumables Tracker",
   roles: null,
   workflowIndex: 105,

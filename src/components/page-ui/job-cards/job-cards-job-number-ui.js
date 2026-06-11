@@ -197,7 +197,7 @@ export default function JobCardDetailPageUi(props) {
       display: "flex",
       gap: "10px"
     }}>
-            <button onClick={() => router.push("/job-cards/view")} style={{
+            <button onClick={() => router.push("/jobs")} style={{
         padding: "var(--control-padding)",
         backgroundColor: "var(--primary)",
         color: "var(--text-2)",

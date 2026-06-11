@@ -312,7 +312,7 @@ export default function Sidebar({
           (item) =>
             hasAccess(item) &&
             (inPresentationMode || !item.href || !hiddenHrRoutes.has(item.href)) &&
-            (inPresentationMode || !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive"))
+            (inPresentationMode || !(hasRestrictedJobSectionRole && item.href === "/archive"))
         ),
       }))
       .filter((section) => section.items.length > 0);

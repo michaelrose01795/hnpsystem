@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const jobCardsListSlide = {
   id: "job-cards-list",
-  route: "/job-cards/view",
+  route: "/jobs",
   title: "Job Cards - Workshop Backbone",
   roles: [
     "admin", "admin manager", "owner", "service", "service manager",

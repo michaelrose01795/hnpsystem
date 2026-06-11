@@ -26,7 +26,7 @@ export const profilePrivacySlide = {
 
 export const accountSecuritySlide = {
   id: "account-security",
-  route: "/account/security",
+  route: "/security",
   title: "Account Security",
   roles: null,
   workflowIndex: 141,

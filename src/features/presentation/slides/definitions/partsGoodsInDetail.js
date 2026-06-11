@@ -1,6 +1,6 @@
 export const partsGoodsInDetailSlide = {
   id: "parts-goods-in-detail",
-  route: "/parts/goods-in/[goodsInNumber]",
+  route: "/goods-in/[goodsInNumber]",
   title: "Goods-In Detail",
   roles: null,
   workflowIndex: 78,

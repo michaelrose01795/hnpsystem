@@ -1,6 +1,6 @@
 export const jobCardsWaitingNextJobsSlide = {
   id: "job-cards-waiting-nextjobs",
-  route: "/job-cards/waiting/nextjobs",
+  route: "/nextjobs",
   title: "Waiting / Next Jobs",
   roles: null,
   workflowIndex: 72,

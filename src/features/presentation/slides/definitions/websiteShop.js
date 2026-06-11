@@ -112,7 +112,7 @@ export const websiteShopCancelSlide = {
 // entries so the sidebar buttons can navigate through the presentation deck.
 export const staffWebsiteLivePreviewSlide = {
   id: "staff-website-live-preview",
-  route: "/staff/website-manager?tab=preview",
+  route: "/website-manager?tab=preview",
   title: "Website Live Preview",
   roles: SHOP_ROLES,
   workflowIndex: 142,
@@ -134,7 +134,7 @@ export const staffWebsiteLivePreviewSlide = {
 
 export const staffWebsiteShopSlide = {
   id: "staff-website-shop",
-  route: "/staff/website-manager?tab=shop",
+  route: "/website-manager?tab=shop",
   title: "Website Shop Management",
   roles: SHOP_ROLES,
   workflowIndex: 143,

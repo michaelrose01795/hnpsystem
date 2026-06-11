@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/myjobs/index.js
+// file location: src/pages/tech/index.js
 // ✅ Imports converted to use absolute alias "@/"
 "use client";
 

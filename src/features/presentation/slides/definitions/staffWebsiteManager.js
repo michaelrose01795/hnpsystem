@@ -3,7 +3,7 @@
 
 export const staffWebsiteManagerSlide = {
   id: "staff-website-manager",
-  route: "/staff/website-manager",
+  route: "/website-manager",
   title: "Website Manager",
   // Roles widened to match the actual access list (owner + admin + managers
   // + sales). Sales staff also use this to edit Offers and Vehicles.

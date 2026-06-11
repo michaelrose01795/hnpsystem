@@ -731,7 +731,7 @@ function GoodsInPage() {
 
   const handleCompletionDismiss = useCallback(() => {
     resetGoodsInState();
-    router.push("/parts/goods-in");
+    router.push("/goods-in");
   }, [resetGoodsInState, router]);
 
   const handleJobItemsAssigned = (updatedItems) => {

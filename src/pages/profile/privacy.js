@@ -403,7 +403,7 @@ export function PrivacyPanel() {
           <p style={{ margin: 0, color: "var(--surfaceTextMuted)", lineHeight: 1.5 }}>
             This page summarises the personal data we hold about you and lets you manage your consents or
             file a request under UK GDPR. Account security controls (password change, recent sign-in
-            activity) are on <Link href="/account/security">/account/security</Link>.
+            activity) are on <Link href="/security">/security</Link>.
           </p>
           {error && (
             <p role="alert" style={{ margin: "10px 0 0", color: "var(--danger-base)" }}>

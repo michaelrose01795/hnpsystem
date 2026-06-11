@@ -59,25 +59,37 @@ export const PUBLIC_PREFIXES = [
 
 // Path prefixes that require an authenticated session.
 export const PROTECTED_PREFIXES = [
-  "/account",
   "/accounts",
   "/admin",
   "/appointments",
+  "/archive", // job-card archive (moved from /job-cards/archive)
   "/clocking",
   "/company-accounts",
+  "/consumables-request", // moved from /tech/consumables-request
+  "/consumables-tracker", // moved from /workshop/consumables-tracker
   "/customers",
   "/dashboard",
+  "/deliveries", // moved from /parts/deliveries
+  "/delivery-planner", // moved from /parts/delivery-planner
   "/dev",
+  "/goods-in", // moved from /parts/goods-in
   "/hr",
   "/job-cards",
+  "/jobs", // job-cards list (moved from /job-cards/view)
   "/messages",
   "/mobile",
+  "/new-job", // create job card (moved from /job-cards/create)
+  "/new-order", // create parts order (moved from /parts/create-order)
+  "/nextjobs", // next-jobs queue (moved from /job-cards/waiting/nextjobs)
   "/parts",
+  "/parts-manager", // moved from /parts/manager
   "/profile",
+  "/security", // own account security (moved from /account/security)
   "/tech",
   "/tracking",
   "/valet",
   "/vhc",
+  "/website-manager", // staff website CMS (moved from /staff/website-manager)
   "/workshop",
 ];
 
@@ -108,11 +120,11 @@ const ACCOUNTS_NAV_ROLE_SET = new Set(["accounts", "accounts manager"]);
 // (src/components/layout/StaffTopbar.js → SERVICE_ACTION_LINKS / PARTS_ACTION_LINKS).
 // Keep in sync if those topbar lists change.
 export const TOPBAR_LINKS = [
-  { href: "/job-cards/create", roles: SERVICE_ACTION_ROLE_SET },
+  { href: "/new-job", roles: SERVICE_ACTION_ROLE_SET },
   { href: "/job-cards/appointments", roles: SERVICE_ACTION_ROLE_SET },
-  { href: "/parts/delivery-planner", roles: PARTS_NAV_ROLE_SET },
-  { href: "/parts/create-order", roles: PARTS_NAV_ROLE_SET },
-  { href: "/parts/goods-in", roles: PARTS_NAV_ROLE_SET },
+  { href: "/delivery-planner", roles: PARTS_NAV_ROLE_SET },
+  { href: "/new-order", roles: PARTS_NAV_ROLE_SET },
+  { href: "/goods-in", roles: PARTS_NAV_ROLE_SET },
 ];
 
 // Mirror of the dynamic "Accounts" sidebar section built at render time inside
@@ -136,7 +148,7 @@ export const ALWAYS_ALLOWED_EXACT = new Set([
   "/messages",
   "/profile",
   "/profile/privacy",
-  "/account/security",
+  "/security",
   "/website",
   "/_error",
   "/404",
@@ -165,29 +177,29 @@ export const ALWAYS_ALLOWED_PREFIXES = [
 // patterns ([param] placeholders); values are the list pages granting entry.
 export const DYNAMIC_DETAIL_EXTENDS = {
   "/job-cards/[jobNumber]": [
-    "/job-cards/view",
-    "/job-cards/myjobs",
-    "/job-cards/create",
-    "/job-cards/waiting/nextjobs",
-    "/job-cards/archive",
+    "/jobs",
+    "/tech",
+    "/new-job",
+    "/nextjobs",
+    "/archive",
   ],
-  "/job-cards/myjobs/[jobNumber]": ["/job-cards/myjobs"],
-  "/job-cards/valet/[jobnumber]": ["/valet", "/job-cards/view"],
-  "/job-cards/view": ["/job-cards/view"],
+  "/tech/[jobNumber]": ["/tech"],
+  "/valet/[jobNumber]": ["/valet", "/jobs"],
+  "/jobs": ["/jobs"],
   // /customers isn't in the sidebar but staff with job-card or admin access
   // reach it via search/links — grant it to anyone with job-card visibility.
   "/customers": [
-    "/job-cards/view",
-    "/job-cards/myjobs",
-    "/job-cards/create",
-    "/job-cards/waiting/nextjobs",
+    "/jobs",
+    "/tech",
+    "/new-job",
+    "/nextjobs",
     "/admin/users",
   ],
   "/customers/[customerSlug]": [
-    "/job-cards/view",
-    "/job-cards/myjobs",
-    "/job-cards/create",
-    "/job-cards/waiting/nextjobs",
+    "/jobs",
+    "/tech",
+    "/new-job",
+    "/nextjobs",
     "/admin/users",
   ],
   "/clocking/[technicianSlug]": ["/clocking"],
@@ -223,21 +235,21 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/hr/reports": ["/hr/manager"],
   "/hr/settings": ["/hr/manager"],
   "/hr/training": ["/hr/manager"],
-  "/parts/create-order/[orderNumber]": ["/parts/create-order"],
-  "/parts/deliveries": ["/parts/deliveries"],
-  "/parts/deliveries/[deliveryId]": ["/parts/deliveries"],
-  "/parts/goods-in/[goodsInNumber]": ["/parts/goods-in"],
+  "/new-order/[orderNumber]": ["/new-order"],
+  "/deliveries": ["/deliveries"],
+  "/deliveries/[deliveryId]": ["/deliveries"],
+  "/goods-in/[goodsInNumber]": ["/goods-in"],
   "/parts": [
-    "/job-cards/view",
-    "/parts/goods-in",
-    "/parts/deliveries",
+    "/jobs",
+    "/goods-in",
+    "/deliveries",
     "/stock-catalogue",
   ],
-  "/parts/manager": ["/parts/deliveries"],
-  "/tech/dashboard": ["/job-cards/myjobs"],
-  "/workshop": ["/workshop/consumables-tracker"],
-  "/newpage": ["/workshop/consumables-tracker"],
-  "/job-cards": ["/job-cards/view"],
+  "/parts-manager": ["/deliveries"],
+  "/tech/dashboard": ["/tech"],
+  "/workshop": ["/consumables-tracker"],
+  "/newpage": ["/consumables-tracker"],
+  "/job-cards": ["/jobs"],
   // /job-cards/appointments redirects to /appointments — grant /appointments
   // anywhere /job-cards/appointments is in nav.
   "/appointments": ["/appointments", "/job-cards/appointments"],

@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import ProfileThemeControls from "@/components/profile/ProfileThemeControls";
 import ProfilePageWrapperUi from "@/components/page-ui/profile/profile-ui"; // Extracted presentation layer.
 import PopupModal from "@/components/popups/popupStyleApi";
-import { SecurityPanel } from "@/pages/account/security";
+import { SecurityPanel } from "@/pages/security";
 import { PrivacyPanel } from "@/pages/profile/privacy";
 import { DesktopAppPanel } from "@/components/profile/DesktopAppCard"; // Desktop installer download popup
 

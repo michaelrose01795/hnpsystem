@@ -8473,7 +8473,7 @@ export default function VhcDetailsPanel({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <button
                 type="button"
-                onClick={() => router.push("/job-cards/view")}
+                onClick={() => router.push("/jobs")}
                 style={{
                 borderRadius: "var(--input-radius)",
                 padding: "8px 14px",

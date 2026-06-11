@@ -800,7 +800,7 @@ export default function DevLayoutOverlay() {
   if (!canAccess || !hydrated) return null;
 
   const currentRoute = router.asPath || router.pathname || "/";
-  const isJobCardsCreateRoute = currentRoute.startsWith("/job-cards/create");
+  const isJobCardsCreateRoute = currentRoute.startsWith("/new-job");
 
   const overlayStyle = overlayBounds
     ? {

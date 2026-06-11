@@ -15,14 +15,14 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 // Topbar-only quick-action links (previously module constants in Layout.js).
 const SERVICE_ACTION_LINKS = [
-  { label: "Create Job Card", href: "/job-cards/create" },
+  { label: "Create Job Card", href: "/new-job" },
   { label: "Appointments", href: "/job-cards/appointments" },
 ];
 
 const PARTS_ACTION_LINKS = [
-  { label: "Delivery/Collection Planner", href: "/parts/delivery-planner" },
-  { label: "Create Order", href: "/parts/create-order" },
-  { label: "Goods In", href: "/parts/goods-in" },
+  { label: "Delivery/Collection Planner", href: "/delivery-planner" },
+  { label: "Create Order", href: "/new-order" },
+  { label: "Goods In", href: "/goods-in" },
 ];
 
 export default function StaffTopbar({
@@ -238,7 +238,7 @@ export default function StaffTopbar({
                 </DropdownField>
                 {!presentationShell && currentJob?.jobNumber ? (
                   <Link
-                    href={`/job-cards/myjobs/${currentJob.jobNumber}`}
+                    href={`/tech/${currentJob.jobNumber}`}
                     prefetch={false}
                     className="app-btn app-btn--primary"
                   >

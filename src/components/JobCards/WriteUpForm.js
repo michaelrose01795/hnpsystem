@@ -1272,7 +1272,7 @@ function WriteUpForm({
             if (onSaveSuccess) {
               onSaveSuccess();
             } else if (isTech) {
-              router.push(`/job-cards/myjobs/${jobNumber}`);
+              router.push(`/tech/${jobNumber}`);
             } else {
               router.push(`/job-cards/${jobNumber}`);
             }
@@ -2311,7 +2311,7 @@ function WriteUpForm({
 
   const goBackToJobCard = () => {
     if (isTech) {
-      router.push(`/job-cards/myjobs/${jobNumber}`);
+      router.push(`/tech/${jobNumber}`);
     } else {
       router.push(`/job-cards/${jobNumber}`);
     }

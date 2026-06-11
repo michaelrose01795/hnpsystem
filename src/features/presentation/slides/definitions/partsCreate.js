@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const partsCreateSlide = {
   id: "parts-create-order",
-  route: "/parts/create-order",
+  route: "/new-order",
   title: "Parts - Create Order",
   roles: ["admin", "admin manager", "owner", "parts", "parts manager", "service", "service manager", "workshop manager"],
   workflowIndex: WORKFLOW.PARTS_CREATE,

@@ -203,21 +203,21 @@ export default function AccountsListPage() {
     description: "Trace account spend back to workshop jobs",
     value: linkedInvoices.find((invoice) => invoice.job_number)?.job_number || "Linked by job number",
     actionLabel: "Open job cards",
-    onClick: () => router.push("/job-cards/view")
+    onClick: () => router.push("/jobs")
   },
   {
     title: "Parts Orders",
     description: "Follow order numbers tied to invoiced work",
     value: linkedInvoices.find((invoice) => invoice.order_number)?.order_number || "Linked by order number",
     actionLabel: "Open orders",
-    onClick: () => router.push("/parts/create-order")
+    onClick: () => router.push("/new-order")
   },
   {
     title: "Goods In",
     description: "Check supplier intake and stock-side value flow",
     value: linkedGoodsIn[0]?.goods_in_number || "Linked by goods-in reference",
     actionLabel: "Open goods in",
-    onClick: () => router.push("/parts/goods-in")
+    onClick: () => router.push("/goods-in")
   }];
 
 
@@ -330,7 +330,7 @@ export default function AccountsListPage() {
                   </Button>
               }
                 {invoice.order_number &&
-              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/parts/create-order/${encodeURIComponent(invoice.order_number)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/new-order/${encodeURIComponent(invoice.order_number)}`)}>
                     Order {invoice.order_number}
                   </Button>
               }
@@ -346,7 +346,7 @@ export default function AccountsListPage() {
         <LayerSurface as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
-            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
+            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
               Goods in
             </Button>
           </div>
@@ -365,11 +365,11 @@ export default function AccountsListPage() {
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {record.goods_in_number &&
-              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/parts/goods-in/${encodeURIComponent(record.goods_in_number)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/goods-in/${encodeURIComponent(record.goods_in_number)}`)}>
                     {record.goods_in_number}
                   </Button>
               }
-                <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
+                <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
                   Goods in workspace
                 </Button>
               </div>

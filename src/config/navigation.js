@@ -21,7 +21,7 @@ export const sidebarSections = [
       },
       {
         label: "Archive Job",
-        href: "/job-cards/archive",
+        href: "/archive",
         roles: [],
       },
     ],
@@ -32,12 +32,12 @@ export const sidebarSections = [
     items: [
       {
         label: "Next Jobs",
-        href: "/job-cards/waiting/nextjobs",
+        href: "/nextjobs",
         roles: ["admin manager"],
       },
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["admin manager"],
       },
       {
@@ -76,20 +76,20 @@ export const sidebarSections = [
         // Access: Admin, Managers and Sales — keep this list in sync with
         // WEBSITE_MANAGER_ROLES in src/pages/staff/website-manager.js.
         label: "Website Manager",
-        href: "/staff/website-manager",
+        href: "/website-manager",
         roles: ["owner", "admin", "admin manager", "general manager", "sales"],
       },
       {
         // Deep-link into the Live Preview tab inside the Website Manager
         // (sidebar reads ?tab=preview on first render — see WebsiteManager.js).
         label: "Website Preview",
-        href: "/staff/website-manager?tab=preview",
+        href: "/website-manager?tab=preview",
         roles: ["owner", "admin", "admin manager", "general manager", "sales"],
       },
       {
         // Deep-link into the Shop tab (products / categories / orders).
         label: "Website Shop",
-        href: "/staff/website-manager?tab=shop",
+        href: "/website-manager?tab=shop",
         roles: ["owner", "admin", "admin manager", "general manager", "sales"],
       },
       {
@@ -106,17 +106,17 @@ export const sidebarSections = [
     items: [
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["service"],
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["service"],
       },
       {
         label: "New Job",
-        href: "/job-cards/create",
+        href: "/new-job",
         roles: ["service"],
       },
     ],
@@ -127,17 +127,17 @@ export const sidebarSections = [
     items: [
       {
         label: "Next Jobs",
-        href: "/job-cards/waiting/nextjobs",
+        href: "/nextjobs",
         roles: ["service manager"],
       },
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["service manager"],
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["service manager"],
       },
       {
@@ -147,7 +147,7 @@ export const sidebarSections = [
       },
       {
         label: "New Job",
-        href: "/job-cards/create",
+        href: "/new-job",
         roles: ["service manager"],
       },
     ],
@@ -158,12 +158,12 @@ export const sidebarSections = [
     items: [
       {
         label: "Next Jobs",
-        href: "/job-cards/waiting/nextjobs",
+        href: "/nextjobs",
         roles: ["workshop manager"],
       },
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["workshop manager"],
       },
       {
@@ -173,12 +173,12 @@ export const sidebarSections = [
       },
       {
         label: "Consumables Tracker", // Workshop consumable planning workspace
-        href: "/workshop/consumables-tracker",
+        href: "/consumables-tracker",
         roles: ["workshop manager"],
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["workshop manager"],
       },
     ],
@@ -189,17 +189,17 @@ export const sidebarSections = [
     items: [
       {
         label: "Next Jobs",
-        href: "/job-cards/waiting/nextjobs",
+        href: "/nextjobs",
         roles: ["aftersales manager"],
       },
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["aftersales manager"],
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["aftersales manager"],
       },
     ],
@@ -210,12 +210,12 @@ export const sidebarSections = [
     items: [
       {
         label: "My Jobs",
-        href: "/job-cards/myjobs",
+        href: "/tech",
         roles: ["techs"],
       },
       {
         label: "Request Consumables", // Technician consumable request portal
-        href: "/tech/consumables-request",
+        href: "/consumables-request",
         roles: ["techs"],
       },
       {
@@ -231,7 +231,7 @@ export const sidebarSections = [
     items: [
       {
         label: "My Jobs",
-        href: "/job-cards/myjobs",
+        href: "/tech",
         roles: ["mobile technician"],
       },
       {
@@ -241,12 +241,12 @@ export const sidebarSections = [
       },
       {
         label: "Request Parts",
-        href: "/tech/consumables-request",
+        href: "/consumables-request",
         roles: ["mobile technician"],
       },
       {
         label: "New Mobile Job",
-        href: "/job-cards/create",
+        href: "/new-job",
         roles: ["mobile technician"],
       },
     ],
@@ -257,7 +257,7 @@ export const sidebarSections = [
     items: [
       {
         label: "My Jobs",
-        href: "/job-cards/myjobs",
+        href: "/tech",
         roles: ["mot tester"],
       },
       {
@@ -273,7 +273,7 @@ export const sidebarSections = [
     items: [
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["parts"],
       },
       {
@@ -283,12 +283,12 @@ export const sidebarSections = [
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["parts"],
       },
       {
         label: "Deliveries",
-        href: "/parts/deliveries",
+        href: "/deliveries",
         roles: ["parts"],
       },
     ],
@@ -299,7 +299,7 @@ export const sidebarSections = [
     items: [
       {
         label: "Job Cards",
-        href: "/job-cards/view",
+        href: "/jobs",
         roles: ["parts manager"],
       },
       {
@@ -309,12 +309,12 @@ export const sidebarSections = [
       },
       {
         label: "Goods In",
-        href: "/parts/goods-in",
+        href: "/goods-in",
         roles: ["parts manager"],
       },
       {
         label: "Deliveries",
-        href: "/parts/deliveries",
+        href: "/deliveries",
         roles: ["parts manager"],
       },
     ],

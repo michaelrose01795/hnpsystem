@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/archive/index.js
+// file location: src/pages/archive/index.js
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";

@@ -3,19 +3,19 @@ import { useUser } from "@/context/UserContext";
 import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
 
 const BASE_PARTS_TABS = [
-  { label: "Goods In", href: "/parts/goods-in", match: (path) => path.startsWith("/parts/goods-in") },
-  { label: "Deliveries", href: "/parts/deliveries", match: (path) => path.startsWith("/parts/deliveries") },
+  { label: "Goods In", href: "/goods-in", match: (path) => path.startsWith("/goods-in") },
+  { label: "Deliveries", href: "/deliveries", match: (path) => path.startsWith("/deliveries") },
   {
     label: "Delivery/Collection Planner",
-    href: "/parts/delivery-planner",
-    match: (path) => path.startsWith("/parts/delivery-planner"),
+    href: "/delivery-planner",
+    match: (path) => path.startsWith("/delivery-planner"),
   },
 ];
 
 const MANAGER_TAB = {
   label: "Manager",
-  href: "/parts/manager",
-  match: (path) => path.startsWith("/parts/manager"),
+  href: "/parts-manager",
+  match: (path) => path.startsWith("/parts-manager"),
 };
 
 export default function PartsWorkspaceTabs() {

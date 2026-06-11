@@ -316,9 +316,9 @@ function MobileDashboardInner() {
           </div>
           <ul style={quickActionsListStyle}>
             <li><Link href="/appointments" style={quickActionLinkStyle}><span>Appointments</span><span>Open</span></Link></li>
-            <li><Link href="/job-cards/myjobs" style={quickActionLinkStyle}><span>My jobs</span><span>Open</span></Link></li>
-            <li><Link href="/tech/consumables-request" style={quickActionLinkStyle}><span>Request parts</span><span>Open</span></Link></li>
-            <li><Link href="/job-cards/create" style={quickActionLinkStyle}><span>New mobile job</span><span>Open</span></Link></li>
+            <li><Link href="/tech" style={quickActionLinkStyle}><span>My jobs</span><span>Open</span></Link></li>
+            <li><Link href="/consumables-request" style={quickActionLinkStyle}><span>Request parts</span><span>Open</span></Link></li>
+            <li><Link href="/new-job" style={quickActionLinkStyle}><span>New mobile job</span><span>Open</span></Link></li>
           </ul>
         </LayerTheme>
       </DevLayoutSection>
@@ -362,7 +362,7 @@ function JobRow({ job, parentKey }) {
         </div>
       </div>
       <Link
-        href={`/job-cards/myjobs/${encodeURIComponent(job.job_number)}`}
+        href={`/tech/${encodeURIComponent(job.job_number)}`}
         style={{
           fontWeight: 600,
           color: "var(--text-accent)",

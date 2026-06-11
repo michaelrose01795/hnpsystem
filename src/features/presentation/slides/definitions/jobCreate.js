@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const jobCreateSlide = {
   id: "job-create",
-  route: "/job-cards/create",
+  route: "/new-job",
   title: "Create a Job Card",
   roles: [
     "admin", "admin manager", "owner", "service", "service manager",

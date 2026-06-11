@@ -796,7 +796,7 @@ export default function Layout({
       description: "View your personal employment info",
       section: "General",
     });
-    addNavItem("Archive Job", "/job-cards/archive", {
+    addNavItem("Archive Job", "/archive", {
       keywords: ["archive", "job archive", "archived jobs"],
       description: "Archive completed job cards",
       section: "General",
@@ -804,15 +804,15 @@ export default function Layout({
   }
 
   if (isTech) {
-    addNavItem("My Jobs", "/job-cards/myjobs", {
+    addNavItem("My Jobs", "/tech", {
       keywords: ["my jobs", "jobs", "tech"],
       section: "Workshop",
     });
-    addNavItem("Start Job", "/job-cards/myjobs", {
+    addNavItem("Start Job", "/tech", {
       keywords: ["start job", "tech"],
       section: "Workshop",
     });
-    addNavItem("Request Consumables", "/tech/consumables-request", {
+    addNavItem("Request Consumables", "/consumables-request", {
       keywords: ["consumables", "request", "supplies"],
       description: "Submit consumable restock requests to management",
       section: "Workshop",
@@ -824,14 +824,14 @@ export default function Layout({
       userRoles.includes(roleName)
     )
   ) {
-    addNavItem("Next Jobs", "/job-cards/waiting/nextjobs", {
+    addNavItem("Next Jobs", "/nextjobs", {
       keywords: ["next jobs", "waiting list", "queue"],
       section: "Workshop",
     });
   }
 
   if (userRoles.includes("workshop manager")) {
-    addNavItem("Consumables Tracker", "/workshop/consumables-tracker", {
+    addNavItem("Consumables Tracker", "/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
       description: "Monitor consumable spend, reminders, and supplier details",
       section: "Workshop",
@@ -839,7 +839,7 @@ export default function Layout({
   }
 
   if (viewRoles.some((r) => userRoles.includes(r))) {
-    addNavItem("Job Cards", "/job-cards/view", {
+    addNavItem("Job Cards", "/jobs", {
       keywords: ["view job", "job cards"],
       description: "Browse all job cards",
       section: "Workshop",
@@ -852,12 +852,12 @@ export default function Layout({
       description: "Manage parts allocations and deliveries",
       section: "Parts",
     });
-    addNavItem("Deliveries", "/parts/deliveries", {
+    addNavItem("Deliveries", "/deliveries", {
       keywords: ["parts deliveries", "goods in", "stock"],
       description: "Review inbound deliveries and update stock",
       section: "Parts",
     });
-    addNavItem("Delivery/Collection Planner", "/parts/delivery-planner", {
+    addNavItem("Delivery/Collection Planner", "/delivery-planner", {
       keywords: ["delivery planner", "collection planner", "routes", "outbound"],
       description: "Plan outbound runs and manage scheduled collections",
       section: "Parts",
@@ -865,7 +865,7 @@ export default function Layout({
   }
 
   if (isPartsManager) {
-    addNavItem("Parts Manager Dashboard", "/parts/manager", {
+    addNavItem("Parts Manager Dashboard", "/parts-manager", {
       keywords: ["parts manager", "stock value", "parts dashboard"],
       description: "View stock, spending, and income KPIs",
       section: "Parts",

@@ -261,7 +261,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setStatus("In Progress"); // Reflect active work in status bar
         await refreshCurrentJob(); // Keep context in sync with active job
         onClose(); // Close modal
-        router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job page
+        router.push(`/tech/${job.jobNumber}`); // Navigate to tech's job page
       } else {
         setError(res.error || "Failed to clock in"); // Show DB error
       }
@@ -339,7 +339,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   // ✅ NEW: Handle clicking on active job - navigate to job page
   const handleActiveJobClick = (job) => {
     onClose(); // Close modal
-    router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job detail page
+    router.push(`/tech/${job.jobNumber}`); // Navigate to tech's job detail page
   };
 
   if (!isOpen) return null; // Do not render when closed

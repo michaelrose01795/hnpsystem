@@ -203,7 +203,7 @@ export default function TechsDashboard() {
 
   const handleStartJob = useCallback(
     (job) => {
-      router.push(`/job-cards/myjobs/${job.jobNumber}`);
+      router.push(`/tech/${job.jobNumber}`);
     },
     [router]
   );
@@ -215,7 +215,7 @@ export default function TechsDashboard() {
   {
     key: "view-all-jobs",
     label: "View All Jobs",
-    href: "/job-cards/myjobs"
+    href: "/tech"
   },
   {
     key: "time-tracking",
@@ -225,7 +225,7 @@ export default function TechsDashboard() {
   {
     key: "request-consumables",
     label: "Request Consumables",
-    href: "/tech/consumables-request"
+    href: "/consumables-request"
   }];
 
 

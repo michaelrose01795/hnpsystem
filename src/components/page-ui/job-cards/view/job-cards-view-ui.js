@@ -240,7 +240,7 @@ export default function ViewJobCardsUi(props) {
               color: "var(--text-2)"
             }}>
                   {emptyStateMessage}
-                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
+                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 
@@ -562,7 +562,7 @@ export default function ViewJobCardsUi(props) {
                   View Full Details
                 </button>
 
-                <button onClick={() => router.push(`/job-cards/myjobs/${popupJob.jobNumber}?tab=vhc`)} style={popupSecondaryActionButtonStyle} onMouseEnter={e => {
+                <button onClick={() => router.push(`/tech/${popupJob.jobNumber}?tab=vhc`)} style={popupSecondaryActionButtonStyle} onMouseEnter={e => {
                   e.currentTarget.style.backgroundColor = "var(--surface)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }} onMouseLeave={e => {

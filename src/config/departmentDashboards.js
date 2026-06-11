@@ -45,7 +45,7 @@ export const departmentDashboardShortcuts = [
   },
   {
     label: "Parts Manager Dashboard",
-    href: "/parts/manager",
+    href: "/parts-manager",
     roles: ["parts manager"],
     description: "View stock, spending, and income KPIs",
   },

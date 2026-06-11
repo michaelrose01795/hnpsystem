@@ -1,6 +1,6 @@
 export const jobCardsValetSlide = {
   id: "job-cards-valet",
-  route: "/job-cards/valet/[jobnumber]",
+  route: "/valet/[jobNumber]",
   title: "Job Card: Valet",
   roles: null,
   workflowIndex: 71,

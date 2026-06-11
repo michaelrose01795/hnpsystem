@@ -1,4 +1,4 @@
-// file location: src/pages/account/security.js
+// file location: src/pages/security.js
 //
 // Self-service security settings: change password, see recent auth activity.
 // More controls (MFA enrolment, active sessions, recovery codes) will be

@@ -703,7 +703,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
             color: "var(--info-dark)"
           }}>
                       No collections scheduled for {formatDate(selectedCollectionDate)}.
-                    </p> : selectedCollectionJobs.map(job => <button key={job.id} type="button" onClick={() => router.push(`/parts/create-order/${job.order_number}`)} style={{
+                    </p> : selectedCollectionJobs.map(job => <button key={job.id} type="button" onClick={() => router.push(`/new-order/${job.order_number}`)} style={{
             border: "none",
             borderRadius: "var(--radius-md)",
             padding: "14px",

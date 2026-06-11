@@ -594,7 +594,7 @@ const CARD_BACKGROUND_LAYERS = [
 const USAGE_REGISTRY = {
   "buttons-app-btn": [
   { label: "Button primitive", file: "src/components/ui/Button.js" },
-  { label: "Job cards page", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Job cards page", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Accounts page", file: "src/pages/accounts/index.js", route: "/accounts" },
   { label: "Admin users", file: "src/pages/admin/users/index.js", route: "/admin/users" },
   { label: "HR employees tab", file: "src/components/HR/tabs/EmployeesTab.js" },
@@ -611,14 +611,14 @@ const USAGE_REGISTRY = {
   "dropdown-api": [
   { label: "DropdownField primitive", file: "src/components/ui/dropdownAPI/DropdownField.js" },
   { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
-  { label: "Job card view", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Job card view", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "HR manager", file: "src/pages/hr/manager/index.js", route: "/hr/manager" },
   { label: "Accounts settings", file: "src/components/accounts/AccountsSettingsPanel.js" }],
 
   "calendar-api": [
   { label: "CalendarField primitive", file: "src/components/ui/calendarAPI/CalendarField.js" },
   { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
-  { label: "Job cards myjobs", file: "src/pages/job-cards/myjobs/index.js", route: "/job-cards/myjobs" },
+  { label: "Job cards myjobs", file: "src/pages/tech/index.js", route: "/tech" },
   { label: "Tracking page", file: "src/pages/tracking/index.js", route: "/tracking" }],
 
   "monthpicker-api": [
@@ -632,7 +632,7 @@ const USAGE_REGISTRY = {
   { label: "Personal widgets", file: "src/components/profile/personal/widgets/PersonalWidgets.js" }],
 
   "app-badge": [
-  { label: "Tab badges in job-cards", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Tab badges in job-cards", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "HR employees pills", file: "src/components/HR/tabs/EmployeesTab.js" },
   { label: "Customer portal", file: "src/features/customerPortal/components/VHCSummaryList.js" }],
 
@@ -676,14 +676,14 @@ const USAGE_REGISTRY = {
   { label: "Job card details", file: "src/pages/job-cards/[jobNumber].js" }],
 
   "table-app-data": [
-  { label: "My Jobs table", file: "src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js", route: "/job-cards/myjobs" },
+  { label: "My Jobs table", file: "src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js", route: "/tech" },
   { label: "Transaction table", file: "src/components/accounts/TransactionTable.js" },
   { label: "Invoice table", file: "src/components/accounts/InvoiceTable.js" },
   { label: "Account table", file: "src/components/accounts/AccountTable.js" },
   { label: "Accounts page", file: "src/pages/accounts/index.js", route: "/accounts" }],
 
   "section-layers": [
-  { label: "Job cards myjob page", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Job cards myjob page", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Customer portal layout", file: "src/features/customerPortal/components/CustomerLayout.js" },
   { label: "Profile page", file: "src/pages/profile/index.js", route: "/profile" }],
 
@@ -737,12 +737,12 @@ const USAGE_REGISTRY = {
 
   "spacing-non-global": [
   { label: "VHC modal padding (var(--space-md) var(--space-6))", file: "src/styles/appTheme.js" },
-  { label: "Job-card inline 24px padding", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Job-card inline 24px padding", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Login page paddings", file: "src/pages/login.js", route: "/login" },
   { label: "Customer portal layout gaps", file: "src/features/customerPortal/components/CustomerLayout.js" },
   { label: "VHC EmptyStateMessage 18px", file: "src/components/VHC/VhcSharedComponents.js" },
   { label: "Payment modal 24px pad", file: "src/features/invoices/styles/invoice.module.css" },
-  { label: "Documents preview 24px overlay pad", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" }],
+  { label: "Documents preview 24px overlay pad", file: "src/pages/tech/[jobNumber].js", route: "/tech" }],
 
   "popup-global": [
   { label: "popupStyleApi (backdrop + card)", file: "src/components/popups/popupStyleApi.js" },
@@ -765,7 +765,7 @@ const USAGE_REGISTRY = {
 
   "checkboxes-states": [
   { label: "Native checkbox styling", file: "src/styles/staffglobal.css" },
-  { label: "Tech consumables request", file: "src/pages/tech/consumables-request.js" },
+  { label: "Tech consumables request", file: "src/pages/consumables-request.js" },
   { label: "Widget settings modal", file: "src/components/profile/personal/WidgetSettingsModal.js" },
   { label: "Stock check popup", file: "src/components/Consumables/StockCheckPopup.js" },
   { label: "Proposed Global Standard — src/components/ui/Checkbox.js (not yet created)", file: "src/components/ui/" }],
@@ -830,7 +830,7 @@ const USAGE_REGISTRY = {
   "spacing-comparison": [
   { label: "Source: theme.css --space-* scale", file: "src/styles/theme.css" },
   { label: "Audit: appTheme.js inline px values", file: "src/styles/appTheme.js" },
-  { label: "Audit: inline padding in job-cards", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
+  { label: "Audit: inline padding in job-cards", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Audit: VHC components", file: "src/components/VHC/VhcSharedComponents.js" }],
 
   "motion-transitions": [

@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const partsDeliveriesSlide = {
   id: "parts-deliveries",
-  route: "/parts/deliveries",
+  route: "/deliveries",
   title: "Parts - Deliveries and Planner",
   roles: ["admin", "admin manager", "owner", "parts", "parts manager", "parts driver"],
   workflowIndex: WORKFLOW.PARTS_DELIVERIES,

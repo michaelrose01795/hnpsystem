@@ -269,7 +269,7 @@ const renderMessageContent = (content, userRoles = []) => {
       href = `/accounts/view/${value}`;
       title = `Account ${value}`;
     } else if (prefix === 'order' && value) {
-      href = `/parts/create-order/${value}`;
+      href = `/new-order/${value}`;
       title = `Parts Order ${value}`;
     } else if (prefix === 'user' && value) {
       title = `User: ${value}`;
@@ -291,10 +291,10 @@ const renderMessageContent = (content, userRoles = []) => {
       href = '/clocking';
       title = 'Time Clocking';
     } else if (standalone === 'archive') {
-      href = '/job-cards/archive';
+      href = '/archive';
       title = 'Job Archive';
     } else if (standalone === 'myjobs') {
-      href = '/job-cards/myjobs';
+      href = '/tech';
       title = 'My Jobs';
     } else if (standalone === 'appointments') {
       href = '/job-cards/appointments';
@@ -768,7 +768,7 @@ const getJobLink = (jobNumber, userRoles = []) => {
 
   // Technicians use myjobs path
   if (normalizedRoles.includes('technician')) {
-    return `/job-cards/myjobs/${jobNumber}`;
+    return `/tech/${jobNumber}`;
   }
 
   // Everyone else uses standard job-cards path
@@ -870,7 +870,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "order",
     hasInput: true,
     roles: ['parts', 'parts manager', 'admin'],
-    getLink: (num) => `/parts/create-order/${num}`
+    getLink: (num) => `/new-order/${num}`
   },
 
   // Account Commands
@@ -951,7 +951,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "archive",
     hasInput: false,
     roles: ['service advisor', 'service manager', 'workshop manager', 'admin'],
-    getLink: () => '/job-cards/archive'
+    getLink: () => '/archive'
   },
   {
     command: "/myjobs",
@@ -960,7 +960,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "myjobs",
     hasInput: false,
     roles: ['technician'],
-    getLink: () => '/job-cards/myjobs'
+    getLink: () => '/tech'
   },
   {
     command: "/appointments",
@@ -1009,7 +1009,7 @@ function MessagesPage() {
   const canSeeCustomerRequests = hasCustomerBookingRequestAccess(user?.roles);
   const handleCreateJobFromRequest = (note) => {
     if (!note?.event_id || !canSeeCustomerRequests) return;
-    router.push(`/job-cards/create?fromEvent=${encodeURIComponent(note.event_id)}`);
+    router.push(`/new-job?fromEvent=${encodeURIComponent(note.event_id)}`);
   };
   const [systemLoading, setSystemLoading] = useState(false);
   const [bookingsLoading, setBookingsLoading] = useState(false);

@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/myjobs/[jobNumber].js
+// file location: src/pages/tech/[jobNumber].js
 
 "use client";
 
@@ -978,7 +978,7 @@ export default function TechJobDetailPage() {
 
       if (jobError || !job) {
         alert("Job not found");
-        router.push("/job-cards/myjobs");
+        router.push("/tech");
         return;
       }
 
@@ -2847,7 +2847,7 @@ export default function TechJobDetailPage() {
       return;
     }
 
-    router.push("/job-cards/myjobs");
+    router.push("/tech");
   };
 
   if (rosterLoading) {

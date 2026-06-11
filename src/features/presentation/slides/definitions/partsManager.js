@@ -1,6 +1,6 @@
 export const partsManagerSlide = {
   id: "parts-manager",
-  route: "/parts/manager",
+  route: "/parts-manager",
   title: "Parts Manager",
   roles: null,
   workflowIndex: 74,

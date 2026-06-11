@@ -1,6 +1,6 @@
 export const partsDeliveryPlannerSlide = {
   id: "parts-delivery-planner",
-  route: "/parts/delivery-planner",
+  route: "/delivery-planner",
   title: "Delivery Planner",
   roles: null,
   workflowIndex: 77,

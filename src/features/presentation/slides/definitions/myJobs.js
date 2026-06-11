@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const myJobsSlide = {
   id: "my-jobs",
-  route: "/job-cards/myjobs",
+  route: "/tech",
   title: "My Jobs - Technician View",
   roles: ["techs", "mobile technician", "mot tester", "painters"],
   workflowIndex: WORKFLOW.MY_JOBS,

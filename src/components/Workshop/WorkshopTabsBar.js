@@ -4,14 +4,14 @@ import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
 
 export const workshopTabs = [
   { href: "/workshop", label: "Dashboard" },
-  { href: "/job-cards/waiting/nextjobs", label: "Next Jobs" },
-  { href: "/job-cards/view", label: "Job Cards" },
-  { href: "/workshop/consumables-tracker", label: "Consumables" },
+  { href: "/nextjobs", label: "Next Jobs" },
+  { href: "/jobs", label: "Job Cards" },
+  { href: "/consumables-tracker", label: "Consumables" },
   { href: "/clocking", label: "Clocking" },
 ];
 
 export const workshopQuickActions = [
-  { href: "/job-cards/create", label: "Create Job Card" },
+  { href: "/new-job", label: "Create Job Card" },
   { href: "/job-cards/appointments", label: "Appointments" },
   { href: "/appointments", label: "Check In" },
 ];

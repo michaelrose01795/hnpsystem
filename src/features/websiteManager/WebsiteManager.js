@@ -59,7 +59,7 @@ export default function WebsiteManager() {
     (typeof user?.username === "string" && user.username.trim()) || "Staff User";
 
   // Initial tab honours ?tab=... so the sidebar / presentation can deep-link
-  // directly to a sub-section ("/staff/website-manager?tab=shop" jumps
+  // directly to a sub-section ("/website-manager?tab=shop" jumps
   // straight to the Shop tab on first render).
   const initialTabFromQuery =
     typeof router.query?.tab === "string" && VALID_TABS.includes(router.query.tab)

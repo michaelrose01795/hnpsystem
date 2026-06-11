@@ -2,7 +2,7 @@
 import JobCardsIndexRedirectUi from "@/components/page-ui/job-cards/job-cards-ui"; // Extracted presentation layer.
 export async function getServerSideProps() {return {
     redirect: {
-      destination: "/job-cards/view",
+      destination: "/jobs",
       permanent: false
     }
   };

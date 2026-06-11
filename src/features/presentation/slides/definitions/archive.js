@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const archiveSlide = {
   id: "archive",
-  route: "/job-cards/archive",
+  route: "/archive",
   title: "Archive - Completed Jobs",
   roles: ["admin", "admin manager", "owner", "service manager", "workshop manager", "general manager", "after sales director", "aftersales manager"],
   workflowIndex: WORKFLOW.ARCHIVE,

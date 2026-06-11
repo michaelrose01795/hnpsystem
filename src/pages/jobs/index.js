@@ -1,4 +1,4 @@
-// file location: src/pages/job-cards/view/index.js
+// file location: src/pages/jobs/index.js
 // ✅ Imports converted to use absolute alias "@/"
 // Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js

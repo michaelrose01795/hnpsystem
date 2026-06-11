@@ -2,7 +2,7 @@
 import VhcIndexRedirectUi from "@/components/page-ui/vhc/vhc-ui"; // Extracted presentation layer.
 export async function getServerSideProps() {return {
     redirect: {
-      destination: "/job-cards/view",
+      destination: "/jobs",
       permanent: false
     }
   };

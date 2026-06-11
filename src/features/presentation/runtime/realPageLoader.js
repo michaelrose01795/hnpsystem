@@ -28,7 +28,7 @@ const ROUTE_TO_MODULE = {
   "/admin/compliance/retention": () => import("@/pages/admin/compliance/retention"),
   "/admin/compliance/ropa": () => import("@/pages/admin/compliance/ropa"),
   "/admin/compliance/sars": () => import("@/pages/admin/compliance/sars"),
-  "/staff/website-manager": () => import("@/pages/staff/website-manager"),
+  "/website-manager": () => import("@/pages/website-manager"),
 
   // Dashboards
   "/dashboard/managers": () => import("@/pages/dashboard/managers/index"),
@@ -53,34 +53,34 @@ const ROUTE_TO_MODULE = {
   "/hr/settings": () => import("@/pages/hr/settings"),
   "/hr/training": () => import("@/pages/hr/training"),
 
-  // Job cards
+  // Job cards (deep routes moved to short top-level paths; full card unchanged)
   "/job-cards": () => import("@/pages/job-cards/index"),
-  "/job-cards/waiting/nextjobs": () => import("@/pages/job-cards/waiting/nextjobs"),
-  "/job-cards/view": () => import("@/pages/job-cards/view/index"),
+  "/nextjobs": () => import("@/pages/nextjobs"),
+  "/jobs": () => import("@/pages/jobs/index"),
   "/job-cards/[jobNumber]": () => import("@/pages/job-cards/[jobNumber]"),
-  "/job-cards/create": () => import("@/pages/job-cards/create/index"),
-  "/job-cards/archive": () => import("@/pages/job-cards/archive/index"),
+  "/new-job": () => import("@/pages/new-job/index"),
+  "/archive": () => import("@/pages/archive/index"),
   "/job-cards/appointments": () => import("@/pages/job-cards/appointments"),
-  "/job-cards/myjobs": () => import("@/pages/job-cards/myjobs/index"),
-  "/job-cards/myjobs/[jobNumber]": () => import("@/pages/job-cards/myjobs/[jobNumber]"),
-  "/job-cards/valet/[jobnumber]": () => import("@/pages/job-cards/valet/[jobnumber]"),
+  "/tech": () => import("@/pages/tech/index"),
+  "/tech/[jobNumber]": () => import("@/pages/tech/[jobNumber]"),
+  "/valet/[jobNumber]": () => import("@/pages/valet/[jobNumber]"),
 
-  // Parts
+  // Parts (deep leaf pages flattened to short top-level paths; /parts index unchanged)
   "/parts": () => import("@/pages/parts/index"),
-  "/parts/manager": () => import("@/pages/parts/manager"),
-  "/parts/create-order": () => import("@/pages/parts/create-order/index"),
-  "/parts/create-order/[orderNumber]": () => import("@/pages/parts/create-order/[orderNumber]"),
-  "/parts/deliveries": () => import("@/pages/parts/deliveries"),
-  "/parts/deliveries/[deliveryId]": () => import("@/pages/parts/deliveries/[deliveryId]"),
-  "/parts/delivery-planner": () => import("@/pages/parts/delivery-planner"),
-  "/parts/goods-in": () => import("@/pages/parts/goods-in"),
-  "/parts/goods-in/[goodsInNumber]": () => import("@/pages/parts/goods-in/[goodsInNumber]"),
+  "/parts-manager": () => import("@/pages/parts-manager"),
+  "/new-order": () => import("@/pages/new-order/index"),
+  "/new-order/[orderNumber]": () => import("@/pages/new-order/[orderNumber]"),
+  "/deliveries": () => import("@/pages/deliveries/index"),
+  "/deliveries/[deliveryId]": () => import("@/pages/deliveries/[deliveryId]"),
+  "/delivery-planner": () => import("@/pages/delivery-planner"),
+  "/goods-in": () => import("@/pages/goods-in/index"),
+  "/goods-in/[goodsInNumber]": () => import("@/pages/goods-in/[goodsInNumber]"),
   "/stock-catalogue": () => import("@/pages/stock-catalogue"),
 
   // Tech
   "/tech/dashboard": () => import("@/pages/tech/dashboard"),
   "/tech/efficiency": () => import("@/pages/tech/efficiency"),
-  "/tech/consumables-request": () => import("@/pages/tech/consumables-request"),
+  "/consumables-request": () => import("@/pages/consumables-request"),
 
   // Mobile
   "/mobile/dashboard": () => import("@/pages/mobile/dashboard"),
@@ -103,7 +103,7 @@ const ROUTE_TO_MODULE = {
   "/website/shop/cancel": () => import("@/pages/website/shop/cancel"),
 
   // Workshop / valet
-  "/workshop/consumables-tracker": () => import("@/pages/workshop/consumables-tracker"),
+  "/consumables-tracker": () => import("@/pages/consumables-tracker"),
   "/valet": () => import("@/pages/valet/index"),
 
   // Staff-side customers
@@ -121,7 +121,7 @@ const ROUTE_TO_MODULE = {
   "/newsfeed": () => import("@/pages/newsfeed"),
   "/profile": () => import("@/pages/profile/index"),
   "/profile/privacy": () => import("@/pages/profile/privacy"),
-  "/account/security": () => import("@/pages/account/security"),
+  "/security": () => import("@/pages/security"),
   "/login": () => import("@/pages/login"),
   "/password-reset/new": () => import("@/pages/password-reset/new"),
 };

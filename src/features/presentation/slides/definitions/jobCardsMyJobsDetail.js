@@ -1,6 +1,6 @@
 export const jobCardsMyJobsDetailSlide = {
   id: "my-jobs-detail",
-  route: "/job-cards/myjobs/[jobNumber]",
+  route: "/tech/[jobNumber]",
   title: "My Jobs: Detail",
   roles: null,
   workflowIndex: 70,

@@ -398,7 +398,7 @@ export default function TechJobDetailPageUi(props) {
           <h2 style={{
       color: "var(--primary)"
     }}>Job Not Found</h2>
-          <button onClick={() => router.push("/job-cards/myjobs")} style={{
+          <button onClick={() => router.push("/tech")} style={{
       padding: "12px 24px",
       backgroundColor: "var(--primary)",
       color: "white",

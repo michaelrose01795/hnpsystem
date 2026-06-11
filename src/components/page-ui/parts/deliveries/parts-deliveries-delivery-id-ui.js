@@ -94,7 +94,7 @@ export default function DeliveryRoutePageUi(props) {
       alignItems: "center",
       gap: "12px"
     }}>
-          <Link href="/parts/deliveries" style={{
+          <Link href="/deliveries" style={{
         color: "var(--primary-selected)",
         fontWeight: 600
       }}>

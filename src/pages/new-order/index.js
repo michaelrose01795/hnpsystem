@@ -540,9 +540,9 @@ export default function PartsJobCardPage() {
       }
 
       if (orderRecord?.order_number) {
-        router.push(`/parts/create-order/${orderRecord.order_number}`);
+        router.push(`/new-order/${orderRecord.order_number}`);
       } else {
-        router.push("/parts/create-order");
+        router.push("/new-order");
       }
     } catch (submitError) {
       console.error("Failed to create parts order:", submitError);

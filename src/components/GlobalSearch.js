@@ -193,7 +193,7 @@ const GlobalSearch = ({
         const orderId = result.orderNumber || result.jobNumber || "";
         return {
           ...result,
-          href: orderId ? `/parts/create-order/${orderId}` : null,
+          href: orderId ? `/new-order/${orderId}` : null,
         };
       }
 
@@ -259,7 +259,7 @@ const GlobalSearch = ({
       item.type === "parts_order"
         ? (() => {
             const orderId = item.orderNumber || item.jobNumber || null;
-            return orderId ? `/parts/create-order/${encodeURIComponent(orderId)}` : null;
+            return orderId ? `/new-order/${encodeURIComponent(orderId)}` : null;
           })()
         : null;
 

@@ -1,6 +1,6 @@
 export const techConsumablesRequestSlide = {
   id: "tech-consumables-request",
-  route: "/tech/consumables-request",
+  route: "/consumables-request",
   title: "Tech: Consumables Request",
   roles: null,
   workflowIndex: 90,
