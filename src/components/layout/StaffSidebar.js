@@ -14,6 +14,7 @@ import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import { getSidebarNavIcon } from "@/components/layout/sidebarNavIcons";
 import BrandLogo from "@/components/BrandLogo";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
@@ -163,6 +164,7 @@ export default function Sidebar({
   onToggle,
   onNavigate,
   isCondensed = false,
+  isCollapsed = false,
   extraSections = [],
   visibleRoles = null,
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
@@ -419,6 +421,109 @@ export default function Sidebar({
     );
   };
 
+  // Collapsed (44px) rail helpers. Each nav button becomes a single icon button;
+  // the text label moves to title/aria-label so it stays accessible and shows on
+  // hover. Icon colour follows the design request (var(--theme)).
+  // Idle icons match the normal sidebar button text colour (.app-btn--secondary
+  // uses var(--text-accent)).
+  const ICON_COLOR = "var(--text-accent)";
+  const renderNavContent = (label, href, isActive = false) => {
+    if (!isCollapsed) return renderLinkLabel(label, href);
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          // Fills the 44px button's content box (44 − 2×8px padding = 28px) so
+          // the glyph reads large within the collapsed rail.
+          width: 28,
+          height: 28,
+          // Selected item flips the glyph to the surface colour so it reads
+          // against the active (accent) button fill; idle glyphs use --theme.
+          color: isActive ? "var(--surface)" : ICON_COLOR,
+          background: "transparent",
+        }}
+      >
+        {getSidebarNavIcon(label)}
+      </span>
+    );
+  };
+  // Collapsed rail keeps sections separated with a short 2px theme line in place
+  // of the section-title text. To preserve the EXACT vertical rhythm of the
+  // expanded rail (so buttons line up through the whole transition), the divider
+  // reuses the title's className — inheriting its font line-height — and the same
+  // per-section margins (passed in as `marginStyle`). An invisible single-line
+  // spacer forces the box to the title's line height; the rule is centred over it.
+  const renderSectionDivider = (key, marginStyle = {}) => (
+    <div
+      key={key}
+      aria-hidden="true"
+      className="app-sidebar__section-title"
+      style={{
+        position: "relative",
+        display: "block",
+        alignSelf: "stretch",
+        flexShrink: 0,
+        ...marginStyle,
+      }}
+    >
+      <span style={{ visibility: "hidden" }}>&nbsp;</span>
+      <span
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <span style={{ width: 24, height: 2, borderRadius: 1, background: "var(--theme)" }} />
+      </span>
+    </div>
+  );
+  // Pronounced expand/collapse: every nav link carries this transition in BOTH
+  // states, so the button width/padding glides between the full label row and
+  // the 40px icon square (the label simply gets clipped by the narrowing shell).
+  // Direction-aware motion. A CSS transition animates with the easing declared
+  // in the *destination* state, so keying off isCollapsed gives each direction
+  // its own feel: closing stays the liked easeInOutCubic; opening gets a longer,
+  // softer easeOutExpo reveal (quick to move, very gentle settle) so the rail
+  // unfurls smoothly instead of decelerating hard.
+  const OPEN_MOTION = "0.52s cubic-bezier(0.16, 1, 0.3, 1)"; // easeOutExpo — reveal
+  const CLOSE_MOTION = "0.4s cubic-bezier(0.65, 0, 0.35, 1)"; // easeInOutCubic — close
+  const MOTION = isCollapsed ? CLOSE_MOTION : OPEN_MOTION;
+  const NAV_LINK_TRANSITION = `width ${MOTION}, min-width ${MOTION}, padding ${MOTION}`;
+  // Props applied to every nav link. When collapsed: square icon footprint,
+  // centred content, and the label surfaced as a tooltip / a11y name.
+  const navLinkProps = (label, extraStyle = {}) =>
+    isCollapsed
+      ? {
+          title: label,
+          "aria-label": label,
+          style: {
+            // Match the expanded button's vertical box exactly (height +
+            // margin come from .app-btn / .app-btn--nav) so the list lines up
+            // through the whole transition. The 44px button is centred in the
+            // 48px rail by the body's 2px horizontal padding. Padding tightens
+            // to 8px (from --control-padding's 14px) so the larger icon fills
+            // the button; because NAV_LINK_TRANSITION animates padding too, the
+            // content still glides rather than snapping when toggling.
+            width: 44,
+            minWidth: 44,
+            height: "var(--control-height)",
+            minHeight: "var(--control-height)",
+            padding: 8,
+            justifyContent: "center",
+            transition: NAV_LINK_TRANSITION,
+            ...extraStyle,
+          },
+        }
+      : { style: { transition: NAV_LINK_TRANSITION, ...extraStyle } };
+
   const sidebarSectionKey = isCondensed ? "app-sidebar-shell-mobile" : "app-sidebar-shell";
   const sidebarHeaderKey = isCondensed ? "app-sidebar-header-mobile" : "app-sidebar-header";
   const sidebarBodyKey = isCondensed ? "app-sidebar-body-mobile" : "app-sidebar-body";
@@ -433,8 +538,8 @@ export default function Sidebar({
       className="app-sidebar"
       style={{
         padding: "0",
-        width: isCondensed ? "100%" : "260px",
-        minWidth: isCondensed ? "auto" : "220px",
+        width: isCollapsed ? "48px" : isCondensed ? "100%" : "260px",
+        minWidth: isCollapsed ? "48px" : isCondensed ? "auto" : "220px",
         height: isCondensed ? "auto" : "100%",
         minHeight: isCondensed ? "auto" : "100%",
         maxHeight: isCondensed ? "100%" : "100%",
@@ -447,6 +552,12 @@ export default function Sidebar({
         overflowX: "hidden",
         overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
+        // Smooth the 260px ↔ 44px width change so collapsing/expanding glides
+        // rather than snapping. Uses the same direction-aware MOTION as the nav
+        // buttons and body padding so every moving part travels in lockstep
+        // (and the rail in StaffLayout mirrors it).
+        transition: `width ${MOTION}, min-width ${MOTION}`,
+        willChange: "width",
         // Solid surface sidebar shell (pre-glass design).
         background: "var(--surface)",
       }}
@@ -470,6 +581,9 @@ export default function Sidebar({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          // Collapsed rail is only 44px wide; drop the header's horizontal padding
+          // so the (shrunken) logo isn't crushed by it.
+          padding: isCollapsed ? "0 2px" : undefined,
           height: isCondensed ? "60px" : "75px", // fix the height so the oversized logo crops vertically
           overflow: "hidden",
         }}
@@ -484,12 +598,22 @@ export default function Sidebar({
             alignItems: "center",
           }}
         >
-          <BrandLogo
-            alt="H&P logo"
-            width={800}
-            height={240}
-            style={headerLogoStyle}
-          />
+          {isCollapsed ? (
+            // Collapsed rail uses the square desktop-app icon (the same image
+            // offered on the desktop-download card) rather than the wide wordmark.
+            <img
+              src="/images/logo/desktop.png"
+              alt="H&P"
+              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            />
+          ) : (
+            <BrandLogo
+              alt="H&P logo"
+              width={800}
+              height={240}
+              style={headerLogoStyle}
+            />
+          )}
         </div>
       </DevLayoutSection>
 
@@ -518,13 +642,31 @@ export default function Sidebar({
           background: "var(--surface)",
           flex: 1,
           minHeight: 0,
+          // Vertical padding stays var(--space-5) in both states so the button
+          // column starts at the same Y; only the horizontal padding collapses
+          // (0 when collapsed) to fit the 44px rail. Setting it inline in BOTH
+          // states + transitioning it lets the button's left edge glide instead
+          // of snapping the instant the rail collapses.
+          padding: isCollapsed ? "var(--space-5) 2px" : "var(--space-5)",
+          transition: `padding ${MOTION}`,
+          // IMPORTANT: keep this a BLOCK container in the collapsed state too.
+          // The expanded body is block, so its vertical margins collapse (e.g. a
+          // department title's margin-top:16 collapses against the preceding
+          // button's margin-bottom:8 → 16px gap). A flex column would NOT collapse
+          // them (→ 24px), which drifts every section break out of alignment.
+          // The 44px buttons already fill the rail's content width, so no flex
+          // centring is needed.
         }}
       >
         {presentationPageLinks.length > 0 && (
           <>
-            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-              Presentation Pages
-            </div>
+            {isCollapsed ? (
+              renderSectionDivider("divider-presentation", { marginBottom: "10px" })
+            ) : (
+              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+                Presentation Pages
+              </div>
+            )}
             {presentationPageLinks.map((item) => {
               const isActive = isItemActive(item.href);
               return (
@@ -536,8 +678,9 @@ export default function Sidebar({
                   prefetch={false}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction="true"
+                  {...navLinkProps(item.label)}
                 >
-                  {item.label}
+                  {renderNavContent(item.label, item.href, isActive)}
                 </Link>
               );
             })}
@@ -546,28 +689,32 @@ export default function Sidebar({
 
         {!inPresentationMode && dashboardShortcuts.length > 0 && (
           <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "10px",
-              }}
-            >
-              <div className="app-sidebar__section-title">
-                Dashboard
+            {isCollapsed ? (
+              renderSectionDivider("divider-dashboard", { marginBottom: "10px" })
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "10px",
+                }}
+              >
+                <div className="app-sidebar__section-title">
+                  Dashboard
+                </div>
+                {onToggle && (
+                  <button
+                    className="app-btn app-btn--secondary app-btn--xs"
+                    type="button"
+                    onClick={onToggle}
+                    aria-label="Close sidebar"
+                  >
+                    Close
+                  </button>
+                )}
               </div>
-              {onToggle && (
-                <button
-                  className="app-btn app-btn--secondary app-btn--xs"
-                  type="button"
-                  onClick={onToggle}
-                  aria-label="Close sidebar"
-                >
-                  Close
-                </button>
-              )}
-            </div>
+            )}
             {dashboardShortcuts.map((shortcut) => {
               const isActive =
                 isItemActive(shortcut.href) ||
@@ -581,8 +728,9 @@ export default function Sidebar({
                   title={shortcut.description}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
+                  {...navLinkProps(shortcut.label)}
                 >
-                  {shortcut.label}
+                  {renderNavContent(shortcut.label, shortcut.href, isActive)}
                 </Link>
               );
             })}
@@ -592,9 +740,13 @@ export default function Sidebar({
         {/* General Section */}
         {!inPresentationMode && generalSections.length > 0 && (
           <>
-            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-              General
-            </div>
+            {isCollapsed ? (
+              renderSectionDivider("divider-general", { marginBottom: "10px" })
+            ) : (
+              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+                General
+              </div>
+            )}
             {generalSections.flatMap((section) => section.items).map((item) => {
               if (!item.href) return null;
               const isActive = isItemActive(item.href);
@@ -606,8 +758,9 @@ export default function Sidebar({
                   prefetch={inPresentationMode ? false : undefined}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
+                  {...navLinkProps(item.label)}
                 >
-                  {renderLinkLabel(item.label, item.href)}
+                  {renderNavContent(item.label, item.href, isActive)}
                 </Link>
               );
             })}
@@ -625,9 +778,13 @@ export default function Sidebar({
         {/* Department Sections - NO COLLAPSE, just headers */}
         {!inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
-            <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
-              {section.label}
-            </div>
+            {isCollapsed ? (
+              renderSectionDivider(`divider-${section.label}`, { marginTop: "16px", marginBottom: "10px" })
+            ) : (
+              <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
+                {section.label}
+              </div>
+            )}
             {section.items.map((item) => {
               if (!item.href) return null;
               const isActive = isItemActive(item.href);
@@ -639,8 +796,9 @@ export default function Sidebar({
                   prefetch={inPresentationMode ? false : undefined}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
+                  {...navLinkProps(item.label)}
                 >
-                  {renderLinkLabel(item.label, item.href)}
+                  {renderNavContent(item.label, item.href, isActive)}
                 </Link>
               );
             })}
@@ -650,11 +808,18 @@ export default function Sidebar({
         {/* Account Section */}
         {accountSections.length > 0 && (
           <>
-            <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
-              Account
-            </div>
+            {isCollapsed ? (
+              renderSectionDivider("divider-account", { marginTop: "16px", marginBottom: "10px" })
+            ) : (
+              <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
+                Account
+              </div>
+            )}
             {accountSections.flatMap((section) => section.items).map((item) => {
               if (item.action === "logout") {
+                // Collapsed rail shows only nav icons down to Profile — the
+                // clock / logout / vision / dev controls are hidden here.
+                if (isCollapsed) return null;
                 return (
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
@@ -783,8 +948,9 @@ export default function Sidebar({
                     style={{
                       marginBottom: "10px",
                     }}
+                    {...navLinkProps(item.label)}
                   >
-                    {renderLinkLabel(item.label, item.href)}
+                    {renderNavContent(item.label, item.href, isActive)}
                   </Link>
                 );
               }

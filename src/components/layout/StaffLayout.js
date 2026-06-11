@@ -50,6 +50,9 @@ const MODE_ROLE_MAP = {
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
 const NAV_DRAWER_WIDTH = 260;
+// Collapsed desktop rail: the sidebar shrinks to an icon-only strip instead of
+// hiding entirely when "closed" (see StaffSidebar isCollapsed mode).
+const COLLAPSED_RAIL_WIDTH = 48;
 const STATUS_DRAWER_WIDTH = 560;
 const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
 const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
@@ -122,6 +125,7 @@ export default function Layout({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [navToggleHover, setNavToggleHover] = useState(false);
   const closeSidebar = () => setIsSidebarOpen(false);
   // Fixed-card scroll model (desktop staff pages): the page card is a constant-
   // size rounded frosted frame; its content scrolls inside an inner scroller
@@ -967,7 +971,15 @@ export default function Layout({
   const navButtonPaddingOffset = !isTablet && !hideSidebar ? 16 : 0;
   // The toggle's flat side anchors to the screen edge when closed and to the
   // sidebar's right edge when open.
-  const navToggleAnchor = isSidebarOpen ? navDrawerTargetWidth + navButtonPaddingOffset : 0;
+  const navToggleAnchor = isSidebarOpen
+    ? navDrawerTargetWidth + navButtonPaddingOffset
+    : COLLAPSED_RAIL_WIDTH + navButtonPaddingOffset;
+  // Direction-aware sidebar motion — must mirror StaffSidebar's MOTION so the
+  // rail, shell, buttons and edge nub all move as one. Opening reveals with a
+  // longer, softer easeOutExpo; closing keeps the snappier easeInOutCubic.
+  const sidebarMotion = isSidebarOpen
+    ? "0.52s cubic-bezier(0.16, 1, 0.3, 1)"
+    : "0.4s cubic-bezier(0.65, 0, 0.35, 1)";
   const showNavToggleButton = !hideSidebar && !isTablet; // Hide on tablet/mobile since we use tab-style buttons
   // Sidebar toggle geometry. The button is drawn double-width and then clipped
   // back to its outer half, so only a clean semicircular nub protrudes past the
@@ -1028,8 +1040,8 @@ export default function Layout({
           {...lockChromeInteraction}
           backgroundToken="app-sidebar-rail"
           style={{
-            width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
-            minWidth: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
+            width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
+            minWidth: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
             padding: "16px 0",
             // Pin the rail to the viewport so the page scrolls behind it while the
             // sidebar keeps its own internal scroll. flex-start stops it stretching
@@ -1042,26 +1054,26 @@ export default function Layout({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            transition: "width 0.25s ease, min-width 0.25s ease",
+            transition: `width ${sidebarMotion}, min-width ${sidebarMotion}`,
+            willChange: "width",
             position: "sticky",
             top: 0,
             overflow: "hidden",
             flexShrink: 0,
           }}
         >
-          {isSidebarOpen && (
-            <Sidebar
-              onToggle={!isTablet ? undefined : closeSidebar}
-              extraSections={serviceSidebarSections}
-              visibleRoles={userRoles}
-              modeLabel={activeModeLabel}
-              allowedRoutes={presentationAllowedRoutes}
-              presentationRoleKey={activePresentationRole?.key || null}
-              inPresentationMode={presentationShell}
-              pendingHref={pendingHref}
-              isAuthLoading={isPreAuthLoading}
-            />
-          )}
+          <Sidebar
+            onToggle={!isTablet ? undefined : closeSidebar}
+            isCollapsed={!isSidebarOpen}
+            extraSections={serviceSidebarSections}
+            visibleRoles={userRoles}
+            modeLabel={activeModeLabel}
+            allowedRoutes={presentationAllowedRoutes}
+            presentationRoleKey={activePresentationRole?.key || null}
+            inPresentationMode={presentationShell}
+            pendingHref={pendingHref}
+            isAuthLoading={isPreAuthLoading}
+          />
         </DevLayoutSection>
       )}
 
@@ -1344,6 +1356,10 @@ export default function Layout({
         <button
           type="button"
           onClick={toggleSidebar}
+          onMouseEnter={() => setNavToggleHover(true)}
+          onMouseLeave={() => setNavToggleHover(false)}
+          onFocus={() => setNavToggleHover(true)}
+          onBlur={() => setNavToggleHover(false)}
           // Edge-toggle, not a square dismiss button — class exempts it from the
           // global `[aria-label*="Close "]` close-button sizing rule.
           className="app-sidebar-edge-toggle"
@@ -1373,12 +1389,59 @@ export default function Layout({
             display: "flex",
             alignItems: "center",
             justifyContent: "center", // centre the arrow within the visible half-circle nub
-            transition: "left 0.25s ease",
+            // Glide the edge nub in lockstep with the rail width (same
+            // direction-aware motion) so it tracks the sidebar edge smoothly.
+            transition: `left ${sidebarMotion}`,
           }}
           aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
         >
           {isSidebarOpen ? "‹" : "›"}
         </button>
+      )}
+
+      {/* Tooltip anchored ABOVE the edge toggle. Rendered as a sibling (not a
+          child) because the button's clipPath would otherwise clip it. Centred
+          on the visible nub and pinned just above it; it glides with the nub via
+          the same direction-aware motion. */}
+      {showNavToggleButton && navToggleHover && (
+        <div
+          role="tooltip"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            left: `${navToggleAnchor + toggleNub / 2}px`,
+            bottom: `calc(50% + ${toggleHeight / 2 + 10}px)`,
+            transform: "translateX(-50%)",
+            zIndex: 3601,
+            padding: "6px 10px",
+            borderRadius: "var(--control-radius-xs)",
+            background: "var(--primary-hover)",
+            color: "var(--onAccentText)",
+            fontSize: "12px",
+            fontWeight: 600,
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            boxShadow: "none",
+            transition: `left ${sidebarMotion}`,
+          }}
+        >
+          {isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          {/* Little caret pointing down at the nub. */}
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%) rotate(45deg)",
+              marginTop: "-4px",
+              width: 8,
+              height: 8,
+              background: "var(--primary-hover)",
+            }}
+          />
+        </div>
       )}
 
       {/* Desktop floating status sidebar */}

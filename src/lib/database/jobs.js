@@ -3623,8 +3623,11 @@ export const getVehicleJobHistory = async (vehicleId) => {
 };
 
 /* ============================================
-   ✅ FIX: UPDATE JOB POSITION
-   Moves a job to a new position or stage (e.g., from 'waiting' to 'in progress')
+   ✅ UPDATE JOB QUEUE POSITION
+   Persists a job's order within the workshop board (Next Jobs). Writes the numeric
+   order to `queue_position` — NOT `waiting_status`, which is the customer waiting
+   status ("Waiting"/"Parts"/"Collection"/…) shown across the app and must not be
+   overwritten with a number.
 ============================================ */
 export const updateJobPosition = async (jobId, newPosition) => {
   try {
@@ -3633,7 +3636,7 @@ export const updateJobPosition = async (jobId, newPosition) => {
     const { data, error } = await supabase
       .from("jobs")
       .update({
-        waiting_status: newPosition,
+        queue_position: newPosition,
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId)

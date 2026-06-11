@@ -373,7 +373,11 @@ function WorkshopQueueHeader({ title, count }) {
 }
 
 // ------------------------------------------------------------------- Board ----
-function WorkshopQueueBoard({ techRows, motRows, activeDropTarget, ...shared }) {
+// Memoised: during a drag the planner re-renders every frame to move the ghost,
+// but the board's props (rows, drag target, handlers) only change when the drop
+// target actually changes — so this whole 11-row grid stays put between those,
+// keeping the drag smooth and stopping the rest of the board from flickering.
+const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, motRows, activeDropTarget, ...shared }) {
   const renderRow = (row) => (
     <div
       key={`${row.panelKey}-row-shell`}
@@ -427,7 +431,7 @@ function WorkshopQueueBoard({ techRows, motRows, activeDropTarget, ...shared }) 
       </div>
     </LayerTheme>
   );
-}
+});
 
 // ===========================================================================
 // Job details modal
@@ -883,8 +887,12 @@ export default function WorkshopQueuePlanner({
           aria-hidden="true"
           style={{
             position: "fixed",
-            left: dragState.clientX + DRAG_PREVIEW_OFFSET_PX,
-            top: dragState.clientY + DRAG_PREVIEW_OFFSET_PX,
+            // Move via a compositor transform (not left/top) so the ghost glides
+            // without forcing layout on every frame — same visual position.
+            left: 0,
+            top: 0,
+            transform: `translate3d(${dragState.clientX + DRAG_PREVIEW_OFFSET_PX}px, ${dragState.clientY + DRAG_PREVIEW_OFFSET_PX}px, 0)`,
+            willChange: "transform",
             pointerEvents: "none",
             zIndex: 3200,
             minWidth: "160px",

@@ -99,6 +99,20 @@ const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING
 const DRAG_START_THRESHOLD_PX = 8;
 const DRAG_PREVIEW_OFFSET_PX = 16;
 
+// Two drop indicators are equivalent when all four positioning fields match. Used
+// to skip redundant state updates during a drag so the board only re-renders (and
+// the drop bar only moves) when the target genuinely changes — not on every pixel.
+const areDropIndicatorsEqual = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.targetType === b.targetType &&
+    String(a.targetKey || "") === String(b.targetKey || "") &&
+    String(a.targetJobNumber || "") === String(b.targetJobNumber || "") &&
+    a.placement === b.placement
+  );
+};
+
 const toDevSectionKey = (value) =>
 String(value || "unknown").
 trim().
@@ -389,8 +403,17 @@ export default function NextJobsPage() {
   const dropIndicatorRef = useRef(null);
   const searchHighlightTimeoutRef = useRef(null);
   const jobCardRefs = useRef({});
+  // Drag is rAF-throttled: pointermove only records the latest coords; a single
+  // animation frame does the hit-testing + state updates, so a fast pointer can't
+  // out-run React with a flood of re-renders (the old source of the glitchiness).
+  const pointerFrameRef = useRef(null);
+  const latestPointerRef = useRef({ x: 0, y: 0 });
 
   const clearDragState = useCallback(() => {
+    if (pointerFrameRef.current != null) {
+      cancelAnimationFrame(pointerFrameRef.current);
+      pointerFrameRef.current = null;
+    }
     dragStateRef.current = null;
     dropIndicatorRef.current = null;
     setDragState(null);
@@ -542,7 +565,7 @@ export default function NextJobsPage() {
       completedAt: row.completed_at || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      position: row.position || null,
+      position: row.queue_position ?? null,
       appointment: row.appointments?.[0] ?
       {
         appointmentId: row.appointments[0].appointment_id,
@@ -569,6 +592,7 @@ export default function NextJobsPage() {
         tech_completion_status,
         assigned_to,
         waiting_status,
+        queue_position,
         job_categories,
         requests,
         vhc_required,
@@ -1043,11 +1067,13 @@ export default function NextJobsPage() {
     [assigneeLookup]
   );
 
-  const handleOpenJobDetails = (job) => {
+  // Stable identity so the memoised board doesn't re-render mid-drag just because
+  // this handler was recreated on a ghost-position frame.
+  const handleOpenJobDetails = useCallback((job) => {
     clearDragState();
     setFeedbackMessage(null);
     setSelectedJob(job);
-  };
+  }, [clearDragState]);
 
   const handleCloseJobDetails = () => {
     clearDragState();
@@ -1136,11 +1162,14 @@ export default function NextJobsPage() {
     if (jobCard && targetContainer.contains(jobCard)) {
       const targetJobNumber = jobCard.getAttribute("data-dnd-job-number");
       const rect = jobCard.getBoundingClientRect();
+      // Cards are laid out horizontally (tech rows, unassigned grid), so the drop
+      // side is decided on the X axis: cursor on the left half drops the card
+      // before (to the left), right half drops it after (to the right).
       return {
         targetType,
         targetKey,
         targetJobNumber,
-        placement: clientY < rect.top + rect.height / 2 ? "before" : "after"
+        placement: clientX < rect.left + rect.width / 2 ? "before" : "after"
       };
     }
 
@@ -1300,33 +1329,62 @@ export default function NextJobsPage() {
   useEffect(() => {
     if (!dragStateRef.current) return undefined;
 
+    // One animation frame's worth of drag work: move the ghost (via dragState
+    // position) and re-resolve the drop target — but only commit a state update
+    // when something actually changed. Coalescing here means N pointermove events
+    // in a frame cost a single, consistent update instead of N competing renders.
+    const runDragFrame = () => {
+      pointerFrameRef.current = null;
+      const currentState = dragStateRef.current;
+      if (!currentState?.started) return;
+
+      const { x, y } = latestPointerRef.current;
+
+      // Ghost position: only push a new dragState if the cursor actually moved.
+      if (currentState.clientX !== x || currentState.clientY !== y) {
+        const nextState = { ...currentState, clientX: x, clientY: y };
+        dragStateRef.current = nextState;
+        setDragState(nextState);
+      }
+
+      // Drop indicator: only update when the resolved target differs, so the drop
+      // bar and the board don't flicker/re-render on every frame.
+      const nextIndicator = resolveDropIndicator(x, y, currentState.job);
+      if (!areDropIndicatorsEqual(nextIndicator, dropIndicatorRef.current)) {
+        dropIndicatorRef.current = nextIndicator;
+        setDropIndicator(nextIndicator);
+      }
+    };
+
+    const scheduleDragFrame = () => {
+      if (pointerFrameRef.current != null) return;
+      pointerFrameRef.current = requestAnimationFrame(runDragFrame);
+    };
+
     const handlePointerMove = (event) => {
       if (event.pointerId !== dragStateRef.current?.pointerId) return;
 
       const currentState = dragStateRef.current;
       if (!currentState) return;
 
-      const movedEnough =
-      Math.abs(event.clientX - currentState.originX) >= DRAG_START_THRESHOLD_PX ||
-      Math.abs(event.clientY - currentState.originY) >= DRAG_START_THRESHOLD_PX;
+      latestPointerRef.current = { x: event.clientX, y: event.clientY };
 
-      const nextState = {
-        ...currentState,
-        clientX: event.clientX,
-        clientY: event.clientY,
-        started: currentState.started || movedEnough
-      };
+      if (!currentState.started) {
+        const movedEnough =
+        Math.abs(event.clientX - currentState.originX) >= DRAG_START_THRESHOLD_PX ||
+        Math.abs(event.clientY - currentState.originY) >= DRAG_START_THRESHOLD_PX;
+        if (!movedEnough) return;
 
-      dragStateRef.current = nextState;
-      setDragState(nextState);
-
-      if (nextState.started) {
-        event.preventDefault();
-        setDraggingJob(nextState.job);
-        const nextIndicator = resolveDropIndicator(event.clientX, event.clientY, nextState.job);
-        dropIndicatorRef.current = nextIndicator;
-        setDropIndicator(nextIndicator);
+        // Promote to an active drag exactly once — this mounts the ghost.
+        const startedState = { ...currentState, clientX: event.clientX, clientY: event.clientY, started: true };
+        dragStateRef.current = startedState;
+        setDragState(startedState);
+        setDraggingJob(startedState.job);
       }
+
+      // While dragging, defer all hit-testing/state work to the next frame.
+      event.preventDefault();
+      scheduleDragFrame();
     };
 
     const handlePointerEnd = async (event) => {
@@ -1364,6 +1422,10 @@ export default function NextJobsPage() {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerEnd);
       window.removeEventListener("pointercancel", handlePointerEnd);
+      if (pointerFrameRef.current != null) {
+        cancelAnimationFrame(pointerFrameRef.current);
+        pointerFrameRef.current = null;
+      }
     };
   }, [clearDragState, completePointerDrop, Boolean(dragState), resolveDropIndicator]);
 

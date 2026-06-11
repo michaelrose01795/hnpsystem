@@ -233,7 +233,8 @@
       "Bash(sed -n '47,55p' src/components/Consumables/StockCheckPopup.js)",
       "Bash(sed -n '808,820p' src/components/Clocking/EfficiencyTab.js)",
       "Bash(sed -n '2722,2732p' src/components/JobCards/WriteUpForm.js)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Bash(awk '/CREATE TABLE.*\\\\.jobs /{f=1} f{print NR\": \"$0} /\\\\\\);/{if\\(f\\)exit}' src/lib/database/schema/schemaReference.sql)"
     ],
     "deny": [],
     "ask": [],
