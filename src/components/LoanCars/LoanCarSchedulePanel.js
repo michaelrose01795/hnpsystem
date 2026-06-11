@@ -91,6 +91,36 @@ const buildDateRows = (lookBackDays = LOOK_BACK_DAYS, lookAheadDays = LOOK_AHEAD
   });
 };
 
+// Month-scoped rows for the tracking month picker: one row per day from the 1st
+// to the last of the chosen "YYYY-MM". `isToday` still flags the current day so
+// the today-row styling and auto-scroll-to-top keep working when the selected
+// month is the current one. Returns null for an unparseable month value so the
+// caller can fall back to the rolling window.
+const buildMonthDateRows = (monthValue) => {
+  const match = String(monthValue || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  if (monthIndex < 0 || monthIndex > 11) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = toDateKey(today);
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(year, monthIndex, index + 1);
+    const key = toDateKey(date);
+    return {
+      key,
+      label: date.toLocaleDateString("en-GB", { weekday: "short" }),
+      dateLabel: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      compactDateLabel: date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }),
+      isToday: key === todayKey,
+    };
+  });
+};
+
 const bookingCoversDate = (booking, dayKey) =>
   booking.loanCarId && booking.startDate <= dayKey && booking.endDate >= dayKey;
 
@@ -1541,6 +1571,7 @@ export default function LoanCarSchedulePanel({
   highlightedJobNumber = "",
   highlightedReg = "",
   mode = "job-card",
+  month = "",
   refreshKey = 0,
   searchTerm = "",
   showFleetManager = false,
@@ -1548,18 +1579,19 @@ export default function LoanCarSchedulePanel({
   const scrollRef = useRef(null);
   const todayRowRef = useRef(null);
   const hasAutoScrolledTodayRef = useRef(false);
+  const hasHandledInitialMonthRef = useRef(false);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [selectedCell, setSelectedCell] = useState(null);
   const [selectedLoanCar, setSelectedLoanCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const dateRows = useMemo(
-    () =>
-      mode === "tracking"
-        ? buildDateRows(TRACKING_LOOK_BACK_DAYS, TRACKING_LOOK_AHEAD_DAYS)
-        : buildDateRows(),
-    [mode]
-  );
+  const dateRows = useMemo(() => {
+    if (mode !== "tracking") return buildDateRows();
+    // A month is chosen via the tracking picker → span the 1st to the last of
+    // that month. Fall back to the rolling look-back/ahead window only if the
+    // month value is missing or malformed.
+    return buildMonthDateRows(month) || buildDateRows(TRACKING_LOOK_BACK_DAYS, TRACKING_LOOK_AHEAD_DAYS);
+  }, [mode, month]);
   const jobDraft = buildJobBookingDraft({ jobData, highlightedJobNumber, highlightedReg });
   const highlightedJob = String(highlightedJobNumber || jobData?.jobNumber || "").trim().toLowerCase();
   const highlightedVehicle = String(highlightedReg || jobData?.reg || "").trim().toLowerCase();
@@ -1646,6 +1678,35 @@ export default function LoanCarSchedulePanel({
       if (secondFrame) window.cancelAnimationFrame(secondFrame);
     };
   }, [loading, mode, visibleCars.length]);
+
+  // When the user picks a different month, reset the table view to its top:
+  // the current month re-pins today to the top (matching the default load),
+  // any other month sits flush at the 1st. The first render is skipped so this
+  // never competes with the today auto-scroll effect above.
+  useEffect(() => {
+    if (mode !== "tracking") return undefined;
+    if (!hasHandledInitialMonthRef.current) {
+      hasHandledInitialMonthRef.current = true;
+      return undefined;
+    }
+    if (!scrollRef.current) return undefined;
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        if (todayRowRef.current) {
+          scrollTodayIntoView(todayRowRef);
+        } else if (scrollRef.current) {
+          scrollRef.current.scrollTop = 0;
+        }
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [month, mode]);
 
   const handleSaveCar = async (car) => {
     const isNewCar = !(car.loanCarId || car.id);

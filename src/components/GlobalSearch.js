@@ -33,6 +33,7 @@ const GlobalSearch = ({
   accentColor = "var(--primary)",
   isDarkMode = false,
   navigationItems = [],
+  onActiveChange,
 }) => {
   const router = useRouter();
   const containerRef = useRef(null);
@@ -215,6 +216,13 @@ const GlobalSearch = ({
     !feedback &&
     !shouldShowFeedback;
   const shouldShowDropdown = shouldShowFeedback || showResults || showEmptyState;
+
+  // Report "search is in use" upward (focused, or its results list is open) so a
+  // host like the auto-hide topbar can stay visible until the search is dismissed.
+  useEffect(() => {
+    if (typeof onActiveChange !== "function") return;
+    onActiveChange(isFocused || shouldShowDropdown);
+  }, [isFocused, shouldShowDropdown, onActiveChange]);
 
   useEffect(() => {
     if (!containerRef.current) return;

@@ -11,6 +11,7 @@ import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -1360,6 +1361,10 @@ export default function TrackingDashboard() {
   const [isWideTrackerView, setIsWideTrackerView] = useState(false);
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
   const [loanCarSearchTerm, setLoanCarSearchTerm] = useState("");
+  const [loanCarMonth, setLoanCarMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [loanCarFleetManagerOpen, setLoanCarFleetManagerOpen] = useState(false);
   const [loanCarRefreshKey, setLoanCarRefreshKey] = useState(0);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
@@ -2422,6 +2427,7 @@ export default function TrackingDashboard() {
       return (
         <LoanCarSchedulePanel
           mode="tracking"
+          month={loanCarMonth}
           searchTerm={loanCarSearchTerm}
           showFleetManager={loanCarFleetManagerOpen}
           refreshKey={loanCarRefreshKey}
@@ -2463,6 +2469,9 @@ export default function TrackingDashboard() {
       loadActiveTab={loadActiveTab}
       loading={loading}
       loanCarFleetManagerOpen={loanCarFleetManagerOpen}
+      loanCarMonth={loanCarMonth}
+      setLoanCarMonth={setLoanCarMonth}
+      MonthPickerField={MonthPickerField}
       LocationEntryModal={LocationEntryModal}
       LocationSearchModal={LocationSearchModal}
       oilStockModal={oilStockModal}

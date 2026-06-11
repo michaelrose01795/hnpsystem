@@ -2715,6 +2715,11 @@ html.staff-scope .searchbar-api__icon {
 
 /* .app-btn variant locks moved to src/styles/families/buttons.css. */
 
+/* Button corner radius is now driven by --primary-control-radius (theme.css)
+   via --control-radius, so the Primary button and every Primary-styled control
+   (inputs, dropdowns, calendar + time pickers) share one rounding source. No
+   per-variant override needed here. */
+
 html.staff-scope .dropdown-api__value,
 html.staff-scope .calendar-api__value,
 html.staff-scope .timepicker-api__value {
@@ -4935,15 +4940,20 @@ html.staff-scope .app-table-shell--with-headings thead {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: var(--secondary-pressed);
+  /* OPAQUE sticky header: --secondary-pressed is a translucent tint (alpha 0.2),
+     so on its own the scrolling rows show through the heading. Layer the tint
+     over an opaque --surface so the heading stays fully solid — rows stop
+     cleanly at its bottom edge and are never seen moving behind it. */
+  background: linear-gradient(var(--secondary-pressed), var(--secondary-pressed)), var(--surface);
 }
 
 html.staff-scope .app-table-shell--with-headings thead th {
   position: sticky;
   top: 0;
   z-index: 41;
-  background: var(--secondary-pressed) !important;
-  background-image: none !important;
+  /* Same opaque tint-over-surface stack as the thead above — keeps the header
+     solid so rows cannot read through it while scrolling. */
+  background: linear-gradient(var(--secondary-pressed), var(--secondary-pressed)), var(--surface) !important;
   background-clip: padding-box;
   color: var(--text-1) !important;
   font-size: 0.72rem;

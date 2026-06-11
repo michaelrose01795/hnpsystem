@@ -259,7 +259,21 @@
   --datetime-control-width: 12ch;
   --dropdown-trigger-height: var(--control-height);
   --dropdown-trigger-height-sm: var(--control-height);
-  --control-radius: 14px;
+  /* ─────────────────────────────────────────────────────────────────────
+     PRIMARY CONTROL — single source of truth (2026-06-11).
+     The Primary button (.app-btn--primary) reads its background, hover,
+     text colour and corner radius from these four tokens. Every Primary-
+     styled control links back to them: text inputs, dropdown triggers +
+     options, calendar-day cells, time-picker options. Re-skin the Primary
+     button by editing THESE FOUR — the change cascades to all of those
+     controls automatically. (This intentionally REVERSES the earlier
+     "copy-not-link" decoupling; the linked tokens below carry the note.) */
+  --primary-control-bg: var(--secondary);
+  --primary-control-bg-hover: var(--secondary-hover);
+  --primary-control-color: var(--text-1);
+  --primary-control-radius: 28px; /* rounder than --radius-xl (24px); pill-ends on 44px controls */
+
+  --control-radius: var(--primary-control-radius); /* follows Primary radius */
   --control-radius-sm: var(--radius-sm);
   --control-radius-xs: 10px;
   --dropdown-trigger-radius: var(--control-radius);
@@ -279,40 +293,43 @@
   --control-border: none; /* DEPRECATED — inputs use --input-ring directly */
   --control-border-hover: var(--secondary-hover); /* colour-only alias for hover ring */
   --control-border-focus: var(--secondary-hover); /* colour-only alias for focus ring */
-  --control-bg: var(--secondary);
-  --control-bg-hover: var(--secondary-hover);
-  --control-bg-active: var(--secondary-hover);
+  --control-bg: var(--primary-control-bg); /* follows Primary button */
+  --control-bg-hover: var(--primary-control-bg-hover); /* follows Primary button */
+  --control-bg-active: var(--primary-control-bg-hover);
   --textfieldbackground: #9ca3af;
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
-  --dropdown-trigger-bg: var(--secondary);
-  --dropdown-trigger-color: var(--text-1);
-  --dropdown-trigger-hover-bg: var(--secondary-hover);
+  /* Dropdown / calendar / time-picker now LINK to the Primary control source
+     (was copy-not-link from --secondary). Editing --primary-control-* re-skins
+     these. Selected-state colour stays --accentText to keep the selected cue. */
+  --dropdown-trigger-bg: var(--primary-control-bg);
+  --dropdown-trigger-color: var(--primary-control-color);
+  --dropdown-trigger-hover-bg: var(--primary-control-bg-hover);
   --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
     0 0 36px rgba(0, 0, 0, 0.18),
     0 0 12px rgba(0, 0, 0, 0.10);
-  --dropdown-option-bg: var(--secondary);
-  --dropdown-option-color: var(--text-1);
-  --dropdown-option-hover-bg: var(--secondary-hover);
-  --dropdown-option-selected-bg: var(--secondary-hover);
+  --dropdown-option-bg: var(--primary-control-bg);
+  --dropdown-option-color: var(--primary-control-color);
+  --dropdown-option-hover-bg: var(--primary-control-bg-hover);
+  --dropdown-option-selected-bg: var(--primary-control-bg-hover);
   --dropdown-option-selected-color: var(--accentText);
-  --calendar-day-bg: var(--secondary);
-  --calendar-day-color: var(--text-1);
-  --calendar-day-hover-bg: var(--secondary-hover);
-  --calendar-day-selected-bg: var(--secondary-hover);
+  --calendar-day-bg: var(--primary-control-bg);
+  --calendar-day-color: var(--primary-control-color);
+  --calendar-day-hover-bg: var(--primary-control-bg-hover);
+  --calendar-day-selected-bg: var(--primary-control-bg-hover);
   --calendar-day-selected-color: var(--accentText);
-  --timepicker-option-bg: var(--secondary);
-  --timepicker-option-color: var(--text-1);
-  --timepicker-option-hover-bg: var(--secondary-hover);
-  --timepicker-option-selected-bg: var(--secondary-hover);
+  --timepicker-option-bg: var(--primary-control-bg);
+  --timepicker-option-color: var(--primary-control-color);
+  --timepicker-option-hover-bg: var(--primary-control-bg-hover);
+  --timepicker-option-selected-bg: var(--primary-control-bg-hover);
   --timepicker-option-selected-color: var(--accentText);
-  --timepicker-now-bg: var(--secondary);
-  --timepicker-now-color: var(--text-1);
-  --timepicker-now-hover-bg: var(--secondary-hover);
+  --timepicker-now-bg: var(--primary-control-bg);
+  --timepicker-now-color: var(--primary-control-color);
+  --timepicker-now-hover-bg: var(--primary-control-bg-hover);
   --searchbar-clear-bg: var(--secondary);
   --searchbar-clear-color: var(--text-1);
   --searchbar-clear-hover-bg: var(--secondary-hover);
@@ -595,41 +612,42 @@
   --control-border: none; /* DEPRECATED — inputs use --input-ring directly */
   --control-border-hover: var(--secondary-hover);
   --control-border-focus: var(--secondary-hover);
-  --control-bg: var(--secondary);
-  --control-bg-hover: var(--secondary-hover);
-  --control-bg-active: var(--secondary-hover);
+  --control-bg: var(--primary-control-bg); /* follows Primary button */
+  --control-bg-hover: var(--primary-control-bg-hover); /* follows Primary button */
+  --control-bg-active: var(--primary-control-bg-hover);
   --textfieldbackground: #a1a1aa;
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
-  --dropdown-trigger-bg: var(--secondary);
-  --dropdown-trigger-color: var(--text-1);
-  --dropdown-trigger-hover-bg: var(--secondary-hover);
+  /* Linked to the Primary control source — see base-theme note. */
+  --dropdown-trigger-bg: var(--primary-control-bg);
+  --dropdown-trigger-color: var(--primary-control-color);
+  --dropdown-trigger-hover-bg: var(--primary-control-bg-hover);
   --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
     0 0 40px rgba(0, 0, 0, 0.65),
     0 0 16px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --dropdown-option-bg: var(--secondary);
-  --dropdown-option-color: var(--text-1);
-  --dropdown-option-hover-bg: var(--secondary-hover);
-  --dropdown-option-selected-bg: var(--secondary-hover);
+  --dropdown-option-bg: var(--primary-control-bg);
+  --dropdown-option-color: var(--primary-control-color);
+  --dropdown-option-hover-bg: var(--primary-control-bg-hover);
+  --dropdown-option-selected-bg: var(--primary-control-bg-hover);
   --dropdown-option-selected-color: var(--accentText);
-  --calendar-day-bg: var(--secondary);
-  --calendar-day-color: var(--text-1);
-  --calendar-day-hover-bg: var(--secondary-hover);
-  --calendar-day-selected-bg: var(--secondary-hover);
+  --calendar-day-bg: var(--primary-control-bg);
+  --calendar-day-color: var(--primary-control-color);
+  --calendar-day-hover-bg: var(--primary-control-bg-hover);
+  --calendar-day-selected-bg: var(--primary-control-bg-hover);
   --calendar-day-selected-color: var(--accentText);
-  --timepicker-option-bg: var(--secondary);
-  --timepicker-option-color: var(--text-1);
-  --timepicker-option-hover-bg: var(--secondary-hover);
-  --timepicker-option-selected-bg: var(--secondary-hover);
+  --timepicker-option-bg: var(--primary-control-bg);
+  --timepicker-option-color: var(--primary-control-color);
+  --timepicker-option-hover-bg: var(--primary-control-bg-hover);
+  --timepicker-option-selected-bg: var(--primary-control-bg-hover);
   --timepicker-option-selected-color: var(--accentText);
-  --timepicker-now-bg: var(--secondary);
-  --timepicker-now-color: var(--text-1);
-  --timepicker-now-hover-bg: var(--secondary-hover);
+  --timepicker-now-bg: var(--primary-control-bg);
+  --timepicker-now-color: var(--primary-control-color);
+  --timepicker-now-hover-bg: var(--primary-control-bg-hover);
   --searchbar-clear-bg: var(--secondary);
   --searchbar-clear-color: var(--text-1);
   --searchbar-clear-hover-bg: var(--secondary-hover);

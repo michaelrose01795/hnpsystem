@@ -1,34 +1,11 @@
 
-NEED FIXING STILL
-TODO
-Have it so the staffglobal.css setting for tables is adjusted, have it so the table rows goes up to the bottom of the heading section and then stops and then has the heading section seperate, this is the heading section doesnt scroll wihtin the table, so the rows cannot be seen moving behind the heading row. 
-
-Table
-what about the "Workshop Consumables Scheduled Card | 1.2.1.1.1.1.3 key: workshop-consumables-scheduled-card source: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js:737 route: /workshop/consumables-tracker parent workshop-consumables-tracker-content (1.2.1.1.1.1) | 1 child" table within this section does this follow the staffglobal.css table design
-
-
-
-
-
-
 
 TODO
-chgeck buttons, not following shap and style is this becuase they arent following staffglobal.css settings deep dive into this across all pages
+chgeck buttons, not following shape and style is this becuase they arent following staffglobal.css settings deep dive into this across all pages
 
 TODO
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
 
-CHECK
-update the appointment page table so match the photo style one so it looks more modern. 
-
-TODO
-this will be the same desing as the next job page layout etc. 
-
-
-
-
-TODO
-update the messages oage like the photoes
 
 
 

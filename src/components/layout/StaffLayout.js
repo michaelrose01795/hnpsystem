@@ -137,6 +137,9 @@ export default function Layout({
   // the locked model the bar is an absolute overlay and the page itself does not
   // scroll, so the hook watches the inner page scroller (pageScrollRef).
   const enableTopbarAutoHide = !isTablet && !hideSidebar;
+  // While the topbar's global search is in use (focused or its results list open)
+  // the bar must stay visible and never fold away — fed to the hook as suppressHide.
+  const [topbarSearchActive, setTopbarSearchActive] = useState(false);
   const {
     wrapperRef: topbarWrapperRef,
     barRef: topbarBarRef,
@@ -147,6 +150,7 @@ export default function Layout({
     enabled: enableTopbarAutoHide,
     overlay: lockViewport,
     scrollRef: pageScrollRef,
+    suppressHide: topbarSearchActive,
   });
 
   const urlJobId =
@@ -1147,6 +1151,7 @@ export default function Layout({
             navigationItems={navigationItems}
             userRoles={userRoles}
             overlay={lockViewport}
+            onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
             barRef={topbarBarRef}
             wrapperStyle={topbarWrapperStyle}

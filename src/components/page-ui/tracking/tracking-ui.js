@@ -32,6 +32,9 @@ export default function TrackingDashboardUi(props) {
     loadActiveTab,
     loading,
     loanCarFleetManagerOpen,
+    loanCarMonth,
+    setLoanCarMonth,
+    MonthPickerField,
     refreshLoading,
     oilStockModal,
     openEntryModal,
@@ -112,6 +115,12 @@ export default function TrackingDashboardUi(props) {
               minWidth: isMobileView ? "100%" : "180px",
               maxWidth: "720px"
             }} />
+                  {activeTab === "loan-cars" && MonthPickerField && (
+                  <MonthPickerField
+              value={loanCarMonth}
+              onValueChange={(nextValue) => setLoanCarMonth(nextValue)}
+              aria-label={`Select loan car month, currently ${loanCarMonth}`} />
+                  )}
               </DevLayoutSection>
               <div style={{
           display: "flex",

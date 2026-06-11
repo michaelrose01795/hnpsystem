@@ -84,16 +84,18 @@ html.staff-scope .app-btn--nav {
 /* === here.                                               === */
 /* ========================================================= */
 html.staff-scope .app-btn--primary {
-  /* Primary tracks the text-field background so form surfaces (input + CTA)
-     read as one family. --input-bg resolves to --control-bg (pale accent
-     tint in whichever theme colour the user has chosen). */
-  background: var(--input-bg) !important;
-  color: var(--text-1) !important;
+  /* Primary is the single source of truth for the form-control family.
+     Background / hover / text colour come from --primary-control-* (theme.css);
+     editing those four tokens re-skins text inputs, dropdowns, calendar and
+     time pickers too. Radius flows via .app-btn → --control-radius, which is
+     also driven by --primary-control-radius. */
+  background: var(--primary-control-bg) !important;
+  color: var(--primary-control-color) !important;
   border: none !important;
 }
 html.staff-scope .app-btn--primary:hover,
 html.staff-scope .app-btn--primary:focus-visible {
-  background: var(--control-bg-hover) !important;
+  background: var(--primary-control-bg-hover) !important;
 }
 
 html.staff-scope .app-btn--secondary {

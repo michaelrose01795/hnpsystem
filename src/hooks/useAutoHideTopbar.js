@@ -35,12 +35,21 @@ const FALLBACK_TOP_GAP = 18; // matches --page-gutter-y in theme.css
 // hook does NOT reposition the bar; it only drives the fold-away animation off
 // the inner scroller's scrollTop: visible at the top, visible while scrolling,
 // folds 1.5s after scrolling stops, unfolds the moment scrolling resumes.
-export default function useAutoHideTopbar({ enabled = true, overlay = false, scrollRef = null } = {}) {
+// `suppressHide`: while true the bar must stay visible and never fold away — even
+// after scrolling stops. Driven by the global search being in use (focused or its
+// results list open) so the topbar housing it can't disappear out from under it.
+export default function useAutoHideTopbar({
+  enabled = true,
+  overlay = false,
+  scrollRef = null,
+  suppressHide = false,
+} = {}) {
   const wrapperRef = useRef(null);
   const barRef = useRef(null);
   const hideTimerRef = useRef(null);
   const floatingRef = useRef(false);
   const rafRef = useRef(0);
+  const suppressHideRef = useRef(suppressHide);
 
   const [floating, setFloating] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -65,6 +74,34 @@ export default function useAutoHideTopbar({ enabled = true, overlay = false, scr
         : { left: rect.left, width: rect.width, top }
     );
   }, []);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  // Arm the fold-away timer — unless the bar is currently locked open (search in
+  // use), in which case it must never fold while that lock is held.
+  const scheduleHide = useCallback(() => {
+    clearHideTimer();
+    if (suppressHideRef.current) return;
+    hideTimerRef.current = setTimeout(() => setHidden(true), HIDE_DELAY_MS);
+  }, [clearHideTimer]);
+
+  // Hold the bar open while the lock is held; re-arm the fold-away the moment it
+  // releases (if the page is still scrolled away from the top).
+  useEffect(() => {
+    suppressHideRef.current = suppressHide;
+    if (!enabled) return;
+    if (suppressHide) {
+      clearHideTimer();
+      setHidden(false);
+    } else if (floatingRef.current) {
+      scheduleHide();
+    }
+  }, [suppressHide, enabled, clearHideTimer, scheduleHide]);
 
   // Honour reduced-motion: drop the 3D fold, keep a plain slide/fade.
   useEffect(() => {
@@ -113,16 +150,6 @@ export default function useAutoHideTopbar({ enabled = true, overlay = false, scr
     const scroller = overlay ? scrollRef?.current : null;
     if (overlay && !scroller) return undefined;
 
-    const clearHideTimer = () => {
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
-    };
-    const scheduleHide = () => {
-      clearHideTimer();
-      hideTimerRef.current = setTimeout(() => setHidden(true), HIDE_DELAY_MS);
-    };
     // Overlay mode reads the inner scroller; window mode reads the document
     // scroll (lives on body in this app, but read defensively).
     const readScrollTop = () =>
@@ -201,7 +228,7 @@ export default function useAutoHideTopbar({ enabled = true, overlay = false, scr
         rafRef.current = 0;
       }
     };
-  }, [enabled, overlay, scrollRef, measureGeom]);
+  }, [enabled, overlay, scrollRef, measureGeom, clearHideTimer, scheduleHide]);
 
   // ---- derived styles ----------------------------------------------------
   const foldedTransform = reducedMotion

@@ -47,6 +47,9 @@ export default function StaffTopbar({
   navigationItems,
   userRoles = [],
   overlay = false,
+  // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
+  // search is in use (focused or its results list showing).
+  onSearchActiveChange,
   // Auto-hide/fold geometry is owned by StaffLayout (via useAutoHideTopbar) so
   // the page card can react to the bar's folded state. The refs + computed
   // styles arrive here as props; this component is purely presentational.
@@ -350,7 +353,11 @@ export default function StaffTopbar({
                 position: "relative",
               }}
             >
-              <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
+              <GlobalSearch
+                accentColor={colors.accent}
+                navigationItems={navigationItems}
+                onActiveChange={onSearchActiveChange}
+              />
             </div>
 
             <div
