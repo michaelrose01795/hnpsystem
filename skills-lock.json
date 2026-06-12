@@ -1123,6 +1123,12 @@
       "skillPath": "skills/imagegen-frontend-web/SKILL.md",
       "computedHash": "27255c7c50181e58add156b2aa2bd5325285b85f04027e4c8b73742d98d7be0a"
     },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "ec3199f460c3a6fade94e753d5dfe2b46d0c770e64670a5954260d94b39311dd"
+    },
     "industrial-brutalist-ui": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
@@ -1261,6 +1267,12 @@
       "skillPath": "plugins/ruflo-swarm/skills/monitor-stream/SKILL.md",
       "computedHash": "9ba0914b232f51614133e495964da11c24eeb0fa63fd141f00ca3eb3d8824e00"
     },
+    "nested-subagents": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "skillPath": "plugins/ruflo-agent/skills/nested-subagents/SKILL.md",
+      "computedHash": "a75f3b29f176e936b4138e5e0a624affc47e77445f26fdf5292e82109d4828eb"
+    },
     "neural-train": {
       "source": "ruvnet/ruflo",
       "sourceType": "github",
@@ -1373,7 +1385,7 @@
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "skillPath": "skills/stitch-skill/SKILL.md",
-      "computedHash": "acf2921a7e50c06e637f072ba52e36a994cbb44ecbe6e31435bc113b894f5499"
+      "computedHash": "c96b580192b34167efa01f460bbc669ff4315cf97f3cf6ff85ded8029aa720b8"
     },
     "stream-chain": {
       "source": "ruvnet/ruflo",
@@ -1541,13 +1553,13 @@
       "source": "ruvnet/ruflo",
       "sourceType": "github",
       "skillPath": "plugins/ruflo-workflows/skills/workflow-create/SKILL.md",
-      "computedHash": "4717fc03738e46ea38606ae056f055e6e0b8bc94b59c89e9683744ff8f25b135"
+      "computedHash": "7d1a3543e79f57a9ac74993b003ab14043a20507ae6c505e100c34d77caa723d"
     },
     "workflow-run": {
       "source": "ruvnet/ruflo",
       "sourceType": "github",
       "skillPath": "plugins/ruflo-workflows/skills/workflow-run/SKILL.md",
-      "computedHash": "24a0354dabdf86e108decfdbf18120fb43eea344216e26407684421b70d4179d"
+      "computedHash": "a6c379325082bb553857eb34ed28c3f04e158a2aad889252bc54a85aabe22b99"
     }
   }
 }
