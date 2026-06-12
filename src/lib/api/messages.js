@@ -68,3 +68,12 @@ export const ensureJobCustomerThread = (payload) =>
     method: "POST",
     body: payload,
   });
+
+export const fetchMessageTemplates = (params = {}) =>
+  apiRequest("/api/messages/templates", { searchParams: params });
+
+export const saveMessageTemplate = (payload) =>
+  apiRequest("/api/messages/templates", {
+    method: "POST",
+    body: payload,
+  });

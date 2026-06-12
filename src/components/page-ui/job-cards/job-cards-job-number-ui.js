@@ -77,6 +77,8 @@ export default function JobCardDetailPageUi(props) {
     handleTrackerSave,
     handleUpdateRequestPrePickLocation,
     handleUpdateRequests,
+    handleUpdateRequestStatus,
+    clockingEntries,
     handleWriteUpCompletionChange,
     handleWriteUpRequestStatusesChange,
     handleWriteUpSaveSuccess,
@@ -712,7 +714,7 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Customer Requests</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <CustomerRequestsTab jobData={jobData} canEdit={canEdit} onUpdate={handleUpdateRequests} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onToggleVhcRequired={handleToggleVhcRequired} overallStatusId={overallStatusId} vhcSummary={vhcSummaryCounts} vhcChecks={jobVhcChecks} notes={jobNotes} partsJobItems={jobData?.parts_job_items || []} />
+            <CustomerRequestsTab jobData={jobData} canEdit={canEdit} onUpdate={handleUpdateRequests} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onUpdateRequestStatus={handleUpdateRequestStatus} onNavigateTab={handleTabClick} clockingEntries={clockingEntries} onToggleVhcRequired={handleToggleVhcRequired} overallStatusId={overallStatusId} vhcSummary={vhcSummaryCounts} vhcChecks={jobVhcChecks} notes={jobNotes} partsJobItems={jobData?.parts_job_items || []} />
           </div>
 
           <div className="app-page-stack" style={{
@@ -722,7 +724,7 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Contact</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <ContactTab jobData={jobData} canEdit={canEdit} onSaveCustomerDetails={handleCustomerDetailsSave} customerSaving={customerSaving} />
+            <ContactTab jobData={jobData} canEdit={canEdit} onSaveCustomerDetails={handleCustomerDetailsSave} customerSaving={customerSaving} dbUserId={dbUserId} />
           </div>
 
           <div className="app-page-stack" style={{

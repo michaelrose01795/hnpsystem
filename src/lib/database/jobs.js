@@ -883,6 +883,10 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           address,
           postcode,
           contact_preference,
+          preferences,
+          notes,
+          work_address,
+          work_postcode,
           created_at,
           updated_at
         )
@@ -2505,11 +2509,22 @@ const formatJobData = (data) => {
       ? `${data.vehicle.customer.firstname} ${data.vehicle.customer.lastname}`
       : "",
     customerId: data.customer_id || data.vehicle?.customer?.id || null,
+    customerFirstName: data.vehicle?.customer?.firstname || "",
+    customerLastName: data.vehicle?.customer?.lastname || "",
     customerPhone: data.vehicle?.customer?.mobile || data.vehicle?.customer?.telephone || "",
+    customerMobile: data.vehicle?.customer?.mobile || "",
+    customerTelephone: data.vehicle?.customer?.telephone || "",
     customerEmail: data.vehicle?.customer?.email || "",
     customerAddress: data.vehicle?.customer?.address || "",
     customerPostcode: data.vehicle?.customer?.postcode || "",
     customerContactPreference: data.vehicle?.customer?.contact_preference || "email",
+    // Customer-level preferences (text[]), notes and work address — Contact tab redesign.
+    customerPreferences: Array.isArray(data.vehicle?.customer?.preferences)
+      ? data.vehicle.customer.preferences
+      : [],
+    customerNotes: data.vehicle?.customer?.notes || "",
+    customerWorkAddress: data.vehicle?.customer?.work_address || "",
+    customerWorkPostcode: data.vehicle?.customer?.work_postcode || "",
     
     // ✅ Appointment info
     appointment: data.appointments?.[0]
@@ -3223,6 +3238,36 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
     return { success: true };
   } catch (error) {
     console.error("❌ upsertJobRequestsForJob error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   UPDATE A SINGLE JOB REQUEST STATUS
+   upsertJobRequestsForJob intentionally never writes `status`, so the
+   per-request "Mark complete" action on the Customer Requests tab uses this
+   dedicated single-row updater instead.
+============================================ */
+export const updateJobRequestStatus = async (requestId, status) => {
+  try {
+    if (!requestId) {
+      return { success: false, error: { message: "Request ID is required" } };
+    }
+    const nextStatus = String(status || "").trim();
+    if (!nextStatus) {
+      return { success: false, error: { message: "Status is required" } };
+    }
+
+    const { error } = await supabase
+      .from("job_requests")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("request_id", requestId);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ updateJobRequestStatus error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

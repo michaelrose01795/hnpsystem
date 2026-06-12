@@ -10,7 +10,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/database/supabaseClient";
-import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, updateJobRequestStatus, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
 import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
@@ -48,7 +48,7 @@ import {
   normaliseDecisionStatus } from
 "@/features/vhc/vhcStatusEngine";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
-import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
+import { clockInToJob, getUserActiveJobs, switchJob, getJobClockingEntries } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab";
 import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
@@ -85,6 +85,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // real WriteUpForm shape (tab bar + content grid) so switching tabs never
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
+import ContactTab from "@/components/page-ui/job-cards/contact/ContactTab"; // Redesigned Contact tab (extracted from this file).
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
@@ -742,6 +743,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
+  // Per-request clocking entries (job_clocking rows with request_id + hoursWorked).
+  // Loaded for the Customer Requests tab so each request can show its total
+  // clocked time. Refreshed whenever the job id changes or a status update lands.
+  const [clockingEntries, setClockingEntries] = useState([]);
   const [statusSnapshot, setStatusSnapshot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -2107,16 +2112,26 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setCustomerSaving(true);
 
       try {
-        const payload = {
-          firstname: updatedDetails.firstName?.trim() || null,
-          lastname: updatedDetails.lastName?.trim() || null,
-          email: updatedDetails.email?.trim() || null,
-          mobile: updatedDetails.mobile?.trim() || null,
-          telephone: updatedDetails.telephone?.trim() || null,
-          address: updatedDetails.address?.trim() || null,
-          postcode: updatedDetails.postcode?.trim() || null,
-          contact_preference: updatedDetails.contactPreference || null
+        // Only write keys the caller actually provided, so the Contact-details
+        // edit form and the Notes & Preferences section can share this handler
+        // without each one wiping the other's fields.
+        const payload = {};
+        const setIf = (key, present, value) => {
+          if (present) payload[key] = value;
         };
+        setIf("firstname", "firstName" in updatedDetails, updatedDetails.firstName?.trim() || null);
+        setIf("lastname", "lastName" in updatedDetails, updatedDetails.lastName?.trim() || null);
+        setIf("email", "email" in updatedDetails, updatedDetails.email?.trim() || null);
+        setIf("mobile", "mobile" in updatedDetails, updatedDetails.mobile?.trim() || null);
+        setIf("telephone", "telephone" in updatedDetails, updatedDetails.telephone?.trim() || null);
+        setIf("address", "address" in updatedDetails, updatedDetails.address?.trim() || null);
+        setIf("postcode", "postcode" in updatedDetails, updatedDetails.postcode?.trim() || null);
+        setIf("contact_preference", "contactPreference" in updatedDetails, updatedDetails.contactPreference || null);
+        // Contact-tab redesign fields.
+        setIf("preferences", "preferences" in updatedDetails, Array.isArray(updatedDetails.preferences) ? updatedDetails.preferences : []);
+        setIf("notes", "notes" in updatedDetails, updatedDetails.notes?.trim() || null);
+        setIf("work_address", "workAddress" in updatedDetails, updatedDetails.workAddress?.trim() || null);
+        setIf("work_postcode", "workPostcode" in updatedDetails, updatedDetails.workPostcode?.trim() || null);
 
         const { error: customerError } = await supabase.
         from("customers").
@@ -2127,17 +2142,20 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           throw customerError;
         }
 
-        const updatedName = `${updatedDetails.firstName || ""} ${updatedDetails.lastName || ""}`.trim();
+        // Only resync the denormalised jobs.customer name when the name changed.
+        if ("firstName" in updatedDetails || "lastName" in updatedDetails) {
+          const updatedName = `${updatedDetails.firstName ?? jobData.customerFirstName ?? ""} ${updatedDetails.lastName ?? jobData.customerLastName ?? ""}`.trim();
 
-        const { error: jobError } = await supabase.
-        from("jobs").
-        update({
-          customer: updatedName || null
-        }).
-        eq("id", jobData.id);
+          const { error: jobError } = await supabase.
+          from("jobs").
+          update({
+            customer: updatedName || null
+          }).
+          eq("id", jobData.id);
 
-        if (jobError) {
-          throw jobError;
+          if (jobError) {
+            throw jobError;
+          }
         }
 
         await fetchJobData({ silent: true, force: true });
@@ -3213,10 +3231,48 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       prev ? { ...prev, requests: requestPayload } : prev
       );
       await fetchJobData({ silent: true, force: true });
+      await loadClockingEntries();
       alert("✅ Job requests updated successfully");
     } catch (error) {
       console.error("Error updating requests:", error);
       alert("Failed to update job requests");
+    }
+  };
+
+  // ✅ Load per-request clocking totals for the Customer Requests tab.
+  const loadClockingEntries = useCallback(async () => {
+    if (!jobData?.id) {
+      setClockingEntries([]);
+      return;
+    }
+    try {
+      const entries = await getJobClockingEntries(jobData.id);
+      setClockingEntries(Array.isArray(entries) ? entries : []);
+    } catch (error) {
+      console.error("Failed to load clocking entries", error);
+      setClockingEntries([]);
+    }
+  }, [jobData?.id]);
+
+  useEffect(() => {
+    loadClockingEntries();
+  }, [loadClockingEntries]);
+
+  // ✅ Mark a single request complete / change its status (Customer Requests tab).
+  // upsertJobRequestsForJob never writes `status`, so this uses the dedicated
+  // single-row updater and then refreshes the job + clocking data.
+  const handleUpdateRequestStatus = async (requestId, nextStatus) => {
+    if (!canEdit || !requestId) return;
+    try {
+      const result = await updateJobRequestStatus(requestId, nextStatus);
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to update request status");
+      }
+      await fetchJobData({ silent: true, force: true });
+      await loadClockingEntries();
+    } catch (error) {
+      console.error("Error updating request status:", error);
+      alert("Failed to update request status");
     }
   };
 
@@ -3809,7 +3865,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // ✅ Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -4901,6 +4957,9 @@ function CustomerRequestsTab({
   canEdit,
   onUpdate,
   onUpdateRequestPrePickLocation = async () => {},
+  onUpdateRequestStatus = async () => {},
+  onNavigateTab = () => {},
+  clockingEntries = [],
   onToggleVhcRequired = () => {},
   overallStatusId = null,
   vhcSummary = { total: 0, red: 0, amber: 0 },
@@ -4945,6 +5004,9 @@ function CustomerRequestsTab({
   const [editableAuthorisedRows, setEditableAuthorisedRows] = useState([]);
   const [editing, setEditing] = useState(false);
   const [moreEditRequestIndex, setMoreEditRequestIndex] = useState(null);
+  // Selected request key for the 60/40 detail panel. Null falls back to the
+  // first row, so the panel always shows something.
+  const [selectedRequestKey, setSelectedRequestKey] = useState(null);
   const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
   const indentedNoteStyle = {
     ...smallPrintStyle,
@@ -5854,6 +5916,153 @@ function CustomerRequestsTab({
   // dropdown, its options list, and the /api/vhc/pre-pick-location writer have
   // been retired in favour of a single source of truth.
 
+  // Selected request index while editing (drives the right-hand editor panel).
+  const [selectedEditIndex, setSelectedEditIndex] = useState(0);
+
+  // ---- Unified rows + stats for the redesigned 60/40 layout ----
+  // Per-request clocked hours, summed from job_clocking entries by request_id.
+  const clockedHoursByRequestId = useMemo(() => {
+    const map = new Map();
+    (Array.isArray(clockingEntries) ? clockingEntries : []).forEach((entry) => {
+      const requestId = entry?.requestId ?? entry?.request_id ?? null;
+      if (requestId === null || requestId === undefined) return;
+      const hours = Number(entry?.hoursWorked ?? entry?.hours_worked ?? 0);
+      if (!Number.isFinite(hours) || hours <= 0) return;
+      const key = String(requestId);
+      map.set(key, (map.get(key) || 0) + hours);
+    });
+    return map;
+  }, [clockingEntries]);
+
+  const getClockedHoursForRequestId = useCallback(
+    (requestId) => {
+      if (requestId === null || requestId === undefined) return 0;
+      return clockedHoursByRequestId.get(String(requestId)) || 0;
+    },
+    [clockedHoursByRequestId]
+  );
+
+  // Combined customer + authorised rows, each fully resolved for table + detail.
+  const combinedRequestRows = useMemo(() => {
+    const rows = [];
+    customerRequestRows.forEach((req, index) => {
+      const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
+      const resolvedRequestPrePick = resolveLinkedPrePickLocation({
+        linkedPartRows: collectLinkedPartRows({
+          parts: linkedPrePickPartsSource,
+          requestId: req.requestId ?? req.request_id ?? null,
+          vhcItemId: req.vhcItemId ?? req.vhc_item_id ?? null,
+          resolveCanonicalVhcId
+        }),
+        fallbackValues: [req.prePickLocation, req.pre_pick_location]
+      });
+      const rowCompletedInWriteUp = isRequestRowCompleteFromWriteUp(req, index);
+      // Honour an explicit job_requests.status of completed (set by the
+      // "Mark Complete" action) so the DB write is reflected in the read view;
+      // otherwise fall back to the write-up / workflow-derived status.
+      const rawRowStatus = String(req.status || "").trim().toLowerCase();
+      const explicitlyComplete = rawRowStatus === "completed" || rawRowStatus === "complete";
+      const effectiveRowStatus = rowCompletedInWriteUp || explicitlyComplete ? "completed" : customerRequestStatusByWorkflow;
+      const { normalizedStatus, statusLabel, statusBadgeStyle } = getRequestStatusPresentation(effectiveRowStatus, "inprogress");
+      const requestId = req.requestId ?? req.request_id ?? null;
+      rows.push({
+        key: `customer-${requestId ?? `idx-${index}`}`,
+        kind: "customer",
+        numberLabel: String(index + 1),
+        title: `Request ${index + 1}`,
+        requestId,
+        description: req.description || req.text || "",
+        detailLine: "",
+        noteText: (req.noteText || "").trim(),
+        linkedNoteTexts,
+        jobType: req.jobType || "",
+        hours: req.hours,
+        hoursValue: Number(req.hours) || 0,
+        prePick: resolvedRequestPrePick || null,
+        normalizedStatus,
+        statusLabel,
+        statusBadgeStyle,
+        linkedParts: getLinkedPartsForRequestRow(req),
+        severity: null,
+        clockedHours: getClockedHoursForRequestId(requestId)
+      });
+    });
+    authorisedRows.forEach((row, index) => {
+      const linkedParts = getLinkedPartsForRequestRow(row);
+      const hasActiveLinkedPart = linkedParts.some((item) => !isRemovedPartsRow(item));
+      const hasOnlyRemovedLinkedParts = linkedParts.length > 0 && linkedParts.every((item) => isRemovedPartsRow(item));
+      const authorisedStatusSource =
+        (hasActiveLinkedPart ? "added_to_job" : null) ||
+        (hasOnlyRemovedLinkedParts ? "removed" : null) ||
+        row.status ||
+        (row.complete ? "completed" : null) ||
+        normaliseAuthorizationState(row.approvalStatus || row.authorizationState) ||
+        "authorized";
+      const { normalizedStatus, statusLabel, statusBadgeStyle } = getRequestStatusPresentation(authorisedStatusSource, "authorized");
+      const labourHoursValue =
+        row.labourHours !== null && row.labourHours !== undefined && row.labourHours !== ""
+          ? Number(row.labourHours)
+          : Number(row.hours) || 0;
+      const requestId = row.requestId ?? row.request_id ?? null;
+      rows.push({
+        key: `authorised-${requestId ?? row.vhcItemId ?? `idx-${index}`}`,
+        kind: "authorised",
+        numberLabel: `A${index + 1}`,
+        title: `Authorised ${index + 1}`,
+        requestId,
+        description: row.label || row.description || "Authorised item",
+        detailLine: row.detail || "",
+        noteText: (row.noteText || "").trim(),
+        linkedNoteTexts: [],
+        jobType: row.jobType || "",
+        hours: labourHoursValue,
+        hoursValue: Number(labourHoursValue) || 0,
+        prePick: row.prePickLocation || null,
+        normalizedStatus,
+        statusLabel,
+        statusBadgeStyle,
+        linkedParts,
+        severity: row.severity || null,
+        clockedHours: getClockedHoursForRequestId(requestId)
+      });
+    });
+    return rows;
+  }, [
+    customerRequestRows,
+    authorisedRows,
+    linkedNotesByRequestIndex,
+    linkedPrePickPartsSource,
+    resolveCanonicalVhcId,
+    isRequestRowCompleteFromWriteUp,
+    customerRequestStatusByWorkflow,
+    getRequestStatusPresentation,
+    getLinkedPartsForRequestRow,
+    getClockedHoursForRequestId
+  ]);
+
+  const requestStats = useMemo(() => {
+    const totalRequests = combinedRequestRows.length;
+    const totalHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.hoursValue) || 0), 0);
+    const clockedHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.clockedHours) || 0), 0);
+    const prePicked = combinedRequestRows.filter((r) => r.prePick).length;
+    const inProgress = combinedRequestRows.filter((r) => r.normalizedStatus === "inprogress").length;
+    const complete = combinedRequestRows.filter((r) => r.normalizedStatus === "completed").length;
+    return { totalRequests, totalHours, clockedHours, prePicked, inProgress, complete };
+  }, [combinedRequestRows]);
+
+  const selectedRow = useMemo(() => {
+    if (!combinedRequestRows.length) return null;
+    return combinedRequestRows.find((r) => r.key === selectedRequestKey) || combinedRequestRows[0];
+  }, [combinedRequestRows, selectedRequestKey]);
+
+  // Plain (token-backed, borderless) surface styles for the new layout.
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 };
+  const statLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)" };
+  const statValueStyle = { fontSize: "20px", fontWeight: 700, color: "var(--text-1)" };
+  const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
+  const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
+  const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
@@ -5946,609 +6155,264 @@ function CustomerRequestsTab({
         }
       </div>
 
-      {editing ?
-      <div>
-          {requests.map((req, index) =>
-        <div
-          key={index}
-          style={{
-            ...requestRowButtonStyle,
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            flexWrap: "nowrap"
-          }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Stats row — full width, surface boxes alternating off the theme shell */}
+        <div className="jc-req-statgrid">
+          <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
+          <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
+          <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
+          <div style={statBoxStyle}><span style={statLabelStyle}>Pre-picked</span><span style={statValueStyle}>{requestStats.prePicked}</span></div>
+          <div style={statBoxStyle}><span style={statLabelStyle}>In Progress</span><span style={statValueStyle}>{requestStats.inProgress}</span></div>
+          <div style={statBoxStyle}><span style={statLabelStyle}>Complete</span><span style={statValueStyle}>{requestStats.complete}</span></div>
+        </div>
 
-              <div
-            style={{
-              flex: 1,
-              flexBasis: "420px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              minWidth: "260px"
-            }}>
+        {editing ?
+        /* ---------- EDIT MODE: 60/40 list + per-request editor ---------- */
+        <div className="jc-req-split">
+          <div className="jc-req-table-wrap">
+            <table className="app-data-table app-data-table--rounded">
+              <thead>
+                <tr>
+                  <th style={{ width: "44px" }}>#</th>
+                  <th>Request</th>
+                  <th style={{ width: "130px" }}>Billed To</th>
+                  <th style={{ width: "80px" }}>Hours</th>
+                  <th style={{ width: "96px" }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((req, index) => {
+                  const hasHours = req.time !== "" && req.time !== null && req.time !== undefined;
+                  return (
+                    <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
+                      <td style={{ fontWeight: 600 }}>{index + 1}</td>
+                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request…</span>}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
+                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                      <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
+                    </tr>
+                  );
+                })}
+                {requests.length === 0 &&
+                <tr><td colSpan={5} style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>No requests yet.</td></tr>}
+              </tbody>
+            </table>
+            <div style={{ marginTop: "12px" }}>
+              <button type="button" className="app-btn app-btn--primary" onClick={handleAddRequest}>Add Request</button>
+            </div>
 
-                <span style={requestSubtitleStyle}>Request {index + 1}</span>
+            {editableAuthorisedRows.length > 0 &&
+            <div style={{ marginTop: "18px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-dark)", marginBottom: "10px" }}>Authorised VHC</div>
+              <table className="app-data-table app-data-table--rounded">
+                <thead>
+                  <tr><th>Item</th><th style={{ width: "80px" }}>Hours</th><th style={{ width: "150px" }}>Billed To</th></tr>
+                </thead>
+                <tbody>
+                  {editableAuthorisedRows.map((req, index) => {
+                    const hasHours = req.time !== "" && req.time !== null && req.time !== undefined;
+                    return (
+                      <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
+                        <td style={{ color: "var(--text-1)" }}>{req.text}</td>
+                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                        <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>}
+          </div>
+
+          {/* RIGHT: per-request editor */}
+          <div style={detailPanelStyle}>
+            {requests[selectedEditIndex] ?
+            <>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>Request {selectedEditIndex + 1}</h3>
+              <div style={requestDetailsFieldStyle}>
+                <label style={requestDetailsLabelStyle}>Request Description</label>
                 <RequestPresetAutosuggestInput
-              value={req.text || ""}
-              onChange={(nextValue) => handleUpdateRequest(index, "text", nextValue)}
-              onPresetSelect={(preset) => {
-                const updated = [...requests];
-                updated[index] = {
-                  ...updated[index],
-                  text: preset.label,
-                  time: Number(preset.defaultHours) > 0 ? Number(preset.defaultHours) : "",
-                  presetId: preset.id,
-                  selectedPresetLabel: preset.label
-                };
-                setRequests(updated);
-              }}
-              inputStyle={{
-                width: "100%",
-                padding: "6px 0",
-                border: "none",
-                borderBottom: "var(--input-ring)",
-                borderRadius: "0",
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "var(--text-1)",
-                backgroundColor: "transparent"
-              }} />
-
+                  value={requests[selectedEditIndex].text || ""}
+                  onChange={(nextValue) => handleUpdateRequest(selectedEditIndex, "text", nextValue)}
+                  onPresetSelect={(preset) => {
+                    const updated = [...requests];
+                    updated[selectedEditIndex] = {
+                      ...updated[selectedEditIndex],
+                      text: preset.label,
+                      time: Number(preset.defaultHours) > 0 ? Number(preset.defaultHours) : "",
+                      presetId: preset.id,
+                      selectedPresetLabel: preset.label
+                    };
+                    setRequests(updated);
+                  }}
+                  inputStyle={{ width: "100%", padding: "8px 10px", border: "none", borderBottom: "var(--input-ring)", borderRadius: "0", fontSize: "14px", color: "var(--text-1)", backgroundColor: "transparent" }} />
               </div>
-
-              <div style={{ width: "82px", flexShrink: 0 }}>
-                <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                  Est. Hours
-                </label>
-                <div style={{ position: "relative" }}>
-                <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={req.time}
-                onChange={(e) => handleUpdateRequest(index, "time", e.target.value)}
-                onBlur={() => persistPresetHoursFromRow(requests[index])}
-                className="edit-requests-hours-input"
-                style={{
-                  width: "100%",
-                  height: "var(--control-height-sm)",
-                  padding: "8px 24px 8px 10px",
-                  border: "none",
-                  borderRadius: "var(--control-radius)",
-                  fontSize: "14px",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--text-1)",
-                  appearance: "textfield",
-                  MozAppearance: "textfield"
-                }} />
-                <span style={{
-                pointerEvents: "none",
-                position: "absolute",
-                right: "9px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--text-1)",
-                fontSize: "var(--control-font-size)",
-                fontWeight: 700,
-                lineHeight: 1
-              }}>
-                  h
-                </span>
-                </div>
-
+              <div style={requestDetailsGridStyle}>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Labour Time (h)</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].time || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "time", e.target.value)} onBlur={() => persistPresetHoursFromRow(requests[selectedEditIndex])} className="app-input" /></div>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Account Type</label><DropdownField value={requests[selectedEditIndex].paymentType || "Customer"} onChange={(e) => handleUpdateRequest(selectedEditIndex, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" /></div>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Labour Price</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].labourPrice || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "labourPrice", e.target.value)} className="app-input" /></div>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Menu Price</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].menuPrice || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "menuPrice", e.target.value)} className="app-input" /></div>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Set Price</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].setPrice ?? requests[selectedEditIndex].price ?? ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "setPrice", e.target.value)} className="app-input" /></div>
+                <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Discount</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].discount || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "discount", e.target.value)} className="app-input" /></div>
               </div>
-
-              <div style={requestMoneyInputStyle}>
-                <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                  Price
-                </label>
-                <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={req.setPrice ?? req.price ?? ""}
-              onChange={(e) => handleUpdateRequest(index, "setPrice", e.target.value)}
-              className="edit-requests-price-input"
-              style={{
-                width: "100%",
-                height: "var(--control-height-sm)",
-                padding: "8px 10px",
-                border: "none",
-                borderRadius: "var(--control-radius)",
-                fontSize: "14px",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-1)"
-              }} />
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px", color: "var(--text-1)", fontWeight: 700 }}>
+                <input type="checkbox" checked={Boolean(requests[selectedEditIndex].specialRate)} onChange={(e) => handleUpdateRequest(selectedEditIndex, "specialRate", e.target.checked)} />
+                Special labour rate
+              </label>
+              <div style={requestDetailsFieldStyle}>
+                <label style={requestDetailsLabelStyle}>Internal Notes</label>
+                <textarea value={requests[selectedEditIndex].noteText || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
               </div>
-
-              <button
-            onClick={() => setMoreEditRequestIndex(index)}
-            style={{
-              marginLeft: "auto",
-              minHeight: "var(--control-height)",
-              minWidth: "86px",
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--control-bg)",
-              color: "var(--accentText)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontSize: "var(--control-font-size)",
-              fontWeight: "600",
-              alignSelf: "flex-end"
-            }}>
-
-                More
-              </button>
-            </div>
-        )}
-          {moreEditRequestIndex !== null && requests[moreEditRequestIndex] &&
-        <div style={{ ...popupOverlayStyles, zIndex: 1250 }} onClick={(event) => {
-          if (event.target === event.currentTarget) setMoreEditRequestIndex(null);
-        }}>
-              <div style={{
-            ...popupCardStyles,
-            width: "100%",
-            maxWidth: "760px",
-            maxHeight: "88vh",
-            overflowY: "auto",
-            border: "none"
-          }} onClick={(event) => event.stopPropagation()}>
-                <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-                    <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>Request {moreEditRequestIndex + 1} Details</h3>
-                    <button type="button" onClick={() => setMoreEditRequestIndex(null)} className="app-btn app-btn--secondary app-btn--sm">Close</button>
-                  </div>
-                  <div style={requestDetailsFieldStyle}>
-                    <label style={requestDetailsLabelStyle}>Request Description</label>
-                    <textarea value={requests[moreEditRequestIndex].text || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "text", e.target.value)} className="app-input app-input--textarea" />
-                  </div>
-                  <div style={requestDetailsGridStyle}>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Labour Time</label>
-                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].time || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "time", e.target.value)} onBlur={() => persistPresetHoursFromRow(requests[moreEditRequestIndex])} className="app-input" />
-                    </div>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Labour Price</label>
-                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].labourPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "labourPrice", e.target.value)} className="app-input" />
-                    </div>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Menu Price</label>
-                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].menuPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "menuPrice", e.target.value)} className="app-input" />
-                    </div>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Set Price</label>
-                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].setPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "setPrice", e.target.value)} className="app-input" />
-                    </div>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Discount</label>
-                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].discount || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "discount", e.target.value)} className="app-input" />
-                    </div>
-                    <div style={requestDetailsFieldStyle}>
-                      <label style={requestDetailsLabelStyle}>Account Type</label>
-                      <DropdownField value={requests[moreEditRequestIndex].paymentType || "Customer"} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" />
-                    </div>
-                  </div>
-                  <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px", color: "var(--text-1)", fontWeight: 700 }}>
-                    <input type="checkbox" checked={Boolean(requests[moreEditRequestIndex].specialRate)} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "specialRate", e.target.checked)} />
-                    Special labour rate
-                  </label>
-                  <div style={requestDetailsFieldStyle}>
-                    <label style={requestDetailsLabelStyle}>Internal Notes</label>
-                    <textarea value={requests[moreEditRequestIndex].noteText || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                    <button type="button" onClick={() => {
-                  handleRemoveRequest(moreEditRequestIndex);
-                  setMoreEditRequestIndex(null);
-                }} className="app-btn app-btn--danger">Remove Request</button>
-                    <button type="button" onClick={() => setMoreEditRequestIndex(null)} className="app-btn app-btn--primary">Done</button>
-                  </div>
-                </div>
+              <div>
+                <button type="button" className="app-btn app-btn--danger" onClick={() => { handleRemoveRequest(selectedEditIndex); setSelectedEditIndex(0); }}>Remove Request</button>
               </div>
-            </div>
-        }
-          <button
-          onClick={handleAddRequest}
-          style={{
-            padding: "var(--control-padding)",
-            backgroundColor: "var(--primary)",
-            color: "var(--text-2)",
-            border: "none",
-            borderRadius: "var(--control-radius)",
-            cursor: "pointer",
-            fontWeight: "600",
-            fontSize: "var(--control-font-size)",
-            minHeight: "var(--control-height)"
-          }}>
-
-            Add Request
-          </button>
-
-          {editableAuthorisedRows.length > 0 &&
-        <div style={{ marginTop: "18px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--success-dark)", marginBottom: "10px" }}>
-                Authorised VHC
-              </div>
-              {editableAuthorisedRows.map((req, index) =>
-          <div
-            key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}
-            style={{
-              ...authorisedRowButtonStyle,
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "nowrap",
-              // Severity-driven row tint overrides default authorised-row background for red/amber VHC items.
-              ...(req.severity === "red" ?
-              { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } :
-              req.severity === "amber" ?
-              { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } :
-              null)
-            }}>
-
-                  <div
-              style={{
-                flex: 1,
-                flexBasis: "420px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                minWidth: "260px"
-              }}>
-
-                    <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
-                    <input
-                type="text"
-                value={req.text}
-                readOnly
-                style={{
-                  width: "100%",
-                  padding: "6px 0",
-                  border: "none",
-                  borderBottom: "var(--input-ring)",
-                  borderRadius: "0",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "var(--text-1)",
-                  backgroundColor: "transparent"
-                }} />
-
-                  </div>
-
-                  <div style={{ width: "82px", flexShrink: 0 }}>
-                    <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                      Est. Hours
-                    </label>
-                    <div style={{ position: "relative" }}>
-                    <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={req.time}
-                  readOnly
-                  disabled
-                  className="edit-requests-hours-input"
-                  style={{
-                    width: "100%",
-                    height: "var(--control-height-sm)",
-                    padding: "8px 24px 8px 10px",
-                    border: "none",
-                    borderRadius: "var(--control-radius)",
-                    fontSize: "14px",
-                    backgroundColor: "var(--surface)",
-                    color: "var(--text-1)",
-                    opacity: 0.75,
-                    cursor: "not-allowed"
-                  }} />
-                    <span style={{
-                  pointerEvents: "none",
-                  position: "absolute",
-                  right: "9px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--text-1)",
-                  fontSize: "var(--control-font-size)",
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  opacity: 0.75
-                }}>
-                      h
-                    </span>
-                    </div>
-
-                  </div>
-
-                  <div style={{ width: "170px", flexShrink: 0 }}>
-                    <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                      Payment Type
-                    </label>
-                    <DropdownField
-                value={req.paymentType}
-                onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)}
-                options={[
-                { value: "Customer", label: "Customer" },
-                { value: "Warranty", label: "Warranty" },
-                { value: "Sales Goodwill", label: "Sales Goodwill" },
-                { value: "Service Goodwill", label: "Service Goodwill" },
-                { value: "Internal", label: "Internal" },
-                { value: "Insurance", label: "Insurance" },
-                { value: "Lease Company", label: "Lease Company" },
-                { value: "Staff", label: "Staff" }]
-                }
-                className="edit-requests-payment-dropdown"
-                disabled={!req.requestId && !req.vhcItemId} />
-
-                  </div>
-                </div>
-          )}
-            </div>
-        }
+            </> :
+            <p style={{ color: "var(--grey-accent)", fontStyle: "italic", margin: 0 }}>Select a request to edit, or add a new one.</p>}
+          </div>
         </div> :
 
-      <div>
-      {customerRequestRows && customerRequestRows.length > 0 || authorisedRows.length > 0 ?
-        <>
-            {customerRequestRows.map((req, index) => {
-            const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
-            // Resolve pre-pick from the linked part(s) — the canonical store —
-            // falling back to any legacy job_requests value for older data.
-            const resolvedRequestPrePick = resolveLinkedPrePickLocation({
-              linkedPartRows: collectLinkedPartRows({
-                parts: linkedPrePickPartsSource,
-                requestId: req.requestId ?? req.request_id ?? null,
-                vhcItemId: req.vhcItemId ?? req.vhc_item_id ?? null,
-                resolveCanonicalVhcId
-              }),
-              fallbackValues: [req.prePickLocation, req.pre_pick_location]
-            });
-            // Per-row override: if this customer request has a matching ticked
-            // task in the write-up checklist, show Completed for this row even
-            // when the bulk write-up status hasn't been flipped yet.
-            const rowCompletedInWriteUp = isRequestRowCompleteFromWriteUp(req, index);
-            const effectiveRowStatus = rowCompletedInWriteUp ?
-            "completed" :
-            customerRequestStatusByWorkflow;
-            const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
-              effectiveRowStatus,
-              "inprogress"
-            );
-            const legacyDetails = normalizeRequests(jobData.requests)[req.sortOrder ? Number(req.sortOrder) - 1 : index] || {};
-            const setPriceValue = legacyDetails.setPrice ?? legacyDetails.price ?? "";
-            const labourPriceValue = legacyDetails.labourPrice ?? "";
-            return (
-              <div key={index} style={requestRowButtonStyle}>
-                <div
-                  style={requestColumnGridStyle}>
+        (combinedRequestRows.length > 0 ?
+        <div className="jc-req-split">
+          <div className="jc-req-table-wrap">
+            <table className="app-data-table app-data-table--rounded">
+              <thead>
+                <tr>
+                  <th style={{ width: "44px" }}>#</th>
+                  <th>Request</th>
+                  <th style={{ width: "130px" }}>Billed To</th>
+                  <th style={{ width: "80px" }}>Hours</th>
+                  <th style={{ width: "140px" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {combinedRequestRows.map((row) => {
+                  const isSel = selectedRow && selectedRow.key === row.key;
+                  return (
+                    <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
+                      <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
+                      <td style={{ color: "var(--text-1)" }}>{row.description || "—"}</td>
+                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
+                      <td>{formatHoursDisplay(row.hours)}</td>
+                      <td><span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-                  <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
-                    <span style={requestSubtitleStyle}>Request {index + 1}</span>
-                    <span style={{ fontSize: "14px", color: "var(--text-1)" }}>
-                      {req.description || req.text || req}
-                    </span>
-                    {(() => {
-                      const noteText = (req.noteText || "").trim();
-                      if (!noteText) return null;
-                      return (
-                        <span style={indentedNoteStyle}>
-                          Note - {noteText}
-                        </span>);
+          {/* RIGHT: selected request detail */}
+          <div style={detailPanelStyle}>
+            {selectedRow ?
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>{selectedRow.title}</h3>
+                {selectedRow.kind === "authorised" && <span className="app-badge app-badge--success">Authorised</span>}
+                <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>
+              </div>
 
-                    })()}
-                    {linkedNoteTexts.map((linkedText, noteIndex) =>
-                    <div key={`linked-note-${index}-${noteIndex}`} style={indentedNoteStyle}>
-                        Note - {linkedText}
-                      </div>
-                    )}
-                    {(setPriceValue || labourPriceValue || legacyDetails.menuPrice || legacyDetails.discount || legacyDetails.specialRate) &&
-                    <span style={indentedNoteStyle}>
-                        {[
-                        setPriceValue ? `Set: Â£${Number(setPriceValue).toFixed(2)}` : "",
-                        labourPriceValue ? `Labour: Â£${Number(labourPriceValue).toFixed(2)}` : "",
-                        legacyDetails.menuPrice ? `Menu: Â£${Number(legacyDetails.menuPrice).toFixed(2)}` : "",
-                        legacyDetails.discount ? `Discount: Â£${Number(legacyDetails.discount).toFixed(2)}` : "",
-                        legacyDetails.specialRate ? "Special rate" : ""]
-                        .filter(Boolean)
-                        .join(" | ")}
-                      </span>
-                    }
-                  </div>
-                  <div style={requestValueColumnStyle}>
-                    <div
-                      className="app-input"
-                      aria-label={`Pre-pick location: ${resolvedRequestPrePick ? formatPrePickLabel(resolvedRequestPrePick) : "Not set"}`}
-                      style={{ ...prePickLabelStyle, ...requestFullWidthValueStyle, opacity: resolvedRequestPrePick ? 1 : 0.72 }}>
-                      {resolvedRequestPrePick ?
-                      `Pre-picked: ${formatPrePickLabel(resolvedRequestPrePick)}` :
-                      "Pre-pick not set"}
-                    </div>
-                  </div>
-                  <div style={requestValueColumnStyle}>
-                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
-                      {formatHoursDisplay(req.hours)}
-                    </span>
-                  </div>
-                  <div style={requestValueColumnStyle}>
-                    {req.jobType &&
-                    <span style={{ ...getPaymentTypePillStyle(req.jobType), ...requestFullWidthValueStyle }}>
-                        {req.jobType}
-                      </span>
-                    }
-                  </div>
-                  <div style={requestValueColumnStyle}>
-                    <span style={{ ...statusBadgeStyle, ...requestFullWidthValueStyle }}>{statusLabel}</span>
-                  </div>
-                </div>
-              </div>);
+              {/* Action buttons - one row */}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
+                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
+                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("notes")}>Add Notes</button>
+                <button type="button" className="app-btn app-btn--primary" disabled={!canEdit || !selectedRow.requestId || selectedRow.normalizedStatus === "completed"} onClick={() => onUpdateRequestStatus(selectedRow.requestId, "completed")}>{selectedRow.normalizedStatus === "completed" ? "Completed" : "Mark Complete"}</button>
+              </div>
 
-          })}
-            {authorisedRows.map((row, index) => {
-            const rowKey = row.requestId || row.vhcItemId || `authorized-row-${index}`;
-            const linkedParts = getLinkedPartsForRequestRow(row);
-            const hasActiveLinkedPart = linkedParts.some((item) => !isRemovedPartsRow(item));
-            const hasOnlyRemovedLinkedParts = linkedParts.length > 0 && linkedParts.every((item) => isRemovedPartsRow(item));
-            const authorisedStatusSource =
-            (hasActiveLinkedPart ? "added_to_job" : null) || (
-            hasOnlyRemovedLinkedParts ? "removed" : null) ||
-            row.status || (
-            row.complete ? "completed" : null) ||
-            normaliseAuthorizationState(row.approvalStatus || row.authorizationState) ||
-            "authorized";
-            const { statusLabel: authorisedStatusLabel, statusBadgeStyle: authorisedStatusBadgeStyle } =
-            getRequestStatusPresentation(authorisedStatusSource, "authorized");
-            const linkedPartDescriptions = linkedParts.
-            map((item) => item?.part?.name || item?.part?.description || "").
-            map((value) => String(value || "").trim()).
-            filter(Boolean);
-            const linkedPartSummary = linkedPartDescriptions.slice(0, 2).join(" • ");
-            const rowLabel = row.detail ?
-            `${row.label || row.description || "Authorised item"} - ${row.detail}` :
-            row.label || row.description || "Authorised item";
-            const rowDetailLine =
-            !row.detail && linkedPartSummary ?
-            `- ${linkedPartSummary}` :
-            row.detail ?
-            `- ${row.detail}` :
-            null;
-            const labourHoursValue =
-            row.labourHours !== null && row.labourHours !== undefined && row.labourHours !== "" ?
-            Number(row.labourHours) :
-            null;
-            const partsCostValue =
-            row.partsCost !== null && row.partsCost !== undefined && row.partsCost !== "" ?
-            Number(row.partsCost) :
-            null;
-            const severityRowStyle =
-            row.severity === "red" ?
-            { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } // Red VHC severity overrides default row bg.
-            : row.severity === "amber" ?
-            { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } // Amber VHC severity overrides default row bg.
-            : null;
-            return (
-              <div key={rowKey} style={{ ...authorisedRowButtonStyle, ...(severityRowStyle || {}) }}>
-                  <div
-                  style={requestColumnGridStyle}>
+              {/* Meta line */}
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "13px", color: "var(--text-1)" }}>
+                <span><strong>Hours:</strong> {formatHoursDisplay(selectedRow.hours)}</span>
+                <span><strong>Pre-pick:</strong> {selectedRow.prePick ? formatPrePickLabel(selectedRow.prePick) : "Not set"}</span>
+                {selectedRow.jobType && <span><strong>Billed to:</strong> {selectedRow.jobType}</span>}
+              </div>
 
-                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
-                      <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
-                      <span style={{ fontSize: "14px", color: "var(--text-1)" }}>
-                        {rowLabel}
-                      </span>
-                      {rowDetailLine ?
-                    <span style={{ fontSize: "13px", color: "var(--text-1)" }}>
-                          {rowDetailLine}
-                        </span> :
-                    null}
-                      {(labourHoursValue !== null || Number.isFinite(partsCostValue) && partsCostValue > 0 || row.prePickLocation) &&
-                    <div style={{ fontSize: "12px", color: "var(--text-1)" }}>
-                          {labourHoursValue !== null && <span>Labour: {formatHoursDisplay(labourHoursValue)}</span>}
-                          {labourHoursValue !== null && Number.isFinite(partsCostValue) && partsCostValue > 0 && <span> | </span>}
-                          {Number.isFinite(partsCostValue) && partsCostValue > 0 &&
-                      <span>Parts: £{partsCostValue.toFixed(2)}</span>
-                      }
-                          {(labourHoursValue !== null || Number.isFinite(partsCostValue) && partsCostValue > 0) && row.prePickLocation && <span> | </span>}
-                          {row.prePickLocation && <span>Pre-pick: {formatPrePickLabel(row.prePickLocation)}</span>}
-                        </div>
-                    }
-                      {row.noteText &&
-                    <span style={indentedNoteStyle}>Note - {row.noteText}</span>
-                    }
-                    </div>
-                    <div style={requestValueColumnStyle}>
-                      <div
-                      className="app-input"
-                      aria-label={`Pre-pick location: ${row.prePickLocation ? formatPrePickLabel(row.prePickLocation) : "Not set"}`}
-                      style={{ ...prePickLabelStyle, ...requestFullWidthValueStyle, opacity: row.prePickLocation ? 1 : 0.72 }}>
-                        {row.prePickLocation ?
-                      `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}` :
-                      "Pre-pick not set"}
-                      </div>
-                    </div>
-                    <div style={requestValueColumnStyle}>
-                      <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
-                        {formatHoursDisplay(labourHoursValue)}
-                      </span>
-                    </div>
-                    <div style={requestValueColumnStyle}>
-                      {row.jobType &&
-                    <span style={{ ...getPaymentTypePillStyle(row.jobType), ...requestFullWidthValueStyle }}>
-                          {row.jobType}
-                        </span>
-                    }
-                    </div>
-                    <div style={requestValueColumnStyle}>
-                      <span style={{ ...authorisedStatusBadgeStyle, ...requestFullWidthValueStyle }}>{authorisedStatusLabel}</span>
-                    </div>
-                  </div>
-                  {linkedParts.length > 0 &&
-                <div
-                  style={{
-                    marginTop: "10px",
-                    padding: "10px 12px",
-                    borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--theme)"
-                  }}>
+              {/* Description */}
+              <div style={detailCardStyle}>
+                <div style={detailCardLabelStyle}>Description</div>
+                <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "—"}{selectedRow.detailLine ? ` — ${selectedRow.detailLine}` : ""}</div>
+              </div>
 
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                        <thead>
-                          <tr style={{ color: "var(--grey-accent)", textAlign: "left", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            <th style={{ padding: "4px 8px 6px 0" }}>Part No</th>
-                            <th style={{ padding: "4px 8px 6px" }}>Description</th>
-                            <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Qty</th>
-                            <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Price</th>
-                            <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {linkedParts.map((item, pIdx) =>
-                      <tr
-                        key={item.id || pIdx}
-                        style={{
-                          color: "var(--text-1)",
-                          backgroundColor: normalizeStatusId(item.status) === "removed" ? undefined : "var(--surface)"
-                        }}>
+              {/* Internal notes */}
+              <div style={detailCardStyle}>
+                <div style={detailCardLabelStyle}>Internal Notes</div>
+                {selectedRow.noteText || selectedRow.linkedNoteTexts.length > 0 ?
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {selectedRow.noteText && <div style={{ fontSize: "13px", color: "var(--text-1)" }}>{selectedRow.noteText}</div>}
+                  {selectedRow.linkedNoteTexts.map((t, i) => <div key={i} style={{ fontSize: "13px", color: "var(--text-1)" }}>{t}</div>)}
+                </div> :
+                <div style={{ fontSize: "13px", color: "var(--grey-accent)", fontStyle: "italic" }}>No notes added.</div>}
+              </div>
 
-                              <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-1)" }}>{item.part?.partNumber || item.part_number || "\u2014"}</td>
-                              <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "\u2014"}</td>
-                              <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
-                              <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.unitPrice != null ? `\u00A3${Number(item.unitPrice).toFixed(2)}` : "\u2014"}</td>
-                              <td style={{ padding: "4px 8px", textAlign: "right" }}>
-                                <span style={{
-                            padding: "2px 8px",
-                            borderRadius: "var(--control-radius)",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                            backgroundColor:
-                            item.status === "fitted" ? "var(--success-surface)" :
-                            item.status === "allocated" || item.status === "pre_picked" || item.status === "picked" ? "var(--theme)" :
-                            item.status === "on_order" ? "var(--warning-surface)" :
-                            "var(--surface)",
-                            color:
-                            item.status === "fitted" ? "var(--success-dark)" :
-                            item.status === "allocated" || item.status === "pre_picked" || item.status === "picked" ? "var(--info-dark)" :
-                            item.status === "on_order" ? "var(--warning-dark)" :
-                            "var(--grey-accent-dark)"
-                          }}>
-                                  {(item.status || "pending").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                                </span>
-                              </td>
-                            </tr>
-                      )}
-                        </tbody>
-                      </table>
-                    </div>
-                }
-                </div>);
+              {/* Linked parts */}
+              <div style={detailCardStyle}>
+                <div style={detailCardLabelStyle}>Linked Parts</div>
+                {selectedRow.linkedParts.length > 0 ?
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ color: "var(--grey-accent)", textAlign: "left" }}>
+                      <th style={{ padding: "4px 8px 6px 0" }}>Part No</th>
+                      <th style={{ padding: "4px 8px 6px" }}>Description</th>
+                      <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedRow.linkedParts.map((item, i) =>
+                    <tr key={item.id || i} style={{ color: "var(--text-1)" }}>
+                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "—"}</td>
+                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "—"}</td>
+                      <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
+                    </tr>)}
+                  </tbody>
+                </table> :
+                <div style={{ fontSize: "13px", color: "var(--grey-accent)", fontStyle: "italic" }}>No linked parts.</div>}
+              </div>
 
-          })}
+              {/* Total clocked time */}
+              <div style={detailCardStyle}>
+                <div style={detailCardLabelStyle}>Time Clocked</div>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>{formatHoursDisplay(selectedRow.clockedHours)}</div>
+                <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>of {formatHoursDisplay(selectedRow.hours)} assigned</div>
+              </div>
             </> :
-
-        <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>
+            <p style={{ color: "var(--grey-accent)", fontStyle: "italic", margin: 0 }}>Select a request to view details.</p>}
+          </div>
+        </div> :
+        <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>)
         }
-        </div>
-      }
+
+        <style jsx global>{`
+          html.staff-scope .jc-req-statgrid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+          }
+          html.staff-scope .jc-req-split {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            gap: 16px;
+            align-items: start;
+          }
+          html.staff-scope .jc-req-table-wrap {
+            min-width: 0;
+            overflow-x: auto;
+          }
+          html.staff-scope .jc-req-row {
+            transition: background-color 0.15s ease;
+          }
+          html.staff-scope .jc-req-row:hover {
+            background-color: var(--secondary-pressed);
+          }
+          @media (max-width: 1100px) {
+            html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          }
+          @media (max-width: 900px) {
+            html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr); }
+          }
+          @media (max-width: 560px) {
+            html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          }
+        `}</style>
+      </div>
 
       {/* Additional Job Info */}
       <div style={{ marginTop: "0", paddingTop: "0", borderTop: "none" }}>
@@ -6866,385 +6730,6 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
 
 }
 
-// ✅ Contact Tab
-function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving }) {
-  const [editing, setEditing] = useState(false);
-  const [approvalChecked, setApprovalChecked] = useState(false);
-  const [formState, setFormState] = useState({
-    firstName: jobData.customerFirstName || "",
-    lastName: jobData.customerLastName || "",
-    email: jobData.customerEmail || "",
-    mobile: jobData.customerMobile || jobData.customerPhone || "",
-    telephone: jobData.customerTelephone || "",
-    address: jobData.customerAddress || "",
-    postcode: jobData.customerPostcode || "",
-    contactPreference: jobData.customerContactPreference || "Email"
-  });
-  const [saveError, setSaveError] = useState("");
-
-  useEffect(() => {
-    if (!editing) {
-      setFormState({
-        firstName: jobData.customerFirstName || "",
-        lastName: jobData.customerLastName || "",
-        email: jobData.customerEmail || "",
-        mobile: jobData.customerMobile || jobData.customerPhone || "",
-        telephone: jobData.customerTelephone || "",
-        address: jobData.customerAddress || "",
-        postcode: jobData.customerPostcode || "",
-        contactPreference: jobData.customerContactPreference || "Email"
-      });
-      setSaveError("");
-      setApprovalChecked(false);
-    }
-  }, [jobData, editing]);
-
-  const handleFieldChange = (field, value) => {
-    setFormState((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const startEditing = () => {
-    setEditing(true);
-    setApprovalChecked(false);
-    setSaveError("");
-  };
-
-  const cancelEditing = () => {
-    setEditing(false);
-    setApprovalChecked(false);
-  };
-
-  const handleSave = async () => {
-    if (!approvalChecked || !onSaveCustomerDetails) return;
-    setSaveError("");
-    const result = await onSaveCustomerDetails(formState);
-    if (result?.success) {
-      alert("✅ Customer details updated");
-      setEditing(false);
-      setApprovalChecked(false);
-    } else if (result?.error?.message) {
-      setSaveError(result.error.message);
-    }
-  };
-
-  const contactOptions = ["Email", "Phone", "SMS", "WhatsApp", "No Preference"];
-  const labelStyle = { fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "6px", fontWeight: "600" };
-  const inputStyle = {
-    width: "100%",
-    padding: "var(--control-padding)",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    backgroundColor: "var(--control-bg)",
-    color: "var(--text-1)",
-    fontSize: "var(--control-font-size)",
-    minHeight: "var(--control-height)"
-  };
-  const readOnlyStyle = {
-    padding: "var(--control-padding)",
-    backgroundColor: "var(--control-bg)",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    fontSize: "var(--control-font-size)",
-    color: "var(--text-1)",
-    fontWeight: "500",
-    minHeight: "var(--control-height)",
-    overflowWrap: "anywhere" // long emails wrap inside the cell instead of breaking the single-row layout
-  };
-  const panelStyle = {
-    background: "var(--surface)",
-    border: "none",
-    borderRadius: "var(--radius-md)",
-    padding: "18px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px"
-  };
-  const panelHeaderStyle = {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: "12px",
-    marginBottom: "14px",
-    flexWrap: "wrap"
-  };
-  const badgeStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "4px 10px",
-    borderRadius: "var(--control-radius)",
-    background: "rgba(var(--primary-rgb), 0.08)",
-    border: "none",
-    color: "var(--primary-selected)",
-    fontSize: "12px",
-    fontWeight: "600",
-    width: "fit-content"
-  };
-  const actionsStyle = { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" };
-  const primaryButtonStyle = (disabled) => ({
-    padding: "var(--control-padding)",
-    backgroundColor: "var(--primary)",
-    color: "var(--text-2)",
-    border: "none",
-    borderRadius: "var(--control-radius)",
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: "600",
-    fontSize: "var(--control-font-size)",
-    minHeight: "var(--control-height)",
-    opacity: disabled ? 0.6 : 1
-  });
-  const secondaryButtonStyle = (disabled) => ({
-    padding: "var(--control-padding)",
-    backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-    color: "var(--primary-selected)",
-    border: "none",
-    borderRadius: "var(--control-radius)",
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: "600",
-    fontSize: "var(--control-font-size)",
-    minHeight: "var(--control-height)",
-    opacity: disabled ? 0.7 : 1
-  });
-  const isSaveDisabled = customerSaving || !approvalChecked;
-
-  return (
-    <DevLayoutSection
-      sectionKey="jobcard-tab-contact-panel"
-      sectionType="section-shell"
-      parentKey="jobcard-tab-contact"
-      backgroundToken="surface"
-      shell
-      style={panelStyle}>
-
-      <DevLayoutSection
-        sectionKey="jobcard-tab-contact-header"
-        sectionType="toolbar"
-        parentKey="jobcard-tab-contact-panel"
-        style={panelHeaderStyle}>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {editing ? <div style={badgeStyle}>Editing</div> : null}
-        </div>
-      </DevLayoutSection>
-
-      <DevLayoutSection
-        sectionKey="jobcard-tab-contact-fields"
-        sectionType="form-grid"
-        parentKey="jobcard-tab-contact-panel"
-        style={{ display: "grid", width: "100%", gridTemplateColumns: "minmax(150px, 1fr) minmax(240px, 1.7fr) minmax(150px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr)", gap: "16px" }}>
-
-        <div>
-          <label style={labelStyle}>
-            CUSTOMER NAME
-          </label>
-          {editing ?
-          <div style={{ display: "flex", gap: "8px" }}>
-              <input
-              type="text"
-              placeholder="First name"
-              value={formState.firstName}
-              onChange={(e) => handleFieldChange("firstName", e.target.value)}
-              style={{
-                flex: 1,
-                ...inputStyle
-              }}
-              disabled={customerSaving} />
-
-              <input
-              type="text"
-              placeholder="Last name"
-              value={formState.lastName}
-              onChange={(e) => handleFieldChange("lastName", e.target.value)}
-              style={{
-                flex: 1,
-                ...inputStyle
-              }}
-              disabled={customerSaving} />
-
-            </div> :
-
-          <div style={readOnlyStyle}>
-              {jobData.customer || "N/A"}
-            </div>
-          }
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            EMAIL ADDRESS
-          </label>
-          {editing ?
-          <input
-            type="email"
-            value={formState.email}
-            onChange={(e) => handleFieldChange("email", e.target.value)}
-            style={inputStyle}
-            disabled={customerSaving} /> :
-
-
-          <div style={{ ...readOnlyStyle, color: "var(--text-1)" }}>
-              {jobData.customerEmail || "N/A"}
-            </div>
-          }
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            MOBILE PHONE
-          </label>
-          {editing ?
-          <input
-            type="tel"
-            value={formState.mobile}
-            onChange={(e) => handleFieldChange("mobile", e.target.value)}
-            style={inputStyle}
-            disabled={customerSaving} /> :
-
-
-          <div style={readOnlyStyle}>
-              {jobData.customerMobile || jobData.customerPhone || "N/A"}
-            </div>
-          }
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            LANDLINE PHONE
-          </label>
-          {editing ?
-          <input
-            type="tel"
-            value={formState.telephone}
-            onChange={(e) => handleFieldChange("telephone", e.target.value)}
-            style={inputStyle}
-            disabled={customerSaving} /> :
-
-
-          <div style={readOnlyStyle}>
-              {jobData.customerTelephone || "N/A"}
-            </div>
-          }
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            CONTACT PREFERENCE
-          </label>
-          {editing ?
-          <select
-            value={formState.contactPreference}
-            onChange={(e) => handleFieldChange("contactPreference", e.target.value)}
-            style={inputStyle}
-            disabled={customerSaving}>
-
-              {contactOptions.map((option) =>
-            <option key={option} value={option}>
-                  {option}
-                </option>
-            )}
-            </select> :
-
-          <div style={readOnlyStyle}>
-              {jobData.customerContactPreference || "Email"}
-            </div>
-          }
-        </div>
-
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label style={labelStyle}>
-            ADDRESS
-          </label>
-          {editing ?
-          <textarea
-            value={formState.address}
-            onChange={(e) => handleFieldChange("address", e.target.value)}
-            rows={3}
-            style={{
-              width: "100%",
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              fontSize: "var(--control-font-size)",
-              resize: "vertical"
-            }}
-            disabled={customerSaving} /> :
-
-
-          <div style={readOnlyStyle}>
-              {jobData.customerAddress || "N/A"}
-            </div>
-          }
-        </div>
-      </DevLayoutSection>
-
-      {editing &&
-      <DevLayoutSection
-        sectionKey="jobcard-tab-contact-approval"
-        sectionType="content-card"
-        parentKey="jobcard-tab-contact-panel"
-        style={{
-          marginTop: "20px",
-          padding: "16px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none"
-        }}>
-
-          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "var(--text-1)", fontWeight: "700" }}>
-            <input
-            type="checkbox"
-            checked={approvalChecked}
-            onChange={(e) => setApprovalChecked(e.target.checked)}
-            disabled={customerSaving}
-            style={{ width: "16px", height: "16px" }} />
-
-            Customer has approved updated details
-          </label>
-          <p style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "8px", marginBottom: 0 }}>
-            Regulatory requirement: customer confirmation must be recorded before saving.
-          </p>
-        </DevLayoutSection>
-      }
-
-      {saveError &&
-      <DevLayoutSection
-        sectionKey="jobcard-tab-contact-error"
-        sectionType="content-card"
-        parentKey="jobcard-tab-contact-panel"
-        style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
-
-          {saveError}
-        </DevLayoutSection>
-      }
-
-      {canEdit &&
-      <DevLayoutSection
-        sectionKey="jobcard-tab-contact-actions"
-        sectionType="toolbar"
-        parentKey="jobcard-tab-contact-panel"
-        style={{ ...actionsStyle, marginTop: "auto", justifyContent: "flex-start" }}>
-
-          {editing ?
-        <>
-              <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
-                {customerSaving ? "Saving..." : "Save"}
-              </button>
-              <button onClick={cancelEditing} disabled={customerSaving} style={secondaryButtonStyle(customerSaving)}>
-                Cancel
-              </button>
-            </> :
-
-        <button onClick={startEditing} style={primaryButtonStyle(false)}>
-              Edit Customer Details
-            </button>
-        }
-        </DevLayoutSection>
-      }
-    </DevLayoutSection>);
-
-}
 // ✅ Scheduling Tab
 function SchedulingTab({
   jobData,

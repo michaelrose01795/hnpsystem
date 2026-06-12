@@ -198,7 +198,23 @@ CREATE TABLE public.customers (
   updated_at timestamp with time zone DEFAULT now(),
   name text,
   slug_key text DEFAULT regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text),
+  preferences text[] NOT NULL DEFAULT '{}'::text[],
+  notes text,
+  work_address text,
+  work_postcode text,
   CONSTRAINT customers_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.message_templates (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  template_key text NOT NULL UNIQUE,
+  title text NOT NULL,
+  body text NOT NULL,
+  is_active boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT message_templates_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.jobs (
   id integer NOT NULL DEFAULT nextval('jobs_id_seq'::regclass),
