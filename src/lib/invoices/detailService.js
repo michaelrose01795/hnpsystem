@@ -1217,6 +1217,8 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     invoice_id: invoice.invoice_id || invoice.id,
     invoice_number: invoice.invoice_number || invoice.invoice_id || "INV-DRAFT", // friendly invoice number fallback
     invoice_date: invoice.invoice_date || invoice.created_at || new Date().toISOString(), // date fallback
+    due_date: invoice.due_date || null, // payment due date (null on proforma fallbacks)
+    invoice_notes: invoice.invoice_notes || "", // free-text invoice notes (editable in job-card workspace)
     account_number: invoice.account_number || job?.account_number || invoice.account_id || "", // account number snapshot
     job_number: invoice.job_number || job?.job_number || jobNumber || "", // ensure job number
     order_number: invoice.order_number || orderNumber || "", // optional order reference

@@ -268,7 +268,8 @@
       "Bash(awk '/CREATE TABLE.*parts_job_items/,/\\\\\\);/' src/lib/database/schema/schemaReference.sql)",
       "Bash(echo \"=== layers exit=$? ===\")",
       "Bash(echo \"=== eslint exit=$? ===\")",
-      "Bash(echo \"=== exit=$? ===\")"
+      "Bash(echo \"=== exit=$? ===\")",
+      "Bash(npm run *)"
     ],
     "deny": [],
     "ask": [],

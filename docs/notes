@@ -1,9 +1,6 @@
-look through the photoes to update the job card pages
+Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 
 
-
---------------------------------------------------
-
-VHC 
+----------------- VHC -----------------
 summary 
 TODO
 i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children" follow the staffglobal.css settings. along the top add a section which containts red items, amber items, green items, parts required parts ordered, parts booked totals, split the section into 70/30, have the 70 eseciton show the current red and amber sections which has tables which have heading itme, reported fault, parts, labour, total, status, check box, keep the authorise decline reset buttons etc. keep the green section as it is in the 70% section. make a new 30% section of the pages width which shows the approved rows with a total parts, labour of all the apporved, the same with declinded, add an action button two each row so the user can reset to amber/red or complete the approved rows. 
@@ -43,14 +40,6 @@ i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-
 
 -----------------------------------------------------------------------
 
-Documents
-TODO
-within the  "Jobcard Tab Content Shell | 1.2.2.1.1.4 key: jobcard-tab-content-shell source: src/components/page-ui/job-cards/job-cards-job-number-ui.js:700 route: /job-cards/00079 parent jobcard-page-shell (1.2.2.1.1) | 1 child (Documents tab)" follow the staffglobal.css settings. but add a search bar withn the same row as "Upload Documents" section. 
-
-
-Invoice
-TODO
-i want to redsing the "Jobcard Tab Content Shell | 1.2.2.1.1.4 key: jobcard-tab-content-shell source: src/components/page-ui/job-cards/job-cards-job-number-ui.js:700 route: /job-cards/00079 parent jobcard-page-shell (1.2.2.1.1) | 1 child (Invoice)" follow the staffglobal.css settings. add a top seciton which includes the invoice number, invoice date, due date invoice total, balance due, payment status. have it so each request shows a table if it has labout and parts attached to the request, have each seciton show total parts, labour of each request indivulally on the same section for example, have it show the request of the with the full description etc. add at the bottom of the section a Invoice notes which can be changed, and a subtotal ex vat, vat total (20%) and then an invocice total incl vat as well. at the top of the page section add a preview invoice which is the currently proforma section, print invoice button as well as a make payment button which is linked to the payment popup which when the status of the invoice is set to the paid the make payment button changes to to send invoice button which is auto send to the cust email etc. 
 
 
 

@@ -1,11 +1,16 @@
 // file location: src/features/invoices/components/InvoiceDetail.js
+// "Document" invoice layout (printed-invoice style). Still used by the
+// /new-order proforma viewer. The job-card Invoice tab now renders the
+// redesigned InvoiceWorkspace instead (selected via the `variant` prop on
+// InvoiceDetailSection). Request/parts resolution and the proforma override
+// editor are shared with InvoiceWorkspace via buildInvoiceRequestRows and
+// useProformaOverrideEditor.
 import React, { useState } from "react";
-import { getJobRequests } from "@/lib/canonical/fields";
 import styles from "@/features/invoices/styles/invoice.module.css";
-import ModalPortal from "@/components/popups/ModalPortal";
-import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentModal";
-import { isAuthorisedDecision, isVhcAuthorisedSource, isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized status helpers.
+import { buildInvoiceRequestRows } from "@/features/invoices/lib/buildInvoiceRequestRows";
+import { useProformaOverrideEditor } from "@/features/invoices/components/ProformaOverrideModal";
+import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized status helpers.
 
 const formatCurrency = (value) => {
   const number = Number(value || 0);
@@ -17,70 +22,6 @@ const formatDate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-};
-
-const isAuthorisedRequest = (request = {}) => {
-  const explicitKind = String(request?.request_kind || "").toLowerCase().trim();
-  if (isAuthorisedDecision(explicitKind)) return true; // Centralized decision check.
-  if (explicitKind === "request") return false;
-  if (isAuthorisedDecision(request?.job_type)) return true; // Centralized decision check.
-  const label = String(request?.request_label || "").toLowerCase();
-  const title = String(request?.title || "").toLowerCase();
-  const summary = String(request?.summary || "").toLowerCase();
-  return (
-    label.includes("authorised") ||
-    label.includes("authorized") ||
-    title.includes("authorised") ||
-    title.includes("authorized") ||
-    summary.includes("authorised") ||
-    summary.includes("authorized")
-  );
-};
-
-/** @see statusHelpers.isVhcAuthorisedSource — delegates to centralized check. */
-const isAuthorisedSource = (value) => isVhcAuthorisedSource(value);
-
-/** @see statusHelpers.isAuthorisedDecision — delegates to centralized check. */
-const isAuthorizedVhcDecision = (value) => isAuthorisedDecision(value);
-
-const parseChecklistPayload = (raw) => {
-  if (!raw) return null;
-  if (typeof raw === "object") return raw;
-  if (typeof raw !== "string") return null;
-  try {
-    return JSON.parse(raw);
-  } catch (_error) {
-    return null;
-  }
-};
-
-const cleanChecklistTaskLabel = (value = "") =>
-  String(value || "").replace(/^request\s*\d+\s*:\s*/i, "").trim();
-
-const parseWriteUpRequestKey = (value = "") => {
-  const key = String(value || "").trim().toLowerCase();
-  const reqId = key.match(/^reqid-(\d+)$/);
-  if (reqId) return { requestId: String(reqId[1]), sortOrder: null };
-  const sortOrder = key.match(/^req-(\d+)$/);
-  if (sortOrder) return { requestId: null, sortOrder: Number(sortOrder[1]) };
-  return { requestId: null, sortOrder: null };
-};
-
-const BILLING_OPTIONS = [
-  "Customer",
-  "Warranty",
-  "Sales Goodwill",
-  "Service Goodwill",
-  "Internal",
-  "Insurance",
-  "Lease Company",
-  "Staff",
-];
-
-const toFixedInput = (value, fallback = "0.00") => {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return fallback;
-  return numeric.toFixed(2);
 };
 
 const AddressBlock = ({ title, address }) => {
@@ -270,402 +211,29 @@ export default function InvoiceDetail({
   onDataPatch = null,
   onPaymentCompleted = null,
   onReleaseRequested = null,
+  hideActions = false,
 }) {
   const detailData = data ?? {};
-  const { company, invoice, requests = [], payment, payments = [] } = detailData;
-  const [editingRequest, setEditingRequest] = useState(null);
-  const [overrideForm, setOverrideForm] = useState(null);
-  const [overrideSaving, setOverrideSaving] = useState(false);
-  const [billingDropdownSeed, setBillingDropdownSeed] = useState(0);
+  const { company, invoice, payment, payments = [] } = detailData;
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  const isProforma = Boolean(data?.meta?.isProforma);
+  const { openEditor, modal } = useProformaOverrideEditor({
+    jobIdForOverride: jobData?.id || null,
+    onDataPatch,
+    onDataRefresh,
+  });
 
   if (!data) {
     return null;
   }
 
-  const requestRowsSource = getJobRequests(jobData);
-  const customerRequestIds = [];
-  const authorisedRequestIds = [];
-  const requestSourceById = {};
-  requestRowsSource.forEach((row) => {
-    const requestId = row?.requestId ?? row?.request_id ?? null;
-    if (requestId === null || requestId === undefined) return;
-    const source = String(row?.requestSource ?? row?.request_source ?? "").toLowerCase().trim();
-    requestSourceById[String(requestId)] = source;
-    const jobType = String(row?.jobType ?? row?.job_type ?? "").toLowerCase().trim();
-    const isAuthorisedRow =
-      source === "vhc_authorised" ||
-      source === "vhc_authorized" ||
-      jobType === "authorised" ||
-      jobType === "authorized";
-    if (isAuthorisedRow) {
-      authorisedRequestIds.push(String(requestId));
-    } else {
-      customerRequestIds.push(String(requestId));
-    }
-  });
-  const hasRequestLinking = customerRequestIds.length > 0 || authorisedRequestIds.length > 0;
-  const authorisedRequestIdSet = new Set(authorisedRequestIds);
-  const customerRequestIdSet = new Set(customerRequestIds);
-  const resolveIsAuthorised = (request = {}) => {
-    const explicitKind = String(request?.request_kind || "").trim().toLowerCase();
-    if (explicitKind === "authorised" || explicitKind === "authorized") return true;
-    if (explicitKind === "request") return false;
-
-    const requestId = request?.request_id;
-    if (requestId !== null && requestId !== undefined) {
-      const key = String(requestId);
-      if (authorisedRequestIdSet.has(key)) return true;
-      if (customerRequestIdSet.has(key)) return false;
-    }
-
-    const source = String(request?.request_source || request?.requestSource || "").trim().toLowerCase();
-    if (isAuthorisedSource(source)) return true;
-
-    return isAuthorisedRequest(request);
-  };
-  const partsByRequestId = {};
-  const partsByVhcItemId = {};
-  const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
-  allocations.forEach((item) => {
-    const status = String(item?.status || "").toLowerCase().trim();
-    if (status === "removed" || status === "cancelled") return;
-    const requestId = item?.allocatedToRequestId ?? item?.allocated_to_request_id ?? null;
-    if (requestId === null || requestId === undefined) return;
-    const key = String(requestId);
-    if (!partsByRequestId[key]) {
-      partsByRequestId[key] = [];
-    }
-    const qty = Number(
-      item?.quantityAllocated ??
-        item?.quantity_allocated ??
-        item?.qty ??
-        item?.quantityRequested ??
-        item?.quantity_requested ??
-        0
-    ) || 0;
-    const priceGross = Number(
-      item?.unitPrice ??
-        item?.unit_price ??
-        item?.price ??
-        item?.part?.unitPrice ??
-        item?.part?.unit_price ??
-        0
-    ) || 0;
-    const rateValue = Number(item?.rate ?? item?.vatRate ?? item?.vat_rate ?? 20);
-    const rate = Number.isFinite(rateValue) ? rateValue : 20;
-    const vatFactor = 1 + rate / 100;
-    const price = vatFactor > 0 ? priceGross / vatFactor : priceGross; // net unit price
-    const net = qty * price;
-    const gross = qty * priceGross;
-    const vat = gross - net; // VAT extracted from VAT-inclusive amount
-    partsByRequestId[key].push({
-      part_number: item?.part?.partNumber || item?.part?.part_number || item?.part_number || "",
-      description: item?.part?.name || item?.part?.description || item?.description || "Part",
-      retail: item?.retail ?? item?.part?.retail ?? item?.part?.unitPrice ?? item?.part?.unit_price ?? null,
-      qty,
-      price,
-      vat,
-      rate,
-    });
-
-    const vhcItemId = item?.vhcItemId ?? item?.vhc_item_id ?? null;
-    if (vhcItemId !== null && vhcItemId !== undefined) {
-      const vhcKey = String(vhcItemId);
-      if (!partsByVhcItemId[vhcKey]) {
-        partsByVhcItemId[vhcKey] = [];
-      }
-      partsByVhcItemId[vhcKey].push({
-        part_number: item?.part?.partNumber || item?.part?.part_number || item?.part_number || "",
-        description: item?.part?.name || item?.part?.description || item?.description || "Part",
-        retail: item?.retail ?? item?.part?.retail ?? item?.part?.unitPrice ?? item?.part?.unit_price ?? null,
-        qty,
-        price,
-        vat,
-        rate,
-      });
-    }
-  });
-
-  const authorisedMetaByRequestId = {};
-  const pushAuthorisedMeta = (row) => {
-    if (!row) return;
-    const requestId = row?.request_id ?? row?.requestId ?? null;
-    if (requestId === null || requestId === undefined) return;
-    const key = String(requestId);
-    const issueTitle =
-      row?.issue_title ??
-      row?.issueTitle ??
-      row?.label ??
-      row?.description ??
-      row?.text ??
-      "";
-    const label = row?.label ?? "";
-    const issueDescription =
-      row?.issue_description ??
-      row?.issueDescription ??
-      row?.detail ??
-      "";
-    const labourHoursRaw = row?.labour_hours ?? row?.labourHours ?? row?.hours ?? null;
-    const labourHours =
-      labourHoursRaw !== null && labourHoursRaw !== undefined && labourHoursRaw !== ""
-        ? Number(labourHoursRaw)
-        : null;
-    const partsCostRaw = row?.parts_cost ?? row?.partsCost ?? null;
-    const partsCost =
-      partsCostRaw !== null && partsCostRaw !== undefined && partsCostRaw !== ""
-        ? Number(partsCostRaw)
-        : null;
-
-    const existing = authorisedMetaByRequestId[key];
-    const next = {
-      label: String(label || "").trim(),
-      issueTitle: String(issueTitle || "").trim(),
-      issueDescription: String(issueDescription || "").trim(),
-      labourHours: Number.isFinite(labourHours) ? labourHours : null,
-      partsCost: Number.isFinite(partsCost) ? partsCost : null,
-      vhcItemId:
-        row?.vhcItemId ??
-        row?.vhc_item_id ??
-        row?.vhc_id ??
-        null,
-    };
-
-    if (!existing) {
-      authorisedMetaByRequestId[key] = next;
-      return;
-    }
-
-    const existingScore =
-      (existing.label ? 1 : 0) +
-      (existing.issueTitle ? 1 : 0) +
-      (existing.issueDescription ? 1 : 0) +
-      (existing.labourHours !== null ? 1 : 0) +
-      (existing.partsCost !== null ? 1 : 0);
-    const nextScore =
-      (next.label ? 1 : 0) +
-      (next.issueTitle ? 1 : 0) +
-      (next.issueDescription ? 1 : 0) +
-      (next.labourHours !== null ? 1 : 0) +
-      (next.partsCost !== null ? 1 : 0);
-    if (nextScore >= existingScore) {
-      authorisedMetaByRequestId[key] = next;
-    }
-  };
-
-  const authorizedVhcRows = Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
-  authorizedVhcRows.forEach(pushAuthorisedMeta);
-
-  const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
-  vhcChecks
-    .filter((row) => {
-      const section = String(row?.section || "").trim();
-      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
-      const state = row?.authorization_state ?? row?.approval_status ?? row?.status ?? null;
-      return isAuthorizedVhcDecision(state) || row?.Complete === true || row?.complete === true;
-    })
-    .forEach(pushAuthorisedMeta);
-
-  const writeUpChecklist = parseChecklistPayload(jobData?.writeUp?.task_checklist);
-  const writeUpTasks = Array.isArray(writeUpChecklist?.tasks) ? writeUpChecklist.tasks : [];
-  const writeUpRequestTitleByRequestId = {};
-  const writeUpRequestTitleBySortOrder = {};
-  const writeUpVhcTitleByVhcId = {};
-
-  writeUpTasks.forEach((task) => {
-    const source = String(task?.source || "").trim().toLowerCase();
-    const label = cleanChecklistTaskLabel(task?.label || "");
-    if (!label) return;
-    if (source === "request") {
-      const { requestId, sortOrder } = parseWriteUpRequestKey(task?.sourceKey || task?.source_key || "");
-      if (requestId) {
-        writeUpRequestTitleByRequestId[requestId] = label;
-      } else if (sortOrder) {
-        writeUpRequestTitleBySortOrder[String(sortOrder)] = label;
-      }
-      return;
-    }
-    if (source === "vhc") {
-      const key = String(task?.sourceKey || task?.source_key || "");
-      const vhcMatch = key.match(/vhc-[^-]+-(\d+)$/i);
-      if (vhcMatch && vhcMatch[1]) {
-        writeUpVhcTitleByVhcId[String(vhcMatch[1])] = label;
-      }
-    }
-  });
-
-  const activeAuthorisedRequestIdSet = new Set(Object.keys(authorisedMetaByRequestId));
-  const visibleRequests = requests.filter((request) => {
-    const requestId = request?.request_id ?? null;
-    if (requestId === null || requestId === undefined) return true;
-    const source = requestSourceById[String(requestId)] || "";
-    if (!isAuthorisedSource(source)) return true;
-    // During realtime sync there can be a short lag before authorised meta is hydrated.
-    // Keep explicitly authorised rows visible so invoice/proforma updates are immediate.
-    if (activeAuthorisedRequestIdSet.has(String(requestId))) return true;
-    return resolveIsAuthorised(request);
-  });
-
-  let customerRowIndex = 0;
-  let authorisedRowIndex = 0;
-  const orderedRequests = [...visibleRequests].sort((a, b) => {
-    const aAuthorised = resolveIsAuthorised(a);
-    const bAuthorised = resolveIsAuthorised(b);
-    if (aAuthorised === bAuthorised) {
-      return (a.request_number || 0) - (b.request_number || 0);
-    }
-    return aAuthorised ? 1 : -1;
-  });
-  const isProforma = Boolean(data?.meta?.isProforma);
+  const { rows } = buildInvoiceRequestRows(data, jobData);
   const invoicePaid = isInvoiceRowPaid(invoice); // Centralized check from statusHelpers.
-  const jobIdForOverride = jobData?.id || null;
 
   const handleOpenProformaEditor = (request) => {
     if (!isProforma) return;
-    setBillingDropdownSeed((prev) => prev + 1);
-    const currentPartsNet = (request?.totals?.request_total_net || 0) - (request?.labour?.net || 0);
-    const override = request?.proforma_override || {};
-    setEditingRequest(request);
-    const summarySeed = String(
-      override?.summary_override ?? request?.summary ?? request?.job_type ?? "Customer"
-    ).trim();
-    const normalizedSummary = BILLING_OPTIONS.includes(summarySeed) ? summarySeed : "Customer";
-    setOverrideForm({
-      titleOverride: override.title_override ?? request?.title ?? "",
-      summaryOverride: normalizedSummary,
-      labourHoursOverride:
-        override.labour_hours_override !== null && override.labour_hours_override !== undefined
-          ? toFixedInput(override.labour_hours_override)
-          : toFixedInput(request?.labour?.hours ?? 0),
-      partsTotalOverride:
-        override.parts_total_override !== null && override.parts_total_override !== undefined
-          ? toFixedInput(override.parts_total_override)
-          : toFixedInput(currentPartsNet ?? 0),
-      labourTotalOverride:
-        override.labour_total_override !== null && override.labour_total_override !== undefined
-          ? toFixedInput(override.labour_total_override)
-          : toFixedInput(request?.labour?.net ?? 0),
-      taxTotalOverride:
-        override.tax_total_override !== null && override.tax_total_override !== undefined
-          ? toFixedInput(override.tax_total_override)
-          : toFixedInput(request?.totals?.request_total_vat ?? 0),
-      totalOverride:
-        override.total_override !== null && override.total_override !== undefined
-          ? toFixedInput(override.total_override)
-          : toFixedInput(request?.totals?.request_total_gross ?? 0),
-    });
-  };
-
-  const handleCloseProformaEditor = () => {
-    if (overrideSaving) return;
-    setEditingRequest(null);
-    setOverrideForm(null);
-  };
-
-  const handleSaveProformaOverride = async () => {
-    if (!editingRequest || !overrideForm || !jobIdForOverride) return;
-    try {
-      setOverrideSaving(true);
-      const response = await fetch("/api/invoices/proforma-overrides", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          jobId: jobIdForOverride,
-          requestKey:
-            editingRequest?.proforma_key ||
-            `${editingRequest?.request_kind || "request"}:id:${editingRequest?.request_id ?? editingRequest?.request_number}`,
-          requestId: editingRequest?.request_id ?? null,
-          requestKind: editingRequest?.request_kind || "request",
-          requestNumber: editingRequest?.request_number || null,
-          titleOverride: overrideForm.titleOverride,
-          summaryOverride: overrideForm.summaryOverride,
-          labourHoursOverride: overrideForm.labourHoursOverride,
-          partsTotalOverride: overrideForm.partsTotalOverride,
-          labourTotalOverride: overrideForm.labourTotalOverride,
-          taxTotalOverride: overrideForm.taxTotalOverride,
-          totalOverride: overrideForm.totalOverride,
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || "Failed to save override");
-      }
-      if (typeof onDataPatch === "function") {
-        onDataPatch((prev) => {
-          const prevRequests = Array.isArray(prev?.requests) ? prev.requests : [];
-          const nextRequests = prevRequests.map((row) => {
-            const sameKey = (row?.proforma_key || "") === (editingRequest?.proforma_key || "");
-            const sameLegacy =
-              !sameKey &&
-              String(row?.request_kind || "") === String(editingRequest?.request_kind || "") &&
-              String(row?.request_id ?? "") === String(editingRequest?.request_id ?? "") &&
-              Number(row?.request_number || 0) === Number(editingRequest?.request_number || 0);
-            if (!sameKey && !sameLegacy) return row;
-
-            const labourNet = Number(overrideForm.labourTotalOverride || 0) || 0;
-            const partsNet = Number(overrideForm.partsTotalOverride || 0) || 0;
-            const taxTotal = Number(overrideForm.taxTotalOverride || 0) || 0;
-            const total = Number(overrideForm.totalOverride || 0) || 0;
-            const labourHours = Number(overrideForm.labourHoursOverride || 0) || 0;
-
-            return {
-              ...row,
-              title: overrideForm.titleOverride || row.title,
-              summary: overrideForm.summaryOverride || row.summary,
-              labour: {
-                ...(row.labour || {}),
-                hours: labourHours,
-                net: labourNet,
-              },
-              totals: {
-                ...(row.totals || {}),
-                request_total_net: labourNet + partsNet,
-                request_total_vat: taxTotal,
-                request_total_gross: total,
-              },
-              proforma_override: {
-                title_override: overrideForm.titleOverride || "",
-                summary_override: overrideForm.summaryOverride || "",
-                labour_hours_override: labourHours,
-                parts_total_override: partsNet,
-                labour_total_override: labourNet,
-                tax_total_override: taxTotal,
-                total_override: total,
-              },
-            };
-          });
-
-          const totals = nextRequests.reduce(
-            (acc, row) => ({
-              service_total: acc.service_total + Number(row?.totals?.request_total_net || 0),
-              vat_total: acc.vat_total + Number(row?.totals?.request_total_vat || 0),
-              invoice_total: acc.invoice_total + Number(row?.totals?.request_total_gross || 0),
-            }),
-            { service_total: 0, vat_total: 0, invoice_total: 0 }
-          );
-
-          return {
-            ...prev,
-            requests: nextRequests,
-            invoice: {
-              ...(prev.invoice || {}),
-              totals,
-            },
-          };
-        });
-      }
-      setEditingRequest(null);
-      setOverrideForm(null);
-      if (typeof onDataRefresh === "function") {
-        await onDataRefresh();
-      }
-    } catch (error) {
-      console.error("Failed to save proforma override", error);
-      alert(error?.message || "Failed to save proforma override");
-    } finally {
-      setOverrideSaving(false);
-    }
+    openEditor(request);
   };
 
   return (
@@ -689,7 +257,7 @@ export default function InvoiceDetail({
           )}
         </div>
         <div className="invoice-action-buttons" style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
-          {!isProforma && (
+          {!hideActions && !isProforma && (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button type="button" className={styles.printButton} onClick={onPrint}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
@@ -757,214 +325,23 @@ export default function InvoiceDetail({
 
       <VehicleRow vehicle={invoice.vehicle_details} />
 
-      {orderedRequests.length === 0 ? (
+      {rows.length === 0 ? (
         <div className={`${styles.statusMessage}`}>
           No detailed requests recorded for this invoice yet.
         </div>
       ) : (
-        orderedRequests.map((request) => {
-          const isAuthorised = resolveIsAuthorised(request);
-          const currentAuthorisedNumber = authorisedRowIndex + 1;
-          const currentCustomerNumber = customerRowIndex + 1;
-          const explicitRequestId = request?.request_id ?? null;
-          const linkedRequestId = explicitRequestId
-            ? String(explicitRequestId)
-            : isAuthorised
-            ? authorisedRequestIds[authorisedRowIndex]
-            : customerRequestIds[customerRowIndex];
-          if (isAuthorised) {
-            authorisedRowIndex += 1;
-          } else {
-            customerRowIndex += 1;
-          }
-          const linkedParts =
-            hasRequestLinking && linkedRequestId
-              ? (() => {
-                  const byRequest = partsByRequestId[String(linkedRequestId)] || [];
-                  if (!isAuthorised) return byRequest;
-                  const vhcItemId = authorisedMetaByRequestId[String(linkedRequestId)]?.vhcItemId ?? null;
-                  if (vhcItemId === null || vhcItemId === undefined) return byRequest;
-                  const byVhc = partsByVhcItemId[String(vhcItemId)] || [];
-                  const merged = [...byRequest];
-                  const seen = new Set(
-                    merged.map((row) => `${row.part_number}:${row.description}:${row.qty}:${row.price}`)
-                  );
-                  byVhc.forEach((row) => {
-                    const key = `${row.part_number}:${row.description}:${row.qty}:${row.price}`;
-                    if (seen.has(key)) return;
-                    seen.add(key);
-                    merged.push(row);
-                  });
-                  return merged;
-                })()
-              : undefined;
-          const authorisedMeta = linkedRequestId ? authorisedMetaByRequestId[String(linkedRequestId)] : null;
-
-          let requestForDisplay = request;
-          if (isAuthorised) {
-            const overriddenTitle = String(request?.proforma_override?.title_override || "").trim();
-            const overriddenSummary = String(request?.proforma_override?.summary_override || "").trim();
-            const writeUpVhcTitle =
-              authorisedMeta?.vhcItemId !== null && authorisedMeta?.vhcItemId !== undefined
-                ? writeUpVhcTitleByVhcId[String(authorisedMeta.vhcItemId)] || ""
-                : "";
-            const issueTitle = authorisedMeta?.issueTitle || request.title;
-            const issueDescription = authorisedMeta?.issueDescription || "";
-            const displayTitle =
-              overriddenTitle ||
-              writeUpVhcTitle ||
-              authorisedMeta?.label ||
-              (issueDescription ? `${issueTitle} - ${issueDescription}` : issueTitle);
-            requestForDisplay = {
-              ...request,
-              request_label: `Authorised ${currentAuthorisedNumber}`,
-              title: displayTitle || request.title,
-              summary: overriddenSummary || "",
-            };
-          } else {
-            const overriddenTitle = String(request?.proforma_override?.title_override || "").trim();
-            const overriddenSummary = String(request?.proforma_override?.summary_override || "").trim();
-            const writeUpRequestTitle =
-              (linkedRequestId ? writeUpRequestTitleByRequestId[String(linkedRequestId)] : "") ||
-              writeUpRequestTitleBySortOrder[String(currentCustomerNumber)] ||
-              "";
-            requestForDisplay = {
-              ...request,
-              request_label: `Request ${currentCustomerNumber}`,
-              title: overriddenTitle || writeUpRequestTitle || request.title,
-              summary: overriddenSummary || request.summary,
-            };
-          }
-
-          return (
-            <RequestBlock
-              key={`${request.request_number}-${linkedRequestId || "no-link"}`}
-              request={requestForDisplay}
-              linkedParts={linkedParts}
-              isEditable={isProforma}
-              onOpenEditor={handleOpenProformaEditor}
-            />
-          );
-        })
+        rows.map((row) => (
+          <RequestBlock
+            key={row.key}
+            request={row.displayRequest}
+            linkedParts={row.linkedParts}
+            isEditable={isProforma}
+            onOpenEditor={handleOpenProformaEditor}
+          />
+        ))
       )}
 
-      {isProforma && editingRequest && overrideForm && (
-        <ModalPortal>
-          <div
-            role="dialog"
-            aria-modal="true"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                handleCloseProformaEditor();
-              }
-            }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(15, 23, 42, 0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1200,
-              padding: "16px",
-            }}
-          >
-            <div
-              onMouseDown={(event) => event.stopPropagation()}
-              style={{
-                width: "min(760px, 100%)",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                padding: "18px",
-                display: "grid",
-                gap: "12px",
-              }}
-            >
-              <h3 style={{ margin: 0 }}>{editingRequest.request_label || `Request ${editingRequest.request_number}`}</h3>
-              <div style={{ display: "grid", gap: "8px" }}>
-                <label style={{ display: "grid", gap: "4px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Description Override</span>
-                  <textarea
-                    rows={2}
-                    value={overrideForm.titleOverride}
-                    onChange={(event) =>
-                      setOverrideForm((prev) => ({ ...prev, titleOverride: event.target.value }))
-                    }
-                    style={{ width: "100%" }}
-                  />
-                </label>
-                <label style={{ display: "grid", gap: "4px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Billing To</span>
-                  <DropdownField
-                    key={`billing-${editingRequest?.proforma_key || editingRequest?.request_number || "row"}-${billingDropdownSeed}`}
-                    options={BILLING_OPTIONS.map((option) => ({ value: option, label: option }))}
-                    value={overrideForm.summaryOverride}
-                    onValueChange={(value) =>
-                      setOverrideForm((prev) => ({ ...prev, summaryOverride: String(value || "Customer") }))
-                    }
-                    placeholder="Select billing type"
-                    size="sm"
-                    usePortal={false}
-                    menuStyle={{ maxHeight: "132px", overflowY: "auto" }}
-                  />
-                </label>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-                  gap: "8px",
-                }}
-              >
-                {[
-                  ["Labour Hours", "labourHoursOverride"],
-                  ["Parts Total (Net)", "partsTotalOverride"],
-                  ["Labour Total (Net)", "labourTotalOverride"],
-                  ["Tax Total", "taxTotalOverride"],
-                  ["Total", "totalOverride"],
-                ].map(([label, key]) => (
-                  <label key={key} style={{ display: "grid", gap: "4px" }}>
-                    <span style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>{label}</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={overrideForm[key]}
-                      onChange={(event) =>
-                        setOverrideForm((prev) => ({ ...prev, [key]: event.target.value }))
-                      }
-                      onBlur={(event) =>
-                        setOverrideForm((prev) => ({
-                          ...prev,
-                          [key]: toFixedInput(event.target.value, "0.00"),
-                        }))
-                      }
-                      style={{
-                        padding: "6px 8px",
-                        fontSize: "0.85rem",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        appearance: "textfield",
-                        MozAppearance: "textfield",
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                <button type="button" onClick={handleCloseProformaEditor} className={styles.printButton} style={{ background: "var(--surface)", color: "var(--text-1)" }}>
-                  Cancel
-                </button>
-                <button type="button" onClick={handleSaveProformaOverride} className={styles.printButton} disabled={overrideSaving}>
-                  {overrideSaving ? "Saving..." : "Save Proforma Override"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
+      {isProforma && modal}
 
       <TotalsFooter totals={invoice.totals} />
 

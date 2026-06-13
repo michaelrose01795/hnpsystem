@@ -1,6 +1,7 @@
 // file location: src/features/invoices/components/InvoiceDetailSection.js
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import InvoiceDetail from "@/features/invoices/components/InvoiceDetail";
+import InvoiceWorkspace from "@/features/invoices/components/InvoiceWorkspace";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getJobRequests } from "@/lib/canonical/fields";
@@ -22,6 +23,7 @@ export default function InvoiceDetailSection({
   jobId,
   jobData = null,
   invoiceReady = false,
+  variant = "document",
   onInvoiceStateChange = null,
   onPaymentCompleted = null,
   onReleaseRequested = null,
@@ -237,6 +239,31 @@ export default function InvoiceDetailSection({
     });
   }, []);
 
+  const handleSaveNotes = useCallback(
+    async (notes) => {
+      const invoiceId = data?.invoice?.id;
+      if (!invoiceId) {
+        return { success: false, error: "Create the invoice before saving notes." };
+      }
+      const response = await fetch("/api/invoices/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ invoiceId, notes }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Failed to save notes");
+      }
+      // Optimistically reflect the saved value so the editor's dirty-check resets.
+      setData((prev) =>
+        prev ? { ...prev, invoice: { ...(prev.invoice || {}), invoice_notes: notes } } : prev
+      );
+      return { success: true };
+    },
+    [data]
+  );
+
   const handleEmail = useCallback(async () => {
     if (!customerEmail) {
       setEmailStatus("No customer email on file.");
@@ -316,18 +343,34 @@ export default function InvoiceDetailSection({
           {proformaNotice}
         </div>
       )}
-      <InvoiceDetail
-        data={data}
-        onPrint={handlePrint}
-        onEmail={handleEmail}
-        emailStatus={emailStatus}
-        customerEmail={customerEmail}
-        jobData={jobData}
-        onDataRefresh={fetchInvoice}
-        onDataPatch={handleDataPatch}
-        onPaymentCompleted={onPaymentCompleted}
-        onReleaseRequested={onReleaseRequested}
-      />
+      {variant === "jobcard" ? (
+        <InvoiceWorkspace
+          data={data}
+          onPrint={handlePrint}
+          onEmail={handleEmail}
+          emailStatus={emailStatus}
+          customerEmail={customerEmail}
+          jobData={jobData}
+          onDataRefresh={fetchInvoice}
+          onDataPatch={handleDataPatch}
+          onPaymentCompleted={onPaymentCompleted}
+          onReleaseRequested={onReleaseRequested}
+          onSaveNotes={handleSaveNotes}
+        />
+      ) : (
+        <InvoiceDetail
+          data={data}
+          onPrint={handlePrint}
+          onEmail={handleEmail}
+          emailStatus={emailStatus}
+          customerEmail={customerEmail}
+          jobData={jobData}
+          onDataRefresh={fetchInvoice}
+          onDataPatch={handleDataPatch}
+          onPaymentCompleted={onPaymentCompleted}
+          onReleaseRequested={onReleaseRequested}
+        />
+      )}
     </>
   );
 }

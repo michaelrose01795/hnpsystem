@@ -72,7 +72,7 @@
 .headerBox { /* // shared header card */
   border-radius: var(--radius-sm); /* // soft corners */
   padding: 16px; /* // internal spacing */
-  background: var(--surface-secondary, var(--surface)); /* // support dark mode tokens */
+  background: var(--theme); /* // themed inner-card layer (alternates with --surface shell) */
 } /* // end headerBox */
 
 .headerBox h3 { /* // header title */
@@ -98,7 +98,8 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
   gap: 12px; /* // spacing between columns */
   border-radius: var(--radius-sm); /* // soft corners */
-  padding: 12px; /* // internal spacing */
+  padding: 16px; /* // internal spacing — keep text off the card edge */
+  background: var(--theme); /* // themed inner-card layer */
 } /* // end vehicleRow */
 
 .vehicleItem { /* // each vehicle data cell */
@@ -115,10 +116,11 @@
 
 .requestBlock { /* // container for each request section */
   border-radius: var(--control-radius); /* // soft corners */
-  padding: 16px; /* // internal spacing */
+  padding: 18px; /* // internal spacing — keep text off the card edge */
   display: flex; /* // flex column reflow */
   flex-direction: column; /* // stack elements */
   gap: 14px; /* // spacing */
+  background: var(--theme); /* // themed inner-card layer */
 } /* // end requestBlock */
 
 .requestHeader { /* // header row for request title/labour */
@@ -150,7 +152,7 @@
   color: var(--text-1); /* // muted color */
   border-bottom: var(--separating-line); /* // underline header */
   padding: 8px; /* // spacing */
-  background: var(--surface-secondary, var(--surface)); /* // subtle background */
+  background: var(--surface); /* // contrast header against themed request card */
   position: sticky; /* // optional sticky header */
   top: 0; /* // stick to top */
 } /* // end partsTable th */
@@ -222,9 +224,9 @@
 } /* // end totalsFooter */
 
 .totalCard { /* // individual total card */
-  background: var(--surface-secondary, var(--surface)); /* // subtle background */
+  background: var(--theme); /* // themed inner-card layer */
   border-radius: var(--control-radius-xs); /* // soft corners */
-  padding: 12px; /* // spacing */
+  padding: 16px; /* // spacing — keep text off the card edge */
 } /* // end totalCard */
 
 .totalCard span { /* // label text */
@@ -242,7 +244,7 @@
 .paymentDetails { /* // payment/bank detail box */
   border-radius: var(--radius-sm); /* // corners */
   padding: 16px; /* // spacing */
-  background: var(--surface); /* // solid surface background */
+  background: var(--theme); /* // themed inner-card layer */
 } /* // end paymentDetails */
 
 .paymentDetails h3 { /* // payment heading */

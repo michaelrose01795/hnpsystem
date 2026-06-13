@@ -12632,6 +12632,7 @@ function DocumentsTab({
   const [isRenamingPreview, setIsRenamingPreview] = useState(false);
   const [previewRenameValue, setPreviewRenameValue] = useState("");
   const [editingDoc, setEditingDoc] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(""); // filters the document grid by file name
 
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
@@ -12640,6 +12641,14 @@ function DocumentsTab({
       return bTime - aTime;
     });
   }, [documents]);
+
+  const filteredDocuments = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sortedDocuments;
+    return sortedDocuments.filter((doc) =>
+    (doc.name || doc.file_name || "").toLowerCase().includes(query)
+    );
+  }, [sortedDocuments, searchQuery]);
 
   const formatDate = (value) => {
     if (!value) return "";
@@ -12904,6 +12913,16 @@ function DocumentsTab({
         <span style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 500 }}>
           {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
         </span>
+        {/* Search bar — shares the toolbar row with the Upload Documents button.
+            Styling inherited from staffglobal.css input[type="search"] rules. */}
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search documents…"
+          aria-label="Search documents"
+          style={{ flex: "1 1 200px", minWidth: "160px", maxWidth: "360px", padding: "var(--control-padding)", fontSize: "14px" }} />
+
         {typeof onManageDocuments === "function" &&
         <button
           type="button"
@@ -12934,6 +12953,20 @@ function DocumentsTab({
           <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>ðŸ“„</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
+        </div> :
+      filteredDocuments.length === 0 ?
+      <div
+        style={{
+          padding: "48px 24px",
+          borderRadius: "var(--radius-md)",
+          textAlign: "center",
+          color: "var(--text-1)",
+          fontSize: "14px",
+          lineHeight: 1.6
+        }}>
+
+          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No matching documents</div>
+          No documents match “{searchQuery.trim()}”.
         </div> : (
 
       /* Gallery grid */
@@ -12944,7 +12977,7 @@ function DocumentsTab({
           gap: "14px"
         }}>
 
-          {sortedDocuments.map((doc) => {
+          {filteredDocuments.map((doc) => {
           const docName = doc.name || doc.file_name || "Document";
           const docType = doc.type || doc.file_type || "";
           const docUrl = doc.url || doc.file_url || "";

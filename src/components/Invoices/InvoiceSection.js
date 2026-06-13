@@ -27,6 +27,7 @@ export default function InvoiceSection({
       jobId={jobData?.id}
       jobData={jobData}
       invoiceReady={invoiceReady}
+      variant="jobcard"
       onInvoiceStateChange={onInvoiceStateChange}
       onPaymentCompleted={onPaymentCompleted}
       onReleaseRequested={onReleaseRequested}
