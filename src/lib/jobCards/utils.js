@@ -22,6 +22,32 @@ const buildHistoryText = (...values) =>
     .map((value) => String(value || "").trim())
     .find(Boolean) || "";
 
+// Resolve a "First Last" display name from an embedded users row
+// (technician:assigned_to / advisor:booked_by). Returns "" when absent.
+const buildPersonName = (person) =>
+  person
+    ? `${person.first_name || ""} ${person.last_name || ""}`.trim()
+    : "";
+
+// Tally a job's parts_job_items into the four counts shown in the history
+// detail panel. allocated = status 'allocated'; onOrder = status 'on_order';
+// backOrder = stock_status 'back_order'; total = every line on the job.
+const summarisePartsItems = (items = []) => {
+  const list = Array.isArray(items) ? items : [];
+  return list.reduce(
+    (acc, item) => {
+      const status = String(item?.status || "").toLowerCase();
+      const stockStatus = String(item?.stock_status || "").toLowerCase();
+      if (status === "allocated") acc.allocated += 1;
+      if (status === "on_order") acc.onOrder += 1;
+      if (stockStatus === "back_order") acc.backOrder += 1;
+      acc.total += 1;
+      return acc;
+    },
+    { allocated: 0, onOrder: 0, backOrder: 0, total: 0 }
+  );
+};
+
 const mapHistoryNote = (note = {}) => {
   const creatorName = note.user
     ? `${note.user.first_name || ""} ${note.user.last_name || ""}`.trim()
@@ -113,12 +139,27 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
         : null;
       const combinedRequests = [...requests, ...approvedVhcRequests];
 
+      const spendValue =
+        invoiceRecord?.invoice_total ?? invoiceRecord?.total ?? null;
+      const spend =
+        spendValue === null || spendValue === ""
+          ? null
+          : Number(spendValue);
+
       return {
         id: job.id,
         jobNumber: job.job_number || job.jobNumber,
         serviceDate: requestedAt,
         serviceDateFormatted,
+        status: job.status || "",
         mileage: pickMileageValue(job.mileage, job.milage),
+        advisor: buildPersonName(job.advisor),
+        technician: buildPersonName(job.technician),
+        // Parts user is allocated_by (auth.users uuid) — no clean name join
+        // available yet, so surface "" and let the UI render "—". TODO: resolve.
+        partsUser: "",
+        parts: summarisePartsItems(job.parts_job_items),
+        spend: Number.isFinite(spend) ? spend : null,
         requests,
         approvedVhcRequests,
         combinedRequests,

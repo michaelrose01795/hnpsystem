@@ -260,7 +260,10 @@
       "PowerShell(npx eslint \"src/components/page-ui/job-cards/contact\" \"src/lib/database/messageTemplates.js\" \"src/pages/api/messages/templates/index.js\" 2>&1)",
       "PowerShell(npx eslint \"src/components/page-ui/job-cards/contact\" \"src/pages/job-cards/[jobNumber].js\" \"src/lib/database/jobs.js\" \"src/lib/api/messages.js\" 2>&1)",
       "PowerShell(npx eslint \"src/components/page-ui/job-cards/contact\" 2>&1)",
-      "Bash([ -f \"$f\" ])"
+      "Bash([ -f \"$f\" ])",
+      "Bash(awk 'NR>=50')",
+      "Bash(sed -i '7553,7709d' \"src/pages/job-cards/[jobNumber].js\")",
+      "Bash(sed -n '7548,7556p' \"src/pages/job-cards/[jobNumber].js\")"
     ],
     "deny": [],
     "ask": [],

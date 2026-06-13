@@ -23,6 +23,9 @@ import {
 "@/lib/database/notes";
 import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
+// Redesigned Service History tab (summary / tree / detail / mileage trend).
+// Replaces the legacy inline ServiceHistoryTab that lived in this file.
+import ServiceHistoryTab from "@/components/page-ui/job-cards/service-history/ServiceHistoryTab";
 import {
   normalizeRequests,
   mapCustomerJobsToHistory } from
@@ -60,6 +63,13 @@ import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
+// Scheduling dashboard sections (Scheduling tab redesign).
+import TechnicianAssignmentSection from "@/components/page-ui/job-cards/scheduling/TechnicianAssignmentSection";
+import JobProgressSection from "@/components/page-ui/job-cards/scheduling/JobProgressSection";
+import CollectionTypeSection from "@/components/page-ui/job-cards/scheduling/CollectionTypeSection";
+import CustomerUpdatesSection from "@/components/page-ui/job-cards/scheduling/CustomerUpdatesSection";
+import QuickActionsSection from "@/components/page-ui/job-cards/scheduling/QuickActionsSection";
+import AlertsRemindersSection from "@/components/page-ui/job-cards/scheduling/AlertsRemindersSection";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import {
@@ -6734,6 +6744,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
 function SchedulingTab({
   jobData,
   canEdit,
+  jobNumber,
   customerVehicles = [],
   customerVehiclesLoading = false,
   bookingRequest = null,
@@ -6744,7 +6755,9 @@ function SchedulingTab({
   onAppointmentSave = () => {},
   onAppointmentRebook = () => {},
   appointmentSaving = false,
-  onLogisticsSelectionChange = () => {}
+  onLogisticsSelectionChange = () => {},
+  onNavigateTab = () => {},
+  onRefreshJob = () => {}
 }) {
   const router = useRouter();
   const waitingOptions = ["Waiting", "Loan Car", "Collection", "Neither"];
@@ -7103,7 +7116,20 @@ function SchedulingTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
+      {/* ── Dashboard Row 1: Technician Assignment | Job Progress ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
+        <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
+        <JobProgressSection jobData={jobData} />
+      </div>
+
+      {/* ── Dashboard Row 2: Collection Type | Customer Updates ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
+        <CollectionTypeSection waitingStatus={bookingWaitingStatus} canEdit={canEdit} onSelect={handleBookingWaitingSelect} jobData={jobData} />
+        <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
+      </div>
+
+      {/* ── Booking & appointment (existing functionality, re-laid into the dashboard) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", alignItems: "stretch" }}>
         {/* ── Section 1: Customer & Vehicle ── */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-customer-vehicle"
@@ -7175,54 +7201,7 @@ function SchedulingTab({
             }
           </div>
         </DevLayoutSection>
-
-        {/* Customer logistics */}
-        <LayerSurface
-          sectionKey="jobcard-tab-scheduling-logistics"
-          sectionType="content-card"
-          parentKey="jobcard-tab-scheduling">
-
-
-
-          <div style={sectionTitleRow}>
-            <h3 style={cardTitleStyle}>Customer Logistics</h3>
-          </div>
-          {/* Mirrors the main job-card tab strip (job-cards-auto-tab-row-1):
-               same .tab-scroll-row container chip + .tab-api__item buttons,
-               same --tab-container-bg background and 8px padding. Reusing
-               those classes means this row picks up every visual change made
-               to the canonical tab family (radius, spacing, active-state
-               colours, hover, focus) without diverging styling. */}
-          <div
-            className="tab-scroll-row"
-            role="tablist"
-            style={{
-              backgroundColor: "var(--tab-container-bg)",
-              borderRadius: "var(--radius-sm)",
-              padding: "8px"
-            }}>
-            {waitingOptions.map((option) => {
-              const isActive =
-              bookingWaitingStatus === option ||
-              !bookingWaitingStatus && option === "Neither";
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  role="tab"
-                  className={`tab-api__item${isActive ? " is-active" : ""}`}
-                  onClick={() => handleBookingWaitingSelect(option)}
-                  disabled={!canEdit}
-                  aria-pressed={isActive}
-                  aria-selected={isActive}>
-                  {option}
-                </button>);
-
-            })}
-          </div>
-          {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
-          <div style={{ minHeight: "0px" }} />
-        </LayerSurface>
+        {/* Customer Logistics moved to the Collection Type dashboard section above. */}
       </div>
 
       {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
@@ -7551,167 +7530,26 @@ function SchedulingTab({
           }
         </DevLayoutSection>
       </DevLayoutSection>
+
+      {/* ── Dashboard Row 4: Quick Actions ── */}
+      <QuickActionsSection
+        canEdit={canEdit}
+        onChangeCollectionTimes={() => {
+          if (typeof document !== "undefined") {
+            const el = document.querySelector('[data-dev-section-key="jobcard-scheduling-collection"]');
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }}
+        onAddWorkshopNote={() => onNavigateTab("notes")}
+        onSendCustomerUpdate={() => onNavigateTab("messages")}
+      />
+
+      {/* ── Dashboard Row 5: Alerts & Reminders ── */}
+      <AlertsRemindersSection jobData={jobData} />
     </div>);
 
 }
 
-// ✅ Service History Tab
-function ServiceHistoryTab({ vehicleJobHistory }) {
-  const history = Array.isArray(vehicleJobHistory) ?
-  vehicleJobHistory :
-  [];
-
-  const handleInvoiceOpen = (job) => {
-    if (job.invoiceAvailable && job.invoiceUrl) {
-      window.open(job.invoiceUrl, "_blank");
-    } else {
-      alert("No invoice document stored for this job yet.");
-    }
-  };
-
-  const tableHeaderCellStyle = {
-    textAlign: "left",
-    padding: "12px 12px",
-    position: "sticky",
-    top: 0,
-    background: "var(--surface)",
-    zIndex: 1,
-    fontSize: "11px",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    color: "var(--text-1)",
-    fontWeight: "700",
-    whiteSpace: "nowrap"
-  };
-  const tableCellStyle = {
-    padding: "12px",
-    verticalAlign: "top",
-    borderTop: "var(--separating-line)",
-    fontSize: "12px",
-    color: "var(--text-1)",
-    overflowWrap: "anywhere"
-  };
-  const rowLabelStyle = {
-    fontSize: "11px",
-    color: "var(--grey-accent)",
-    fontWeight: "700",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase"
-  };
-
-  return (
-    <DevLayoutSection
-      sectionKey="jobcard-tab-service-history-panel"
-      sectionType="section-shell"
-      parentKey="jobcard-tab-service-history"
-      backgroundToken="surface"
-      shell>
-
-      {history.length > 0 ?
-      <DevLayoutSection
-        sectionKey="jobcard-tab-service-history-list"
-        sectionType="table"
-        parentKey="jobcard-tab-service-history-panel"
-        style={{
-          borderRadius: "var(--radius-md)",
-          backgroundColor: "var(--surface)",
-          overflow: "hidden"
-        }}>
-
-          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
-            <thead>
-              <tr>
-                <th style={{ ...tableHeaderCellStyle, width: "11%" }}>Job Number</th>
-                <th style={{ ...tableHeaderCellStyle, width: "16%" }}>Invoice Number</th>
-                <th style={{ ...tableHeaderCellStyle, width: "17%" }}>Date of Appointment</th>
-                <th style={{ ...tableHeaderCellStyle, width: "10%" }}>Mileage</th>
-                <th style={{ ...tableHeaderCellStyle, width: "46%" }}>Requests</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((job) => {
-              const combinedRequests = Array.isArray(job.combinedRequests) ? job.combinedRequests : [];
-              return (
-                <tr key={job.id || job.jobNumber} style={{ backgroundColor: "var(--surface)" }}>
-                    <td style={tableCellStyle}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--primary)" }}>
-                          {job.jobNumber || "—"}
-                        </span>
-                        <span style={rowLabelStyle}>Job Card</span>
-                      </div>
-                    </td>
-                    <td style={tableCellStyle}>
-                      {job.invoiceNumber ?
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
-                          <span style={{ fontWeight: "600", overflowWrap: "anywhere" }}>{job.invoiceNumber}</span>
-                          {job.invoiceAvailable ?
-                      <button
-                        type="button"
-                        onClick={() => handleInvoiceOpen(job)}
-                        style={{
-                          padding: "6px 8px",
-                          borderRadius: "var(--control-radius)",
-                          border: "none",
-                          backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                          color: "var(--primary-selected)",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          cursor: "pointer"
-                        }}>
-
-                              Open Invoice
-                            </button> :
-                      null}
-                        </div> :
-
-                    <span style={{ color: "var(--grey-accent)" }}>Not assigned</span>
-                    }
-                    </td>
-                    <td style={tableCellStyle}>
-                      <span>{job.serviceDateFormatted || "Unknown"}</span>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <span>{job.mileage ? `${job.mileage} miles` : "Not recorded"}</span>
-                    </td>
-                    <td style={tableCellStyle}>
-                      {combinedRequests.length > 0 ?
-                    <span style={{ color: "var(--text-1)", lineHeight: "1.35", overflowWrap: "anywhere" }}>
-                          {combinedRequests.
-                      map((item) => item?.text || item?.description || "Request").
-                      join(" | ")}
-                        </span> :
-
-                    <span style={{ color: "var(--grey-accent)" }}>No requests recorded</span>
-                    }
-                    </td>
-                  </tr>);
-
-            })}
-            </tbody>
-          </table>
-        </DevLayoutSection> :
-
-      <DevLayoutSection
-        sectionKey="jobcard-tab-service-history-empty"
-        sectionType="empty-state"
-        parentKey="jobcard-tab-service-history-panel"
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--control-radius)"
-        }}>
-
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
-          <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-            No previous service history for this vehicle
-          </p>
-        </DevLayoutSection>
-      }
-    </DevLayoutSection>);
-
-}
 
 function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) {
   const hasParts = Array.isArray(goodsInParts) && goodsInParts.length > 0;

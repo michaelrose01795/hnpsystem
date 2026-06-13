@@ -288,6 +288,7 @@ CREATE TABLE public.jobs (
   redirected_from_mobile_by integer,
   redirect_reason text,
   queue_position integer,
+  next_update_due timestamp with time zone,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(user_id),
   CONSTRAINT jobs_checked_in_by_fkey FOREIGN KEY (checked_in_by) REFERENCES public.users(user_id),
@@ -301,6 +302,17 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id),
   CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id)
+);
+-- Skill tags per technician (Scheduling dashboard → Technician Assignment section).
+-- One row per (user_id, skill); seed values out-of-band. Display-only in UI v1.
+CREATE TABLE public.technician_skills (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  skill text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT technician_skills_pkey PRIMARY KEY (id),
+  CONSTRAINT technician_skills_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT technician_skills_user_skill_unique UNIQUE (user_id, skill)
 );
 CREATE TABLE public.job_notes (
   note_id integer NOT NULL DEFAULT nextval('job_notes_note_id_seq'::regclass),

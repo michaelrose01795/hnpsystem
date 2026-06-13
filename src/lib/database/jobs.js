@@ -362,6 +362,7 @@ const _getAllJobsUncached = async () => {
       sub_job_sequence,
       created_at,
       updated_at,
+      next_update_due,
       vehicle:vehicle_id(
         vehicle_id,
         registration,
@@ -850,6 +851,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       sub_job_sequence,
       created_at,
       updated_at,
+      next_update_due,
       vehicle:vehicle_id(
         vehicle_id,
         registration,
@@ -1212,6 +1214,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       sub_job_sequence,
       created_at,
       updated_at,
+      next_update_due,
       vehicle:vehicle_id(
         vehicle_id,
         registration,
@@ -2598,6 +2601,8 @@ const formatJobData = (data) => {
     // ✅ Timestamps
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    // Customer "next update due" target (Scheduling dashboard → Customer Updates).
+    nextUpdateDue: data.next_update_due || null,
   };
 };
 
@@ -3354,6 +3359,17 @@ export const unassignTechnicianFromJob = async (jobId) => {
   return updateJob(jobId, {
     assigned_to: null,
     status: "Open",
+  });
+};
+
+/* ============================================
+   SET CUSTOMER "NEXT UPDATE DUE"
+   Stores the target time the customer should next be updated by
+   (Scheduling dashboard → Customer Updates). Pass null to clear.
+============================================ */
+export const setJobNextUpdateDue = async (jobId, nextUpdateDueIso) => {
+  return updateJob(jobId, {
+    next_update_due: nextUpdateDueIso || null,
   });
 };
 

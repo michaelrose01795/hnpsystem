@@ -734,7 +734,10 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Scheduling</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <SchedulingTab jobData={jobData} canEdit={canEdit} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} onAppointmentRebook={handleAppointmentRebook} appointmentSaving={appointmentSaving} onLogisticsSelectionChange={handleSchedulingLogisticsChange} />
+            <SchedulingTab jobData={jobData} canEdit={canEdit} jobNumber={jobData?.jobNumber || jobNumber} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} onAppointmentRebook={handleAppointmentRebook} appointmentSaving={appointmentSaving} onLogisticsSelectionChange={handleSchedulingLogisticsChange} onNavigateTab={handleTabClick} onRefreshJob={() => fetchJobData({
+            silent: true,
+            force: true
+          })} />
           </div>
 
           <div className="app-page-stack" style={{

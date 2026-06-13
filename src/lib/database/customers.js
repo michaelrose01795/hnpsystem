@@ -245,8 +245,13 @@ export const getCustomerJobs = async (customerId) => {
       requests,
       job_source,
       waiting_status,
+      assigned_to,
+      booked_by,
       created_at,
       updated_at,
+      technician:assigned_to(first_name, last_name),
+      advisor:booked_by(first_name, last_name),
+      parts_job_items(status, stock_status, quantity_allocated, quantity_fitted),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       job_notes(
         note_id,
