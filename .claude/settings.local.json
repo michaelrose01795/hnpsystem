@@ -263,7 +263,8 @@
       "Bash([ -f \"$f\" ])",
       "Bash(awk 'NR>=50')",
       "Bash(sed -i '7553,7709d' \"src/pages/job-cards/[jobNumber].js\")",
-      "Bash(sed -n '7548,7556p' \"src/pages/job-cards/[jobNumber].js\")"
+      "Bash(sed -n '7548,7556p' \"src/pages/job-cards/[jobNumber].js\")",
+      "Bash(git show *)"
     ],
     "deny": [],
     "ask": [],

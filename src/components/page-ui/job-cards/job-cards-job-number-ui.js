@@ -24,6 +24,7 @@ export default function JobCardDetailPageUi(props) {
     VHCTab,
     WarrantyTab,
     WriteUpForm,
+    WriteUpWorkspace,
     actingUserId,
     actingUserNumericId,
     activeTab,
@@ -78,6 +79,9 @@ export default function JobCardDetailPageUi(props) {
     handleUpdateRequestPrePickLocation,
     handleUpdateRequests,
     handleUpdateRequestStatus,
+    handleSaveRequestWorkDetails,
+    handleMarkAllRequestsComplete,
+    handleSaveWriteUp,
     clockingEntries,
     handleWriteUpCompletionChange,
     handleWriteUpRequestStatusesChange,
@@ -780,24 +784,16 @@ export default function JobCardDetailPageUi(props) {
             <NotesTabNew jobData={jobData} canEdit={canEdit} actingUserNumericId={actingUserNumericId} onNotesChange={handleNotesChange} onNoteAdded={handleNoteAdded} highlightNoteIds={highlightedNoteIds} noteHistoryJobs={vehicleJobHistory} />
           </div>
 
-          {/* Write-up keeps its inner full-height flex column because the form
-              manages its own scroll. The outer stack still flips visibility. */}
+          {/* Write-up tab now renders the per-request WriteUpWorkspace (replaced
+              the legacy WriteUpForm). The outer stack flips visibility. */}
           <div className="app-page-stack" style={{
-          display: activeTab === "write-up" ? undefined : "none",
-          height: "100%"
+          display: activeTab === "write-up" ? undefined : "none"
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-writeup" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Write-up tab content">
-            <div style={{
-            height: "100%",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-          }}>
-              {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
-                  <strong>Locked: Write Up</strong>
-                  <span>{partsWriteUpVhcLockDescription}</span>
-                </div>}
-              {writeUpTabMounted || activeTab === "write-up" ? <WriteUpForm jobNumber={jobData?.jobNumber || jobNumber} jobCardData={jobData ? { jobCard: jobData } : null} showHeader={false} readOnly={!canEditPartsWriteUpVhc} onSaveSuccess={handleWriteUpSaveSuccess} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} /> : null}
-            </div>
+            {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Write Up</strong>
+                <span>{partsWriteUpVhcLockDescription}</span>
+              </div>}
+            {writeUpTabMounted || activeTab === "write-up" ? <WriteUpWorkspace jobData={jobData} canEdit={canEditPartsWriteUpVhc} onUpdate={handleUpdateRequests} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onUpdateRequestStatus={handleUpdateRequestStatus} onSaveRequestWorkDetails={handleSaveRequestWorkDetails} onMarkAllRequestsComplete={handleMarkAllRequestsComplete} onSaveWriteUp={handleSaveWriteUp} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} onSaveSuccess={handleWriteUpSaveSuccess} onNavigateTab={handleTabClick} clockingEntries={clockingEntries} onToggleVhcRequired={handleToggleVhcRequired} overallStatusId={overallStatusId} vhcSummary={vhcSummaryCounts} vhcChecks={jobVhcChecks} notes={jobNotes} partsJobItems={jobData?.parts_job_items || []} /> : null}
           </div>
 
           <div className="app-page-stack" style={{

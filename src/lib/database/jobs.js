@@ -413,6 +413,10 @@ const _getAllJobsUncached = async () => {
         vhc_item_id,
         pre_pick_location,
         note_text,
+        fault_reported,
+        diagnosis,
+        rectification,
+        customer_approved,
         created_at,
         updated_at
       ),
@@ -908,6 +912,10 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         vhc_item_id,
         pre_pick_location,
         note_text,
+        fault_reported,
+        diagnosis,
+        rectification,
+        customer_approved,
         created_at,
         updated_at
       ),
@@ -1051,6 +1059,10 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           vhc_item_id,
           pre_pick_location,
           note_text,
+          fault_reported,
+          diagnosis,
+          rectification,
+          customer_approved,
           created_at,
           updated_at
         ),
@@ -2321,6 +2333,10 @@ const formatJobData = (data) => {
     vhcItemId: request.vhc_item_id ?? null,
     prePickLocation: request.pre_pick_location || null,
     noteText: request.note_text || "",
+    faultReported: request.fault_reported || "",
+    diagnosis: request.diagnosis || "",
+    rectification: request.rectification || "",
+    customerApproved: Boolean(request.customer_approved),
     createdAt: request.created_at || null,
     updatedAt: request.updated_at || null,
   }));
@@ -3273,6 +3289,77 @@ export const updateJobRequestStatus = async (requestId, status) => {
     return { success: true };
   } catch (error) {
     console.error("❌ updateJobRequestStatus error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   UPDATE A SINGLE JOB REQUEST'S WORK DETAILS
+   Persists the per-request Fault Reported / Diagnosis / Rectification text and
+   the Customer Approved flag edited inline on the Customer Requests tab's detail
+   panel. Separate from upsertJobRequestsForJob (which is the bulk edit-mode
+   save) so the read-view detail panel can save a single field on blur without
+   rewriting the whole request list. Only the fields provided are written.
+============================================ */
+export const updateJobRequestWorkDetails = async (requestId, fields = {}) => {
+  try {
+    if (!requestId) {
+      return { success: false, error: { message: "Request ID is required" } };
+    }
+
+    const updatePayload = { updated_at: new Date().toISOString() };
+    if (Object.prototype.hasOwnProperty.call(fields, "faultReported")) {
+      const value = fields.faultReported;
+      updatePayload.fault_reported = value === "" || value === undefined ? null : String(value);
+    }
+    if (Object.prototype.hasOwnProperty.call(fields, "diagnosis")) {
+      const value = fields.diagnosis;
+      updatePayload.diagnosis = value === "" || value === undefined ? null : String(value);
+    }
+    if (Object.prototype.hasOwnProperty.call(fields, "rectification")) {
+      const value = fields.rectification;
+      updatePayload.rectification = value === "" || value === undefined ? null : String(value);
+    }
+    if (Object.prototype.hasOwnProperty.call(fields, "customerApproved")) {
+      updatePayload.customer_approved = Boolean(fields.customerApproved);
+    }
+
+    const { error } = await supabase
+      .from("job_requests")
+      .update(updatePayload)
+      .eq("request_id", requestId);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ updateJobRequestWorkDetails error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   MARK ALL OF A JOB'S REQUESTS COMPLETE
+   Powers the "Mark All Complete" button on the Customer Requests tab summary.
+   Sets status='completed' on every job_requests row for the job (both customer
+   requests and VHC-authorised rows that have a request_id).
+============================================ */
+export const markAllJobRequestsComplete = async (jobId) => {
+  try {
+    if (!jobId) {
+      return { success: false, error: { message: "Job ID is required" } };
+    }
+
+    const { error } = await supabase
+      .from("job_requests")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("job_id", jobId);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ markAllJobRequestsComplete error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

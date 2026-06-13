@@ -1,11 +1,101 @@
-// ✅ New NotesTab with Multiple Notes Support
+// ✅ Redesigned NotesTab — overview stats + filter bar + 70/30 list/detail split
 // file location: src/components/NotesTab.js
-import React, { useState, useEffect, useMemo, useRef } from "react";
+//
+// Layout (follows the Service History tab redesign + staffglobal.css conventions):
+//   1. Overview LayerSurface  → stat tiles (total / pinned / internal / customer
+//      view / last updated) plus a search bar and "Add note" button.
+//   2. Filter LayerSurface    → All / Pinned / Internal / Customer Visible /
+//      Workshop / Parts / Advisor / Manager toggle pills (.app-btn + is-active).
+//   3. 70/30 split            → left: notes list + inline composer; right: the
+//      selected note's detail (category, created/updated, activity timeline,
+//      "Visible to" roles with an Edit access toggle).
+//
+// Data model note: job_notes has no pinned/title/category/access columns
+// (src/lib/database/schema/schemaReference.sql). So:
+//   • pinned  → client-side, persisted to localStorage per job (no schema change)
+//   • title   → derived from note linkage; description = the note text
+//   • category / "visible to" / access → derived from hidden_from_customer
+//   • role filters → derived from the note author's role (created_by)
+// All persistence still flows through the existing src/lib/database/notes.js helpers.
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
 import { normalizeRequests } from "@/lib/jobCards/utils";
 import { useConfirmation } from "@/context/ConfirmationContext";
+import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
+import useIsMobile from "@/hooks/useIsMobile";
+
+/* ---- shared text styles (mirrors the Service History tab redesign) ---- */
+const eyebrowStyle = {
+  margin: 0,
+  fontSize: "0.7rem",
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "var(--accentText)",
+  fontWeight: 700,
+};
+const labelStyle = {
+  fontSize: "0.65rem",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "rgba(var(--text-1-rgb), 0.6)",
+  fontWeight: 700,
+};
+const valueStyle = {
+  fontSize: "1.4rem",
+  fontWeight: 700,
+  color: "var(--text-1)",
+  lineHeight: 1.1,
+  wordBreak: "break-word",
+};
+const metaStyle = { fontSize: "0.8rem", color: "rgba(var(--text-1-rgb), 0.7)" };
+const fieldLabelStyle = {
+  fontSize: "0.6rem",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "rgba(var(--text-1-rgb), 0.6)",
+  fontWeight: 700,
+};
+
+/* ---- filter definitions ---- */
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "pinned", label: "Pinned" },
+  { id: "internal", label: "Internal" },
+  { id: "customer", label: "Customer Visible" },
+  { id: "workshop", label: "Workshop" },
+  { id: "parts", label: "Parts" },
+  { id: "advisor", label: "Advisor" },
+  { id: "manager", label: "Manager" },
+];
+const ROLE_FILTERS = ["workshop", "parts", "advisor", "manager"];
+
+// Map an author's role string onto one of the four role filter groups.
+const roleGroupOf = (role) => {
+  const r = String(role || "").toLowerCase();
+  if (!r) return "other";
+  if (r.includes("manager") || r.includes("owner") || r.includes("admin")) return "manager";
+  if (r.includes("part")) return "parts";
+  if (r.includes("advisor") || r.includes("service")) return "advisor";
+  if (
+    r.includes("workshop") ||
+    r.includes("tech") ||
+    r.includes("mot") ||
+    r.includes("paint") ||
+    r.includes("valet")
+  )
+    return "workshop";
+  return "other";
+};
+const ROLE_GROUP_LABELS = {
+  workshop: "Workshop",
+  parts: "Parts",
+  advisor: "Service Advisor",
+  manager: "Manager / Admin",
+  other: "Staff",
+};
 
 export default function NotesTabNew({
   jobData,
@@ -14,10 +104,12 @@ export default function NotesTabNew({
   onNotesChange,
   onNoteAdded,
   highlightNoteIds = [],
-  noteHistoryJobs = []
+  noteHistoryJobs = [],
 }) {
   const jobId = jobData?.id;
   const { confirm } = useConfirmation();
+  const isMobile = useIsMobile(900);
+
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newNoteText, setNewNoteText] = useState("");
@@ -29,13 +121,13 @@ export default function NotesTabNew({
   const [editingNoteText, setEditingNoteText] = useState("");
   const [error, setError] = useState("");
   const [linkingNote, setLinkingNote] = useState(null);
-  const notesListViewportRef = useRef(null);
-  const notesListInnerRef = useRef(null);
-  const [notesListScrollStyle, setNotesListScrollStyle] = useState({
-    maxHeight: "none",
-    overflowY: "visible",
-    paddingRight: 0,
-  });
+
+  // Redesign-only UI state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const [editingAccess, setEditingAccess] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState(() => new Set());
 
   const requestOptions = useMemo(() => normalizeRequests(jobData?.requests), [jobData?.requests]);
   const authorisedItems = useMemo(
@@ -57,6 +149,7 @@ export default function NotesTabNew({
     () => new Set(Array.isArray(highlightNoteIds) ? highlightNoteIds : []),
     [highlightNoteIds]
   );
+
   const historyJobsWithNotes = useMemo(() => {
     const historyJobs = Array.isArray(noteHistoryJobs) ? noteHistoryJobs : [];
     const currentJobId = jobData?.id ?? jobId ?? null;
@@ -102,71 +195,32 @@ export default function NotesTabNew({
     loadNotes();
   }, [jobId]);
 
+  // Hydrate pinned set from localStorage (client-only; no schema column exists).
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    let frameId = null;
-    const bottomGutter = 16;
-
-    const updateNotesListScroll = () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        const viewportEl = notesListViewportRef.current;
-        const innerEl = notesListInnerRef.current;
-        if (!viewportEl || !innerEl) return;
-
-        const listRect = viewportEl.getBoundingClientRect();
-        const layoutBottom =
-          document.querySelector('[data-dev-section-key="app-layout-sidebar-rail"]')?.getBoundingClientRect().bottom ||
-          window.innerHeight - bottomGutter;
-        const availableHeight = Math.floor(layoutBottom - listRect.top - bottomGutter);
-        const contentHeight = Math.ceil(innerEl.scrollHeight);
-        const shouldScroll = availableHeight > 120 && contentHeight > availableHeight;
-        const nextStyle = shouldScroll
-          ? {
-              maxHeight: `${availableHeight}px`,
-              overflowY: "auto",
-              paddingRight: "6px",
-            }
-          : {
-              maxHeight: "none",
-              overflowY: "visible",
-              paddingRight: 0,
-            };
-
-        setNotesListScrollStyle((current) =>
-          current.maxHeight === nextStyle.maxHeight &&
-          current.overflowY === nextStyle.overflowY &&
-          current.paddingRight === nextStyle.paddingRight
-            ? current
-            : nextStyle
-        );
-      });
-    };
-
-    updateNotesListScroll();
-    window.addEventListener("resize", updateNotesListScroll);
-
-    const resizeObserver = typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(updateNotesListScroll)
-      : null;
-    if (resizeObserver) {
-      if (notesListViewportRef.current) resizeObserver.observe(notesListViewportRef.current);
-      if (notesListInnerRef.current) resizeObserver.observe(notesListInnerRef.current);
+    if (typeof window === "undefined" || !jobId) return;
+    try {
+      const raw = window.localStorage.getItem(`hnp:pinnedNotes:${jobId}`);
+      setPinnedIds(raw ? new Set(JSON.parse(raw)) : new Set());
+    } catch {
+      setPinnedIds(new Set());
     }
+  }, [jobId]);
 
-    return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
+  const togglePin = (noteId) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(noteId)) next.delete(noteId);
+      else next.add(noteId);
+      if (typeof window !== "undefined" && jobId) {
+        try {
+          window.localStorage.setItem(`hnp:pinnedNotes:${jobId}`, JSON.stringify([...next]));
+        } catch {
+          /* ignore quota / disabled storage */
+        }
       }
-      window.removeEventListener("resize", updateNotesListScroll);
-      resizeObserver?.disconnect();
-    };
-  }, [notes.length, showAddNote, editingNoteId, editingNoteText, canEdit]);
+      return next;
+    });
+  };
 
   const loadNotes = async () => {
     setLoading(true);
@@ -204,6 +258,7 @@ export default function NotesTabNew({
         if (createdNoteId && typeof onNoteAdded === "function") {
           onNoteAdded(createdNoteId);
         }
+        if (createdNoteId) setSelectedNoteId(createdNoteId);
         setNewNoteText("");
         setNewNoteHidden(true); // Reset to default
         setShowAddNote(false);
@@ -298,15 +353,9 @@ export default function NotesTabNew({
   };
 
   const resolveLinkLabel = (note) => {
-    const requestCount = Array.isArray(note.linkedRequestIndices)
-      ? note.linkedRequestIndices.length
-      : 0;
-    const vhcCount = Array.isArray(note.linkedVhcIds)
-      ? note.linkedVhcIds.length
-      : 0;
-    const partCount = Array.isArray(note.linkedPartIds)
-      ? note.linkedPartIds.length
-      : 0;
+    const requestCount = Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices.length : 0;
+    const vhcCount = Array.isArray(note.linkedVhcIds) ? note.linkedVhcIds.length : 0;
+    const partCount = Array.isArray(note.linkedPartIds) ? note.linkedPartIds.length : 0;
     if (!requestCount && !vhcCount && !partCount) return "";
     const parts = [];
     if (requestCount) parts.push(`Requests ${requestCount}`);
@@ -317,15 +366,9 @@ export default function NotesTabNew({
 
   const handleLinkNote = async (note, link) => {
     if (!note?.noteId) return;
-    const currentRequestLinks = Array.isArray(note.linkedRequestIndices)
-      ? note.linkedRequestIndices
-      : [];
-    const currentVhcLinks = Array.isArray(note.linkedVhcIds)
-      ? note.linkedVhcIds
-      : [];
-    const currentPartLinks = Array.isArray(note.linkedPartIds)
-      ? note.linkedPartIds
-      : [];
+    const currentRequestLinks = Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices : [];
+    const currentVhcLinks = Array.isArray(note.linkedVhcIds) ? note.linkedVhcIds : [];
+    const currentPartLinks = Array.isArray(note.linkedPartIds) ? note.linkedPartIds : [];
     let nextRequestLinks = currentRequestLinks;
     let nextVhcLinks = currentVhcLinks;
     let nextPartLinks = currentPartLinks;
@@ -378,11 +421,9 @@ export default function NotesTabNew({
   };
 
   const isLinkedToRequest = (note, index) =>
-    Array.isArray(note?.linkedRequestIndices) &&
-    note.linkedRequestIndices.includes(index + 1);
+    Array.isArray(note?.linkedRequestIndices) && note.linkedRequestIndices.includes(index + 1);
   const isLinkedToAuthorised = (note, item) =>
-    Array.isArray(note?.linkedVhcIds) &&
-    note.linkedVhcIds.includes(item?.vhc_id ?? item?.id ?? null);
+    Array.isArray(note?.linkedVhcIds) && note.linkedVhcIds.includes(item?.vhc_id ?? item?.id ?? null);
   const isLinkedToPart = (note, partId) =>
     Array.isArray(note?.linkedPartIds) && note.linkedPartIds.includes(partId);
 
@@ -402,27 +443,117 @@ export default function NotesTabNew({
     }
   };
 
+  // Derive a presentational title + category for a note from its linkage.
+  const deriveNoteMeta = (note) => {
+    const reqIdx = Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices : [];
+    const vhcIds = Array.isArray(note.linkedVhcIds) ? note.linkedVhcIds : [];
+    const partIds = Array.isArray(note.linkedPartIds) ? note.linkedPartIds : [];
+    if (reqIdx.length) {
+      const n = reqIdx[0];
+      const req = requestOptions[n - 1];
+      const reqText = req?.text || req || "";
+      return { title: `Request ${n}`, category: "Customer Request", requestText: reqText };
+    }
+    if (vhcIds.length) {
+      const item = authorisedItems.find((i) => (i.vhc_id ?? i.id) === vhcIds[0]);
+      return { title: item?.issue_title || item?.section || "VHC item", category: "VHC Item", requestText: "" };
+    }
+    if (partIds.length) {
+      return { title: "Linked part", category: "Part", requestText: "" };
+    }
+    return { title: "General note", category: "General", requestText: "" };
+  };
+
+  /* ---- derived collections (filter + search + pin ordering) ---- */
+  const filteredNotes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesFilter = (note) => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "pinned") return pinnedIds.has(note.noteId);
+      if (activeFilter === "internal") return !!note.hiddenFromCustomer;
+      if (activeFilter === "customer") return !note.hiddenFromCustomer;
+      if (ROLE_FILTERS.includes(activeFilter)) return roleGroupOf(note.createdByRole) === activeFilter;
+      return true;
+    };
+    const matchesSearch = (note) => {
+      if (!q) return true;
+      const meta = deriveNoteMeta(note);
+      const hay = `${note.noteText || ""} ${note.createdBy || ""} ${meta.title} ${meta.category}`.toLowerCase();
+      return hay.includes(q);
+    };
+    return notes
+      .filter((note) => matchesFilter(note) && matchesSearch(note))
+      .sort((a, b) => (pinnedIds.has(b.noteId) ? 1 : 0) - (pinnedIds.has(a.noteId) ? 1 : 0));
+    // deriveNoteMeta depends on requestOptions/authorisedItems via closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes, activeFilter, searchQuery, pinnedIds, requestOptions, authorisedItems]);
+
+  // Keep the detail-panel selection valid as the filtered list changes.
+  useEffect(() => {
+    if (!filteredNotes.length) {
+      setSelectedNoteId(null);
+      return;
+    }
+    if (!filteredNotes.some((n) => n.noteId === selectedNoteId)) {
+      setSelectedNoteId(filteredNotes[0].noteId);
+    }
+  }, [filteredNotes, selectedNoteId]);
+
+  const selectedNote = useMemo(
+    () => notes.find((n) => n.noteId === selectedNoteId) || null,
+    [notes, selectedNoteId]
+  );
+
+  /* ---- overview stats ---- */
+  const stats = useMemo(() => {
+    const total = notes.length;
+    const pinned = notes.filter((n) => pinnedIds.has(n.noteId)).length;
+    const internal = notes.filter((n) => n.hiddenFromCustomer).length;
+    const customerView = notes.filter((n) => !n.hiddenFromCustomer).length;
+    const lastUpdatedTs = notes.reduce((acc, n) => {
+      const ts = new Date(n.updatedAt || n.createdAt || 0).getTime();
+      return Number.isFinite(ts) && ts > acc ? ts : acc;
+    }, 0);
+    return {
+      total,
+      pinned,
+      internal,
+      customerView,
+      lastUpdated: lastUpdatedTs ? formatDateTime(new Date(lastUpdatedTs).toISOString()) : "—",
+    };
+  }, [notes, pinnedIds]);
+
+  // Per-filter counts shown as badges on the filter pills.
+  const filterCount = (id) => {
+    if (id === "all") return notes.length;
+    if (id === "pinned") return notes.filter((n) => pinnedIds.has(n.noteId)).length;
+    if (id === "internal") return notes.filter((n) => n.hiddenFromCustomer).length;
+    if (id === "customer") return notes.filter((n) => !n.hiddenFromCustomer).length;
+    return notes.filter((n) => roleGroupOf(n.createdByRole) === id).length;
+  };
+
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)" }}>
-        Loading notes...
-      </div>
+      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)" }}>Loading notes...</div>
     );
   }
 
-  const panelStyle = {
-    background: "var(--section-card-bg)",
-    border: "none",
-    borderRadius: "var(--radius-md)",
-    padding: "var(--section-card-padding)",
-  };
+  const statTiles = [
+    { label: "Total Notes", value: stats.total },
+    { label: "Pinned", value: stats.pinned },
+    { label: "Internal", value: stats.internal },
+    { label: "Customer View", value: stats.customerView },
+    { label: "Last Updated", value: stats.lastUpdated, small: true },
+  ];
+
+  const splitColumns = isMobile ? "1fr" : "minmax(0, 7fr) minmax(0, 3fr)";
+
   return (
-    <div style={panelStyle}>
+    <>
       {error && (
         <div
           style={{
             padding: "12px",
-            marginBottom: "16px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--warning-surface)",
             color: "var(--danger)",
@@ -433,96 +564,184 @@ export default function NotesTabNew({
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: showAddNote ? "12px" : "20px" }}>
-        <div style={{ fontSize: "13px", color: "var(--text-1)" }}>
-          {notes.length} note{notes.length === 1 ? "" : "s"}
+      {/* ============================================================= */}
+      {/* 1. Overview — stats + search + add note                       */}
+      {/* ============================================================= */}
+      <LayerSurface
+        sectionKey="jobcard-notes-overview"
+        parentKey="jobcard-tab-notes"
+        gap="var(--space-4)"
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-3)",
+            flexWrap: "wrap",
+          }}
+        >
+          <p style={eyebrowStyle}>Notes</p>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
+            <SearchBar
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery("")}
+              placeholder="Search notes…"
+              ariaLabel="Search notes"
+              style={{ width: "240px", maxWidth: "100%" }}
+            />
+            <button
+              type="button"
+              className="app-btn app-btn--secondary"
+              onClick={() => setShowHistory((current) => !current)}
+            >
+              {showHistory ? "Hide history" : "Show history"}
+            </button>
+            {canEdit && (
+              <button
+                type="button"
+                className="app-btn app-btn--primary"
+                onClick={() => {
+                  setShowAddNote(true);
+                  if (typeof window !== "undefined") {
+                    window.requestAnimationFrame(() => {
+                      document
+                        .getElementById("jobcard-note-composer")
+                        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    });
+                  }
+                }}
+              >
+                + Add note
+              </button>
+            )}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={() => setShowHistory((current) => !current)}
+
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--space-3)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          }}
+        >
+          {statTiles.map((tile) => (
+            <LayerTheme key={tile.label} radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-2)">
+              <span style={labelStyle}>{tile.label}</span>
+              <span style={tile.small ? { ...valueStyle, fontSize: "0.95rem", fontWeight: 600 } : valueStyle}>
+                {tile.value}
+              </span>
+            </LayerTheme>
+          ))}
+        </div>
+      </LayerSurface>
+
+      {/* ============================================================= */}
+      {/* 2. Filter bar (separate section)                              */}
+      {/* ============================================================= */}
+      <LayerSurface sectionKey="jobcard-notes-filters" parentKey="jobcard-tab-notes" gap="var(--space-3)">
+        <p style={eyebrowStyle}>Filter</p>
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+          {FILTERS.map((filter) => {
+            const isActive = activeFilter === filter.id;
+            const count = filterCount(filter.id);
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                className={`app-btn app-btn--secondary app-btn--sm${isActive ? " is-active" : ""}`}
+                onClick={() => setActiveFilter(filter.id)}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                {filter.label}
+                <span className={`app-badge app-badge--control ${isActive ? "app-badge--accent-strong" : ""}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </LayerSurface>
+
+      {/* ============================================================= */}
+      {/* 3. 70/30 split — list (left) / detail (right)                 */}
+      {/* ============================================================= */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: splitColumns,
+          gap: "var(--page-stack-gap)",
+          alignItems: "start",
+        }}
+      >
+        {/* ---- LEFT 70%: composer + notes list ---- */}
+        <LayerSurface
+          sectionKey="jobcard-notes-list"
+          parentKey="jobcard-tab-notes"
+          gap="var(--space-4)"
+          style={{ minWidth: 0 }}
+        >
+          <div
             style={{
-              minHeight: "44px",
-              padding: "10px 18px",
-              backgroundColor: showHistory ? "var(--surface)" : "var(--control-bg)",
-              color: showHistory ? "var(--accentText)" : "var(--text-1)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
+              gap: "var(--space-3)",
+              flexWrap: "wrap",
             }}
           >
-            {showHistory ? "hide history" : "show history"}
-          </button>
-          {canEdit && (
-            <button
-              onClick={() => setShowAddNote(true)}
-              style={{
-                minHeight: "44px",
-                padding: "10px 20px",
-                backgroundColor: "var(--primary)",
-                color: "var(--text-2)",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                display: showAddNote ? "none" : "inline-flex",
-              }}
-            >
-              Add New Note
-            </button>
-          )}
-        </div>
-      </div>
+            <p style={eyebrowStyle}>Notes list</p>
+            <span style={metaStyle}>
+              {filteredNotes.length} of {notes.length} shown
+            </span>
+          </div>
 
-      {/* Add New Note */}
-      {canEdit && (
-        <>
-          {showAddNote && (
-            <div
-              style={{
-                padding: "20px",
-                backgroundColor: "var(--layer-section-level-3)",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                marginBottom: "20px",
-              }}
-            >
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)", marginBottom: "12px" }}>
-                Add New Note
-              </div>
+          {/* Inline composer */}
+          {canEdit && showAddNote && (
+            <LayerTheme id="jobcard-note-composer" radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
+              <span style={fieldLabelStyle}>New note</span>
               <textarea
                 value={newNoteText}
                 onChange={(e) => setNewNoteText(e.target.value)}
                 onInput={(e) => {
                   e.currentTarget.style.height = "auto";
-                  const next = Math.min(e.currentTarget.scrollHeight, 220);
-                  e.currentTarget.style.height = `${next}px`;
+                  e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 220)}px`;
                 }}
-                placeholder="Type your note here..."
+                placeholder="Type your note here…"
                 style={{
                   width: "100%",
-                  height: "56px",
-                  minHeight: "56px",
+                  minHeight: "72px",
                   maxHeight: "220px",
                   padding: "12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "none",
                   fontSize: "14px",
                   lineHeight: 1.6,
                   resize: "none",
                   overflowY: "auto",
-                  backgroundColor: "var(--surface)",
+                  background: "var(--surface)",
                   color: "var(--text-1)",
-                  marginBottom: "12px",
                 }}
               />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-1)", cursor: "pointer" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "var(--space-2)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    color: "var(--text-1)",
+                    cursor: "pointer",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={newNoteHidden}
@@ -531,313 +750,430 @@ export default function NotesTabNew({
                   />
                   Hide from customer
                 </label>
-                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)" }}>
                   <button
+                    type="button"
+                    className="app-btn app-btn--secondary app-btn--sm"
                     onClick={() => {
                       setShowAddNote(false);
                       setNewNoteText("");
-                    }}
-                    style={{
-                      padding: "10px 18px",
-                      backgroundColor: "var(--surface)",
-                      color: "var(--info)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500"
                     }}
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
+                    className="app-btn app-btn--primary app-btn--sm"
                     onClick={handleAddNote}
                     disabled={!newNoteText.trim() || savingNewNote}
-                    style={{
-                      padding: "10px 18px",
-                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface)" : "var(--primary)",
-                      color: !newNoteText.trim() || savingNewNote ? "var(--text-1)" : "white",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                    }}
                   >
-                    {savingNewNote ? "Saving..." : "Save Note"}
+                    {savingNewNote ? "Saving…" : "Save note"}
                   </button>
                 </div>
               </div>
-            </div>
+            </LayerTheme>
           )}
-        </>
-      )}
 
-      {/* Notes List */}
-      <div
-        ref={notesListViewportRef}
-        style={notesListScrollStyle}
-      >
-        <div ref={notesListInnerRef} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {notes.length === 0 ? (
-          <div
-            style={{
-              padding: "40px",
-              textAlign: "center",
-              backgroundColor: "var(--control-bg)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-            }}
-          >
-            <div style={{ fontSize: "48px", marginBottom: "12px" }}>📝</div>
-            <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-1)", marginBottom: "4px" }}>
-              No Notes Yet
-            </div>
-            <p style={{ color: "var(--text-1)", fontSize: "14px", margin: 0 }}>
-              {canEdit ? "Add your first note above" : "No notes have been added to this job"}
-            </p>
-          </div>
-        ) : (
-          notes.map((note, index) => {
-            const isEditing = editingNoteId === note.noteId;
-            const linkLabel = resolveLinkLabel(note);
-            const isHighlighted = highlightedNoteIdSet.has(note.noteId);
+          {/* Notes list */}
+          {filteredNotes.length === 0 ? (
+            <LayerTheme radius="var(--radius-sm)" padding="var(--space-6)" gap="var(--space-2)" style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "40px" }}>📝</div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>
+                {notes.length === 0 ? "No notes yet" : "No notes match this filter"}
+              </div>
+              <p style={{ color: "rgba(var(--text-1-rgb), 0.6)", fontSize: "13px", margin: 0 }}>
+                {notes.length === 0
+                  ? canEdit
+                    ? "Use “Add note” to create the first one."
+                    : "No notes have been added to this job."
+                  : "Try a different filter or clear the search."}
+              </p>
+            </LayerTheme>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
+                maxHeight: isMobile ? "none" : "min(70vh, 820px)",
+                overflowY: isMobile ? "visible" : "auto",
+                paddingRight: isMobile ? 0 : "4px",
+              }}
+            >
+              {filteredNotes.map((note) => {
+                const meta = deriveNoteMeta(note);
+                const isSelected = note.noteId === selectedNoteId;
+                const isPinned = pinnedIds.has(note.noteId);
+                const isHighlighted = highlightedNoteIdSet.has(note.noteId);
+                const isEditing = editingNoteId === note.noteId;
 
-            return (
-              <div
-                key={note.noteId}
-                style={{
-                  padding: "14px",
-                  backgroundColor: isHighlighted ? "var(--success-surface)" : "var(--control-bg)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  transition: "background-color 0.2s ease",
-                }}
-              >
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", rowGap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
-                      <span
-                        style={{
-                          padding: "3px 8px",
-                          borderRadius: "var(--radius-pill)",
-                          backgroundColor: "var(--control-bg-hover)",
-                          color: "var(--text-1)",
-                          fontSize: "10px",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Note {index + 1}
-                      </span>
-                      {linkLabel && (
-                        <span
-                          style={{
-                            padding: "3px 8px",
-                            borderRadius: "var(--radius-pill)",
-                            backgroundColor: "var(--control-bg-hover)",
-                            color: "var(--accentText)",
-                            fontSize: "10px",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Linked: {linkLabel}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-1)" }}>
-                      {note.createdBy}
-                      {note.createdByEmail && (
-                        <span style={{ fontSize: "11px", color: "var(--text-1)", fontWeight: 400, marginLeft: "6px" }}>
-                          ({note.createdByEmail})
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "2px" }}>
-                      Created: {formatDateTime(note.createdAt)}
-                      {note.updatedAt !== note.createdAt && (
-                        <span style={{ marginLeft: "8px" }}>
-                          · Updated: {formatDateTime(note.updatedAt)} by {note.lastUpdatedBy}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <span
-                        style={{
-                          padding: "3px 8px",
-                          borderRadius: "var(--radius-pill)",
-                          backgroundColor: note.hiddenFromCustomer ? "var(--warning-surface)" : "var(--success-surface)",
-                          color: note.hiddenFromCustomer ? "var(--warning)" : "var(--success-dark)",
-                          fontSize: "10px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {note.hiddenFromCustomer ? "Hidden" : "Visible"}
-                      </span>
-                    </div>
-                </div>
-
-                {/* Note Content */}
-                {isEditing ? (
-                  <div>
-                    <textarea
-                      value={editingNoteText}
-                      onChange={(e) => setEditingNoteText(e.target.value)}
-                      onInput={(e) => {
-                        e.currentTarget.style.height = "auto";
-                        const next = Math.min(e.currentTarget.scrollHeight, 260);
-                        e.currentTarget.style.height = `${next}px`;
-                      }}
-                      style={{
-                        width: "100%",
-                        height: "80px",
-                        minHeight: "80px",
-                        maxHeight: "260px",
-                        padding: "12px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        fontSize: "14px",
-                        lineHeight: 1.6,
-                        resize: "none",
-                        overflowY: "auto",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text-1)",
-                        marginBottom: "10px",
-                      }}
-                    />
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        onClick={() => handleSaveEdit(note.noteId)}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "var(--radius-xs)",
-                          border: "none",
-                          backgroundColor: "var(--primary)",
-                          color: "var(--text-2)",
-                          fontWeight: 700,
-                          fontSize: "13px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "var(--radius-xs)",
-                          border: "none",
-                          backgroundColor: "var(--surface)",
-                          color: "var(--text-1)",
-                          fontWeight: 700,
-                          fontSize: "13px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
+                return (
+                  <LayerTheme
+                    key={note.noteId}
+                    radius="var(--radius-sm)"
+                    padding="var(--space-4)"
+                    gap="var(--space-2)"
                     style={{
-                      fontSize: "14px",
-                      color: "var(--text-1)",
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-wrap",
-                      marginBottom: "12px",
+                      minWidth: 0,
+                      // Selection / highlight rings via box-shadow (never a border).
+                      boxShadow: isSelected
+                        ? "var(--focus-ring, 0 0 0 2px var(--accent-strong))"
+                        : isHighlighted
+                        ? "0 0 0 2px var(--success-base)"
+                        : "none",
                     }}
                   >
-                    {note.noteText}
-                  </div>
-                )}
+                    {/* Row header: title + pin + visibility */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: "var(--space-2)",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedNoteId(note.noteId)}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          textAlign: "left",
+                          background: "transparent",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "0.95rem",
+                            fontWeight: 700,
+                            color: "var(--accentText)",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {meta.title}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "var(--text-1)",
+                            lineHeight: 1.5,
+                            whiteSpace: "pre-wrap",
+                            overflowWrap: "anywhere",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {note.noteText}
+                        </span>
+                      </button>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flex: "0 0 auto" }}>
+                        <button
+                          type="button"
+                          onClick={() => togglePin(note.noteId)}
+                          title={isPinned ? "Unpin note" : "Pin note"}
+                          aria-label={isPinned ? "Unpin note" : "Pin note"}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                            fontSize: "16px",
+                            lineHeight: 1,
+                            padding: "2px",
+                            opacity: isPinned ? 1 : 0.4,
+                          }}
+                        >
+                          📌
+                        </button>
+                        <span
+                          className={`app-badge ${note.hiddenFromCustomer ? "app-badge--warning" : "app-badge--success"}`}
+                        >
+                          {note.hiddenFromCustomer ? "Internal" : "Customer"}
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Actions */}
-                {canEdit && !isEditing && (
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px", paddingTop: "12px" }}>
-                    <button
-                      onClick={() => handleEditNote(note)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--primary)",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setLinkingNote(note)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text-1)",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Link
-                    </button>
-                    <button
-                      onClick={() => handleToggleHiddenFromCustomer(note)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--text-1)",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {note.hiddenFromCustomer ? "Show to Customer" : "Hide from Customer"}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteNote(note.noteId)}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        backgroundColor: "var(--warning-surface)",
-                        color: "var(--danger)",
-                        fontWeight: 700,
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-        </div>
-      </div>
-      {showHistory && (
-        <LayerTheme
-          sectionKey="jobcard-tab-notes-history"
-          sectionType="content-card"
+                    {/* Inline editor (when editing this note) */}
+                    {isEditing ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                        <textarea
+                          value={editingNoteText}
+                          onChange={(e) => setEditingNoteText(e.target.value)}
+                          onInput={(e) => {
+                            e.currentTarget.style.height = "auto";
+                            e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 260)}px`;
+                          }}
+                          style={{
+                            width: "100%",
+                            minHeight: "80px",
+                            maxHeight: "260px",
+                            padding: "12px",
+                            borderRadius: "var(--radius-xs)",
+                            fontSize: "14px",
+                            lineHeight: 1.6,
+                            resize: "none",
+                            overflowY: "auto",
+                            background: "var(--surface)",
+                            color: "var(--text-1)",
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                          <button
+                            type="button"
+                            className="app-btn app-btn--primary app-btn--sm"
+                            onClick={() => handleSaveEdit(note.noteId)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            className="app-btn app-btn--secondary app-btn--sm"
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Footer: by who + date + quick actions */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "var(--space-2)",
+                            flexWrap: "wrap",
+                            ...metaStyle,
+                          }}
+                        >
+                          <span style={{ overflowWrap: "anywhere" }}>
+                            {note.createdBy} · {formatDateTime(note.createdAt)}
+                          </span>
+                          {canEdit && (
+                            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                              <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleEditNote(note)}>
+                                Edit
+                              </button>
+                              <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => setLinkingNote(note)}>
+                                Link
+                              </button>
+                              <button type="button" className="app-btn app-btn--danger app-btn--xs" onClick={() => handleDeleteNote(note.noteId)}>
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </LayerTheme>
+                );
+              })}
+            </div>
+          )}
+        </LayerSurface>
+
+        {/* ---- RIGHT 30%: selected note detail ---- */}
+        <LayerSurface
+          sectionKey="jobcard-notes-detail"
           parentKey="jobcard-tab-notes"
-          radius="var(--radius-md)"
-          padding="var(--section-card-padding)"
+          gap="var(--space-4)"
+          style={{ minWidth: 0, position: isMobile ? "static" : "sticky", top: "12px" }}
+        >
+          <p style={eyebrowStyle}>Note details</p>
+
+          {!selectedNote ? (
+            <p style={{ color: "rgba(var(--text-1-rgb), 0.6)", margin: 0 }}>
+              Select a note from the list to see its details.
+            </p>
+          ) : (
+            (() => {
+              const meta = deriveNoteMeta(selectedNote);
+              const linkLabel = resolveLinkLabel(selectedNote);
+              const wasUpdated =
+                selectedNote.updatedAt && selectedNote.updatedAt !== selectedNote.createdAt;
+              const authorGroup = roleGroupOf(selectedNote.createdByRole);
+              const timeline = [
+                { label: "Created", who: selectedNote.createdBy, when: selectedNote.createdAt, tone: "var(--accent-strong)" },
+                ...(wasUpdated
+                  ? [{ label: "Updated", who: selectedNote.lastUpdatedBy, when: selectedNote.updatedAt, tone: "var(--theme-hover)" }]
+                  : []),
+                ...(linkLabel
+                  ? [{ label: `Linked — ${linkLabel}`, who: "", when: null, tone: "var(--theme-hover)" }]
+                  : []),
+              ];
+
+              return (
+                <>
+                  {/* Fields grid */}
+                  <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "var(--space-3)",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                        <span style={fieldLabelStyle}>Category</span>
+                        <span className="app-badge app-badge--control">{meta.category}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                        <span style={fieldLabelStyle}>Created by</span>
+                        <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)", overflowWrap: "anywhere" }}>
+                          {selectedNote.createdBy}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                        <span style={fieldLabelStyle}>Created date</span>
+                        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                          {formatDateTime(selectedNote.createdAt)}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                        <span style={fieldLabelStyle}>Updated date</span>
+                        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                          {wasUpdated ? formatDateTime(selectedNote.updatedAt) : "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "var(--text-1)",
+                        lineHeight: 1.6,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {selectedNote.noteText}
+                    </div>
+                  </LayerTheme>
+
+                  {/* Activity timeline */}
+                  <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
+                    <span style={fieldLabelStyle}>Activity timeline</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      {timeline.map((event, index) => (
+                        <div key={`${event.label}-${index}`} style={{ display: "flex", gap: "var(--space-3)", alignItems: "stretch" }}>
+                          <div style={{ position: "relative", width: "12px", flex: "0 0 12px", display: "flex", justifyContent: "center" }}>
+                            {index < timeline.length - 1 && (
+                              <span aria-hidden style={{ position: "absolute", top: "12px", bottom: "-12px", width: "2px", background: "var(--theme-hover)" }} />
+                            )}
+                            <span aria-hidden style={{ position: "absolute", top: "2px", width: "12px", height: "12px", borderRadius: "var(--radius-pill)", background: event.tone }} />
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-1)", overflowWrap: "anywhere" }}>
+                              {event.label}
+                            </span>
+                            <span style={metaStyle}>
+                              {[event.who, event.when ? formatDateTime(event.when) : ""].filter(Boolean).join(" · ") || "—"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </LayerTheme>
+
+                  {/* Visible to + Edit access */}
+                  <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)" }}>
+                      <span style={fieldLabelStyle}>Visible to</span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          className="app-btn app-btn--secondary app-btn--xs"
+                          onClick={() => setEditingAccess((v) => !v)}
+                        >
+                          {editingAccess ? "Done" : "Edit access"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                      {/* Author's role group always has access; other staff roles do too. */}
+                      <span className="app-badge app-badge--success">
+                        {ROLE_GROUP_LABELS[authorGroup] || "Staff"}
+                      </span>
+                      <span className="app-badge app-badge--control">All staff</span>
+                      <span className={`app-badge ${selectedNote.hiddenFromCustomer ? "app-badge--control" : "app-badge--success"}`} style={selectedNote.hiddenFromCustomer ? { opacity: 0.5 } : undefined}>
+                        Customer {selectedNote.hiddenFromCustomer ? "(hidden)" : "(visible)"}
+                      </span>
+                    </div>
+
+                    {editingAccess && canEdit && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "var(--space-2)",
+                          paddingTop: "var(--space-2)",
+                          borderTop: "var(--separating-line)",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                          Customer can view this note
+                        </span>
+                        <button
+                          type="button"
+                          className={`app-btn app-btn--sm ${selectedNote.hiddenFromCustomer ? "app-btn--secondary" : "app-btn--primary"}`}
+                          onClick={() => handleToggleHiddenFromCustomer(selectedNote)}
+                        >
+                          {selectedNote.hiddenFromCustomer ? "Make visible" : "Make internal"}
+                        </button>
+                      </div>
+                    )}
+                  </LayerTheme>
+
+                  {/* Detail actions */}
+                  {canEdit && (
+                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                      <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={() => handleEditNote(selectedNote)}>
+                        Edit note
+                      </button>
+                      <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={() => setLinkingNote(selectedNote)}>
+                        Link
+                      </button>
+                      <button
+                        type="button"
+                        className="app-btn app-btn--secondary app-btn--sm"
+                        onClick={() => togglePin(selectedNote.noteId)}
+                      >
+                        {pinnedIds.has(selectedNote.noteId) ? "Unpin" : "Pin"}
+                      </button>
+                      <button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={() => handleDeleteNote(selectedNote.noteId)}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()
+          )}
+        </LayerSurface>
+      </div>
+
+      {/* ============================================================= */}
+      {/* History (toggled from the overview toolbar)                   */}
+      {/* ============================================================= */}
+      {showHistory && (
+        <LayerSurface
+          sectionKey="jobcard-tab-notes-history"
+          parentKey="jobcard-tab-notes"
           gap="var(--layout-card-gap)"
-          style={{ marginTop: "20px" }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accentText)" }}>
-                History Notes
-              </div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accentText)" }}>History notes</div>
               <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>
                 Notes grouped by jobcard for this vehicle history.
               </div>
@@ -857,26 +1193,13 @@ export default function NotesTabNew({
           </div>
 
           {historyJobsWithNotes.length === 0 ? (
-            <div
-              style={{
-                padding: "24px",
-                textAlign: "center",
-                color: "var(--text-1)",
-              }}
-            >
+            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>
               No history notes have been added for this vehicle yet.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {historyJobsWithNotes.map((job) => (
-                <div
-                  key={job.id || job.jobNumber}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
+                <LayerTheme key={job.id || job.jobNumber} radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-2)">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)" }}>
                       Jobcard {job.jobNumber || "Unknown"}
@@ -892,6 +1215,7 @@ export default function NotesTabNew({
                         key={note.noteId || `${job.id || job.jobNumber}-note-${index}`}
                         style={{
                           padding: "10px 0",
+                          // Row separators are the one allowed in-list line (CLAUDE.md §3.0a).
                           borderBottom: index === job.notes.length - 1 ? "none" : "var(--separating-line)",
                           display: "grid",
                           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
@@ -914,13 +1238,18 @@ export default function NotesTabNew({
                       </div>
                     ))}
                   </div>
-                </div>
+                </LayerTheme>
               ))}
             </div>
           )}
-        </LayerTheme>
+        </LayerSurface>
       )}
-      {linkingNote && typeof document !== "undefined" &&
+
+      {/* ============================================================= */}
+      {/* Link note modal (unchanged behaviour)                         */}
+      {/* ============================================================= */}
+      {linkingNote &&
+        typeof document !== "undefined" &&
         createPortal(
           <div
             style={{
@@ -940,199 +1269,166 @@ export default function NotesTabNew({
                 borderRadius: "var(--radius-md)",
                 padding: "var(--section-card-padding)",
                 width: "min(520px, 100%)",
-                border: "none",
+                maxHeight: "85vh",
+                overflowY: "auto",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
               }}
             >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                Link note
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accentText)" }}>Link note</div>
+                <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={() => setLinkingNote(null)}>
+                  Close
+                </button>
               </div>
               <button
                 type="button"
-                onClick={() => setLinkingNote(null)}
-                style={{
-                  border: "none",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--info)",
-                  borderRadius: "var(--radius-xs)",
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Close
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <button
-                type="button"
+                className="app-btn app-btn--secondary app-btn--sm"
+                style={{ alignSelf: "flex-start" }}
                 onClick={() => handleLinkNote(linkingNote, { clear: true })}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--info-dark)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  alignSelf: "flex-start",
-                }}
               >
                 Clear link
               </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
-                  Customer requests
-                </div>
-                {requestOptions.length === 0 ? (
-                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No requests available.</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {requestOptions.map((req, index) => {
-                      const activeNote =
-                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
-                      const isSelected = isLinkedToRequest(activeNote, index);
-                      return (
-                      <button
-                        key={`request-link-${index}`}
-                        type="button"
-                        onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: index + 1 })}
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: "var(--radius-sm)",
-                          border: "none",
-                          backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          color: isSelected ? "var(--success)" : "var(--info-dark)",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "8px",
-                        }}
-                      >
-                        <span>Request {index + 1}: {req?.text || req}</span>
-                        {isSelected && (
-                          <span style={{ fontSize: "11px", fontWeight: 700 }}>
-                            Selected
-                          </span>
-                        )}
-                      </button>
-                    );
-                    })}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px" }}>
+                    Customer requests
                   </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
-                  Authorised items
-                </div>
-                {authorisedItems.length === 0 ? (
-                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No authorised items available.</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {authorisedItems.map((item) => {
-                      const itemId = item.vhc_id ?? item.id;
-                      const activeNote =
-                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
-                      const isSelected = isLinkedToAuthorised(activeNote, item);
-                      return (
-                      <button
-                        key={`authorized-link-${itemId}`}
-                        type="button"
-                        onClick={() => handleLinkNote(activeNote, { linkedVhcId: itemId })}
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: "var(--radius-sm)",
-                          border: "none",
-                          backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          color: isSelected ? "var(--success)" : "var(--info-dark)",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "8px",
-                        }}
-                      >
-                        <span>{item.issue_title || item.section}</span>
-                        {isSelected && (
-                          <span style={{ fontSize: "11px", fontWeight: 700 }}>
-                            Selected
-                          </span>
-                        )}
-                      </button>
-                    );
-                    })}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
-                  Authorised parts
-                </div>
-                {authorisedParts.length === 0 ? (
-                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No authorised parts available.</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {authorisedParts.map((part) => {
-                      const activeNote =
-                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
-                      const partId = part.partId ?? part.part_id ?? part.id;
-                      const partLabel =
-                        part.part?.name ||
-                        part.part?.part_number ||
-                        part.part_number ||
-                        part.partNumber ||
-                        "Authorised part";
-                      const isSelected = isLinkedToPart(activeNote, partId);
-                      return (
-                        <button
-                          key={`authorized-part-link-${partId}`}
-                          type="button"
-                          onClick={() => handleLinkNote(activeNote, { linkedPartId: partId })}
-                          style={{
-                            padding: "10px 12px",
-                            borderRadius: "var(--radius-sm)",
-                            border: "none",
-                            backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
-                            textAlign: "left",
-                            cursor: "pointer",
-                            fontSize: "13px",
-                            color: isSelected ? "var(--success)" : "var(--info-dark)",
-                            fontWeight: 600,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "8px",
-                          }}
-                        >
-                          <span>{partLabel}</span>
-                          {isSelected && (
-                            <span style={{ fontSize: "11px", fontWeight: 700 }}>
-                              Selected
+                  {requestOptions.length === 0 ? (
+                    <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No requests available.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {requestOptions.map((req, index) => {
+                        const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                        const isSelected = isLinkedToRequest(activeNote, index);
+                        return (
+                          <button
+                            key={`request-link-${index}`}
+                            type="button"
+                            onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: index + 1 })}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              border: "none",
+                              backgroundColor: isSelected ? "var(--success-surface)" : "var(--theme)",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              color: isSelected ? "var(--success-dark)" : "var(--text-1)",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                            }}
+                          >
+                            <span>
+                              Request {index + 1}: {req?.text || req}
                             </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                            {isSelected && <span style={{ fontSize: "11px", fontWeight: 700 }}>Selected</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px" }}>
+                    Authorised items
                   </div>
-                )}
+                  {authorisedItems.length === 0 ? (
+                    <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No authorised items available.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {authorisedItems.map((item) => {
+                        const itemId = item.vhc_id ?? item.id;
+                        const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                        const isSelected = isLinkedToAuthorised(activeNote, item);
+                        return (
+                          <button
+                            key={`authorized-link-${itemId}`}
+                            type="button"
+                            onClick={() => handleLinkNote(activeNote, { linkedVhcId: itemId })}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              border: "none",
+                              backgroundColor: isSelected ? "var(--success-surface)" : "var(--theme)",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              color: isSelected ? "var(--success-dark)" : "var(--text-1)",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                            }}
+                          >
+                            <span>{item.issue_title || item.section}</span>
+                            {isSelected && <span style={{ fontSize: "11px", fontWeight: 700 }}>Selected</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px" }}>
+                    Authorised parts
+                  </div>
+                  {authorisedParts.length === 0 ? (
+                    <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No authorised parts available.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {authorisedParts.map((part) => {
+                        const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                        const partId = part.partId ?? part.part_id ?? part.id;
+                        const partLabel =
+                          part.part?.name ||
+                          part.part?.part_number ||
+                          part.part_number ||
+                          part.partNumber ||
+                          "Authorised part";
+                        const isSelected = isLinkedToPart(activeNote, partId);
+                        return (
+                          <button
+                            key={`authorized-part-link-${partId}`}
+                            type="button"
+                            onClick={() => handleLinkNote(activeNote, { linkedPartId: partId })}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              border: "none",
+                              backgroundColor: isSelected ? "var(--success-surface)" : "var(--theme)",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              color: isSelected ? "var(--success-dark)" : "var(--text-1)",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                            }}
+                          >
+                            <span>{partLabel}</span>
+                            {isSelected && <span style={{ fontSize: "11px", fontWeight: 700 }}>Selected</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>,
+          </div>,
           document.body
         )}
-    </div>
+    </>
   );
 }
