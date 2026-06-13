@@ -264,7 +264,11 @@
       "Bash(awk 'NR>=50')",
       "Bash(sed -i '7553,7709d' \"src/pages/job-cards/[jobNumber].js\")",
       "Bash(sed -n '7548,7556p' \"src/pages/job-cards/[jobNumber].js\")",
-      "Bash(git show *)"
+      "Bash(git show *)",
+      "Bash(awk '/CREATE TABLE.*parts_job_items/,/\\\\\\);/' src/lib/database/schema/schemaReference.sql)",
+      "Bash(echo \"=== layers exit=$? ===\")",
+      "Bash(echo \"=== eslint exit=$? ===\")",
+      "Bash(echo \"=== exit=$? ===\")"
     ],
     "deny": [],
     "ask": [],

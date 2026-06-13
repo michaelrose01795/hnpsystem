@@ -1,6 +1,11 @@
 // file location: src/pages/api/jobcards/[jobNumber]/index.js
 import { getJobByNumber } from "@/lib/database/jobs";
 import { getNotesByJob } from "@/lib/database/notes";
+import {
+  getWarrantyClaimForJob,
+  computeWarrantyTotals,
+  getWarrantyJobRequests,
+} from "@/lib/database/warranty";
 import { getCustomerJobs } from "@/lib/database/customers";
 import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobCards/utils";
 import { supabaseService } from "@/lib/database/supabaseClient";
@@ -144,13 +149,31 @@ async function handler(req, res, session) {
 
     const { data } = liveResult;
     const { jobCard, customer, vehicle } = data;
-    // Fetch notes and customer history in parallel to reduce response time
-    const [notes, customerJobs] = await Promise.all([
-      jobCard.id ? getNotesByJob(jobCard.id) : [], // fetch job notes
-      jobCard.customerId ? getCustomerJobs(jobCard.customerId) : [], // fetch customer job history
-    ]);
+    // Resolve which job owns the warranty claim: a warranty job owns its own
+    // claim; any other job borrows the claim of its linked warranty job. Keying
+    // on the warranty job means the same claim shows from either side of the link.
+    const warrantyJobId =
+      String(jobCard.jobSource || "").toLowerCase() === "warranty"
+        ? jobCard.id
+        : jobCard.linkedWarrantyJobId || null;
+    // Fetch notes, customer history, and warranty claim/totals/requests in parallel.
+    const [notes, customerJobs, warrantyClaim, warrantyTotals, warrantyLinkedRequests] =
+      await Promise.all([
+        jobCard.id ? getNotesByJob(jobCard.id) : [], // fetch job notes
+        jobCard.customerId ? getCustomerJobs(jobCard.customerId) : [], // fetch customer job history
+        warrantyJobId ? getWarrantyClaimForJob(warrantyJobId) : null, // warranty claim header + requests
+        warrantyJobId ? computeWarrantyTotals(warrantyJobId) : null, // derived parts + labour totals
+        warrantyJobId ? getWarrantyJobRequests(warrantyJobId) : [], // warranty job work lines
+      ]);
     const sharedNote = notes[0] || null;
     const vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
+
+    // Attach warranty data to the job payload so the Warranty tab can render it.
+    jobCard.warrantyJobId = warrantyJobId;
+    jobCard.warrantyClaim = warrantyClaim;
+    jobCard.warrantyRequests = warrantyClaim?.requests || [];
+    jobCard.warrantyTotals = warrantyTotals;
+    jobCard.warrantyLinkedRequests = warrantyLinkedRequests || [];
 
     // Serve hot cache for fast reloads; callers can bypass with force=1.
     res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);

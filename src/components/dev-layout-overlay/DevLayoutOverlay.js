@@ -50,6 +50,18 @@ const humanizeKey = (value) =>
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const getClosestDataValue = (node, attributeName) => {
+  let current = node;
+  while (current) {
+    const value = current.getAttribute?.(attributeName);
+    if (value) return String(value).replace(/\s+/g, " ").trim();
+    current = current.parentElement;
+  }
+  return "";
+};
+
+const normalizeContextText = (value) => String(value || "").replace(/\s+/g, " ").trim();
+
 const isVisibleRect = (rect, minWidth = DEFAULT_MIN_WIDTH, minHeight = DEFAULT_MIN_HEIGHT) =>
   rect.width >= minWidth &&
   rect.height >= minHeight &&
@@ -183,6 +195,9 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
   const computed = window.getComputedStyle(node);
   const rect = node.getBoundingClientRect();
   const textPreview = getSectionTextPreview(node);
+  const activeTabLabel = normalizeContextText(
+    node.getAttribute("data-dev-active-tab-label") || node.getAttribute("data-dev-active-tab") || ""
+  );
 
   return {
     key,
@@ -203,6 +218,14 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
     tagName: String(node.tagName || "").toLowerCase(),
     classData: String(node.className || "").replace(/\s+/g, " ").trim(),
     textPreview,
+    pageContext: normalizeContextText(getClosestDataValue(node, "data-dev-page")),
+    tabContext: normalizeContextText(activeTabLabel || getClosestDataValue(node, "data-dev-tab")),
+    cardContext: normalizeContextText(
+      node.getAttribute("data-dev-card-section") ||
+      node.getAttribute("data-dev-area") ||
+      getClosestDataValue(node, "data-dev-card-section") ||
+      getClosestDataValue(node, "data-dev-area")
+    ),
     backgroundToken: backgroundToken || getBackgroundToken(node, computed),
     backgroundClass: getBackgroundClass(node),
     backgroundColor: computed.backgroundColor,
@@ -620,36 +643,39 @@ const formatSourceEntry = (entry) => {
   return `${entry.file}:${entry.line}${dynamic}`;
 };
 
+const formatContextPart = (value, suffix = "") => {
+  const text = normalizeContextText(value);
+  if (!text) return "";
+  return suffix && !text.toLowerCase().endsWith(suffix.toLowerCase()) ? `${text} ${suffix}` : text;
+};
+
+const buildSectionContextText = (section) => {
+  const page = formatContextPart(section.pageContext || "", "");
+  const tab = formatContextPart(section.tabContext || "", "tab");
+  const card = formatContextPart(section.cardContext || section.textPreview || humanizeKey(section.key), "");
+  return [page, tab, card].filter(Boolean).join(" > ");
+};
+
 const buildSectionLocatorText = (section, route) => {
   const sources = findDevLayoutSectionSources(section.key);
   const name = humanizeKey(section.key) || "Unnamed section";
-
-  // Card name + position first — the two things you usually want at a glance.
-  const lines = [`${name} | ${section.number || "?"}`, `key: ${section.key}`];
-
-  // Exact source location(s) — primary on the "source:" line, any extras
-  // indented underneath so the click target's code home stays obvious.
-  if (sources.length) {
-    lines.push(`source: ${formatSourceEntry(sources[0])}`);
-    sources.slice(1, 4).forEach((entry) => lines.push(formatSourceEntry(entry)));
-  } else {
-    lines.push("source: not mapped");
-  }
-
-  lines.push(`route: ${section.route || route}`);
-
-  // Parent + child count condensed to one short line (the old format dumped
-  // every child key and number, which was the bulk of the noise).
+  const contextText = buildSectionContextText(section);
   const relations = [];
   if (section.parentKey) {
-    relations.push(`parent ${section.parentKey}${section.parentNumber ? ` (${section.parentNumber})` : ""}`);
+    relations.push(`parent ${section.parentKey}${section.parentNumber ? ` ${section.parentNumber}` : ""}`);
   }
   if (section.childKeys.length) {
     relations.push(`${section.childKeys.length} child${section.childKeys.length === 1 ? "" : "ren"}`);
   }
-  if (relations.length) lines.push(relations.join(" | "));
 
-  return lines.join(" ");
+  return [
+    `${name} | ${section.number || "?"}`,
+    `key ${section.key}`,
+    `file ${sources.length ? formatSourceEntry(sources[0]) : "not mapped"}`,
+    `route ${section.route || route}`,
+    contextText ? `where ${contextText}` : "",
+    relations.length ? relations.join(" | ") : "",
+  ].filter(Boolean).join(" | ");
 };
 
 export default function DevLayoutOverlay() {
@@ -724,7 +750,20 @@ export default function DevLayoutOverlay() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class", "style", "data-dev-section-key", "data-dev-section-parent", "data-dev-background-token", "data-dev-text-preview"],
+      attributeFilter: [
+        "class",
+        "style",
+        "data-dev-section-key",
+        "data-dev-section-parent",
+        "data-dev-background-token",
+        "data-dev-text-preview",
+        "data-dev-page",
+        "data-dev-tab",
+        "data-dev-area",
+        "data-dev-card-section",
+        "data-dev-active-tab",
+        "data-dev-active-tab-label",
+      ],
     });
 
     update();

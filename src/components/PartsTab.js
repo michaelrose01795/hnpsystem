@@ -124,6 +124,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   // State for tracking parts marked as arrived (before API call completes)
   const [arrivedPartIds, setArrivedPartIds] = useState([]);
   const [removingPart, setRemovingPart] = useState(false);
+  // Redesigned parts table: search + status filter chips drive the single table.
+  const [tableSearch, setTableSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all"); // all | allocated | on_order | back_order
+  // Editable draft for the row-action (3-dot) popup. Holds local edits until saved.
+  const [partDraft, setPartDraft] = useState(null);
+  const [savingPartDetails, setSavingPartDetails] = useState(false);
   const partNameDragRef = useRef({ active: false, startX: 0, startScrollLeft: 0 });
   useBodyModalLock(showPrePickPopup);
   const canAllocateParts = Boolean(canEdit && jobId);
@@ -157,11 +163,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       name: item.part?.name || "Part",
       description: item.part?.description || "",
       quantity: item.quantityRequested ?? item.quantityAllocated ?? 0,
+      quantityRequested: item.quantityRequested ?? item.quantityAllocated ?? 0,
+      quantityAllocated: item.quantityAllocated ?? 0,
       unitPrice: item.part?.unit_price ?? item.part?.unitPrice ?? 0,
       unitCost: item.part?.unit_cost ?? item.part?.unitCost ?? 0,
       qtyInStock: item.part?.qty_in_stock ?? item.part?.qtyInStock ?? 0,
       storageLocation: item.storageLocation || item.part?.storage_location || "Not assigned",
       status: item.status || "pending",
+      stockStatus: item.stock_status || item.stockStatus || null,
       allocatedToRequestId: item.allocatedToRequestId || null,
       vhcItemId: item.vhc_item_id || item.vhcItemId || null,
       authorised: item.authorised === true,
@@ -188,11 +197,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           name: partData?.name || "Part",
           description: partData?.description || "",
           quantity: item.quantity_requested ?? item.quantityRequested ?? 1,
+          quantityRequested: item.quantity_requested ?? item.quantityRequested ?? 1,
+          quantityAllocated: item.quantity_allocated ?? item.quantityAllocated ?? 0,
           unitPrice: item.unit_price ?? partData?.unit_price ?? 0,
           unitCost: item.unit_cost ?? partData?.unit_cost ?? 0,
           qtyInStock: partData?.qty_in_stock ?? 0,
           storageLocation: item.storage_location || item.storageLocation || partData?.storage_location || "Not assigned",
           status: item.status || "pending",
+          stockStatus: item.stock_status || item.stockStatus || null,
           allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
           vhcItemId: item.vhc_item_id || item.vhcItemId || null,
           authorised: item.authorised === true,
@@ -1102,6 +1114,168 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   );
   const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId && !part.vhcItemId);
   const leftPanelParts = [...bookedParts, ...removedParts];
+
+  // ── Redesigned single-table model ───────────────────────────────────────────
+  // The parts tab now renders one summary + one table driven by jobParts.
+  // Status display map for the table "Status" column + popup status dropdown.
+  const PART_STATUS_META = useMemo(
+    () => ({
+      pending: { label: "Pending", badge: "app-badge--neutral" },
+      priced: { label: "Priced", badge: "app-badge--neutral" },
+      pre_pick: { label: "Pre-Picked", badge: "app-badge--accent-soft" },
+      on_order: { label: "On Order", badge: "app-badge--warning" },
+      booked: { label: "Booked", badge: "app-badge--accent-soft" },
+      stock: { label: "In Stock", badge: "app-badge--success" },
+      reserved: { label: "Reserved", badge: "app-badge--accent-soft" },
+      removed: { label: "Removed", badge: "app-badge--danger" },
+    }),
+    []
+  );
+
+  // Status options offered in the row-action popup (canonical DB statuses).
+  const statusOptions = useMemo(
+    () => [
+      { value: "pending", label: "Pending" },
+      { value: "on_order", label: "On Order" },
+      { value: "pre_picked", label: "Pre-Picked" },
+      { value: "booked", label: "Booked" },
+      { value: "stock", label: "In Stock" },
+      { value: "removed", label: "Removed" },
+    ],
+    []
+  );
+
+  // Request lookup so each row can show which request the part is allocated to,
+  // and the popup can offer a re-allocation dropdown.
+  const requestById = useMemo(() => {
+    const map = new Map();
+    (allRequests || []).forEach((req) => map.set(String(req.id), req));
+    return map;
+  }, [allRequests]);
+
+  const requestSelectOptions = useMemo(
+    () => [
+      { value: "", label: "Unallocated" },
+      ...(allRequests || []).map((req) => ({
+        value: String(req.id),
+        label: `${req.type === "vhc" ? "VHC" : "Customer"} · ${String(req.description || "Request").slice(0, 48)}`,
+      })),
+    ],
+    [allRequests]
+  );
+
+  // Derive every display value for a single table row from a jobParts entry.
+  const derivePartRow = useCallback(
+    (part) => {
+      const statusKey = normalizePartStatus(part.status);
+      const isRemoved = statusKey === "removed";
+      const isOnOrder = statusKey === "on_order";
+      const isBackOrder = String(part.stockStatus || "") === "back_order";
+      const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
+      const qtyReq = Number(part.quantityRequested ?? part.quantity ?? 0);
+      const qtyAlloc = Number(part.quantityAllocated ?? 0);
+      // No dedicated "quantity_ordered" column — a part is "ordered" while it sits
+      // on order, so the outstanding ordered qty = requested minus already allocated.
+      const qtyOrd = isOnOrder ? Math.max(0, qtyReq - qtyAlloc) : 0;
+      const unitPrice = Number(part.unitPrice ?? 0);
+      const total = unitPrice * qtyReq;
+      // Request label: customer requests link via allocatedToRequestId; VHC parts
+      // link via vhcItemId (their request row id is "vhc-<id>" in allRequests).
+      let requestLabel = "—";
+      if (part.allocatedToRequestId && requestById.has(String(part.allocatedToRequestId))) {
+        requestLabel = requestById.get(String(part.allocatedToRequestId)).description;
+      } else if (part.vhcItemId && requestById.has(`vhc-${part.vhcItemId}`)) {
+        requestLabel = requestById.get(`vhc-${part.vhcItemId}`).description;
+      } else if (part.vhcItemId) {
+        requestLabel = "VHC item";
+      } else if (part.allocatedToRequestId) {
+        requestLabel = `Request ${part.allocatedToRequestId}`;
+      }
+      const etaText = part.eta_date
+        ? `${part.eta_date}${part.eta_time ? ` ${String(part.eta_time).slice(0, 5)}` : ""}`
+        : "—";
+      const locationLabel =
+        formatPickedLocationLabel(part.prePickLocation) ||
+        (part.storageLocation && part.storageLocation !== "Not assigned" ? part.storageLocation : "") ||
+        "—";
+      return {
+        statusKey,
+        statusMeta: PART_STATUS_META[statusKey] || { label: statusKey, badge: "app-badge--neutral" },
+        isRemoved,
+        isOnOrder,
+        isBackOrder,
+        isAllocated,
+        qtyReq,
+        qtyAlloc,
+        qtyOrd,
+        unitPrice,
+        total,
+        requestLabel,
+        etaText,
+        locationLabel,
+        supplier: part.supplier_reference || "—",
+      };
+    },
+    [PART_STATUS_META, requestById]
+  );
+
+  // Top-of-section summary counts.
+  const partsSummary = useMemo(() => {
+    const summary = { total: 0, allocated: 0, onOrder: 0, backOrder: 0, removed: 0, returned: 0 };
+    jobParts.forEach((part) => {
+      const statusKey = normalizePartStatus(part.status);
+      summary.total += 1;
+      if (statusKey === "removed") {
+        summary.removed += 1;
+        // Best-effort "Return": removed parts that had been ordered/allocated and
+        // therefore need returning to the supplier.
+        if (part.supplier_reference || Number(part.quantityAllocated ?? 0) > 0) summary.returned += 1;
+        return;
+      }
+      if (part.allocatedToRequestId || part.vhcItemId || Number(part.quantityAllocated ?? 0) > 0) {
+        summary.allocated += 1;
+      }
+      if (statusKey === "on_order") summary.onOrder += 1;
+      if (String(part.stockStatus || "") === "back_order") summary.backOrder += 1;
+    });
+    return summary;
+  }, [jobParts]);
+
+  // Filter + search the single table.
+  const tableParts = useMemo(() => {
+    const term = tableSearch.trim().toLowerCase();
+    return jobParts.filter((part) => {
+      const statusKey = normalizePartStatus(part.status);
+      if (activeFilter === "allocated" && !(part.allocatedToRequestId || part.vhcItemId || Number(part.quantityAllocated ?? 0) > 0)) {
+        return false;
+      }
+      if (activeFilter === "on_order" && statusKey !== "on_order") return false;
+      if (activeFilter === "back_order" && String(part.stockStatus || "") !== "back_order") return false;
+      if (!term) return true;
+      const haystack = [
+        part.partNumber,
+        part.name,
+        part.description,
+        part.supplier_reference,
+        part.storageLocation,
+        formatPickedLocationLabel(part.prePickLocation),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [jobParts, tableSearch, activeFilter]);
+
+  const PARTS_FILTERS = useMemo(
+    () => [
+      { key: "all", label: "All Parts", count: partsSummary.total },
+      { key: "allocated", label: "Allocated", count: partsSummary.allocated },
+      { key: "on_order", label: "On Order", count: partsSummary.onOrder },
+      { key: "back_order", label: "Back Order", count: partsSummary.backOrder },
+    ],
+    [partsSummary]
+  );
   const assignableParts = useMemo(
     () =>
       leftPanelParts.filter((part) => {
@@ -1416,7 +1590,129 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     } else {
       setPartRemoveQuantity("1");
     }
+    // Seed the editable draft for the row-action popup from the opened part.
+    const part = partPopup.part;
+    setPartDraft({
+      id: part.id,
+      status: normalizePartStatus(part.status),
+      requestSelection: part.allocatedToRequestId
+        ? String(part.allocatedToRequestId)
+        : part.vhcItemId
+        ? `vhc-${part.vhcItemId}`
+        : "",
+      prePickLocation: part.prePickLocation || "",
+      storageLocation: part.storageLocation && part.storageLocation !== "Not assigned" ? part.storageLocation : "",
+      quantityRequested: String(part.quantityRequested ?? part.quantity ?? 0),
+      quantityAllocated: String(part.quantityAllocated ?? 0),
+      unitPrice: String(part.unitPrice ?? 0),
+      supplier_reference: part.supplier_reference || "",
+      eta_date: part.eta_date || "",
+      eta_time: part.eta_time ? String(part.eta_time).slice(0, 5) : "",
+    });
   }, [partPopup]);
+
+  // Save all editable fields from the row-action popup back to the DB, then
+  // refresh so the table reflects the changes. Field updates are routed to the
+  // endpoint that owns each concern (update-status / job-items / allocate).
+  const handleSavePartDetails = useCallback(async () => {
+    if (!partDraft?.id || !canEdit || !partPopup.part) return;
+    const orig = partPopup.part;
+    setSavingPartDetails(true);
+    try {
+      // 1) Status / pre-pick / ETA / supplier → /api/parts/update-status
+      const statusBody = { partItemId: partDraft.id };
+      let statusDirty = false;
+      if (partDraft.status !== normalizePartStatus(orig.status)) {
+        statusBody.status = partDraft.status;
+        statusDirty = true;
+      }
+      if ((partDraft.prePickLocation || "") !== (orig.prePickLocation || "")) {
+        statusBody.prePickLocation = partDraft.prePickLocation || null;
+        statusDirty = true;
+      }
+      if ((partDraft.eta_date || "") !== (orig.eta_date || "")) {
+        statusBody.etaDate = partDraft.eta_date || null;
+        statusDirty = true;
+      }
+      if ((partDraft.eta_time || "") !== (orig.eta_time ? String(orig.eta_time).slice(0, 5) : "")) {
+        statusBody.etaTime = partDraft.eta_time || null;
+        statusDirty = true;
+      }
+      if ((partDraft.supplier_reference || "") !== (orig.supplier_reference || "")) {
+        statusBody.supplierReference = partDraft.supplier_reference || null;
+        statusDirty = true;
+      }
+      if (statusDirty) {
+        const res = await fetch("/api/parts/update-status", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(statusBody),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || data.error || "Failed to update part status");
+      }
+
+      // 2) Quantities / price / storage → /api/parts/job-items/{id}
+      const itemBody = {};
+      if (Number(partDraft.quantityRequested) !== Number(orig.quantityRequested ?? orig.quantity ?? 0)) {
+        itemBody.quantityRequested = Number(partDraft.quantityRequested) || 0;
+      }
+      if (Number(partDraft.quantityAllocated) !== Number(orig.quantityAllocated ?? 0)) {
+        itemBody.quantityAllocated = Number(partDraft.quantityAllocated) || 0;
+      }
+      if (Number(partDraft.unitPrice) !== Number(orig.unitPrice ?? 0)) {
+        itemBody.unit_price = Number(partDraft.unitPrice) || 0;
+      }
+      if ((partDraft.storageLocation || "") !== (orig.storageLocation && orig.storageLocation !== "Not assigned" ? orig.storageLocation : "")) {
+        itemBody.storage_location = partDraft.storageLocation || null;
+      }
+      if (Object.keys(itemBody).length > 0) {
+        const res = await fetch(`/api/parts/job-items/${partDraft.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(itemBody),
+        });
+        const data = await res.json();
+        if (!res.ok || data?.ok === false) throw new Error(data?.error || data?.message || "Failed to update part quantities");
+      }
+
+      // 3) Request allocation → /api/parts/allocate-to-request (set) or clear via job-items PATCH.
+      const origReq = orig.allocatedToRequestId
+        ? String(orig.allocatedToRequestId)
+        : orig.vhcItemId
+        ? `vhc-${orig.vhcItemId}`
+        : "";
+      if ((partDraft.requestSelection || "") !== origReq) {
+        if (partDraft.requestSelection) {
+          const res = await fetch("/api/parts/allocate-to-request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ partAllocationId: partDraft.id, requestId: partDraft.requestSelection, jobId }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.message || "Failed to allocate part to request");
+        } else {
+          const res = await fetch(`/api/parts/job-items/${partDraft.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ allocated_to_request_id: null, vhc_item_id: null }),
+          });
+          const data = await res.json();
+          if (!res.ok || data?.ok === false) throw new Error(data?.error || data?.message || "Failed to unallocate part");
+        }
+      }
+
+      await refreshCatalogStockState();
+      if (typeof onRefreshJob === "function") onRefreshJob();
+      setPartPopup({ open: false, part: null });
+      setPartDraft(null);
+    } catch (error) {
+      console.error("Failed to save part details:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSavingPartDetails(false);
+    }
+  }, [partDraft, partPopup.part, canEdit, jobId, onRefreshJob, refreshCatalogStockState]);
 
   useEffect(() => {
     if (!showAllocatePanel) {
@@ -1710,1257 +2006,452 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           color: var(--text-1);
         }
       `}</style>
-      {/* Search Section — render the root wrapper only when the Book Part panel
-          is open. When hidden, omitting it entirely (rather than rendering an
-          empty flex item) avoids leaving the parent stack gap above the parts
-          workspace, so the workspace sits flush to the top of the section. */}
-      {showBookPartPanel && (
-        <DevLayoutSection
-          sectionKey="jobcard-parts-tab-root"
-          sectionType="section-shell"
-          parentKey="jobcard-tab-parts"
-          backgroundToken="surface"
-          shell
-          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-        >
-          <DevLayoutSection
-            sectionKey="jobcard-parts-stock-search"
-            sectionType="content-card"
-            parentKey="jobcard-parts-tab-root"
-            style={{
-              background: "var(--surface)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              padding: "16px",
-            }}
-          >
-        <div style={{ marginBottom: "12px" }}>
-          <div
-            style={{
-              fontSize: "var(--text-body-sm)",
-              fontWeight: 600,
-              color: "var(--primary)",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}
-          >
-            Search Parts Stock
-          </div>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
-            Search and add parts to this job
-          </p>
-        </div>
-        <SearchBar
-          value={catalogSearch}
-          disabled={!canAllocateParts}
-          onChange={(e) => {
-            setCatalogSearch(e.target.value);
-            setCatalogSuccessMessage("");
-            setCatalogSubmitError("");
-          }}
-          onClear={() => {
-            setCatalogSearch("");
-            setCatalogSuccessMessage("");
-            setCatalogSubmitError("");
-          }}
-          placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
+      {/* ===== Parts Summary ===== */}
+      <LayerSurface
+        sectionKey="jobcard-parts-summary"
+        sectionType="content-card"
+        parentKey="jobcard-tab-parts"
+        radius="var(--radius-sm)"
+        padding="16px"
+        gap="12px"
+      >
+        <div
           style={{
-            width: "100%",
-            opacity: canAllocateParts ? 1 : 0.7,
+            fontSize: "var(--text-body-sm)",
+            fontWeight: 600,
+            color: "var(--text-1)",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
           }}
-        />
-        {catalogLoading && (
-          <div style={{ marginTop: "8px" }}>
-            <InlineLoading width={120} label="Searching" />
-          </div>
-        )}
-        {!catalogLoading && catalogError && (
-          <div style={{ fontSize: "var(--text-caption)", color: "var(--danger)", marginTop: "8px" }}>{catalogError}</div>
-        )}
-        {canAllocateParts && !catalogLoading && catalogResults.length > 0 && (
-          <div
-            style={{
-              maxHeight: "200px",
-              overflowY: "auto",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              marginTop: "12px",
-            }}
-          >
-            {catalogResults.map((part) => {
-              const isSelected = selectedCatalogPart?.id === part.id;
-              return (
-                <button
-                  key={part.id}
-                  type="button"
-                  onClick={() => handleCatalogSelect(part)}
+        >
+          Parts Summary
+        </div>
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          {[
+            { label: "Allocated", value: partsSummary.allocated },
+            { label: "On Order", value: partsSummary.onOrder },
+            { label: "Back Order", value: partsSummary.backOrder },
+            { label: "Return", value: partsSummary.returned },
+            { label: "Removed", value: partsSummary.removed },
+            { label: "Total Parts", value: partsSummary.total },
+          ].map((item) => (
+            <li key={item.label}>
+              <LayerTheme
+                radius="var(--radius-xs)"
+                padding="12px"
+                gap="2px"
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}
+              >
+                <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.1 }}>
+                  {item.value}
+                </span>
+                <span
                   style={{
-                    width: "100%",
-                    padding: "10px",
-                    border: "none",
-                    borderBottom: "1px solid var(--separating-line)",
-                    textAlign: "left",
-                    background: isSelected ? "var(--theme)" : "transparent",
-                    cursor: "pointer",
+                    fontSize: "var(--text-caption)",
+                    color: "var(--text-1)",
+                    opacity: 0.7,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
                 >
-                  <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>{part.name}</div>
-                  <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)" }}>
-                    Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
-                  </div>
-                  <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
-                    Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)}
-                  </div>
+                  {item.label}
+                </span>
+              </LayerTheme>
+            </li>
+          ))}
+        </ul>
+      </LayerSurface>
+
+      {/* ===== Parts Table Section ===== */}
+      <LayerSurface
+        sectionKey="jobcard-parts-table-section"
+        sectionType="section-shell"
+        parentKey="jobcard-tab-parts"
+        shell
+        radius="var(--radius-sm)"
+        padding="16px"
+        gap="14px"
+      >
+        {/* Controls: status filters + search + Book Part toggle */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {PARTS_FILTERS.map((f) => {
+              const isActive = activeFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setActiveFilter(f.key)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-pill)",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "var(--text-caption)",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    background: isActive ? "var(--accent-purple)" : "var(--theme)",
+                    color: isActive ? "var(--text-2)" : "var(--text-1)",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {f.label} ({f.count})
                 </button>
               );
             })}
           </div>
-        )}
-        {selectedCatalogPart && (
           <div
             style={{
-              borderRadius: "var(--radius-sm)",
-              padding: "12px",
-              background: "var(--theme)",
-              marginTop: "12px",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              flex: "1 1 240px",
+              justifyContent: "flex-end",
+              minWidth: "200px",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-              <div>
-                <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>{selectedCatalogPart.name}</div>
-                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)" }}>
-                  Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={clearSelectedCatalogPart}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--info)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: "var(--text-label)",
-                }}
-              >
-                Clear
-              </button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "10px" }}>
-              <div>
-                <label style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", display: "block", marginBottom: "4px" }}>
-                  Quantity
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="catalog-qty-input"
-                  value={catalogQuantity}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    if (next === "" || /^\d+$/.test(next)) {
-                      setCatalogQuantity(next);
-                    }
-                  }}
-                  placeholder="1"
-                  style={{
-                    width: "100%",
-                    padding: "6px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    fontSize: "var(--text-label)",
-                  }}
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", marginBottom: "4px" }}>Available</div>
-                <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
-                  {selectedCatalogPart.qty_in_stock ?? 0}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", marginBottom: "4px" }}>Sell Price</div>
-                <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
-                  £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
-                </div>
-              </div>
-            </div>
-            {catalogSubmitError && (
-              <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-caption)", marginBottom: "8px" }}>
-                {catalogSubmitError}
-              </div>
-            )}
-            {catalogSuccessMessage && (
-              <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-caption)", marginBottom: "8px" }}>
-                {catalogSuccessMessage}
-              </div>
-            )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={handleAddPartFromStock}
-                disabled={!canAllocateParts || allocatingPart}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  background: !canAllocateParts ? "var(--surface)" : "var(--accent-purple)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                  fontSize: "var(--text-body-sm)",
-                }}
-              >
-                {allocatingPart ? "Adding..." : "Add to Job"}
-              </button>
-              <button
-                type="button"
-                onClick={handleAddPartToOrderFromStock}
-                disabled={!canAllocateParts || allocatingPart}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "var(--radius-xs)",
-                  background: !canAllocateParts ? "var(--surface)" : "var(--surface)",
-                  color: !canAllocateParts ? "var(--text-1)" : "var(--accent-purple)",
-                  fontWeight: 600,
-                  cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                  fontSize: "var(--text-body-sm)",
-                }}
-              >
-                {allocatingPart ? "Adding..." : "Add to Order"}
-              </button>
-            </div>
+            <SearchBar
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              onClear={() => setTableSearch("")}
+              placeholder="Search parts in table..."
+              style={{ flex: "1 1 200px", maxWidth: "320px" }}
+            />
+            <button
+              type="button"
+              onClick={toggleBookPartPanel}
+              disabled={!canAllocateParts}
+              className="app-table-action-btn app-table-action-btn--primary"
+              style={{ whiteSpace: "nowrap", opacity: canAllocateParts ? 1 : 0.6 }}
+            >
+              {showBookPartPanel ? "Hide" : "Book Part"}
+            </button>
           </div>
-        )}
-        {/* Success/Error messages - shown outside selectedCatalogPart block so they remain visible */}
-        {catalogSuccessMessage && !selectedCatalogPart && (
-          <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-label)", marginTop: "12px", textAlign: "center" }}>
-            {catalogSuccessMessage}
-          </div>
-        )}
-        {catalogSubmitError && !selectedCatalogPart && (
-          <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-label)", marginTop: "12px", textAlign: "center" }}>
-            {catalogSubmitError}
-          </div>
-        )}
-          </DevLayoutSection>
-        </DevLayoutSection>
-      )}
+        </div>
 
-      {/* Layout: Parts List (Left) and Requests (Right) */}
-      <DevLayoutSection
-        sectionKey="jobcard-parts-workspace"
-        sectionType="section-shell"
-        parentKey="jobcard-tab-parts"
-        backgroundToken="surface"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-          gap: "16px",
-          // gap to the search panel is now owned by the parent stack (10px); no extra margin needed
-        }}
-      >
-        {/* Left Side - Parts Added to Job */}
-        <DevLayoutSection
-          sectionKey="jobcard-parts-added-panel"
-          sectionType="content-card"
-          parentKey="jobcard-parts-workspace"
-          style={{
-            background: "var(--surface)",
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-            padding: "16px",
-            minHeight: "400px",
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "12px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-            }}
+        {/* Book Part panel — search stock and add to the job (unchanged behaviour) */}
+        {showBookPartPanel && (
+          <LayerTheme
+            sectionKey="jobcard-parts-stock-search"
+            sectionType="content-card"
+            parentKey="jobcard-parts-table-section"
+            radius="var(--radius-sm)"
+            padding="16px"
+            gap="12px"
           >
             <div>
               <div
                 style={{
                   fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
-                  color: "var(--text-1)",
+                  color: "var(--primary)",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
                 }}
               >
-                Parts Added to Job
+                Search Parts Stock
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
-                {unallocatedParts.length} unallocated · {bookedParts.length} total
+              <p style={{ margin: "4px 0 0", fontSize: "var(--text-label)", color: "var(--text-1)", opacity: 0.7 }}>
+                Search and add parts to this job
               </p>
             </div>
-            {/* Tabs on same row */}
-            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={toggleBookPartPanel}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid transparent",
-                  background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
-                  color: showBookPartPanel ? "var(--text-2)" : "var(--danger)",
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {showBookPartPanel ? "Hide" : "Book Part"}
-              </button>
-              <button
-                type="button"
-                onClick={toggleAllocatePanel}
-                title="Show allocate-to-request panel"
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid transparent",
-                  background: showAllocatePanel ? "var(--accent-purple)" : "var(--theme)",
-                  color: showAllocatePanel ? "var(--text-2)" : "var(--accent-purple)",
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {showAllocatePanel ? "Hide" : (allPartsArrived ? "On Order" : "Allocate")}
-              </button>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {leftPanelParts.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--text-1)",
-                  fontSize: "var(--text-label)",
-                  borderRadius: "var(--radius-xs)",
-                }}
-              >
-                No unallocated parts. Add parts using the search above.
-              </div>
-            ) : (
-              <div
-                style={{
-                  overflowX: "auto",
-                  overflowY: "auto",
-                  maxHeight: "600px",
-                  padding: "0 6px 6px",
-                }}
-              >
-                <table
-                  className="app-data-table app-data-table--rounded"
-                  data-dev-section="1"
-                  data-dev-section-key="jobcard-parts-added-table"
-                  data-dev-section-type="data-table"
-                  data-dev-section-parent="jobcard-parts-added-panel"
-                  data-dev-disable-table-subsections="1"
-                  style={{
-                    width: "min(100%, 860px)",
-                    minWidth: "680px",
-                    tableLayout: "fixed",
-                    borderCollapse: "separate",
-                    borderSpacing: 0,
-                    fontSize: "var(--text-caption)",
-                  }}
-                >
-                  <thead>
-                    <tr>
-                      {assignMode && (
-                        <th style={{ textAlign: "center", width: "40px" }}>
-                          Select
-                        </th>
-                      )}
-                      <th style={{ textAlign: "left", width: assignMode ? "59%" : "64%" }}>Part</th>
-                      <th style={{ textAlign: "center", width: "26%" }}>Pre-pick</th>
-                      <th style={{ textAlign: "right", width: "10%" }}>Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leftPanelParts.map((part) => {
-                      const isSelected = selectedPartIds.includes(part.id);
-                      const isRemoved =
-                        removedPartIds.includes(part.id) ||
-                        normalizePartStatus(part.status) === "removed";
-
-                      const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
-                      const isAssignable = !isRemoved && !isAllocated;
-                      const prePickDisplay = part.prePickLocation
-                        ? formatPickedLocationLabel(part.prePickLocation)
-                        : "Not assigned";
-
-                      return (
-                        <tr
-                          key={part.id}
-                          onClick={() => {
-                            if (assignMode) {
-                              if (isAssignable) {
-                                togglePartSelection(part.id);
-                              }
-                              return;
-                            }
-                            setPartPopup({ open: true, part });
-                          }}
-                          style={{
-                            background: isRemoved
-                              ? "var(--danger)"
-                              : assignMode && isSelected
-                              ? "var(--theme)"
-                              : "var(--surface)",
-                            cursor: assignMode ? (isAssignable ? "pointer" : "not-allowed") : "pointer",
-                            opacity: isRemoved ? 0.8 : 1,
-                            boxShadow: isSelected ? "0 0 0 1px var(--accent-purple)" : "none",
-                          }}
-                          title={
-                            assignMode
-                              ? isRemoved
-                                ? "Removed rows cannot be assigned."
-                                : isAllocated
-                                ? "Already allocated rows cannot be assigned."
-                                : "Click to select this part for allocation."
-                              : part.source === "goods-in"
-                              ? "Goods-in parts will be added as job items when assigned."
-                              : "Click to view options"
-                          }
-                        >
-                      {assignMode && (
-                        <td style={{
-                          padding: "9px 8px",
-                          textAlign: "center",
-                          verticalAlign: "middle",
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            disabled={!isAssignable}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={() => {
-                              if (isAssignable) {
-                                togglePartSelection(part.id);
-                              }
-                            }}
-                          />
-                        </td>
-                      )}
-                          {/* Part Column */}
-                          <td style={{
-                            padding: "9px 12px",
-                            verticalAlign: "middle",
-                            width: assignMode ? "59%" : "64%",
-                            }}>
-                            <div style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              minHeight: "44px",
-                            }}>
-                              <div style={{
-                                minWidth: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "2px",
-                              }}>
-                                <div style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                  flexWrap: "wrap",
-                                }}>
-                                  <span style={{
-                                    fontWeight: 600,
-                                    color: isRemoved ? "var(--text-2)" : "var(--accent-purple)",
-                                    textDecoration: isRemoved ? "line-through" : "none",
-                                  }}>
-                                    {part.partNumber}
-                                  </span>
-                                  {assignMode && isSelected && (
-                                    <span
-                                      style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        padding: "2px 8px",
-                                        borderRadius: "var(--radius-pill)",
-                                        background: "var(--accent-purple)",
-                                        color: "var(--text-2)",
-                                        fontSize: "var(--text-caption)",
-                                        fontWeight: 700,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.06em",
-                                      }}
-                                    >
-                                      Selected
-                                    </span>
-                                  )}
-                                  {part.authorised && (
-                                    <span
-                                      style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        padding: "2px 8px",
-                                        borderRadius: "var(--radius-pill)",
-                                        background: "var(--theme)",
-                                        color: "var(--info-dark)",
-                                        fontSize: "var(--text-caption)",
-                                        fontWeight: 700,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.06em",
-                                      }}
-                                    >
-                                      Authorised
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{
-                                  fontSize: "var(--text-body-sm)",
-                                  color: isRemoved ? "var(--text-2)" : "var(--text-1)",
-                                  textDecoration: isRemoved ? "line-through" : "none",
-                                }}>
-                                  {part.description || part.name}
-                                </div>
-                              </div>
-                              {isAllocated && (
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    if (!assignMode) {
-                                      setPartPopup({ open: true, part });
-                                    }
-                                  }}
-                                  aria-label={`Allocated part ${part.partNumber}`}
-                                  className="app-btn app-btn--xs"
-                                  style={{
-                                    minHeight: "auto",
-                                    flex: "0 0 auto",
-                                    alignSelf: "center",
-                                    padding: "4px 8px",
-                                    borderRadius: "var(--radius-xs)",
-                                    border: "none",
-                                    background: "var(--success-surface)",
-                                    color: "var(--success-dark)",
-                                    fontSize: "var(--text-caption)",
-                                    fontWeight: 600,
-                                    cursor: assignMode ? "not-allowed" : "pointer",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                  }}
-                                >
-                                  Allocated
-                                </button>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Pre-pick Column */}
-                          <td
-                            style={{
-                              padding: "9px 12px",
-                              verticalAlign: "middle",
-                              textAlign: "center",
-                              width: "26%",
-                              minWidth: "150px",
-                            }}
-                          >
-                            <div
-                              className="app-input"
-                              aria-label={`Pre-pick location: ${prePickDisplay}`}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                minHeight: "34px",
-                                padding: "6px 10px",
-                                fontSize: "var(--text-caption)",
-                                lineHeight: 1.2,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                opacity: part.prePickLocation ? 1 : 0.72,
-                              }}
-                            >
-                              {prePickDisplay}
-                            </div>
-                          </td>
-
-                          {/* Qty Column */}
-                          <td style={{
-                            padding: "9px 12px",
-                            textAlign: "right",
-                            verticalAlign: "middle",
-                            color: isRemoved ? "var(--text-2)" : "var(--text-1)",
-                            textDecoration: isRemoved ? "line-through" : "none",
-                            fontWeight: 600,
-                          }}>
-                            {part.quantity}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <SearchBar
+              value={catalogSearch}
+              disabled={!canAllocateParts}
+              onChange={(e) => {
+                setCatalogSearch(e.target.value);
+                setCatalogSuccessMessage("");
+                setCatalogSubmitError("");
+              }}
+              onClear={() => {
+                setCatalogSearch("");
+                setCatalogSuccessMessage("");
+                setCatalogSubmitError("");
+              }}
+              placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
+              style={{ width: "100%", opacity: canAllocateParts ? 1 : 0.7 }}
+            />
+            {catalogLoading && (
+              <div>
+                <InlineLoading width={120} label="Searching" />
               </div>
             )}
-          </div>
-        </DevLayoutSection>
-
-        {/* Right Side - On Order (VHC) / Allocate Parts */}
-        {/* Swap sections when all parts arrived: show Allocate by default, On Order on click */}
-        {(showAllocatePanel && !allPartsArrived) || (!showAllocatePanel && allPartsArrived) ? (
-          <DevLayoutSection
-            className="on-order-section"
-            sectionKey="jobcard-parts-allocate-panel"
-            sectionType="content-card"
-            parentKey="jobcard-parts-workspace"
-            style={{
-              background: "var(--surface)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              padding: "16px",
-              minHeight: "400px",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-          <div style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "var(--text-body-sm)",
-                  fontWeight: 600,
-                  color: "var(--text-1)",
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Allocate Parts
-              </div>
-              {assignMode ? (
-                <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
-                  {!assignTargetRequestId
-                    ? "Select a row in 'Allocate Parts' first."
-                    : !selectedAssignablePart
-                    ? "Now select a row in 'Parts Added to Job' that is not allocated or removed."
-                    : `Press 'Assign selected' again to assign ${selectedAssignablePart.partNumber || "the selected part"}.`}
-                </div>
-              ) : null}
-            </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {assignMode && (
-                <button
-                  type="button"
-                  onClick={cancelAssignSelection}
-                  disabled={allocatingSelection}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: "var(--radius-xs)",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 600,
-                    cursor: allocatingSelection ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleAssignButtonClick}
-                disabled={
-                  !canEdit ||
-                  allocatingSelection ||
-                  !hasAssignableParts
-                }
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid transparent",
-                  background:
-                    !hasAssignableParts
-                      ? "var(--success-surface)"
-                      : !canEdit || allocatingSelection
-                      ? "var(--surface)"
-                      : assignMode
-                      ? "var(--success)"
-                      : "var(--accent-purple)",
-                  color:
-                    !hasAssignableParts
-                      ? "var(--success-dark)"
-                      : !canEdit || allocatingSelection
-                      ? "var(--text-1)"
-                      : "var(--text-2)",
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  cursor:
-                    !canEdit || !hasAssignableParts || allocatingSelection
-                      ? "not-allowed"
-                      : "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {allocatingSelection
-                  ? "Assigning..."
-                  : !hasAssignableParts
-                  ? "All parts allocated"
-                  : !assignMode
-                  ? "Assign selected"
-                  : !assignTargetRequestId
-                  ? "Select request below"
-                  : !selectedAssignablePart
-                  ? "Select part row"
-                  : "Assign selected"}
-              </button>
-            </div>
-          </div>
-          {/* Fixed-size content container to match ON ORDER section */}
-          <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
-            {allRequests.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--text-1)",
-                  fontSize: "var(--text-label)",
-                  borderRadius: "var(--radius-xs)",
-                }}
-              >
-                No customer requests or authorised work found for this job.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", flex: 1, paddingTop: "2px" /* keep first heading caps clear of the scroll clip edge */ }}>
-                {/* Customer Requests - always shown at the top */}
-                {(() => {
-                  const customerRequests = allRequests.filter((r) => r.type === "customer");
+            {!catalogLoading && catalogError && (
+              <div style={{ fontSize: "var(--text-caption)", color: "var(--danger)" }}>{catalogError}</div>
+            )}
+            {canAllocateParts && !catalogLoading && catalogResults.length > 0 && (
+              <div style={{ maxHeight: "200px", overflowY: "auto", borderRadius: "var(--radius-sm)" }}>
+                {catalogResults.map((part) => {
+                  const isSelected = selectedCatalogPart?.id === part.id;
                   return (
-                    <DevLayoutSection
-                      sectionKey="jobcard-parts-allocate-customer-requests"
-                      sectionType="list"
-                      parentKey="jobcard-parts-allocate-panel"
+                    <button
+                      key={part.id}
+                      type="button"
+                      onClick={() => handleCatalogSelect(part)}
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                        paddingLeft: "6px", // Keeps the section edge from clipping the heading's leading cap.
+                        width: "100%",
+                        padding: "10px",
+                        border: "none",
+                        borderBottom: "1px solid var(--separating-line)",
+                        textAlign: "left",
+                        background: isSelected ? "var(--surface)" : "transparent",
+                        cursor: "pointer",
                       }}
                     >
-                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.5 }}>
-                        Customer Requests
+                      <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>
+                        {part.name}
                       </div>
-                      {customerRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--text-1)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
-                          No customer requests reported.
-                        </div>
-                      ) : (
-                        customerRequests.map((request) => {
-                          const baseAllocated = partAllocations[request.id] || [];
-                          const allocatedParts = [...baseAllocated]
-                            .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
-                            .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
-                          return (
-                            <DevLayoutSection
-                              key={request.id}
-                              sectionKey={`jobcard-parts-customer-request-${request.id}`}
-                              sectionType="content-card"
-                              parentKey="jobcard-parts-allocate-customer-requests"
-                              onClick={() => {
-                                if (assignMode && request.canAllocate) {
-                                  setAssignTargetRequestId(request.id);
-                                }
-                              }}
-                              style={{
-                                padding: "12px",
-                                borderRadius: "var(--radius-sm)",
-                                background: "var(--theme)",
-                                cursor: assignMode && request.canAllocate ? "pointer" : "default",
-                                boxShadow:
-                                  assignMode && String(assignTargetRequestId) === String(request.id)
-                                    ? "0 0 0 2px rgba(var(--primary-rgb), 0.08)"
-                                    : "none",
-                              }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                                <div>
-                                  <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
-                                  {request.description}
-                                  </div>
-                                  {assignMode && String(assignTargetRequestId) === String(request.id) && (
-                                    <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
-                                      Selected allocation row
-                                    </div>
-                                  )}
-                                </div>
-                                {assignMode ? (
-                                  <span
-                                    style={{
-                                      padding: "6px 10px",
-                                      borderRadius: "var(--radius-xs)",
-                                      background:
-                                        String(assignTargetRequestId) === String(request.id)
-                                          ? "var(--theme)"
-                                          : "var(--surface)",
-                                      color:
-                                        String(assignTargetRequestId) === String(request.id)
-                                          ? "var(--accent-purple)"
-                                          : "var(--text-1)",
-                                      fontSize: "var(--text-caption)",
-                                      fontWeight: 600,
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {String(assignTargetRequestId) === String(request.id) ? "Selected" : "Click to select"}
-                                  </span>
-                                ) : null}
-                              </div>
-                              {allocatedParts.length > 0 && (
-                                <div
-                                  style={{
-                                    marginTop: "10px",
-                                  }}
-                                >
-                                  <table
-                                    data-dev-section="1"
-                                    data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}`}
-                                    data-dev-section-type="data-table"
-                                    data-dev-section-parent={`jobcard-parts-customer-request-${request.id}`}
-                                    className="parts-allocate-subtable app-data-table app-data-table--rounded"
-                                    style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
-                                  >
-                                    <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
-                                      <tr>
-                                        <th style={{ textAlign: "left" }}>Part</th>
-                                        <th style={{ textAlign: "right" }}>Qty</th>
-                                        <th style={{ textAlign: "right" }}>Retail</th>
-                                        <th style={{ textAlign: "right" }}>Cost</th>
-                                        <th style={{ textAlign: "center" }}>Unassign</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
-                                      {allocatedParts.map((part) => (
-                                        <tr key={part.id} style={{ background: "var(--theme)" }}>
-                                          <td style={{ padding: "6px", verticalAlign: "middle" }}>
-                                            <span className="parts-allocate-cell-scroll" style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                                              {part.partNumber}
-                                            </span>
-                                            <span className="parts-allocate-cell-scroll parts-allocate-description-cell" style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
-                                              {part.description || part.name}
-                                            </span>
-                                          </td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>
-                                            <span className="parts-allocate-cell-scroll">{part.quantity}</span>
-                                          </td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>
-                                            <span className="parts-allocate-cell-scroll">{formatMoney(part.unitPrice)}</span>
-                                          </td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>
-                                            <span className="parts-allocate-cell-scroll">{formatMoney(part.unitCost)}</span>
-                                          </td>
-                                          <td style={{ padding: "6px", textAlign: "center" }}>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleUnassignPart(part.id)}
-                                              disabled={!canEdit}
-                                              style={{
-                                                padding: "4px 8px",
-                                                borderRadius: "var(--radius-xs)",
-                                                border: "none",
-                                                background: !canEdit ? "var(--surface)" : "var(--danger-surface)",
-                                                color: !canEdit ? "var(--text-1)" : "var(--danger)",
-                                                fontSize: "var(--text-caption)",
-                                                fontWeight: 600,
-                                                cursor: !canEdit ? "not-allowed" : "pointer",
-                                              }}
-                                            >
-                                              <span className="parts-allocate-cell-scroll">Unassign</span>
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </DevLayoutSection>
-                          );
-                        })
-                      )}
-                    </DevLayoutSection>
-                  );
-                })()}
-
-                {/* VHC Requests - always shown below customer requests */}
-                {(() => {
-                  const vhcRequests = allRequests.filter((r) => r.type === "vhc");
-                  const groupedVhcRequests = [];
-                  const groupedVhcRequestMap = new Map();
-
-                  vhcRequests.forEach((request) => {
-                    const sectionLabel = String(request.section || "Other VHC Items").trim() || "Other VHC Items";
-                    if (!groupedVhcRequestMap.has(sectionLabel)) {
-                      const bucket = { section: sectionLabel, rows: [] };
-                      groupedVhcRequestMap.set(sectionLabel, bucket);
-                      groupedVhcRequests.push(bucket);
-                    }
-                    groupedVhcRequestMap.get(sectionLabel).rows.push(request);
-                  });
-
-                  return (
-                    <DevLayoutSection
-                      sectionKey="jobcard-parts-allocate-vhc-requests"
-                      sectionType="list"
-                      parentKey="jobcard-parts-allocate-panel"
-                      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-                    >
-                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                        VHC Requests
+                      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75 }}>
+                        Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
                       </div>
-                      {vhcRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--text-1)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
-                          No VHC requests reported.
-                        </div>
-                      ) : (
-                        groupedVhcRequests.map((group) => (
-                          <DevLayoutSection
-                            key={`vhc-group-${group.section}`}
-                            sectionKey={`jobcard-parts-vhc-group-${String(group.section || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other"}`}
-                            sectionType="content-card"
-                            parentKey="jobcard-parts-allocate-vhc-requests"
-                            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-                          >
-                            {group.rows.map((request) => {
-                              const baseAllocated = partAllocations[request.id] || [];
-                              const vhcAllocated =
-                                request.vhcItemId
-                                  ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
-                                  : [];
-                              const allocatedParts = [...baseAllocated, ...vhcAllocated]
-                                .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
-                                .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
-                              return (
-                                <DevLayoutSection
-                                  key={request.id}
-                                  sectionKey={`jobcard-parts-vhc-request-${request.id}`}
-                                  sectionType="content-card"
-                                  parentKey={`jobcard-parts-vhc-group-${String(group.section || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other"}`}
-                                  onClick={() => {
-                                    if (assignMode && request.canAllocate) {
-                                      setAssignTargetRequestId(request.id);
-                                    }
-                                  }}
-                                  style={{
-                                    padding: "12px",
-                                    borderRadius: "var(--radius-sm)",
-                                    background: "var(--surface)",
-                                    cursor: assignMode && request.canAllocate ? "pointer" : "default",
-                                    boxShadow:
-                                      assignMode && String(assignTargetRequestId) === String(request.id)
-                                        ? "0 0 0 2px rgba(var(--primary-rgb), 0.08)"
-                                        : "none",
-                                  }}
-                                >
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
-                                      <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
-                                        {request.displayText || request.description}
-                                      </div>
-                                    {assignMode && String(assignTargetRequestId) === String(request.id) && (
-                                      <div style={{ fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
-                                          Selected allocation row
-                                      </div>
-                                    )}
-                                      {request.detailText && (
-                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
-                                          {request.detailText}
-                                        </div>
-                                      )}
-                                    </div>
-                                    {assignMode ? (
-                                      <span
-                                        style={{
-                                          padding: "6px 10px",
-                                          borderRadius: "var(--radius-xs)",
-                                          background:
-                                            String(assignTargetRequestId) === String(request.id)
-                                              ? "var(--theme)"
-                                              : "var(--surface)",
-                                          color:
-                                            String(assignTargetRequestId) === String(request.id)
-                                              ? "var(--accent-purple)"
-                                              : "var(--text-1)",
-                                          fontSize: "var(--text-caption)",
-                                          fontWeight: 600,
-                                          whiteSpace: "nowrap",
-                                        }}
-                                      >
-                                        {String(assignTargetRequestId) === String(request.id) ? "Selected" : "Click to select"}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  {allocatedParts.length > 0 && (
-                                    <div
-                                      style={{
-                                        marginTop: "10px",
-                                      }}
-                                    >
-                                      <table
-                                        data-dev-section="1"
-                                        data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}`}
-                                        data-dev-section-type="data-table"
-                                        data-dev-section-parent={`jobcard-parts-vhc-request-${request.id}`}
-                                        className="parts-allocate-subtable app-data-table app-data-table--rounded"
-                                        style={{ width: "100%", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
-                                      >
-                                        <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
-                                          <tr>
-                                            <th style={{ textAlign: "left", padding: "6px" }}>Part</th>
-                                            <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
-                                            <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
-                                            <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
-                                            <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
-                                          {allocatedParts.map((part) => (
-                                            <tr key={part.id} style={{ background: "var(--theme)" }}>
-                                              <td style={{ padding: "6px", verticalAlign: "middle" }}>
-                                                <span className="parts-allocate-cell-scroll" style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                                                  {part.partNumber}
-                                                </span>
-                                                <span className="parts-allocate-cell-scroll parts-allocate-description-cell" style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
-                                                  {part.description || part.name}
-                                                </span>
-                                              </td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>
-                                                <span className="parts-allocate-cell-scroll">{part.quantity}</span>
-                                              </td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>
-                                                <span className="parts-allocate-cell-scroll">{formatMoney(part.unitPrice)}</span>
-                                              </td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>
-                                                <span className="parts-allocate-cell-scroll">{formatMoney(part.unitCost)}</span>
-                                              </td>
-                                              <td style={{ padding: "6px", textAlign: "center" }}>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleUnassignPart(part.id)}
-                                                  disabled={!canEdit}
-                                                  style={{
-                                                    padding: "4px 8px",
-                                                    borderRadius: "var(--radius-xs)",
-                                                    border: "none",
-                                                    background: !canEdit ? "var(--surface)" : "var(--danger-surface)",
-                                                    color: !canEdit ? "var(--text-1)" : "var(--danger)",
-                                                    fontSize: "var(--text-caption)",
-                                                    fontWeight: 600,
-                                                    cursor: !canEdit ? "not-allowed" : "pointer",
-                                                  }}
-                                                >
-                                                  <span className="parts-allocate-cell-scroll">Unassign</span>
-                                                </button>
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  )}
-                                </DevLayoutSection>
-                              );
-                            })}
-                          </DevLayoutSection>
-                        ))
-                      )}
-                    </DevLayoutSection>
+                      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
+                        Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)}
+                      </div>
+                    </button>
                   );
-                })()}
-            </div>
+                })}
+              </div>
             )}
-          </div>
-          </DevLayoutSection>
-        ) : (
-          <DevLayoutSection
-            className="on-order-section"
-            sectionKey="jobcard-parts-on-order-panel"
-            sectionType="content-card"
-            parentKey="jobcard-parts-workspace"
-            style={{
-              background: "var(--surface)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              padding: "16px",
-              minHeight: "400px",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            <div style={{ marginBottom: "12px" }}>
-              <div
-                style={{
-                  fontSize: "var(--text-body-sm)",
-                  fontWeight: 600,
-                  color: "var(--text-1)",
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                }}
-              >
-                On Order
+            {selectedCatalogPart && (
+              <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>
+                      {selectedCatalogPart.name}
+                    </div>
+                    <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75 }}>
+                      Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelectedCatalogPart}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--text-1)",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: "var(--text-label)",
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, display: "block", marginBottom: "4px" }}>
+                      Quantity
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="catalog-qty-input"
+                      value={catalogQuantity}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d+$/.test(next)) {
+                          setCatalogQuantity(next);
+                        }
+                      }}
+                      placeholder="1"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        borderRadius: "var(--radius-xs)",
+                        border: "none",
+                        fontSize: "var(--text-label)",
+                        background: "var(--theme)",
+                        color: "var(--text-1)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, marginBottom: "4px" }}>Available</div>
+                    <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
+                      {selectedCatalogPart.qty_in_stock ?? 0}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, marginBottom: "4px" }}>Sell Price</div>
+                    <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
+                      £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                {catalogSubmitError && (
+                  <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-caption)" }}>
+                    {catalogSubmitError}
+                  </div>
+                )}
+                {catalogSuccessMessage && (
+                  <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-caption)" }}>
+                    {catalogSuccessMessage}
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={handleAddPartFromStock}
+                    disabled={!canAllocateParts || allocatingPart}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "var(--radius-xs)",
+                      border: "none",
+                      background: !canAllocateParts ? "var(--theme)" : "var(--accent-purple)",
+                      color: "var(--text-2)",
+                      fontWeight: 600,
+                      cursor: !canAllocateParts ? "not-allowed" : "pointer",
+                      fontSize: "var(--text-body-sm)",
+                    }}
+                  >
+                    {allocatingPart ? "Adding..." : "Add to Job"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddPartToOrderFromStock}
+                    disabled={!canAllocateParts || allocatingPart}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "var(--radius-xs)",
+                      border: "none",
+                      background: "var(--theme)",
+                      color: !canAllocateParts ? "var(--text-1)" : "var(--accent-purple)",
+                      fontWeight: 600,
+                      cursor: !canAllocateParts ? "not-allowed" : "pointer",
+                      fontSize: "var(--text-body-sm)",
+                    }}
+                  >
+                    {allocatingPart ? "Adding..." : "Add to Order"}
+                  </button>
+                </div>
+              </LayerSurface>
+            )}
+            {catalogSuccessMessage && !selectedCatalogPart && (
+              <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-label)", textAlign: "center" }}>
+                {catalogSuccessMessage}
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--text-1)" }}>
-                {partsOnOrderFromDB.length > 0
-                  ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? "s" : ""} on order`
-                  : "No parts currently on order"}
-              </p>
-            </div>
-            {/* Fixed-size table container */}
-            <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
-              <div
-                style={{
-                  overflowX: "auto",
-                  overflowY: "auto",
-                  maxHeight: "600px",
-                  flex: 1,
-                  padding: "8px",
-                }}
-              >
-                <table
-                  className="on-order-table app-data-table app-data-table--rounded"
-                  data-dev-section="1"
-                  data-dev-section-key="jobcard-parts-on-order-table"
-                  data-dev-section-type="data-table"
-                  data-dev-section-parent="jobcard-parts-on-order-panel"
-                  style={{ width: "100%" }}
-                >
-                  <thead data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="jobcard-parts-on-order-table">
-                    <tr>
-                      <th style={{ textAlign: "left" }}>Part Name</th>
-                      <th style={{ textAlign: "left" }}>Part Number</th>
-                      <th style={{ textAlign: "right" }}>Qty</th>
-                      <th style={{ textAlign: "right" }}>Price</th>
-                      <th style={{ textAlign: "left" }}>ETA Date</th>
-                      <th style={{ textAlign: "left" }}>ETA Time</th>
-                      <th style={{ textAlign: "center" }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
-                    {partsOnOrderFromDB.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--text-1)" }}>
-                          No parts currently on order for this job.
-                        </td>
-                      </tr>
-                    ) : (
-                      partsOnOrderFromDB.map((part) => {
-                        // Check if manually marked as arrived OR auto-detected via part number match
-                        const isManuallyArrived = arrivedPartIds.includes(part.id);
-                        const isAutoArrived = part.partNumber && arrivedPartNumbers.has(part.partNumber.toLowerCase().trim());
-                        const isArrived = isManuallyArrived || isAutoArrived;
-                        const isRemoved = normalizePartStatus(part.status) === "removed";
-                        return (
-                          <tr
-                            key={part.id}
-                            style={{
-                              background: isRemoved ? "var(--danger)" : "var(--surface)",
-                              opacity: isRemoved ? 0.8 : 1,
-                            }}
-                          >
-                            <td style={{ color: "var(--text-1)" }}>
-                              <span
-                                className="part-name-cell on-order-cell-scroll"
-                                onMouseDown={handlePartNameDragStart}
-                                onMouseMove={handlePartNameDragMove}
-                                onMouseUp={handlePartNameDragEnd}
-                                onMouseLeave={handlePartNameDragEnd}
-                              >
-                                {part.partName}
-                              </span>
-                            </td>
-                            <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                              <span className="on-order-cell-scroll">{part.partNumber}</span>
-                            </td>
-                            <td style={{ textAlign: "right" }}>
-                              <span className="on-order-cell-scroll">{part.quantity}</span>
-                            </td>
-                            <td style={{ textAlign: "right" }}>
-                              <span className="on-order-cell-scroll">{formatMoney(part.unitPrice)}</span>
-                            </td>
-                            <td>
-                              <CalendarField
-                                value={part.etaDate || ""}
-                                onChange={(e) => handleUpdateETA(part.id, "etaDate", e.target.value)}
-                                disabled={!canEdit || isArrived}
-                                placeholder="Date"
-                                size="sm"
-                                className="compact-input"
-                              />
-                            </td>
-                            <td>
-                              <TimePickerField
-                                value={part.etaTime || ""}
-                                onChange={(e) => handleUpdateETA(part.id, "etaTime", e.target.value)}
-                                disabled={!canEdit || isArrived}
-                                placeholder="Time"
-                                size="sm"
-                                minuteStep={15}
-                                className="compact-input"
-                              />
-                            </td>
-                            <td style={{ textAlign: "center" }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!isArrived) {
-                                    setArrivedPartIds((prev) => [...prev, part.id]);
-                                    handlePartArrived(part.id);
-                                  }
-                                }}
-                                disabled={!canEdit || isArrived}
-                                style={{
-                                  borderRadius: "var(--radius-xs)",
-                                  border: "none",
-                                  background: !canEdit
-                                    ? "var(--surface)"
-                                    : isArrived
-                                    ? "var(--success)"
-                                    : "var(--warning)",
-                                  color: !canEdit ? "var(--info)" : "white",
-                                  fontWeight: 600,
-                                  cursor: !canEdit || isArrived ? "not-allowed" : "pointer",
-                                  whiteSpace: "nowrap",
-                                  padding: "6px 12px",
-                                }}
-                              >
-                                <span className="on-order-cell-scroll">{isArrived ? "Arrived" : "Arrived?"}</span>
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+            )}
+            {catalogSubmitError && !selectedCatalogPart && (
+              <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-label)", textAlign: "center" }}>
+                {catalogSubmitError}
               </div>
-            </div>
-          </DevLayoutSection>
+            )}
+          </LayerTheme>
         )}
-      </DevLayoutSection>
+
+        {/* The parts table */}
+        <div style={{ overflowX: "auto" }}>
+          <table
+            className="app-data-table app-data-table--rounded"
+            data-dev-section="1"
+            data-dev-section-key="jobcard-parts-table"
+            data-dev-section-type="data-table"
+            data-dev-section-parent="jobcard-parts-table-section"
+            data-dev-disable-table-subsections="1"
+            style={{ width: "100%", minWidth: "1040px", borderCollapse: "separate", borderSpacing: 0, fontSize: "var(--text-caption)" }}
+          >
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left" }}>Part Details</th>
+                <th style={{ textAlign: "left" }}>Request</th>
+                <th style={{ textAlign: "center" }}>Status</th>
+                <th style={{ textAlign: "left" }}>Location</th>
+                <th style={{ textAlign: "right" }}>Qty Req</th>
+                <th style={{ textAlign: "right" }}>Qty Alloc</th>
+                <th style={{ textAlign: "right" }}>Qty Ord</th>
+                <th style={{ textAlign: "left" }}>Supplier</th>
+                <th style={{ textAlign: "left" }}>ETA</th>
+                <th style={{ textAlign: "right" }}>Unit Price</th>
+                <th style={{ textAlign: "right" }}>Total</th>
+                <th style={{ textAlign: "center" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableParts.length === 0 ? (
+                <tr>
+                  <td colSpan={12} style={{ textAlign: "center", padding: "24px", color: "var(--text-1)", opacity: 0.7 }}>
+                    {jobParts.length === 0
+                      ? "No parts added to this job yet. Use Book Part to add one."
+                      : "No parts match this filter or search."}
+                  </td>
+                </tr>
+              ) : (
+                tableParts.map((part) => {
+                  const row = derivePartRow(part);
+                  return (
+                    <tr
+                      key={part.id}
+                      style={{
+                        opacity: row.isRemoved ? 0.7 : 1,
+                        textDecoration: row.isRemoved ? "line-through" : "none",
+                      }}
+                    >
+                      <td style={{ textAlign: "left", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                          <span style={{ fontWeight: 600, color: row.isRemoved ? "var(--text-1)" : "var(--accent-purple)" }}>
+                            {part.partNumber}
+                          </span>
+                          <span style={{ color: "var(--text-1)", opacity: 0.8 }}>{part.description || part.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: "left", verticalAlign: "middle", color: "var(--text-1)" }}>
+                        {row.requestLabel}
+                      </td>
+                      <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                        <span className={`app-badge ${row.statusMeta.badge}`}>{row.statusMeta.label}</span>
+                        {row.isBackOrder && (
+                          <span className="app-badge app-badge--danger" style={{ marginLeft: "4px" }}>Back Order</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "left", verticalAlign: "middle", color: "var(--text-1)" }}>{row.locationLabel}</td>
+                      <td style={{ textAlign: "right", verticalAlign: "middle", fontWeight: 600, color: "var(--text-1)" }}>{row.qtyReq}</td>
+                      <td style={{ textAlign: "right", verticalAlign: "middle", color: "var(--text-1)" }}>{row.qtyAlloc}</td>
+                      <td style={{ textAlign: "right", verticalAlign: "middle", color: "var(--text-1)" }}>{row.qtyOrd}</td>
+                      <td style={{ textAlign: "left", verticalAlign: "middle", color: "var(--text-1)" }}>{row.supplier}</td>
+                      <td style={{ textAlign: "left", verticalAlign: "middle", color: "var(--text-1)" }}>{row.etaText}</td>
+                      <td style={{ textAlign: "right", verticalAlign: "middle", color: "var(--text-1)" }}>{formatMoney(row.unitPrice)}</td>
+                      <td style={{ textAlign: "right", verticalAlign: "middle", fontWeight: 600, color: "var(--text-1)" }}>{formatMoney(row.total)}</td>
+                      <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                        <button
+                          type="button"
+                          aria-label={`Edit part ${part.partNumber}`}
+                          title="Edit part details"
+                          onClick={() => setPartPopup({ open: true, part })}
+                          className="app-table-action-btn app-table-action-btn--ghost"
+                          style={{ minWidth: "32px", padding: "0 8px", fontSize: "var(--text-body)", lineHeight: 1, fontWeight: 700 }}
+                        >
+                          &#8942;
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </LayerSurface>
 
       {/* Part Removal Popup Modal */}
       {showPrePickPopup && (
@@ -3111,7 +2602,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     Part Details
                   </div>
                   <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.78 }}>
-                    Review pre-pick location or remove stock from this job.
+                    Edit any detail for this job item — changes apply on Save.
                   </div>
                 </div>
                 <Button
@@ -3161,85 +2652,179 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 </div>
               </LayerTheme>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    Number(partPopup.part.quantity || 0) > 1
-                      ? "repeat(auto-fit, minmax(220px, 1fr))"
-                      : "1fr",
-                  gap: "var(--layout-card-gap)",
-                  alignItems: "end",
-                }}
-              >
-                <DropdownField
-                  className="parts-part-details-prepick-dropdown"
-                  menuClassName="parts-part-details-prepick-menu"
-                  menuStyle={{
-                    maxHeight: "136px",
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    overscrollBehavior: "contain",
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    WebkitOverflowScrolling: "touch",
-                    touchAction: "pan-y",
+              {partDraft && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "var(--layout-card-gap)",
+                    alignItems: "end",
                   }}
-                  label="Pre-pick"
-                  placeholder={
-                    savingPrePickPartId === String(partPopup.part.id)
-                      ? "Saving..."
-                      : "Select pre-pick location"
-                  }
-                  value={partPopup.part.prePickLocation || ""}
-                  onChange={(event) => handlePartPrePickLocationChange(partPopup.part, event.target.value)}
-                  options={prePickLocationOptions}
-                  disabled={
-                    !canEdit ||
-                    partPopup.part.source === "goods-in" ||
-                    normalizePartStatus(partPopup.part.status) === "removed" ||
-                    savingPrePickPartId === String(partPopup.part.id)
-                  }
-                />
-                {Number(partPopup.part.quantity || 0) > 1 && (
+                >
+                  <DropdownField
+                    label="Status"
+                    placeholder="Select status"
+                    value={partDraft.status}
+                    onChange={(event) => setPartDraft((d) => ({ ...d, status: event.target.value }))}
+                    options={statusOptions}
+                    disabled={!canEdit}
+                  />
+                  <DropdownField
+                    label="Allocated request"
+                    placeholder="Unallocated"
+                    value={partDraft.requestSelection}
+                    onChange={(event) => setPartDraft((d) => ({ ...d, requestSelection: event.target.value }))}
+                    options={requestSelectOptions}
+                    disabled={!canEdit}
+                  />
+                  <DropdownField
+                    className="parts-part-details-prepick-dropdown"
+                    menuClassName="parts-part-details-prepick-menu"
+                    menuStyle={{
+                      maxHeight: "136px",
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      overscrollBehavior: "contain",
+                      scrollbarWidth: "none",
+                      msOverflowStyle: "none",
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    label="Pre-pick location"
+                    placeholder="Select pre-pick location"
+                    value={partDraft.prePickLocation}
+                    onChange={(event) => setPartDraft((d) => ({ ...d, prePickLocation: event.target.value }))}
+                    options={prePickLocationOptions}
+                    disabled={!canEdit || partPopup.part.source === "goods-in"}
+                  />
                   <div>
-                    <label
-                      style={{
-                        fontSize: "var(--control-label-size)",
-                        color: "var(--text-1)",
-                        fontWeight: "var(--control-label-weight)",
-                        display: "block",
-                        marginBottom: "6px",
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      Storage location
+                    </label>
+                    <input
+                      type="text"
+                      className="app-input"
+                      value={partDraft.storageLocation}
+                      onChange={(e) => setPartDraft((d) => ({ ...d, storageLocation: e.target.value }))}
+                      placeholder="Not assigned"
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      Qty requested
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="app-input"
+                      value={partDraft.quantityRequested}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d+$/.test(next)) setPartDraft((d) => ({ ...d, quantityRequested: next }));
                       }}
-                    >
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      Qty allocated
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="app-input"
+                      value={partDraft.quantityAllocated}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d+$/.test(next)) setPartDraft((d) => ({ ...d, quantityAllocated: next }));
+                      }}
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      Unit price (£)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="app-input"
+                      value={partDraft.unitPrice}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d*\.?\d*$/.test(next)) setPartDraft((d) => ({ ...d, unitPrice: next }));
+                      }}
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      Supplier reference
+                    </label>
+                    <input
+                      type="text"
+                      className="app-input"
+                      value={partDraft.supplier_reference}
+                      onChange={(e) => setPartDraft((d) => ({ ...d, supplier_reference: e.target.value }))}
+                      placeholder="—"
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      ETA date
+                    </label>
+                    <input
+                      type="date"
+                      className="app-input"
+                      value={partDraft.eta_date}
+                      onChange={(e) => setPartDraft((d) => ({ ...d, eta_date: e.target.value }))}
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
+                      ETA time
+                    </label>
+                    <input
+                      type="time"
+                      className="app-input"
+                      value={partDraft.eta_time}
+                      onChange={(e) => setPartDraft((d) => ({ ...d, eta_time: e.target.value }))}
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "var(--control-label-size)", color: "var(--text-1)", fontWeight: "var(--control-label-weight)", display: "block", marginBottom: "6px" }}>
                       Quantity to remove
                     </label>
                     <input
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
+                      className="app-input"
                       value={partRemoveQuantity}
                       onChange={(e) => {
                         const next = e.target.value;
-                        if (next === "" || /^\d+$/.test(next)) {
-                          setPartRemoveQuantity(next);
-                        }
+                        if (next === "" || /^\d+$/.test(next)) setPartRemoveQuantity(next);
                       }}
                       placeholder="1"
-                      style={{
-                        width: "100%",
-                        padding: "var(--control-padding)",
-                        borderRadius: "var(--control-radius)",
-                        border: "none",
-                        minHeight: "var(--control-height)",
-                        fontSize: "var(--control-font-size)",
-                        background: "var(--surface)",
-                        color: "var(--text-1)",
-                      }}
+                      disabled={!canEdit}
+                      style={{ width: "100%" }}
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <style jsx global>{`
                 html.staff-scope .parts-part-details-prepick-menu::-webkit-scrollbar {
@@ -3273,7 +2858,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     variant="danger"
                     size="sm"
                     onClick={() => handleRemovePartFromPopup("partial")}
-                    disabled={!canEdit}
+                    disabled={!canEdit || savingPartDetails}
                   >
                     Remove
                   </Button>
@@ -3282,9 +2867,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     variant="danger"
                     size="sm"
                     onClick={() => handleRemovePartFromPopup("all")}
-                    disabled={!canEdit}
+                    disabled={!canEdit || savingPartDetails}
                   >
                     Remove All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSavePartDetails}
+                    disabled={!canEdit || savingPartDetails}
+                  >
+                    {savingPartDetails ? "Saving..." : "Save changes"}
                   </Button>
                 </div>
               </div>

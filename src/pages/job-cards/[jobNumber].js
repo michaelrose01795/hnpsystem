@@ -1,5 +1,5 @@
-// file location: src/pages/job-cards/[jobNumber].js
-// ✅ Imports converted to use absolute alias "@/"
+﻿// file location: src/pages/job-cards/[jobNumber].js
+// âœ… Imports converted to use absolute alias "@/"
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -96,7 +96,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
 import ContactTab from "@/components/page-ui/job-cards/contact/ContactTab"; // Redesigned Contact tab (extracted from this file).
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md Â§3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
     return (
@@ -673,9 +673,9 @@ const normalizeKeyLocationLabel = (value = "") => {
   const text = String(value || "").trim();
   if (!text) return "";
   return text.
-  replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "").
-  replace(/^Key location\s*[-:–]\s*/i, "").
-  replace(/^Key locations?\s*[-:–]\s*/i, "");
+  replace(/^Keys (received|hung|updated)\s*[-â€“]\s*/i, "").
+  replace(/^Key location\s*[-:â€“]\s*/i, "").
+  replace(/^Key locations?\s*[-:â€“]\s*/i, "");
 };
 
 const ensureDropdownOption = (options = [], value = "") => {
@@ -748,10 +748,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   const isArchiveMode = router.query.archive === "1"; // moved up so useJob can reference it
 
-  // SWR-powered initial data — provides cached data instantly on revisit or prefetch
+  // SWR-powered initial data â€” provides cached data instantly on revisit or prefetch
   const { jobResponse: swrJobResponse, mutate: mutateSwrJob } = useJob(jobNumber, { archive: isArchiveMode });
 
-  // ✅ State Management
+  // âœ… State Management
   const [jobData, setJobData] = useState(null);
   // Per-request clocking entries (job_clocking rows with request_id + hoursWorked).
   // Loaded for the Customer Requests tab so each request can show its total
@@ -815,7 +815,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
   const trackerUpdateRef = useRef(null);
 
-  // ✅ Related Jobs (Prime/Sub-job) State
+  // âœ… Related Jobs (Prime/Sub-job) State
   const [relatedJobs, setRelatedJobs] = useState([]);
   const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
   const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
@@ -881,7 +881,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData, activeTab]);
 
-  // ✅ Permission Check (centralized shared model)
+  // âœ… Permission Check (centralized shared model)
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
   const permissions = useMemo(
     () =>
@@ -1070,7 +1070,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // job is past the Checked In stage and should read as "In Progress" until
   // the next stage advances it. The persisted jobs.status row is sometimes
   // still "Checked In" because the auto-promotion in jobStatusService runs on
-  // the sub-status path, not on every clocking event — so we promote here
+  // the sub-status path, not on every clocking event â€” so we promote here
   // for display whenever clocking activity exists for the job.
   const clockingSummary = statusSnapshot?.clockingSummary || null;
   const techHasClockedOnThisJob = Boolean(
@@ -1106,7 +1106,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     overallStatusId === JOB_STATUSES.CHECKED_IN ||
 
     // Only fall back to the timestamps when we don't know the canonical
-    // status yet — i.e. before the status snapshot has loaded.
+    // status yet â€” i.e. before the status snapshot has loaded.
     !overallStatusId && (
     jobData?.checkedInAt ||
     jobData?.appointment?.status === "checked_in")
@@ -1349,7 +1349,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setJobNotes(notes || []);
       return notes[0] || null;
     } catch (noteError) {
-      console.error("❌ Failed to load shared note:", noteError);
+      console.error("âŒ Failed to load shared note:", noteError);
       setJobNotes([]);
       return null;
     }
@@ -1400,7 +1400,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
 
         const jobCard = data.jobCard;
-        console.log("🔍 jobCard.jobRequests hours:", (jobCard.jobRequests || []).map((r) => ({ desc: (r.description || "").slice(0, 30), hours: r.hours })));
+        console.log("ðŸ” jobCard.jobRequests hours:", (jobCard.jobRequests || []).map((r) => ({ desc: (r.description || "").slice(0, 30), hours: r.hours })));
         const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
         const resolvedHydratedMileage = pickMileageValue(
           jobCard?.mileage,
@@ -1423,7 +1423,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
         const overlayToApply = writeUpOptimisticSyncRef.current;
         setJobData(overlayToApply ? applyWriteUpOptimisticOverlay(hydratedJobCard, overlayToApply) : hydratedJobCard);
-        // Do NOT set jobDocuments here — fetchDocuments() is the authoritative source
+        // Do NOT set jobDocuments here â€” fetchDocuments() is the authoritative source
         // and runs independently. Setting from the embedded join (which can silently
         // return [] when the PostgREST schema cache is stale) would overwrite correctly
         // fetched files and cause them to disappear from the gallery.
@@ -1449,7 +1449,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           mapCustomerJobsToHistory(customerJobs, jobCard.reg)
         );
       } catch (err) {
-        console.error("❌ Exception fetching job:", err);
+        console.error("âŒ Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
       } finally {
         lastJobFetchAtRef.current = Date.now();
@@ -1466,7 +1466,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     fetchJobData();
   }, [fetchJobData]);
 
-  // Stable callbacks for WriteUpForm — avoids re-creating on every parent render
+  // Stable callbacks for WriteUpForm â€” avoids re-creating on every parent render
   const handleWriteUpSaveSuccess = useCallback(() => {
     fetchJobData({ silent: true, force: true });
   }, [fetchJobData]);
@@ -1499,7 +1499,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     } catch {
 
 
-      // silently ignore — the gallery will refresh on next fetchDocuments
+      // silently ignore â€” the gallery will refresh on next fetchDocuments
     }}, [jobNumber]);
   const handleDocumentFileUploaded = useCallback((fileData) => {
     if (!fileData) return;
@@ -1563,7 +1563,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     } catch {
 
 
-      // silently ignore — the embedded-join fallback already ran
+      // silently ignore â€” the embedded-join fallback already ran
     }}, [jobNumber]);
   // Always fetch documents directly on page load and job-number changes.
   // This is the authoritative source: a direct query against job_files avoids
@@ -1662,7 +1662,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData?.id, jobData?.vhcRequired, jobData?.vhcCompletedAt, vhcAuthorizedWorkCompleted, canEdit]);
 
-  // ✅ Fetch related jobs when job data loads
+  // âœ… Fetch related jobs when job data loads
   useEffect(() => {
     const primeJobNumber = jobData?.primeJobNumber;
     if (!primeJobNumber) {
@@ -1880,10 +1880,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     // Structured payload renders the modern themed-tile layout in
     // ConfirmationDialog (see src/components/popups/ConfirmationDialog.js).
     const confirmed = await confirm({
-      title: null, // Suppress the eyebrow — the prompt is enough on its own.
+      title: null, // Suppress the eyebrow â€” the prompt is enough on its own.
       message: "Check in this customer?",
       details: [
-      { label: "Job", value: jobData.jobNumber || jobData.id || "—", tone: "info" },
+      { label: "Job", value: jobData.jobNumber || jobData.id || "â€”", tone: "info" },
       { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
       { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
       { label: "Appointment", value: jobData.appointment?.time || "N/A", tone: "accent" }],
@@ -1903,8 +1903,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       if (!result?.success) {
-        console.error("❌ Check-in failed:", result?.error);
-        alert(`❌ Failed to check in: ${result?.error?.message || "Unknown error"}`);
+        console.error("âŒ Check-in failed:", result?.error);
+        alert(`âŒ Failed to check in: ${result?.error?.message || "Unknown error"}`);
         return;
       }
 
@@ -1922,7 +1922,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       alert(
-        `✅ Customer Checked In!\n\n` +
+        `âœ… Customer Checked In!\n\n` +
         `Job: ${jobData.jobNumber || jobData.id}\n` +
         `Customer: ${jobData.customer || "N/A"}\n` +
         `Time: ${new Date().toLocaleTimeString()}`
@@ -1931,8 +1931,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await fetchJobData({ silent: true, force: true });
       revalidateAllJobs(); // tell other pages (appointments, dashboard) to refresh
     } catch (error) {
-      console.error("❌ Error checking in:", error);
-      alert("❌ Error checking in customer. Please try again.");
+      console.error("âŒ Error checking in:", error);
+      alert("âŒ Error checking in customer. Please try again.");
     } finally {
       setCheckingIn(false);
     }
@@ -1970,7 +1970,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         const vehicles = await getCustomerVehicles(customerId);
         setCustomerVehicles(Array.isArray(vehicles) ? vehicles : []);
       } catch (vehicleError) {
-        console.error("❌ Failed to load customer vehicles:", vehicleError);
+        console.error("âŒ Failed to load customer vehicles:", vehicleError);
         setCustomerVehicles([]);
       } finally {
         setCustomerVehiclesLoading(false);
@@ -1979,7 +1979,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     []
   );
 
-  // jobDocuments is driven solely by fetchDocuments() — not by jobData.files —
+  // jobDocuments is driven solely by fetchDocuments() â€” not by jobData.files â€”
   // so that the embedded-join result (which can be empty due to schema-cache issues)
   // never overwrites the correct direct-query result.
 
@@ -2172,7 +2172,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync customer changes to other pages
         return { success: true };
       } catch (saveError) {
-        console.error("❌ Failed to update customer:", saveError);
+        console.error("âŒ Failed to update customer:", saveError);
         alert(saveError?.message || "Failed to update customer details");
         return { success: false, error: saveError };
       } finally {
@@ -2234,7 +2234,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           }
         }
 
-        // ✅ When prime job (job 1) saves an appointment, sync to all sub-jobs
+        // âœ… When prime job (job 1) saves an appointment, sync to all sub-jobs
         if (jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0) {
           for (const subJob of jobData.subJobs) {
             if (!subJob?.id) continue;
@@ -2260,7 +2260,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                 }]);
               }
             } catch (subErr) {
-              console.warn(`⚠️ Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
+              console.warn(`âš ï¸ Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
             }
           }
         }
@@ -2270,7 +2270,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         // "Open" stay on "Open" even after they're put on the appointment
         // calendar, which is why such a job appears in /appointments but its
         // header badge still reads "Open". Only fire this transition for jobs
-        // that haven't moved past the pre-booked stage — autoSetBookedStatus
+        // that haven't moved past the pre-booked stage â€” autoSetBookedStatus
         // would otherwise overwrite Checked-In / In-Progress / Invoiced jobs.
         const currentJobStatus = String(jobData?.status || "").trim().toLowerCase();
         const PRE_BOOKED_STATUSES = new Set(["", "open", "pending", "new", "booked"]);
@@ -2287,13 +2287,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   try {
                     await autoSetBookedStatus(subJob.id);
                   } catch (subStatusErr) {
-                    console.warn(`⚠️ Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
+                    console.warn(`âš ï¸ Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
                   }
                 }
               }
             }
           } catch (statusError) {
-            console.warn("⚠️ Failed to auto-set Booked status after appointment save:", statusError);
+            console.warn("âš ï¸ Failed to auto-set Booked status after appointment save:", statusError);
           }
         }
 
@@ -2301,7 +2301,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync appointment changes to other pages
         return { success: true };
       } catch (appointmentError) {
-        console.error("❌ Failed to update appointment:", appointmentError);
+        console.error("âŒ Failed to update appointment:", appointmentError);
         alert(appointmentError?.message || "Failed to update appointment");
         return { success: false, error: appointmentError };
       } finally {
@@ -2499,14 +2499,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           }
         } catch (requestError) {
           console.error(
-            "⚠️ Booking request notifications failed:",
+            "âš ï¸ Booking request notifications failed:",
             requestError
           );
         }
 
         return { success: true };
       } catch (bookingError) {
-        console.error("❌ Failed to save booking details:", bookingError);
+        console.error("âŒ Failed to save booking details:", bookingError);
         alert(bookingError?.message || "Failed to save booking details");
         return { success: false, error: bookingError };
       } finally {
@@ -2653,7 +2653,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (mileageError) {
-        console.error("❌ Failed to save mileage:", mileageError);
+        console.error("âŒ Failed to save mileage:", mileageError);
         return { success: false, error: mileageError };
       }
     },
@@ -2757,7 +2757,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (approvalError) {
-        console.error("❌ Failed to approve booking:", approvalError);
+        console.error("âŒ Failed to approve booking:", approvalError);
         alert(approvalError?.message || "Failed to approve booking");
         return { success: false, error: approvalError };
       } finally {
@@ -2857,7 +2857,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       // Redirect to invoice tab after successful invoice creation
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
     } catch (createError) {
-      console.error("❌ Failed to trigger invoice creation:", createError);
+      console.error("âŒ Failed to trigger invoice creation:", createError);
       alert(createError?.message || "Failed to trigger invoice creation");
     } finally {
       setCreatingInvoice(false);
@@ -2965,7 +2965,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           from(JOB_DOCUMENT_BUCKET).
           remove([storagePath]);
           if (removeError) {
-            console.warn("⚠️ Failed to remove file from storage:", removeError);
+            console.warn("âš ï¸ Failed to remove file from storage:", removeError);
           }
         }
 
@@ -2975,7 +2975,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           return;
         }
 
-        // Job tracker logging — non-blocking.
+        // Job tracker logging â€” non-blocking.
         try {
           const mime = String(file.type || file.mimeType || file.name || "").toLowerCase();
           const kind = mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime) ?
@@ -3002,7 +3002,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         prev
         );
       } catch (deleteError) {
-        console.error("❌ Failed to delete document:", deleteError);
+        console.error("âŒ Failed to delete document:", deleteError);
         alert(deleteError?.message || "Failed to delete document");
       }
     },
@@ -3061,7 +3061,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         setSharedNote(latest?.noteText || "");
         setSharedNoteMeta(latest);
       } catch (saveError) {
-        console.error("❌ Failed to save note:", saveError);
+        console.error("âŒ Failed to save note:", saveError);
         alert(saveError?.message || "Failed to save note");
       } finally {
         setSharedNoteSaving(false);
@@ -3086,7 +3086,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }, 300);
   }, [canEdit, saveSharedNote, sharedNoteMeta?.noteText]);
 
-  // ✅ Update Job Request Handler
+  // âœ… Update Job Request Handler
   const handleUpdateRequests = async (updatedRequests) => {
     if (!canEdit || !jobData?.id) return;
 
@@ -3242,14 +3242,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
-      alert("✅ Job requests updated successfully");
+      alert("âœ… Job requests updated successfully");
     } catch (error) {
       console.error("Error updating requests:", error);
       alert("Failed to update job requests");
     }
   };
 
-  // ✅ Load per-request clocking totals for the Customer Requests tab.
+  // âœ… Load per-request clocking totals for the Customer Requests tab.
   const loadClockingEntries = useCallback(async () => {
     if (!jobData?.id) {
       setClockingEntries([]);
@@ -3268,7 +3268,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     loadClockingEntries();
   }, [loadClockingEntries]);
 
-  // ✅ Mark a single request complete / change its status (Customer Requests tab).
+  // âœ… Mark a single request complete / change its status (Customer Requests tab).
   // upsertJobRequestsForJob never writes `status`, so this uses the dedicated
   // single-row updater and then refreshes the job + clocking data.
   const handleUpdateRequestStatus = async (requestId, nextStatus) => {
@@ -3303,7 +3303,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
   };
 
-  // "Mark All Complete" on the Customer Requests tab summary — sets every
+  // "Mark All Complete" on the Customer Requests tab summary â€” sets every
   // request row for this job to completed in one write.
   const handleMarkAllRequestsComplete = async () => {
     if (!canEdit || !jobData?.id) return;
@@ -3595,7 +3595,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
       if (result.success) {
         setJobData((prev) => prev ? { ...prev, vhcRequired: nextValue } : prev);
-        alert(nextValue ? "✅ VHC marked as required" : "✅ VHC marked as not required");
+        alert(nextValue ? "âœ… VHC marked as required" : "âœ… VHC marked as not required");
       } else {
         alert(result?.error?.message || "Failed to update VHC requirement");
       }
@@ -3605,7 +3605,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
   };
 
-  // ✅ VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
+  // âœ… VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
   const vhcFinancialTotals = useMemo(() => {
     // Return null values if jobData is not loaded yet
     if (!jobData) {
@@ -3628,7 +3628,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return { authorized: 0, declined: 0 };
   }, [jobData, vhcFinancialTotalsFromPanel]);
 
-  // ✅ Customer VHC delivery status — fetched + polled here so both the VHC tab
+  // âœ… Customer VHC delivery status â€” fetched + polled here so both the VHC tab
   // (Send action) and the customer summary card badge share one source of truth.
   const loadVhcCustomerStatus = useCallback(async () => {
     if (!jobNumber) return;
@@ -3692,19 +3692,19 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     if (value === null || value === undefined) {
       return "N/A";
     }
-    // Show £0.00 for zero values, or the actual amount
+    // Show Â£0.00 for zero values, or the actual amount
     if (!Number.isFinite(value)) {
       return "N/A";
     }
-    return `£${value.toFixed(2)}`;
+    return `Â£${value.toFixed(2)}`;
   };
 
-  // ✅ Loading State
+  // âœ… Loading State
   if (loading) {
     return <JobCardDetailPageUi view="section1" JobCardPageShellSkeleton={JobCardPageShellSkeleton} jobNumber={jobNumber} />;
   }
 
-  // ✅ Error State
+  // âœ… Error State
   if (error || !jobData) {
     return <JobCardDetailPageUi view="section2" error={error} jobNumber={jobNumber} router={router} />;
 
@@ -3809,7 +3809,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       overallStatusId
     );
     const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
-    // Invoice gate matches the tab indicator — if every checklist row is
+    // Invoice gate matches the tab indicator â€” if every checklist row is
     // ticked the write-up is "done" for prerequisite purposes, even if the
     // 800ms autosave hasn't yet rewritten writeUp.completion_status in the
     // DB. Without this, ticking the final box flips the tab green but the
@@ -3876,7 +3876,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     "";
     const jobDivisionLower = jobDivisionLabel.toLowerCase();
 
-    // ✅ Job group position (X/Y Job Cards badge)
+    // âœ… Job group position (X/Y Job Cards badge)
     const isInPrimeGroup = jobData.isPrimeJob || Boolean(jobData.primeJobId);
     const jobGroupPosition = jobData.isPrimeJob ?
     1 :
@@ -3886,7 +3886,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     relatedJobs.length + 1;
     const showJobGroupBadge = isInPrimeGroup && jobGroupTotal > 1;
 
-    // ✅ Tab Configuration (from shared permission model)
+    // âœ… Tab Configuration (from shared permission model)
     const permissionTabs = permissions?.tabs || [];
     const tabsWithLoanCar = isLoanCarLogisticsSelected && !isValetMode ?
     permissionTabs.reduce((acc, tab) => {
@@ -3928,8 +3928,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       whiteSpace: "nowrap"
     };
 
-    // ✅ Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    // âœ… Main Render
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -4995,7 +4995,7 @@ class JobCardErrorBoundary extends React.Component {
           justifyContent: "center",
           minHeight: "60vh"
         }}>
-          <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>âš ï¸</div>
           <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>
             Job card failed to render
           </h2>
@@ -5015,7 +5015,7 @@ class JobCardErrorBoundary extends React.Component {
 // TAB COMPONENTS
 // ============================================
 
-// ✅ Customer Requests Tab
+// âœ… Customer Requests Tab
 function CustomerRequestsTab({
   jobData,
   canEdit,
@@ -5438,7 +5438,7 @@ function CustomerRequestsTab({
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
-  // OR every checklist row is checked — which is what the user expects when
+  // OR every checklist row is checked â€” which is what the user expects when
   // they tick off every row but haven't yet hit the explicit "Mark Complete"
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
@@ -5485,7 +5485,7 @@ function CustomerRequestsTab({
     completedWriteUpSortOrders.has(sortOrderNum)) {
       return true;
     }
-    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
+    // Fall back to positional index (1-based) â€” matches how WriteUpForm seeds
     // a fresh checklist when no requestId/sortOrder is present.
     if (Number.isInteger(indexInList) && indexInList >= 0 &&
     completedWriteUpSortOrders.has(indexInList + 1)) {
@@ -5813,7 +5813,7 @@ function CustomerRequestsTab({
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
         _wheelOrder: toWheelPositionOrder(`${computedLabel || ""} ${computedDetail || ""}`),
         _originalIndex: rowIndex,
-        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source — the matched VHC check, the linked request row, and the row itself — so the severity field is found regardless of which shape the row arrived as.
+        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source â€” the matched VHC check, the linked request row, and the row itself â€” so the severity field is found regardless of which shape the row arrived as.
         severity: resolveVhcSeverity({ ...(row || {}), ...(linkedRequestRow || {}), ...(matchedCheck || {}) })
       };
     });
@@ -6220,7 +6220,7 @@ function CustomerRequestsTab({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Stats row — full width, surface boxes alternating off the theme shell */}
+        {/* Stats row â€” full width, surface boxes alternating off the theme shell */}
         <div className="jc-req-statgrid">
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
@@ -6250,9 +6250,9 @@ function CustomerRequestsTab({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request…</span>}</td>
-                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
-                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New requestâ€¦</span>}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
+                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
                   );
@@ -6278,7 +6278,7 @@ function CustomerRequestsTab({
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
                         <td style={{ color: "var(--text-1)" }}>{req.text}</td>
-                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>
                     );
@@ -6354,8 +6354,8 @@ function CustomerRequestsTab({
                   return (
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
-                      <td style={{ color: "var(--text-1)" }}>{row.description || "—"}</td>
-                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
+                      <td style={{ color: "var(--text-1)" }}>{row.description || "â€”"}</td>
+                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "â€”"}</td>
                       <td>{formatHoursDisplay(row.hours)}</td>
                       <td><span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span></td>
                     </tr>
@@ -6393,7 +6393,7 @@ function CustomerRequestsTab({
               {/* Description */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Description</div>
-                <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "—"}{selectedRow.detailLine ? ` — ${selectedRow.detailLine}` : ""}</div>
+                <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "â€”"}{selectedRow.detailLine ? ` â€” ${selectedRow.detailLine}` : ""}</div>
               </div>
 
               {/* Internal notes */}
@@ -6422,8 +6422,8 @@ function CustomerRequestsTab({
                   <tbody>
                     {selectedRow.linkedParts.map((item, i) =>
                     <tr key={item.id || i} style={{ color: "var(--text-1)" }}>
-                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "—"}</td>
-                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "—"}</td>
+                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "â€”"}</td>
+                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "â€”"}</td>
                       <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
                     </tr>)}
                   </tbody>
@@ -6501,11 +6501,11 @@ function CustomerRequestsTab({
 
 }
 
-// WriteUpWorkspace — the per-request technician workspace that now powers the
+// WriteUpWorkspace â€” the per-request technician workspace that now powers the
 // Write-up tab (replaces the legacy WriteUpForm). It owns the per-request
 // Fault Reported / Diagnosis / Rectification text, the request completion
 // toggles, and the summary KPIs. Completion is bridged back into job_writeups
-// (via onSaveWriteUp → saveWriteUpToDatabase) plus the optimistic write-up
+// (via onSaveWriteUp â†’ saveWriteUpToDatabase) plus the optimistic write-up
 // handlers, so invoice gating and per-request "Completed" status keep working.
 function WriteUpWorkspace({
   jobData,
@@ -6960,7 +6960,7 @@ function WriteUpWorkspace({
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
-  // OR every checklist row is checked — which is what the user expects when
+  // OR every checklist row is checked â€” which is what the user expects when
   // they tick off every row but haven't yet hit the explicit "Mark Complete"
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
@@ -7007,7 +7007,7 @@ function WriteUpWorkspace({
     completedWriteUpSortOrders.has(sortOrderNum)) {
       return true;
     }
-    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
+    // Fall back to positional index (1-based) â€” matches how WriteUpForm seeds
     // a fresh checklist when no requestId/sortOrder is present.
     if (Number.isInteger(indexInList) && indexInList >= 0 &&
     completedWriteUpSortOrders.has(indexInList + 1)) {
@@ -7335,7 +7335,7 @@ function WriteUpWorkspace({
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
         _wheelOrder: toWheelPositionOrder(`${computedLabel || ""} ${computedDetail || ""}`),
         _originalIndex: rowIndex,
-        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source — the matched VHC check, the linked request row, and the row itself — so the severity field is found regardless of which shape the row arrived as.
+        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source â€” the matched VHC check, the linked request row, and the row itself â€” so the severity field is found regardless of which shape the row arrived as.
         severity: resolveVhcSeverity({ ...(row || {}), ...(linkedRequestRow || {}), ...(matchedCheck || {}) })
       };
     });
@@ -7691,7 +7691,7 @@ function WriteUpWorkspace({
   const handleDetailFieldBlur = (field) => {
     if (!canEdit || !selectedRow?.requestId) return;
     const value = detailDraft[field] ?? "";
-    if (value === detailSavedRef.current[field]) return; // no change → skip write
+    if (value === detailSavedRef.current[field]) return; // no change â†’ skip write
     detailSavedRef.current = { ...detailSavedRef.current, [field]: value };
     onSaveRequestWorkDetails(selectedRow.requestId, { [field]: value });
   };
@@ -7767,7 +7767,7 @@ function WriteUpWorkspace({
         sortOrder: t.sortOrder ?? null,
         status: t.checked ? "complete" : "inprogress"
       }));
-      // Optimistic — instant tab highlight / invoice gate / request statuses.
+      // Optimistic â€” instant tab highlight / invoice gate / request statuses.
       onTasksSnapshotChange(tasks);
       onRequestStatusesChange(requestStatuses);
       onCompletionChange(deriveCompletionStatus(tasks));
@@ -7812,7 +7812,7 @@ function WriteUpWorkspace({
     return files;
   }, [jobData?.files, jobData?.job_files, jobData?.documents]);
 
-  // Detail-panel textarea style — borderless surface field per the Border/Layer law.
+  // Detail-panel textarea style â€” borderless surface field per the Border/Layer law.
   const detailTextareaStyle = {
     width: "100%",
     minHeight: "72px",
@@ -7919,7 +7919,7 @@ function WriteUpWorkspace({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Summary row — request KPIs + Mark All Complete action */}
+        {/* Summary row â€” request KPIs + Mark All Complete action */}
         <div className="jc-req-summary">
           <div className="jc-req-statgrid">
             <div style={statBoxStyle}><span style={statLabelStyle}>Requests Complete</span><span style={statValueStyle}>{requestStats.complete}/{requestStats.totalRequests}</span></div>
@@ -7958,9 +7958,9 @@ function WriteUpWorkspace({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request…</span>}</td>
-                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
-                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New requestâ€¦</span>}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
+                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
                   );
@@ -7986,7 +7986,7 @@ function WriteUpWorkspace({
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
                         <td style={{ color: "var(--text-1)" }}>{req.text}</td>
-                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
+                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>
                     );
@@ -8063,7 +8063,7 @@ function WriteUpWorkspace({
                       <td style={{ fontWeight: 600, verticalAlign: "top" }}>{row.numberLabel}</td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                          <span style={{ color: "var(--text-1)" }}>{row.description || "—"}</span>
+                          <span style={{ color: "var(--text-1)" }}>{row.description || "â€”"}</span>
                           <span className="app-badge" style={{ ...row.statusBadgeStyle, alignSelf: "flex-start" }}>{row.statusLabel}</span>
                         </div>
                       </td>
@@ -8076,7 +8076,7 @@ function WriteUpWorkspace({
                           data-complete={rowComplete ? "1" : "0"}
                           disabled={!canEdit || !row.requestId || rowComplete}
                           onClick={(e) => { e.stopPropagation(); handleToggleRequestComplete(row); }}>
-                          ✓
+                          âœ“
                         </button>
                       </td>
                     </tr>
@@ -8113,7 +8113,7 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, faultReported: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("faultReported")}
-                  placeholder="Fault reported by the customer…" />
+                  placeholder="Fault reported by the customerâ€¦" />
               </div>
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Diagnosis</label>
@@ -8123,7 +8123,7 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, diagnosis: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("diagnosis")}
-                  placeholder="Technician diagnosis…" />
+                  placeholder="Technician diagnosisâ€¦" />
               </div>
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Rectification</label>
@@ -8133,14 +8133,14 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, rectification: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("rectification")}
-                  placeholder="Work carried out to rectify…" />
+                  placeholder="Work carried out to rectifyâ€¦" />
               </div>
               {!selectedRow.requestId &&
               <div style={{ fontSize: "12px", color: "var(--grey-accent)", fontStyle: "italic" }}>
                 Save this request first to record fault / diagnosis / rectification.
               </div>}
 
-              {/* Bottom info strip — labour time, parts, attachments, customer approval */}
+              {/* Bottom info strip â€” labour time, parts, attachments, customer approval */}
               <div className="jc-req-infostrip">
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Labour Time</div>
@@ -8150,7 +8150,7 @@ function WriteUpWorkspace({
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Parts Used</div>
                   <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>{selectedPartsSummary.count}</div>
-                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>£{selectedPartsSummary.cost.toFixed(2)} cost</div>
+                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>Â£{selectedPartsSummary.cost.toFixed(2)} cost</div>
                 </div>
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Attachments</div>
@@ -8472,7 +8472,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               fontWeight: 700
             }}>
 
-            ✕
+            âœ•
           </button>
         </div>
 
@@ -8574,7 +8574,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
 
 }
 
-// ✅ Scheduling Tab
+// âœ… Scheduling Tab
 function SchedulingTab({
   jobData,
   canEdit,
@@ -8950,21 +8950,21 @@ function SchedulingTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* ── Dashboard Row 1: Technician Assignment | Job Progress ── */}
+      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress â”€â”€ */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
         <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
         <JobProgressSection jobData={jobData} />
       </div>
 
-      {/* ── Dashboard Row 2: Collection Type | Customer Updates ── */}
+      {/* â”€â”€ Dashboard Row 2: Collection Type | Customer Updates â”€â”€ */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
         <CollectionTypeSection waitingStatus={bookingWaitingStatus} canEdit={canEdit} onSelect={handleBookingWaitingSelect} jobData={jobData} />
         <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
       </div>
 
-      {/* ── Booking & appointment (existing functionality, re-laid into the dashboard) ── */}
+      {/* â”€â”€ Booking & appointment (existing functionality, re-laid into the dashboard) â”€â”€ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", alignItems: "stretch" }}>
-        {/* ── Section 1: Customer & Vehicle ── */}
+        {/* â”€â”€ Section 1: Customer & Vehicle â”€â”€ */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-customer-vehicle"
           sectionType="content-card"
@@ -9038,10 +9038,10 @@ function SchedulingTab({
         {/* Customer Logistics moved to the Collection Type dashboard section above. */}
       </div>
 
-      {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
+      {/* â”€â”€ Row: Customer Reported Issues (left) + Appointment Information (right) â”€â”€ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
 
-        {/* ── Section 2: Customer Reported Issues ── */}
+        {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-reported-issues"
           sectionType="content-card"
@@ -9087,7 +9087,7 @@ function SchedulingTab({
           </div>
         </DevLayoutSection>
 
-        {/* ── Section 3: Appointment Information ── */}
+        {/* â”€â”€ Section 3: Appointment Information â”€â”€ */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-appointment"
           sectionType="content-card"
@@ -9149,7 +9149,7 @@ function SchedulingTab({
             </div>
           </div>
 
-          {/* ✅ Linked job cards appointment note */}
+          {/* âœ… Linked job cards appointment note */}
           {jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0 &&
           <div style={{
             marginBottom: "12px",
@@ -9235,7 +9235,7 @@ function SchedulingTab({
         </DevLayoutSection>
       </div>
 
-      {/* ── Section 5: Actions ── */}
+      {/* â”€â”€ Section 5: Actions â”€â”€ */}
       <DevLayoutSection
         sectionKey="jobcard-tab-scheduling-actions"
         sectionType="toolbar"
@@ -9365,7 +9365,7 @@ function SchedulingTab({
         </DevLayoutSection>
       </DevLayoutSection>
 
-      {/* ── Dashboard Row 4: Quick Actions ── */}
+      {/* â”€â”€ Dashboard Row 4: Quick Actions â”€â”€ */}
       <QuickActionsSection
         canEdit={canEdit}
         onChangeCollectionTimes={() => {
@@ -9378,7 +9378,7 @@ function SchedulingTab({
         onSendCustomerUpdate={() => onNavigateTab("messages")}
       />
 
-      {/* ── Dashboard Row 5: Alerts & Reminders ── */}
+      {/* â”€â”€ Dashboard Row 5: Alerts & Reminders â”€â”€ */}
       <AlertsRemindersSection jobData={jobData} />
     </div>);
 
@@ -9493,13 +9493,13 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
                   <td style={{ padding: "12px 16px", fontWeight: 600 }}>
                     {line.goodsInNumber || "GIN"}
                   </td>
-                  <td style={{ padding: "12px 16px" }}>{line.partNumber || "—"}</td>
+                  <td style={{ padding: "12px 16px" }}>{line.partNumber || "â€”"}</td>
                   <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>{line.description || "No description"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>{line.quantity ?? 0}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.retailPrice)}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.costPrice)}</td>
                   <td style={{ padding: "12px 16px" }}>
-                    {line.invoiceNumber || "—"}
+                    {line.invoiceNumber || "â€”"}
                   </td>
                   <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                     {formatDateTime(line.createdAt)}
@@ -9514,7 +9514,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
 
 }
 
-// ✅ Parts Tab (TODO)
+// âœ… Parts Tab (TODO)
 const normalizePartStatus = (status = "") => {
   const normalized = status.toLowerCase().replace(/\s+/g, "_");
   if (["pending"].includes(normalized)) return "pending";
@@ -9553,9 +9553,9 @@ const moneyFormatter = new Intl.NumberFormat("en-GB", {
 });
 
 const formatMoney = (value) => {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return "â€”";
   const amount = Number(value);
-  if (Number.isNaN(amount)) return "—";
+  if (Number.isNaN(amount)) return "â€”";
   return moneyFormatter.format(amount);
 };
 
@@ -9839,7 +9839,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           }} />
 
         {catalogLoading &&
-        <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stock…</div>
+        <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stockâ€¦</div>
         }
         {!catalogLoading && catalogError &&
         <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{catalogError}</div>
@@ -9872,10 +9872,10 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
 
                   <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
-                    Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
+                    Part #: {part.part_number} Â· Supplier: {part.supplier || "Unknown"}
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
-                    Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)} · {part.category || "Uncategorised"}
+                    Stock: {part.qty_in_stock ?? 0} Â· Â£{Number(part.unit_price || 0).toFixed(2)} Â· {part.category || "Uncategorised"}
                   </div>
                 </button>);
 
@@ -9895,7 +9895,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               <div>
                 <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "1rem" }}>{selectedCatalogPart.name}</div>
                 <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
-                  Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
+                  Part #: {selectedCatalogPart.part_number} Â· Location: {selectedCatalogPart.storage_location || "Unassigned"}
                 </div>
               </div>
               <button
@@ -9957,10 +9957,10 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   Sell Price
                 </div>
                 <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-purple)" }}>
-                  £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
+                  Â£{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
-                  Cost £{Number(selectedCatalogPart.unit_cost || 0).toFixed(2)}
+                  Cost Â£{Number(selectedCatalogPart.unit_cost || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -9991,7 +9991,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               cursor: !canAllocateParts ? "not-allowed" : "pointer"
             }}>
 
-              {allocatingPart ? "Adding…" : `Add to Job ${jobNumber || ""}`}
+              {allocatingPart ? "Addingâ€¦" : `Add to Job ${jobNumber || ""}`}
             </button>
           </div>
         }
@@ -10261,7 +10261,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           backgroundColor: "var(--theme)",
           borderRadius: "var(--radius-sm)",
         }}>
-            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>ðŸ§°</div>
             <h3 style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)", marginBottom: "8px" }}>
               No Parts Linked
             </h3>
@@ -10275,7 +10275,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
 
 }
 
-// ✅ Notes Tab
+// âœ… Notes Tab
 function NotesTab({ value, onChange, canEdit, saving, meta }) {
   const lastUpdated =
   meta?.updatedAt || meta?.createdAt ?
@@ -10334,7 +10334,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             }
           </div>
           <div style={{ fontSize: "12px", color: saving ? "var(--warning)" : "var(--info)" }}>
-            {saving ? "Saving…" : "Synced"}
+            {saving ? "Savingâ€¦" : "Synced"}
           </div>
         </div>
       </div>
@@ -10342,7 +10342,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
 }
 
-// ✅ VHC Tab
+// âœ… VHC Tab
 function VHCTab({
   jobNumber,
   jobData,
@@ -10369,7 +10369,7 @@ function VHCTab({
   const hasAwaitingCustomerDecision = useMemo(() => {
     // Routed through the engine in Phase 1: projectVhcItem normalises the row,
     // getDisplayStatus computes the same dotStateKey buildVhcRowStatusView used
-    // to compute inline. Behaviour is byte-identical — "awaiting" still means
+    // to compute inline. Behaviour is byte-identical â€” "awaiting" still means
     // pending decision with labour AND parts filled in (the gate for "Send VHC").
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     return checks.some((check) => {
@@ -10489,7 +10489,7 @@ function VHCTab({
   const customActions =
   <>
       {/* "Customer VHC: <status>" badge now lives in the job-card customer */}
-      {/* summary card — see JobCardDetailPageUi jobcard-summary-customer. */}
+      {/* summary card â€” see JobCardDetailPageUi jobcard-summary-customer. */}
       <button
       type="button"
       className="app-btn app-btn--primary app-btn--sm"
@@ -10505,7 +10505,7 @@ function VHCTab({
       title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
         {generatingLink ? "..." : copied ? "Copied" : "Copy"}
       </button>
-      {/* TODO: After testing, lock the Send button to fire only once per job — */}
+      {/* TODO: After testing, lock the Send button to fire only once per job â€” */}
       {/* relabel to "Sent" and disable after a successful first send (track via */}
       {/* jobData.vhc_sent_at or a local state mirror) so the same email can't */}
       {/* be re-sent. For now multiple sends are allowed for debugging. */}
@@ -10555,7 +10555,7 @@ function VHCTab({
 
 }
 
-// ✅ Messages Tab
+// âœ… Messages Tab
 // Helper function to render message content with clickable slash commands
 const renderMessageContentWithLinks = (content) => {
   if (!content) return null;
@@ -10995,7 +10995,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
                 color: "var(--info-dark)"
               }}>
 
-                  {member.name} · {member.role || "Team"}
+                  {member.name} Â· {member.role || "Team"}
                 </span>
             )}
               {customerMember &&
@@ -11008,7 +11008,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
                 color: "var(--accent-purple)"
               }}>
 
-                  {customerMember.name || "Customer"} · Customer
+                  {customerMember.name || "Customer"} Â· Customer
                 </span>
             }
             </div>
@@ -11920,7 +11920,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             </label>
             <DropdownField
               id="clocking-tech-selector"
-              placeholder={techniciansLoading ? "Loading technicians…" : "Select technician"}
+              placeholder={techniciansLoading ? "Loading techniciansâ€¦" : "Select technician"}
               options={technicianOptions}
               value={selectedTechnicianId}
               onChange={(event) => {
@@ -11966,7 +11966,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
 
-                {submitting ? "Clocking…" : "Just clock"}
+                {submitting ? "Clockingâ€¦" : "Just clock"}
               </button> :
             null}
             <button
@@ -11984,7 +11984,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
 
-              {submitting ? "Saving…" : "Save clocking entry"}
+              {submitting ? "Savingâ€¦" : "Save clocking entry"}
             </button>
             <button
               type="button"
@@ -12010,7 +12010,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               onClick={() => setShowTechsPopup(true)}
               className="app-badge app-badge--control app-badge--uppercase app-badge--accent-soft"
               style={{ border: "none", cursor: "pointer" }}>
-              {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
+              {techniciansLoading ? "Loading techniciansâ€¦" : `${technicianOptions.length} techs`}
               {techAbsences.length > 0 &&
               <span className="app-badge app-badge--uppercase app-badge--warning" style={{ marginLeft: "6px" }}>
                   {techAbsences.length} off
@@ -12046,7 +12046,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </DevLayoutSection>
       }
 
-      {/* Techs / Staff Off popup — portal-rendered so it centers on the viewport, not the tab */}
+      {/* Techs / Staff Off popup â€” portal-rendered so it centers on the viewport, not the tab */}
       {showTechsPopup && typeof document !== "undefined" && createPortal(
         <div
           style={{ ...popupOverlayStyles, zIndex: 1300 }}
@@ -12068,10 +12068,10 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>
-                Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+                Technicians Â· {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
               </h3>
               <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
-                Click an available technician to clock them onto Job #{normalizedJobNumber || "—"}.
+                Click an available technician to clock them onto Job #{normalizedJobNumber || "â€”"}.
                 {techAbsences.length > 0 ? ` ${techAbsences.length} with approved time off today.` : ""}
               </p>
             </div>
@@ -12091,7 +12091,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             null}
 
             {techniciansLoading || techStatusesLoading ?
-            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div> :
+            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading techniciansâ€¦</div> :
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
                 {technicianOptions.map((tech) => {
@@ -12124,10 +12124,10 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   pillLabel = "On this job";
                 } else if (isOnAnotherJob) {
                   toneClass = "app-badge--danger";
-                  pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`;
+                  pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "â€”"}`;
                 } else if (canClockOn) {
                   toneClass = "app-badge--success-strong";
-                  pillLabel = isThisRowSubmitting ? "Clocking on…" : "Clock on";
+                  pillLabel = isThisRowSubmitting ? "Clocking onâ€¦" : "Clock on";
                 } else if (rawStatus === "Tea Break") {
                   toneClass = "app-badge--warning";
                 }
@@ -12173,7 +12173,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 const secondaryLine = isOff ?
                 absence.role :
                 isOnAnotherJob ?
-                `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}` :
+                `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "â€”"}` :
                 tech.description || "Technician";
 
                 return (
@@ -12229,361 +12229,6 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         document.body
       )}
 
-    </DevLayoutSection>);
-
-}
-
-function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
-  const router = useRouter();
-  const [linkMode, setLinkMode] = useState(false);
-  const [availableJobs, setAvailableJobs] = useState([]);
-  const [loadingJobs, setLoadingJobs] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState("");
-  const [linking, setLinking] = useState(false);
-  const [linkError, setLinkError] = useState("");
-  const linkedJob = jobData?.linkedWarrantyJob || null;
-  // Prime job is the VHC host for sub-jobs; fall back to warranty master or own job number
-  const sharedVhcJobNumber =
-  jobData?.warrantyVhcMasterJobNumber ||
-  jobData?.primeJobNumber ||
-  jobData?.jobNumber;
-  const isHostJob =
-  !jobData?.primeJobNumber ||
-  sharedVhcJobNumber === jobData?.jobNumber;
-  const isLinked = Boolean(jobData?.linkedWarrantyJobId);
-
-  const loadWarrantyJobs = useCallback(async () => {
-    if (!canEdit) return;
-    setLoadingJobs(true);
-    try {
-      const { data, error } = await supabase.
-      from("jobs").
-      select(
-        "id, job_number, status, job_source, vehicle_reg, vehicle_make_model, warranty_linked_job_id"
-      ).
-      eq("job_source", "Warranty").
-      neq("id", jobData.id).
-      order("created_at", { ascending: false }).
-      limit(50);
-
-      if (error) {
-        throw error;
-      }
-
-      const filtered = (data || []).filter(
-        (record) =>
-        !record.warranty_linked_job_id ||
-        record.warranty_linked_job_id === jobData.id
-      );
-      setAvailableJobs(filtered);
-      setLinkError(
-        filtered.length ? "" : "No warranty jobs are available to link right now."
-      );
-    } catch (err) {
-      console.error("❌ Failed to load warranty jobs:", err);
-      setLinkError(err?.message || "Failed to load warranty jobs.");
-    } finally {
-      setLoadingJobs(false);
-    }
-  }, [canEdit, jobData?.id]);
-
-  useEffect(() => {
-    if (linkMode) {
-      loadWarrantyJobs();
-    } else {
-      setAvailableJobs([]);
-      setSelectedJobId("");
-      setLinkError("");
-    }
-  }, [linkMode, loadWarrantyJobs]);
-
-  const handleLinkJob = async () => {
-    if (!selectedJobId) {
-      setLinkError("Select a warranty job card to link.");
-      return;
-    }
-
-    const numericJobId = Number(selectedJobId);
-    if (Number.isNaN(numericJobId)) {
-      setLinkError("Invalid job selection.");
-      return;
-    }
-
-    const targetJob =
-    availableJobs.find((job) => job.id === numericJobId) || null;
-
-    if (!targetJob) {
-      setLinkError("Selected warranty job is no longer available.");
-      return;
-    }
-
-    const targetIsWarranty =
-    (targetJob.job_source || "").toLowerCase() === "warranty";
-    const currentIsWarranty =
-    (jobData?.jobSource || "").toLowerCase() === "warranty";
-
-    const masterJobId =
-    !currentIsWarranty && targetIsWarranty ?
-    jobData.id :
-    currentIsWarranty && !targetIsWarranty ?
-    targetJob.id :
-    jobData.id;
-
-    setLinking(true);
-    setLinkError("");
-
-    const currentUpdate = await updateJob(jobData.id, {
-      warranty_linked_job_id: numericJobId,
-      warranty_vhc_master_job_id: masterJobId
-    });
-
-    if (!currentUpdate?.success) {
-      setLinkError(
-        currentUpdate?.error?.message || "Failed to update primary job."
-      );
-      setLinking(false);
-      return;
-    }
-
-    const targetUpdate = await updateJob(numericJobId, {
-      warranty_linked_job_id: jobData.id,
-      warranty_vhc_master_job_id: masterJobId,
-      status: jobData.status
-    });
-
-    if (!targetUpdate?.success) {
-      await updateJob(jobData.id, {
-        warranty_linked_job_id: null,
-        warranty_vhc_master_job_id: null
-      });
-      setLinkError(
-        targetUpdate?.error?.message || "Failed to update warranty job."
-      );
-      setLinking(false);
-      return;
-    }
-
-    alert("✅ Warranty job card linked successfully.");
-    setLinkMode(false);
-    setSelectedJobId("");
-    setAvailableJobs([]);
-    setLinking(false);
-    if (typeof onLinkComplete === "function") {
-      onLinkComplete();
-    }
-  };
-
-  const handleOpenLinkedJob = () => {
-    if (!linkedJob?.jobNumber) return;
-    router.push(`/job-cards/${linkedJob.jobNumber}`);
-  };
-
-  const renderLinkControls = () => {
-    if (!canEdit) {
-      return null;
-    }
-
-    if (!linkMode) {
-      return (
-        <DevLayoutSection
-          sectionKey="jobcard-tab-warranty-link-action"
-          sectionType="toolbar"
-          parentKey="jobcard-tab-warranty-panel"
-          style={{ marginTop: "16px" }}>
-
-          <button
-            type="button"
-            onClick={() => setLinkMode(true)}
-            style={{
-              padding: "10px 18px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              fontWeight: "600",
-              cursor: "pointer"
-            }}>
-
-            {isLinked ? "Change Linked Warranty Job" : "Link Warranty Job Card"}
-          </button>
-        </DevLayoutSection>);
-
-    }
-
-    return (
-      <DevLayoutSection
-        sectionKey="jobcard-tab-warranty-link-form"
-        sectionType="content-card"
-        parentKey="jobcard-tab-warranty-panel"
-        style={{
-          marginTop: "20px",
-          padding: "16px",
-          borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--warning-surface)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px"
-        }}>
-
-        <div>
-          <DropdownField
-            label="Select Warranty Job"
-            placeholder={
-            loadingJobs ?
-            "Loading warranty jobs..." :
-            "Choose a warranty job number"
-            }
-            value={selectedJobId}
-            onValueChange={(val) => setSelectedJobId(val)}
-            disabled={loadingJobs || linking}
-            options={availableJobs.map((job) => ({
-              value: String(job.id),
-              label: `${job.job_number} · ${job.vehicle_reg || "No Reg"} · ${job.vehicle_make_model || "Warranty Job"}`
-            }))} />
-
-          {linkError &&
-          <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--danger)" }}>
-              {linkError}
-            </p>
-          }
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            type="button"
-            onClick={handleLinkJob}
-            disabled={linking || !selectedJobId}
-            style={{
-              padding: "10px 18px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: linking ? "var(--accent-purple)" : "var(--info)",
-              color: "var(--text-2)",
-              fontWeight: "600",
-              cursor: linking ? "not-allowed" : "pointer",
-              minWidth: "140px"
-            }}>
-
-            {linking ? "Linking..." : "Link Job"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setLinkMode(false)}
-            disabled={linking}
-            style={{
-              padding: "10px 18px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              fontWeight: "600",
-              cursor: linking ? "not-allowed" : "pointer"
-            }}>
-
-            Cancel
-          </button>
-        </div>
-      </DevLayoutSection>);
-
-  };
-
-  return (
-    <DevLayoutSection
-      sectionKey="jobcard-tab-warranty-panel"
-      sectionType="section-shell"
-      parentKey="jobcard-tab-warranty"
-      backgroundToken="surface"
-      shell>
-
-      <DevLayoutSection
-        sectionKey="jobcard-tab-warranty-linked-job"
-        sectionType="content-card"
-        parentKey="jobcard-tab-warranty-panel"
-        style={{
-          padding: "18px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          backgroundColor: "var(--surface)",
-          marginBottom: "16px"
-        }}>
-
-        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
-          Linked Warranty Job
-        </h3>
-        {linkedJob ?
-        <>
-            <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "14px" }}>
-              Linked to Job #{linkedJob.jobNumber} ({linkedJob.status || "Open"})
-            </p>
-            <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-              <button
-              type="button"
-              onClick={handleOpenLinkedJob}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-1)",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "13px"
-              }}>
-
-                View Linked Job
-              </button>
-            </div>
-          </> :
-
-        <p style={{ margin: 0, color: "var(--info)", fontSize: "14px" }}>
-            No warranty job card is linked yet.
-          </p>
-        }
-      </DevLayoutSection>
-
-      <DevLayoutSection
-        sectionKey="jobcard-tab-warranty-shared-vhc"
-        sectionType="content-card"
-        parentKey="jobcard-tab-warranty-panel"
-        style={{
-          padding: "18px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          backgroundColor: "var(--surface)"
-        }}>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-          <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>
-            Shared VHC Source
-          </h3>
-          {!isHostJob &&
-          <span style={{
-            padding: "3px 10px",
-            backgroundColor: "var(--theme)",
-            color: "var(--accent-strong)",
-            borderRadius: "var(--control-radius-xs)",
-            fontSize: "11px",
-            fontWeight: "600"
-          }}>
-              Inherited from Host
-            </span>
-          }
-        </div>
-        <p style={{ margin: "0 0 6px 0", color: "var(--text-1)", fontSize: "14px" }}>
-          VHC checklist hosted on Job #{sharedVhcJobNumber}
-          {!isHostJob &&
-          <span style={{ marginLeft: "6px", fontSize: "12px", color: "var(--text-1)", fontWeight: "400" }}>
-              (Host Job)
-            </span>
-          }
-        </p>
-        <p style={{ margin: 0, color: "var(--text-1)", fontSize: "13px" }}>
-          Any VHC updates, approvals, or parts raised on the host job instantly
-          reflect on all linked job cards. Clocking, labour, and invoicing remain
-          separate per job.
-        </p>
-      </DevLayoutSection>
-
-      {renderLinkControls()}
     </DevLayoutSection>);
 
 }
@@ -12914,7 +12559,7 @@ function DocumentsTab({
 
   return (
     <div>
-      {/* Document preview popup — portalled to document.body so position:fixed is
+      {/* Document preview popup â€” portalled to document.body so position:fixed is
             always relative to the viewport, not any transformed ancestor */}
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
@@ -13052,7 +12697,7 @@ function DocumentsTab({
                 }}
                 aria-label="Close preview">
 
-                ×
+                Ã—
               </button>
             </div>
 
@@ -13107,7 +12752,7 @@ function DocumentsTab({
             <div>
               <h3 style={{ margin: 0, fontSize: "15px", color: "var(--accent-strong)" }}>Valet Upload Picture</h3>
               <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-1)" }}>
-                Upload wash/valet photos for Job #{valetJobNumber || "—"}.
+                Upload wash/valet photos for Job #{valetJobNumber || "â€”"}.
               </p>
             </div>
             <ValetClockingPanel
@@ -13131,7 +12776,7 @@ function DocumentsTab({
               opacity: valetUploading || !valetUploadFile ? 0.7 : 1
             }}>
 
-              {valetUploading ? "Uploading…" : "Upload Valet Photo"}
+              {valetUploading ? "Uploadingâ€¦" : "Upload Valet Photo"}
             </button>
             {valetUploadError && <span style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{valetUploadError}</span>}
           </div>
@@ -13170,7 +12815,7 @@ function DocumentsTab({
           lineHeight: 1.6
         }}>
 
-          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
+          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>ðŸ“„</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </div> : (
@@ -13237,7 +12882,7 @@ function DocumentsTab({
                   }}>
 
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
-                        {docType.includes("pdf") ? "📕" : docType.includes("sheet") || docName.match(/\.xls/i) ? "📗" : docType.includes("word") || docName.match(/\.doc/i) ? "📘" : "📄"}
+                        {docType.includes("pdf") ? "ðŸ“•" : docType.includes("sheet") || docName.match(/\.xls/i) ? "ðŸ“—" : docType.includes("word") || docName.match(/\.doc/i) ? "ðŸ“˜" : "ðŸ“„"}
                       </span>
                       <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: typeMeta.color }}>
                         {typeMeta.label}

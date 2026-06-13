@@ -303,6 +303,52 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id)
 );
+-- Warranty claim header — one row per warranty job (job_source = 'Warranty').
+-- Keyed on the warranty job so the same claim shows from either side of the
+-- bidirectional retail<->warranty link. claim_value is NOT stored: it is derived
+-- live from warranty parts + labour totals (see src/lib/database/warranty.js).
+CREATE TABLE public.warranty_claims (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  warranty_job_id integer NOT NULL UNIQUE,
+  host_job_id integer,
+  customer_liability numeric NOT NULL DEFAULT 0,
+  authorisation_status text NOT NULL DEFAULT 'not_requested'::text CHECK (authorisation_status = ANY (ARRAY['not_requested'::text, 'requested'::text, 'authorised'::text, 'rejected'::text])),
+  authorisation_reference text,
+  authorisation_requested_at timestamp with time zone,
+  authorised_at timestamp with time zone,
+  work_completed_at timestamp with time zone,
+  claim_submitted_at timestamp with time zone,
+  claim_paid_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by integer,
+  updated_by integer,
+  CONSTRAINT warranty_claims_pkey PRIMARY KEY (id),
+  CONSTRAINT warranty_claims_warranty_job_id_fkey FOREIGN KEY (warranty_job_id) REFERENCES public.jobs(id) ON DELETE CASCADE,
+  CONSTRAINT warranty_claims_host_job_id_fkey FOREIGN KEY (host_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT warranty_claims_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT warranty_claims_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+-- Warranty requests / authorisations — rows behind the requests table on the
+-- Warranty tab. Approval lifecycle only (pending/approved/rejected); submission
+-- and payment of the overall claim live on warranty_claims timestamps.
+CREATE TABLE public.warranty_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  claim_id uuid NOT NULL,
+  warranty_job_id integer NOT NULL,
+  request_date timestamp with time zone NOT NULL DEFAULT now(),
+  request_type text NOT NULL,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  amount numeric NOT NULL DEFAULT 0,
+  requested_by integer,
+  note text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT warranty_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT warranty_requests_claim_id_fkey FOREIGN KEY (claim_id) REFERENCES public.warranty_claims(id) ON DELETE CASCADE,
+  CONSTRAINT warranty_requests_warranty_job_id_fkey FOREIGN KEY (warranty_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT warranty_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id)
+);
 -- Skill tags per technician (Scheduling dashboard → Technician Assignment section).
 -- One row per (user_id, skill); seed values out-of-band. Display-only in UI v1.
 CREATE TABLE public.technician_skills (
