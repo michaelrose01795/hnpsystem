@@ -1,6 +1,8 @@
-// file location: src/components/page-ui/job-cards/service-history/historyFormat.js
-// Shared display formatters for the redesigned Service History tab. Pure,
-// token-aware helpers — no React, no side effects.
+// file location: src/components/page-ui/job-cards/historyFormat.js
+// Shared display formatters for the Service History and Warranty tabs. Pure,
+// token-aware helpers — no React, no side effects. Kept as a standalone module
+// because both tabs depend on it (CLAUDE.md §4.3: utilities live outside the
+// per-tab component files).
 
 const GBP = new Intl.NumberFormat("en-GB", {
   style: "currency",

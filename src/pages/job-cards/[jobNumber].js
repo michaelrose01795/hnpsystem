@@ -25,7 +25,7 @@ import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 // Redesigned Service History tab (summary / tree / detail / mileage trend).
 // Replaces the legacy inline ServiceHistoryTab that lived in this file.
-import ServiceHistoryTab from "@/components/page-ui/job-cards/service-history/ServiceHistoryTab";
+import ServiceHistoryTab from "@/components/page-ui/job-cards/ServiceHistoryTab";
 import {
   normalizeRequests,
   mapCustomerJobsToHistory } from
@@ -63,13 +63,15 @@ import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
-// Scheduling dashboard sections (Scheduling tab redesign).
-import TechnicianAssignmentSection from "@/components/page-ui/job-cards/scheduling/TechnicianAssignmentSection";
-import JobProgressSection from "@/components/page-ui/job-cards/scheduling/JobProgressSection";
-import CollectionTypeSection from "@/components/page-ui/job-cards/scheduling/CollectionTypeSection";
-import CustomerUpdatesSection from "@/components/page-ui/job-cards/scheduling/CustomerUpdatesSection";
-import QuickActionsSection from "@/components/page-ui/job-cards/scheduling/QuickActionsSection";
-import AlertsRemindersSection from "@/components/page-ui/job-cards/scheduling/AlertsRemindersSection";
+// Scheduling dashboard sections (Scheduling tab redesign) — one file per tab (CLAUDE.md §4.3).
+import {
+  TechnicianAssignmentSection,
+  JobProgressSection,
+  CollectionTypeSection,
+  CustomerUpdatesSection,
+  QuickActionsSection,
+  AlertsRemindersSection,
+} from "@/components/page-ui/job-cards/SchedulingTab";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import {
@@ -95,7 +97,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // real WriteUpForm shape (tab bar + content grid) so switching tabs never
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
-import ContactTab from "@/components/page-ui/job-cards/contact/ContactTab"; // Redesigned Contact tab (extracted from this file).
+import ContactTab from "@/components/page-ui/job-cards/ContactTab"; // Redesigned Contact tab — one file per tab (CLAUDE.md §4.3).
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md Â§3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
@@ -11126,6 +11128,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [techAbsences, setTechAbsences] = useState([]); // today's approved absences for tech roles
   const [showTechsPopup, setShowTechsPopup] = useState(false); // staff-off style popup toggle
+  const [clockingSummary, setClockingSummary] = useState(null); // headline totals lifted from ClockingHistorySection for the KPI strip
 
   const jobId = useMemo(() => {
     if (jobData?.id === undefined || jobData?.id === null) {
@@ -11746,20 +11749,132 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
   disabledMessageOverride ||
   "This job card is read-only. Clocking entries can only be added by staff with edit access.");
 
+  // Flat labour rate (incl. VAT) used to cost the clocked time on the KPI strip.
+  const CLOCKING_LABOUR_RATE_GBP = 162;
+
+  // Headline KPI figures derived from the totals ClockingHistorySection lifts up.
+  // "Sold vs actual" model: clocked = hours worked, allocated = sold/budget,
+  // remaining = sold − clocked, efficiency = sold ÷ clocked.
+  const summary = clockingSummary || {};
+  const clockedHours = Number.isFinite(summary.clockedHours) ? summary.clockedHours : 0;
+  const allocatedHours =
+    summary.allocatedHours !== null && summary.allocatedHours !== undefined ?
+    summary.allocatedHours :
+    null;
+  const remainingHours =
+    summary.remainingHours !== null && summary.remainingHours !== undefined ?
+    summary.remainingHours :
+    null;
+  const efficiency =
+    summary.efficiency !== null && summary.efficiency !== undefined ? summary.efficiency : null;
+  const clockedCost = clockedHours * CLOCKING_LABOUR_RATE_GBP;
+
+  const formatHours = (value) =>
+  value === null || value === undefined ? "—" : `${Number(value).toFixed(2)}h`;
+  const formatGbp = (value) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0
+  }).format(value || 0);
+
+  const clockingKpiCards = [
+  {
+    key: "clocked",
+    label: "Clocked time & cost",
+    value: formatHours(clockedHours),
+    sub: `${formatGbp(clockedCost)} @ ${formatGbp(CLOCKING_LABOUR_RATE_GBP)}/h`,
+    valueColor: "var(--text-1)"
+  },
+  {
+    key: "remaining",
+    label: "Time remaining",
+    value: formatHours(remainingHours),
+    sub:
+    remainingHours !== null && remainingHours < 0 ?
+    `Over allocated by ${Math.abs(remainingHours).toFixed(2)}h` :
+    "Of allocated time",
+    valueColor:
+    remainingHours !== null && remainingHours < 0 ? "var(--danger-dark)" : "var(--text-1)"
+  },
+  {
+    key: "allocated",
+    label: "Allocated time",
+    value: formatHours(allocatedHours),
+    sub: "Sold / budgeted hours",
+    valueColor: "var(--text-1)"
+  },
+  {
+    key: "efficiency",
+    label: "Labour efficiency",
+    value: efficiency === null ? "—" : `${efficiency}%`,
+    sub: efficiency === null ? "Needs clocked time" : efficiency >= 100 ? "On or under budget" : "Over budget",
+    valueColor:
+    efficiency === null ?
+    "var(--text-1)" :
+    efficiency >= 100 ?
+    "var(--success)" :
+    "var(--warning-dark)"
+  }];
+
+
   return (
     <DevLayoutSection
       sectionKey="jobcard-tab-clocking-panel"
       sectionType="content-card"
       parentKey="jobcard-tab-clocking"
       data-dev-text-preview="Clocking entry form and history"
+      backgroundToken="surface"
+      className="app-layout-card"
       style={{
-        padding: "20px",
-        borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--surface)",
-        display: "flex",
-        flexDirection: "column",
         gap: "18px"
       }}>
+
+      {/* Top section: headline clocking KPIs (sold vs actual). Stat cards use the
+          canonical .app-layout-stat-card (--theme) so they alternate off the
+          --surface panel per the staffglobal layer rules. */}
+      {jobId && normalizedJobNumber &&
+      <DevLayoutSection
+        sectionKey="jobcard-tab-clocking-summary"
+        sectionType="stat-card"
+        parentKey="jobcard-tab-clocking-panel"
+        data-dev-text-preview="Clocking summary KPIs"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "16px"
+        }}>
+
+          {clockingKpiCards.map((card) =>
+        <div key={card.key} className="app-layout-stat-card">
+              <span
+            style={{
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--grey-accent)"
+            }}>
+
+                {card.label}
+              </span>
+              <span
+            style={{
+              fontSize: "1.6rem",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              color: card.valueColor
+            }}>
+
+                {card.value}
+              </span>
+              <span style={{ fontSize: "0.82rem", fontWeight: 500, color: "var(--grey-accent)" }}>
+                {card.sub}
+              </span>
+            </div>
+        )}
+        </DevLayoutSection>
+      }
 
       {techniciansError &&
       <div
@@ -12040,6 +12155,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           jobAllocatedHours={jobData?.labour_hours || null}
           refreshSignal={refreshSignal}
           enableRequestClick={false}
+          onSummaryChange={setClockingSummary}
           title="Clocking history"
           backgroundLayer="theme" />
 

@@ -1,6 +1,6 @@
 // file location: src/components/page-ui/job-cards/job-cards-job-number-ui.js
 import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
-import WarrantyTab from "@/components/page-ui/job-cards/warranty/WarrantyTab"; // redesigned Warranty tab
+import WarrantyTab from "@/components/page-ui/job-cards/WarrantyTab"; // redesigned Warranty tab — one file per tab (CLAUDE.md §4.3)
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 

@@ -43,12 +43,6 @@ i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-
 
 -----------------------------------------------------------------------
 
-Clocking
-TODO
-i want to redsing the "Jobcard Tab Content Shell | 1.2.2.1.1.4 key: jobcard-tab-content-shell source: src/components/page-ui/job-cards/job-cards-job-number-ui.js:700 route: /job-cards/00079 parent jobcard-page-shell (1.2.2.1.1) | 1 child (Clocking)" follow the staffglobal.css settings. have it so the top section shows total clocked time and cost, total time remianing, total time completed/clocked and labour efficiency asa %. in the section below have it keep the current "Job Cards 00079 Auto Data Table 1 | 1.2.1.1.1.4.1.1.2.1 key: job-cards-00079-auto-data-table-1 source: src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00079 parent jobcard-tab-clocking-history (1.2.1.1.1.4.1.1.2) | 2 children" table and detail section, but improve the layout if required. 
-
-
-
 Documents
 TODO
 within the  "Jobcard Tab Content Shell | 1.2.2.1.1.4 key: jobcard-tab-content-shell source: src/components/page-ui/job-cards/job-cards-job-number-ui.js:700 route: /job-cards/00079 parent jobcard-page-shell (1.2.2.1.1) | 1 child (Documents tab)" follow the staffglobal.css settings. but add a search bar withn the same row as "Upload Documents" section. 

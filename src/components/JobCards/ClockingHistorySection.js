@@ -45,6 +45,7 @@ export default function ClockingHistorySection({
   refreshSignal = 0,
   enableRequestClick = false,
   onRequestClick,
+  onSummaryChange,
   title = "Clocking history",
   backgroundLayer = "surface"
 }) {
@@ -262,6 +263,42 @@ export default function ClockingHistorySection({
       };
     });
   }, [entries, fallbackJobHours, jobNumber, liveNow]);
+
+  // Roll the per-row figures up into the headline totals the Clocking tab's
+  // KPI strip renders (clocked vs sold hours, remaining, labour efficiency).
+  // Lifted here rather than recomputed in the tab so the live timer + realtime
+  // subscription stay the single source of truth for clocking data.
+  const summary = useMemo(() => {
+    const clockedHours = derivedRows.reduce(
+      (sum, row) => sum + (row.timeTaken !== null && row.timeTaken !== undefined ? row.timeTaken : 0),
+      0
+    );
+    const allocatedHours =
+      totalAllocatedForRequests !== null && totalAllocatedForRequests !== undefined
+        ? totalAllocatedForRequests
+        : fallbackJobHours !== null && fallbackJobHours !== undefined
+        ? Number(fallbackJobHours)
+        : null;
+    const remainingHours =
+      allocatedHours !== null ? Number((allocatedHours - clockedHours).toFixed(2)) : null;
+    const efficiency =
+      allocatedHours !== null && clockedHours > 0
+        ? Math.round((allocatedHours / clockedHours) * 100)
+        : null;
+    return {
+      clockedHours: Number(clockedHours.toFixed(2)),
+      allocatedHours: allocatedHours !== null ? Number(allocatedHours.toFixed(2)) : null,
+      remainingHours,
+      efficiency,
+      entryCount: derivedRows.length
+    };
+  }, [derivedRows, totalAllocatedForRequests, fallbackJobHours]);
+
+  useEffect(() => {
+    if (typeof onSummaryChange === "function") {
+      onSummaryChange(summary);
+    }
+  }, [summary, onSummaryChange]);
 
   const handleConfirmClockOff = useCallback(async () => {
     if (!clockOffTarget) return;
