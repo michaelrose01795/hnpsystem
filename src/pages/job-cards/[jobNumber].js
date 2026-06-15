@@ -6130,7 +6130,7 @@ function CustomerRequestsTab({
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
 
   return (
-    <div>
+    <div className="jc-customer-requests">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text-1)" }}>
           Customer Requests
@@ -6452,9 +6452,9 @@ function CustomerRequestsTab({
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 10px;
           }
-          html.staff-scope .jc-req-split {
+          html.staff-scope .jc-customer-requests .jc-req-split {
             display: grid;
-            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 16px;
             align-items: start;
           }
@@ -6475,7 +6475,7 @@ function CustomerRequestsTab({
             html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           }
           @media (max-width: 900px) {
-            html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr); }
+            html.staff-scope .jc-customer-requests .jc-req-split { grid-template-columns: minmax(0, 1fr); }
           }
           @media (max-width: 560px) {
             html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -9047,7 +9047,8 @@ function SchedulingTab({
       </div>
 
       {/* â”€â”€ Row: Customer Reported Issues (left) + Appointment Information (right) â”€â”€ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
+      {/* auto-fit keeps the two columns side-by-side on desktop and stacks them on narrow screens (CLAUDE.md §3.6) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "16px", alignItems: "stretch" }}>
 
         {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
         <DevLayoutSection
@@ -9187,7 +9188,8 @@ function SchedulingTab({
             </div>
           }
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+          {/* auto-fit: Date/Time fields stay in a row on desktop, stack on narrow screens (CLAUDE.md §3.6) */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: "12px" }}>
             <div>
               <CalendarField
                 label="Date"
@@ -11958,7 +11960,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           data-dev-text-preview="Clock-in and clock-out date/time fields"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            // auto-fit keeps 4 fields across on desktop, reflows to fewer columns on smaller screens (CLAUDE.md §3.6)
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
             gap: "16px"
           }}>
 
@@ -12010,7 +12013,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           data-dev-text-preview="Job request and technician selectors"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
+            // auto-fit keeps the two selectors side-by-side on desktop, stacks on narrow screens (CLAUDE.md §3.6)
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
             gap: "16px"
           }}>
 

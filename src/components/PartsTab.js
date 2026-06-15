@@ -2255,7 +2255,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     Clear
                   </button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                {/* auto-fit keeps the three fields in a row on desktop, stacks them on narrow screens (CLAUDE.md §3.6) */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: "10px" }}>
                   <div>
                     <label style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, display: "block", marginBottom: "4px" }}>
                       Quantity
@@ -2307,7 +2308,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     {catalogSuccessMessage}
                   </div>
                 )}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {/* auto-fit keeps the buttons side-by-side on desktop, stacks them on very narrow screens (CLAUDE.md §3.6) */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))", gap: "8px" }}>
                   <button
                     type="button"
                     onClick={handleAddPartFromStock}

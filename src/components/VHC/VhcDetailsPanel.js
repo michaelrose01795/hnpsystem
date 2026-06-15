@@ -10448,7 +10448,8 @@ export default function VhcDetailsPanel({
                 Labour Cost
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                {/* auto-fit keeps the two labour-cost fields in a row on desktop, stacks on narrow screens (CLAUDE.md §3.6) */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))", gap: "10px" }}>
                   <div>
                     <label
                       style={{
