@@ -11,6 +11,7 @@ import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 // Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
 // owned by the DB helper module per CLAUDE.md §5.
 import { loadVhcFallbackBundle } from "@/lib/database/vhc";
+import { classifyVhcMedia, groupVhcMedia } from "@/lib/vhc/buildVhcMediaLibrary";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -5768,35 +5769,13 @@ export default function VhcDetailsPanel({
       {renderCustomerSection("Green Items", greenItems || [], "green")}
     </div>
   );
-  const photoFiles = useMemo(() => {
-    const isVhcMedia = (file = {}) => {
-      const folder = String(file.folder || "").trim().toLowerCase();
-      return folder === "vhc" || folder === "vhc-media";
-    };
-    const isImage = (file = {}) => {
-      const type = (file.file_type || "").toLowerCase();
-      const name = (file.file_name || "").toLowerCase();
-      return (
-        type.startsWith("image") ||
-        /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(name)
-      );
-    };
-    return jobFiles.filter((file) => isVhcMedia(file) && isImage(file));
-  }, [jobFiles]);
-  const videoFiles = useMemo(() => {
-    const isVhcMedia = (file = {}) => {
-      const folder = String(file.folder || "").trim().toLowerCase();
-      return folder === "vhc" || folder === "vhc-media";
-    };
-    const isVideo = (file = {}) => {
-      const type = (file.file_type || "").toLowerCase();
-      const name = (file.file_name || "").toLowerCase();
-      return (
-        type.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/i.test(name)
-      );
-    };
-    return jobFiles.filter((file) => isVhcMedia(file) && isVideo(file));
-  }, [jobFiles]);
+  // VHC photo / video classification is shared with the technician-facing
+  // VhcMediaGallery via the buildVhcMediaLibrary helper so both surfaces agree
+  // on what counts as VHC media.
+  const { photoFiles, videoFiles } = useMemo(
+    () => classifyVhcMedia(jobFiles),
+    [jobFiles],
+  );
 
   // Group VHC media (photos + videos) by the request/concern they were
   // captured against (job_files.vhc_concern_link). Each linked concern becomes
@@ -5806,72 +5785,10 @@ export default function VhcDetailsPanel({
   // job_files.is_main_vhc_video is the customer-facing "main" walkaround taken
   // at the end of the health check; it is pulled out and pinned in a row at the
   // very top of the tab regardless of whether it is also linked to a concern.
-  const mediaLibrary = useMemo(() => {
-    const groups = new Map();
-    const unlinkedPhotos = [];
-    const unlinkedVideos = [];
-    const mainVideos = [];
-    let customerVisible = 0;
-
-    const place = (file, kind) => {
-      if (file?.visible_to_customer) customerVisible += 1;
-      // The designated main customer video is always pinned at the top, never
-      // duplicated into a request row or the unlinked bucket.
-      if (kind === "video" && file?.is_main_vhc_video) {
-        mainVideos.push(file);
-        return;
-      }
-      const link =
-        file?.vhc_concern_link && typeof file.vhc_concern_link === "object"
-          ? file.vhc_concern_link
-          : null;
-      const key = link?.concernId != null ? String(link.concernId) : null;
-      if (!key) {
-        if (kind === "video") unlinkedVideos.push(file);
-        else unlinkedPhotos.push(file);
-        return;
-      }
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          label: link.label || link.categoryLabel || "Reported concern",
-          section: link.section || "",
-          status: String(link.status || "").toLowerCase(),
-          photos: [],
-          videos: [],
-        });
-      }
-      const group = groups.get(key);
-      if (kind === "video") group.videos.push(file);
-      else group.photos.push(file);
-    };
-
-    photoFiles.forEach((file) => place(file, "photo"));
-    videoFiles.forEach((file) => place(file, "video"));
-
-    const linkedGroups = Array.from(groups.values()).sort((a, b) =>
-      a.label.localeCompare(b.label),
-    );
-
-    // Newest main video first so the latest end-of-check walkaround leads.
-    mainVideos.sort(
-      (a, b) =>
-        new Date(b.uploaded_at || 0).getTime() -
-        new Date(a.uploaded_at || 0).getTime(),
-    );
-
-    return {
-      groups: linkedGroups,
-      unlinkedPhotos,
-      unlinkedVideos,
-      mainVideos,
-      stats: {
-        photos: photoFiles.length,
-        videos: videoFiles.length,
-        customerVisible,
-      },
-    };
-  }, [photoFiles, videoFiles]);
+  const mediaLibrary = useMemo(
+    () => groupVhcMedia({ photoFiles, videoFiles }),
+    [photoFiles, videoFiles],
+  );
 
   // Top-level Photos-tab upload: drops an (unlinked) VHC photo onto the job,
   // then bumps the reload token so the panel re-fetches its job_files.
@@ -8354,49 +8271,85 @@ export default function VhcDetailsPanel({
           ? "var(--warning)"
           : "var(--text-1)";
 
-    const countLabel = (photos, videos) => {
-      const parts = [];
-      parts.push(`${photos.length} ${photos.length === 1 ? "photo" : "photos"}`);
-      parts.push(`${videos.length} ${videos.length === 1 ? "video" : "videos"}`);
-      return parts.join(" · ");
+    // Severity → badge text + tone, mirroring the attachment's "Safety Critical /
+    // Advisory / Monitor" chips. Driven purely by the status we already have.
+    const severityBadge = (status) => {
+      if (status === "red") return { label: "Safety Critical", color: "var(--danger)", bg: "var(--danger-surface)" };
+      if (status === "amber") return { label: "Advisory", color: "var(--warning)", bg: "var(--warning-surface)" };
+      if (status === "green") return { label: "Monitor", color: "var(--success)", bg: "var(--success-surface)" };
+      return null;
     };
 
-    const renderPhotoThumb = (file) => (
-      <a
-        key={file.file_id}
-        href={file.file_url}
-        target="_blank"
-        rel="noreferrer"
-        title={`${file.file_name || "Photo"} · ${formatDateTime(file.uploaded_at)}`}
+    // Small numbered chip overlaid on each thumbnail (top-left in the attachment).
+    const renderThumbIndex = (index) => (
+      <span
         style={{
-          display: "block",
-          width: `${THUMB_SIZE}px`,
-          height: `${THUMB_SIZE}px`,
+          position: "absolute",
+          top: "6px",
+          left: "6px",
+          minWidth: "18px",
+          height: "18px",
+          padding: "0 5px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           borderRadius: "var(--radius-sm)",
-          overflow: "hidden",
-          flexShrink: 0,
-          background: "var(--surface)",
+          background: "var(--overlay)",
+          color: "var(--text-2)",
+          fontSize: "11px",
+          fontWeight: 700,
+          lineHeight: 1,
         }}
       >
-        <img
-          src={file.file_url}
-          alt={file.file_name || "VHC photo"}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-      </a>
+        {index + 1}
+      </span>
     );
 
-    const renderVideoThumb = (file) => {
+    const renderPhotoThumb = (file, index) => (
+      <figure
+        key={file.file_id}
+        style={{ margin: 0, width: `${THUMB_SIZE}px`, flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
+      >
+        <a
+          href={file.file_url}
+          target="_blank"
+          rel="noreferrer"
+          title={`${file.file_name || "Photo"} · ${formatDateTime(file.uploaded_at)}`}
+          style={{
+            position: "relative",
+            display: "block",
+            width: `${THUMB_SIZE}px`,
+            height: `${THUMB_SIZE}px`,
+            borderRadius: "var(--radius-sm)",
+            overflow: "hidden",
+            background: "var(--surface)",
+          }}
+        >
+          <img
+            src={file.file_url}
+            alt={file.file_name || "VHC photo"}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+          {renderThumbIndex(index)}
+        </a>
+        <figcaption style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.65 }}>
+          {formatDateTime(file.uploaded_at)}
+        </figcaption>
+      </figure>
+    );
+
+    const renderVideoThumb = (file, index) => {
       const width = Math.round(THUMB_SIZE * 1.6);
       const saving = mainVideoSavingId === file.file_id;
       return (
-        <div
+        <figure
           key={file.file_id}
-          style={{ width: `${width}px`, flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
+          style={{ margin: 0, width: `${width}px`, flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
         >
           <div
             title={`${file.file_name || "Video"} · ${formatDateTime(file.uploaded_at)}`}
             style={{
+              position: "relative",
               width: `${width}px`,
               height: `${THUMB_SIZE}px`,
               borderRadius: "var(--radius-sm)",
@@ -8410,65 +8363,106 @@ export default function VhcDetailsPanel({
               preload="metadata"
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
+            {renderThumbIndex(index)}
           </div>
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={() => handleToggleMainVideo(file.file_id, true)}
-              disabled={saving}
-              style={{
-                padding: "4px 8px",
-                borderRadius: "var(--input-radius)",
-                border: "none",
-                background: "rgba(var(--primary-rgb), 0.10)",
-                color: "var(--primary-selected)",
-                fontSize: "11px",
-                fontWeight: 600,
-                cursor: saving ? "wait" : "pointer",
-                opacity: saving ? 0.65 : 1,
-              }}
-            >
-              {saving ? "Saving…" : "Set as main video"}
-            </button>
-          )}
-        </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <figcaption style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.65 }}>
+              {formatDateTime(file.uploaded_at)}
+            </figcaption>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => handleToggleMainVideo(file.file_id, true)}
+                disabled={saving}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "var(--input-radius)",
+                  border: "none",
+                  background: "rgba(var(--primary-rgb), 0.10)",
+                  color: "var(--primary-selected)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: saving ? "wait" : "pointer",
+                  opacity: saving ? 0.65 : 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {saving ? "Saving…" : "Set as main video"}
+              </button>
+            )}
+          </div>
+        </figure>
       );
     };
 
-    const renderRequestRow = (key, label, status, photos, videos) => (
-      <div
-        key={key}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "flex-start",
-          gap: "20px",
-          background: "var(--theme)",
-          borderRadius: "var(--radius-md)",
-          padding: "16px",
-        }}
-      >
-        {/* Left — the report/concern this set of media belongs to */}
-        <div style={{ flex: "0 0 200px", minWidth: "160px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span
-              aria-hidden="true"
-              style={{ width: "10px", height: "10px", borderRadius: "var(--radius-pill)", background: statusColour(status), flexShrink: 0 }}
-            />
-            <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>{label}</span>
-          </div>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-            {countLabel(photos, videos)}
-          </span>
-        </div>
+    const renderRequestRow = (key, label, section, status, photos, videos) => {
+      const badge = severityBadge(status);
+      // Videos lead, then photos — numbered continuously across the strip.
+      let mediaIndex = -1;
+      return (
+        <div
+          key={key}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            gap: "24px",
+            background: "var(--theme)",
+            borderRadius: "var(--radius-md)",
+            padding: "20px",
+          }}
+        >
+          {/* Left — the report/concern this set of media belongs to */}
+          <div style={{ flex: "0 0 200px", minWidth: "180px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span
+                  aria-hidden="true"
+                  style={{ width: "10px", height: "10px", borderRadius: "var(--radius-pill)", background: statusColour(status), flexShrink: 0 }}
+                />
+                <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>{label}</span>
+              </div>
+              {section ? (
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", opacity: 0.55, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {section}
+                </span>
+              ) : null}
+            </div>
 
-        {/* Right — the photos + videos taken for that request */}
-        <div style={{ flex: "1 1 240px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-          {videos.map((file) => renderVideoThumb(file))}
-          {photos.map((file) => renderPhotoThumb(file))}
+            {badge ? (
+              <span
+                style={{
+                  alignSelf: "flex-start",
+                  padding: "3px 10px",
+                  borderRadius: "var(--radius-pill)",
+                  background: badge.bg,
+                  color: badge.color,
+                  fontSize: "11px",
+                  fontWeight: 700,
+                }}
+              >
+                {badge.label}
+              </span>
+            ) : null}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
+              </span>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                {videos.length} {videos.length === 1 ? "Video" : "Videos"}
+              </span>
+            </div>
+          </div>
+
+          {/* Right — the photos + videos taken for that request, in a thumbnail strip */}
+          <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexWrap: "wrap", gap: "14px" }}>
+            {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
+            {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     const statTiles = [
       { label: "Photos", value: stats.photos },
@@ -8616,10 +8610,10 @@ export default function VhcDetailsPanel({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {groups.map((group) =>
-              renderRequestRow(group.key, group.label, group.status, group.photos, group.videos),
+              renderRequestRow(group.key, group.label, group.section, group.status, group.photos, group.videos),
             )}
             {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) &&
-              renderRequestRow("__unlinked__", "Unlinked media", "", unlinkedPhotos, unlinkedVideos)}
+              renderRequestRow("__unlinked__", "Unlinked media", "", "", unlinkedPhotos, unlinkedVideos)}
           </div>
         )}
       </div>

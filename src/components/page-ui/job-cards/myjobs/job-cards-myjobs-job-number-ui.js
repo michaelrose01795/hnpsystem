@@ -1,6 +1,8 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js
+import { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 
 export default function TechJobDetailPageUi(props) {
@@ -113,6 +115,11 @@ export default function TechJobDetailPageUi(props) {
     visibleTabs,
     writeUpTechComplete,
   } = props; // receive page logic props.
+
+  // Bumped after any VHC media upload so the read-only gallery below re-fetches
+  // the job's files and the technician sees their capture immediately.
+  const [galleryReloadToken, setGalleryReloadToken] = useState(0);
+  const bumpGallery = () => setGalleryReloadToken((token) => token + 1);
 
   const vhcCustomerStatusMeta = (() => {
     const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
@@ -1094,6 +1101,7 @@ export default function TechJobDetailPageUi(props) {
                     </span>
                     <CustomerVideoButton jobNumber={jobNumber} userId={dbUserId || user?.id} vhcContextLabel={activeSection || "vhc-summary"} vhcData={vhcData} onUploadComplete={() => {
                 fetchJobData();
+                bumpGallery();
               }} />
                     <button type="button" className="vhc-btn" onClick={handleCompleteVhcClick}>
                       Reopen VHC
@@ -1187,6 +1195,7 @@ export default function TechJobDetailPageUi(props) {
                 }} onUploadComplete={() => {
                   console.log("VHC media uploaded, refreshing job data...");
                   fetchJobData();
+                  bumpGallery();
                 }} />}
                     </div>
                   </DevLayoutSection>
@@ -1387,29 +1396,35 @@ export default function TechJobDetailPageUi(props) {
                 </DevLayoutSection>}
                 </>)}
 
+              {/* Captured media — read-only viewer so the technician can see the
+                  photos / videos they took against concerns during this check. */}
+              {!activeSection && <DevLayoutSection as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                  <VhcMediaGallery jobId={jobData?.id} reloadToken={galleryReloadToken} />
+                </DevLayoutSection>}
+
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-wheels" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <WheelsTyresDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("wheelsTyres", data)} onComplete={data => handleSectionComplete("wheelsTyres", data)} initialData={vhcData.wheelsTyres} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <WheelsTyresDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("wheelsTyres", data)} onComplete={data => handleSectionComplete("wheelsTyres", data)} initialData={vhcData.wheelsTyres} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "brakesHubs" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-brakes" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <BrakesHubsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("brakesHubs", data)} onComplete={data => handleSectionComplete("brakesHubs", data)} initialData={vhcData.brakesHubs} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <BrakesHubsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("brakesHubs", data)} onComplete={data => handleSectionComplete("brakesHubs", data)} initialData={vhcData.brakesHubs} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "serviceIndicator" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-service" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <ServiceIndicatorDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("serviceIndicator", data)} onComplete={data => handleSectionComplete("serviceIndicator", data)} initialData={vhcData.serviceIndicator} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <ServiceIndicatorDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("serviceIndicator", data)} onComplete={data => handleSectionComplete("serviceIndicator", data)} initialData={vhcData.serviceIndicator} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "externalInspection" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-external" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <ExternalDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("externalInspection", data)} onComplete={data => handleSectionComplete("externalInspection", data)} initialData={vhcData.externalInspection} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <ExternalDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("externalInspection", data)} onComplete={data => handleSectionComplete("externalInspection", data)} initialData={vhcData.externalInspection} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "internalElectrics" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-internal" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <InternalElectricsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("internalElectrics", data)} onComplete={data => handleSectionComplete("internalElectrics", data)} initialData={vhcData.internalElectrics} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <InternalElectricsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("internalElectrics", data)} onComplete={data => handleSectionComplete("internalElectrics", data)} initialData={vhcData.internalElectrics} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "underside" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-underside" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <UndersideDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("underside", data)} onComplete={data => handleSectionComplete("underside", data)} initialData={vhcData.underside} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => fetchJobData?.()} />
+                  <UndersideDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("underside", data)} onComplete={data => handleSectionComplete("underside", data)} initialData={vhcData.underside} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
             </DevLayoutSection>}
 

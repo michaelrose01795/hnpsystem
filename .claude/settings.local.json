@@ -275,7 +275,9 @@
       "Bash(awk 'NR>=2985 && NR<=2990 {print NR\": \"$0}' \"src/components/VHC/VhcDetailsPanel.js\")",
       "PowerShell(npm run check:borders 2>&1)",
       "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" 2>&1)",
-      "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" -f json 2>$null | ConvertFrom-Json | ForEach-Object { $_.messages } | Where-Object { $_.severity -eq 2 } | Select-Object line, ruleId, message)"
+      "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" -f json 2>$null | ConvertFrom-Json | ForEach-Object { $_.messages } | Where-Object { $_.severity -eq 2 } | Select-Object line, ruleId, message)",
+      "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js 2>&1)",
+      "PowerShell(npx eslint src/components/VHC/VhcMediaGallery.js 2>&1)"
     ],
     "deny": [],
     "ask": [],

@@ -5,16 +5,12 @@ Update the "Invoice Preview" popup so it is actually the final invoice, changes 
 ----------------- VHC -----------------
 Videos
 TODO
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children (Videos tab)" follow the staffglobal.css settings. Change it so the photos and videos tabs within the VHC tab are within one “video/photo” tab name, have it so in one request line it shows the photos and videos with a photo and video count under the request section. But at the very top this has a customer facing video row which is always at the top which is the main video which is taken at the end of the VHC check etc. also adjust the top section to include video counts as well as video counts in the same boxes etc. 
-
+update
+CHECK
+fix uploading photos within health check and having it save to database and show within the photo/video tab, req deep dive
 
 
 -----------------------------------------------------------------------
-
-
-
-
-
 
 
 
