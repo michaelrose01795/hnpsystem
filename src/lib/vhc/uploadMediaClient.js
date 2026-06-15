@@ -14,6 +14,10 @@ export async function uploadVhcMediaFile({
   // so the media file can be correlated back to the exact concern that
   // prompted the technician to record it.
   concernLink = null,
+  // When true the upload is flagged as the job's main customer-facing VHC
+  // video (the end-of-check walkaround), stored in job_files.is_main_vhc_video
+  // and pinned at the top of the Video / Photo tab.
+  isMainVideo = false,
 }) {
   if (!file) {
     throw new Error("No media file provided");
@@ -39,6 +43,7 @@ export async function uploadVhcMediaFile({
 
   formData.append("userId", String(userId || "system"));
   formData.append("visibleToCustomer", String(visibleToCustomer));
+  formData.append("isMainVideo", String(isMainVideo === true));
 
   if (replaceFileId !== undefined && replaceFileId !== null && String(replaceFileId).trim()) {
     formData.append("replaceFileId", String(replaceFileId));
@@ -70,6 +75,34 @@ export async function uploadVhcMediaFile({
 
   if (!response.ok) {
     throw new Error(payload?.message || payload?.error || `Upload failed (${response.status})`);
+  }
+
+  return payload?.file || null;
+}
+
+// Promote/demote an existing job_files video as the job's main customer-facing
+// VHC video (job_files.is_main_vhc_video). Used by the "Set as main video"
+// toggle in the VHC Video / Photo tab.
+export async function setMainVhcVideo({ fileId, isMain = true }) {
+  if (fileId === undefined || fileId === null || String(fileId).trim() === "") {
+    throw new Error("Missing fileId");
+  }
+
+  const response = await fetch("/api/vhc/set-main-video", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileId, isMain: isMain === true }),
+  });
+
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.message || payload?.error || `Update failed (${response.status})`);
   }
 
   return payload?.file || null;

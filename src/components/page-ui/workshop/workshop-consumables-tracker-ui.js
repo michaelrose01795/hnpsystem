@@ -245,7 +245,7 @@ export default function ConsumablesTrackerPageUi(props) {
           {historyModalConsumable && <div style={orderModalOverlayStyle}>
               <div style={historyModalStyle} role="dialog" aria-modal="true">
                 <button type="button" onClick={closeHistoryModal} style={orderModalCloseButtonStyle} aria-label="Close history modal">
-                  âœ•
+                  ✕
                 </button>
                 <h3 style={{
                   margin: "0 0 6px",
@@ -274,10 +274,10 @@ export default function ConsumablesTrackerPageUi(props) {
                       borderBottom: isLastLog ? "none" : themedOrderHistoryRowBorder
                     }}>
                           <span>{log.itemName || historyModalConsumable.name}</span>
-                          <span>{log.quantity ? log.quantity.toLocaleString() : "â€”"}</span>
+                          <span>{log.quantity ? log.quantity.toLocaleString() : "—"}</span>
                           <span>{formatCurrency(log.unitCost)}</span>
                           <span>{formatCurrency(log.totalCost)}</span>
-                          <span>{log.supplier || "â€”"}</span>
+                          <span>{log.supplier || "—"}</span>
                           <span>{formatDate(log.date)}</span>
                         </div>;
                   })}

@@ -12,6 +12,9 @@ const JOB_FILES_COLUMN_DEFINITIONS = {
   // captured file was recorded against so we can later correlate media
   // back to a specific amber/red VHC issue.
   vhc_concern_link: "jsonb",
+  // Flags the single "main" customer-facing VHC video (the end-of-check
+  // walkaround), pinned at the top of the Video / Photo tab.
+  is_main_vhc_video: "boolean DEFAULT false",
 };
 
 const REPAIRABLE_JOB_FILES_COLUMNS = Object.keys(JOB_FILES_COLUMN_DEFINITIONS);

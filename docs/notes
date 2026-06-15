@@ -1,37 +1,8 @@
+CHeck global setting
+
 Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 
 
 ----------------- VHC -----------------
-summary 
-TODO
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children" follow the staffglobal.css settings. along the top add a section which containts red items, amber items, green items, parts required parts ordered, parts booked totals, split the section into 70/30, have the 70 eseciton show the current red and amber sections which has tables which have heading itme, reported fault, parts, labour, total, status, check box, keep the authorise decline reset buttons etc. keep the green section as it is in the 70% section. make a new 30% section of the pages width which shows the approved rows with a total parts, labour of all the apporved, the same with declinded, add an action button two each row so the user can reset to amber/red or complete the approved rows. 
-
-
-
-
-Health Check
-NOT NEEDED?
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children" follow the staffglobal.css settings. have it so the "Vhc Healthcheck Card Serviceindicator | 1.2.1.1.1.1.1.1.1.1.2 key: vhc-healthcheck-card-serviceindicator source: src/components/VHC/VhcDetailsPanel.js:1068 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00076 parent vhc-healthcheck-stack (1.2.1.1.1.1.1.1.1.1) | 3 children", "Vhc Healthcheck Card Externalinspection | 1.2.1.1.1.1.1.1.1.1.3 key: vhc-healthcheck-card-externalinspection source: src/components/VHC/VhcDetailsPanel.js:1068 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00076 parent vhc-healthcheck-stack (1.2.1.1.1.1.1.1.1.1) | 2 children","Vhc Healthcheck Card Internalelectrics | 1.2.1.1.1.1.1.1.1.1.4 key: vhc-healthcheck-card-internalelectrics source: src/components/VHC/VhcDetailsPanel.js:1068 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00076 parent vhc-healthcheck-stack (1.2.1.1.1.1.1.1.1.1) | 1 child", "Vhc Healthcheck Card Underside | 1.2.2.1.1.1.1.1.1.1.5 key: vhc-healthcheck-card-underside source: src/components/VHC/VhcDetailsPanel.js:1068 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00076 parent vhc-healthcheck-stack (1.2.2.1.1.1.1.1.1.1) | 1 child" section are set to a 2x2 grid patern underneath the "Vhc Healthcheck Card Brakeshubs | 1.2.2.1.1.1.1.1.1.1.1 key: vhc-healthcheck-card-brakeshubs source: src/components/VHC/VhcDetailsPanel.js:1068 (dynamic pattern) src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) route: /job-cards/00076 parent vhc-healthcheck-stack (1.2.2.1.1.1.1.1.1.1) | 3 children" card to minimise the scroll distance, keep it so the design of the cards are the same just have it so the widths are halfed etc so it can fit two cards within a row etc. 
-
-
-
-Parts Identified
-TODO
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children"follow the staffglobal.css settings. add a seciton at the top for parts identifed, linked items, estimated parts cost, eastimated labour, total esitied valuse, as well as add part, awaiting response, authorised, ordered, here etc sections to give a count of number of rows with those status. also add a dropdowns wihtin that section below the "add part, awaiting response, authorised, ordered, here" for example which are used to filter the table fo rexample by status, vhc items (red or amber), and add a search bar for the user to search for anything within the table etc. 
-
-
-
-Parts Authorised
-TODO
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children (Parts Authorised)" follow the staffglobal.css settings. Have table which shows VHC item, part details, decision, part status (in stock, on order, here), parts cost, action column to change status of the rows like to add a part to that vhc item, or to put the part as not required to to change the status to say here etc. Have the in progress and declined within this table as well however show this at the bottom, keep authorised at the top. At the top of the section add a total for the approved parts, in progress, declined parts, total authorised, total pending, total potential. Add a search bar as well to search for parts within the table. beofre making this change have it so the "Authorised parts" and "Parts Identified" tab are combined, i want it so all the info for each Parts Identified for example is just a section where the user adds the part to the  vhc item, so comibine the table used withn those two tabs into a new one tab which is "Parts", and then remove the other two tabs as they arent needed, keep the funciton so when a part is added ot the VHC item it shows within the summary tab the same for example as well as the have it so when the part is authorised within the summary tab its follows the same idea as changing the status column of the authorised part to so it either says add part, awaiting response, authorised, ordered, here etc /along those lines. 
-
-
-
-Photos
-TODO
-i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children (photo tab)"follow the staffglobal.css settings. Add a section at the top for total photos, with annotations, before and after pictures, linked to requests with an upload photo button. Have it so with where the photos are it’s got the report example nsr tyre with count of photos and then to the right it has the photos taken and linked to that request. Do a new line for each request, keep the photos taken preview image the same size. 
-
-
-
 Videos
 TODO
 i want to redsing the "Jobcard Tab Vhc Panel | 1.2.2.1.1.4.1.1 key: jobcard-tab-vhc-panel source: src/pages/job-cards/[jobNumber].js:9379 route: /job-cards/00079 parent jobcard-tab-vhc (1.2.2.1.1.4.1) | 2 children (Videos tab)" follow the staffglobal.css settings. Change it so the photos and videos tabs within the VHC tab are within one “video/photo” tab name, have it so in one request line it shows the photos and videos with a photo and video count under the request section. But at the very top this has a customer facing video row which is always at the top which is the main video which is taken at the end of the VHC check etc. also adjust the top section to include video counts as well as video counts in the same boxes etc. 

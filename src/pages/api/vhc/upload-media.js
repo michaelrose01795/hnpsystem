@@ -156,7 +156,7 @@ async function fetchExistingMediaRow(client, numericFileId) {
   }
 }
 
-async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleToCustomer, concernLink = null }) {
+async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleToCustomer, concernLink = null, isMainVideo = false }) {
   const client = getClient();
   const numericFileId = Number.parseInt(String(fileId || "").trim(), 10);
   if (!Number.isInteger(numericFileId) || numericFileId <= 0) {
@@ -182,6 +182,7 @@ async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleTo
     storageType: "supabase",
     storagePath,
     concernLink,
+    isMainVideo,
   });
 
   if (!result.success) {
@@ -219,6 +220,7 @@ async function handler(req, res) {
     const { jobId, isTempJob } = await resolveUploadJobId(rawJobId, rawJobNumber);
     const userId = fields.userId || "system";
     const visibleToCustomer = fields.visibleToCustomer === "true" || fields.visibleToCustomer === true;
+    const isMainVideo = fields.isMainVideo === "true" || fields.isMainVideo === true;
     const replaceFileId = fields.replaceFileId || null;
 
     // Optional per-section concern link, sent as a JSON string. Ignored
@@ -279,6 +281,7 @@ async function handler(req, res) {
         uploadedBy: userId,
         visibleToCustomer,
         concernLink,
+        isMainVideo,
       });
     } else {
       const result = await uploadAndRecord(file, {
@@ -287,6 +290,7 @@ async function handler(req, res) {
         uploadedBy: userId,
         visibleToCustomer,
         concernLink,
+        isMainVideo,
       });
 
       if (!result.success) {

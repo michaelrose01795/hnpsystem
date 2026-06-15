@@ -395,7 +395,7 @@ export const loadVhcFallbackBundle = async (jobId) => { // Fetch vhc_checks + pa
     db.from("parts_job_items").select("*").eq("job_id", jobId), // All linked parts rows.
     db
       .from("job_files")
-      .select("file_id, file_name, file_url, file_type, folder, uploaded_at, uploaded_by")
+      .select("file_id, file_name, file_url, file_type, folder, uploaded_at, uploaded_by, visible_to_customer, vhc_concern_link, is_main_vhc_video")
       .eq("job_id", jobId), // Attached job files (photos/videos).
   ]);
   if (checksRes.error) throw checksRes.error; // Match prior throw behaviour.

@@ -98,7 +98,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
 import ContactTab from "@/components/page-ui/job-cards/ContactTab"; // Redesigned Contact tab — one file per tab (CLAUDE.md §4.3).
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md Â§3.0)
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
     return (
@@ -3694,14 +3694,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     if (value === null || value === undefined) {
       return "N/A";
     }
-    // Show Â£0.00 for zero values, or the actual amount
+    // Show £0.00 for zero values, or the actual amount
     if (!Number.isFinite(value)) {
       return "N/A";
     }
-    return `Â£${value.toFixed(2)}`;
+    return `£${value.toFixed(2)}`;
   };
 
-  // âœ… Loading State
+  // Loading State
   if (loading) {
     return <JobCardDetailPageUi view="section1" JobCardPageShellSkeleton={JobCardPageShellSkeleton} jobNumber={jobNumber} />;
   }
@@ -6468,6 +6468,9 @@ function CustomerRequestsTab({
           html.staff-scope .jc-req-row:hover {
             background-color: var(--secondary-pressed);
           }
+          @media (max-width: 1280px) {
+            html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+          }
           @media (max-width: 1100px) {
             html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           }
@@ -8152,7 +8155,7 @@ function WriteUpWorkspace({
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Parts Used</div>
                   <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>{selectedPartsSummary.count}</div>
-                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>Â£{selectedPartsSummary.cost.toFixed(2)} cost</div>
+                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>£{selectedPartsSummary.cost.toFixed(2)} cost</div>
                 </div>
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Attachments</div>
@@ -8245,6 +8248,9 @@ function WriteUpWorkspace({
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
+          }
+          @media (max-width: 1280px) {
+            html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
           }
           @media (max-width: 1100px) {
             html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -9874,10 +9880,10 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
 
                   <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
-                    Part #: {part.part_number} Â· Supplier: {part.supplier || "Unknown"}
+                    Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
-                    Stock: {part.qty_in_stock ?? 0} Â· Â£{Number(part.unit_price || 0).toFixed(2)} Â· {part.category || "Uncategorised"}
+                    Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)} · {part.category || "Uncategorised"}
                   </div>
                 </button>);
 
@@ -9897,7 +9903,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               <div>
                 <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "1rem" }}>{selectedCatalogPart.name}</div>
                 <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
-                  Part #: {selectedCatalogPart.part_number} Â· Location: {selectedCatalogPart.storage_location || "Unassigned"}
+                  Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
                 </div>
               </div>
               <button
@@ -9959,10 +9965,10 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   Sell Price
                 </div>
                 <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-purple)" }}>
-                  Â£{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
+                  £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>
-                  Cost Â£{Number(selectedCatalogPart.unit_cost || 0).toFixed(2)}
+                  Cost £{Number(selectedCatalogPart.unit_cost || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -10997,7 +11003,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
                 color: "var(--info-dark)"
               }}>
 
-                  {member.name} Â· {member.role || "Team"}
+                  {member.name} · {member.role || "Team"}
                 </span>
             )}
               {customerMember &&
@@ -11010,7 +11016,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
                 color: "var(--accent-purple)"
               }}>
 
-                  {customerMember.name || "Customer"} Â· Customer
+                  {customerMember.name || "Customer"} · Customer
                 </span>
             }
             </div>
@@ -12184,7 +12190,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>
-                Technicians Â· {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+                Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
               </h3>
               <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
                 Click an available technician to clock them onto Job #{normalizedJobNumber || "â€”"}.

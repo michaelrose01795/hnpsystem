@@ -269,7 +269,13 @@
       "Bash(echo \"=== layers exit=$? ===\")",
       "Bash(echo \"=== eslint exit=$? ===\")",
       "Bash(echo \"=== exit=$? ===\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(awk 'NR>=2987 && NR<=2992 {print NR\": \"$0} NR>=3090 && NR<=3102 {print NR\": \"$0}' \"src/components/VHC/VhcDetailsPanel.js\")",
+      "Bash(sed -i '2988,3101d' \"src/components/VHC/VhcDetailsPanel.js\")",
+      "Bash(awk 'NR>=2985 && NR<=2990 {print NR\": \"$0}' \"src/components/VHC/VhcDetailsPanel.js\")",
+      "PowerShell(npm run check:borders 2>&1)",
+      "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" 2>&1)",
+      "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" -f json 2>$null | ConvertFrom-Json | ForEach-Object { $_.messages } | Where-Object { $_.severity -eq 2 } | Select-Object line, ruleId, message)"
     ],
     "deny": [],
     "ask": [],

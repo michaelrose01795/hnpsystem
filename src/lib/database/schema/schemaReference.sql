@@ -350,6 +350,7 @@ CREATE TABLE public.job_files (
   storage_type text,
   storage_path text,
   vhc_concern_link jsonb,
+  is_main_vhc_video boolean DEFAULT false,
   CONSTRAINT job_files_pkey PRIMARY KEY (file_id),
   CONSTRAINT job_files_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id)

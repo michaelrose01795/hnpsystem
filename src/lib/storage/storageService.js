@@ -15,7 +15,7 @@ import {
 } from "@/lib/storage/jobFilesSchemaRepair";
 
 const BUCKET = "job-files"; // single bucket for all job-related uploads
-const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path", "vhc_concern_link"];
+const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path", "vhc_concern_link", "is_main_vhc_video"];
 
 // Prefer the service-role client (server-side); fall back to anon client.
 function getClient() {
@@ -184,6 +184,7 @@ export async function saveFileRecord(meta) {
     uploaded_at: new Date().toISOString(),
     visible_to_customer: meta.visibleToCustomer ?? true,
     storage_path: meta.storagePath || null,
+    is_main_vhc_video: meta.isMainVideo === true,
     // Concern link JSON — only included when the caller provided it.
     // Empty objects are filtered so the column stays NULL by default.
     ...(meta.concernLink && typeof meta.concernLink === "object" && Object.keys(meta.concernLink).length
@@ -200,7 +201,7 @@ export async function saveFileRecord(meta) {
     const response = await client
       .from("job_files")
       .insert([insertRow])
-      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer")
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, is_main_vhc_video")
       .single();
 
     data = response.data;
@@ -263,6 +264,7 @@ export async function updateFileRecord(fileId, meta) {
     uploaded_at: new Date().toISOString(),
     visible_to_customer: meta.visibleToCustomer ?? true,
     storage_path: meta.storagePath || null,
+    is_main_vhc_video: meta.isMainVideo === true,
     ...(meta.concernLink && typeof meta.concernLink === "object" && Object.keys(meta.concernLink).length
       ? { vhc_concern_link: meta.concernLink }
       : {}),
@@ -278,7 +280,7 @@ export async function updateFileRecord(fileId, meta) {
       .from("job_files")
       .update(updatePayload)
       .eq("file_id", fileId)
-      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer")
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, is_main_vhc_video")
       .single();
 
     data = response.data;
@@ -333,7 +335,7 @@ export async function updateFileRecord(fileId, meta) {
  * Uploads the file to Supabase Storage then writes a `job_files` row.
  *
  * @param {{ buffer: Buffer, fileName: string, mimetype: string, size: number }} file
- * @param {{ jobId: string|number, folder: string, uploadedBy: string|number, visibleToCustomer?: boolean }} opts
+ * @param {{ jobId: string|number, folder: string, uploadedBy: string|number, visibleToCustomer?: boolean, isMainVideo?: boolean }} opts
  * @returns {Promise<{ success: boolean, data?: object, publicUrl?: string, error?: string }>}
  */
 export async function uploadAndRecord(file, opts) {
@@ -351,6 +353,7 @@ export async function uploadAndRecord(file, opts) {
     storageType: "supabase",
     storagePath,
     concernLink: opts.concernLink || null,
+    isMainVideo: opts.isMainVideo === true,
   });
 
   if (!result.success) {

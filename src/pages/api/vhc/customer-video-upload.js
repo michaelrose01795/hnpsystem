@@ -4,12 +4,13 @@ export const runtime = "nodejs";
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabaseService } from "@/lib/database/supabaseClient";
-import { 
-  ensureVhcMediaBucket, 
-  buildVhcMediaStoragePath, 
+import { saveFileRecord } from "@/lib/storage/storageService";
+import {
+  ensureVhcMediaBucket,
+  buildVhcMediaStoragePath,
   uploadVhcMediaFile,
   BUCKET_NAME,
-  MEDIA_TYPES 
+  MEDIA_TYPES
 } from "@/lib/storage/vhcMediaBucketService";
 
 export const config = {
@@ -123,6 +124,65 @@ const createCustomerVideoRecord = async ({
   return record;
 };
 
+// Resolve a numeric jobs.id from a job number, tolerating padded / hashed
+// forms (e.g. "68", "00068", "#ENR00068").
+const resolveJobIdByNumber = async (jobNumber) => {
+  const token = String(jobNumber || "").trim().replace(/^#/, "");
+  if (!token) return null;
+
+  const candidates = new Set([token, token.toUpperCase()]);
+  if (/^\d+$/.test(token)) {
+    const parsed = Number.parseInt(token, 10);
+    if (parsed > 0) {
+      candidates.add(String(parsed));
+      candidates.add(String(parsed).padStart(5, "0"));
+    }
+  }
+
+  const { data } = await supabaseService
+    .from("jobs")
+    .select("id")
+    .in("job_number", Array.from(candidates))
+    .limit(1);
+
+  const job = Array.isArray(data) ? data[0] : null;
+  return job?.id ?? null;
+};
+
+// Mirror the uploaded customer video into job_files flagged as the main VHC
+// video, so it surfaces in the pinned "Customer Video" row of the staff Video /
+// Photo tab (which reads job_files). Best-effort: a failure here must not fail
+// the customer-media upload itself.
+const mirrorCustomerVideoToJobFiles = async ({
+  jobNumber,
+  storagePath,
+  publicUrl,
+  mimeType,
+  fileSize,
+  uploadedBy,
+}) => {
+  try {
+    const jobId = await resolveJobIdByNumber(jobNumber);
+    if (!jobId) return;
+
+    await saveFileRecord({
+      jobId,
+      fileName: storagePath ? String(storagePath).split("/").pop() : "customer-video.webm",
+      fileUrl: publicUrl,
+      fileType: mimeType || "video/webm",
+      folder: "vhc-media",
+      uploadedBy,
+      visibleToCustomer: true,
+      fileSize,
+      storageType: "supabase",
+      storagePath,
+      isMainVideo: true,
+    });
+  } catch (mirrorError) {
+    console.warn("⚠️ Failed to mirror customer video into job_files:", mirrorError?.message);
+  }
+};
+
 const handleSignedUploadRequest = async (body, res) => {
   const action = String(body.action || "").trim();
 
@@ -182,6 +242,15 @@ const handleSignedUploadRequest = async (body, res) => {
       fileSize: fileMeta.fileSize,
       overlays,
       contextLabel,
+      uploadedBy,
+    });
+
+    await mirrorCustomerVideoToJobFiles({
+      jobNumber,
+      storagePath,
+      publicUrl,
+      mimeType: fileMeta.mimeType,
+      fileSize: fileMeta.fileSize,
       uploadedBy,
     });
 
@@ -246,6 +315,15 @@ async function handler(req, res) {
       fileSize: file.size,
       overlays,
       contextLabel,
+      uploadedBy,
+    });
+
+    await mirrorCustomerVideoToJobFiles({
+      jobNumber,
+      storagePath,
+      publicUrl,
+      mimeType: file.mimeType,
+      fileSize: file.size,
       uploadedBy,
     });
 
