@@ -1,14 +1,14 @@
+00076
 CHeck global setting
 
+CHECK
 Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 
 
 ----------------- VHC -----------------
 Videos
-TODO
-update
-CHECK
-fix uploading photos within health check and having it save to database and show within the photo/video tab, req deep dive
+expand
 
+go through all taps to adjust slight ui desing and make sure everythign works correctly 
 
 -----------------------------------------------------------------------
 

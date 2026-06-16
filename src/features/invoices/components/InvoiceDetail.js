@@ -24,6 +24,14 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const getInvoiceNumberDisplay = (invoice = {}, { finalPreview = false } = {}) => {
+  const invoiceNumber = String(invoice.invoice_number || "").trim();
+  const isProformaNumber = invoiceNumber.toUpperCase().startsWith("PROFORMA-");
+  if (invoiceNumber && (!finalPreview || !isProformaNumber)) return invoiceNumber;
+  if (invoice.invoice_id && !finalPreview) return invoice.invoice_id;
+  return finalPreview ? "Hidden until invoice is created" : "—";
+};
+
 const AddressBlock = ({ title, address }) => {
   return (
     <div className={styles.headerBox}>
@@ -39,12 +47,12 @@ const AddressBlock = ({ title, address }) => {
   );
 };
 
-const JobMetaBlock = ({ invoice }) => {
+const JobMetaBlock = ({ invoice, finalPreview = false }) => {
   return (
     <div className={styles.headerBox}>
       <h3>Job & Invoice</h3>
       <ul className={styles.headerList}>
-        <li>Invoice No: <strong>{invoice.invoice_number || "—"}</strong></li>
+        <li>Invoice No: <strong>{getInvoiceNumberDisplay(invoice, { finalPreview })}</strong></li>
         <li>Date: <strong>{formatDate(invoice.invoice_date)}</strong></li>
         <li>A/C No: <strong>{invoice.account_number || "—"}</strong></li>
         <li>Job No: <strong>{invoice.job_number || "—"}</strong></li>
@@ -212,12 +220,14 @@ export default function InvoiceDetail({
   onPaymentCompleted = null,
   onReleaseRequested = null,
   hideActions = false,
+  forceFinalPreview = false,
 }) {
   const detailData = data ?? {};
   const { company, invoice, payment, payments = [] } = detailData;
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
-  const isProforma = Boolean(data?.meta?.isProforma);
+  const isProforma = forceFinalPreview ? false : Boolean(data?.meta?.isProforma);
+  const canEditProforma = Boolean(data?.meta?.isProforma) && !forceFinalPreview;
   const { openEditor, modal } = useProformaOverrideEditor({
     jobIdForOverride: jobData?.id || null,
     onDataPatch,
@@ -300,7 +310,13 @@ export default function InvoiceDetail({
           )}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
             <span className={styles.invoiceStatusBadge}>
-              {isProforma ? "Proforma preview" : invoicePaid ? "Payment captured" : invoice?.payment_status || "Live invoice"}
+              {forceFinalPreview && data?.meta?.isProforma
+                ? "Final invoice preview"
+                : isProforma
+                ? "Proforma preview"
+                : invoicePaid
+                ? "Payment captured"
+                : invoice?.payment_status || "Live invoice"}
             </span>
           </div>
           {emailStatus && emailStatus !== "Sending..." && (
@@ -320,7 +336,7 @@ export default function InvoiceDetail({
       <section className={styles.headerGrid}>
         <AddressBlock title="Invoice To" address={invoice.invoice_to} />
         <AddressBlock title="Deliver To" address={invoice.deliver_to} />
-        <JobMetaBlock invoice={invoice} />
+        <JobMetaBlock invoice={invoice} finalPreview={forceFinalPreview} />
       </section>
 
       <VehicleRow vehicle={invoice.vehicle_details} />
@@ -335,13 +351,13 @@ export default function InvoiceDetail({
             key={row.key}
             request={row.displayRequest}
             linkedParts={row.linkedParts}
-            isEditable={isProforma}
+            isEditable={canEditProforma}
             onOpenEditor={handleOpenProformaEditor}
           />
         ))
       )}
 
-      {isProforma && modal}
+      {canEditProforma && modal}
 
       <TotalsFooter totals={invoice.totals} />
 

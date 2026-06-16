@@ -201,7 +201,7 @@ export async function saveFileRecord(meta) {
     const response = await client
       .from("job_files")
       .insert([insertRow])
-      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, is_main_vhc_video")
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, storage_path, vhc_concern_link, is_main_vhc_video")
       .single();
 
     data = response.data;
@@ -280,7 +280,7 @@ export async function updateFileRecord(fileId, meta) {
       .from("job_files")
       .update(updatePayload)
       .eq("file_id", fileId)
-      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, is_main_vhc_video")
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer, storage_path, vhc_concern_link, is_main_vhc_video")
       .single();
 
     data = response.data;

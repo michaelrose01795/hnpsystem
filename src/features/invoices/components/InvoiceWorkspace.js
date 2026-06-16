@@ -26,6 +26,16 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const getFinalInvoiceNumberDisplay = (invoice = {}, isProforma = false) => {
+  if (invoice.invoice_number && !String(invoice.invoice_number).toUpperCase().startsWith("PROFORMA-")) {
+    return invoice.invoice_number;
+  }
+  if (!isProforma && invoice.invoice_id) {
+    return invoice.invoice_id;
+  }
+  return "Hidden until invoice is created";
+};
+
 // Small label/value tile (nested LayerTheme keeps surface alternation correct).
 const SummaryTile = ({ label, children, tone }) => (
   <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="6px">
@@ -194,6 +204,7 @@ export default function InvoiceWorkspace({
   const capturedTotal = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const invoiceTotal = Number(totals.invoice_total || 0);
   const balanceDue = invoicePaid ? 0 : Math.max(0, invoiceTotal - capturedTotal);
+  const finalInvoiceNumber = getFinalInvoiceNumberDisplay(invoice, isProforma);
 
   const paymentStatusLabel = isProforma
     ? "Proforma"
@@ -241,7 +252,7 @@ export default function InvoiceWorkspace({
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", justifyContent: "flex-end" }}>
             <Button variant="secondary" size="sm" onClick={() => setPreviewOpen(true)}>
-              Preview Invoice
+              Preview Final Invoice
             </Button>
             <Button variant="secondary" size="sm" onClick={onPrint}>
               Print Invoice
@@ -385,25 +396,13 @@ export default function InvoiceWorkspace({
           <div style={{ minWidth: 0 }}>
             <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--accentText)" }}>Invoice Preview</h2>
             <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.88rem" }}>
-              {invoice.invoice_number || "—"}
-              {isProforma ? " · Proforma" : ` · ${formatCurrency(invoiceTotal)}`}
+              {finalInvoiceNumber} · Final invoice · {formatCurrency(invoiceTotal)}
             </p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", justifyContent: "flex-end" }}>
             <Button variant="secondary" size="sm" onClick={onPrint}>
               Print
             </Button>
-            {!isProforma && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onEmail}
-                disabled={!customerEmail || emailStatus === "Sending..."}
-                title={customerEmail ? `Send to ${customerEmail}` : "No customer email on file"}
-              >
-                {emailStatus === "Sending..." ? "Sending..." : "Email"}
-              </Button>
-            )}
             <Button variant="ghost" size="sm" onClick={() => setPreviewOpen(false)}>
               Close
             </Button>
@@ -421,6 +420,7 @@ export default function InvoiceWorkspace({
           onDataPatch={onDataPatch}
           onPaymentCompleted={onPaymentCompleted}
           onReleaseRequested={onReleaseRequested}
+          forceFinalPreview
         />
       </PopupModal>
     </>

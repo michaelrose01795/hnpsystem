@@ -1427,6 +1427,8 @@ export default function VhcDetailsPanel({
   const [photoUploadError, setPhotoUploadError] = useState("");
   // file_id currently being promoted/demoted as the main customer video.
   const [mainVideoSavingId, setMainVideoSavingId] = useState(null);
+  const [photoPreviewFile, setPhotoPreviewFile] = useState(null);
+  const [photoPreviewMessage, setPhotoPreviewMessage] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
   const [itemEntries, setItemEntries] = useState({});
   const [severitySelections, setSeveritySelections] = useState({ red: [], amber: [] });
@@ -1512,6 +1514,43 @@ export default function VhcDetailsPanel({
       }
     },
     [onJobDataRefresh]
+  );
+
+  const handleSectionMediaUploaded = useCallback(
+    (uploadedFile, concern = null) => {
+      if (uploadedFile) {
+        const concernLink =
+          uploadedFile.vhc_concern_link ||
+          (concern
+            ? {
+                section: concern.section,
+                category: concern.category || null,
+                categoryLabel: concern.categoryLabel || null,
+                concernId: concern.concernId,
+                index: concern.index,
+                label: concern.label,
+                status: concern.status,
+              }
+            : null);
+        const enrichedFile = {
+          ...uploadedFile,
+          ...(concernLink ? { vhc_concern_link: concernLink } : {}),
+        };
+
+        setJob((prev) => {
+          if (!prev) return prev;
+          const currentFiles = Array.isArray(prev.job_files) ? prev.job_files : [];
+          const nextFiles = currentFiles.some((file) => String(file?.file_id) === String(enrichedFile.file_id))
+            ? currentFiles.map((file) => (String(file?.file_id) === String(enrichedFile.file_id) ? { ...file, ...enrichedFile } : file))
+            : [enrichedFile, ...currentFiles];
+          return { ...prev, job_files: nextFiles };
+        });
+      }
+
+      setPhotosReloadToken((token) => token + 1);
+      refreshJobData(uploadedFile, concern);
+    },
+    [refreshJobData]
   );
 
   const applyLinkedPrePickLocation = useCallback(
@@ -5839,6 +5878,26 @@ export default function VhcDetailsPanel({
     [],
   );
 
+  const handleOpenPhotoPreview = useCallback((file) => {
+    setPhotoPreviewFile(file || null);
+    setPhotoPreviewMessage("");
+  }, []);
+
+  const handleCopyPhotoLink = useCallback(async () => {
+    const url = photoPreviewFile?.file_url;
+    if (!url) return;
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      setPhotoPreviewMessage("Copy is not available in this browser.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setPhotoPreviewMessage("Link copied.");
+    } catch {
+      setPhotoPreviewMessage("Could not copy the link.");
+    }
+  }, [photoPreviewFile]);
+
   const customerName = useMemo(() => {
     if (!job?.customer) return "—";
     if (job.customer.name) return job.customer.name;
@@ -8201,20 +8260,34 @@ export default function VhcDetailsPanel({
         {files.map((file) => (
           <div
             key={file.file_id}
+            role={fileType === "photo" ? "button" : undefined}
+            tabIndex={fileType === "photo" ? 0 : undefined}
+            onClick={fileType === "photo" ? () => handleOpenPhotoPreview(file) : undefined}
+            onKeyDown={
+              fileType === "photo"
+                ? (event) => {
+                    if (event.key === "Enter" || event.key === " ") handleOpenPhotoPreview(file);
+                  }
+                : undefined
+            }
             style={{
-              borderRadius: "var(--radius-sm)",
+              padding: "10px",
+              borderRadius: "var(--radius-md)",
               overflow: "hidden",
               background: "var(--surface)",
+              cursor: fileType === "photo" ? "pointer" : "default",
             }}
           >
             {fileType === "photo" ? (
               <img
                 src={file.file_url}
-                alt={file.file_name}
+                alt="VHC photo"
                 style={{
                   width: "100%",
-                  height: "150px",
+                  height: "156px",
                   objectFit: "cover",
+                  display: "block",
+                  borderRadius: "var(--radius-sm)",
                 }}
               />
             ) : (
@@ -8223,14 +8296,17 @@ export default function VhcDetailsPanel({
                 controls
                 style={{
                   width: "100%",
-                  height: "150px",
+                  height: "156px",
+                  objectFit: "cover",
+                  display: "block",
+                  borderRadius: "var(--radius-sm)",
                 }}
               />
             )}
             <div style={{ padding: "12px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "8px" }}>
                 <div style={{ fontSize: "12px", color: "var(--text-accent)", fontWeight: 600, flex: 1 }}>
-                  {file.file_name}
+                  {""}
                 </div>
                 {file.visible_to_customer !== undefined && (
                   <span
@@ -8244,15 +8320,12 @@ export default function VhcDetailsPanel({
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "4px" }}>
-                {formatDateTime(file.uploaded_at)}
-              </div>
             </div>
           </div>
         ))}
       </div>
     );
-  }, []);
+  }, [handleOpenPhotoPreview]);
 
   // Video / Photo tab — request-grouped layout. A pinned "customer video" row
   // (the main end-of-check walkaround) always sits at the very top, followed by
@@ -8261,7 +8334,7 @@ export default function VhcDetailsPanel({
   // label, a status dot and a "X photos · Y videos" count on the left, with the
   // linked photo thumbnails and video previews on the right.
   const renderMediaTab = useCallback(() => {
-    const THUMB_SIZE = 88;
+    const MEDIA_TILE_HEIGHT = 156;
     const { groups, unlinkedPhotos, unlinkedVideos, mainVideos, stats } = mediaLibrary;
 
     const statusColour = (status) =>
@@ -8306,53 +8379,47 @@ export default function VhcDetailsPanel({
     );
 
     const renderPhotoThumb = (file, index) => (
-      <figure
+      <button
+        type="button"
         key={file.file_id}
-        style={{ margin: 0, width: `${THUMB_SIZE}px`, flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
+        onClick={() => handleOpenPhotoPreview(file)}
+        title="Open photo preview"
+        style={{
+          position: "relative",
+          height: `${MEDIA_TILE_HEIGHT}px`,
+          minWidth: "180px",
+          flex: "1 1 180px",
+          padding: 0,
+          border: "none",
+          borderRadius: "var(--radius-md)",
+          overflow: "hidden",
+          background: "var(--surface)",
+          cursor: "pointer",
+        }}
       >
-        <a
-          href={file.file_url}
-          target="_blank"
-          rel="noreferrer"
-          title={`${file.file_name || "Photo"} · ${formatDateTime(file.uploaded_at)}`}
-          style={{
-            position: "relative",
-            display: "block",
-            width: `${THUMB_SIZE}px`,
-            height: `${THUMB_SIZE}px`,
-            borderRadius: "var(--radius-sm)",
-            overflow: "hidden",
-            background: "var(--surface)",
-          }}
-        >
           <img
             src={file.file_url}
-            alt={file.file_name || "VHC photo"}
+            alt="VHC photo"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
           {renderThumbIndex(index)}
-        </a>
-        <figcaption style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.65 }}>
-          {formatDateTime(file.uploaded_at)}
-        </figcaption>
-      </figure>
+      </button>
     );
 
     const renderVideoThumb = (file, index) => {
-      const width = Math.round(THUMB_SIZE * 1.6);
       const saving = mainVideoSavingId === file.file_id;
       return (
         <figure
           key={file.file_id}
-          style={{ margin: 0, width: `${width}px`, flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}
+          style={{ margin: 0, minWidth: "220px", flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "8px" }}
         >
           <div
-            title={`${file.file_name || "Video"} · ${formatDateTime(file.uploaded_at)}`}
+            title="Video preview"
             style={{
               position: "relative",
-              width: `${width}px`,
-              height: `${THUMB_SIZE}px`,
-              borderRadius: "var(--radius-sm)",
+              width: "100%",
+              height: `${MEDIA_TILE_HEIGHT}px`,
+              borderRadius: "var(--radius-md)",
               overflow: "hidden",
               background: "var(--surface)",
             }}
@@ -8365,11 +8432,8 @@ export default function VhcDetailsPanel({
             />
             {renderThumbIndex(index)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-            <figcaption style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.65 }}>
-              {formatDateTime(file.uploaded_at)}
-            </figcaption>
-            {!readOnly && (
+          {!readOnly ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
               <button
                 type="button"
                 onClick={() => handleToggleMainVideo(file.file_id, true)}
@@ -8389,8 +8453,8 @@ export default function VhcDetailsPanel({
               >
                 {saving ? "Saving…" : "Set as main video"}
               </button>
-            )}
-          </div>
+            </div>
+          ) : null}
         </figure>
       );
     };
@@ -8406,14 +8470,15 @@ export default function VhcDetailsPanel({
             display: "flex",
             flexWrap: "wrap",
             alignItems: "flex-start",
-            gap: "24px",
+            gap: "10px",
             background: "var(--theme)",
             borderRadius: "var(--radius-md)",
-            padding: "20px",
+            padding: "10px",
+            minHeight: `${MEDIA_TILE_HEIGHT + 20}px`,
           }}
         >
           {/* Left — the report/concern this set of media belongs to */}
-          <div style={{ flex: "0 0 200px", minWidth: "180px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ flex: "0 0 210px", minWidth: "180px", display: "flex", flexDirection: "column", gap: "10px", padding: "10px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span
@@ -8456,7 +8521,7 @@ export default function VhcDetailsPanel({
           </div>
 
           {/* Right — the photos + videos taken for that request, in a thumbnail strip */}
-          <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexWrap: "wrap", gap: "14px" }}>
+          <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", alignItems: "stretch", flexWrap: "wrap", gap: "10px" }}>
             {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
             {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
           </div>
@@ -8618,7 +8683,7 @@ export default function VhcDetailsPanel({
         )}
       </div>
     );
-  }, [mediaLibrary, readOnly, photoUploadError, photoUploading, handlePhotoTabUpload, handleToggleMainVideo, mainVideoSavingId]);
+  }, [mediaLibrary, readOnly, photoUploadError, photoUploading, handlePhotoTabUpload, handleToggleMainVideo, handleOpenPhotoPreview, mainVideoSavingId]);
 
   if (!resolvedJobNumber) {
     return renderStatusMessage("Provide a job number to view VHC details.");
@@ -9771,7 +9836,7 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
       {activeSection === "brakesHubs" && (
@@ -9785,7 +9850,7 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
       {activeSection === "serviceIndicator" && (
@@ -9799,7 +9864,7 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
       {activeSection === "externalInspection" && (
@@ -9814,7 +9879,7 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
       {activeSection === "internalElectrics" && (
@@ -9829,7 +9894,7 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
       {activeSection === "underside" && (
@@ -9844,9 +9909,115 @@ export default function VhcDetailsPanel({
           jobId={job?.id || null}
           jobNumber={resolvedJobNumber}
           userId={dbUserId || authUserId || null}
-          onSectionMediaUploaded={() => refreshJobData?.()}
+          onSectionMediaUploaded={handleSectionMediaUploaded}
         />
       )}
+
+      <VHCModalShell
+        isOpen={Boolean(photoPreviewFile)}
+        title="Photo Preview"
+        subtitle={photoPreviewFile?.vhc_concern_link?.label || "Inspection media"}
+        width="980px"
+        height="auto"
+        adaptiveHeight
+        onClose={() => {
+          setPhotoPreviewFile(null);
+          setPhotoPreviewMessage("");
+        }}
+        sectionKey="vhc-photo-preview"
+        footer={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", width: "100%", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-1)", opacity: 0.7 }}>
+              {photoPreviewMessage || (photoPreviewFile?.visible_to_customer ? "Visible to customer" : "Internal only")}
+            </span>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={handleCopyPhotoLink}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--input-radius)",
+                  border: "1px solid var(--ghostbutton-ring)",
+                  background: "var(--surface)",
+                  color: "var(--text-accent)",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Copy link
+              </button>
+              {photoPreviewFile?.file_url ? (
+                <a
+                  href={photoPreviewFile.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "var(--input-radius)",
+                    background: "var(--theme)",
+                    color: "var(--text-accent)",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  Open original
+                </a>
+              ) : null}
+              {photoPreviewFile?.file_url ? (
+                <a
+                  href={photoPreviewFile.file_url}
+                  download
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "var(--input-radius)",
+                    background: "var(--primary)",
+                    color: "var(--text-2)",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  Download
+                </a>
+              ) : null}
+            </div>
+          </div>
+        }
+      >
+        {photoPreviewFile ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "start" }}>
+            <div style={{ flex: "1 1 520px", minWidth: "min(100%, 280px)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--theme)", padding: "10px" }}>
+              <img
+                src={photoPreviewFile.file_url}
+                alt="VHC photo preview"
+                style={{ width: "100%", maxHeight: "68vh", objectFit: "contain", display: "block", borderRadius: "var(--radius-sm)" }}
+              />
+            </div>
+            <div style={{ flex: "1 1 220px", minWidth: "min(100%, 220px)", display: "flex", flexDirection: "column", gap: "12px", padding: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)" }}>
+              <div style={{ display: "grid", gap: "4px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-1)", opacity: 0.65 }}>
+                  Linked item
+                </span>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-accent)" }}>
+                  {photoPreviewFile.vhc_concern_link?.label || "Unlinked media"}
+                </span>
+                {photoPreviewFile.vhc_concern_link?.section ? (
+                  <span style={{ fontSize: "12px", color: "var(--text-1)", opacity: 0.75 }}>
+                    {photoPreviewFile.vhc_concern_link.section}
+                  </span>
+                ) : null}
+              </div>
+              <div style={{ display: "grid", gap: "4px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-1)", opacity: 0.65 }}>
+                  Captured
+                </span>
+                <span style={{ fontSize: "13px", color: "var(--text-1)" }}>
+                  {formatDateTime(photoPreviewFile.uploaded_at)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </VHCModalShell>
 
       <VHCModalShell
         isOpen={isAddPartsModalOpen}
