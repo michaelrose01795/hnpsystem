@@ -461,6 +461,110 @@ export const getNotesByUser = async (userId) => {
 };
 
 /* ============================================
+   NOTE VIEWERS (per-note staff access)
+   Backed by public.note_viewers — see schemaReference.sql.
+============================================ */
+
+// Active staff list for the "Add user" picker (id + display fields only).
+export const getActiveStaff = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id, first_name, last_name, role")
+      .eq("is_active", true)
+      .order("first_name", { ascending: true });
+
+    if (error) throw error;
+
+    return (data || []).map((user) => ({
+      id: user.user_id,
+      name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || `User ${user.user_id}`,
+      role: user.role || "",
+    }));
+  } catch (error) {
+    console.error("❌ getActiveStaff error:", error);
+    return [];
+  }
+};
+
+// Viewers explicitly granted access to a single note.
+export const getNoteViewers = async (noteId) => {
+  if (!noteId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("note_viewers")
+      .select(`
+        note_id,
+        user_id,
+        created_at,
+        viewer:user_id(
+          user_id,
+          first_name,
+          last_name,
+          role
+        )
+      `)
+      .eq("note_id", noteId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    return (data || []).map((row) => ({
+      noteId: row.note_id,
+      userId: row.user_id,
+      name:
+        `${row.viewer?.first_name || ""} ${row.viewer?.last_name || ""}`.trim() ||
+        `User ${row.user_id}`,
+      role: row.viewer?.role || "",
+    }));
+  } catch (error) {
+    console.error("❌ getNoteViewers error:", error);
+    return [];
+  }
+};
+
+// Grant a staff member access to a note. Idempotent via the composite PK.
+export const addNoteViewer = async ({ noteId, userId, addedBy = null }) => {
+  try {
+    if (!noteId || !userId) {
+      throw new Error("noteId and userId are required");
+    }
+    const { error } = await supabase
+      .from("note_viewers")
+      .upsert(
+        { note_id: noteId, user_id: userId, added_by: addedBy },
+        { onConflict: "note_id,user_id" }
+      );
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("❌ addNoteViewer error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+// Revoke a staff member's access to a note.
+export const removeNoteViewer = async (noteId, userId) => {
+  try {
+    if (!noteId || !userId) {
+      throw new Error("noteId and userId are required");
+    }
+    const { error } = await supabase
+      .from("note_viewers")
+      .delete()
+      .eq("note_id", noteId)
+      .eq("user_id", userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("❌ removeNoteViewer error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
    BULK CREATE NOTES
    ✅ NEW: Create multiple notes at once
 ============================================ */

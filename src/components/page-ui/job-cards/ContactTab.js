@@ -243,6 +243,7 @@ const manageLabelStyle = {
 
 function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClose, onSaved }) {
   const [drafts, setDrafts] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
   const [savingKey, setSavingKey] = useState(null);
   const [error, setError] = useState("");
 
@@ -253,6 +254,7 @@ function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClos
       seeded[tpl.templateKey] = { title: tpl.title, body: tpl.body };
     });
     setDrafts(seeded);
+    setSearchTerm("");
     setError("");
   }, [isOpen, templates]);
 
@@ -279,6 +281,15 @@ function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClos
     }
   };
 
+  const filteredTemplates = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return templates;
+    return templates.filter((tpl) => {
+      const draftTitle = drafts[tpl.templateKey]?.title || tpl.title || "";
+      return draftTitle.toLowerCase().includes(term);
+    });
+  }, [drafts, searchTerm, templates]);
+
   if (!isOpen) return null;
 
   return (
@@ -293,14 +304,25 @@ function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClos
         <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
       </div>
 
-      <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7, fontSize: "0.85rem" }}>
-        Edit the default customer-facing wording. Use <code>{"{customerName}"}</code>, <code>{"{jobNumber}"}</code> and <code>{"{reg}"}</code> as placeholders.
-      </p>
+      <input
+        className="app-input"
+        type="search"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search template titles"
+        aria-label="Search template titles"
+      />
 
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        {templates.map((tpl) => {
+        {filteredTemplates.length === 0 && (
+          <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>
+            No template titles match your search.
+          </p>
+        )}
+
+        {filteredTemplates.map((tpl) => {
           const draft = drafts[tpl.templateKey] || { title: tpl.title, body: tpl.body };
           return (
             <div
@@ -727,31 +749,35 @@ function CustomerPreferencesSection({
         })}
       </div>
 
-      {/* Full preference multiselect */}
-      <div>
-        <span style={prefsLabelStyle}>All preferences</span>
-        <MultiSelectDropdown
-          options={PREFERENCE_OPTIONS}
-          value={prefs}
-          onChange={setPrefs}
-          disabled={!canEdit}
-          placeholder="Select preferences"
-          searchPlaceholder="Search preferences"
-        />
-      </div>
+      {/* Preferences dropdown (fixed min/max width) sits beside the customer
+          notes, which flex-fill the remaining row width. Wraps on narrow screens. */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-4)", alignItems: "flex-start" }}>
+        {/* Full preference multiselect */}
+        <div style={{ flex: "0 1 300px", minWidth: "220px", maxWidth: "340px" }}>
+          <span style={prefsLabelStyle}>All preferences</span>
+          <MultiSelectDropdown
+            options={PREFERENCE_OPTIONS}
+            value={prefs}
+            onChange={setPrefs}
+            disabled={!canEdit}
+            placeholder="Select preferences"
+            searchPlaceholder="Search preferences"
+          />
+        </div>
 
-      {/* Customer notes */}
-      <div>
-        <span style={prefsLabelStyle}>Customer notes</span>
-        <textarea
-          className="app-input"
-          rows={4}
-          value={notes}
-          disabled={!canEdit}
-          placeholder="Notes that follow this customer across all their jobs…"
-          onChange={(e) => setNotes(e.target.value)}
-          style={{ resize: "vertical" }}
-        />
+        {/* Customer notes — takes the rest of the row width */}
+        <div style={{ flex: "1 1 320px", minWidth: "260px" }}>
+          <span style={prefsLabelStyle}>Customer notes</span>
+          <textarea
+            className="app-input"
+            rows={4}
+            value={notes}
+            disabled={!canEdit}
+            placeholder="Notes that follow this customer across all their jobs…"
+            onChange={(e) => setNotes(e.target.value)}
+            style={{ resize: "vertical", width: "100%" }}
+          />
+        </div>
       </div>
     </LayerSurface>
   );
@@ -949,20 +975,6 @@ function QuickMessageTemplatesSection({
               gap="var(--space-3)"
             >
               <span style={{ fontWeight: 700, color: "var(--text-1)" }}>{tpl.title}</span>
-              <p
-                style={{
-                  margin: 0,
-                  color: "var(--text-1)", opacity: 0.7,
-                  fontSize: "0.82rem",
-                  lineHeight: 1.4,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {interpolateTemplate(tpl.body, vars)}
-              </p>
               <Button
                 variant="primary"
                 size="sm"

@@ -19,12 +19,22 @@
 // All persistence still flows through the existing src/lib/database/notes.js helpers.
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
+import {
+  getNotesByJob,
+  createJobNote,
+  updateJobNote,
+  deleteJobNote,
+  getActiveStaff,
+  getNoteViewers,
+  addNoteViewer,
+  removeNoteViewer,
+} from "@/lib/database/notes";
 import { normalizeRequests } from "@/lib/jobCards/utils";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import useIsMobile from "@/hooks/useIsMobile";
 
 /* ---- shared text styles (mirrors the Service History tab redesign) ---- */
@@ -129,6 +139,13 @@ export default function NotesTabNew({
   const [editingAccess, setEditingAccess] = useState(false);
   const [pinnedIds, setPinnedIds] = useState(() => new Set());
 
+  // Per-note viewer access (backed by public.note_viewers).
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [noteViewers, setNoteViewers] = useState([]);
+  const [viewersLoading, setViewersLoading] = useState(false);
+  const [showAddViewer, setShowAddViewer] = useState(false);
+  const [viewerToAdd, setViewerToAdd] = useState("");
+
   const requestOptions = useMemo(() => normalizeRequests(jobData?.requests), [jobData?.requests]);
   const authorisedItems = useMemo(
     () =>
@@ -205,6 +222,40 @@ export default function NotesTabNew({
       setPinnedIds(new Set());
     }
   }, [jobId]);
+
+  // Load the active staff list once (used by the "Add user" picker).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const staff = await getActiveStaff();
+      if (!cancelled) setStaffOptions(staff);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load the explicit viewers for the currently selected note.
+  useEffect(() => {
+    let cancelled = false;
+    setShowAddViewer(false);
+    setViewerToAdd("");
+    if (!selectedNoteId) {
+      setNoteViewers([]);
+      return undefined;
+    }
+    setViewersLoading(true);
+    (async () => {
+      const viewers = await getNoteViewers(selectedNoteId);
+      if (!cancelled) {
+        setNoteViewers(viewers);
+        setViewersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedNoteId]);
 
   const togglePin = (noteId) => {
     setPinnedIds((prev) => {
@@ -325,6 +376,46 @@ export default function NotesTabNew({
     } catch (err) {
       console.error("Failed to toggle visibility:", err);
       setError("Failed to toggle visibility");
+    }
+  };
+
+  const handleAddViewer = async () => {
+    if (!canEdit || !selectedNoteId || !viewerToAdd) return;
+    const userId = Number(viewerToAdd);
+    if (!Number.isInteger(userId)) return;
+
+    try {
+      const result = await addNoteViewer({
+        noteId: selectedNoteId,
+        userId,
+        addedBy: actingUserNumericId ?? null,
+      });
+      if (result.success) {
+        const viewers = await getNoteViewers(selectedNoteId);
+        setNoteViewers(viewers);
+        setViewerToAdd("");
+        setShowAddViewer(false);
+      } else {
+        setError(result.error?.message || "Failed to add viewer");
+      }
+    } catch (err) {
+      console.error("Failed to add viewer:", err);
+      setError("Failed to add viewer");
+    }
+  };
+
+  const handleRemoveViewer = async (userId) => {
+    if (!canEdit || !selectedNoteId) return;
+    try {
+      const result = await removeNoteViewer(selectedNoteId, userId);
+      if (result.success) {
+        setNoteViewers((prev) => prev.filter((viewer) => viewer.userId !== userId));
+      } else {
+        setError(result.error?.message || "Failed to remove viewer");
+      }
+    } catch (err) {
+      console.error("Failed to remove viewer:", err);
+      setError("Failed to remove viewer");
     }
   };
 
@@ -538,6 +629,12 @@ export default function NotesTabNew({
     );
   }
 
+  // Filter options for the Overview-row dropdown (label + live count).
+  const filterOptions = FILTERS.map((filter) => ({
+    value: filter.id,
+    label: `${filter.label} (${filterCount(filter.id)})`,
+  }));
+
   const statTiles = [
     { label: "Total Notes", value: stats.total },
     { label: "Pinned", value: stats.pinned },
@@ -583,6 +680,14 @@ export default function NotesTabNew({
         >
           <p style={eyebrowStyle}>Notes</p>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
+            <DropdownField
+              options={filterOptions}
+              value={activeFilter}
+              onValueChange={(value) => setActiveFilter(value)}
+              ariaLabel="Filter notes"
+              size="sm"
+              style={{ width: "200px", maxWidth: "100%" }}
+            />
             <SearchBar
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -638,34 +743,7 @@ export default function NotesTabNew({
       </LayerSurface>
 
       {/* ============================================================= */}
-      {/* 2. Filter bar (separate section)                              */}
-      {/* ============================================================= */}
-      <LayerSurface sectionKey="jobcard-notes-filters" parentKey="jobcard-tab-notes" gap="var(--space-3)">
-        <p style={eyebrowStyle}>Filter</p>
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-          {FILTERS.map((filter) => {
-            const isActive = activeFilter === filter.id;
-            const count = filterCount(filter.id);
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                className={`app-btn app-btn--secondary app-btn--sm${isActive ? " is-active" : ""}`}
-                onClick={() => setActiveFilter(filter.id)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-              >
-                {filter.label}
-                <span className={`app-badge app-badge--control ${isActive ? "app-badge--accent-strong" : ""}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </LayerSurface>
-
-      {/* ============================================================= */}
-      {/* 3. 70/30 split — list (left) / detail (right)                 */}
+      {/* 2. 70/30 split — list (left) / detail (right)                 */}
       {/* ============================================================= */}
       <div
         style={{
@@ -957,19 +1035,7 @@ export default function NotesTabNew({
                           <span style={{ overflowWrap: "anywhere" }}>
                             {note.createdBy} · {formatDateTime(note.createdAt)}
                           </span>
-                          {canEdit && (
-                            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                              <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleEditNote(note)}>
-                                Edit
-                              </button>
-                              <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => setLinkingNote(note)}>
-                                Link
-                              </button>
-                              <button type="button" className="app-btn app-btn--danger app-btn--xs" onClick={() => handleDeleteNote(note.noteId)}>
-                                Delete
-                              </button>
-                            </div>
-                          )}
+                          {/* Edit / Link / Delete actions live only in the detail panel (right column). */}
                         </div>
                       </>
                     )}
@@ -1097,7 +1163,7 @@ export default function NotesTabNew({
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
                       {/* Author's role group always has access; other staff roles do too. */}
                       <span className="app-badge app-badge--success">
                         {ROLE_GROUP_LABELS[authorGroup] || "Staff"}
@@ -1106,30 +1172,94 @@ export default function NotesTabNew({
                       <span className={`app-badge ${selectedNote.hiddenFromCustomer ? "app-badge--control" : "app-badge--success"}`} style={selectedNote.hiddenFromCustomer ? { opacity: 0.5 } : undefined}>
                         Customer {selectedNote.hiddenFromCustomer ? "(hidden)" : "(visible)"}
                       </span>
+
+                      {/* Explicitly-granted viewers (public.note_viewers). */}
+                      {noteViewers.map((viewer) => (
+                        <span
+                          key={viewer.userId}
+                          className="app-badge app-badge--accent-soft"
+                          style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                        >
+                          {viewer.name}
+                          {editingAccess && canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveViewer(viewer.userId)}
+                              title={`Remove ${viewer.name}`}
+                              aria-label={`Remove ${viewer.name}`}
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                color: "inherit",
+                                cursor: "pointer",
+                                fontSize: "13px",
+                                lineHeight: 1,
+                                padding: 0,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </span>
+                      ))}
                     </div>
 
                     {editingAccess && canEdit && (
                       <div
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
+                          flexDirection: "column",
                           gap: "var(--space-2)",
                           paddingTop: "var(--space-2)",
                           borderTop: "var(--separating-line)",
-                          flexWrap: "wrap",
                         }}
                       >
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
-                          Customer can view this note
-                        </span>
-                        <button
-                          type="button"
-                          className={`app-btn app-btn--sm ${selectedNote.hiddenFromCustomer ? "app-btn--secondary" : "app-btn--primary"}`}
-                          onClick={() => handleToggleHiddenFromCustomer(selectedNote)}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "var(--space-2)",
+                            flexWrap: "wrap",
+                          }}
                         >
-                          {selectedNote.hiddenFromCustomer ? "Make visible" : "Make internal"}
-                        </button>
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                            Customer can view this note
+                          </span>
+                          <button
+                            type="button"
+                            className={`app-btn app-btn--sm ${selectedNote.hiddenFromCustomer ? "app-btn--secondary" : "app-btn--primary"}`}
+                            onClick={() => handleToggleHiddenFromCustomer(selectedNote)}
+                          >
+                            {selectedNote.hiddenFromCustomer ? "Make visible" : "Make internal"}
+                          </button>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "var(--space-2)",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                            Give a specific staff member access
+                          </span>
+                          <button
+                            type="button"
+                            className="app-btn app-btn--secondary app-btn--sm"
+                            onClick={() => {
+                              setViewerToAdd("");
+                              setShowAddViewer(true);
+                            }}
+                          >
+                            + Add user
+                          </button>
+                        </div>
+                        {viewersLoading && (
+                          <span style={metaStyle}>Loading viewers…</span>
+                        )}
                       </div>
                     )}
                   </LayerTheme>
@@ -1244,6 +1374,106 @@ export default function NotesTabNew({
           )}
         </LayerSurface>
       )}
+
+      {/* ============================================================= */}
+      {/* Add viewer modal — grant a staff member access to the note    */}
+      {/* ============================================================= */}
+      {showAddViewer &&
+        typeof document !== "undefined" &&
+        createPortal(
+          (() => {
+            const existingViewerIds = new Set(noteViewers.map((viewer) => viewer.userId));
+            const availableStaff = staffOptions.filter(
+              (staff) => !existingViewerIds.has(staff.id)
+            );
+            const staffSelectOptions = availableStaff.map((staff) => ({
+              value: String(staff.id),
+              label: staff.role ? `${staff.name} · ${staff.role}` : staff.name,
+            }));
+
+            return (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  backgroundColor: "rgba(10, 10, 20, 0.45)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 230,
+                  padding: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: "var(--surface)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "var(--section-card-padding)",
+                    width: "min(420px, 100%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accentText)" }}>Add viewer</div>
+                    <button
+                      type="button"
+                      className="app-btn app-btn--secondary app-btn--sm"
+                      onClick={() => {
+                        setShowAddViewer(false);
+                        setViewerToAdd("");
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <span style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.7)" }}>
+                    Select a staff member to give access to this note.
+                  </span>
+
+                  {staffSelectOptions.length === 0 ? (
+                    <span style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>
+                      All active staff already have access.
+                    </span>
+                  ) : (
+                    <DropdownField
+                      options={staffSelectOptions}
+                      value={viewerToAdd}
+                      onValueChange={(value) => setViewerToAdd(value)}
+                      placeholder="Select a staff member…"
+                      ariaLabel="Select staff member to add"
+                      style={{ width: "100%" }}
+                    />
+                  )}
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+                    <button
+                      type="button"
+                      className="app-btn app-btn--secondary app-btn--sm"
+                      onClick={() => {
+                        setShowAddViewer(false);
+                        setViewerToAdd("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="app-btn app-btn--primary app-btn--sm"
+                      onClick={handleAddViewer}
+                      disabled={!viewerToAdd || staffSelectOptions.length === 0}
+                    >
+                      Add viewer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })(),
+          document.body
+        )}
 
       {/* ============================================================= */}
       {/* Link note modal (unchanged behaviour)                         */}

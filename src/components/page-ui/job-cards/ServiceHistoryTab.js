@@ -25,6 +25,7 @@ import { Line } from "react-chartjs-2";
 import useVehicleHistoryAnalytics from "@/hooks/useVehicleHistoryAnalytics";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { exportToCsv } from "@/utils/exportUtils";
 import {
@@ -493,28 +494,29 @@ function MileageTrendChart({ points = [] }) {
    CompareJobsModal — pick two jobs from the history and see their details side
    by side. PopupModal card is --surface, so the comparison columns are <LayerTheme>.
    ════════════════════════════════════════════════════════════════════════ */
-const compareSelectStyle = {
-  width: "100%",
-  minHeight: "var(--control-height)",
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  background: "var(--input-bg)",
-  color: "var(--text-1)",
-};
-
 function ComparePicker({ label, value, onChange, history }) {
+  const options = useMemo(
+    () =>
+      history.map((job) => ({
+        value: String(jobKey(job)),
+        label: formatText(job.jobNumber),
+        description: formatText(job.serviceDateFormatted),
+      })),
+    [history]
+  );
+
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "160px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "160px" }}>
       <span style={eyebrowStyle}>{label}</span>
-      <select style={compareSelectStyle} value={value ?? ""} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Select a job…</option>
-        {history.map((job) => (
-          <option key={jobKey(job)} value={String(jobKey(job))}>
-            {formatText(job.jobNumber)} — {formatText(job.serviceDateFormatted)}
-          </option>
-        ))}
-      </select>
-    </label>
+      <DropdownField
+        ariaLabel={`${label} job`}
+        className="service-history-compare-dropdown"
+        placeholder="Select a job..."
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        options={options}
+      />
+    </div>
   );
 }
 
@@ -743,7 +745,6 @@ function ExportHistoryModal({ isOpen, onClose, history = [], selectedJob }) {
         <span style={{ ...optionHintStyle, alignSelf: "center", marginRight: "auto" }}>
           {rows.length} job{rows.length === 1 ? "" : "s"} ready to export
         </span>
-        <button type="button" onClick={onClose} className="app-btn app-btn--secondary">Cancel</button>
         <button type="button" onClick={handleExport} disabled={!rows.length} className="app-btn app-btn--primary">
           Export CSV
         </button>

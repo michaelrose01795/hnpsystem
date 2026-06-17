@@ -1,5 +1,5 @@
 ﻿// file location: src/pages/job-cards/[jobNumber].js
-// âœ… Imports converted to use absolute alias "@/"
+// Imports converted to use absolute alias "@/"
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -70,7 +70,6 @@ import {
   CollectionTypeSection,
   CustomerUpdatesSection,
   QuickActionsSection,
-  AlertsRemindersSection,
 } from "@/components/page-ui/job-cards/SchedulingTab";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
@@ -99,6 +98,26 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
 import ContactTab from "@/components/page-ui/job-cards/ContactTab"; // Redesigned Contact tab — one file per tab (CLAUDE.md §4.3).
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+
+function RequestCompleteIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="100%"
+      height="100%"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12.5l4 4L19 7" />
+    </svg>
+  );
+}
+
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
     return (
@@ -753,7 +772,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // SWR-powered initial data â€” provides cached data instantly on revisit or prefetch
   const { jobResponse: swrJobResponse, mutate: mutateSwrJob } = useJob(jobNumber, { archive: isArchiveMode });
 
-  // âœ… State Management
+  // State Management
   const [jobData, setJobData] = useState(null);
   // Per-request clocking entries (job_clocking rows with request_id + hoursWorked).
   // Loaded for the Customer Requests tab so each request can show its total
@@ -817,7 +836,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
   const trackerUpdateRef = useRef(null);
 
-  // âœ… Related Jobs (Prime/Sub-job) State
+  // Related Jobs (Prime/Sub-job) State
   const [relatedJobs, setRelatedJobs] = useState([]);
   const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
   const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
@@ -883,7 +902,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData, activeTab]);
 
-  // âœ… Permission Check (centralized shared model)
+  // Permission Check (centralized shared model)
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
   const permissions = useMemo(
     () =>
@@ -1351,7 +1370,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setJobNotes(notes || []);
       return notes[0] || null;
     } catch (noteError) {
-      console.error("âŒ Failed to load shared note:", noteError);
+      console.error("Failed to load shared note:", noteError);
       setJobNotes([]);
       return null;
     }
@@ -1451,7 +1470,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           mapCustomerJobsToHistory(customerJobs, jobCard.reg)
         );
       } catch (err) {
-        console.error("âŒ Exception fetching job:", err);
+        console.error("Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
       } finally {
         lastJobFetchAtRef.current = Date.now();
@@ -1664,7 +1683,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData?.id, jobData?.vhcRequired, jobData?.vhcCompletedAt, vhcAuthorizedWorkCompleted, canEdit]);
 
-  // âœ… Fetch related jobs when job data loads
+  // Fetch related jobs when job data loads
   useEffect(() => {
     const primeJobNumber = jobData?.primeJobNumber;
     if (!primeJobNumber) {
@@ -1905,8 +1924,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       if (!result?.success) {
-        console.error("âŒ Check-in failed:", result?.error);
-        alert(`âŒ Failed to check in: ${result?.error?.message || "Unknown error"}`);
+        console.error("Check-in failed:", result?.error);
+        alert(`Failed to check in: ${result?.error?.message || "Unknown error"}`);
         return;
       }
 
@@ -1924,7 +1943,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       alert(
-        `âœ… Customer Checked In!\n\n` +
+        `Customer checked in.\n\n` +
         `Job: ${jobData.jobNumber || jobData.id}\n` +
         `Customer: ${jobData.customer || "N/A"}\n` +
         `Time: ${new Date().toLocaleTimeString()}`
@@ -1933,8 +1952,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await fetchJobData({ silent: true, force: true });
       revalidateAllJobs(); // tell other pages (appointments, dashboard) to refresh
     } catch (error) {
-      console.error("âŒ Error checking in:", error);
-      alert("âŒ Error checking in customer. Please try again.");
+      console.error("Error checking in:", error);
+      alert("Error checking in customer. Please try again.");
     } finally {
       setCheckingIn(false);
     }
@@ -1972,7 +1991,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         const vehicles = await getCustomerVehicles(customerId);
         setCustomerVehicles(Array.isArray(vehicles) ? vehicles : []);
       } catch (vehicleError) {
-        console.error("âŒ Failed to load customer vehicles:", vehicleError);
+        console.error("Failed to load customer vehicles:", vehicleError);
         setCustomerVehicles([]);
       } finally {
         setCustomerVehiclesLoading(false);
@@ -2174,7 +2193,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync customer changes to other pages
         return { success: true };
       } catch (saveError) {
-        console.error("âŒ Failed to update customer:", saveError);
+        console.error("Failed to update customer:", saveError);
         alert(saveError?.message || "Failed to update customer details");
         return { success: false, error: saveError };
       } finally {
@@ -2236,7 +2255,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           }
         }
 
-        // âœ… When prime job (job 1) saves an appointment, sync to all sub-jobs
+        // When prime job (job 1) saves an appointment, sync to all sub-jobs
         if (jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0) {
           for (const subJob of jobData.subJobs) {
             if (!subJob?.id) continue;
@@ -2262,7 +2281,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                 }]);
               }
             } catch (subErr) {
-              console.warn(`âš ï¸ Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
+              console.warn(`Warning: Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
             }
           }
         }
@@ -2289,13 +2308,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   try {
                     await autoSetBookedStatus(subJob.id);
                   } catch (subStatusErr) {
-                    console.warn(`âš ï¸ Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
+                    console.warn(`Warning: Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
                   }
                 }
               }
             }
           } catch (statusError) {
-            console.warn("âš ï¸ Failed to auto-set Booked status after appointment save:", statusError);
+            console.warn("Warning: Failed to auto-set Booked status after appointment save:", statusError);
           }
         }
 
@@ -2303,7 +2322,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync appointment changes to other pages
         return { success: true };
       } catch (appointmentError) {
-        console.error("âŒ Failed to update appointment:", appointmentError);
+        console.error("Failed to update appointment:", appointmentError);
         alert(appointmentError?.message || "Failed to update appointment");
         return { success: false, error: appointmentError };
       } finally {
@@ -2501,14 +2520,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           }
         } catch (requestError) {
           console.error(
-            "âš ï¸ Booking request notifications failed:",
+            "Warning: Booking request notifications failed:",
             requestError
           );
         }
 
         return { success: true };
       } catch (bookingError) {
-        console.error("âŒ Failed to save booking details:", bookingError);
+        console.error("Failed to save booking details:", bookingError);
         alert(bookingError?.message || "Failed to save booking details");
         return { success: false, error: bookingError };
       } finally {
@@ -2655,7 +2674,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (mileageError) {
-        console.error("âŒ Failed to save mileage:", mileageError);
+        console.error("Failed to save mileage:", mileageError);
         return { success: false, error: mileageError };
       }
     },
@@ -2759,7 +2778,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (approvalError) {
-        console.error("âŒ Failed to approve booking:", approvalError);
+        console.error("Failed to approve booking:", approvalError);
         alert(approvalError?.message || "Failed to approve booking");
         return { success: false, error: approvalError };
       } finally {
@@ -2859,7 +2878,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       // Redirect to invoice tab after successful invoice creation
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
     } catch (createError) {
-      console.error("âŒ Failed to trigger invoice creation:", createError);
+      console.error("Failed to trigger invoice creation:", createError);
       alert(createError?.message || "Failed to trigger invoice creation");
     } finally {
       setCreatingInvoice(false);
@@ -2967,7 +2986,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           from(JOB_DOCUMENT_BUCKET).
           remove([storagePath]);
           if (removeError) {
-            console.warn("âš ï¸ Failed to remove file from storage:", removeError);
+            console.warn("Warning: Failed to remove file from storage:", removeError);
           }
         }
 
@@ -3004,7 +3023,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         prev
         );
       } catch (deleteError) {
-        console.error("âŒ Failed to delete document:", deleteError);
+        console.error("Failed to delete document:", deleteError);
         alert(deleteError?.message || "Failed to delete document");
       }
     },
@@ -3063,7 +3082,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         setSharedNote(latest?.noteText || "");
         setSharedNoteMeta(latest);
       } catch (saveError) {
-        console.error("âŒ Failed to save note:", saveError);
+        console.error("Failed to save note:", saveError);
         alert(saveError?.message || "Failed to save note");
       } finally {
         setSharedNoteSaving(false);
@@ -3088,7 +3107,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }, 300);
   }, [canEdit, saveSharedNote, sharedNoteMeta?.noteText]);
 
-  // âœ… Update Job Request Handler
+  // Update Job Request Handler
   const handleUpdateRequests = async (updatedRequests) => {
     if (!canEdit || !jobData?.id) return;
 
@@ -3244,14 +3263,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
-      alert("âœ… Job requests updated successfully");
+      alert("Job requests updated successfully");
     } catch (error) {
       console.error("Error updating requests:", error);
       alert("Failed to update job requests");
     }
   };
 
-  // âœ… Load per-request clocking totals for the Customer Requests tab.
+  // Load per-request clocking totals for the Customer Requests tab.
   const loadClockingEntries = useCallback(async () => {
     if (!jobData?.id) {
       setClockingEntries([]);
@@ -3270,7 +3289,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     loadClockingEntries();
   }, [loadClockingEntries]);
 
-  // âœ… Mark a single request complete / change its status (Customer Requests tab).
+  // Mark a single request complete / change its status (Customer Requests tab).
   // upsertJobRequestsForJob never writes `status`, so this uses the dedicated
   // single-row updater and then refreshes the job + clocking data.
   const handleUpdateRequestStatus = async (requestId, nextStatus) => {
@@ -3597,7 +3616,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
       if (result.success) {
         setJobData((prev) => prev ? { ...prev, vhcRequired: nextValue } : prev);
-        alert(nextValue ? "âœ… VHC marked as required" : "âœ… VHC marked as not required");
+        alert(nextValue ? "VHC marked as required" : "VHC marked as not required");
       } else {
         alert(result?.error?.message || "Failed to update VHC requirement");
       }
@@ -3607,7 +3626,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
   };
 
-  // âœ… VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
+  // VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
   const vhcFinancialTotals = useMemo(() => {
     // Return null values if jobData is not loaded yet
     if (!jobData) {
@@ -3630,7 +3649,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return { authorized: 0, declined: 0 };
   }, [jobData, vhcFinancialTotalsFromPanel]);
 
-  // âœ… Customer VHC delivery status â€” fetched + polled here so both the VHC tab
+  // Customer VHC delivery status â€” fetched + polled here so both the VHC tab
   // (Send action) and the customer summary card badge share one source of truth.
   const loadVhcCustomerStatus = useCallback(async () => {
     if (!jobNumber) return;
@@ -3706,7 +3725,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return <JobCardDetailPageUi view="section1" JobCardPageShellSkeleton={JobCardPageShellSkeleton} jobNumber={jobNumber} />;
   }
 
-  // âœ… Error State
+  // Error State
   if (error || !jobData) {
     return <JobCardDetailPageUi view="section2" error={error} jobNumber={jobNumber} router={router} />;
 
@@ -3878,7 +3897,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     "";
     const jobDivisionLower = jobDivisionLabel.toLowerCase();
 
-    // âœ… Job group position (X/Y Job Cards badge)
+    // Job group position (X/Y Job Cards badge)
     const isInPrimeGroup = jobData.isPrimeJob || Boolean(jobData.primeJobId);
     const jobGroupPosition = jobData.isPrimeJob ?
     1 :
@@ -3888,7 +3907,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     relatedJobs.length + 1;
     const showJobGroupBadge = isInPrimeGroup && jobGroupTotal > 1;
 
-    // âœ… Tab Configuration (from shared permission model)
+    // Tab Configuration (from shared permission model)
     const permissionTabs = permissions?.tabs || [];
     const tabsWithLoanCar = isLoanCarLogisticsSelected && !isValetMode ?
     permissionTabs.reduce((acc, tab) => {
@@ -3930,7 +3949,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       whiteSpace: "nowrap"
     };
 
-    // âœ… Main Render
+    // Main Render
     return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
@@ -4997,7 +5016,7 @@ class JobCardErrorBoundary extends React.Component {
           justifyContent: "center",
           minHeight: "60vh"
         }}>
-          <div style={{ fontSize: "60px", marginBottom: "20px" }}>âš ï¸</div>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>Warning</div>
           <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>
             Job card failed to render
           </h2>
@@ -5017,7 +5036,7 @@ class JobCardErrorBoundary extends React.Component {
 // TAB COMPONENTS
 // ============================================
 
-// âœ… Customer Requests Tab
+// Customer Requests Tab
 function CustomerRequestsTab({
   jobData,
   canEdit,
@@ -6122,9 +6141,10 @@ function CustomerRequestsTab({
   }, [combinedRequestRows, selectedRequestKey]);
 
   // Plain (token-backed, borderless) surface styles for the new layout.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 };
-  const statLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)" };
-  const statValueStyle = { fontSize: "20px", fontWeight: 700, color: "var(--text-1)" };
+  // Stat boxes lay out label + value inline on a single line within each tile.
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "10px 12px", display: "flex", flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: "8px", minWidth: 0 };
+  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--text-1)", lineHeight: 1 };
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -6223,7 +6243,7 @@ function CustomerRequestsTab({
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Stats row â€” full width, surface boxes alternating off the theme shell */}
-        <div className="jc-req-statgrid">
+        <div className="jc-req-statgrid jc-request-overview-statgrid">
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
@@ -6452,6 +6472,14 @@ function CustomerRequestsTab({
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 10px;
           }
+          html.staff-scope .jc-req-statgrid.jc-request-overview-statgrid {
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(118px, 1fr);
+            grid-template-columns: none;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+          }
           html.staff-scope .jc-customer-requests .jc-req-split {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -6472,13 +6500,13 @@ function CustomerRequestsTab({
             html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
           }
           @media (max-width: 1100px) {
-            html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            html.staff-scope .jc-req-statgrid:not(.jc-request-overview-statgrid) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           }
           @media (max-width: 900px) {
             html.staff-scope .jc-customer-requests .jc-req-split { grid-template-columns: minmax(0, 1fr); }
           }
           @media (max-width: 560px) {
-            html.staff-scope .jc-req-statgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            html.staff-scope .jc-req-statgrid:not(.jc-request-overview-statgrid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           }
         `}</style>
       </div>
@@ -8081,7 +8109,9 @@ function WriteUpWorkspace({
                           data-complete={rowComplete ? "1" : "0"}
                           disabled={!canEdit || !row.requestId || rowComplete}
                           onClick={(e) => { e.stopPropagation(); handleToggleRequestComplete(row); }}>
-                          âœ“
+                          <span className="jc-req-tick-icon">
+                            <RequestCompleteIcon />
+                          </span>
                         </button>
                       </td>
                     </tr>
@@ -8225,9 +8255,15 @@ function WriteUpWorkspace({
             border-radius: var(--radius-xs);
             background: var(--theme);
             color: var(--success);
-            font-size: 16px;
-            font-weight: 800;
             line-height: 1;
+          }
+          html.staff-scope .app-data-table button.jc-req-tick .jc-req-tick-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: transparent;
           }
           html.staff-scope .app-data-table button.jc-req-tick[data-complete="1"] {
             background: var(--success);
@@ -8480,7 +8516,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               fontWeight: 700
             }}>
 
-            âœ•
+            <span aria-hidden="true">&times;</span>
           </button>
         </div>
 
@@ -8582,7 +8618,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
 
 }
 
-// âœ… Scheduling Tab
+// Scheduling Tab
 function SchedulingTab({
   jobData,
   canEdit,
@@ -8954,20 +8990,21 @@ function SchedulingTab({
     backgroundColor: "var(--theme)",
     borderRadius: "var(--control-radius)"
   };
+  const schedulingThreeColumnRowStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+    gap: "16px",
+    alignItems: "stretch"
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress â”€â”€ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
+      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress | Collection Type â”€â”€ */}
+      <div style={schedulingThreeColumnRowStyle}>
         <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
         <JobProgressSection jobData={jobData} />
-      </div>
-
-      {/* â”€â”€ Dashboard Row 2: Collection Type | Customer Updates â”€â”€ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", alignItems: "stretch" }}>
         <CollectionTypeSection waitingStatus={bookingWaitingStatus} canEdit={canEdit} onSelect={handleBookingWaitingSelect} jobData={jobData} />
-        <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
       </div>
 
       {/* â”€â”€ Booking & appointment (existing functionality, re-laid into the dashboard) â”€â”€ */}
@@ -9046,9 +9083,10 @@ function SchedulingTab({
         {/* Customer Logistics moved to the Collection Type dashboard section above. */}
       </div>
 
-      {/* â”€â”€ Row: Customer Reported Issues (left) + Appointment Information (right) â”€â”€ */}
-      {/* auto-fit keeps the two columns side-by-side on desktop and stacks them on narrow screens (CLAUDE.md §3.6) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "16px", alignItems: "stretch" }}>
+      {/* â”€â”€ Row: Customer Updates | Customer Reported Issues | Appointment Information â”€â”€ */}
+      {/* auto-fit keeps the row three-up on wide desktop and stacks it on narrow screens (CLAUDE.md §3.6) */}
+      <div style={schedulingThreeColumnRowStyle}>
+        <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
 
         {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
         <DevLayoutSection
@@ -9158,7 +9196,7 @@ function SchedulingTab({
             </div>
           </div>
 
-          {/* âœ… Linked job cards appointment note */}
+          {/* Linked job cards appointment note */}
           {jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0 &&
           <div style={{
             marginBottom: "12px",
@@ -9388,8 +9426,6 @@ function SchedulingTab({
         onSendCustomerUpdate={() => onNavigateTab("messages")}
       />
 
-      {/* â”€â”€ Dashboard Row 5: Alerts & Reminders â”€â”€ */}
-      <AlertsRemindersSection jobData={jobData} />
     </div>);
 
 }
@@ -9524,7 +9560,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
 
 }
 
-// âœ… Parts Tab (TODO)
+// Parts Tab (TODO)
 const normalizePartStatus = (status = "") => {
   const normalized = status.toLowerCase().replace(/\s+/g, "_");
   if (["pending"].includes(normalized)) return "pending";
@@ -10285,7 +10321,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
 
 }
 
-// âœ… Notes Tab
+// Notes Tab
 function NotesTab({ value, onChange, canEdit, saving, meta }) {
   const lastUpdated =
   meta?.updatedAt || meta?.createdAt ?
@@ -10352,7 +10388,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
 }
 
-// âœ… VHC Tab
+// VHC Tab
 function VHCTab({
   jobNumber,
   jobData,
@@ -10569,7 +10605,7 @@ function VHCTab({
 
 }
 
-// âœ… Messages Tab
+// Messages Tab
 // Helper function to render message content with clickable slash commands
 const renderMessageContentWithLinks = (content) => {
   if (!content) return null;
@@ -12836,7 +12872,7 @@ function DocumentsTab({
                 }}
                 aria-label="Close preview">
 
-                Ã—
+                <span aria-hidden="true">&times;</span>
               </button>
             </div>
 

@@ -7406,7 +7406,6 @@ export default function VhcDetailsPanel({
       color: "var(--text-1)",
       fontSize: "var(--control-font-size)",
     };
-    const filterLabelStyle = { fontSize: "var(--text-label)", fontWeight: 500, color: "var(--text-1)" };
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -7417,9 +7416,9 @@ export default function VhcDetailsPanel({
           data-dev-section-type="toolbar"
           data-dev-section-parent="vhc-parts-shell"
           style={{
-            background: "var(--surface)",
-            borderRadius: "var(--radius-md)",
-            padding: "16px",
+            // Borderless, backgroundless layout container so the money tiles and
+            // search/add controls sit directly on the parent panel surface card
+            // rather than inside a nested sub-card.
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -7431,12 +7430,14 @@ export default function VhcDetailsPanel({
               <div
                 key={tile.key}
                 className="app-layout-stat-card"
-                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+                // Override the class defaults (column layout + 110px min-height) so
+                // each tile is only as tall as its single line of text.
+                style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: "8px", minHeight: "auto", padding: "8px 12px" }}
               >
                 <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)" }}>
                   {tile.label}
                 </span>
-                <span style={{ fontSize: "22px", fontWeight: 800, color: tile.tone, lineHeight: 1.1 }}>
+                <span style={{ fontSize: "16px", fontWeight: 800, color: tile.tone, lineHeight: 1.1 }}>
                   {tile.value}
                 </span>
               </div>
@@ -7446,7 +7447,6 @@ export default function VhcDetailsPanel({
           {/* Search box + header "Add Part" control */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "end" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span style={filterLabelStyle}>Search parts</span>
               <input
                 type="search"
                 className="app-input"
@@ -7459,7 +7459,6 @@ export default function VhcDetailsPanel({
             {!isCustomerView && !readOnly && addTargetOptions.length > 0 && (
               <div style={{ display: "flex", gap: "8px", alignItems: "end" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
-                  <span style={filterLabelStyle}>Add part to item</span>
                   <select
                     className="app-input"
                     value={partsAddTargetId}
@@ -8544,18 +8543,17 @@ export default function VhcDetailsPanel({
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Customer-facing main video — the end-of-check walkaround. Always
-            pinned at the very top, even before any video has been uploaded. */}
-        <div style={PANEL_SECTION_STYLE}>
+        {/* Customer-facing main video — the end-of-check walkaround. Shown on a
+            --theme surface (like the request media rows) and ordered below the
+            Video / Photo summary card. Left blank when no video exists. */}
+        <div style={{ ...PANEL_SECTION_STYLE, order: 2, background: "var(--theme)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Customer Video</h3>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
               Main walkaround taken at the end of the health check
             </span>
           </div>
-          {mainVideos.length === 0 ? (
-            <EmptyStateMessage message="No customer video has been uploaded yet." />
-          ) : (
+          {mainVideos.length === 0 ? null : (
             <div
               style={{
                 display: "grid",
@@ -8566,7 +8564,7 @@ export default function VhcDetailsPanel({
               {mainVideos.map((file) => (
                 <div
                   key={file.file_id}
-                  style={{ borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--theme)" }}
+                  style={{ borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--surface)" }}
                 >
                   <video
                     src={file.file_url}
@@ -8613,7 +8611,7 @@ export default function VhcDetailsPanel({
         </div>
 
         {/* Summary card: photo + video stat tiles + top-level upload button */}
-        <div style={PANEL_SECTION_STYLE}>
+        <div style={{ ...PANEL_SECTION_STYLE, order: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Video / Photo</h3>
             {!readOnly && (
@@ -8674,18 +8672,21 @@ export default function VhcDetailsPanel({
           </div>
         </div>
 
-        {/* One row per request that has media, plus any unlinked photos */}
-        {!hasRequestMedia ? (
-          <EmptyStateMessage message="No photos or videos have been linked to a request." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {groups.map((group) =>
-              renderRequestRow(group.key, group.label, group.section, group.status, group.photos, group.videos),
-            )}
-            {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) &&
-              renderRequestRow("__unlinked__", "Unlinked media", "", "", unlinkedPhotos, unlinkedVideos)}
-          </div>
-        )}
+        {/* One row per request that has media, plus any unlinked photos.
+            order: 3 keeps this below the summary (1) and customer video (2). */}
+        <div style={{ order: 3, display: "flex", flexDirection: "column", gap: "12px" }}>
+          {!hasRequestMedia ? (
+            <EmptyStateMessage message="No photos or videos have been linked to a request." />
+          ) : (
+            <>
+              {groups.map((group) =>
+                renderRequestRow(group.key, group.label, group.section, group.status, group.photos, group.videos),
+              )}
+              {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) &&
+                renderRequestRow("__unlinked__", "Unlinked media", "", "", unlinkedPhotos, unlinkedVideos)}
+            </>
+          )}
+        </div>
       </div>
     );
   }, [mediaLibrary, readOnly, photoUploadError, photoUploading, handlePhotoTabUpload, handleToggleMainVideo, handleOpenPhotoPreview, mainVideoSavingId]);
@@ -8959,7 +8960,14 @@ export default function VhcDetailsPanel({
                       data-dev-section-key="vhc-summary-tiles"
                       data-dev-section-type="toolbar"
                       data-dev-section-parent="vhc-summary-stack"
-                      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}
+                      style={{
+                        display: "grid",
+                        gridAutoFlow: "column",
+                        gridAutoColumns: "minmax(96px, 1fr)",
+                        gap: "8px",
+                        overflowX: "auto",
+                        paddingBottom: "2px",
+                      }}
                     >
                       {tiles.map((tile) => (
                         <div
@@ -8967,20 +8975,21 @@ export default function VhcDetailsPanel({
                           style={{
                             background: tile.bg,
                             borderRadius: "var(--radius-md)",
-                            padding: "14px 16px",
+                            padding: "10px 12px",
                             display: "flex",
                             flexDirection: "column",
                             gap: "4px",
+                            minWidth: 0,
                           }}
                         >
-                          <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: tile.color }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: tile.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {tile.label}
                           </span>
-                          <span style={{ fontSize: "24px", fontWeight: 800, color: "var(--text-accent)", lineHeight: 1 }}>
+                          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-accent)", lineHeight: 1 }}>
                             {tile.count}
                           </span>
                           {tile.value !== null && tile.value > 0 ? (
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: tile.color }}>
+                            <span style={{ fontSize: "12px", fontWeight: 600, color: tile.color, whiteSpace: "nowrap" }}>
                               {formatCurrency(tile.value)}
                             </span>
                           ) : null}

@@ -1,7 +1,6 @@
 // file location: src/hooks/useJobProgressBreakdown.js
 // Pure derivation of a job's request-progress breakdown for the Scheduling
-// dashboard → Job Progress section (circular ring + legend) and the
-// Alerts & Reminders section. Keeps business logic out of the components
+// dashboard → Job Progress section (circular ring + legend). Keeps business logic out of the components
 // (CLAUDE.md §4 — logic belongs in hooks, not components).
 //
 // Buckets each customer/job request into one of four states:
