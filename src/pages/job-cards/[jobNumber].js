@@ -10559,6 +10559,10 @@ function VHCTab({
         onFinancialTotalsChange={onFinancialTotalsChange}
         onJobDataRefresh={onJobDataRefresh}
         onUpdateRequestPrePickLocation={onUpdateRequestPrePickLocation}
+        devOverlayAutoOutline
+        devOverlayPageContext="Job card detail"
+        devOverlayTabContext="VHC"
+        devOverlayCardContext="VHC panel"
         enableTabs />
 
     </DevLayoutSection>);

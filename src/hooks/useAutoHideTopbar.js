@@ -254,7 +254,13 @@ export default function useAutoHideTopbar({
       transition: foldTransition,
       willChange: "transform, opacity",
     };
-    return { wrapperRef, barRef, wrapperStyle: undefined, barStyle, floating, hidden };
+    // The wrapper is the absolute overlay box that occupies the bar's footprint
+    // over the page card. The folded bar uses a `transform`, which does NOT free
+    // its layout box, so the wrapper keeps spanning that strip. Drop the wrapper's
+    // pointer-events while folded so clicks fall straight through to the content
+    // that has risen into the bar's slot — as if the bar were never there.
+    const wrapperStyle = { pointerEvents: hidden ? "none" : "auto" };
+    return { wrapperRef, barRef, wrapperStyle, barStyle, floating, hidden };
   }
 
   const wrapperStyle = enabled

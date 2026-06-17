@@ -118,7 +118,7 @@ const TAB_OPTIONS = [
   { id: "summary", label: "Summary" },
   { id: "health-check", label: "Health Check" },
   { id: "parts", label: "Parts" },
-  { id: "media", label: "Video / Photo" },
+  { id: "media", label: "Media" },
 ];
 
 const PRE_PICK_LOCATION_OPTIONS_FULL = [
@@ -1406,6 +1406,10 @@ export default function VhcDetailsPanel({
   onUpdateRequestPrePickLocation = async () => {},
   viewMode = "full",
   enableTabs = false,
+  devOverlayAutoOutline = false,
+  devOverlayPageContext = "",
+  devOverlayTabContext = "",
+  devOverlayCardContext = "",
 }) {
   const isCustomerView = viewMode === "customer";
   const router = useRouter();
@@ -1430,6 +1434,7 @@ export default function VhcDetailsPanel({
   const [photoPreviewFile, setPhotoPreviewFile] = useState(null);
   const [photoPreviewMessage, setPhotoPreviewMessage] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
+  const activeTabLabel = TAB_OPTIONS.find((tab) => tab.id === activeTab)?.label || "";
   const [itemEntries, setItemEntries] = useState({});
   const [severitySelections, setSeveritySelections] = useState({ red: [], amber: [] });
   const [activeSection, setActiveSection] = useState(null);
@@ -8806,7 +8811,15 @@ export default function VhcDetailsPanel({
   };
 
   return (
-    <div style={pageWrapperStyle}>
+    <div
+      style={pageWrapperStyle}
+      data-dev-auto-outline={devOverlayAutoOutline ? "cards" : undefined}
+      data-dev-page={devOverlayPageContext || undefined}
+      data-dev-tab={devOverlayTabContext || undefined}
+      data-dev-card-section={devOverlayCardContext || undefined}
+      data-dev-active-tab={activeTab}
+      data-dev-active-tab-label={activeTabLabel || undefined}
+    >
       {showNavigation && (
         <div style={PANEL_SECTION_STYLE}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -8907,7 +8920,14 @@ export default function VhcDetailsPanel({
                 </div>
               )}
             </div>
-            <div style={TAB_CONTENT_STYLE} data-dev-section="1" data-dev-section-key="vhc-tab-content" data-dev-section-type="section-shell">
+            <div
+              style={TAB_CONTENT_STYLE}
+              data-dev-section="1"
+              data-dev-section-key="vhc-tab-content"
+              data-dev-section-type="section-shell"
+              data-dev-active-tab={activeTab}
+              data-dev-active-tab-label={activeTabLabel || undefined}
+            >
               {activeTab === "summary" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }} data-dev-section="1" data-dev-section-key="vhc-summary-stack" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
                 {/* Top summary bar: item counts (+ £) and parts pipeline counts */}

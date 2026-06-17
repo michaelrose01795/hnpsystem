@@ -307,6 +307,77 @@ const addTableSubSections = ({ sectionsByKey, route }) => {
   });
 };
 
+const isTransparentBackground = (value) => {
+  const normalized = String(value || "").replace(/\s+/g, "").toLowerCase();
+  return !normalized || normalized === "transparent" || normalized === "rgba(0,0,0,0)";
+};
+
+const isAutoCardCandidate = (node) => {
+  if (!node || node.nodeType !== 1) return false;
+  if (node.getAttribute?.("data-dev-section-key")) return false;
+  if (node.closest?.("[data-dev-disable-fallback='1']")) return false;
+  if (isOverlayInternalNode(node)) return false;
+
+  const tagName = String(node.tagName || "").toLowerCase();
+  if (
+    ["button", "input", "select", "textarea", "option", "img", "video", "svg", "path", "thead", "tbody", "tr", "td", "th"].includes(tagName)
+  ) {
+    return false;
+  }
+
+  const computed = window.getComputedStyle(node);
+  const hasSurfaceBackground = !isTransparentBackground(computed.backgroundColor);
+  const radius = px(computed.borderTopLeftRadius || computed.borderRadius);
+  const maxPadding = Math.max(px(computed.paddingTop), px(computed.paddingRight), px(computed.paddingBottom), px(computed.paddingLeft));
+  const display = String(computed.display || "");
+
+  return hasSurfaceBackground && radius > 0 && maxPadding >= 8 && display !== "contents" && display !== "none";
+};
+
+const addScopedAutoCardSections = ({ sectionsByKey, route, activeCategoryIds }) => {
+  if (activeCategoryIds && !activeCategoryIds.has("section") && !activeCategoryIds.has("stat-card")) return;
+
+  let autoIndex = 0;
+  const scopeNodes = Array.from(document.querySelectorAll("[data-dev-auto-outline~='cards']")).filter(
+    (node) => !isOverlayInternalNode(node)
+  );
+
+  scopeNodes.forEach((scopeNode) => {
+    Array.from(scopeNode.querySelectorAll("*")).forEach((node) => {
+      if (!isAutoCardCandidate(node)) return;
+
+      const rect = node.getBoundingClientRect();
+      if (!isVisibleRect(rect, 96, 24)) return;
+
+      const explicitParent = node.parentElement?.closest?.("[data-dev-section-key]");
+      const parentKey = sanitizeKey(explicitParent?.getAttribute?.("data-dev-section-key") || "");
+      const type = String(node.className || "").toLowerCase().includes("stat") ? "stat-card" : "content-card";
+      const categoryId = getCategoryIdForSectionType(type);
+      if (activeCategoryIds && categoryId && !activeCategoryIds.has(categoryId)) return;
+
+      autoIndex += 1;
+      const keyBase = parentKey || sanitizeKey(scopeNode.getAttribute?.("data-dev-card-section") || route.replace(/\//g, "-"));
+      const key = sanitizeKey(`${keyBase}-auto-${type}-${autoIndex}`);
+      if (!key || sectionsByKey.has(key)) return;
+
+      sectionsByKey.set(
+        key,
+        buildEntry({
+          key,
+          node,
+          route,
+          order: sectionsByKey.size,
+          type,
+          parentKey,
+          widthMode: "",
+          isShell: false,
+          source: "scoped-auto",
+        })
+      );
+    });
+  });
+};
+
 const numberSections = (sections) => {
   const childrenByParent = new Map();
   sections.forEach((entry) => {
@@ -513,6 +584,8 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
       );
     });
   });
+
+  addScopedAutoCardSections({ sectionsByKey, route, activeCategoryIds });
 
   addTableSubSections({ sectionsByKey, route });
 
@@ -756,6 +829,7 @@ export default function DevLayoutOverlay() {
         "data-dev-section-key",
         "data-dev-section-parent",
         "data-dev-background-token",
+        "data-dev-auto-outline",
         "data-dev-text-preview",
         "data-dev-page",
         "data-dev-tab",

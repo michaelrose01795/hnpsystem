@@ -136,6 +136,71 @@ if (isStubEnv) {
 
 const stubClient = isStubEnv ? buildStubClient() : null;
 
+// Network resilience wrapper.
+//
+// Some environments (notably local dev behind antivirus/firewall TLS
+// inspection or a flaky link) have a slow, unreliable outbound HTTPS path:
+// TLS handshakes intermittently take many seconds or fail outright with
+// `TypeError: fetch failed` before any response is received. Each page fires
+// many sequential Supabase queries, so a single dropped connection surfaces as
+// a 500. We wrap fetch so that:
+//   1. Each attempt has a hard timeout — a hung connection fails fast and is
+//      retried instead of stalling 30s+ behind the default socket timeout.
+//   2. Transient connection failures are retried with exponential backoff.
+//      Connectivity itself works (calls succeed, just slowly), so a retry
+//      almost always lands.
+// We only retry idempotent requests (GET/HEAD). A write (POST/PATCH/DELETE)
+// that throws may have reached the server before the response was lost, so it
+// is never retried automatically — the caller's error handling stays in charge.
+const FETCH_ATTEMPT_TIMEOUT_MS = 15000;
+const FETCH_MAX_RETRIES = 2;
+const FETCH_RETRY_BASE_DELAY_MS = 300;
+
+const isRetriableMethod = (method) => {
+  const m = String(method || "GET").toUpperCase();
+  return m === "GET" || m === "HEAD";
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const resilientFetch = async (input, init = {}) => {
+  const method =
+    init?.method || (typeof input === "object" && input?.method) || "GET";
+  const maxAttempts = isRetriableMethod(method) ? FETCH_MAX_RETRIES + 1 : 1;
+  const callerSignal = init?.signal;
+  let lastError;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const onCallerAbort = () => controller.abort(callerSignal?.reason);
+    if (callerSignal) {
+      if (callerSignal.aborted) controller.abort(callerSignal.reason);
+      else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+    }
+    const timer = setTimeout(
+      () => controller.abort(new Error("Supabase fetch timed out")),
+      FETCH_ATTEMPT_TIMEOUT_MS
+    );
+
+    try {
+      // Any HTTP response (including 4xx/5xx) is a success at the transport
+      // layer — only thrown errors (network failure / abort) are retried.
+      return await fetch(input, { ...init, signal: controller.signal });
+    } catch (error) {
+      lastError = error;
+      // Caller-initiated abort: propagate immediately, never retry.
+      if (callerSignal?.aborted) throw error;
+      if (attempt === maxAttempts - 1) break;
+      await delay(FETCH_RETRY_BASE_DELAY_MS * 2 ** attempt);
+    } finally {
+      clearTimeout(timer);
+      if (callerSignal) callerSignal.removeEventListener("abort", onCallerAbort);
+    }
+  }
+
+  throw lastError;
+};
+
 const createServiceRoleClient = () => {
   if (isStubEnv) return stubClient;
   if (!supabaseServiceKey) return null;
@@ -146,6 +211,7 @@ const createServiceRoleClient = () => {
       persistSession: false,
       detectSessionInUrl: false,
     },
+    global: { fetch: resilientFetch },
   });
 };
 
@@ -168,6 +234,7 @@ const rawSupabaseClient = isStubEnv
         persistSession: true,
         detectSessionInUrl: true,
       },
+      global: { fetch: resilientFetch },
     });
 
 export const supabaseClient = wrapWithPresentationProxy(rawSupabaseClient);
