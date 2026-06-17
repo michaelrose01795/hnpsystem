@@ -3862,6 +3862,31 @@ html.staff-scope .searchbar-api__input::placeholder {
   opacity: 1;
 }
 
+html.staff-scope .searchbar-api__results-menu {
+  max-height: 320px;
+}
+
+html.staff-scope .searchbar-api__results-menu[role="status"] {
+  max-height: none;
+}
+
+html.staff-scope button.searchbar-api__result {
+  min-height: 56px;
+}
+
+html.staff-scope .searchbar-api__result-title {
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+html.staff-scope .searchbar-api__result-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Clear button. Independent from the .app-btn family and intentionally
    chromeless — no background, no border, no radius, just the × icon
    sitting at the far right of the search bar. 44px hit target so it's

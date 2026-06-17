@@ -63,7 +63,10 @@ export const resolveJobCardPermissions = ({
     canEditBase &&
     mainStatusForEditLock === JOB_STATUSES.INVOICED;
 
-  const canViewVhcTab = Boolean(vhcRequired || isWorkshopManager);
+  // VHC tab is always visible now — marking VHC "Not Required" no longer hides
+  // the tab. The required/not-required toggle lives inside the VHC tab's tabs
+  // row (see VHCTab customActions), so the tab must stay reachable regardless.
+  const canViewVhcTab = true;
 
   const isPartsWriteUpVhcLockedByStatus =
     mainStatusForEditLock === JOB_STATUSES.BOOKED ||

@@ -30,8 +30,6 @@ const createSlugFromResult = (item = {}) => {
 };
 
 const GlobalSearch = ({
-  accentColor = "var(--primary)",
-  isDarkMode = false,
   navigationItems = [],
   onActiveChange,
 }) => {
@@ -311,16 +309,14 @@ const GlobalSearch = ({
     }
   };
 
-  const dropdownBackground = "var(--control-menu-bg)";
-  const textColor = isDarkMode ? "var(--search-text)" : "var(--text-1)";
-  const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
-  const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
-
   const dropdownZIndex = 3700;
   const dropdownContent =
     shouldShowDropdown && dropdownStyle ? (
       <div
         ref={dropdownRef}
+        className="searchbar-api__results-menu dropdown-api__menu"
+        role={showResults ? "listbox" : "status"}
+        aria-label={showResults ? "Global search results" : undefined}
         style={{
           ...dropdownStyle,
           zIndex: dropdownZIndex,
@@ -328,112 +324,52 @@ const GlobalSearch = ({
         }}
       >
         {shouldShowFeedback && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderRadius: "var(--control-radius)",
-              backgroundColor: dropdownBackground,
-
-              color: textColor,
-              fontSize: "0.85rem",
-            }}
-          >
-            {isLoading ? "Searching…" : feedback}
+          <div className="dropdown-api__empty">
+            {isLoading ? "Searching..." : feedback}
           </div>
         )}
 
         {showResults && (
-          <div
-            style={{
-              backgroundColor: dropdownBackground,
-              borderRadius: "var(--radius-md)",
-              overflow: "hidden",
-              maxHeight: "280px",
-              overflowY: "auto",
-            }}
-          >
+          <>
             {combinedResults.map((item, index) => {
               const active = index === activeIndex;
               const chipLabel = typeLabels[item.type] || "Result";
-              const itemBackground = active
-                ? "rgba(var(--primary-rgb), 0.14)"
-                : "transparent";
-              const itemColor = active ? accentColor : textColor;
 
               return (
                 <button
                   key={`${item.type}-${item.title}-${index}`}
                   type="button"
+                  role="option"
+                  aria-selected={active}
+                  className={`searchbar-api__result dropdown-api__option ${active ? "is-selected" : ""}`.trim()}
                   onMouseEnter={() => {
                     setActiveIndex(index);
                     // Prefetch job data when hovering over a job card search result
                     if (item.type === "job" && item.jobNumber) prefetchJob(item.jobNumber);
                   }}
                   onClick={() => handleSelect(item)}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "none",
-                    borderBottom:
-                      index === combinedResults.length - 1
-                        ? "none"
-                        : "1px solid var(--separating-line)",
-                    backgroundColor: itemBackground,
-                    color: itemColor,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                  <span
+                    className="searchbar-api__result-title dropdown-api__option-label"
+                  >
+                    <span
+                      className="searchbar-api__result-title-text"
+                    >
                       {item.title}
                     </span>
-                    {item.subtitle && (
-                      <span
-                        style={{
-                          fontSize: "0.8rem",
-                          color: isDarkMode ? "var(--primary-border)" : "var(--grey-accent)",
-                        }}
-                      >
-                        {item.subtitle}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "0.7rem",
-                      padding: "4px 8px",
-                      borderRadius: "var(--radius-pill)",
-                      backgroundColor: active ? accentColor : "rgba(var(--primary-rgb), 0.12)",
-                      color: active ? "var(--text-2)" : "var(--primary-selected)",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    {chipLabel}
+                  </span>
+                  <span className="searchbar-api__result-description dropdown-api__option-description">
+                    {[item.subtitle, chipLabel].filter(Boolean).join(" - ")}
                   </span>
                 </button>
               );
             })}
-          </div>
+          </>
         )}
 
         {showEmptyState && (
-          <div
-            style={{
-              padding: "16px",
-              borderRadius: "var(--control-radius)",
-              backgroundColor: dropdownBackground,
-
-              color: textColor,
-              fontSize: "0.85rem",
-            }}
-          >
-            No matches — try another term.
+          <div className="dropdown-api__empty">
+            No matches - try another term.
           </div>
         )}
       </div>

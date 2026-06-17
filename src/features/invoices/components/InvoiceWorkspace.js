@@ -64,7 +64,7 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
   const hasLineItems = hasLabour || parts.length > 0;
 
   return (
-    <LayerTheme
+    <LayerSurface
       radius="var(--radius-sm)"
       gap="var(--space-3)"
       onClick={isProforma ? () => onOpenEditor?.(request) : undefined}
@@ -154,7 +154,7 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
           Request Total (inc VAT): <strong style={{ color: "var(--accentText)" }}>{formatCurrency(totalsGross)}</strong>
         </span>
       </div>
-    </LayerTheme>
+    </LayerSurface>
   );
 };
 

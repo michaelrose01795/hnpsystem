@@ -2006,70 +2006,53 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           color: var(--text-1);
         }
       `}</style>
-      {/* ===== Parts Summary ===== */}
-      <LayerSurface
-        sectionKey="jobcard-parts-summary"
-        sectionType="content-card"
-        parentKey="jobcard-tab-parts"
-        radius="var(--radius-sm)"
-        padding="16px"
-        gap="12px"
+      {/* ===== Parts Metrics ===== */}
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          gap: "10px",
+        }}
       >
-        <div
-          style={{
-            fontSize: "var(--text-body-sm)",
-            fontWeight: 600,
-            color: "var(--text-1)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-          }}
-        >
-          Parts Summary
-        </div>
-        <ul
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-            gap: "10px",
-          }}
-        >
-          {[
-            { label: "Allocated", value: partsSummary.allocated },
-            { label: "On Order", value: partsSummary.onOrder },
-            { label: "Back Order", value: partsSummary.backOrder },
-            { label: "Return", value: partsSummary.returned },
-            { label: "Removed", value: partsSummary.removed },
-            { label: "Total Parts", value: partsSummary.total },
-          ].map((item) => (
-            <li key={item.label}>
-              <LayerTheme
-                radius="var(--radius-xs)"
-                padding="12px"
-                gap="2px"
-                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}
-              >
-                <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.1 }}>
-                  {item.value}
-                </span>
-                <span
-                  style={{
-                    fontSize: "var(--text-caption)",
-                    color: "var(--text-1)",
-                    opacity: 0.7,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {item.label}
-                </span>
-              </LayerTheme>
-            </li>
-          ))}
-        </ul>
-      </LayerSurface>
+        {[
+          { label: "Allocated", value: partsSummary.allocated },
+          { label: "On Order", value: partsSummary.onOrder },
+          { label: "Back Order", value: partsSummary.backOrder },
+          { label: "Return", value: partsSummary.returned },
+          { label: "Removed", value: partsSummary.removed },
+          { label: "Total Parts", value: partsSummary.total },
+        ].map((item) => (
+          <LayerSurface
+            key={item.label}
+            as="li"
+            sectionKey={`jobcard-parts-metric-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+            sectionType="stat-card"
+            parentKey="jobcard-tab-parts"
+            radius="var(--radius-sm)"
+            padding="12px"
+            gap="2px"
+            style={{ alignItems: "flex-start" }}
+          >
+            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.1 }}>
+              {item.value}
+            </span>
+            <span
+              style={{
+                fontSize: "var(--text-caption)",
+                color: "var(--text-1)",
+                opacity: 0.7,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {item.label}
+            </span>
+          </LayerSurface>
+        ))}
+      </ul>
 
       {/* ===== Parts Table Section ===== */}
       <LayerSurface
