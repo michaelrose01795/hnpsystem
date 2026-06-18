@@ -1058,7 +1058,20 @@ const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
   return displayItems.length > 0 ? displayItems : items;
 };
 
-const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
+const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collapsedProp, onToggle }) => {
+  // Sections render minimised (header only, ~60px) by default. The header acts
+  // as a dropdown toggle that expands the full detail in place — this is
+  // separate from the "Open" button, which launches the section modal.
+  // When `onToggle` is supplied the collapse state is controlled by the parent
+  // (used to link paired sections so opening one opens both); otherwise the
+  // card manages its own state.
+  const isControlled = typeof onToggle === "function";
+  const [internalCollapsed, setInternalCollapsed] = useState(true);
+  const collapsed = isControlled ? collapsedProp : internalCollapsed;
+  const toggleCollapsed = () => {
+    if (isControlled) onToggle();
+    else setInternalCollapsed((prev) => !prev);
+  };
   const rawItems = Array.isArray(section?.items) ? section.items : [];
   const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
@@ -1085,15 +1098,40 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         data-dev-section-key={`vhc-healthcheck-card-${config.key}-header`}
         data-dev-section-type="toolbar"
         data-dev-section-parent={`vhc-healthcheck-card-${config.key}`}
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        onClick={toggleCollapsed}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleCollapsed();
+          }
+        }}
         style={{
           display: "flex",
           justifyContent: "space-between",
           gap: "16px",
           flexWrap: "wrap",
           alignItems: "center",
+          cursor: "pointer",
         }}
       >
-        <div style={{ flex: 1, minWidth: "220px" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              flexShrink: 0,
+              lineHeight: 1,
+              fontSize: "13px",
+              color: "var(--text-accent)",
+              transition: "transform 0.15s ease",
+              transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+            }}
+          >
+            ▼
+          </span>
           <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-accent)" }}>
             {config.label}
           </h3>
@@ -1101,15 +1139,16 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
             gap: "8px",
-            alignItems: "flex-end",
-            minWidth: "200px",
+            alignItems: "center",
           }}
         >
           <button
             type="button"
-            onClick={() => onOpen && onOpen(config.key)}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (onOpen) onOpen(config.key);
+            }}
             style={{
               padding: "8px 14px",
               borderRadius: "var(--input-radius)",
@@ -1126,7 +1165,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         </div>
       </div>
 
-      {hasItems ? (
+      {!collapsed && (hasItems ? (
         <div
           style={{
             display: isBrakesHubsSection ? "grid" : "flex",
@@ -1398,7 +1437,38 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         >
           No technician entries have been captured for this section yet.
         </div>
-      )}
+      ))}
+    </div>
+  );
+};
+
+// Renders a pair of health sections that share a single collapse state, so
+// opening (or closing) one section also opens (or closes) its partner. The two
+// sit in a 50/50 row that drops to one column on mobile. There is no wrapping
+// card — the sections live directly in the health-check stack.
+const HealthSectionPair = ({ sections, onOpen }) => {
+  const [collapsed, setCollapsed] = useState(true);
+  const toggleCollapsed = () => setCollapsed((prev) => !prev);
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+        gap: "18px",
+        alignItems: "start",
+      }}
+    >
+      {sections.map(({ config, data, rawData }) => (
+        <HealthSectionCard
+          key={config.key}
+          config={config}
+          section={data}
+          rawData={rawData}
+          onOpen={onOpen}
+          collapsed={collapsed}
+          onToggle={toggleCollapsed}
+        />
+      ))}
     </div>
   );
 };
@@ -3959,10 +4029,10 @@ export default function VhcDetailsPanel({
     loading,
   ]);
 
-  const formatCurrency = (value) => {
+  const formatCurrency = useCallback((value) => {
     if (!Number.isFinite(value)) return "—";
     return `£${value.toFixed(2)}`;
-  };
+  }, []);
 
   const formatLabourHoursDisplay = (value) => {
     if (value === null || value === undefined || value === "") return "—";
@@ -3991,6 +4061,81 @@ export default function VhcDetailsPanel({
       totalOverride: entry?.totalOverride,
     });
   };
+
+  const vhcPartsToolbarMoneyTiles = (() => {
+    const resolveRowSeverity = (value) =>
+      normaliseColour(
+        value?.vhcCheck?.severity ||
+          value?.vhcCheck?.display_status ||
+          value?.severityKey ||
+          value?.rawSeverity ||
+          value?.severity
+      );
+    const quoteItems = [
+      ...(quoteSeverityLists.red || []),
+      ...(quoteSeverityLists.amber || []),
+      ...(quoteSeverityLists.authorized || []),
+      ...(quoteSeverityLists.completed || []),
+      ...(quoteSeverityLists.declined || []),
+    ].filter((value) => {
+      const severity = resolveRowSeverity(value);
+      return severity === "red" || severity === "amber";
+    });
+
+    if (quoteItems.length === 0) return [];
+
+    const partsByVhcId = new Map();
+    partsIdentified.forEach((part) => {
+      const rawVhcId = part?.vhc_item_id ?? part?.vhcItemId ?? null;
+      if (rawVhcId === null || rawVhcId === undefined || String(rawVhcId).trim() === "") return;
+      const canonicalId = String(resolveCanonicalVhcId(rawVhcId));
+      if (!partsByVhcId.has(canonicalId)) partsByVhcId.set(canonicalId, []);
+      partsByVhcId.get(canonicalId).push(part);
+    });
+
+    const sumCost = (predicate) =>
+      quoteItems.reduce((sum, item) => {
+        const vhcId = String(item.id);
+        const canonicalId = String(resolveCanonicalVhcId(item.canonicalId || item.id));
+        const entry = getEntryForItem(vhcId);
+        const entryDecision = normaliseDecisionStatus(entry?.status);
+        const declined = entryDecision === "declined";
+        const authorised =
+          !declined &&
+          (entryDecision === "authorized" ||
+            entryDecision === "completed" ||
+            authorizedViewIds.has(canonicalId));
+
+        if (!predicate({ declined, authorised })) return sum;
+
+        const linkedParts = partsByVhcId.get(canonicalId) || [];
+        const linkedPartsCost = linkedParts.reduce((total, part) => {
+          const qtyValue = Number(part?.quantity_requested);
+          const qty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+          const unitPrice = Number(part?.unit_price ?? part?.part?.unit_price ?? 0);
+          return Number.isFinite(unitPrice) ? total + qty * unitPrice : total;
+        }, 0);
+        const mappedPartsCost = Number(partsCostByVhcItem.get(canonicalId) || 0);
+        const partsCost = partsNotRequired.has(vhcId)
+          ? 0
+          : mappedPartsCost > 0
+            ? mappedPartsCost
+            : linkedPartsCost;
+        return sum + (partsCost || 0);
+      }, 0);
+
+    const approvedTotal = sumCost((item) => item.authorised);
+    const inProgressTotal = sumCost((item) => !item.authorised && !item.declined);
+    const declinedTotal = sumCost((item) => item.declined);
+    const potentialTotal = approvedTotal + inProgressTotal + declinedTotal;
+
+    return [
+      { key: "approved", label: "Approved Parts", value: formatCurrency(approvedTotal), tone: "var(--success)" },
+      { key: "inprogress", label: "In Progress", value: formatCurrency(inProgressTotal), tone: "var(--warning)" },
+      { key: "declined", label: "Declined Parts", value: formatCurrency(declinedTotal), tone: "var(--danger)" },
+      { key: "potential", label: "Total Potential", value: formatCurrency(potentialTotal), tone: "var(--text-accent)" },
+    ];
+  })();
 
   const toggleRowSelection = (severity, itemId) => {
     if (readOnly) return;
@@ -5847,6 +5992,15 @@ export default function VhcDetailsPanel({
     [photoFiles, videoFiles],
   );
 
+  const vhcMediaToolbarStatTiles = (() => {
+    const stats = mediaLibrary?.stats || {};
+    return [
+      { label: "Photos", value: stats.photos || 0 },
+      { label: "Videos", value: stats.videos || 0 },
+      { label: "Customer-visible", value: stats.customerVisible || 0 },
+    ];
+  })();
+
   // Top-level Photos-tab upload: drops an (unlinked) VHC photo onto the job,
   // then bumps the reload token so the panel re-fetches its job_files.
   const handlePhotoTabUpload = useCallback(
@@ -7463,24 +7617,6 @@ export default function VhcDetailsPanel({
       return { ...it, entryDecision, declined, authorised, group, groupRank };
     });
 
-    // ── Money totals (all six are £ sums, per requested spec) ──
-    // Some labels intentionally overlap (Approved ≈ Total Authorised); they are
-    // kept as distinct tiles because the brief asked for both explicitly.
-    const sumCost = (predicate) =>
-      classifiedItems.filter(predicate).reduce((sum, it) => sum + (it.partsCost || 0), 0);
-    const approvedTotal = sumCost((it) => it.authorised);
-    const inProgressTotal = sumCost((it) => it.group === "in-progress");
-    const declinedTotal = sumCost((it) => it.declined);
-    const potentialTotal = classifiedItems.reduce((sum, it) => sum + (it.partsCost || 0), 0);
-    const moneyTiles = [
-      { key: "approved", label: "Approved Parts", value: formatCurrency(approvedTotal), tone: "var(--success)" },
-      { key: "inprogress", label: "In Progress", value: formatCurrency(inProgressTotal), tone: "var(--warning)" },
-      { key: "declined", label: "Declined Parts", value: formatCurrency(declinedTotal), tone: "var(--danger)" },
-      { key: "totAuth", label: "Total Authorised", value: formatCurrency(approvedTotal), tone: "var(--authorised)" },
-      { key: "totPending", label: "Total Pending", value: formatCurrency(inProgressTotal), tone: "var(--text-accent)" },
-      { key: "totPotential", label: "Total Potential", value: formatCurrency(potentialTotal), tone: "var(--text-accent)" },
-    ];
-
     // ── Live search (VHC item / part name / part number), then sort so
     // authorised rows sit at the top and declined fall to the bottom. ──
     const searchQuery = normaliseMatchText(partsIdentifiedSearch);
@@ -7510,41 +7646,21 @@ export default function VhcDetailsPanel({
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* ── Money totals + search (staffglobal tokens) ── */}
+        {/* Parts search (staffglobal tokens) */}
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-parts-header"
           data-dev-section-type="toolbar"
           data-dev-section-parent="vhc-parts-shell"
           style={{
-            // Borderless, backgroundless layout container so the money tiles and
-            // search controls sit directly on the parent panel surface card
+            // Borderless, backgroundless layout container so the search controls
+            // sit directly on the parent panel surface card
             // rather than inside a nested sub-card.
             display: "flex",
             flexDirection: "column",
             gap: "16px",
           }}
         >
-          {/* Money totals (all £) */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
-            {moneyTiles.map((tile) => (
-              <div
-                key={tile.key}
-                className="app-layout-stat-card"
-                // Override the class defaults (column layout + 110px min-height) so
-                // each tile is only as tall as its single line of text.
-                style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: "8px", minHeight: "auto", padding: "8px 12px" }}
-              >
-                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)" }}>
-                  {tile.label}
-                </span>
-                <span style={{ fontSize: "16px", fontWeight: 800, color: tile.tone, lineHeight: 1.1 }}>
-                  {tile.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
           {/* Search box */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "end" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -8369,7 +8485,7 @@ export default function VhcDetailsPanel({
   // linked photo thumbnails and video previews on the right.
   const renderMediaTab = useCallback(() => {
     const MEDIA_TILE_HEIGHT = 156;
-    const { groups, unlinkedPhotos, unlinkedVideos, mainVideos, stats } = mediaLibrary;
+    const { groups, unlinkedPhotos, unlinkedVideos, mainVideos } = mediaLibrary;
 
     const statusColour = (status) =>
       status === "red"
@@ -8567,12 +8683,6 @@ export default function VhcDetailsPanel({
       );
     };
 
-    const statTiles = [
-      { label: "Photos", value: stats.photos },
-      { label: "Videos", value: stats.videos },
-      { label: "Customer-visible", value: stats.customerVisible },
-    ];
-
     const hasRequestMedia = groups.length > 0 || unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
 
     return (
@@ -8649,59 +8759,6 @@ export default function VhcDetailsPanel({
             Single row: equal-width stat tiles kept to the left, Upload Media
             button pushed to the far right. order: 1 keeps it above the
             Customer Video card (order: 2). */}
-        <div style={{ order: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-          {/* Equal-width stat tiles, kept to the left of the row */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {statTiles.map((tile) => (
-              <div
-                key={tile.label}
-                style={{ width: "128px", background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: "2px" }}
-              >
-                <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)", lineHeight: 1 }}>{tile.value}</span>
-                <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.06em", opacity: 0.7, whiteSpace: "nowrap" }}>
-                  {tile.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {!readOnly && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
-              {photoUploadError && (
-                <span role="alert" style={{ fontSize: "12px", fontWeight: 600, color: "var(--danger)" }}>
-                  {photoUploadError}
-                </span>
-              )}
-              <input
-                ref={photoUploadInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoTabUpload}
-                style={{ display: "none" }}
-              />
-              <button
-                type="button"
-                onClick={() => photoUploadInputRef.current?.click()}
-                disabled={photoUploading}
-                style={{
-                  padding: "8px 18px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "var(--text-2)",
-                  fontWeight: 600,
-                  fontSize: "var(--control-font-size)",
-                  minHeight: "var(--control-height)",
-                  cursor: photoUploading ? "wait" : "pointer",
-                  opacity: photoUploading ? 0.65 : 1,
-                }}
-              >
-                {photoUploading ? "Uploading…" : "Upload Media"}
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* One row per request that has media, plus any unlinked photos.
             order: 3 keeps this below the summary (1) and customer video (2). */}
         <div style={{ order: 3, display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -8719,7 +8776,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [mediaLibrary, readOnly, photoUploadError, photoUploading, handlePhotoTabUpload, handleToggleMainVideo, handleOpenPhotoPreview, mainVideoSavingId]);
+  }, [mediaLibrary, readOnly, handleToggleMainVideo, handleOpenPhotoPreview, mainVideoSavingId]);
 
   if (!resolvedJobNumber) {
     return renderStatusMessage("Provide a job number to view VHC details.");
@@ -8945,6 +9002,120 @@ export default function VhcDetailsPanel({
                   );
                 })}
               </nav>
+              {activeTab === "parts" && vhcPartsToolbarMoneyTiles.length > 0 ? (
+                <div
+                  data-dev-section="1"
+                  data-dev-section-key="vhc-parts-toolbar-money"
+                  data-dev-section-type="toolbar"
+                  data-dev-section-parent="vhc-tabs-row"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, minmax(112px, 1fr))",
+                    gap: "8px",
+                    flex: "1 1 560px",
+                    minWidth: 0,
+                    maxWidth: "720px",
+                    overflowX: "auto",
+                  }}
+                >
+                  {vhcPartsToolbarMoneyTiles.map((tile) => (
+                    <div
+                      key={tile.key}
+                      className="app-layout-stat-card"
+                      style={{
+                        alignItems: "flex-start",
+                        gap: "2px",
+                        minHeight: "auto",
+                        padding: "6px 10px",
+                      }}
+                    >
+                      <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: "var(--text-1)" }}>
+                        {tile.label}
+                      </span>
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: tile.tone, lineHeight: 1.1 }}>
+                        {tile.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {activeTab === "media" ? (
+                <div
+                  data-dev-section="1"
+                  data-dev-section-key="vhc-media-toolbar-stats"
+                  data-dev-section-type="toolbar"
+                  data-dev-section-parent="vhc-tabs-row"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(112px, 128px))",
+                    justifyContent: "center",
+                    gap: "8px",
+                    flex: "1 1 420px",
+                    minWidth: 0,
+                  }}
+                >
+                  {vhcMediaToolbarStatTiles.map((tile) => (
+                    <div
+                      key={tile.label}
+                      className="app-layout-stat-card"
+                      style={{
+                        alignItems: "flex-start",
+                        gap: "2px",
+                        minHeight: "auto",
+                        padding: "6px 10px",
+                      }}
+                    >
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-1)", lineHeight: 1.1 }}>
+                        {tile.value}
+                      </span>
+                      <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: "var(--text-1)", opacity: 0.7, whiteSpace: "nowrap" }}>
+                        {tile.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {activeTab === "media" && !readOnly ? (
+                <div
+                  data-dev-section="1"
+                  data-dev-section-key="vhc-media-toolbar-upload"
+                  data-dev-section-type="toolbar"
+                  data-dev-section-parent="vhc-tabs-row"
+                  style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}
+                >
+                  {photoUploadError ? (
+                    <span role="alert" style={{ fontSize: "12px", fontWeight: 600, color: "var(--danger)" }}>
+                      {photoUploadError}
+                    </span>
+                  ) : null}
+                  <input
+                    ref={photoUploadInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoTabUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => photoUploadInputRef.current?.click()}
+                    disabled={photoUploading}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "var(--input-radius)",
+                      border: "none",
+                      background: "var(--primary)",
+                      color: "var(--text-2)",
+                      fontWeight: 600,
+                      fontSize: "var(--control-font-size)",
+                      minHeight: "var(--control-height)",
+                      cursor: photoUploading ? "wait" : "pointer",
+                      opacity: photoUploading ? 0.65 : 1,
+                    }}
+                  >
+                    {photoUploading ? "Uploading..." : "Upload Media"}
+                  </button>
+                </div>
+              ) : null}
               {customActions && (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   {typeof customActions === "function" ? customActions(activeTab) : customActions}
@@ -9462,12 +9633,18 @@ export default function VhcDetailsPanel({
 
                   {(() => {
                     // Wheels & Tyres and Brakes & Hubs each take a full-width row at
-                    // the top; the remaining sections sit in a responsive 2-up grid
-                    // beneath them (smaller cards, single column on mobile) to cut the
-                    // vertical scroll distance.
+                    // the top. The remaining sections are paired into grouping cards:
+                    // Service Indicator & Under Bonnet + External share one card (50/50),
+                    // Internal + Underside share another (50/50). Each pair collapses to
+                    // a single column on mobile.
                     const leadKeys = ["wheelsTyres", "brakesHubs"];
+                    const groupedPairs = [
+                      ["serviceIndicator", "externalInspection"],
+                      ["internalElectrics", "underside"],
+                    ];
+                    const findSection = (key) =>
+                      orderedHealthSections.find(({ config }) => config.key === key);
                     const leadSections = orderedHealthSections.filter(({ config }) => leadKeys.includes(config.key));
-                    const gridSections = orderedHealthSections.filter(({ config }) => !leadKeys.includes(config.key));
                     return (
                       <>
                         {leadSections.map(({ config, data, rawData }) => (
@@ -9479,28 +9656,17 @@ export default function VhcDetailsPanel({
                             onOpen={handleOpenSection}
                           />
                         ))}
-                        {gridSections.length > 0 ? (
-                          <div
-                            style={{
-                              display: "grid",
-                              // minmax floor keeps two cards per row on wider viewports
-                              // and collapses to one column once space runs out.
-                              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                              gap: "18px",
-                              alignItems: "start",
-                            }}
-                          >
-                            {gridSections.map(({ config, data, rawData }) => (
-                              <HealthSectionCard
-                                key={config.key}
-                                config={config}
-                                section={data}
-                                rawData={rawData}
-                                onOpen={handleOpenSection}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
+                        {groupedPairs.map((pairKeys, groupIdx) => {
+                          const pairSections = pairKeys.map(findSection).filter(Boolean);
+                          if (pairSections.length === 0) return null;
+                          return (
+                            <HealthSectionPair
+                              key={`vhc-healthcheck-pair-${groupIdx}`}
+                              sections={pairSections}
+                              onOpen={handleOpenSection}
+                            />
+                          );
+                        })}
                       </>
                     );
                   })()}
@@ -9824,12 +9990,18 @@ export default function VhcDetailsPanel({
 
                   {(() => {
                     // Wheels & Tyres and Brakes & Hubs each take a full-width row at
-                    // the top; the remaining sections sit in a responsive 2-up grid
-                    // beneath them (smaller cards, single column on mobile) to cut the
-                    // vertical scroll distance.
+                    // the top. The remaining sections are paired into grouping cards:
+                    // Service Indicator & Under Bonnet + External share one card (50/50),
+                    // Internal + Underside share another (50/50). Each pair collapses to
+                    // a single column on mobile.
                     const leadKeys = ["wheelsTyres", "brakesHubs"];
+                    const groupedPairs = [
+                      ["serviceIndicator", "externalInspection"],
+                      ["internalElectrics", "underside"],
+                    ];
+                    const findSection = (key) =>
+                      orderedHealthSections.find(({ config }) => config.key === key);
                     const leadSections = orderedHealthSections.filter(({ config }) => leadKeys.includes(config.key));
-                    const gridSections = orderedHealthSections.filter(({ config }) => !leadKeys.includes(config.key));
                     return (
                       <>
                         {leadSections.map(({ config, data, rawData }) => (
@@ -9841,28 +10013,17 @@ export default function VhcDetailsPanel({
                             onOpen={handleOpenSection}
                           />
                         ))}
-                        {gridSections.length > 0 ? (
-                          <div
-                            style={{
-                              display: "grid",
-                              // minmax floor keeps two cards per row on wider viewports
-                              // and collapses to one column once space runs out.
-                              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                              gap: "18px",
-                              alignItems: "start",
-                            }}
-                          >
-                            {gridSections.map(({ config, data, rawData }) => (
-                              <HealthSectionCard
-                                key={config.key}
-                                config={config}
-                                section={data}
-                                rawData={rawData}
-                                onOpen={handleOpenSection}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
+                        {groupedPairs.map((pairKeys, groupIdx) => {
+                          const pairSections = pairKeys.map(findSection).filter(Boolean);
+                          if (pairSections.length === 0) return null;
+                          return (
+                            <HealthSectionPair
+                              key={`vhc-healthcheck-pair-${groupIdx}`}
+                              sections={pairSections}
+                              onOpen={handleOpenSection}
+                            />
+                          );
+                        })}
                       </>
                     );
                   })()}

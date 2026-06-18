@@ -10437,7 +10437,8 @@ function VHCTab({
     }
   };
 
-  const customActions =
+  const customActions = (activeVhcTab) =>
+  activeVhcTab === "summary" ?
   <>
       {/* "Customer VHC: <status>" badge now lives in the job-card customer */}
       {/* summary card â€” see JobCardDetailPageUi jobcard-summary-customer. */}
@@ -10490,7 +10491,8 @@ function VHCTab({
           {sendVhcMessage}
         </span> :
     null}
-    </>;
+    </> :
+  null;
 
 
   return (
