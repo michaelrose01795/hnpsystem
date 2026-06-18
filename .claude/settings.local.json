@@ -280,7 +280,8 @@
       "PowerShell(npx eslint src/components/VHC/VhcMediaGallery.js 2>&1)",
       "PowerShell(node tools/scripts/check-borders.js)",
       "PowerShell(npx next lint --file src/components/VHC/VhcDetailsPanel.js --file src/lib/vhc/uploadMediaClient.js --file src/pages/api/vhc/update-media.js 2>&1)",
-      "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js src/lib/vhc/uploadMediaClient.js src/pages/api/vhc/update-media.js 2>&1)"
+      "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js src/lib/vhc/uploadMediaClient.js src/pages/api/vhc/update-media.js 2>&1)",
+      "Bash(awk -F/ 'NF==1{print \"\\(root\\)\"} NF>1{print $1}')"
     ],
     "deny": [],
     "ask": [],

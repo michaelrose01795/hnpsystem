@@ -791,10 +791,10 @@ export default function JobCardDetailPageUi(props) {
           display: activeTab === "write-up" ? undefined : "none"
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-writeup" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-page="Job card detail" data-dev-tab="Write-up" data-dev-card-section="write-up tab" data-dev-text-preview="Write-up tab" data-dev-auto-outline="cards">
             {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
-                <strong>Locked: Write Up</strong>
+                <strong>Locked</strong>
                 <span>{partsWriteUpVhcLockDescription}</span>
               </div>}
-            {writeUpTabMounted || activeTab === "write-up" ? <WriteUpWorkspace jobData={jobData} canEdit={canEditPartsWriteUpVhc} onUpdate={handleUpdateRequests} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onUpdateRequestStatus={handleUpdateRequestStatus} onSaveRequestWorkDetails={handleSaveRequestWorkDetails} onMarkAllRequestsComplete={handleMarkAllRequestsComplete} onSaveWriteUp={handleSaveWriteUp} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} onSaveSuccess={handleWriteUpSaveSuccess} onNavigateTab={handleTabClick} clockingEntries={clockingEntries} onToggleVhcRequired={handleToggleVhcRequired} overallStatusId={overallStatusId} vhcSummary={vhcSummaryCounts} vhcChecks={jobVhcChecks} notes={jobNotes} partsJobItems={jobData?.parts_job_items || []} /> : null}
+            {writeUpTabMounted || activeTab === "write-up" ? <WriteUpWorkspace jobData={jobData} canEdit={canEditPartsWriteUpVhc} onUpdate={handleUpdateRequests} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onUpdateRequestStatus={handleUpdateRequestStatus} onSaveRequestWorkDetails={handleSaveRequestWorkDetails} onMarkAllRequestsComplete={handleMarkAllRequestsComplete} onSaveWriteUp={handleSaveWriteUp} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} onSaveSuccess={handleWriteUpSaveSuccess} onNavigateTab={handleTabClick} clockingEntries={clockingEntries} overallStatusId={overallStatusId} vhcSummary={vhcSummaryCounts} vhcChecks={jobVhcChecks} notes={jobNotes} partsJobItems={jobData?.parts_job_items || []} /> : null}
           </div>
 
           <div className="app-page-stack" style={{
@@ -807,7 +807,7 @@ export default function JobCardDetailPageUi(props) {
             <VHCTab jobNumber={jobNumber} jobData={jobData} canEdit={canEditPartsWriteUpVhc} canShowCustomerActions={vhcTabAmberReadyInstant} actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} actingUserName={user?.name || user?.email || ""} onFinancialTotalsChange={setVhcFinancialTotalsFromPanel} onJobDataRefresh={() => fetchJobData({
             silent: true,
             force: true
-          })} onVhcCustomerStatusReload={reloadVhcCustomerStatus} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} />
+          })} onVhcCustomerStatusReload={reloadVhcCustomerStatus} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onToggleVhcRequired={handleToggleVhcRequired} canToggleVhcRequired={canEdit} />
           </div>
 
           <div className="app-page-stack" style={{

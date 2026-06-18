@@ -67,9 +67,7 @@ import { TimePickerField } from "@/components/ui/timePickerAPI";
 import {
   TechnicianAssignmentSection,
   JobProgressSection,
-  CollectionTypeSection,
   CustomerUpdatesSection,
-  QuickActionsSection,
 } from "@/components/page-ui/job-cards/SchedulingTab";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
@@ -5045,7 +5043,6 @@ function CustomerRequestsTab({
   onUpdateRequestStatus = async () => {},
   onNavigateTab = () => {},
   clockingEntries = [],
-  onToggleVhcRequired = () => {},
   overallStatusId = null,
   vhcSummary = { total: 0, red: 0, amber: 0 },
   vhcChecks = [],
@@ -6141,8 +6138,10 @@ function CustomerRequestsTab({
   }, [combinedRequestRows, selectedRequestKey]);
 
   // Plain (token-backed, borderless) surface styles for the new layout.
-  // Stat boxes lay out label + value inline on a single line within each tile.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "10px 12px", display: "flex", flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: "8px", minWidth: 0 };
+  // Compact stat tiles: fixed width so every tile matches, label on top with
+  // the count stacked onto its own row below. They sit left-aligned on a single
+  // wrapping row alongside the Edit/Save controls.
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px", width: "112px", flex: "0 0 auto", minWidth: 0 };
   const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--text-1)", lineHeight: 1 };
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
@@ -6151,105 +6150,79 @@ function CustomerRequestsTab({
 
   return (
     <div className="jc-customer-requests">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text-1)" }}>
-          Customer Requests
-        </h2>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          {canEdit && !editing &&
-          <button
-            onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              fontSize: "var(--control-font-size)",
-              fontWeight: "600",
-              cursor: "pointer",
-              minHeight: "var(--control-height)",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              color: "var(--primary-selected)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "0.9";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "1";
-            }}>
-
-              {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
-            </button>
-          }
-          {canEdit && !editing &&
-          <button
-            onClick={() => setEditing(true)}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
-            }}>
-
-              Edit Requests
-            </button>
-          }
-        </div>
-        {editing &&
-        <div style={{ display: "flex", gap: "8px" }}>
-            <button
-            onClick={handleSave}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
-            }}>
-
-              Save
-            </button>
-            <button
-            onClick={() => {
-              setRequests(buildEditRequests());
-              setEditableAuthorisedRows(buildEditableAuthorisedRows(authorisedRows));
-              setEditing(false);
-            }}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              color: "var(--primary-selected)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
-            }}>
-
-              Cancel
-            </button>
-          </div>
-        }
-      </div>
-
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Stats row â€” full width, surface boxes alternating off the theme shell */}
-        <div className="jc-req-statgrid jc-request-overview-statgrid">
+        {/* Stats + actions row — compact, left-aligned. "Customer Requests"
+            heading removed; the Edit/Save controls share this single wrapping
+            row with the stat tiles. Each tile is a fixed width with its count
+            stacked onto its own line. */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "8px" }}>
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Pre-picked</span><span style={statValueStyle}>{requestStats.prePicked}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>In Progress</span><span style={statValueStyle}>{requestStats.inProgress}</span></div>
           <div style={statBoxStyle}><span style={statLabelStyle}>Complete</span><span style={statValueStyle}>{requestStats.complete}</span></div>
+          {canEdit && !editing &&
+          <button
+            onClick={() => setEditing(true)}
+            style={{
+              marginLeft: "auto", // push Edit Requests to the right of the stats row
+              alignSelf: "center",
+              padding: "var(--control-padding)",
+              backgroundColor: "var(--primary)",
+              color: "var(--text-2)",
+              border: "none",
+              borderRadius: "var(--control-radius)",
+              cursor: "pointer",
+              fontWeight: "600",
+              fontSize: "var(--control-font-size)",
+              height: "44px",
+              minHeight: "44px"
+            }}>
+
+              Edit Requests
+            </button>
+          }
+          {editing &&
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
+              <button
+              onClick={handleSave}
+              style={{
+                padding: "var(--control-padding)",
+                backgroundColor: "var(--primary)",
+                color: "var(--text-2)",
+                border: "none",
+                borderRadius: "var(--control-radius)",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)"
+              }}>
+
+                Save
+              </button>
+              <button
+              onClick={() => {
+                setRequests(buildEditRequests());
+                setEditableAuthorisedRows(buildEditableAuthorisedRows(authorisedRows));
+                setEditing(false);
+              }}
+              style={{
+                padding: "var(--control-padding)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-selected)",
+                border: "none",
+                borderRadius: "var(--control-radius)",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)"
+              }}>
+
+                Cancel
+              </button>
+            </div>
+          }
         </div>
 
         {editing ?
@@ -6272,7 +6245,7 @@ function CustomerRequestsTab({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New requestâ€¦</span>}</td>
+                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
                       <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
@@ -6391,18 +6364,19 @@ function CustomerRequestsTab({
           <div style={detailPanelStyle}>
             {selectedRow ?
             <>
+              {/* Title + status badges and the action buttons share one row.
+                  Buttons sit to the right via marginLeft:auto, wrapping below on
+                  narrow widths. */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>{selectedRow.title}</h3>
                 {selectedRow.kind === "authorised" && <span className="app-badge app-badge--success">Authorised</span>}
                 <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>
-              </div>
-
-              {/* Action buttons - one row */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
-                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
-                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("notes")}>Add Notes</button>
-                <button type="button" className="app-btn app-btn--primary" disabled={!canEdit || !selectedRow.requestId || selectedRow.normalizedStatus === "completed"} onClick={() => onUpdateRequestStatus(selectedRow.requestId, "completed")}>{selectedRow.normalizedStatus === "completed" ? "Completed" : "Mark Complete"}</button>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
+                  <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
+                  <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
+                  <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("notes")}>Add Notes</button>
+                  <button type="button" className="app-btn app-btn--primary" disabled={!canEdit || !selectedRow.requestId || selectedRow.normalizedStatus === "completed"} onClick={() => onUpdateRequestStatus(selectedRow.requestId, "completed")}>{selectedRow.normalizedStatus === "completed" ? "Completed" : "Mark Complete"}</button>
+                </div>
               </div>
 
               {/* Meta line */}
@@ -6555,7 +6529,6 @@ function WriteUpWorkspace({
   onSaveSuccess = () => {},
   onNavigateTab = () => {},
   clockingEntries = [],
-  onToggleVhcRequired = () => {},
   overallStatusId = null,
   vhcSummary = { total: 0, red: 0, amber: 0 },
   vhcChecks = [],
@@ -7861,54 +7834,8 @@ function WriteUpWorkspace({
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text-1)" }}>
-          Write-up
-        </h2>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          {canEdit && !editing &&
-          <button
-            onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              fontSize: "var(--control-font-size)",
-              fontWeight: "600",
-              cursor: "pointer",
-              minHeight: "var(--control-height)",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              color: "var(--primary-selected)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "0.9";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "1";
-            }}>
-
-              {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
-            </button>
-          }
-          {canEdit && !editing &&
-          <button
-            onClick={() => setEditing(true)}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
-            }}>
-
-              Edit Requests
-            </button>
-          }
-        </div>
+      {editing &&
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
         {editing &&
         <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -7949,7 +7876,7 @@ function WriteUpWorkspace({
             </button>
           </div>
         }
-      </div>
+      </div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Summary row â€” request KPIs + Mark All Complete action */}
@@ -7991,7 +7918,7 @@ function WriteUpWorkspace({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New requestâ€¦</span>}</td>
+                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
                       <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
@@ -8082,7 +8009,7 @@ function WriteUpWorkspace({
             <table className="app-data-table app-data-table--rounded">
               <thead>
                 <tr>
-                  <th style={{ width: "40px" }}>#</th>
+                  <th style={{ width: "52px", minWidth: "52px", whiteSpace: "nowrap", textAlign: "center" }}>#</th>
                   <th>Request</th>
                   <th style={{ width: "60px", textAlign: "center" }}>Done</th>
                 </tr>
@@ -8093,7 +8020,7 @@ function WriteUpWorkspace({
                   const rowComplete = row.normalizedStatus === "completed";
                   return (
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
-                      <td style={{ fontWeight: 600, verticalAlign: "top" }}>{row.numberLabel}</td>
+                      <td style={{ width: "52px", minWidth: "52px", fontWeight: 600, verticalAlign: "top", textAlign: "center", whiteSpace: "nowrap" }}>{row.numberLabel}</td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                           <span style={{ color: "var(--text-1)" }}>{row.description || "â€”"}</span>
@@ -8148,7 +8075,7 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, faultReported: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("faultReported")}
-                  placeholder="Fault reported by the customerâ€¦" />
+                  placeholder="Fault reported by the customer..." />
               </div>
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Diagnosis</label>
@@ -8158,7 +8085,7 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, diagnosis: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("diagnosis")}
-                  placeholder="Technician diagnosisâ€¦" />
+                  placeholder="Technician diagnosis..." />
               </div>
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Rectification</label>
@@ -8168,7 +8095,7 @@ function WriteUpWorkspace({
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, rectification: e.target.value }))}
                   onBlur={() => handleDetailFieldBlur("rectification")}
-                  placeholder="Work carried out to rectifyâ€¦" />
+                  placeholder="Work carried out to rectify..." />
               </div>
               {!selectedRow.requestId &&
               <div style={{ fontSize: "12px", color: "var(--grey-accent)", fontStyle: "italic" }}>
@@ -9000,141 +8927,11 @@ function SchedulingTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress | Collection Type â”€â”€ */}
+      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress | Appointment Information â”€â”€ */}
       <div style={schedulingThreeColumnRowStyle}>
         <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
         <JobProgressSection jobData={jobData} />
-        <CollectionTypeSection waitingStatus={bookingWaitingStatus} canEdit={canEdit} onSelect={handleBookingWaitingSelect} jobData={jobData} />
-      </div>
-
-      {/* â”€â”€ Booking & appointment (existing functionality, re-laid into the dashboard) â”€â”€ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", alignItems: "stretch" }}>
-        {/* â”€â”€ Section 1: Customer & Vehicle â”€â”€ */}
-        <DevLayoutSection
-          sectionKey="jobcard-tab-scheduling-customer-vehicle"
-          sectionType="content-card"
-          parentKey="jobcard-tab-scheduling"
-          backgroundToken="surface"
-          style={sectionCardStyle}>
-
-          <div style={sectionTitleRow}>
-            <div style={{ flex: 1 }}>
-              <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
-            </div>
-            {bookingRequest ?
-            <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
-                {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
-              </span> :
-            null}
-            <button
-              onClick={() => {
-                const slug = createCustomerDisplaySlug(jobData.customerFirstName || "", jobData.customerLastName || "");
-                const target = slug || jobData.customerId;
-                if (target) router.push(`/customers/${target}`);
-              }}
-              disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                color: "var(--primary-selected)",
-                fontSize: "var(--control-font-size)",
-                fontWeight: "600",
-                minHeight: "var(--control-height)",
-                cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
-                whiteSpace: "nowrap",
-                opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1
-              }}>
-
-              View Profile
-            </button>
-          </div>
-
-          {/* Vehicle selector */}
-          <div>
-            {customerVehiclesLoading ?
-            <div style={{ fontSize: "13px", color: "var(--text-1)", padding: "8px 0" }}>
-                Loading stored vehicles...
-              </div> :
-            vehicleOptions.length > 0 ?
-            <DropdownField
-              label="Vehicle"
-              placeholder="Select stored vehicle"
-              value={selectedVehicleIdValue}
-              onChange={(event) => handleVehicleChange(event.target.value)}
-              disabled={!canEdit}
-              className="compact-picker"
-              options={vehicleOptions.map((vehicle) => ({
-                value: String(vehicle.vehicle_id),
-                label: `${getVehicleRegistration(vehicle, "Vehicle")} \u00B7 ${
-                vehicle.make_model ||
-                [vehicle.make, vehicle.model].filter(Boolean).join(" ")}`
-
-              }))} /> :
-
-
-            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
-                No stored vehicles found for this customer.
-              </div>
-            }
-          </div>
-        </DevLayoutSection>
-        {/* Customer Logistics moved to the Collection Type dashboard section above. */}
-      </div>
-
-      {/* â”€â”€ Row: Customer Updates | Customer Reported Issues | Appointment Information â”€â”€ */}
-      {/* auto-fit keeps the row three-up on wide desktop and stacks it on narrow screens (CLAUDE.md §3.6) */}
-      <div style={schedulingThreeColumnRowStyle}>
-        <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
-
-        {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
-        <DevLayoutSection
-          sectionKey="jobcard-tab-scheduling-reported-issues"
-          sectionType="content-card"
-          parentKey="jobcard-tab-scheduling"
-          backgroundToken="surface"
-          style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
-
-          <div style={sectionTitleRow}>
-            <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
-          </div>
-          <div
-            style={{
-              ...subPanelStyle,
-              flex: 1,
-              minHeight: "120px",
-              maxHeight: bookingRequestLines.length >= 5 ? "292px" : "none",
-              overflowY: "auto",
-              color: "var(--text-1)",
-              fontSize: "13px",
-              lineHeight: "18px"
-            }}>
-
-            {bookingRequestLines.length > 0 ?
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {bookingRequestLines.map((line, index) =>
-              <div
-                key={`${index}-${line}`}
-                style={{
-                  ...reportedIssueRowStyle,
-                  marginBottom: 0
-                }}>
-
-                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <span style={schedulingRowSubtitleStyle}>Reported Issue {index + 1}</span>
-                      <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{line}</span>
-                    </div>
-                  </div>
-              )}
-              </div> :
-
-            <div style={{ padding: "8px 6px", color: "var(--grey-accent)" }}>No reported issues found.</div>
-            }
-          </div>
-        </DevLayoutSection>
-
-        {/* â”€â”€ Section 3: Appointment Information â”€â”€ */}
+        {/* Section: Appointment Information (moved here from the bottom row) */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-appointment"
           sectionType="content-card"
@@ -9152,23 +8949,6 @@ function SchedulingTab({
           }}>
             <h3 style={cardTitleStyle}>Appointment Information</h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => router.push(`/appointments?jobNumber=${encodeURIComponent(jobData.jobNumber || "")}`)}
-                style={{
-                  padding: "var(--control-padding)",
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                  color: "var(--primary-selected)",
-                  fontSize: "var(--control-font-size)",
-                  fontWeight: "600",
-                  minHeight: "var(--control-height)",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap"
-                }}>
-
-                Open Appointment Calendar
-              </button>
               <button
                 onClick={handleAppointmentRebook}
                 disabled={rebookButtonDisabled}
@@ -9265,6 +9045,18 @@ function SchedulingTab({
                 } />
 
             </div>
+            <div>
+              <DropdownField
+                label="Collection Type"
+                value={bookingWaitingStatus || "Neither"}
+                defaultValue="Neither"
+                placeholder="Select collection type"
+                onChange={(event) => handleBookingWaitingSelect(event.target.value)}
+                disabled={!canEdit || appointmentSaving}
+                className="compact-picker"
+                options={waitingOptions.map((option) => ({ value: option, label: option }))} />
+
+            </div>
           </div>
 
           <div
@@ -9279,6 +9071,130 @@ function SchedulingTab({
             }}>
 
             Appointment created: <strong style={{ color: "var(--text-1)" }}>{appointmentCreatedAt}</strong>
+          </div>
+        </DevLayoutSection>
+      </div>
+
+      {/* â”€â”€ Row: Customer Updates | Customer Reported Issues | Customer & Vehicle â”€â”€ */}
+      {/* auto-fit keeps the row three-up on wide desktop and stacks it on narrow screens (CLAUDE.md §3.6) */}
+      <div style={schedulingThreeColumnRowStyle}>
+        <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
+
+        {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-reported-issues"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
+
+          <div style={sectionTitleRow}>
+            <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
+          </div>
+          <div
+            style={{
+              ...subPanelStyle,
+              flex: 1,
+              minHeight: "120px",
+              maxHeight: bookingRequestLines.length >= 5 ? "292px" : "none",
+              overflowY: "auto",
+              color: "var(--text-1)",
+              fontSize: "13px",
+              lineHeight: "18px"
+            }}>
+
+            {bookingRequestLines.length > 0 ?
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {bookingRequestLines.map((line, index) =>
+              <div
+                key={`${index}-${line}`}
+                style={{
+                  ...reportedIssueRowStyle,
+                  marginBottom: 0
+                }}>
+
+                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={schedulingRowSubtitleStyle}>Reported Issue {index + 1}</span>
+                      <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{line}</span>
+                    </div>
+                  </div>
+              )}
+              </div> :
+
+            <div style={{ padding: "8px 6px", color: "var(--grey-accent)" }}>No reported issues found.</div>
+            }
+          </div>
+        </DevLayoutSection>
+
+        {/* Section: Customer & Vehicle (moved here from the full-width row) */}
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-customer-vehicle"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={{ ...sectionCardStyle, marginBottom: 0 }}>
+
+          <div style={sectionTitleRow}>
+            <div style={{ flex: 1 }}>
+              <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
+            </div>
+            {bookingRequest ?
+            <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
+                {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
+              </span> :
+            null}
+            <button
+              onClick={() => {
+                const slug = createCustomerDisplaySlug(jobData.customerFirstName || "", jobData.customerLastName || "");
+                const target = slug || jobData.customerId;
+                if (target) router.push(`/customers/${target}`);
+              }}
+              disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
+              style={{
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-selected)",
+                fontSize: "var(--control-font-size)",
+                fontWeight: "600",
+                minHeight: "var(--control-height)",
+                cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
+                whiteSpace: "nowrap",
+                opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1
+              }}>
+
+              View Profile
+            </button>
+          </div>
+
+          {/* Vehicle selector */}
+          <div>
+            {customerVehiclesLoading ?
+            <div style={{ fontSize: "13px", color: "var(--text-1)", padding: "8px 0" }}>
+                Loading stored vehicles...
+              </div> :
+            vehicleOptions.length > 0 ?
+            <DropdownField
+              label="Vehicle"
+              placeholder="Select stored vehicle"
+              value={selectedVehicleIdValue}
+              onChange={(event) => handleVehicleChange(event.target.value)}
+              disabled={!canEdit}
+              className="compact-picker"
+              options={vehicleOptions.map((vehicle) => ({
+                value: String(vehicle.vehicle_id),
+                label: `${getVehicleRegistration(vehicle, "Vehicle")} · ${
+                vehicle.make_model ||
+                [vehicle.make, vehicle.model].filter(Boolean).join(" ")}`
+
+              }))} /> :
+
+
+            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
+                No stored vehicles found for this customer.
+              </div>
+            }
           </div>
         </DevLayoutSection>
       </div>
@@ -9412,19 +9328,6 @@ function SchedulingTab({
           }
         </DevLayoutSection>
       </DevLayoutSection>
-
-      {/* â”€â”€ Dashboard Row 4: Quick Actions â”€â”€ */}
-      <QuickActionsSection
-        canEdit={canEdit}
-        onChangeCollectionTimes={() => {
-          if (typeof document !== "undefined") {
-            const el = document.querySelector('[data-dev-section-key="jobcard-scheduling-collection"]');
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }}
-        onAddWorkshopNote={() => onNavigateTab("notes")}
-        onSendCustomerUpdate={() => onNavigateTab("messages")}
-      />
 
     </div>);
 
@@ -9885,7 +9788,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           }} />
 
         {catalogLoading &&
-        <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stockâ€¦</div>
+        <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stock...</div>
         }
         {!catalogLoading && catalogError &&
         <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{catalogError}</div>
@@ -10037,7 +9940,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               cursor: !canAllocateParts ? "not-allowed" : "pointer"
             }}>
 
-              {allocatingPart ? "Addingâ€¦" : `Add to Job ${jobNumber || ""}`}
+              {allocatingPart ? "Adding..." : `Add to Job ${jobNumber || ""}`}
             </button>
           </div>
         }
@@ -10380,7 +10283,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             }
           </div>
           <div style={{ fontSize: "12px", color: saving ? "var(--warning)" : "var(--info)" }}>
-            {saving ? "Savingâ€¦" : "Synced"}
+            {saving ? "Saving..." : "Synced"}
           </div>
         </div>
       </div>
@@ -10400,7 +10303,9 @@ function VHCTab({
   onFinancialTotalsChange,
   onJobDataRefresh,
   onVhcCustomerStatusReload = async () => {},
-  onUpdateRequestPrePickLocation = async () => {}
+  onUpdateRequestPrePickLocation = async () => {},
+  onToggleVhcRequired = () => {},
+  canToggleVhcRequired = false
 }) {
   const [copied, setCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -10536,6 +10441,17 @@ function VHCTab({
   <>
       {/* "Customer VHC: <status>" badge now lives in the job-card customer */}
       {/* summary card â€” see JobCardDetailPageUi jobcard-summary-customer. */}
+      {/* VHC required toggle — moved here from the Customer Requests tab so it */}
+      {/* lives alongside the VHC tabs and stays reachable even when VHC is */}
+      {/* marked Not Required (the tab no longer hides). */}
+      {canToggleVhcRequired &&
+      <button
+      type="button"
+      className="app-btn app-btn--secondary app-btn--sm"
+      onClick={() => onToggleVhcRequired(!jobData?.vhcRequired)}
+      title={jobData?.vhcRequired ? "Mark VHC as not required for this job" : "Mark VHC as required for this job"}>
+        {jobData?.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
+      </button>}
       <button
       type="button"
       className="app-btn app-btn--primary app-btn--sm"
@@ -12085,7 +12001,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             </label>
             <DropdownField
               id="clocking-tech-selector"
-              placeholder={techniciansLoading ? "Loading techniciansâ€¦" : "Select technician"}
+              placeholder={techniciansLoading ? "Loading technicians..." : "Select technician"}
               options={technicianOptions}
               value={selectedTechnicianId}
               onChange={(event) => {
@@ -12131,7 +12047,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
 
-                {submitting ? "Clockingâ€¦" : "Just clock"}
+                {submitting ? "Clocking..." : "Just clock"}
               </button> :
             null}
             <button
@@ -12149,7 +12065,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
 
-              {submitting ? "Savingâ€¦" : "Save clocking entry"}
+              {submitting ? "Saving..." : "Save clocking entry"}
             </button>
             <button
               type="button"
@@ -12175,7 +12091,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               onClick={() => setShowTechsPopup(true)}
               className="app-badge app-badge--control app-badge--uppercase app-badge--accent-soft"
               style={{ border: "none", cursor: "pointer" }}>
-              {techniciansLoading ? "Loading techniciansâ€¦" : `${technicianOptions.length} techs`}
+              {techniciansLoading ? "Loading technicians..." : `${technicianOptions.length} techs`}
               {techAbsences.length > 0 &&
               <span className="app-badge app-badge--uppercase app-badge--warning" style={{ marginLeft: "6px" }}>
                   {techAbsences.length} off
@@ -12257,7 +12173,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             null}
 
             {techniciansLoading || techStatusesLoading ?
-            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading techniciansâ€¦</div> :
+            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians...</div> :
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
                 {technicianOptions.map((tech) => {
@@ -12293,7 +12209,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "â€”"}`;
                 } else if (canClockOn) {
                   toneClass = "app-badge--success-strong";
-                  pillLabel = isThisRowSubmitting ? "Clocking onâ€¦" : "Clock on";
+                  pillLabel = isThisRowSubmitting ? "Clocking on..." : "Clock on";
                 } else if (rawStatus === "Tea Break") {
                   toneClass = "app-badge--warning";
                 }
@@ -12951,7 +12867,7 @@ function DocumentsTab({
               opacity: valetUploading || !valetUploadFile ? 0.7 : 1
             }}>
 
-              {valetUploading ? "Uploadingâ€¦" : "Upload Valet Photo"}
+              {valetUploading ? "Uploading..." : "Upload Valet Photo"}
             </button>
             {valetUploadError && <span style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{valetUploadError}</span>}
           </div>
