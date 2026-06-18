@@ -283,7 +283,8 @@
       "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js src/lib/vhc/uploadMediaClient.js src/pages/api/vhc/update-media.js 2>&1)",
       "Bash(awk -F/ 'NF==1{print \"\\(root\\)\"} NF>1{print $1}')",
       "Bash(node tmp_patch.js)",
-      "Bash(node tmp_patch2.js)"
+      "Bash(node tmp_patch2.js)",
+      "Bash(node tools/scripts/check-report-events.js)"
     ],
     "deny": [],
     "ask": [],
