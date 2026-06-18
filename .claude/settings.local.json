@@ -277,7 +277,10 @@
       "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" 2>&1)",
       "PowerShell(npx eslint \"src/components/VHC/VhcDetailsPanel.js\" -f json 2>$null | ConvertFrom-Json | ForEach-Object { $_.messages } | Where-Object { $_.severity -eq 2 } | Select-Object line, ruleId, message)",
       "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js 2>&1)",
-      "PowerShell(npx eslint src/components/VHC/VhcMediaGallery.js 2>&1)"
+      "PowerShell(npx eslint src/components/VHC/VhcMediaGallery.js 2>&1)",
+      "PowerShell(node tools/scripts/check-borders.js)",
+      "PowerShell(npx next lint --file src/components/VHC/VhcDetailsPanel.js --file src/lib/vhc/uploadMediaClient.js --file src/pages/api/vhc/update-media.js 2>&1)",
+      "PowerShell(npx eslint src/components/VHC/VhcDetailsPanel.js src/lib/vhc/uploadMediaClient.js src/pages/api/vhc/update-media.js 2>&1)"
     ],
     "deny": [],
     "ask": [],

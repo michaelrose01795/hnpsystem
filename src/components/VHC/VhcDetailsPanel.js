@@ -38,7 +38,8 @@ import {
   AUTHORISED_PART_STATUS,
 } from "@/features/vhc/vhcStatusEngine";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
-import { uploadVhcMediaFile, setMainVhcVideo } from "@/lib/vhc/uploadMediaClient";
+import { uploadVhcMediaFile, setMainVhcVideo, updateVhcMediaRecord } from "@/lib/vhc/uploadMediaClient";
+import { collectSectionConcerns } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import {
   EmptyStateMessage,
   SeverityBadge,
@@ -1061,6 +1062,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   const rawItems = Array.isArray(section?.items) ? section.items : [];
   const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
+  const isBrakesHubsSection = config.key === "brakesHubs";
 
   return (
     <div
@@ -1125,7 +1127,14 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
       </div>
 
       {hasItems ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div
+          style={{
+            display: isBrakesHubsSection ? "grid" : "flex",
+            flexDirection: isBrakesHubsSection ? undefined : "column",
+            gridTemplateColumns: isBrakesHubsSection ? "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" : undefined,
+            gap: "14px",
+          }}
+        >
           {items.map((item, idx) => {
             const rows = mapRows(item.rows);
             const displayRows = config.key === "wheelsTyres" ? groupWheelSpecRows(rows) : rows;
@@ -1133,7 +1142,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             const itemSeverity = determineItemSeverity(item);
             const theme = itemSeverity ? SEVERITY_THEME[itemSeverity] : null;
             const isBrakeSummaryItem =
-              config.key === "brakesHubs" && /brake/i.test(String(item.heading || item.label || ""));
+              isBrakesHubsSection && /(brake|drum|hub)/i.test(String(item.heading || item.label || ""));
             const wheelRowsSeverity =
               config.key === "wheelsTyres"
                 ? (normaliseColour(item.status) || itemSeverity || "green")
@@ -1239,8 +1248,8 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       padding: "12px",
                       display: "grid",
                       gridTemplateColumns:
-                        config.key === "brakesHubs" && /brake/i.test(String(item.heading || item.label || ""))
-                          ? "repeat(2, minmax(0, 1fr))"
+                        isBrakesHubsSection
+                          ? "1fr"
                           : "repeat(auto-fit, minmax(240px, 1fr))",
                       gap: "10px",
                     }}
@@ -1433,6 +1442,11 @@ export default function VhcDetailsPanel({
   const [mainVideoSavingId, setMainVideoSavingId] = useState(null);
   const [photoPreviewFile, setPhotoPreviewFile] = useState(null);
   const [photoPreviewMessage, setPhotoPreviewMessage] = useState("");
+  // Photo Preview popup controls: visibility-toggle + linked-item relink state.
+  const [mediaVisibilitySaving, setMediaVisibilitySaving] = useState(false);
+  const [mediaLinkSaving, setMediaLinkSaving] = useState(false);
+  const [creatingMediaLocation, setCreatingMediaLocation] = useState(false);
+  const [newMediaLocationName, setNewMediaLocationName] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
   const activeTabLabel = TAB_OPTIONS.find((tab) => tab.id === activeTab)?.label || "";
   const [itemEntries, setItemEntries] = useState({});
@@ -1464,9 +1478,8 @@ export default function VhcDetailsPanel({
   const [authorizedViewLoaded, setAuthorizedViewLoaded] = useState(false);
   const [isAddPartsModalOpen, setIsAddPartsModalOpen] = useState(false);
 
-  // Parts tab — search box + header "Add Part" target selector.
+  // Parts tab — search box.
   const [partsIdentifiedSearch, setPartsIdentifiedSearch] = useState("");
-  const [partsAddTargetId, setPartsAddTargetId] = useState("");
 
 
   const [addPartsTarget, setAddPartsTarget] = useState(null);
@@ -5886,6 +5899,8 @@ export default function VhcDetailsPanel({
   const handleOpenPhotoPreview = useCallback((file) => {
     setPhotoPreviewFile(file || null);
     setPhotoPreviewMessage("");
+    setCreatingMediaLocation(false);
+    setNewMediaLocationName("");
   }, []);
 
   const handleCopyPhotoLink = useCallback(async () => {
@@ -5902,6 +5917,95 @@ export default function VhcDetailsPanel({
       setPhotoPreviewMessage("Could not copy the link.");
     }
   }, [photoPreviewFile]);
+
+  // Flat list of every red/amber reported concern across all VHC sections —
+  // the relink dropdown's "reported item" options. Built from the live vhcData
+  // via the same collector the per-section camera button uses.
+  const reportedConcerns = useMemo(() => {
+    const sectionKeys = ["wheels", "brakes", "service", "external", "internal", "underside"];
+    return sectionKeys.flatMap((key) => collectSectionConcerns(key, vhcData || {}));
+  }, [vhcData]);
+
+  // Custom "media locations" already created on THIS job (custom concern links
+  // saved on its job_files). Job-scoped by construction — they live on this
+  // job's files only and never leak into other job numbers.
+  const customMediaLocations = useMemo(() => {
+    const byId = new Map();
+    jobFiles.forEach((file) => {
+      const link = file?.vhc_concern_link;
+      if (link && typeof link === "object" && link.custom && link.concernId != null) {
+        const id = String(link.concernId);
+        if (!byId.has(id)) byId.set(id, { concernId: id, label: link.label || "Custom location", section: link.section || "", custom: true });
+      }
+    });
+    return Array.from(byId.values());
+  }, [jobFiles]);
+
+  // Persist a new concern link (or null to unlink) onto the previewed media
+  // file, then optimistically patch the popup + bump the reload token.
+  const handleSetMediaLink = useCallback(async (file, link) => {
+    if (!file?.file_id) return;
+    try {
+      setMediaLinkSaving(true);
+      setPhotoPreviewMessage("");
+      await updateVhcMediaRecord({ fileId: file.file_id, concernLink: link });
+      setPhotoPreviewFile((prev) => (prev && prev.file_id === file.file_id ? { ...prev, vhc_concern_link: link } : prev));
+      setCreatingMediaLocation(false);
+      setNewMediaLocationName("");
+      setPhotosReloadToken((token) => token + 1);
+    } catch (err) {
+      console.error("Update media link failed:", err);
+      setPhotoPreviewMessage(err?.message || "Could not update the linked item.");
+    } finally {
+      setMediaLinkSaving(false);
+    }
+  }, []);
+
+  // Resolve a dropdown selection to a concern link and save it. "" → unlink,
+  // "__create__" → reveal the new-location input, otherwise match a reported
+  // concern or an existing custom location by id.
+  const handleSelectMediaLink = useCallback((file, value) => {
+    if (value === "__create__") {
+      setCreatingMediaLocation(true);
+      return;
+    }
+    setCreatingMediaLocation(false);
+    if (!value) {
+      handleSetMediaLink(file, null);
+      return;
+    }
+    const match =
+      reportedConcerns.find((concern) => String(concern.concernId) === value) ||
+      customMediaLocations.find((loc) => String(loc.concernId) === value);
+    if (match) handleSetMediaLink(file, match);
+  }, [reportedConcerns, customMediaLocations, handleSetMediaLink]);
+
+  // Create a brand-new, job-scoped media location from the typed name and link
+  // the current media to it. The custom flag keeps it out of other jobs.
+  const handleCreateMediaLocation = useCallback((file) => {
+    const name = newMediaLocationName.trim();
+    if (!name) return;
+    const concernId = `custom-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    handleSetMediaLink(file, { concernId, label: name, section: "", status: "", custom: true });
+  }, [newMediaLocationName, handleSetMediaLink]);
+
+  // Flip a media file's customer visibility, then optimistically patch + reload.
+  const handleToggleMediaVisibility = useCallback(async (file) => {
+    if (!file?.file_id) return;
+    const next = !file.visible_to_customer;
+    try {
+      setMediaVisibilitySaving(true);
+      setPhotoPreviewMessage("");
+      await updateVhcMediaRecord({ fileId: file.file_id, visibleToCustomer: next });
+      setPhotoPreviewFile((prev) => (prev && prev.file_id === file.file_id ? { ...prev, visible_to_customer: next } : prev));
+      setPhotosReloadToken((token) => token + 1);
+    } catch (err) {
+      console.error("Update media visibility failed:", err);
+      setPhotoPreviewMessage(err?.message || "Could not update visibility.");
+    } finally {
+      setMediaVisibilitySaving(false);
+    }
+  }, []);
 
   const customerName = useMemo(() => {
     if (!job?.customer) return "—";
@@ -7389,9 +7493,6 @@ export default function VhcDetailsPanel({
         return String(a.vhcItem?.label || "").localeCompare(String(b.vhcItem?.label || ""));
       });
 
-    // Options for the header "Add Part" target selector (non-declined items).
-    const addTargetOptions = classifiedItems.filter((it) => !it.declined);
-
     const GROUP_HEADINGS = {
       authorised: "Authorised",
       "in-progress": "In Progress",
@@ -7409,7 +7510,7 @@ export default function VhcDetailsPanel({
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* ── Money totals + search + add-part control (staffglobal tokens) ── */}
+        {/* ── Money totals + search (staffglobal tokens) ── */}
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-parts-header"
@@ -7417,7 +7518,7 @@ export default function VhcDetailsPanel({
           data-dev-section-parent="vhc-parts-shell"
           style={{
             // Borderless, backgroundless layout container so the money tiles and
-            // search/add controls sit directly on the parent panel surface card
+            // search controls sit directly on the parent panel surface card
             // rather than inside a nested sub-card.
             display: "flex",
             flexDirection: "column",
@@ -7444,7 +7545,7 @@ export default function VhcDetailsPanel({
             ))}
           </div>
 
-          {/* Search box + header "Add Part" control */}
+          {/* Search box */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "end" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <input
@@ -7456,45 +7557,6 @@ export default function VhcDetailsPanel({
                 style={controlStyle}
               />
             </label>
-            {!isCustomerView && !readOnly && addTargetOptions.length > 0 && (
-              <div style={{ display: "flex", gap: "8px", alignItems: "end" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
-                  <select
-                    className="app-input"
-                    value={partsAddTargetId}
-                    onChange={(event) => setPartsAddTargetId(event.target.value)}
-                    style={controlStyle}
-                  >
-                    <option value="">Select a VHC item…</option>
-                    {addTargetOptions.map((it) => (
-                      <option key={it.vhcId} value={it.vhcId}>
-                        {it.vhcItem?.label || "VHC Item"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="app-btn app-btn--primary"
-                  disabled={!partsAddTargetId}
-                  onClick={() => {
-                    const target = addTargetOptions.find(
-                      (it) => String(it.vhcId) === String(partsAddTargetId)
-                    );
-                    if (!target) return;
-                    openAddPartsModal(target.vhcId, {
-                      label: target.vhcItem?.label || "VHC Item",
-                      detail: target.vhcItem?.notes || target.vhcItem?.concernText || "",
-                      section: target.vhcItem?.sectionName || target.vhcItem?.categoryLabel || "",
-                      rows: target.vhcItem?.rows || [],
-                    });
-                  }}
-                  style={{ minHeight: "var(--control-height)", whiteSpace: "nowrap" }}
-                >
-                  Add Part
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -7860,38 +7922,6 @@ export default function VhcDetailsPanel({
                           data-dev-section-parent="vhc-parts-identified-table"
                           style={{ background: rowHoverBackground }}
                         >
-                          {!isCustomerView ? (
-                            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "12px" }}>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  if (canAddPart) {
-                                    openAddPartsModal(vhcId, {
-                                      label: vhcLabel,
-                                      detail: vhcNotes,
-                                      section: vhcItem?.sectionName || vhcItem?.categoryLabel || "",
-                                      rows: vhcItem?.rows || [],
-                                    });
-                                  }
-                                }}
-                                disabled={!canAddPart}
-                                style={{
-                                  padding: "8px 14px",
-                                  borderRadius: "var(--radius-xs)",
-                                  background: canAddPart ? "var(--primary)" : "var(--surface)",
-                                  color: canAddPart ? "var(--surface)" : "var(--info)",
-                                  fontWeight: 600,
-                                  cursor: canAddPart ? "pointer" : "not-allowed",
-                                  fontSize: "12px",
-                                  opacity: canAddPart ? 1 : 0.6,
-                                }}
-                                title={isLocked ? "Cannot add parts to authorised or completed items" : ""}
-                              >
-                                Add Part
-                              </button>
-                            </div>
-                          ) : null}
                           {/* Part Details Sections */}
                           {linkedParts.length === 0 ? (
                             <div style={{
@@ -7988,7 +8018,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [quoteSeverityLists, partsIdentified, partsNotRequired, partsCostByVhcItem, getEntryForItem, computeLabourCost, handlePartsNotRequiredToggle, handlePartStatusUpdate, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, isCustomerView, openAddPartsModal, readOnly, resolveCanonicalVhcId, authorizedViewIds, partsIdentifiedSearch, partsAddTargetId]);
+  }, [quoteSeverityLists, partsIdentified, partsNotRequired, partsCostByVhcItem, getEntryForItem, computeLabourCost, handlePartsNotRequiredToggle, handlePartStatusUpdate, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, isCustomerView, openAddPartsModal, readOnly, resolveCanonicalVhcId, authorizedViewIds, partsIdentifiedSearch]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
@@ -8391,8 +8421,8 @@ export default function VhcDetailsPanel({
         style={{
           position: "relative",
           height: `${MEDIA_TILE_HEIGHT}px`,
-          minWidth: "180px",
-          flex: "1 1 180px",
+          width: `${MEDIA_TILE_HEIGHT}px`, // square — picture width matches its height
+          flex: "0 0 auto", // fixed size so the strip overflows sideways instead of shrinking
           padding: 0,
           border: "none",
           borderRadius: "var(--radius-md)",
@@ -8415,7 +8445,7 @@ export default function VhcDetailsPanel({
       return (
         <figure
           key={file.file_id}
-          style={{ margin: 0, minWidth: "220px", flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "8px" }}
+          style={{ margin: 0, width: `${Math.round(MEDIA_TILE_HEIGHT * 1.6)}px`, flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "8px" }}
         >
           <div
             title="Video preview"
@@ -8524,8 +8554,12 @@ export default function VhcDetailsPanel({
             </div>
           </div>
 
-          {/* Right — the photos + videos taken for that request, in a thumbnail strip */}
-          <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", alignItems: "stretch", flexWrap: "wrap", gap: "10px" }}>
+          {/* Vertical rule separating the concern info from its media strip */}
+          <div aria-hidden="true" style={{ alignSelf: "stretch", borderLeft: "var(--separating-line)", flexShrink: 0 }} />
+
+          {/* Right — the photos + videos taken for that request, in a horizontally
+              scrolling thumbnail strip (overflows sideways instead of wrapping). */}
+          <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", alignItems: "stretch", flexWrap: "nowrap", gap: "10px", overflowX: "auto", overflowY: "hidden", paddingBottom: "4px" }}>
             {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
             {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
           </div>
@@ -8543,10 +8577,10 @@ export default function VhcDetailsPanel({
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Customer-facing main video — the end-of-check walkaround. Shown on a
-            --theme surface (like the request media rows) and ordered below the
-            Video / Photo summary card. Left blank when no video exists. */}
-        <div style={{ ...PANEL_SECTION_STYLE, order: 2, background: "var(--theme)" }}>
+        {/* Customer-facing main video — the end-of-check walkaround. Carries the
+            same --theme surface chrome as the request media rows (radius-md,
+            10px padding) so it follows their style. Left blank when no video. */}
+        <div style={{ order: 2, display: "flex", flexDirection: "column", gap: "10px", background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "10px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Customer Video</h3>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
@@ -8610,66 +8644,62 @@ export default function VhcDetailsPanel({
           )}
         </div>
 
-        {/* Summary card: photo + video stat tiles + top-level upload button */}
-        <div style={{ ...PANEL_SECTION_STYLE, order: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Video / Photo</h3>
-            {!readOnly && (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                {photoUploadError && (
-                  <span role="alert" style={{ fontSize: "12px", fontWeight: 600, color: "var(--danger)" }}>
-                    {photoUploadError}
-                  </span>
-                )}
-                <input
-                  ref={photoUploadInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoTabUpload}
-                  style={{ display: "none" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => photoUploadInputRef.current?.click()}
-                  disabled={photoUploading}
-                  style={{
-                    padding: "8px 18px",
-                    borderRadius: "var(--input-radius)",
-                    border: "none",
-                    background: "var(--primary)",
-                    color: "var(--text-2)",
-                    fontWeight: 600,
-                    fontSize: "var(--control-font-size)",
-                    minHeight: "var(--control-height)",
-                    cursor: photoUploading ? "wait" : "pointer",
-                    opacity: photoUploading ? 0.65 : 1,
-                  }}
-                >
-                  {photoUploading ? "Uploading…" : "Upload Photo"}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              gap: "12px",
-            }}
-          >
+        {/* Stats + upload — no longer wrapped in its own surface card. The
+            content now sits directly in the main media tab area (per request).
+            Single row: equal-width stat tiles kept to the left, Upload Media
+            button pushed to the far right. order: 1 keeps it above the
+            Customer Video card (order: 2). */}
+        <div style={{ order: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+          {/* Equal-width stat tiles, kept to the left of the row */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {statTiles.map((tile) => (
               <div
                 key={tile.label}
-                style={{ background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "4px" }}
+                style={{ width: "128px", background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: "2px" }}
               >
-                <span style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-1)" }}>{tile.value}</span>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.7 }}>
+                <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)", lineHeight: 1 }}>{tile.value}</span>
+                <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.06em", opacity: 0.7, whiteSpace: "nowrap" }}>
                   {tile.label}
                 </span>
               </div>
             ))}
           </div>
+
+          {!readOnly && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginLeft: "auto" }}>
+              {photoUploadError && (
+                <span role="alert" style={{ fontSize: "12px", fontWeight: 600, color: "var(--danger)" }}>
+                  {photoUploadError}
+                </span>
+              )}
+              <input
+                ref={photoUploadInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoTabUpload}
+                style={{ display: "none" }}
+              />
+              <button
+                type="button"
+                onClick={() => photoUploadInputRef.current?.click()}
+                disabled={photoUploading}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: "var(--input-radius)",
+                  border: "none",
+                  background: "var(--primary)",
+                  color: "var(--text-2)",
+                  fontWeight: 600,
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
+                  cursor: photoUploading ? "wait" : "pointer",
+                  opacity: photoUploading ? 0.65 : 1,
+                }}
+              >
+                {photoUploading ? "Uploading…" : "Upload Media"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* One row per request that has media, plus any unlinked photos.
@@ -9945,13 +9975,15 @@ export default function VhcDetailsPanel({
       <VHCModalShell
         isOpen={Boolean(photoPreviewFile)}
         title="Photo Preview"
-        subtitle={photoPreviewFile?.vhc_concern_link?.label || "Inspection media"}
+        subtitle={photoPreviewFile?.vhc_concern_link?.label || undefined}
         width="980px"
         height="auto"
         adaptiveHeight
         onClose={() => {
           setPhotoPreviewFile(null);
           setPhotoPreviewMessage("");
+          setCreatingMediaLocation(false);
+          setNewMediaLocationName("");
         }}
         sectionKey="vhc-photo-preview"
         footer={
@@ -9959,52 +9991,19 @@ export default function VhcDetailsPanel({
             <span style={{ fontSize: "12px", color: "var(--text-1)", opacity: 0.7 }}>
               {photoPreviewMessage || (photoPreviewFile?.visible_to_customer ? "Visible to customer" : "Internal only")}
             </span>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={handleCopyPhotoLink}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "var(--input-radius)",
-                  border: "1px solid var(--ghostbutton-ring)",
-                  background: "var(--surface)",
-                  color: "var(--text-accent)",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
+            {/* Action buttons use the shared .app-btn family (staffglobal.css)
+                so they share one height and sit centred in the footer. */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <button type="button" className="app-btn app-btn--secondary" onClick={handleCopyPhotoLink}>
                 Copy link
               </button>
               {photoPreviewFile?.file_url ? (
-                <a
-                  href={photoPreviewFile.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: "var(--input-radius)",
-                    background: "var(--theme)",
-                    color: "var(--text-accent)",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                  }}
-                >
+                <a className="app-btn app-btn--ghost" href={photoPreviewFile.file_url} target="_blank" rel="noreferrer">
                   Open original
                 </a>
               ) : null}
               {photoPreviewFile?.file_url ? (
-                <a
-                  href={photoPreviewFile.file_url}
-                  download
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: "var(--input-radius)",
-                    background: "var(--primary)",
-                    color: "var(--text-2)",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                  }}
-                >
+                <a className="app-btn app-btn--primary" href={photoPreviewFile.file_url} download>
                   Download
                 </a>
               ) : null}
@@ -10022,7 +10021,7 @@ export default function VhcDetailsPanel({
               />
             </div>
             <div style={{ flex: "1 1 220px", minWidth: "min(100%, 220px)", display: "flex", flexDirection: "column", gap: "12px", padding: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)" }}>
-              <div style={{ display: "grid", gap: "4px" }}>
+              <div style={{ display: "grid", gap: "6px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-1)", opacity: 0.65 }}>
                   Linked item
                 </span>
@@ -10034,7 +10033,89 @@ export default function VhcDetailsPanel({
                     {photoPreviewFile.vhc_concern_link.section}
                   </span>
                 ) : null}
+
+                {/* Relink controls — connect this media to a reported item or a
+                    job-scoped custom location. Editing is hidden in readOnly. */}
+                {!readOnly && (
+                  <>
+                    <select
+                      className="app-input"
+                      style={{ width: "100%" }}
+                      disabled={mediaLinkSaving}
+                      value={photoPreviewFile.vhc_concern_link?.concernId != null ? String(photoPreviewFile.vhc_concern_link.concernId) : ""}
+                      onChange={(event) => handleSelectMediaLink(photoPreviewFile, event.target.value)}
+                    >
+                      <option value="">Unlinked media</option>
+                      {reportedConcerns.length > 0 ? (
+                        <optgroup label="Reported items">
+                          {reportedConcerns.map((concern) => (
+                            <option key={concern.concernId} value={String(concern.concernId)}>
+                              {concern.categoryLabel ? `${concern.categoryLabel} — ${concern.label}` : concern.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : null}
+                      {customMediaLocations.length > 0 ? (
+                        <optgroup label="Custom locations">
+                          {customMediaLocations.map((loc) => (
+                            <option key={loc.concernId} value={String(loc.concernId)}>
+                              {loc.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : null}
+                      <option value="__create__">+ Create new location…</option>
+                    </select>
+
+                    {creatingMediaLocation ? (
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <input
+                          className="app-input"
+                          type="text"
+                          style={{ flex: "1 1 140px", minWidth: 0 }}
+                          placeholder="New location name"
+                          value={newMediaLocationName}
+                          disabled={mediaLinkSaving}
+                          onChange={(event) => setNewMediaLocationName(event.target.value)}
+                          onKeyDown={(event) => { if (event.key === "Enter") handleCreateMediaLocation(photoPreviewFile); }}
+                        />
+                        <button
+                          type="button"
+                          className="app-btn app-btn--primary app-btn--sm"
+                          disabled={mediaLinkSaving || !newMediaLocationName.trim()}
+                          onClick={() => handleCreateMediaLocation(photoPreviewFile)}
+                        >
+                          {mediaLinkSaving ? "Saving…" : "Create"}
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </div>
+
+              {/* Customer visibility toggle */}
+              {!readOnly ? (
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-1)", opacity: 0.65 }}>
+                    Customer visibility
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(photoPreviewFile.visible_to_customer)}
+                      aria-label="Toggle customer visibility"
+                      className={`app-toggle--switch${photoPreviewFile.visible_to_customer ? " is-checked" : ""}`}
+                      disabled={mediaVisibilitySaving}
+                      onClick={() => handleToggleMediaVisibility(photoPreviewFile)}
+                    />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)" }}>
+                      {photoPreviewFile.visible_to_customer ? "Visible to customer" : "Internal only"}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
               <div style={{ display: "grid", gap: "4px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-1)", opacity: 0.65 }}>
                   Captured

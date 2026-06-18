@@ -80,6 +80,41 @@ export async function uploadVhcMediaFile({
   return payload?.file || null;
 }
 
+// Update an existing VHC media file's customer visibility and/or its concern
+// link (the "Linked item" it is grouped under). Pass only the fields you want
+// to change — omit `visibleToCustomer` to leave visibility untouched, omit
+// `concernLink` to leave the link untouched, or pass `concernLink: null` to
+// unlink the media. Backs the visibility toggle + relink controls in the
+// Photo Preview popup.
+export async function updateVhcMediaRecord({ fileId, visibleToCustomer, concernLink } = {}) {
+  if (fileId === undefined || fileId === null || String(fileId).trim() === "") {
+    throw new Error("Missing fileId");
+  }
+
+  const payload = { fileId };
+  if (visibleToCustomer !== undefined) payload.visibleToCustomer = visibleToCustomer === true;
+  if (concernLink !== undefined) payload.concernLink = concernLink;
+
+  const response = await fetch("/api/vhc/update-media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  let result = {};
+  try {
+    result = await response.json();
+  } catch {
+    result = {};
+  }
+
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.message || result?.error || `Update failed (${response.status})`);
+  }
+
+  return result?.file || null;
+}
+
 // Promote/demote an existing job_files video as the job's main customer-facing
 // VHC video (job_files.is_main_vhc_video). Used by the "Set as main video"
 // toggle in the VHC Video / Photo tab.
