@@ -15,13 +15,14 @@ import { workshopKpis } from "./workshop";
 import { vhcKpis } from "./vhc";
 import { partsKpis } from "./parts";
 import { accountsKpis } from "./accounts";
+import { serviceKpis } from "./service";
 
 let registered = false;
 
 // Idempotent registration — safe to call from multiple entry points.
 export function registerSeedKpis() {
   if (registered) return catalogSize();
-  registerKpis([...workshopKpis, ...vhcKpis, ...partsKpis, ...accountsKpis]);
+  registerKpis([...workshopKpis, ...vhcKpis, ...partsKpis, ...accountsKpis, ...serviceKpis]);
   registered = true;
   return catalogSize();
 }
