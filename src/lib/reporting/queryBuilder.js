@@ -218,5 +218,42 @@ export async function fetchRows(table, columns, build = (q) => q, { client = sup
   }
 }
 
-const queryBuilder = { applyDateRange, countRows, sumColumn, sumColumnFromSelect, sumProduct, groupCount, fetchRows };
+// Fetch every matching row for a resolver that must inspect JSONB or derived
+// state in application code. This is still bounded by MAX_SUM_ROWS so a malformed
+// report cannot silently scan forever.
+export async function fetchAllRows(
+  table,
+  columns,
+  build = (q) => q,
+  { client = supabase, pageSize = 1000, orderBy, ascending = false } = {}
+) {
+  const rows = [];
+  let from = 0;
+  try {
+    while (true) {
+      let q = client.from(table).select(columns);
+      q = build(q);
+      if (orderBy) q = q.order(orderBy, { ascending });
+      q = q.range(from, from + pageSize - 1);
+      const { data, error } = await q;
+      if (error) {
+        console.warn(`[reporting] fetchAllRows(${table}) failed:`, error.message);
+        break;
+      }
+      if (!data || data.length === 0) break;
+      rows.push(...data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+      if (rows.length >= MAX_SUM_ROWS) {
+        console.warn(`[reporting] fetchAllRows(${table}) hit MAX_SUM_ROWS guard`);
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn(`[reporting] fetchAllRows(${table}) threw:`, err?.message || err);
+  }
+  return rows;
+}
+
+const queryBuilder = { applyDateRange, countRows, sumColumn, sumColumnFromSelect, sumProduct, groupCount, fetchRows, fetchAllRows };
 export default queryBuilder;
