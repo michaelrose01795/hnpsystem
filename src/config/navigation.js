@@ -3,22 +3,31 @@
 import { getReportingFlag } from "@/lib/reporting/config/flags";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 
-// Phase 6: the Reports section is gated by the `reporting_nav_enabled` flag.
-// Roles that may see the Workshop report are derived from the canonical
-// role→department map (workshop + service + management/admin oversight) so the
-// nav and the dimension never drift. The PageAccessGuard reads sidebarSections,
-// so adding this section is what makes /reports/workshop reachable for them.
-const WORKSHOP_REPORT_DEPTS = new Set(["workshop", "service", "management", "admin"]);
-const WORKSHOP_REPORT_ROLES = Object.entries(ROLE_DEPARTMENT_MAP)
-  .filter(([, dept]) => WORKSHOP_REPORT_DEPTS.has(dept))
-  .map(([role]) => role);
+// Phase 6/7: the Reports section is gated by the `reporting_nav_enabled` flag.
+// Roles that may see each department report are derived from the canonical
+// role→department map so the nav and the dimension never drift. The
+// PageAccessGuard reads sidebarSections, so adding these links is what makes
+// /reports/{workshop,parts} reachable for the permitted roles. (Phase 7 added the
+// Parts link; Workshop unchanged.)
+const rolesForDepts = (depts) =>
+  Object.entries(ROLE_DEPARTMENT_MAP)
+    .filter(([, dept]) => depts.has(dept))
+    .map(([role]) => role);
+
+// Workshop report: workshop + service (VHC is cross-cutting) + management/admin.
+const WORKSHOP_REPORT_ROLES = rolesForDepts(new Set(["workshop", "service", "management", "admin"]));
+// Parts report: parts (operational + manager) + management/admin oversight.
+const PARTS_REPORT_ROLES = rolesForDepts(new Set(["parts", "management", "admin"]));
 
 const reportingSections = getReportingFlag("reporting_nav_enabled")
   ? [
       {
         label: "Reports",
         category: "departments",
-        items: [{ label: "Workshop Reports", href: "/reports/workshop", roles: WORKSHOP_REPORT_ROLES }],
+        items: [
+          { label: "Workshop Reports", href: "/reports/workshop", roles: WORKSHOP_REPORT_ROLES },
+          { label: "Parts Reports", href: "/reports/parts", roles: PARTS_REPORT_ROLES },
+        ],
       },
     ]
   : [];

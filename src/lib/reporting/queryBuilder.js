@@ -79,6 +79,54 @@ export async function sumColumn(table, column, build = (q) => q, { client = supa
   return { sum, count, capped };
 }
 
+// Full (non-truncated) sum of the PRODUCT of two numeric columns — e.g. value =
+// Σ (unit_price × quantity_fitted) or stock value = Σ (qty_in_stock × unit_cost).
+// Paginates the same way as sumColumn so the figure is a true total, never a
+// page. Rows where either factor is non-finite are skipped. Returns { sum, count,
+// capped }. (Workshop KPIs never needed a product sum — labour sales is a scalar
+// × a config rate — but every Parts value/margin/stock KPI does, so this lives in
+// the shared builder for any future package to reuse.)
+export async function sumProduct(
+  table,
+  columnA,
+  columnB,
+  build = (q) => q,
+  { client = supabase, pageSize = 1000 } = {}
+) {
+  let sum = 0;
+  let count = 0;
+  let from = 0;
+  let capped = false;
+  try {
+    while (true) {
+      let q = client.from(table).select(`${columnA},${columnB}`);
+      q = build(q).range(from, from + pageSize - 1);
+      const { data, error } = await q;
+      if (error) {
+        console.warn(`[reporting] sumProduct(${table}.${columnA}×${columnB}) failed:`, error.message);
+        break;
+      }
+      if (!data || data.length === 0) break;
+      for (const row of data) {
+        const a = Number(row?.[columnA]);
+        const b = Number(row?.[columnB]);
+        if (Number.isFinite(a) && Number.isFinite(b)) sum += a * b;
+      }
+      count += data.length;
+      if (data.length < pageSize) break;
+      from += pageSize;
+      if (count >= MAX_SUM_ROWS) {
+        capped = true;
+        console.warn(`[reporting] sumProduct(${table}.${columnA}×${columnB}) hit MAX_SUM_ROWS guard`);
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn(`[reporting] sumProduct(${table}.${columnA}×${columnB}) threw:`, err?.message || err);
+  }
+  return { sum, count, capped };
+}
+
 // Distribution: count rows grouped by a column's value (e.g. open parts by
 // status). Returns a map { value -> count }. Paginated, full (not truncated).
 export async function groupCount(table, column, build = (q) => q, { client = supabase, pageSize = 1000 } = {}) {
@@ -127,5 +175,5 @@ export async function fetchRows(table, columns, build = (q) => q, { client = sup
   }
 }
 
-const queryBuilder = { applyDateRange, countRows, sumColumn, groupCount, fetchRows };
+const queryBuilder = { applyDateRange, countRows, sumColumn, sumProduct, groupCount, fetchRows };
 export default queryBuilder;
