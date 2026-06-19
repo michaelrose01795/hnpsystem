@@ -79,6 +79,49 @@ export async function sumColumn(table, column, build = (q) => q, { client = supa
   return { sum, count, capped };
 }
 
+// Full (non-truncated) sum of a numeric column where the query needs a custom
+// select shape, e.g. an invoice-line total filtered by parent invoice date via
+// an embedded join. The summed column must still live on the base table.
+export async function sumColumnFromSelect(
+  table,
+  column,
+  select,
+  build = (q) => q,
+  { client = supabase, pageSize = 1000 } = {}
+) {
+  let sum = 0;
+  let count = 0;
+  let from = 0;
+  let capped = false;
+  try {
+    while (true) {
+      let q = client.from(table).select(select || column);
+      q = build(q).range(from, from + pageSize - 1);
+      const { data, error } = await q;
+      if (error) {
+        console.warn(`[reporting] sumColumnFromSelect(${table}.${column}) failed:`, error.message);
+        break;
+      }
+      if (!data || data.length === 0) break;
+      for (const row of data) {
+        const v = Number(row?.[column]);
+        if (Number.isFinite(v)) sum += v;
+      }
+      count += data.length;
+      if (data.length < pageSize) break;
+      from += pageSize;
+      if (count >= MAX_SUM_ROWS) {
+        capped = true;
+        console.warn(`[reporting] sumColumnFromSelect(${table}.${column}) hit MAX_SUM_ROWS guard`);
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn(`[reporting] sumColumnFromSelect(${table}.${column}) threw:`, err?.message || err);
+  }
+  return { sum, count, capped };
+}
+
 // Full (non-truncated) sum of the PRODUCT of two numeric columns — e.g. value =
 // Σ (unit_price × quantity_fitted) or stock value = Σ (qty_in_stock × unit_cost).
 // Paginates the same way as sumColumn so the figure is a true total, never a
@@ -175,5 +218,5 @@ export async function fetchRows(table, columns, build = (q) => q, { client = sup
   }
 }
 
-const queryBuilder = { applyDateRange, countRows, sumColumn, sumProduct, groupCount, fetchRows };
+const queryBuilder = { applyDateRange, countRows, sumColumn, sumColumnFromSelect, sumProduct, groupCount, fetchRows };
 export default queryBuilder;

@@ -22,6 +22,9 @@ const PARTS_REPORT_ROLES = rolesForDepts(new Set(["parts", "management", "admin"
 // Service Advisor report (Phase 9 — operational): service (operational + manager)
 // + management/admin oversight. The API enforces scope server-side regardless.
 const SERVICE_REPORT_ROLES = rolesForDepts(new Set(["service", "management", "admin"]));
+// MOT report (Phase 10): MOT testers + service/workshop hand-off roles +
+// management/admin oversight. The API enforces scope server-side regardless.
+const MOT_REPORT_ROLES = rolesForDepts(new Set(["mot", "service", "workshop", "management", "admin"]));
 // Accounts report (Phase 8 — financial): Accounts + Management departments,
 // unioned with the executive role set so directors outside those departments can
 // reach it. Deliberately NO general "admin" department — financial reporting is
@@ -39,6 +42,7 @@ const reportingSections = getReportingFlag("reporting_nav_enabled")
           { label: "Workshop Reports", href: "/reports/workshop", roles: WORKSHOP_REPORT_ROLES },
           { label: "Parts Reports", href: "/reports/parts", roles: PARTS_REPORT_ROLES },
           { label: "Service Advisor Reports", href: "/reports/service", roles: SERVICE_REPORT_ROLES },
+          { label: "MOT Reports", href: "/reports/mot", roles: MOT_REPORT_ROLES },
           { label: "Accounts Reports", href: "/reports/accounts", roles: ACCOUNTS_REPORT_ROLES },
         ],
       },

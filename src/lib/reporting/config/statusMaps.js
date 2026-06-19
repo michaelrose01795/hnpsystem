@@ -133,6 +133,29 @@ const APPOINTMENT_STATUS_MAP = {
   noshow: "no_show",
 };
 
+// --- MOT result proxy (jobs.completion_status today; mot_tests.result later) -
+// Mutually-exclusive buckets prevent the old dashboard's overlapping ILIKE
+// counts (e.g. "failed retest" matching both fail and retest). Unknown values
+// survive as cleaned raw strings for data-quality visibility.
+const MOT_RESULT_MAP = {
+  pass: "pass",
+  passed: "pass",
+  mot_pass: "pass",
+  mot_passed: "pass",
+  fail: "fail",
+  failed: "fail",
+  mot_fail: "fail",
+  mot_failed: "fail",
+  retest: "retest",
+  re_test: "retest",
+  retest_required: "retest",
+  retest_pass: "retest",
+  retest_failed: "retest",
+  aborted: "aborted",
+  cancelled: "cancelled",
+  canceled: "cancelled",
+};
+
 // Registry keyed by entity type. Add a new entity by adding a map here.
 export const STATUS_MAPS = Object.freeze({
   job: JOB_STATUS_MAP,
@@ -143,6 +166,7 @@ export const STATUS_MAPS = Object.freeze({
   invoice: INVOICE_STATUS_MAP,
   account: ACCOUNT_STATUS_MAP,
   appointment: APPOINTMENT_STATUS_MAP,
+  mot_result: MOT_RESULT_MAP,
 });
 
 // The canonical state machine per entity (Phase-2 §6.2). Used by the data-quality
@@ -158,6 +182,7 @@ export const STATUS_MODELS = Object.freeze({
   invoice: ["draft", "sent", "overdue", "paid", "part_paid", "cancelled"],
   account: ["active", "frozen", "closed"],
   appointment: ["booked", "confirmed", "arrived", "completed", "cancelled", "no_show"],
+  mot_result: ["pass", "fail", "retest", "aborted", "cancelled"],
 });
 
 // Normalise a raw status for an entity type. Returns the canonical value, or
