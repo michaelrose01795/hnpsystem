@@ -48,3 +48,10 @@ CREATE INDEX IF NOT EXISTS report_event_name_time_idx
   ON public.report_event(event_name, occurred_at);
 CREATE INDEX IF NOT EXISTS report_event_actor_time_idx
   ON public.report_event(actor_user_id, occurred_at);
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (mandatory — see README). Server-only spine; the service
+-- role bypasses RLS, so enabling deny-by-default RLS keeps the append-only event
+-- stream unreachable from the browser. Idempotent.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.report_event ENABLE ROW LEVEL SECURITY;

@@ -17,5 +17,10 @@ export default defineConfig({ // Single config — no plugins required, all targ
     exclude: ["tests/**", "node_modules/**", ".next/**"], // Keep Playwright suite (tests/**) out.
     environment: "node", // Pure-function modules only — no DOM yet.
     globals: false, // Force explicit imports of describe/it/expect.
+    // Unit tests never touch a live database. This forces the in-memory Supabase
+    // stub WHEN credentials are absent (e.g. CI / a fresh clone) so importing a
+    // DB-touching module degrades to the stub instead of throwing. Real-cred
+    // environments are unaffected (the stub only engages when creds are missing).
+    env: { PLAYWRIGHT_TEST_AUTH: "1" },
   },
 });

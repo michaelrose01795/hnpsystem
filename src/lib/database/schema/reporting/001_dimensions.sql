@@ -82,3 +82,15 @@ CREATE TABLE IF NOT EXISTS public.report_kpi_target (
 
 CREATE INDEX IF NOT EXISTS report_kpi_target_kpi_idx
   ON public.report_kpi_target(kpi_id, scope_level, scope_ref);
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (mandatory — see README). These tables are server-only:
+-- written/read exclusively via the service-role client, which bypasses RLS.
+-- Enabling RLS with no policy makes them deny-by-default for the anon/auth keys,
+-- so a reporting table can never be read or written from the browser.
+-- ENABLE ROW LEVEL SECURITY is idempotent (safe to re-run).
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.dim_department     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dim_actor          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dim_kpi            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_kpi_target  ENABLE ROW LEVEL SECURITY;

@@ -67,7 +67,10 @@ const CATALOGUE = [
   E("JOB_REOPENED", "STATUS_TRANSITION", "workshop", "workshop", ["management"], true),
 
   // Parts (§4.2)
-  E("PART_REQUESTED", "LIFECYCLE", "parts", "parts", ["workshop", "vhc"]),
+  // related_departments MUST be dim_department codes (§13.1) — VHC is a cross-
+  // cutting domain, not a department; the producing department of a VHC-driven
+  // part request is workshop (where the item was raised).
+  E("PART_REQUESTED", "LIFECYCLE", "parts", "parts", ["workshop"]),
   E("PART_APPROVED", "DECISION", "parts", "parts", ["workshop"]),
   E("PART_ORDERED", "STATUS_TRANSITION", "parts", "parts", ["accounts"]),
   E("PART_RECEIVED", "INVENTORY", "parts", "parts", ["workshop"]),

@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/jobs.js
 import { notifyJobStatusChange } from "@/lib/notifications/notifyJobStatusChange";
+import { emitJobStatusChanged } from "@/lib/database/reporting/emitters";
 import { getDatabaseClient } from "@/lib/database/client";
 import { ensureUserIdForDisplayName } from "@/lib/users/devUsers";
 import {
@@ -3110,6 +3111,18 @@ export const updateJob = async (jobId, updates) => {
       } catch (historyError) {
         console.error("❌ Failed to log job status history:", historyError);
       }
+
+      // Reporting event spine (Phase-5). Non-blocking + flag-gated: inert until
+      // `reporting_emit_enabled` is ON. History is the job_status_history row
+      // written above, so this emits the report_event only (no duplicate history).
+      await emitJobStatusChanged({
+        jobId,
+        jobNumber: jobNumberForNotification,
+        fromStatus: statusSnapshot.status || null,
+        toStatus: updates.status,
+        actorUserId: updates.status_updated_by || null,
+        reason: updates.status_change_reason || null,
+      });
 
       if (jobNumberForNotification) {
         try {

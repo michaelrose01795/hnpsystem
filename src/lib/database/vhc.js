@@ -2,8 +2,17 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/vhc.js
 import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor to query VHC-related tables.
+import { // Phase-5 reporting emit adapters (non-blocking, flag-gated; inert until reporting_emit_enabled).
+  emitVhcCreated,
+  emitVhcDecision,
+  emitVhcItemStatusChanged,
+  emitVhcSent,
+} from "@/lib/database/reporting/emitters";
+import { normaliseStatus } from "@/lib/reporting/config/statusMaps"; // Canonicalise VHC approval status before deciding the event.
 
 const db = getDatabaseClient(); // Cache the Supabase client so every function can reuse it.
+
+const toIntOrNull = (v) => (Number.isFinite(Number(v)) ? Number(v) : null); // Helper: numeric actor id or null (free-text actors stay unattributed, Risk R2).
 const CHECKS_TABLE = "vhc_checks"; // Table storing individual VHC findings.
 const WORKFLOW_TABLE = "vhc_workflow_status"; // Table summarizing per-job VHC workflow metrics.
 const SEND_HISTORY_TABLE = "vhc_send_history"; // Table logging each time VHC results are sent to customers.
@@ -230,6 +239,7 @@ export const createVhcCheck = async (payload) => { // Insert a new VHC check row
   if (error) { // Handle insert failure.
     throw new Error(`Failed to create VHC check: ${error.message}`); // Provide diagnostics.
   } // Close guard.
+  await emitVhcCreated({ vhcId: data?.vhc_id, jobId: data?.job_id, severity: data?.severity }); // Reporting: VHC_CREATED + status history (inert until emits enabled).
   return mapCheckRow(data); // Return inserted row.
 }; // End createVhcCheck.
 
@@ -249,6 +259,18 @@ export const updateVhcCheck = async (vhcId, updates = {}) => { // Update an exis
   if (error) { // Handle update failures.
     throw new Error(`Failed to update VHC check ${vhcId}: ${error.message}`); // Provide diagnostics.
   } // Close guard.
+  // Reporting (Phase-5): when the approval decision changes, emit an authorise/
+  // decline DECISION (drives conversion + re-auth audit); other status moves emit
+  // the generic VHC_ITEM_STATUS_CHANGED. Both also write vhc_item_status_history.
+  if (Object.prototype.hasOwnProperty.call(updates, "approval_status")) { // Only on an approval transition.
+    const canonical = normaliseStatus("vhc_approval", updates.approval_status); // Collapse authorized/authorised etc.
+    const actorUserId = toIntOrNull(updates.approved_by ?? updates.updated_by); // Numeric actor only (else unattributed, R2).
+    if (canonical === "authorised" || canonical === "declined") { // A commercial decision.
+      await emitVhcDecision({ vhcId, jobId: data?.job_id, decision: canonical, actorUserId }); // VHC_AUTHORISED / VHC_DECLINED.
+    } else { // A non-decision workflow move.
+      await emitVhcItemStatusChanged({ vhcId, jobId: data?.job_id, toStatus: canonical, actorUserId }); // Generic transition.
+    }
+  }
   return mapCheckRow(data); // Return updated row.
 }; // End updateVhcCheck.
 
@@ -318,6 +340,7 @@ export const logVhcSendEvent = async ({ jobId, sentBy, sendMethod = "email", cus
   if (error) { // Handle insert failure.
     throw new Error(`Failed to log VHC send event: ${error.message}`); // Provide diagnostics.
   } // Close guard.
+  await emitVhcSent({ jobId, sendMethod, actorUserId: toIntOrNull(sentBy) }); // Reporting: VHC_SENT (conversion denominator / send→decision latency).
   return mapSendHistoryRow(data); // Return inserted row.
 }; // End logVhcSendEvent.
 
@@ -345,6 +368,7 @@ export const createDeclination = async ({ job_id, jobId, declined_by, declinedBy
   if (error) { // Handle Supabase errors.
     throw new Error(`Failed to record VHC declination: ${error.message}`); // Provide diagnostics.
   } // Close guard.
+  await emitVhcDecision({ vhcId: data?.id, jobId: resolvedJobId, decision: "declined", actorUserId: toIntOrNull(resolvedDeclinedBy), writeHistory: false }); // Reporting: VHC_DECLINED event only (job-level declination, no item transition).
   return mapDeclinationRow(data); // Return mapped row.
 }; // End createDeclination.
 

@@ -20,7 +20,33 @@ foundation. They implement the proposed objects from the architecture docs in
   returns empty, non-erroring results (Principle 9). So applying these migrations is
   a deploy step that **unlocks** capability — the app does not break without them.
 
+## RLS — mandatory on every table
+
+**Every table created by these migrations MUST have Row Level Security enabled.**
+Each migration file ends with an `ALTER TABLE … ENABLE ROW LEVEL SECURITY;` block
+covering every table it creates (001–005 already do).
+
+- These tables are **server-only**: written and read exclusively via the
+  service-role client (`supabaseService`) in `src/lib/database/reporting/*`. The
+  service role **bypasses RLS**, so enabling RLS does not affect reporting.
+- Enabling RLS with **no policy** is intentional: it makes the table
+  **deny-by-default** for the anon/authenticated keys, so a reporting table can
+  never be read or written from the browser.
+- `ENABLE ROW LEVEL SECURITY` is **idempotent** — re-running a migration is safe.
+- If a future table genuinely needs client (anon-key) access, add it deliberately
+  with an explicit, scoped `CREATE POLICY` — never by leaving RLS off.
+
+**Rule for every new migration in this folder (006+):** the file is not complete
+until it ends with an `ENABLE ROW LEVEL SECURITY` statement for each table it
+creates. No reporting table ships with RLS disabled.
+
 ## Files (apply in order)
+
+> **Shortcut:** `000_all_reporting.sql` is the full schema (001–005) in one
+> ready-to-run script, ordered so every FK resolves. Paste it into the Supabase
+> SQL editor and run it once instead of applying the five files individually. It
+> is additive + idempotent (safe to re-run) and mirrors the per-section files
+> below exactly.
 
 | File | Creates | Doc ref |
 |---|---|---|

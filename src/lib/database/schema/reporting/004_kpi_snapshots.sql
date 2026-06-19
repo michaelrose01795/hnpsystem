@@ -128,3 +128,16 @@ CREATE TABLE IF NOT EXISTS public.report_aggregation_run (
 );
 CREATE INDEX IF NOT EXISTS report_aggregation_run_idx
   ON public.report_aggregation_run(cadence, period_key);
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (mandatory — see README). Server-only snapshot pyramid;
+-- the aggregation cron writes via the service role (bypasses RLS). Deny-by-default
+-- keeps snapshots off the browser keys. Idempotent.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.kpi_daily_snapshot           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kpi_weekly_snapshot          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kpi_monthly_snapshot         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kpi_quarterly_snapshot       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.kpi_yearly_snapshot          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_entity_state_snapshot ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_aggregation_run       ENABLE ROW LEVEL SECURITY;

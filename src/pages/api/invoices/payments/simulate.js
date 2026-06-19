@@ -2,6 +2,13 @@ import { createClient } from "@supabase/supabase-js";
 import { findPaymentFlowMethod } from "@/lib/payments/paymentFlow";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
+// Phase-5 reporting: financial lifecycle events (non-blocking, flag-gated, audit-
+// required per catalogue; inert until reporting_emit_enabled).
+import {
+  emitInvoiceStatusChanged,
+  emitPaymentReceived,
+  emitTransactionPosted,
+} from "@/lib/database/reporting/emitters";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,7 +22,7 @@ const dbClient = createClient(supabaseUrl, serviceRoleKey);
 const PAYMENT_SUCCESS_OUTCOMES = new Set(["success"]);
 const COMMUNICATION_METHODS = new Set(["email", "portal_publish"]);
 
-const setInvoiceSentState = async (invoice, methodId, timestamp) => {
+const setInvoiceSentState = async (invoice, methodId, timestamp, actor = {}) => {
   const updates = {
     updated_at: timestamp,
   };
@@ -43,6 +50,17 @@ const setInvoiceSentState = async (invoice, methodId, timestamp) => {
     throw error;
   }
 
+  if (updates.payment_status === "Sent") {
+    await emitInvoiceStatusChanged({
+      invoiceId: invoice.id,
+      fromStatus: invoice.payment_status || "draft",
+      toStatus: "sent",
+      actorUserId: actor.actorUserId ?? null,
+      actorRole: actor.actorRole ?? null,
+      reason: `sent via ${methodId}`,
+    });
+  }
+
   return data;
 };
 
@@ -52,6 +70,7 @@ const recordInvoicePayment = async ({
   amount,
   reference,
   timestamp,
+  actor = {},
 }) => {
   const paymentDate = new Date(timestamp).toISOString().slice(0, 10);
 
@@ -90,6 +109,23 @@ const recordInvoicePayment = async ({
     throw invoiceError;
   }
 
+  // Reporting (Phase-5): payment received + invoice marked paid.
+  await emitPaymentReceived({
+    invoiceId: invoice.id,
+    amountGbp: amount,
+    method: method.label,
+    actorUserId: actor.actorUserId ?? null,
+    actorRole: actor.actorRole ?? null,
+  });
+  await emitInvoiceStatusChanged({
+    invoiceId: invoice.id,
+    fromStatus: invoice.payment_status || "sent",
+    toStatus: "paid",
+    amountGbp: amount,
+    actorUserId: actor.actorUserId ?? null,
+    actorRole: actor.actorRole ?? null,
+  });
+
   if (invoice.account_id) {
     await dbClient.from("account_transactions").insert({
       account_id: invoice.account_id,
@@ -101,15 +137,29 @@ const recordInvoicePayment = async ({
       payment_method: method.label,
       created_by: "Simulated Payment Flow",
     });
+    // Reporting: ledger entry posted.
+    await emitTransactionPosted({
+      accountId: invoice.account_id,
+      jobNumber: invoice.job_number || null,
+      amountGbp: amount,
+      type: "Credit",
+      actorUserId: actor.actorUserId ?? null,
+      actorRole: actor.actorRole ?? null,
+    });
   }
 
   return { invoice: invoiceRow, payment: paymentRow };
 };
 
-async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
+
+  const actor = {
+    actorUserId: Number.isFinite(Number(session?.user?.id)) ? Number(session.user.id) : null,
+    actorRole: session?.user?.roles?.[0] || session?.user?.role || null,
+  };
 
   const {
     invoiceId,
@@ -169,7 +219,7 @@ async function handler(req, res) {
         });
       }
 
-      const updatedInvoice = await setInvoiceSentState(invoice, method.id, timestamp);
+      const updatedInvoice = await setInvoiceSentState(invoice, method.id, timestamp, actor);
 
       return res.status(200).json({
         success: true,
@@ -209,6 +259,7 @@ async function handler(req, res) {
       amount: settledAmount,
       reference: resolvedReference,
       timestamp,
+      actor,
     });
 
     return res.status(200).json({

@@ -8,6 +8,9 @@ import {
   persistStructuredInvoiceRequests,
   SNAPSHOT_VERSION,
 } from "@/lib/invoices/persistence";
+// Phase-5 reporting: INVOICE_CREATED event + invoice_status_history (non-blocking,
+// flag-gated, audit-required per catalogue; inert until reporting_emit_enabled).
+import { emitInvoiceCreated } from "@/lib/database/reporting/emitters";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -181,7 +184,7 @@ const summariseStructuredRequests = (requests = []) => {
   };
 };
 
-async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -402,6 +405,15 @@ async function handler(req, res) {
       method: "invoice_created",
       targetRole: "accounts",
       message: `Invoice ${invoice.invoice_number || invoice.id} created and ready for payment or delivery`
+    });
+
+    await emitInvoiceCreated({
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoice_number || null,
+      jobId,
+      amountGbp: invoice.invoice_total ?? invoice.grand_total ?? null,
+      actorUserId: Number.isFinite(Number(session?.user?.id)) ? Number(session.user.id) : null,
+      actorRole: session?.user?.roles?.[0] || session?.user?.role || null,
     });
 
     return res.status(201).json({

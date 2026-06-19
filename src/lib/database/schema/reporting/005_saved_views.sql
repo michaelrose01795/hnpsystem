@@ -29,3 +29,12 @@ CREATE TABLE IF NOT EXISTS public.report_user_preferences (
   units              text,
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (mandatory — see README). Saved views / preferences are
+-- written via the service role today (reporting API). Deny-by-default RLS keeps
+-- them off the anon/auth keys until an explicit owner-scoped policy is added if
+-- the reporting UI ever reads them with the user key. Idempotent.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.report_saved_view        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_user_preferences  ENABLE ROW LEVEL SECURITY;

@@ -79,7 +79,11 @@ for (const file of walk(path.join(ROOT, "src/lib/reporting"))) {
 }
 
 // --- Check 2: status-mutating DB writes lacking a paired emit.
-const EMIT_RE = /\b(emitReportEvent|writeStatusHistory|emitStatusChange|logJobActivity|logActivity)\b/;
+// Recognise the generic fan-out, the legacy activity loggers, AND the Phase-5
+// lifecycle emit adapters in src/lib/database/reporting/emitters.js — any
+// emit<Name>( helper (emitJobStatusChanged, emitVhcDecision, emitPartStatusChanged,
+// emitInvoiceCreated, …) counts as a paired emit.
+const EMIT_RE = /\b(emitReportEvent|writeStatusHistory|emitStatusChange|logJobActivity|logActivity|emit[A-Z][A-Za-z]+)\b/;
 const STATUS_WRITE_RE = /\.(update|upsert)\s*\(/;
 const STATUS_FIELD_RE = /(^|[^a-z_])(status|payment_status|approval_status)\s*:/i;
 

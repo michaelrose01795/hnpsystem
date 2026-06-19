@@ -109,3 +109,15 @@ CREATE INDEX IF NOT EXISTS delivery_status_history_entity_idx
 
 -- NOTE: mot_test / paint_stage / wash status-history tables are intentionally
 -- omitted — they require their missing domain entities first (Phase-2 TD-E / P7).
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (mandatory — see README). Server-only; the service role
+-- bypasses RLS, so deny-by-default keeps lifecycle history off the browser keys.
+-- Idempotent.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.parts_job_items_status_history  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vhc_item_status_history         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoice_status_history          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_status_history          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointment_status_history      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.delivery_status_history         ENABLE ROW LEVEL SECURITY;

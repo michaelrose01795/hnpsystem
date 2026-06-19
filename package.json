@@ -16,6 +16,7 @@
     "check:layers": "node tools/scripts/check-layers.js",
     "check:borders": "node tools/scripts/check-borders.js",
     "check:report-events": "node tools/scripts/check-report-events.js",
+    "validate:reporting": "vitest run src/lib/reporting/validation",
     "dev-layout:source-map": "node tools/scripts/generate-dev-layout-section-source-map.js",
     "build": "next build",
     "start": "next start",

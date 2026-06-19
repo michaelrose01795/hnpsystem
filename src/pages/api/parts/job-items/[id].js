@@ -4,6 +4,9 @@ import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
 // Phase 6 follow-up: VHC cascades go through the engine entry point.
 import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
+// Phase-5 reporting: emit PART_* event + parts_job_items_status_history on status
+// change (non-blocking, flag-gated; inert until reporting_emit_enabled).
+import { emitPartStatusChanged } from "@/lib/database/reporting/emitters";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]
 const VALID_STATUSES = new Set([
@@ -296,6 +299,19 @@ async function handler(req, res, session) {
         } catch (syncError) {
           console.error("VHC sync error (non-blocking):", syncError);
         }
+      }
+
+      // Reporting (Phase-5): part lifecycle transition → PART_* event + history.
+      if (Object.prototype.hasOwnProperty.call(updates, "status") && updates.status) {
+        await emitPartStatusChanged({
+          partId: id,
+          jobId: updated.job_id ?? existing?.job_id ?? null,
+          fromStatus: existing?.status ?? null,
+          toStatus: updated.status,
+          toStatusCanonical: updated.status, // route already normalised to the 14-status enum
+          quantity: updated.quantity_allocated ?? updated.quantity_requested ?? null,
+          actorUserId: Number.isFinite(Number(session?.user?.id)) ? Number(session.user.id) : null,
+        })
       }
 
       return res.status(200).json({ ok: true, data: updated })
