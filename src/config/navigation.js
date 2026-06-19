@@ -2,6 +2,7 @@
 
 import { getReportingFlag } from "@/lib/reporting/config/flags";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
+import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 
 // Phase 6/7: the Reports section is gated by the `reporting_nav_enabled` flag.
 // Roles that may see each department report are derived from the canonical
@@ -18,6 +19,13 @@ const rolesForDepts = (depts) =>
 const WORKSHOP_REPORT_ROLES = rolesForDepts(new Set(["workshop", "service", "management", "admin"]));
 // Parts report: parts (operational + manager) + management/admin oversight.
 const PARTS_REPORT_ROLES = rolesForDepts(new Set(["parts", "management", "admin"]));
+// Accounts report (Phase 8 — financial): Accounts + Management departments,
+// unioned with the executive role set so directors outside those departments can
+// reach it. Deliberately NO general "admin" department — financial reporting is
+// the highest-sensitivity tier; the API enforces the per-KPI £ gate regardless.
+const ACCOUNTS_REPORT_ROLES = Array.from(
+  new Set([...rolesForDepts(new Set(["accounts", "management"])), ...EXECUTIVE_ROLES])
+);
 
 const reportingSections = getReportingFlag("reporting_nav_enabled")
   ? [
@@ -27,6 +35,7 @@ const reportingSections = getReportingFlag("reporting_nav_enabled")
         items: [
           { label: "Workshop Reports", href: "/reports/workshop", roles: WORKSHOP_REPORT_ROLES },
           { label: "Parts Reports", href: "/reports/parts", roles: PARTS_REPORT_ROLES },
+          { label: "Accounts Reports", href: "/reports/accounts", roles: ACCOUNTS_REPORT_ROLES },
         ],
       },
     ]
