@@ -13,9 +13,10 @@ const REPORTING_FLAGS = {
   // Master switch. When false the reporting APIs still respond but the engine
   // serves only empty, non-erroring envelopes (graceful degradation).
   reporting_enabled: true,
-  // Surface the /reports navigation in the sidebar. OFF until the dedicated
-  // reporting area (a flagged global Sidebar change) is signed off.
-  reporting_nav_enabled: false,
+  // Surface the /reports navigation in the sidebar. Turned ON in Phase 6 (signed
+  // off) to ship the Workshop report package; the sidebar Reports section and the
+  // PageAccessGuard both gate on this flag (src/config/navigation.js).
+  reporting_nav_enabled: true,
   // Allow the resolver to fall back to a live recompute when a snapshot/rollup
   // is missing. Labelled in provenance when it happens (Principle 9 / G8).
   reporting_live_fallback_enabled: true,

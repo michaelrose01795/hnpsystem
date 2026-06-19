@@ -13,6 +13,37 @@ const VHC_DATE_COL = "created_at";
 
 export const vhcKpis = [
   defineKpi({
+    id: "vhc.completion_rate",
+    label: "VHC Completion Rate",
+    department: "workshop",
+    relatedDepartments: ["service"],
+    description: "Share of VHC-required jobs that had a VHC completed in the period.",
+    purpose: "Inspection-process compliance (are required VHCs actually done?).",
+    formula: "COUNT(jobs with VHC completed) ÷ COUNT(jobs vhc_required) × 100",
+    numerator: "COUNT(jobs.vhc_completed_at not null)",
+    denominator: "COUNT(jobs.vhc_required = true)",
+    sourceTables: ["jobs", "vhc_checks"],
+    sourceEvents: ["VHC_COMPLETED"],
+    tier: "tactical",
+    readiness: "R1",
+    aggregation: "ratio",
+    unit: "percent",
+    format: "0.0%",
+    targetType: "higher_is_better",
+    example: "31 ÷ 34 = 91%",
+    resolver: async ({ filter }) => {
+      const [completed, required] = await Promise.all([
+        countRows("jobs", (q) =>
+          applyDateRange(q.not("vhc_completed_at", "is", null), "vhc_completed_at", filter)
+        ),
+        countRows("jobs", (q) => applyDateRange(q.eq("vhc_required", true), "created_at", filter)),
+      ]);
+      const value = required > 0 ? Math.round((completed / required) * 1000) / 10 : null;
+      return { value, numerator: completed, denominator: required };
+    },
+  }),
+
+  defineKpi({
     id: "vhc.red_items",
     label: "Red Items Found",
     department: "workshop",

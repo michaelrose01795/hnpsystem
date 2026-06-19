@@ -84,6 +84,7 @@ export const PROTECTED_PREFIXES = [
   "/parts",
   "/parts-manager", // moved from /parts/manager
   "/profile",
+  "/reports", // reporting platform area (Phase 6 — Workshop package)
   "/security", // own account security (moved from /account/security)
   "/tech",
   "/tracking",

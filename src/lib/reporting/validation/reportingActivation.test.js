@@ -109,14 +109,16 @@ describe("Phase 5 §1 — Reporting Infrastructure Activation", () => {
     expect([...combined].sort()).toEqual([...CREATED_TABLES].sort());
   });
 
-  it("feature-flag posture is correct for activation (emit/nav OFF, platform ON, degrade-safe)", () => {
+  it("feature-flag posture is correct (platform ON, degrade-safe; nav ON from Phase 6, emit still gated)", () => {
     const flags = getAllReportingFlags();
     expect(flags.reporting_enabled).toBe(true);
     expect(flags.reporting_live_fallback_enabled).toBe(true); // graceful degradation path
     expect(flags.reporting_access_audit_enabled).toBe(true);
     expect(flags.reporting_export_enabled).toBe(true);
     expect(flags.reporting_emit_enabled).toBe(false); // capture stays inert until go-live sign-off
-    expect(flags.reporting_nav_enabled).toBe(false); // UI phase only
+    // Phase 6 turned the reporting nav ON (signed off) to ship the Workshop
+    // report package; the dedicated /reports area is now wired into the sidebar.
+    expect(flags.reporting_nav_enabled).toBe(true);
   });
 });
 

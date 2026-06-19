@@ -1,6 +1,29 @@
 // file location: src/config/navigation.js
 
-export const sidebarSections = [
+import { getReportingFlag } from "@/lib/reporting/config/flags";
+import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
+
+// Phase 6: the Reports section is gated by the `reporting_nav_enabled` flag.
+// Roles that may see the Workshop report are derived from the canonical
+// role→department map (workshop + service + management/admin oversight) so the
+// nav and the dimension never drift. The PageAccessGuard reads sidebarSections,
+// so adding this section is what makes /reports/workshop reachable for them.
+const WORKSHOP_REPORT_DEPTS = new Set(["workshop", "service", "management", "admin"]);
+const WORKSHOP_REPORT_ROLES = Object.entries(ROLE_DEPARTMENT_MAP)
+  .filter(([, dept]) => WORKSHOP_REPORT_DEPTS.has(dept))
+  .map(([role]) => role);
+
+const reportingSections = getReportingFlag("reporting_nav_enabled")
+  ? [
+      {
+        label: "Reports",
+        category: "departments",
+        items: [{ label: "Workshop Reports", href: "/reports/workshop", roles: WORKSHOP_REPORT_ROLES }],
+      },
+    ]
+  : [];
+
+const baseSidebarSections = [
   {
     label: "General",
     category: "general",
@@ -350,3 +373,15 @@ export const sidebarSections = [
     ],
   },
 ];
+
+// Insert the (flag-gated) Reports section just before the Account section so it
+// reads as a department area, not after the account/logout controls.
+const accountIndex = baseSidebarSections.findIndex((s) => s.category === "account");
+export const sidebarSections =
+  reportingSections.length && accountIndex >= 0
+    ? [
+        ...baseSidebarSections.slice(0, accountIndex),
+        ...reportingSections,
+        ...baseSidebarSections.slice(accountIndex),
+      ]
+    : [...baseSidebarSections, ...reportingSections];
