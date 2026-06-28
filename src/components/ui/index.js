@@ -23,6 +23,17 @@ export { default as StaffCard } from "./StaffCard";
 export { default as StaffCardGrid } from "./StaffCardGrid";
 export { default as StaffButton } from "./StaffButton";
 export { default as StaffTabs } from "./StaffTabs";
+export {
+  StaffAlert,
+  StaffDrawer,
+  StaffEmptyState,
+  StaffFilterBar,
+  StaffJobSummaryPanel,
+  StaffModal,
+  StaffPagination,
+  StaffPartsRequestRow,
+  StaffVhcItemRow,
+} from "./StaffShowcasePrimitives";
 
 // Shared layout architecture
 export * from "./layout-system";

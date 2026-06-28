@@ -206,7 +206,7 @@ export default function MultiSelectDropdown({
 
       {/* Dropdown menu */}
       <div
-        className="dropdown-api__menu"
+        className="dropdown-api__menu app-dropdown-menu"
         role="listbox"
         aria-multiselectable="true"
         hidden={!isOpen}

@@ -1,6 +1,8 @@
 00076
 CHeck global setting
 
+Phase 15
+
 CHECK
 Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 
 

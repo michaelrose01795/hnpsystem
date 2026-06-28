@@ -396,7 +396,7 @@ export default function Dropdown({
         (() => {
           const menuNode = (
             <div
-              className={`dropdown-api__menu ${menuClassName}`.trim()}
+              className={`dropdown-api__menu app-dropdown-menu staff-scope website-scope ${menuClassName}`.trim()}
               role="listbox"
               aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
               ref={menuRef}

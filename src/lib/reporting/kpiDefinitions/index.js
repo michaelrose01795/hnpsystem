@@ -20,13 +20,14 @@ import { motKpis } from "./mot";
 import { valetingKpis } from "./valeting";
 import { paintKpis } from "./paint";
 import { adminKpis } from "./admin";
+import { managementKpis } from "./management";
 
 let registered = false;
 
 // Idempotent registration — safe to call from multiple entry points.
 export function registerSeedKpis() {
   if (registered) return catalogSize();
-  registerKpis([...workshopKpis, ...vhcKpis, ...partsKpis, ...accountsKpis, ...serviceKpis, ...motKpis, ...valetingKpis, ...paintKpis, ...adminKpis]);
+  registerKpis([...workshopKpis, ...vhcKpis, ...partsKpis, ...accountsKpis, ...serviceKpis, ...motKpis, ...valetingKpis, ...paintKpis, ...adminKpis, ...managementKpis]);
   registered = true;
   return catalogSize();
 }

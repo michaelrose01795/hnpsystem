@@ -2809,6 +2809,8 @@ html.staff-scope .status-sidebar__search-result:focus-visible {
 }
 
 html.staff-scope .dropdown-api__menu,
+html.staff-scope.app-dropdown-menu,
+html.staff-scope .app-dropdown-menu,
 html.staff-scope .calendar-api__menu,
 html.staff-scope .timepicker-api__menu {
   position: absolute;
@@ -3860,6 +3862,12 @@ html.staff-scope .searchbar-api__input::-webkit-search-results-decoration {
 html.staff-scope .searchbar-api__input::placeholder {
   color: var(--control-muted-text);
   opacity: 1;
+}
+
+html.staff-scope.app-dropdown-menu {
+  background: var(--dropdown-menu-bg) !important;
+  color: var(--text-1) !important;
+  box-shadow: var(--dropdown-menu-shadow) !important;
 }
 
 html.staff-scope .searchbar-api__results-menu {
