@@ -30,6 +30,7 @@
 import { defineKpi } from "../kpiCatalog";
 import { applyDateRange, countRows, groupCount, fetchRows, fetchAllRows } from "../queryBuilder";
 import { normaliseStatus, isStatusInModel } from "../config/statusMaps";
+import { runDataQualityMonitors } from "../dataQuality";
 
 // ---------------------------------------------------------------------------
 // Permission: Admin reporting is tightly gated. Execs auto-pass the engine gate
@@ -572,7 +573,67 @@ export const adminKpis = [
     targetType: "informational",
     permission: ADMIN_REPORT_PERMISSION,
     futureNotes:
-      "R2 — DECLARED. Role changes are currently UNLOGGED (readiness audit finding 15: 'role changes / clocking edits / deletes unlogged'). It lights up once user-role writes emit ROLE_CHANGED (and fan out a role-change audit_log action). No reliable proxy exists today, so no number is invented.",
+      "R2 — DECLARED. Role changes are currently UNLOGGED (readiness audit finding 15: 'role changes / clocking edits / deletes unlogged'). It lights up once user-role writes emit ROLE_CHANGED (and fan out a role-change audit_log action). No reliable proxy exists today, so no number is invented. The Phase-15 emitRoleChanged adapter implements the capture; it accrues once reporting_emit_enabled is switched on.",
+  }),
+
+  // =========================================================================
+  // REPORTING HEALTH — Phase-15 data-quality monitor surfaced as a KPI. The
+  // meta-metric guarding every other figure's trust (Phase-2 §13.3). Value = the
+  // share of ACTIVE data-quality monitors passing (health score 0–100); inactive
+  // monitors (capture not accruing yet) are excluded so the score never claims
+  // coverage it doesn't have. Composes the dataQuality monitor service — it does
+  // not re-implement any check.
+  // =========================================================================
+  defineKpi({
+    id: "adm.reporting_health",
+    label: "Reporting Health Score",
+    department: "admin",
+    relatedDepartments: ["management"],
+    description: "Share of active reporting data-quality monitors passing (ownership, attribution, status drift, KPI inputs, snapshot/event/audit integrity).",
+    purpose: "Single trust signal for the reporting platform — the data-quality monitor's headline.",
+    formula: "COUNT(monitors status=ok) ÷ COUNT(active monitors) × 100",
+    numerator: "active monitors passing",
+    denominator: "active monitors",
+    sourceTables: ["report_event", "audit_log", "auth_login_attempts", "jobs", "report_aggregation_run"],
+    tier: "strategic",
+    readiness: "R2",
+    aggregation: "ratio",
+    unit: "percent",
+    format: "0.0%",
+    targetType: "higher_is_better",
+    permission: ADMIN_REPORT_PERMISSION,
+    futureNotes:
+      "R2 — the achievable monitors (status drift, missing attribution, invalid KPI inputs, malformed audit rows) run live today; ownership / event / snapshot monitors are inactive (excluded from the score, not failed) until the event spine + aggregation pipeline accrue. The score sharpens to full coverage automatically as capture goes live — no KPI change needed.",
+    drilldown: async ({ filter }) => {
+      const { indicators } = await runDataQualityMonitors({ filter });
+      return indicators.map((d) => ({
+        monitor: d.id,
+        category: d.category,
+        status: d.status,
+        defects: d.value,
+        detail: typeof d.detail === "object" ? JSON.stringify(d.detail) : d.detail,
+      }));
+    },
+    resolver: async ({ filter }) => {
+      const { summary, indicators } = await runDataQualityMonitors({ filter });
+      return {
+        value: summary.health_score,
+        numerator: summary.ok,
+        denominator: summary.active,
+        count: summary.total_monitors,
+        breakdown: {
+          health_score: summary.health_score,
+          overall_status: summary.status,
+          total_monitors: summary.total_monitors,
+          active_monitors: summary.active,
+          inactive_monitors: summary.inactive,
+          passing: summary.ok,
+          warning: summary.warn,
+          failing: summary.fail,
+          by_monitor: indicators.map((d) => ({ id: d.id, category: d.category, status: d.status, value: d.value })),
+        },
+      };
+    },
   }),
 ];
 

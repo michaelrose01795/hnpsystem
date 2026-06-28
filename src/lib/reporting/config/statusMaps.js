@@ -156,6 +156,64 @@ const MOT_RESULT_MAP = {
   canceled: "cancelled",
 };
 
+// --- MOT test lifecycle (Phase-2 §6.2.9; interim = jobs overlay until mot_tests) -
+// Distinct from MOT_RESULT_MAP: the *lifecycle* a test moves through, vs the
+// terminal *result* bucket. booked → in_test → result_recorded → [retest] →
+// certificate_issued. The result (pass/fail) lives on the result map.
+const MOT_TEST_STATUS_MAP = {
+  booked: "booked",
+  in_test: "in_test",
+  testing: "in_test",
+  started: "in_test",
+  result_recorded: "result_recorded",
+  pass: "result_recorded",
+  fail: "result_recorded",
+  retest: "retest",
+  re_test: "retest",
+  certificate_issued: "certificate_issued",
+  certificated: "certificate_issued",
+};
+
+// --- Wash / valeting lifecycle (Phase-2 §6.2.11; interim = jobs.wash_* overlay) -
+// queued → started → completed, with the skip terminal. Mirrors the valet
+// washState today (blank → complete / no_wash) lifted to an explicit lifecycle.
+const WASH_STATUS_MAP = {
+  queued: "queued",
+  waiting: "queued",
+  in_queue: "queued",
+  started: "started",
+  in_progress: "started",
+  washing: "started",
+  completed: "completed",
+  complete: "completed",
+  done: "completed",
+  skipped: "skipped",
+  no_wash: "skipped",
+  nowash: "skipped",
+};
+
+// --- Paint / bodyshop stage lifecycle (Phase-2 §6.2.10; interim = jobs overlay) -
+// identified → prep → spray → dry → buff → ready → completed. Coarse until a
+// real paint stage entity exists (TD-E / P7); the model is the contract emits
+// target so stage cycle-time becomes computable the moment stages are captured.
+const PAINT_STAGE_STATUS_MAP = {
+  identified: "identified",
+  flagged: "identified",
+  prep: "prep",
+  preparation: "prep",
+  spray: "spray",
+  spraying: "spray",
+  paint: "spray",
+  dry: "dry",
+  drying: "dry",
+  bake: "dry",
+  buff: "buff",
+  polish: "buff",
+  ready: "ready",
+  completed: "completed",
+  complete: "completed",
+};
+
 // Registry keyed by entity type. Add a new entity by adding a map here.
 export const STATUS_MAPS = Object.freeze({
   job: JOB_STATUS_MAP,
@@ -167,6 +225,9 @@ export const STATUS_MAPS = Object.freeze({
   account: ACCOUNT_STATUS_MAP,
   appointment: APPOINTMENT_STATUS_MAP,
   mot_result: MOT_RESULT_MAP,
+  mot_test: MOT_TEST_STATUS_MAP,
+  wash: WASH_STATUS_MAP,
+  paint_stage: PAINT_STAGE_STATUS_MAP,
 });
 
 // The canonical state machine per entity (Phase-2 §6.2). Used by the data-quality
@@ -183,6 +244,9 @@ export const STATUS_MODELS = Object.freeze({
   account: ["active", "frozen", "closed"],
   appointment: ["booked", "confirmed", "arrived", "completed", "cancelled", "no_show"],
   mot_result: ["pass", "fail", "retest", "aborted", "cancelled"],
+  mot_test: ["booked", "in_test", "result_recorded", "retest", "certificate_issued"],
+  wash: ["queued", "started", "completed", "skipped"],
+  paint_stage: ["identified", "prep", "spray", "dry", "buff", "ready", "completed"],
 });
 
 // Normalise a raw status for an entity type. Returns the canonical value, or

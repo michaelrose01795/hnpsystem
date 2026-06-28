@@ -65,7 +65,8 @@ import {
   FINANCIAL_SENSITIVE_ROLES,
 } from "@/lib/reporting/permissionScope";
 import { snapshotTableForCadence } from "@/lib/database/reporting/snapshots";
-import { partEventForStatus } from "@/lib/database/reporting/emitters";
+import emitters, { partEventForStatus, washEventForState, paintEventForStage } from "@/lib/database/reporting/emitters";
+import { DATA_QUALITY_CATEGORIES, DQ_STATUS, runDataQualityMonitors } from "@/lib/reporting/dataQuality";
 
 // Make sure the seed catalogue is registered (engine.js does this on import too).
 registerSeedKpis();
@@ -75,7 +76,7 @@ const SQL_DIR = path.join(process.cwd(), "src/lib/database/schema/reporting");
 function readSql(file) {
   return fs.readFileSync(path.join(SQL_DIR, file), "utf8");
 }
-const SQL_FILES = ["001_dimensions.sql", "002_report_event.sql", "003_status_history.sql", "004_kpi_snapshots.sql", "005_saved_views.sql"];
+const SQL_FILES = ["001_dimensions.sql", "002_report_event.sql", "003_status_history.sql", "004_kpi_snapshots.sql", "005_saved_views.sql", "006_status_history_workflow.sql"];
 const ALL_SQL = SQL_FILES.map(readSql).join("\n");
 const CREATED_TABLES = new Set(
   [...ALL_SQL.matchAll(/CREATE TABLE IF NOT EXISTS public\.([a-z_]+)/g)].map((m) => m[1])
@@ -369,5 +370,90 @@ describe("Phase 5 §9 — Reporting Audit & Permission validation", () => {
   it("the financial-sensitive role set is non-empty and includes Accounts", () => {
     expect(FINANCIAL_SENSITIVE_ROLES.length).toBeGreaterThan(0);
     expect(FINANCIAL_SENSITIVE_ROLES.includes("accounts")).toBe(true);
+  });
+});
+
+// ===========================================================================
+// Phase 15 — Reporting Maturity, Data Trust & Enterprise Readiness.
+// ===========================================================================
+describe("Phase 15 §1 — Event Spine Completion (MOT / Valeting / Paint / security)", () => {
+  it("the wash + paint emit adapters map every milestone state to a stable catalogue event", () => {
+    expect(washEventForState("queued")).toBe("WASH_QUEUED");
+    expect(washEventForState("started")).toBe("WASH_STARTED");
+    expect(washEventForState("completed")).toBe("WASH_COMPLETED");
+    expect(washEventForState("skipped")).toBe("WASH_SKIPPED");
+    expect(washEventForState("anything")).toBe("WASH_STATUS_CHANGED");
+    expect(paintEventForStage("identified")).toBe("PAINT_JOB_IDENTIFIED");
+    expect(paintEventForStage("completed")).toBe("PAINT_COMPLETED");
+    expect(paintEventForStage("spray")).toBe("PAINT_STAGE_CHANGED");
+    for (const s of ["queued", "started", "completed", "skipped", "x"]) expect(EVENT_NAMES.includes(washEventForState(s))).toBe(true);
+    for (const s of ["identified", "completed", "prep", "spray"]) expect(EVENT_NAMES.includes(paintEventForStage(s))).toBe(true);
+  });
+
+  it("every outstanding lifecycle event named in Phase 15 has both a catalogue entry and an emit adapter", () => {
+    const required = [
+      "MOT_RESULT_RECORDED", "MOT_RETEST_LINKED", "WASH_QUEUED", "WASH_STARTED",
+      "WASH_COMPLETED", "WASH_SKIPPED", "PAINT_JOB_IDENTIFIED", "PAINT_STAGE_CHANGED",
+      "PAINT_COMPLETED", "PAINT_PAINTER_ASSIGNED", "PAINT_MATERIAL_USED", "ROLE_CHANGED",
+      "REPORT_VIEWED", "REPORT_EXPORTED",
+    ];
+    for (const n of required) expect(EVENT_NAMES.includes(n), `missing catalogue event ${n}`).toBe(true);
+    const adapters = [
+      "emitMotResultRecorded", "emitMotRetestLinked", "emitWashStatusChanged",
+      "emitPaintStageChanged", "emitPaintPainterAssigned", "emitPaintMaterialUsed",
+      "emitRoleChanged", "emitRecordDeleted", "emitAppointmentStatusChanged",
+      "emitAccountStatusChanged",
+    ];
+    for (const a of adapters) expect(typeof emitters[a], `missing emit adapter ${a}`).toBe("function");
+  });
+});
+
+describe("Phase 15 §2 — Status History Completion (MOT / Valeting / Paint)", () => {
+  it("registers mot_test, wash and paint_stage entities with history tables present in the schema", () => {
+    for (const key of ["mot_test", "wash", "paint_stage"]) {
+      const e = getEntity(key);
+      expect(e, `entity ${key} missing`).toBeTruthy();
+      expect(e.exists).toBe(false); // interim, job-keyed; not yet first-class
+      expect(CREATED_TABLES.has(e.historyTable), `${key}: ${e.historyTable} not in schema`).toBe(true);
+    }
+  });
+
+  it("each workflow entity has a canonical, idempotent status model", () => {
+    for (const key of ["mot_test", "wash", "paint_stage"]) {
+      const model = STATUS_MODELS[key];
+      expect(Array.isArray(model) && model.length > 0, `${key}: no status model`).toBe(true);
+      for (const v of model) expect(normaliseStatus(key, v), `${key}.${v} not stable`).toBe(v);
+    }
+  });
+});
+
+describe("Phase 15 §6 — Data-Quality Monitor service", () => {
+  it("exposes the full set of data-quality categories the architecture requires (§13.1/§13.3)", () => {
+    const required = [
+      "missing_ownership", "missing_attribution", "invalid_status_transitions",
+      "invalid_kpi_inputs", "snapshot_failures", "event_failures", "audit_failures",
+    ];
+    for (const c of required) expect(DATA_QUALITY_CATEGORIES.includes(c), `missing category ${c}`).toBe(true);
+    expect(DQ_STATUS).toEqual(["ok", "warn", "fail", "inactive"]);
+  });
+
+  it("runs end-to-end against the stub client and returns a well-formed health summary", async () => {
+    const result = await runDataQualityMonitors({ filter: {} });
+    expect(result.summary).toBeTruthy();
+    expect(result.indicators.length).toBe(DATA_QUALITY_CATEGORIES.length);
+    for (const d of result.indicators) {
+      expect(DATA_QUALITY_CATEGORIES.includes(d.category)).toBe(true);
+      expect(DQ_STATUS.includes(d.status)).toBe(true);
+    }
+    // Health score is null (no active monitors) or a 0–100 percentage — never a lie.
+    const s = result.summary.health_score;
+    expect(s === null || (s >= 0 && s <= 100)).toBe(true);
+  });
+
+  it("surfaces the monitor through the catalogue as adm.reporting_health (R2, resolvered)", () => {
+    const kpi = getKpi("adm.reporting_health");
+    expect(kpi).toBeTruthy();
+    expect(kpi.department).toBe("admin");
+    expect(typeof kpi.resolver).toBe("function");
   });
 });

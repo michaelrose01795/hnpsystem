@@ -45,7 +45,7 @@ export async function resolveCanonicalActor({ userId = null, authUuid = null } =
         canonicalUserId: data.canonical_user_id,
         usersUserId: data.users_user_id,
         authUuid: data.auth_uuid,
-        role: data.current_role,
+        role: data.current_role_name,
         department: data.current_department,
       };
     }

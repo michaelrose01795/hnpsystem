@@ -311,18 +311,6 @@ CREATE TABLE public.job_notes (
   CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT job_notes_last_updated_by_fkey FOREIGN KEY (last_updated_by) REFERENCES public.users(user_id)
 );
--- Per-note viewer access: which staff members have explicitly been granted
--- visibility on a note (in addition to the note's hidden_from_customer flag).
-CREATE TABLE public.note_viewers (
-  note_id integer NOT NULL,
-  user_id integer NOT NULL,
-  added_by integer,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT note_viewers_pkey PRIMARY KEY (note_id, user_id),
-  CONSTRAINT note_viewers_note_id_fkey FOREIGN KEY (note_id) REFERENCES public.job_notes(note_id) ON DELETE CASCADE,
-  CONSTRAINT note_viewers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
-  CONSTRAINT note_viewers_added_by_fkey FOREIGN KEY (added_by) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.job_writeups (
   writeup_id integer NOT NULL DEFAULT nextval('job_writeups_writeup_id_seq'::regclass),
   job_id integer NOT NULL,

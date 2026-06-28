@@ -110,6 +110,51 @@ const ENTITY_LIST = [
     priority: 6,
     eventName: null,
   },
+  // --- Phase-15 workflow entities (MOT / Valeting / Paint). ------------------
+  // Interim status-history: keyed by the JOB id (entity_id text) because these
+  // workflows are job-overlays today (jobs.completion_status / wash_* fields /
+  // type ILIKE paint) — TD-E. The history tables + status models are the durable
+  // contract so cycle-time/dwell accrue the moment a dedicated entity (mot_tests,
+  // wash_completed_at, paint stage model) lands, without an architecture change.
+  {
+    key: "mot_test",
+    label: "MOT test",
+    sourceTable: "jobs", // interim overlay; mot_tests entity is P7 (TD-E)
+    sourcePk: "id",
+    statusColumn: "completion_status",
+    statusModelKey: "mot_test",
+    historyTable: "mot_test_status_history", // Phase-15 (interim, job-keyed)
+    exists: false,
+    department: "mot",
+    priority: 7,
+    eventName: "MOT_RESULT_RECORDED",
+  },
+  {
+    key: "wash",
+    label: "Wash / valet",
+    sourceTable: "jobs", // interim overlay; wash_completed_at is P7 (TD-E)
+    sourcePk: "id",
+    statusColumn: "wash_state",
+    statusModelKey: "wash",
+    historyTable: "wash_status_history", // Phase-15 (interim, job-keyed)
+    exists: false,
+    department: "valeting",
+    priority: 8,
+    eventName: "WASH_STATUS_CHANGED",
+  },
+  {
+    key: "paint_stage",
+    label: "Paint stage",
+    sourceTable: "jobs", // interim overlay; paint stage model is P7 (TD-E)
+    sourcePk: "id",
+    statusColumn: "status",
+    statusModelKey: "paint_stage",
+    historyTable: "paint_stage_history", // Phase-15 (interim, job-keyed)
+    exists: false,
+    department: "paint",
+    priority: 9,
+    eventName: "PAINT_STAGE_CHANGED",
+  },
 ];
 
 export const ENTITIES = Object.freeze(

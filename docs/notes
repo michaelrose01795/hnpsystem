@@ -1,7 +1,10 @@
 00076
 CHeck global setting
 
-Phase 15
+Phase 16 todo
+
+Put into GPT for prompt to be made from the "--UI FIX--"
+also fix the dropdown list not following the in app style etc within "Date range Last 30 days Trend granularity Daily Search Filter records… Departmen Workshop" section, mka esure these not two ways the in app style works, only have one ui style each feature can follow. also implement when a new page/section is created that card and sections are added to the dev overlay so when the dev overlay is selected the new secitons/page/cards etc everything is shown within the dev overlay without asking for extra steps. 
 
 CHECK
 Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 

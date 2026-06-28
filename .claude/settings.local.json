@@ -305,7 +305,10 @@
       "PowerShell($env:PLAYWRIGHT_TEST_AUTH=1; npx vitest run src/lib/reporting/validation 2>&1 | Select-Object -Last 60)",
       "PowerShell(node tools/scripts/check-report-events.js 2>&1)",
       "PowerShell(node tools/scripts/check-borders.js 2>&1)",
-      "PowerShell($out = node tools/scripts/check-borders.js 2>$null; $hits = $out | Select-String -Pattern \"reporting/management|reports/overview|kpiDefinitions/management|KpiBreakdownCards\"; if \\($hits\\) { Write-Output \"VIOLATIONS IN PHASE 14 FILES:\"; $hits } else { Write-Output \"OK: zero border violations in any Phase 14 file\" }; Write-Output \\(\"Total violation lines: \" + \\($out | Select-String -Pattern ':\\\\d+:'\\).Count\\))"
+      "PowerShell($out = node tools/scripts/check-borders.js 2>$null; $hits = $out | Select-String -Pattern \"reporting/management|reports/overview|kpiDefinitions/management|KpiBreakdownCards\"; if \\($hits\\) { Write-Output \"VIOLATIONS IN PHASE 14 FILES:\"; $hits } else { Write-Output \"OK: zero border violations in any Phase 14 file\" }; Write-Output \\(\"Total violation lines: \" + \\($out | Select-String -Pattern ':\\\\d+:'\\).Count\\))",
+      "Bash(echo \"BUILD_EXIT=$?\")",
+      "Bash(wc -l src/lib/database/schema/addtodatabase.sql)",
+      "Bash(head -20 src/lib/database/schema/addtodatabase.sql)"
     ],
     "deny": [],
     "ask": [],

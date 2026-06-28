@@ -323,6 +323,425 @@ export async function emitTransactionPosted({ accountId = null, jobNumber = null
   });
 }
 
+// ---------------------------------------------------------------------------
+// MOT lifecycle (owner: mot). Phase-15 — completes §4.5. Result recording is
+// audit-required (catalogue). History is written to mot_test_status_history,
+// interim-keyed by the job id until the mot_tests entity lands (TD-E / P7).
+// ---------------------------------------------------------------------------
+export async function emitMotBooked({ jobId, vehicleId = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_BOOKED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      toState: "booked",
+      actorUserId,
+      actorRole,
+      payload: vehicleId ? { vehicle_id: vehicleId } : null,
+    },
+    history: { entityKey: "mot_test", entityId: jobId, fromStatus: null, toStatus: "booked", changedBy: actorUserId, reason: "booked" },
+  });
+}
+
+export async function emitMotTesterAssigned({ jobId, testerId = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_TESTER_ASSIGNED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      actorUserId,
+      actorRole,
+      payload: testerId != null ? { tester_id: testerId } : null,
+    },
+  });
+}
+
+export async function emitMotStarted({ jobId, testerId = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_STARTED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      fromState: "booked",
+      toState: "in_test",
+      actorUserId,
+      actorRole,
+      payload: testerId != null ? { tester_id: testerId } : null,
+    },
+    history: { entityKey: "mot_test", entityId: jobId, fromStatus: "booked", toStatus: "in_test", changedBy: actorUserId },
+  });
+}
+
+// Pass / fail / retest result. Audit-required (compliance) — the catalogue marks
+// MOT_RESULT_RECORDED audit:true, so emitReportEvent fans out an audit_log row.
+export async function emitMotResultRecorded({ jobId, result = null, mileageAtTest = null, testerId = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_RESULT_RECORDED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      fromState: "in_test",
+      toState: "result_recorded",
+      actorUserId,
+      actorRole,
+      reason,
+      payload: { result, mileage_at_test: mileageAtTest, tester_id: testerId },
+    },
+    history: {
+      entityKey: "mot_test",
+      entityId: jobId,
+      fromStatus: "in_test",
+      toStatus: "result_recorded",
+      changedBy: actorUserId,
+      reason,
+      meta: { result, mileage_at_test: mileageAtTest, tester_id: testerId },
+    },
+  });
+}
+
+export async function emitMotAdvisoryAdded({ jobId, severity = null, defectCode = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_ADVISORY_ADDED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      actorUserId,
+      actorRole,
+      payload: { severity, defect_code: defectCode },
+    },
+  });
+}
+
+export async function emitMotRetestLinked({ jobId, originalTestId = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_RETEST_LINKED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      toState: "retest",
+      actorUserId,
+      actorRole,
+      payload: originalTestId != null ? { original_test_id: originalTestId } : null,
+    },
+    history: { entityKey: "mot_test", entityId: jobId, fromStatus: "result_recorded", toStatus: "retest", changedBy: actorUserId },
+  });
+}
+
+export async function emitMotCertificateIssued({ jobId, expiryDate = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "MOT_CERTIFICATE_ISSUED",
+      entityType: "mot_test",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      toState: "certificate_issued",
+      actorUserId,
+      actorRole,
+      payload: expiryDate ? { expiry_date: expiryDate } : null,
+    },
+    history: { entityKey: "mot_test", entityId: jobId, fromStatus: "result_recorded", toStatus: "certificate_issued", changedBy: actorUserId },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// WASH / VALETING lifecycle (owner: valeting). Phase-15 — completes §4.6.
+// One event per transition: named milestone when the target state maps, else the
+// generic WASH_STATUS_CHANGED. Always writes wash_status_history.
+// ---------------------------------------------------------------------------
+const WASH_STATUS_EVENT = {
+  queued: "WASH_QUEUED",
+  started: "WASH_STARTED",
+  completed: "WASH_COMPLETED",
+  skipped: "WASH_SKIPPED",
+};
+
+export function washEventForState(toStateCanonical) {
+  return WASH_STATUS_EVENT[toStateCanonical] || "WASH_STATUS_CHANGED";
+}
+
+export async function emitWashStatusChanged({
+  jobId,
+  fromStatus = null,
+  toStatus = null,
+  toStatusCanonical = null,
+  washAssignee = null,
+  actorUserId = null,
+  actorRole = null,
+  reason = null,
+} = {}) {
+  const eventName = washEventForState(toStatusCanonical || toStatus);
+  return emitReportEvent({
+    event: {
+      eventName,
+      entityType: "wash",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      fromState: fromStatus,
+      toState: toStatus,
+      actorUserId,
+      actorRole,
+      reason,
+      payload: washAssignee != null ? { wash_assignee: washAssignee } : null,
+    },
+    history: {
+      entityKey: "wash",
+      entityId: jobId,
+      fromStatus,
+      toStatus,
+      changedBy: actorUserId,
+      reason,
+      meta: washAssignee != null ? { wash_assignee: washAssignee } : null,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PAINT / BODYSHOP lifecycle (owner: paint). Phase-15 — completes §4.7.
+// Stage transitions map to PAINT_COMPLETED / PAINT_JOB_IDENTIFIED milestones,
+// else the generic PAINT_STAGE_CHANGED. Writes paint_stage_history.
+// ---------------------------------------------------------------------------
+const PAINT_STAGE_EVENT = {
+  identified: "PAINT_JOB_IDENTIFIED",
+  completed: "PAINT_COMPLETED",
+};
+
+export function paintEventForStage(toStageCanonical) {
+  return PAINT_STAGE_EVENT[toStageCanonical] || "PAINT_STAGE_CHANGED";
+}
+
+export async function emitPaintStageChanged({
+  jobId,
+  fromStage = null,
+  toStage = null,
+  toStageCanonical = null,
+  bay = null,
+  painterId = null,
+  actorUserId = null,
+  actorRole = null,
+  reason = null,
+} = {}) {
+  const eventName = paintEventForStage(toStageCanonical || toStage);
+  return emitReportEvent({
+    event: {
+      eventName,
+      entityType: "paint_stage",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      fromState: fromStage,
+      toState: toStage,
+      actorUserId,
+      actorRole,
+      reason,
+      payload: { bay, painter_id: painterId },
+    },
+    history: {
+      entityKey: "paint_stage",
+      entityId: jobId,
+      fromStatus: fromStage,
+      toStatus: toStage,
+      changedBy: actorUserId,
+      reason,
+      meta: { bay, painter_id: painterId },
+    },
+  });
+}
+
+export async function emitPaintPainterAssigned({ jobId, painterId = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "PAINT_PAINTER_ASSIGNED",
+      entityType: "paint_stage",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      actorUserId,
+      actorRole,
+      payload: painterId != null ? { painter_id: painterId } : null,
+    },
+  });
+}
+
+export async function emitPaintMaterialUsed({ jobId, paintCode = null, quantity = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "PAINT_MATERIAL_USED",
+      entityType: "paint_stage",
+      entityId: jobId,
+      parentEntityType: "job",
+      parentEntityId: jobId,
+      quantity,
+      actorUserId,
+      actorRole,
+      payload: { paint_code: paintCode },
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// SERVICE — appointment lifecycle (owner: service). Writes appointment history.
+// ---------------------------------------------------------------------------
+export async function emitAppointmentStatusChanged({ appointmentId, jobId = null, fromStatus = null, toStatus = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "APPOINTMENT_STATUS_CHANGED",
+      entityType: "appointment",
+      entityId: appointmentId,
+      parentEntityType: jobId ? "job" : null,
+      parentEntityId: jobId,
+      fromState: fromStatus,
+      toState: toStatus,
+      actorUserId,
+      actorRole,
+      reason,
+    },
+    history: { entityKey: "appointment", entityId: appointmentId, fromStatus, toStatus, changedBy: actorUserId, reason },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ACCOUNTS — credit-control lifecycle (owner: accounts). Audit-required.
+// ---------------------------------------------------------------------------
+export async function emitAccountStatusChanged({ accountId, fromStatus = null, toStatus = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "ACCOUNT_STATUS_CHANGED",
+      entityType: "account",
+      entityId: accountId,
+      fromState: fromStatus,
+      toState: toStatus,
+      actorUserId,
+      actorRole,
+      reason,
+    },
+    history: { entityKey: "account", entityId: accountId, fromStatus, toStatus, changedBy: actorUserId, reason },
+  });
+}
+
+export async function emitCreditLimitChanged({ accountId, fromLimit = null, toLimit = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "CREDIT_LIMIT_CHANGED",
+      entityType: "account",
+      entityId: accountId,
+      fromState: fromLimit == null ? null : String(fromLimit),
+      toState: toLimit == null ? null : String(toLimit),
+      actorUserId,
+      actorRole,
+      reason,
+      payload: { from_limit: fromLimit, to_limit: toLimit },
+    },
+  });
+}
+
+export async function emitInvoiceVoided({ invoiceId, amountGbp = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "INVOICE_VOIDED",
+      entityType: "invoice",
+      entityId: invoiceId,
+      toState: "cancelled",
+      amountGbp,
+      actorUserId,
+      actorRole,
+      reason,
+    },
+    history: { entityKey: "invoice", entityId: invoiceId, toStatus: "cancelled", changedBy: actorUserId, reason },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ADMIN / SECURITY (owner: admin). All audit-required (catalogue) — closing the
+// audit-coverage gaps the readiness audit found (role changes / deletes unlogged).
+// ---------------------------------------------------------------------------
+export async function emitRoleChanged({ userId, fromRole = null, toRole = null, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "ROLE_CHANGED",
+      entityType: "user",
+      entityId: userId,
+      fromState: fromRole,
+      toState: toRole,
+      actorUserId,
+      actorRole,
+      reason,
+      payload: { from_role: fromRole, to_role: toRole },
+    },
+    audit: { action: "role_changed", entityType: "user", entityId: userId, diff: { from_role: fromRole, to_role: toRole }, reason },
+  });
+}
+
+export async function emitUserCreated({ userId, role = null, department = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "USER_CREATED",
+      entityType: "user",
+      entityId: userId,
+      toState: "active",
+      actorUserId,
+      actorRole,
+      payload: { role, department },
+    },
+  });
+}
+
+export async function emitUserDeactivated({ userId, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "USER_DEACTIVATED",
+      entityType: "user",
+      entityId: userId,
+      toState: "inactive",
+      actorUserId,
+      actorRole,
+      reason,
+    },
+  });
+}
+
+export async function emitRecordDeleted({ entityType, entityId, actorUserId = null, actorRole = null, reason = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "RECORD_DELETED",
+      entityType: entityType || "record",
+      entityId,
+      actorUserId,
+      actorRole,
+      reason,
+      payload: { entity_type: entityType, entity_id: entityId },
+    },
+  });
+}
+
+export async function emitConfigChanged({ key, fromValue = null, toValue = null, actorUserId = null, actorRole = null } = {}) {
+  return emitReportEvent({
+    event: {
+      eventName: "CONFIG_CHANGED",
+      entityType: "config",
+      entityId: key,
+      fromState: fromValue == null ? null : String(fromValue),
+      toState: toValue == null ? null : String(toValue),
+      actorUserId,
+      actorRole,
+      payload: { key, from: fromValue, to: toValue },
+    },
+  });
+}
+
 const emitters = {
   emitJobStatusChanged,
   emitJobCreated,
@@ -336,6 +755,33 @@ const emitters = {
   emitInvoiceStatusChanged,
   emitPaymentReceived,
   emitTransactionPosted,
+  // Phase-15 — MOT
+  emitMotBooked,
+  emitMotTesterAssigned,
+  emitMotStarted,
+  emitMotResultRecorded,
+  emitMotAdvisoryAdded,
+  emitMotRetestLinked,
+  emitMotCertificateIssued,
+  // Phase-15 — Valeting
+  emitWashStatusChanged,
+  washEventForState,
+  // Phase-15 — Paint
+  emitPaintStageChanged,
+  paintEventForStage,
+  emitPaintPainterAssigned,
+  emitPaintMaterialUsed,
+  // Phase-15 — Service / Accounts
+  emitAppointmentStatusChanged,
+  emitAccountStatusChanged,
+  emitCreditLimitChanged,
+  emitInvoiceVoided,
+  // Phase-15 — Admin / security
+  emitRoleChanged,
+  emitUserCreated,
+  emitUserDeactivated,
+  emitRecordDeleted,
+  emitConfigChanged,
 };
 
 export default emitters;

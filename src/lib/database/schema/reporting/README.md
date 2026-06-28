@@ -42,9 +42,9 @@ creates. No reporting table ships with RLS disabled.
 
 ## Files (apply in order)
 
-> **Shortcut:** `000_all_reporting.sql` is the full schema (001–005) in one
+> **Shortcut:** `000_all_reporting.sql` is the full schema (001–006) in one
 > ready-to-run script, ordered so every FK resolves. Paste it into the Supabase
-> SQL editor and run it once instead of applying the five files individually. It
+> SQL editor and run it once instead of applying the files individually. It
 > is additive + idempotent (safe to re-run) and mirrors the per-section files
 > below exactly.
 
@@ -52,9 +52,10 @@ creates. No reporting table ships with RLS disabled.
 |---|---|---|
 | `001_dimensions.sql` | `dim_department`, `dim_actor`, `dim_kpi` | P2 §7, §8.4, §14.3 |
 | `002_report_event.sql` | `report_event` (the event spine) + indexes | P2 §3.1 |
-| `003_status_history.sql` | per-entity `*_status_history` tables | P2 §6 |
+| `003_status_history.sql` | per-entity `*_status_history` tables (parts→delivery) | P2 §6 |
 | `004_kpi_snapshots.sql` | `kpi_daily/weekly/monthly/quarterly/yearly_snapshot` + entity-state snapshots | P2 §9, §10 |
 | `005_saved_views.sql` | `report_saved_view`, `report_user_preferences` | P1 §10 |
+| `006_status_history_workflow.sql` | `mot_test_status_history`, `wash_status_history`, `paint_stage_history` (Phase 15) | P2 §6 / §6.2.9–11 |
 
 ## How to apply
 
