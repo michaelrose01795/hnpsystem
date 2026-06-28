@@ -299,7 +299,9 @@
       "Bash(PLAYWRIGHT_TEST_AUTH=1 npx vitest run src/lib/reporting/validation)",
       "PowerShell($env:PLAYWRIGHT_TEST_AUTH = \"1\"; npm run validate:reporting 2>&1 | Select-Object -Last 60)",
       "PowerShell(npm run check:report-events 2>&1)",
-      "PowerShell(npx eslint src/lib/reporting/kpiDefinitions/service.js src/lib/reporting/kpiDefinitions/index.js src/components/reporting/service src/pages/reports/service.js src/config/navigation.js 2>&1)"
+      "PowerShell(npx eslint src/lib/reporting/kpiDefinitions/service.js src/lib/reporting/kpiDefinitions/index.js src/components/reporting/service src/pages/reports/service.js src/config/navigation.js 2>&1)",
+      "Bash(PLAYWRIGHT_TEST_AUTH=1 npx vitest run src/lib/reporting/validation --reporter=verbose)",
+      "Bash(echo \"---EXIT $?---\")"
     ],
     "deny": [],
     "ask": [],

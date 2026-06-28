@@ -29,6 +29,10 @@ export const REPORTING_AREAS = Object.freeze([
   { label: "Valeting", href: "/reports/valeting", dept: "valeting" },
   { label: "Paint", href: "/reports/paint", dept: "paint" },
   { label: "Accounts", href: "/reports/accounts", dept: "accounts", sensitive: "financial" },
+  // Admin reporting exposes login/audit/security/compliance signal — gated to
+  // Admin-manager / Management / Executive scope (executive level) so operational
+  // department managers don't surface it. The engine enforces the same per-KPI gate.
+  { label: "Admin", href: "/reports/admin", level: "executive" },
   { label: "HR", href: "/reports/hr", dept: "hr", sensitive: "pii" },
   { label: "Audit", href: "/reports/audit", level: "cross-department" },
 ]);
