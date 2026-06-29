@@ -17,11 +17,22 @@ import { buildTrend } from "./trendBuilder";
 import { resolveDrilldown } from "./drilldown";
 import { unavailableProvenance } from "./provenance";
 
+function kpiDepartments(kpi) {
+  return Array.from(new Set([kpi?.department, ...(kpi?.relatedDepartments || [])].filter(Boolean)));
+}
+
+function canSeeKpiDepartment(scope, kpi) {
+  return kpiDepartments(kpi).some((department) => canSeeDepartment(scope, department));
+}
+
 // Guard: can this scope see this KPI at all (KPI-level permission + dept scope)?
 function gate(kpi, scope, filter) {
   if (!kpi) return { ok: false, warnings: ["unknown KPI"] };
   if (!scopeSatisfiesKpiPermission(scope, kpi.permission)) {
     return { ok: false, warnings: [`not permitted to view "${kpi.id}"`] };
+  }
+  if (!canSeeKpiDepartment(scope, kpi)) {
+    return { ok: false, warnings: [`"${kpi.id}" is outside your reporting department scope`] };
   }
   const warnings = [];
   // If a department filter is requested outside scope, narrow + warn.
@@ -100,7 +111,7 @@ export async function getDrilldown(kpiId, ctx = {}) {
 
 // The catalogue a scope is allowed to see (for menus, scorecard composition).
 export function getVisibleCatalog(scope, filter = {}) {
-  return getKpisForScope(scope, filter).map((k) => ({
+  return getKpisForScope(scope, filter).filter((k) => canSeeKpiDepartment(scope, k)).map((k) => ({
     id: k.id,
     label: k.label,
     department: k.department,

@@ -58,6 +58,7 @@ import { getAllReportingFlags, getReportingFlag } from "@/lib/reporting/config/f
 import { actorFromSession, systemActor, customerActor, resolveActor } from "@/lib/reporting/actor";
 import { listKpis, getKpi } from "@/lib/reporting/kpiCatalog";
 import { registerSeedKpis } from "@/lib/reporting/kpiDefinitions";
+import { getKpiValue, getVisibleCatalog } from "@/lib/reporting/engine";
 import {
   resolveScope,
   scopeSatisfiesKpiPermission,
@@ -365,6 +366,19 @@ describe("Phase 5 §9 — Reporting Audit & Permission validation", () => {
     const owner = resolveScope({ user: { id: 2, roles: ["Owner"] } });
     expect(owner.departments).toBe("all");
     expect(canSeeDepartment(owner, "accounts")).toBe(true);
+  });
+
+  it("server-side engine blocks cross-department operational KPIs without a department filter", async () => {
+    const techScope = resolveScope({ user: { id: 1, roles: ["Techs"] } });
+    const denied = await getKpiValue("prt.stock_value", {
+      scope: techScope,
+      filter: { dateRange: { from: "2026-06-01T00:00:00.000Z", to: "2026-06-30T23:59:59.999Z" } },
+    });
+
+    expect(denied.value).toBeNull();
+    expect((denied.warnings || []).join(" ")).toMatch(/outside your reporting department scope/);
+    expect(getVisibleCatalog(techScope).some((k) => k.id === "prt.stock_value")).toBe(false);
+    expect(getVisibleCatalog(techScope).some((k) => k.id === "wsh.jobs_completed")).toBe(true);
   });
 
   it("the financial-sensitive role set is non-empty and includes Accounts", () => {

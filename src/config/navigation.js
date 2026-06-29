@@ -26,6 +26,11 @@ const SERVICE_REPORT_ROLES = rolesForDepts(new Set(["service", "management", "ad
 // management/admin oversight. The API enforces scope server-side regardless.
 const MOT_REPORT_ROLES = rolesForDepts(new Set(["mot", "service", "workshop", "management", "admin"]));
 const PAINT_REPORT_ROLES = rolesForDepts(new Set(["paint", "service", "workshop", "management", "admin"]));
+const VALETING_REPORT_ROLES = rolesForDepts(new Set(["valeting", "service", "workshop", "management", "admin"]));
+const ADMIN_REPORT_ROLES = Array.from(
+  new Set([...rolesForDepts(new Set(["management"])), "admin", ...EXECUTIVE_ROLES])
+);
+const EXECUTIVE_REPORT_ROLES = Array.from(new Set(EXECUTIVE_ROLES));
 // Accounts report (Phase 8 — financial): Accounts + Management departments,
 // unioned with the executive role set so directors outside those departments can
 // reach it. Deliberately NO general "admin" department — financial reporting is
@@ -46,6 +51,9 @@ const reportingSections = getReportingFlag("reporting_nav_enabled")
           { label: "MOT Reports", href: "/reports/mot", roles: MOT_REPORT_ROLES },
           { label: "Paint Reports", href: "/reports/paint", roles: PAINT_REPORT_ROLES },
           { label: "Accounts Reports", href: "/reports/accounts", roles: ACCOUNTS_REPORT_ROLES },
+          { label: "Valeting Reports", href: "/reports/valeting", roles: VALETING_REPORT_ROLES },
+          { label: "Admin Reports", href: "/reports/admin", roles: ADMIN_REPORT_ROLES },
+          { label: "Executive Reports", href: "/reports/overview", roles: EXECUTIVE_REPORT_ROLES },
         ],
       },
     ]
