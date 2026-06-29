@@ -77,6 +77,23 @@ html.staff-scope .app-btn--nav {
 }
 
 /* ========================================================= */
+/* === Shape modifier — circular icon button               === */
+/* === Square (locked to --control-height) + pill radius   === */
+/* === so it renders a perfect circle. Pair with a variant  === */
+/* === (e.g. .app-btn--primary) for the fill. Use for       === */
+/* === single-glyph actions like an "×" close.             === */
+/* ========================================================= */
+html.staff-scope .app-btn--icon {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* ========================================================= */
 /* === Variant treatments                                  === */
 /* === Declared with !important so page-level inline style === */
 /* === cannot drift the palette. Button.js strips visual   === */

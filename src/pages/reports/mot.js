@@ -8,7 +8,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -47,18 +46,15 @@ function MotReportContent() {
         <title>MOT Reports - HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>MOT Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          MOT reporting on the shared reporting platform. Volume, throughput, MOT-due pipeline, MOT revenue and
-          clocking-based tester activity are live; first-time pass, retest, repair conversion and advisory conversion
-          unlock as MOT result events, mot_tests and advisory capture land.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={MOT_DEPARTMENT.label} />
-
-      <TabGroup items={MOT_TABS} value={tab} onChange={setTab} ariaLabel="MOT report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={MOT_DEPARTMENT.label}
+        tabItems={MOT_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="MOT report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

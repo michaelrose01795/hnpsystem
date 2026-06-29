@@ -17,7 +17,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -55,17 +54,15 @@ function PartsReportContent() {
         <title>Parts Reports — HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Parts Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Department performance on the shared reporting platform. Figures are exact and provenance-labelled; supplier,
-          lead-time and dwell tiers unlock as the suppliers master and parts status-history accrue.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={PARTS_DEPARTMENT.label} />
-
-      <TabGroup items={PARTS_TABS} value={tab} onChange={setTab} ariaLabel="Parts report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={PARTS_DEPARTMENT.label}
+        tabItems={PARTS_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Parts report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

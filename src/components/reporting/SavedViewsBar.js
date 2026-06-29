@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import { useSavedViews } from "@/hooks/reporting/useReporting";
+import { reportDevKey } from "./reportDevOverlay";
 
 export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
   const { views, loading, error, createView, deleteView } = useSavedViews(targetRef);
@@ -30,7 +31,14 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
   };
 
   return (
-    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
+    <LayerSurface
+      radius="var(--radius-sm)"
+      padding="12px"
+      gap="10px"
+      sectionKey={reportDevKey("report-saved-views", targetRef || "default")}
+      sectionType="toolbar"
+      data-dev-text-preview="Saved report views"
+    >
       <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--accentText)" }}>Saved views</div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>

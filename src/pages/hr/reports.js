@@ -39,7 +39,7 @@ function ReportsContent() {
         subtitle="Choose a report and export format.">
         
         {showPresentationMock ? (
-          <div style={{ overflowX: "auto" }}>
+          <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
                 <tr>
@@ -71,7 +71,7 @@ function ReportsContent() {
         subtitle="Available HR reporting templates.">
         
         {showPresentationMock ? (
-          <div style={{ overflowX: "auto" }}>
+          <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
                 <tr>

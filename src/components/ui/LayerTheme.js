@@ -37,6 +37,12 @@ export default function LayerTheme({
     ...style,
   };
 
+  // Stable marker class so the Dev Overlay auto-detects every theme-layer
+  // surface without a per-instance `sectionKey`. Visually a no-op; it only
+  // feeds the overlay fallback selectors in src/lib/dev-layout/categories.js.
+  // Mirror of LayerSurface's `app-layer-surface`.
+  const mergedClassName = ["app-layer-theme", className].filter(Boolean).join(" ");
+
   if (sectionKey) {
     return (
       <DevLayoutSection
@@ -47,7 +53,7 @@ export default function LayerTheme({
         backgroundToken={backgroundToken}
         widthMode={widthMode}
         shell={shell}
-        className={className}
+        className={mergedClassName}
         style={themeStyle}
         {...rest}
       >
@@ -58,7 +64,7 @@ export default function LayerTheme({
 
   const Component = as;
   return (
-    <Component className={className} style={themeStyle} {...rest}>
+    <Component className={mergedClassName} style={themeStyle} {...rest}>
       {children}
     </Component>
   );

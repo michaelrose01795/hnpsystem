@@ -111,7 +111,7 @@ export const workshopKpis = [
     drilldown: async ({ filter }) =>
       fetchRows(
         "jobs",
-        "id,job_number,status,completed_at,assigned_to",
+        "id,job_number,customer,vehicle_reg,vehicle_make_model,type,status,checked_in_at,completed_at,assigned_to",
         (q) => applyDateRange(q.not("completed_at", "is", null), "completed_at", filter),
         { orderBy: "completed_at" }
       ),
@@ -141,7 +141,7 @@ export const workshopKpis = [
     drilldown: async ({ filter }) =>
       fetchRows(
         "jobs",
-        "id,job_number,status,created_at,assigned_to",
+        "id,job_number,customer,vehicle_reg,vehicle_make_model,type,status,created_at,assigned_to",
         (q) => applyDateRange(q, "created_at", filter),
         { orderBy: "created_at" }
       ),
@@ -171,7 +171,7 @@ export const workshopKpis = [
     drilldown: async ({ filter }) =>
       fetchRows(
         "jobs",
-        "id,job_number,status,completed_at,assigned_to",
+        "id,job_number,customer,vehicle_reg,vehicle_make_model,type,status,checked_in_at,completed_at,assigned_to",
         (q) => applyDateRange(q.not("completed_at", "is", null), "completed_at", filter),
         { orderBy: "completed_at" }
       ),
@@ -205,6 +205,16 @@ export const workshopKpis = [
     example: "17 released vs 19 created → WIP +2",
     futureNotes:
       "'Released' uses completed_at as the release milestone until JOB_STATUS_CHANGED(→released) status-history accrues (then switch to the released transition).",
+    // Net-WIP KPI: drill-down shows the "created" side (the numerator) — jobs
+    // created in the period. "Released" is counted separately, so the row count
+    // reconciles with `numerator` (created), not the net figure.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "jobs",
+        "id,job_number,status,created_at,completed_at,assigned_to",
+        (q) => applyDateRange(q, "created_at", filter),
+        { orderBy: "created_at" }
+      ),
     resolver: async ({ filter }) => {
       const [created, released] = await Promise.all([
         countRows("jobs", (q) => applyDateRange(q, "created_at", filter)),
@@ -238,6 +248,17 @@ export const workshopKpis = [
     targetType: "higher_is_better",
     example: "12 jobs × 2.1h + 8 authorised VHC × 0.6h = 30.0 sold h/day",
     relatedReports: ["wsh.labour_recovery", "wsh.labour_sales", "wsh.profitability"],
+    // Drill-down shows the job-request labour lines — the primary sold-hours
+    // contributor (Σ job_requests.hours). Authorised VHC labour_hours are summed
+    // into the value separately, so totalling `hours` reconciles with the
+    // request-hours portion of the breakdown, not the full sold-hours value.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "job_requests",
+        "request_id,job_id,description,hours,created_at",
+        (q) => applyDateRange(q, "created_at", filter),
+        { orderBy: "created_at" }
+      ),
     resolver: async ({ filter }) => {
       const { soldHours, requestHours, vhcHours } = await sumSoldHours(filter);
       return {
@@ -266,6 +287,14 @@ export const workshopKpis = [
     example: "6 techs × ~7.5 clocked h = 45 h/day",
     futureNotes:
       "Sums the reconciled time_records.hours_worked (net of breaks). job_clocking is a second labour model — reconcile the two (debt D5) before treating this as the single canonical labour figure.",
+    // Drill-down shows the time_records rows whose hours_worked sum to the value.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "time_records",
+        "id,user_id,job_number,date,hours_worked",
+        (q) => applyDateRange(q, "date", filter),
+        { orderBy: "date" }
+      ),
     resolver: async ({ filter }) => {
       const { sum } = await sumColumn("time_records", "hours_worked", (q) =>
         applyDateRange(q, "date", filter)
@@ -295,6 +324,16 @@ export const workshopKpis = [
     relatedReports: ["acc.labour_revenue"],
     futureNotes:
       "Estimate based on sold-hours × the default labour rate; cross-check against invoiced invoices.labour_total when the Accounts package lands (D12).",
+    // Labour sales = sold hours × labour rate. The contributing records are the
+    // same job-request labour lines that drive sold hours (the rate is a config
+    // scalar, not a per-row value).
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "job_requests",
+        "request_id,job_id,description,hours,created_at",
+        (q) => applyDateRange(q, "created_at", filter),
+        { orderBy: "created_at" }
+      ),
     resolver: async ({ filter }) => {
       const [{ soldHours }, rate] = await Promise.all([sumSoldHours(filter), getLabourRate()]);
       if (rate == null) {
@@ -327,6 +366,15 @@ export const workshopKpis = [
     permission: ["MANAGER_SCOPED_ROLES"],
     futureNotes:
       "R1 today from the int-keyed (canonical) tech_efficiency_entries. Catalogue R1*: allocated-hours reliability improves at R2 once allocated hours auto-pull from job_requests.hours rather than manual entry.",
+    // Ratio KPI: drill-down shows the per-entry allocated/spent rows that feed the
+    // Σ allocated ÷ Σ spent ratio.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "tech_efficiency_entries",
+        "id,user_id,job_number,allocated_hours,hours_spent,date",
+        (q) => applyDateRange(q, "date", filter),
+        { orderBy: "date" }
+      ),
     resolver: async ({ filter }) => {
       const [allocated, spent] = await Promise.all([
         sumColumn("tech_efficiency_entries", "allocated_hours", (q) => applyDateRange(q, "date", filter)),
@@ -381,6 +429,16 @@ export const workshopKpis = [
     format: "0.0",
     targetType: "higher_is_better",
     example: "18 ÷ 6 = 3.0",
+    // Ratio KPI: drill-down shows the NUMERATOR — jobs completed in the period.
+    // The denominator (distinct active technicians from job_clocking) is computed
+    // separately, so the row count reconciles with `numerator`, not the ratio.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "jobs",
+        "id,job_number,status,completed_at,assigned_to",
+        (q) => applyDateRange(q.not("completed_at", "is", null), "completed_at", filter),
+        { orderBy: "completed_at" }
+      ),
     resolver: async ({ filter }) => {
       const [completed, techMap] = await Promise.all([
         countRows("jobs", (q) => applyDateRange(q.not("completed_at", "is", null), "completed_at", filter)),
@@ -411,7 +469,7 @@ export const workshopKpis = [
     drilldown: async ({ filter }) =>
       fetchRows(
         "jobs",
-        "id,job_number,status,service_mode,mobile_outcome,mobile_completed_at,redirected_from_mobile_at,created_at",
+        "id,job_number,customer,vehicle_reg,vehicle_make_model,status,service_mode,mobile_outcome,mobile_completed_at,redirected_from_mobile_at,created_at,assigned_to",
         (q) => applyDateRange(q.eq("service_mode", "mobile"), "created_at", filter),
         { orderBy: "created_at" }
       ),

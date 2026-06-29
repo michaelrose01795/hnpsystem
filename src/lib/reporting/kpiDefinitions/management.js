@@ -103,6 +103,53 @@ const DEPARTMENT_HEADLINES = [
   { code: "accounts", label: "Accounts", primary: "acc.revenue", quality: "acc.outstanding_invoices" },
 ];
 
+// Build one comparison row per department from its two headline KPIs (read via
+// their own resolvers). Shared by mgt.department_performance's resolver (which
+// counts reporting departments) and its drill-down (which returns these rows) so
+// the table reconciles with the value — no duplicated composition logic.
+async function buildDepartmentRows(ctx) {
+  return Promise.all(
+    DEPARTMENT_HEADLINES.map(async (d) => {
+      const [primary, quality] = await Promise.all([runKpi(d.primary, ctx), runKpi(d.quality, ctx)]);
+      const primaryValue = primary?.amountGbp ?? primary?.value ?? null;
+      const qualityValue = quality?.value ?? null;
+      return {
+        department: d.code,
+        label: d.label,
+        primary_kpi: d.primary,
+        primary_value: primaryValue,
+        quality_kpi: d.quality,
+        quality_value: qualityValue,
+        reporting: primaryValue != null || qualityValue != null,
+      };
+    })
+  );
+}
+
+// Build the curated forecast input series (current-period values). Shared by
+// mgt.forecast_inputs's resolver (which counts available series) and its
+// drill-down (which returns these rows).
+async function buildForecastInputRows(ctx) {
+  const [rev, jobs, bookings, sold, clocked] = await Promise.all([
+    runKpi("acc.revenue", ctx),
+    runKpi("wsh.jobs_completed", ctx),
+    runKpi("svc.booking_volume", ctx),
+    runKpi("wsh.sold_hours", ctx),
+    runKpi("wsh.clocked_hours", ctx),
+  ]);
+  return [
+    { series: "Revenue", key: "revenue", value: rev?.amountGbp ?? null, kpi: "acc.revenue" },
+    { series: "Throughput (jobs completed)", key: "throughput", value: jobs?.value ?? null, kpi: "wsh.jobs_completed" },
+    { series: "Bookings", key: "bookings", value: bookings?.value ?? null, kpi: "svc.booking_volume" },
+    {
+      series: "Site recovery %",
+      key: "site_recovery_pct",
+      value: ratioPct(sold?.value ?? 0, clocked?.value ?? 0),
+      kpi: "wsh.sold_hours ÷ wsh.clocked_hours",
+    },
+  ];
+}
+
 export const managementKpis = [
   // =========================================================================
   // COMPANY REVENUE — EXECUTIVE · R1. Σ acc.revenue (company total). Per-
@@ -180,6 +227,9 @@ export const managementKpis = [
     example: "£45k ÷ £300k = 15%",
     futureNotes:
       "Composes vhc.upsell_revenue (authorised VHC value, R1) over acc.revenue (R1). No advisor-level attribution is implied — that stays in the Service package (R2, advisor stamp on VHC_SENT).",
+    // Ratio of two composed KPIs: drill-down delegates to the numerator's own
+    // drill-down (the authorised VHC checks behind the upsell value).
+    drilldown: async (ctx) => runDrilldown("vhc.upsell_revenue", ctx),
     resolver: async (ctx) => {
       const [upsell, rev] = await Promise.all([
         runKpi("vhc.upsell_revenue", ctx),
@@ -230,6 +280,9 @@ export const managementKpis = [
     example: "Σ 320 sold ÷ Σ 300 clocked = 106.7%",
     futureNotes:
       "Composes wsh.sold_hours (R1) and wsh.clocked_hours (R1). R2 per the catalogue: the two clocking systems (job_clocking vs time_records, debt D5) must be reconciled before the site recovery ratio is fully trustworthy. Both inputs compute today, so the figure is live (clearly labelled).",
+    // Site recovery = sold ÷ clocked hours. Drill-down delegates to the numerator's
+    // drill-down (the job-request labour lines behind site sold hours).
+    drilldown: async (ctx) => runDrilldown("wsh.sold_hours", ctx),
     resolver: async (ctx) => {
       const [sold, clocked] = await Promise.all([
         runKpi("wsh.sold_hours", ctx),
@@ -278,26 +331,12 @@ export const managementKpis = [
     permission: MGT_REPORT_PERMISSION,
     futureNotes:
       "Composes each department's existing headline KPIs (throughput + quality) verbatim through their own resolvers — no new department maths. R2: the single NORMALISED performance INDEX score (and a true cross-department ranking) needs the dim_kpi weighting model and TARGET_SET targets, which are declared; until then the per-department composed KPI values are surfaced for direct comparison rather than collapsing them into an invented weighted score.",
+    // Drill-down returns the per-department comparison rows (the table executives
+    // read) — the same rows the resolver counts, so it reconciles with `value`
+    // (the number of departments currently reporting).
+    drilldown: async (ctx) => buildDepartmentRows(ctx),
     resolver: async (ctx) => {
-      const departments = await Promise.all(
-        DEPARTMENT_HEADLINES.map(async (d) => {
-          const [primary, quality] = await Promise.all([
-            runKpi(d.primary, ctx),
-            runKpi(d.quality, ctx),
-          ]);
-          const primaryValue = primary?.amountGbp ?? primary?.value ?? null;
-          const qualityValue = quality?.value ?? null;
-          return {
-            department: d.code,
-            label: d.label,
-            primary_kpi: d.primary,
-            primary_value: primaryValue,
-            quality_kpi: d.quality,
-            quality_value: qualityValue,
-            reporting: primaryValue != null || qualityValue != null,
-          };
-        })
-      );
+      const departments = await buildDepartmentRows(ctx);
       const covered = departments.filter((r) => r.reporting).length;
       return {
         value: covered,
@@ -339,6 +378,10 @@ export const managementKpis = [
     example: "(£330k − £300k) ÷ £300k = +10%",
     futureNotes:
       "Composes acc.revenue and wsh.jobs_completed for the selected window and the same window one year earlier (the literal YoY formula). R2: needs ≥13 months of operational history for the prior-year window to be populated — until then prior-year is empty and growth resolves to null rather than a fabricated figure. Snapshot-backed YoY (yearly rollups) firms this up further.",
+    // YoY composite: drill-down delegates to the current-period revenue records
+    // (acc.revenue). The prior-year window is a separate composition; a current vs
+    // prior toggle is a later UI enhancement.
+    drilldown: async (ctx) => runDrilldown("acc.revenue", ctx),
     resolver: async (ctx) => {
       const { filter } = ctx;
       const dr = filter?.dateRange || {};
@@ -406,28 +449,19 @@ export const managementKpis = [
     permission: MGT_REPORT_PERMISSION,
     futureNotes:
       "Composes the current-period values of acc.revenue, wsh.jobs_completed, svc.booking_volume and site recovery (wsh.sold_hours ÷ wsh.clocked_hours). R2: forecasting needs ≥13 months of daily snapshots — this KPI surfaces the curated inputs today; the forecast-ready historical series lands once the snapshot spine accrues.",
+    // Drill-down returns one row per curated input series (the rows the resolver
+    // counts), so it reconciles with `value` (number of series available now).
+    drilldown: async (ctx) => buildForecastInputRows(ctx),
     resolver: async (ctx) => {
-      const [rev, jobs, bookings, sold, clocked] = await Promise.all([
-        runKpi("acc.revenue", ctx),
-        runKpi("wsh.jobs_completed", ctx),
-        runKpi("svc.booking_volume", ctx),
-        runKpi("wsh.sold_hours", ctx),
-        runKpi("wsh.clocked_hours", ctx),
-      ]);
-      const recovery = ratioPct(sold?.value ?? 0, clocked?.value ?? 0);
-      const inputs = {
-        revenue: rev?.amountGbp ?? null,
-        throughput: jobs?.value ?? null,
-        bookings: bookings?.value ?? null,
-        site_recovery_pct: recovery,
-      };
-      const available = Object.values(inputs).filter((v) => v != null).length;
+      const rows = await buildForecastInputRows(ctx);
+      const available = rows.filter((r) => r.value != null).length;
+      const inputs = Object.fromEntries(rows.map((r) => [r.key, r.value]));
       return {
         value: available,
         count: available,
         breakdown: {
           series_available: available,
-          series_total: Object.keys(inputs).length,
+          series_total: rows.length,
           ...inputs,
         },
       };

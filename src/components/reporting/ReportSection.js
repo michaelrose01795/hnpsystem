@@ -6,16 +6,22 @@
 
 import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { reportDevKey } from "./reportDevOverlay";
 
-export default function ReportSection({ title, subtitle, action, children }) {
+export default function ReportSection({ title, subtitle, action, children, sectionKey, parentKey }) {
+  const devSectionKey = sectionKey || reportDevKey("report-section", title || subtitle, "untitled");
+
   return (
-    <LayerTheme as="section" gap="12px">
-      {(title || action) && (
+    <LayerTheme
+      as="section"
+      gap="12px"
+      sectionKey={devSectionKey}
+      parentKey={parentKey}
+      sectionType="section-shell"
+      data-dev-text-preview={title || subtitle || "Report section"}
+    >
+      {action && (
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            {title && <h2 style={{ margin: 0, fontSize: "1.05rem", color: "var(--accentText)" }}>{title}</h2>}
-            {subtitle && <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--surfaceTextMuted)" }}>{subtitle}</p>}
-          </div>
           {action}
         </div>
       )}

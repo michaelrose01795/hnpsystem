@@ -14,7 +14,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { ADMIN_REPORT_PERMISSION } from "@/lib/reporting/kpiDefinitions/admin";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
@@ -52,19 +51,15 @@ function AdminReportContent() {
         <title>Admin Reports - HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Admin Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Admin reporting on the shared reporting platform. Login security, audit volume, compliance activity and
-          data-quality health are live from the hash-chained audit_log and login-attempt tables. Report usage and active
-          users are audit-backed proxies until the report_event spine accrues; role-change reporting stays blocked until
-          role writes are logged. Access is restricted to Admin, Management and Executive roles.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={ADMIN_DEPARTMENT.label} />
-
-      <TabGroup items={ADMIN_TABS} value={tab} onChange={setTab} ariaLabel="Admin report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={ADMIN_DEPARTMENT.label}
+        tabItems={ADMIN_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Admin report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

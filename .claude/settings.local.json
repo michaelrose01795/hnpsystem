@@ -309,7 +309,14 @@
       "Bash(echo \"BUILD_EXIT=$?\")",
       "Bash(wc -l src/lib/database/schema/addtodatabase.sql)",
       "Bash(head -20 src/lib/database/schema/addtodatabase.sql)",
-      "PowerShell(npm uninstall react-select)"
+      "PowerShell(npm uninstall react-select)",
+      "Bash(grep -nE \"^/\\\\*|^\\\\.[a-z].*\\\\{\" src/styles/staffglobal.css)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(sort -t: -k2 -nr)",
+      "Bash(node \"C:/Users/micha/AppData/Local/Temp/claude/c--hnpsystem/c221ca4e-826c-4936-8a65-38214f29c414/scratchpad/scan-mojibake.js\" \"src/pages/job-cards/[jobNumber].js\")",
+      "Bash(node \"C:/Users/micha/AppData/Local/Temp/claude/c--hnpsystem/c221ca4e-826c-4936-8a65-38214f29c414/scratchpad/scan-all.js\" src)",
+      "Bash(node \"C:/Users/micha/AppData/Local/Temp/claude/c--hnpsystem/c221ca4e-826c-4936-8a65-38214f29c414/scratchpad/fix-mojibake.js\" \"src/pages/job-cards/[jobNumber].js\")",
+      "Bash(npx eslint *)"
     ],
     "deny": [],
     "ask": [],

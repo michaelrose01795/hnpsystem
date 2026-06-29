@@ -7,7 +7,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -46,18 +45,15 @@ function ValetingReportContent() {
         <title>Valeting Reports - HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Valeting Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Valeting reporting on the shared reporting platform. Cars washed, completion rate, skip rate, queue facets
-          and demand split are live; duration, SLA and productivity unlock when wash completion timestamps, wash history
-          and valeter attribution are modelled.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={VALETING_DEPARTMENT.label} />
-
-      <TabGroup items={VALETING_TABS} value={tab} onChange={setTab} ariaLabel="Valeting report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={VALETING_DEPARTMENT.label}
+        tabItems={VALETING_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Valeting report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

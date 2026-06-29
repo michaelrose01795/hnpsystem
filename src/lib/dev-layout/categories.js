@@ -43,6 +43,11 @@ export const DEV_OVERLAY_CATEGORIES = [
     color: "var(--accent-base)",
     sectionTypes: ["section-shell", "content-card"],
     fallbackSelectors: [
+      // Canonical surface primitives — every Card/Section/SectionCard renders
+      // one of these, so listing the marker classes here makes ANY new card or
+      // section auto-appear in the overlay with no per-instance sectionKey.
+      ".app-layer-surface",
+      ".app-layer-theme",
       ".app-section-card",
       ".app-layout-section-shell",
       ".app-layout-card",

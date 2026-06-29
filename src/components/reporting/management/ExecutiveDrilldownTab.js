@@ -13,6 +13,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import ReportSection from "../ReportSection";
 import ReportDrilldownTable from "../ReportDrilldownTable";
 import { CROSS_DEPARTMENT_LINKS, ALL_EXPORTABLE } from "./managementReportConfig";
+import { reportDevKey } from "../reportDevOverlay";
 
 export default function ExecutiveDrilldownTab({ filter }) {
   const [explore, setExplore] = useState(null);
@@ -27,7 +28,7 @@ export default function ExecutiveDrilldownTab({ filter }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           {CROSS_DEPARTMENT_LINKS.map((area) => (
             <Link key={area.href} href={area.href} style={{ textDecoration: "none" }}>
-              <LayerSurface radius="var(--radius-sm)" padding="14px" gap="6px">
+              <LayerSurface radius="var(--radius-sm)" padding="14px" gap="6px" sectionKey={reportDevKey("report-department-link", area.href)} data-dev-text-preview={`${area.label} report link`}>
                 <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "0.92rem" }}>{area.label}</div>
                 <div style={{ fontSize: "0.76rem", color: "var(--surfaceTextMuted)", lineHeight: 1.35 }}>{area.description}</div>
               </LayerSurface>
@@ -42,7 +43,7 @@ export default function ExecutiveDrilldownTab({ filter }) {
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
           {drillable.map((kpi) => (
-            <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px">
+            <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-drilldown-card", kpi.id)} data-dev-text-preview={`${kpi.label} drill-down card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
               <button type="button" className="app-btn app-btn--ghost" onClick={() => setExplore(kpi)} style={{ alignSelf: "flex-start", fontSize: "0.74rem", padding: "4px 10px" }}>

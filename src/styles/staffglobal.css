@@ -4874,6 +4874,7 @@ html.staff-scope .app-table-shell-scroll {
 
 html.staff-scope .app-table-shell {
   width: 100%;
+  min-width: max-content;
   color: var(--text-1);
   background: var(--surface) !important;
   background-image: none !important;
@@ -6428,6 +6429,140 @@ html.staff-scope *::-webkit-scrollbar-thumb {
   background: transparent !important;
 }
 
+/* Tables are the one shared surface where horizontal scrollbars should remain
+   visible: wide columns need a bottom scrollbar that moves with the table. */
+html.staff-scope .app-table-shell-scroll,
+html.staff-scope [data-app-table-shell-scroll] {
+  overflow-x: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--theme) transparent !important;
+  -ms-overflow-style: auto !important;
+}
+
+html.staff-scope .app-table-shell-scroll::-webkit-scrollbar,
+html.staff-scope [data-app-table-shell-scroll]::-webkit-scrollbar {
+  display: block !important;
+  width: 0 !important;
+  height: 8px !important;
+}
+
+html.staff-scope .app-table-shell-scroll::-webkit-scrollbar-track,
+html.staff-scope [data-app-table-shell-scroll]::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html.staff-scope .app-table-shell-scroll::-webkit-scrollbar-thumb,
+html.staff-scope [data-app-table-shell-scroll]::-webkit-scrollbar-thumb {
+  background: var(--theme) !important;
+  border-radius: var(--radius-pill);
+}
+
+html.staff-scope .app-table-shell-scroll::-webkit-scrollbar-corner,
+html.staff-scope [data-app-table-shell-scroll]::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Report tables pan by clicking near the left/right edge of the header area.
+   Keep the table clipped to its section and hide horizontal scrollbar chrome. */
+html.staff-scope .app-table-shell-scroll[data-report-table-pan],
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan] {
+  overflow-x: hidden !important;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+  -ms-overflow-style: none !important;
+}
+
+html.staff-scope .app-table-shell-scroll[data-report-table-pan]::-webkit-scrollbar,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan]::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+html.staff-scope .app-table-shell-scroll[data-report-table-pan] .app-table-shell--with-headings thead,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan] .app-table-shell--with-headings thead,
+html.staff-scope .app-table-shell-scroll[data-report-table-pan] .app-table-shell--with-headings thead th,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan] .app-table-shell--with-headings thead th {
+  cursor: ew-resize;
+  user-select: none;
+}
+
+/* A report-pan table MUST be free to grow wider than its (clipped) wrapper —
+   otherwise there is nothing to pan to. The global `html.staff-scope table {
+   max-width: 100% }` cap squeezes every nowrap column to fit the wrapper, so
+   scrollWidth === clientWidth and the header click-pan handler always bails.
+   Here the table sizes to its content (`max-content`) but never shrinks below
+   the wrapper (`min-width: 100%`), so narrow tables still fill the space while
+   wide ones overflow and become pannable. Scoped to the pan attribute only. */
+html.staff-scope .app-table-shell-scroll[data-report-table-pan] table,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan] table {
+  width: max-content !important;
+  min-width: 100% !important;
+  max-width: none !important;
+}
+
+/* Pan affordance — when the cursor enters a live pan zone, GlobalTableShells
+   tags the wrapper with data-pan-hot=left|right and an animated directional
+   chevron is drawn on the hovered header cell so it's clear a click will page
+   the columns. The chevron is a token-coloured glyph on the th's ::after (no
+   border, no injected DOM); it only appears on the side that can still move. */
+@keyframes report-pan-chevron-right {
+  0%, 100% { transform: translate(0, -50%); opacity: 0.5; }
+  50% { transform: translate(5px, -50%); opacity: 1; }
+}
+@keyframes report-pan-chevron-left {
+  0%, 100% { transform: translate(0, -50%); opacity: 0.5; }
+  50% { transform: translate(-5px, -50%); opacity: 1; }
+}
+
+html.staff-scope .app-table-shell-scroll[data-report-table-pan][data-pan-hot="right"] thead th:hover::after,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan][data-pan-hot="right"] thead th:hover::after {
+  content: "\203A"; /* › single right-pointing angle quote */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  color: var(--accentText);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  animation: report-pan-chevron-right 0.9s ease-in-out infinite;
+}
+
+html.staff-scope .app-table-shell-scroll[data-report-table-pan][data-pan-hot="left"] thead th:hover::after,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan][data-pan-hot="left"] thead th:hover::after {
+  content: "\2039"; /* ‹ single left-pointing angle quote */
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  color: var(--accentText);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  animation: report-pan-chevron-left 0.9s ease-in-out infinite;
+}
+
+/* Subtle accent wash on the hovered header in the hot zone so the active side
+   reads even before the chevron is noticed (opaque over --surface to keep the
+   sticky header solid). */
+html.staff-scope .app-table-shell-scroll[data-report-table-pan][data-pan-hot] thead th:hover,
+html.staff-scope [data-app-table-shell-scroll][data-report-table-pan][data-pan-hot] thead th:hover {
+  background: linear-gradient(rgba(var(--accent-base-rgb), 0.16), rgba(var(--accent-base-rgb), 0.16)), var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-table-shell-scroll[data-report-table-pan][data-pan-hot="right"] thead th:hover::after,
+  html.staff-scope [data-app-table-shell-scroll][data-report-table-pan][data-pan-hot="right"] thead th:hover::after,
+  html.staff-scope .app-table-shell-scroll[data-report-table-pan][data-pan-hot="left"] thead th:hover::after,
+  html.staff-scope [data-app-table-shell-scroll][data-report-table-pan][data-pan-hot="left"] thead th:hover::after {
+    animation: none !important;
+    opacity: 0.9;
+  }
+}
+
 /* =====================================================================
    Staff shared UI building blocks (layout cleanup, 2026-06-01)
    Class-driven primitives for the components in src/components/ui:
@@ -6850,5 +6985,183 @@ html.staff-scope .app-job-summary-panel__body {
   html.staff-scope .app-vhc-row__status,
   html.staff-scope .app-parts-request-row__status {
     justify-content: flex-start;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Clickable KPI cards (reporting)
+   The whole KpiValueCard is the drill-down affordance (the "View records"
+   button was removed). On hover the surface lifts to --surfaceHover so it
+   reads as clickable; keyboard focus shows the standard focus ring. The
+   !important on the hover background is required because LayerSurface sets
+   `background: var(--surface)` inline, which would otherwise win.
+   ───────────────────────────────────────────────────────────────────────── */
+html.staff-scope .report-kpi-card--clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+html.staff-scope .report-kpi-card--clickable:hover {
+  background: var(--surfaceHover) !important;
+}
+
+html.staff-scope .report-kpi-card--clickable:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Report trend graph — ONE shared premium line-graph system (Revolut-style)
+   Every report-page line chart (KpiTrendChart) renders this surface. Restyle
+   all report graphs at once by changing the tokens below — the component holds
+   no colours of its own. Dark premium chart surface so the line + glow pop on
+   top of the light report cards.
+
+   Token group (override here to re-skin every report graph globally):
+   ───────────────────────────────────────────────────────────────────────── */
+html.staff-scope {
+  /* Deep, near-black premium chart backdrop (chart-only; documented exception
+     to the "colours live in theme.css" rule — these are graph-surface tokens,
+     not app colours, and are intentionally dark in both light & dark themes). */
+  --report-graph-surface-top: #171c24;
+  --report-graph-surface-bottom: #0b0e13;
+  /* Line + glow derive from the brand accent so a brand change flows through. */
+  --report-graph-line: var(--accentText);
+  --report-graph-line-rgb: var(--accentMainRgb);
+  --report-graph-fill-top: rgba(var(--accentMainRgb), 0.30);
+  --report-graph-fill-bottom: rgba(var(--accentMainRgb), 0);
+  --report-graph-axis-text: rgba(255, 255, 255, 0.52);
+  --report-graph-value-text: #ffffff;
+  --report-graph-radius: var(--radius-md);
+  --report-graph-pad: 16px;
+  --report-graph-follow: 90ms; /* pointer-follow easing for the active marker */
+}
+
+html.staff-scope .report-graph {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--report-graph-pad);
+  border-radius: var(--report-graph-radius);
+  background: linear-gradient(
+    180deg,
+    var(--report-graph-surface-top),
+    var(--report-graph-surface-bottom)
+  );
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Plot = the scrubbable chart area. touch-action: pan-y keeps vertical page
+   scroll working on mobile while horizontal drags scrub the line. */
+html.staff-scope .report-graph__plot {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+}
+
+html.staff-scope .report-graph__svg {
+  display: block;
+  width: 100%;
+}
+
+html.staff-scope .report-graph__line {
+  fill: none;
+  stroke: var(--report-graph-line);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 200ms ease;
+}
+
+/* Base line dims while a section is selected so the active segment leads. */
+html.staff-scope .report-graph__line--base { opacity: 0.92; }
+html.staff-scope .report-graph--scrubbing .report-graph__line--base { opacity: 0.3; }
+
+/* Active (selected) segment — brighter, thicker, glowing. */
+html.staff-scope .report-graph__line--active {
+  stroke-width: 2.9;
+  opacity: 1;
+}
+html.staff-scope .report-graph__glow {
+  fill: none;
+  stroke: var(--report-graph-line);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Draw-on animation when the chart first mounts. */
+html.staff-scope .report-graph__draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: report-graph-draw 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes report-graph-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+html.staff-scope .report-graph__dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--report-graph-line);
+  box-shadow:
+    0 0 0 4px rgba(var(--report-graph-line-rgb), 0.22),
+    0 0 18px 3px rgba(var(--report-graph-line-rgb), 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: left var(--report-graph-follow) linear, top var(--report-graph-follow) linear;
+}
+
+/* Bottom data panel — sits below the plot in normal flow, never overlaps it. */
+html.staff-scope .report-graph__panel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: var(--report-graph-axis-text);
+}
+html.staff-scope .report-graph__panel-end { text-align: right; }
+html.staff-scope .report-graph__value {
+  color: var(--report-graph-value-text);
+  font-weight: 600;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  transition: color 140ms ease;
+}
+html.staff-scope .report-graph__value-label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--report-graph-axis-text);
+}
+
+html.staff-scope .report-graph__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--report-graph-radius);
+  background: linear-gradient(
+    180deg,
+    var(--report-graph-surface-top),
+    var(--report-graph-surface-bottom)
+  );
+  color: var(--report-graph-axis-text);
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .report-graph__draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  html.staff-scope .report-graph__dot,
+  html.staff-scope .report-graph__line,
+  html.staff-scope .report-graph__value {
+    transition: none;
   }
 }

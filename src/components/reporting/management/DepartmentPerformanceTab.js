@@ -9,6 +9,7 @@
 // shared trend chart for throughput history.
 
 import React from "react";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface";
 import ReportSection from "../ReportSection";
 import ExecutiveTrendCard from "./ExecutiveTrendCard";
@@ -40,12 +41,30 @@ export default function DepartmentPerformanceTab({ filter }) {
         title="Department comparison"
         subtitle="Every operational department's headline KPIs side by side — composed from each department package's own resolvers. A single normalised performance index / ranking needs the dim_kpi weighting model and targets (declared); the live composed values are shown for direct comparison."
       >
-        <LayerSurface radius="var(--radius-sm)" padding="16px" gap="12px">
+        <LayerSurface radius="var(--radius-sm)" padding="16px" gap="12px" sectionKey="report-department-comparison-table-card" data-dev-text-preview="Department comparison table card">
           {error && <div style={{ color: "var(--danger-base)", fontSize: "0.82rem" }}>{error}</div>}
           {loading && <div style={{ color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>Loading department KPIs…</div>}
           {!loading && departments.length > 0 && (
-            <div className="app-table-shell-scroll" style={{ overflowX: "auto" }}>
-              <table className="app-data-table app-table-shell app-table-shell--with-headings" style={{ width: "100%" }}>
+            <DevLayoutSection
+              as="div"
+              className="app-table-shell-scroll"
+              data-report-table-pan
+              sectionKey="report-department-comparison-table-scroll"
+              sectionType="section-shell"
+              parentKey="report-department-comparison-table-card"
+              backgroundToken="transparent"
+              data-dev-text-preview="Department comparison table scroll area"
+              style={{ overflowX: "auto" }}
+            >
+              <table
+                className="app-data-table app-table-shell app-table-shell--with-headings"
+                data-dev-section-key="report-department-comparison-table"
+                data-dev-section-type="data-table"
+                data-dev-section-parent="report-department-comparison-table-scroll"
+                data-dev-background-token="transparent"
+                data-dev-text-preview="Department comparison table"
+                style={{ width: "100%" }}
+              >
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>Department</th>
@@ -69,7 +88,7 @@ export default function DepartmentPerformanceTab({ filter }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </DevLayoutSection>
           )}
           <ProvenanceFooter meta={result.provenance} warnings={result.warnings} compact />
         </LayerSurface>

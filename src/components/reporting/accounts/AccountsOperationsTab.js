@@ -12,16 +12,18 @@ import KpiScorecardStrip from "../KpiScorecardStrip";
 import KpiTrendChart from "../KpiTrendChart";
 import { useKpiTrend } from "@/hooks/reporting/useReporting";
 import { FINANCIAL_ACTIVITY, OPERATIONS_READINESS } from "./accountsReportConfig";
+import { reportDevKey } from "../reportDevOverlay";
 
 function TrendCard({ kpiId, label, unit, format, filter, granularity, granularityLabel }) {
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
+  const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
   return (
-    <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px">
+    <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>{label}</span>
         <span style={{ fontSize: "0.7rem", color: "var(--surfaceTextMuted)" }}>{granularityLabel}</span>
       </div>
-      <KpiTrendChart series={trend.series} unit={unit} format={format} height={110} />
+      <KpiTrendChart series={trend.series} unit={unit} format={format} height={110} loading={trend.loading} sectionKey={`${devSectionKey}-chart`} parentKey={devSectionKey} />
     </LayerSurface>
   );
 }

@@ -21,7 +21,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
@@ -66,18 +65,15 @@ function AccountsReportContent() {
         <title>Accounts Reports — HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Accounts Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Financial performance on the shared reporting platform. Figures are exact and provenance-labelled, and
-          restricted to Accounts, Management and Executive roles; DSO, ageing, payment conversion and profitability
-          unlock as invoice status-history and cost inputs accrue.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={ACCOUNTS_DEPARTMENT.label} />
-
-      <TabGroup items={ACCOUNTS_TABS} value={tab} onChange={setTab} ariaLabel="Accounts report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={ACCOUNTS_DEPARTMENT.label}
+        tabItems={ACCOUNTS_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Accounts report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

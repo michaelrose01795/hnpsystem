@@ -10,6 +10,7 @@ import SavedViewsBar from "../SavedViewsBar";
 import ReportDrilldownTable from "../ReportDrilldownTable";
 import { buildExportUrl } from "@/hooks/reporting/useReporting";
 import { ALL_EXPORTABLE, MOT_VIEW_TARGET } from "./motReportConfig";
+import { reportDevKey } from "../reportDevOverlay";
 
 export default function MotUtilitiesTab({ filter, onApplySavedView }) {
   const [explore, setExplore] = useState(null);
@@ -23,7 +24,7 @@ export default function MotUtilitiesTab({ filter, onApplySavedView }) {
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind any drillable MOT KPI (audited CSV), or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
-            <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px">
+            <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

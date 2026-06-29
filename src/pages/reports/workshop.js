@@ -16,7 +16,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -54,17 +53,15 @@ function WorkshopReportContent() {
         <title>Workshop Reports — HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Workshop Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Department performance on the shared reporting platform. Figures are exact and provenance-labelled; deeper
-          cycle-time and per-operator tiers unlock as the event spine accrues.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={WORKSHOP_DEPARTMENT.label} />
-
-      <TabGroup items={WORKSHOP_TABS} value={tab} onChange={setTab} ariaLabel="Workshop report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={WORKSHOP_DEPARTMENT.label}
+        tabItems={WORKSHOP_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Workshop report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

@@ -19,7 +19,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -62,18 +61,15 @@ function ServiceReportContent() {
         <title>Service Advisor Reports — HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Service Advisor Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Front-of-house performance on the shared reporting platform. Booking volume, VHC send rate, customer-status
-          mix and department-level VHC conversion are live and exact; per-advisor conversion, customer-response and
-          follow-up metrics unlock as the communication event spine and send-advisor attribution accrue.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={SERVICE_DEPARTMENT.label} />
-
-      <TabGroup items={SERVICE_TABS} value={tab} onChange={setTab} ariaLabel="Service Advisor report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={SERVICE_DEPARTMENT.label}
+        tabItems={SERVICE_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Service Advisor report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

@@ -37,6 +37,14 @@ export default function LayerSurface({
     ...style,
   };
 
+  // Stable marker class so the Dev Overlay auto-detects EVERY surface primitive
+  // (and therefore every Card/Section/SectionCard that renders one) without any
+  // per-instance `sectionKey`. The class is a no-op visually — it only feeds the
+  // overlay's fallback selectors in src/lib/dev-layout/categories.js. This is
+  // what makes new pages/sections/cards appear in the overlay with zero extra
+  // steps. See also LayerTheme's `app-layer-theme`.
+  const mergedClassName = ["app-layer-surface", className].filter(Boolean).join(" ");
+
   if (sectionKey) {
     return (
       <DevLayoutSection
@@ -47,7 +55,7 @@ export default function LayerSurface({
         backgroundToken={backgroundToken}
         widthMode={widthMode}
         shell={shell}
-        className={className}
+        className={mergedClassName}
         style={surfaceStyle}
         {...rest}
       >
@@ -58,7 +66,7 @@ export default function LayerSurface({
 
   const Component = as;
   return (
-    <Component className={className} style={surfaceStyle} {...rest}>
+    <Component className={mergedClassName} style={surfaceStyle} {...rest}>
       {children}
     </Component>
   );

@@ -7,7 +7,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
 import ReportFilterBar from "@/components/reporting/ReportFilterBar";
@@ -46,18 +45,15 @@ function PaintReportContent() {
         <title>Paint Reports - HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Paint Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Paint reporting on the shared reporting platform. Completed jobs, current queue, workload, bodyshop demand
-          and a whole-job cycle-time proxy are live where existing job data supports them; stage, bay, material, rework
-          and true painter-productivity metrics remain blocked until Paint workflow modelling lands.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={PAINT_DEPARTMENT.label} />
-
-      <TabGroup items={PAINT_TABS} value={tab} onChange={setTab} ariaLabel="Paint report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={PAINT_DEPARTMENT.label}
+        tabItems={PAINT_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Paint report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

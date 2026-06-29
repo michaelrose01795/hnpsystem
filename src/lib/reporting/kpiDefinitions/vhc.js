@@ -31,6 +31,16 @@ export const vhcKpis = [
     format: "0.0%",
     targetType: "higher_is_better",
     example: "31 ÷ 34 = 91%",
+    // Ratio KPI: drill-down shows the NUMERATOR — jobs with a VHC completed in the
+    // period. The denominator (vhc_required jobs by created_at) is counted
+    // separately, so the row count reconciles with `numerator`, not the percentage.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "jobs",
+        "id,job_number,vhc_required,vhc_completed_at,created_at",
+        (q) => applyDateRange(q.not("vhc_completed_at", "is", null), "vhc_completed_at", filter),
+        { orderBy: "vhc_completed_at" }
+      ),
     resolver: async ({ filter }) => {
       const [completed, required] = await Promise.all([
         countRows("jobs", (q) =>
@@ -89,6 +99,15 @@ export const vhcKpis = [
     format: "£0,0.00",
     targetType: "higher_is_better",
     relatedReports: ["mgt.upsell_contribution"],
+    // Drill-down shows the VHC check rows whose authorized_total_gbp sums to the
+    // value (totalling the column reconciles with the headline figure).
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "vhc_checks",
+        "vhc_id,job_id,section,issue_title,authorized_total_gbp,created_at",
+        (q) => applyDateRange(q, VHC_DATE_COL, filter),
+        { orderBy: VHC_DATE_COL }
+      ),
     resolver: async ({ filter }) => {
       const { sum } = await sumColumn("vhc_checks", "authorized_total_gbp", (q) =>
         applyDateRange(q, VHC_DATE_COL, filter)
@@ -115,6 +134,16 @@ export const vhcKpis = [
     unit: "percent",
     format: "0.0%",
     targetType: "higher_is_better",
+    // Ratio KPI: rows carry both authorised and declined value so the table shows
+    // the identified work behind the rate (numerator = Σ authorized_total_gbp;
+    // denominator = Σ authorized + declined).
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "vhc_checks",
+        "vhc_id,job_id,section,authorized_total_gbp,declined_total_gbp,created_at",
+        (q) => applyDateRange(q, VHC_DATE_COL, filter),
+        { orderBy: VHC_DATE_COL }
+      ),
     resolver: async ({ filter }) => {
       const [{ sum: authorised }, { sum: declined }] = await Promise.all([
         sumColumn("vhc_checks", "authorized_total_gbp", (q) => applyDateRange(q, VHC_DATE_COL, filter)),

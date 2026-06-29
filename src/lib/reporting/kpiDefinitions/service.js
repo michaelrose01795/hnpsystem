@@ -149,7 +149,7 @@ export const serviceKpis = [
     drilldown: async ({ filter }) =>
       fetchRows(
         "jobs",
-        "id,job_number,vhc_required,vhc_sent_at,vhc_completed_at,checked_in_at,booked_by",
+        "id,job_number,customer,vehicle_reg,vehicle_make_model,status,vhc_required,vhc_sent_at,vhc_completed_at,checked_in_at,booked_by",
         (q) => applyDateRange(q.not("vhc_sent_at", "is", null), "vhc_sent_at", filter),
         { orderBy: "vhc_sent_at" }
       ),

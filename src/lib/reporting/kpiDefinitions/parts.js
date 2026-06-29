@@ -264,6 +264,16 @@ export const partsKpis = [
     targetType: "higher_is_better",
     futureNotes:
       "Denominator is all authorised VHC items in the period; a precise 'needing parts' filter on the VHC item arrives once the VHC item model carries a needs-parts signal (improvement). Ratio is lines÷items per the catalogue formula, so it can exceed 100% (multiple part lines per VHC item).",
+    // Ratio KPI: drill-down shows the NUMERATOR — authorised part lines linked to a
+    // VHC item. The denominator (authorised vhc_checks) is counted separately, so
+    // the row count reconciles with `numerator`, not the percentage.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "parts_job_items",
+        "id,job_id,part_id,vhc_item_id,status,quantity_requested,authorised,created_at",
+        (q) => applyDateRange(q.not("vhc_item_id", "is", null).eq("authorised", true), "created_at", filter),
+        { orderBy: "created_at" }
+      ),
     resolver: async ({ filter }) => {
       const [linkedAuthorised, authorisedVhc] = await Promise.all([
         countRows("parts_job_items", (q) =>
@@ -330,6 +340,17 @@ export const partsKpis = [
     permission: ["MANAGER_SCOPED_ROLES", "parts manager"],
     futureNotes:
       "Average stock value is approximated by the current point-in-time stock value until daily stock snapshots accrue (then the true period-average denominator is used — no formula change, snapshot-fed).",
+    // Composite ratio (COGS over period ÷ avg stock value). Drill-down shows the
+    // COGS side — the fitted/sold lines whose unit_cost × quantity_fitted form the
+    // numerator. The denominator is a point-in-time stock snapshot, so the rows
+    // reconcile with `numerator` (COGS), not the ratio.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "parts_job_items",
+        "id,job_id,part_id,status,quantity_fitted,unit_cost,unit_price,updated_at",
+        fittedLineBuild(filter),
+        { orderBy: "updated_at" }
+      ),
     resolver: async ({ filter }) => {
       const [{ cost }, stockValue] = await Promise.all([sumFittedValue(filter), currentStockValue()]);
       const cogs = Math.round(cost * 100) / 100;
@@ -360,6 +381,15 @@ export const partsKpis = [
     relatedReports: ["acc.revenue"],
     futureNotes:
       "Counter orders (parts_order_cards) are not yet linked to revenue — fitted job-line revenue only (catalogue improvement). Cross-check against invoiced invoices.parts_total belongs to the Accounts package.",
+    // Drill-down shows the fitted part lines behind the revenue (totalling
+    // unit_price × quantity_fitted reconciles with the headline value).
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "parts_job_items",
+        "id,job_id,part_id,status,quantity_fitted,unit_price,unit_cost,updated_at",
+        fittedLineBuild(filter),
+        { orderBy: "updated_at" }
+      ),
     resolver: async ({ filter }) => {
       const { revenue } = await sumFittedValue(filter);
       const value = Math.round(revenue * 100) / 100;
@@ -385,6 +415,16 @@ export const partsKpis = [
     targetType: "band",
     example: "(£1,000 − £640) ÷ £1,000 = 36%",
     permission: ["MANAGER_SCOPED_ROLES", "parts manager"],
+    // Ratio KPI: drill-down shows the fitted lines (unit_price + unit_cost) the
+    // margin is computed from. Margin % itself doesn't sum, but per-line price/cost
+    // make the rate auditable.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "parts_job_items",
+        "id,job_id,part_id,status,quantity_fitted,unit_price,unit_cost,updated_at",
+        fittedLineBuild(filter),
+        { orderBy: "updated_at" }
+      ),
     resolver: async ({ filter }) => {
       const { revenue, cost } = await sumFittedValue(filter);
       const value = revenue > 0 ? Math.round(((revenue - cost) / revenue) * 1000) / 10 : null;
@@ -415,6 +455,15 @@ export const partsKpis = [
     format: "£0,0.00",
     targetType: "higher_is_better",
     permission: ["MANAGER_SCOPED_ROLES", "parts manager"],
+    // Drill-down shows the fitted lines (unit_price + unit_cost) whose price−cost
+    // gross profit sums to the value.
+    drilldown: async ({ filter }) =>
+      fetchRows(
+        "parts_job_items",
+        "id,job_id,part_id,status,quantity_fitted,unit_price,unit_cost,updated_at",
+        fittedLineBuild(filter),
+        { orderBy: "updated_at" }
+      ),
     resolver: async ({ filter }) => {
       const { revenue, cost } = await sumFittedValue(filter);
       const value = Math.round((revenue - cost) * 100) / 100;

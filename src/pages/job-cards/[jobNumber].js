@@ -692,9 +692,9 @@ const normalizeKeyLocationLabel = (value = "") => {
   const text = String(value || "").trim();
   if (!text) return "";
   return text.
-  replace(/^Keys (received|hung|updated)\s*[-â€“]\s*/i, "").
-  replace(/^Key location\s*[-:â€“]\s*/i, "").
-  replace(/^Key locations?\s*[-:â€“]\s*/i, "");
+  replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "").
+  replace(/^Key location\s*[-:–]\s*/i, "").
+  replace(/^Key locations?\s*[-:–]\s*/i, "");
 };
 
 const ensureDropdownOption = (options = [], value = "") => {
@@ -767,7 +767,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   const isArchiveMode = router.query.archive === "1"; // moved up so useJob can reference it
 
-  // SWR-powered initial data â€” provides cached data instantly on revisit or prefetch
+  // SWR-powered initial data — provides cached data instantly on revisit or prefetch
   const { jobResponse: swrJobResponse, mutate: mutateSwrJob } = useJob(jobNumber, { archive: isArchiveMode });
 
   // State Management
@@ -1089,7 +1089,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // job is past the Checked In stage and should read as "In Progress" until
   // the next stage advances it. The persisted jobs.status row is sometimes
   // still "Checked In" because the auto-promotion in jobStatusService runs on
-  // the sub-status path, not on every clocking event â€” so we promote here
+  // the sub-status path, not on every clocking event — so we promote here
   // for display whenever clocking activity exists for the job.
   const clockingSummary = statusSnapshot?.clockingSummary || null;
   const techHasClockedOnThisJob = Boolean(
@@ -1125,7 +1125,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     overallStatusId === JOB_STATUSES.CHECKED_IN ||
 
     // Only fall back to the timestamps when we don't know the canonical
-    // status yet â€” i.e. before the status snapshot has loaded.
+    // status yet — i.e. before the status snapshot has loaded.
     !overallStatusId && (
     jobData?.checkedInAt ||
     jobData?.appointment?.status === "checked_in")
@@ -1442,7 +1442,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
         const overlayToApply = writeUpOptimisticSyncRef.current;
         setJobData(overlayToApply ? applyWriteUpOptimisticOverlay(hydratedJobCard, overlayToApply) : hydratedJobCard);
-        // Do NOT set jobDocuments here â€” fetchDocuments() is the authoritative source
+        // Do NOT set jobDocuments here — fetchDocuments() is the authoritative source
         // and runs independently. Setting from the embedded join (which can silently
         // return [] when the PostgREST schema cache is stale) would overwrite correctly
         // fetched files and cause them to disappear from the gallery.
@@ -1485,7 +1485,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     fetchJobData();
   }, [fetchJobData]);
 
-  // Stable callbacks for WriteUpForm â€” avoids re-creating on every parent render
+  // Stable callbacks for WriteUpForm — avoids re-creating on every parent render
   const handleWriteUpSaveSuccess = useCallback(() => {
     fetchJobData({ silent: true, force: true });
   }, [fetchJobData]);
@@ -1518,7 +1518,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     } catch {
 
 
-      // silently ignore â€” the gallery will refresh on next fetchDocuments
+      // silently ignore — the gallery will refresh on next fetchDocuments
     }}, [jobNumber]);
   const handleDocumentFileUploaded = useCallback((fileData) => {
     if (!fileData) return;
@@ -1582,7 +1582,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     } catch {
 
 
-      // silently ignore â€” the embedded-join fallback already ran
+      // silently ignore — the embedded-join fallback already ran
     }}, [jobNumber]);
   // Always fetch documents directly on page load and job-number changes.
   // This is the authoritative source: a direct query against job_files avoids
@@ -1899,10 +1899,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     // Structured payload renders the modern themed-tile layout in
     // ConfirmationDialog (see src/components/popups/ConfirmationDialog.js).
     const confirmed = await confirm({
-      title: null, // Suppress the eyebrow â€” the prompt is enough on its own.
+      title: null, // Suppress the eyebrow — the prompt is enough on its own.
       message: "Check in this customer?",
       details: [
-      { label: "Job", value: jobData.jobNumber || jobData.id || "â€”", tone: "info" },
+      { label: "Job", value: jobData.jobNumber || jobData.id || "—", tone: "info" },
       { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
       { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
       { label: "Appointment", value: jobData.appointment?.time || "N/A", tone: "accent" }],
@@ -1998,7 +1998,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     []
   );
 
-  // jobDocuments is driven solely by fetchDocuments() â€” not by jobData.files â€”
+  // jobDocuments is driven solely by fetchDocuments() — not by jobData.files —
   // so that the embedded-join result (which can be empty due to schema-cache issues)
   // never overwrites the correct direct-query result.
 
@@ -2289,7 +2289,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         // "Open" stay on "Open" even after they're put on the appointment
         // calendar, which is why such a job appears in /appointments but its
         // header badge still reads "Open". Only fire this transition for jobs
-        // that haven't moved past the pre-booked stage â€” autoSetBookedStatus
+        // that haven't moved past the pre-booked stage — autoSetBookedStatus
         // would otherwise overwrite Checked-In / In-Progress / Invoiced jobs.
         const currentJobStatus = String(jobData?.status || "").trim().toLowerCase();
         const PRE_BOOKED_STATUSES = new Set(["", "open", "pending", "new", "booked"]);
@@ -2994,7 +2994,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           return;
         }
 
-        // Job tracker logging â€” non-blocking.
+        // Job tracker logging — non-blocking.
         try {
           const mime = String(file.type || file.mimeType || file.name || "").toLowerCase();
           const kind = mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime) ?
@@ -3322,7 +3322,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
   };
 
-  // "Mark All Complete" on the Customer Requests tab summary â€” sets every
+  // "Mark All Complete" on the Customer Requests tab summary — sets every
   // request row for this job to completed in one write.
   const handleMarkAllRequestsComplete = async () => {
     if (!canEdit || !jobData?.id) return;
@@ -3647,7 +3647,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return { authorized: 0, declined: 0 };
   }, [jobData, vhcFinancialTotalsFromPanel]);
 
-  // Customer VHC delivery status â€” fetched + polled here so both the VHC tab
+  // Customer VHC delivery status — fetched + polled here so both the VHC tab
   // (Send action) and the customer summary card badge share one source of truth.
   const loadVhcCustomerStatus = useCallback(async () => {
     if (!jobNumber) return;
@@ -3828,7 +3828,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       overallStatusId
     );
     const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
-    // Invoice gate matches the tab indicator â€” if every checklist row is
+    // Invoice gate matches the tab indicator — if every checklist row is
     // ticked the write-up is "done" for prerequisite purposes, even if the
     // 800ms autosave hasn't yet rewritten writeUp.completion_status in the
     // DB. Without this, ticking the final box flips the tab green but the
@@ -5456,7 +5456,7 @@ function CustomerRequestsTab({
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
-  // OR every checklist row is checked â€” which is what the user expects when
+  // OR every checklist row is checked — which is what the user expects when
   // they tick off every row but haven't yet hit the explicit "Mark Complete"
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
@@ -5503,7 +5503,7 @@ function CustomerRequestsTab({
     completedWriteUpSortOrders.has(sortOrderNum)) {
       return true;
     }
-    // Fall back to positional index (1-based) â€” matches how WriteUpForm seeds
+    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
     // a fresh checklist when no requestId/sortOrder is present.
     if (Number.isInteger(indexInList) && indexInList >= 0 &&
     completedWriteUpSortOrders.has(indexInList + 1)) {
@@ -5831,7 +5831,7 @@ function CustomerRequestsTab({
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
         _wheelOrder: toWheelPositionOrder(`${computedLabel || ""} ${computedDetail || ""}`),
         _originalIndex: rowIndex,
-        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source â€” the matched VHC check, the linked request row, and the row itself â€” so the severity field is found regardless of which shape the row arrived as.
+        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source — the matched VHC check, the linked request row, and the row itself — so the severity field is found regardless of which shape the row arrived as.
         severity: resolveVhcSeverity({ ...(row || {}), ...(linkedRequestRow || {}), ...(matchedCheck || {}) })
       };
     });
@@ -6246,8 +6246,8 @@ function CustomerRequestsTab({
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
                       <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
-                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
-                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
+                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
                   );
@@ -6273,7 +6273,7 @@ function CustomerRequestsTab({
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
                         <td style={{ color: "var(--text-1)" }}>{req.text}</td>
-                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
+                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>
                     );
@@ -6349,8 +6349,8 @@ function CustomerRequestsTab({
                   return (
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
-                      <td style={{ color: "var(--text-1)" }}>{row.description || "â€”"}</td>
-                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "â€”"}</td>
+                      <td style={{ color: "var(--text-1)" }}>{row.description || "—"}</td>
+                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
                       <td>{formatHoursDisplay(row.hours)}</td>
                       <td><span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span></td>
                     </tr>
@@ -6389,7 +6389,7 @@ function CustomerRequestsTab({
               {/* Description */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Description</div>
-                <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "â€”"}{selectedRow.detailLine ? ` â€” ${selectedRow.detailLine}` : ""}</div>
+                <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "—"}{selectedRow.detailLine ? ` — ${selectedRow.detailLine}` : ""}</div>
               </div>
 
               {/* Internal notes */}
@@ -6418,8 +6418,8 @@ function CustomerRequestsTab({
                   <tbody>
                     {selectedRow.linkedParts.map((item, i) =>
                     <tr key={item.id || i} style={{ color: "var(--text-1)" }}>
-                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "â€”"}</td>
-                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "â€”"}</td>
+                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "—"}</td>
+                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "—"}</td>
                       <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
                     </tr>)}
                   </tbody>
@@ -6508,11 +6508,11 @@ function CustomerRequestsTab({
 
 }
 
-// WriteUpWorkspace â€” the per-request technician workspace that now powers the
+// WriteUpWorkspace — the per-request technician workspace that now powers the
 // Write-up tab (replaces the legacy WriteUpForm). It owns the per-request
 // Fault Reported / Diagnosis / Rectification text, the request completion
 // toggles, and the summary KPIs. Completion is bridged back into job_writeups
-// (via onSaveWriteUp â†’ saveWriteUpToDatabase) plus the optimistic write-up
+// (via onSaveWriteUp → saveWriteUpToDatabase) plus the optimistic write-up
 // handlers, so invoice gating and per-request "Completed" status keep working.
 function WriteUpWorkspace({
   jobData,
@@ -6966,7 +6966,7 @@ function WriteUpWorkspace({
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
-  // OR every checklist row is checked â€” which is what the user expects when
+  // OR every checklist row is checked — which is what the user expects when
   // they tick off every row but haven't yet hit the explicit "Mark Complete"
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
@@ -7013,7 +7013,7 @@ function WriteUpWorkspace({
     completedWriteUpSortOrders.has(sortOrderNum)) {
       return true;
     }
-    // Fall back to positional index (1-based) â€” matches how WriteUpForm seeds
+    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
     // a fresh checklist when no requestId/sortOrder is present.
     if (Number.isInteger(indexInList) && indexInList >= 0 &&
     completedWriteUpSortOrders.has(indexInList + 1)) {
@@ -7341,7 +7341,7 @@ function WriteUpWorkspace({
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
         _wheelOrder: toWheelPositionOrder(`${computedLabel || ""} ${computedDetail || ""}`),
         _originalIndex: rowIndex,
-        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source â€” the matched VHC check, the linked request row, and the row itself â€” so the severity field is found regardless of which shape the row arrived as.
+        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source — the matched VHC check, the linked request row, and the row itself — so the severity field is found regardless of which shape the row arrived as.
         severity: resolveVhcSeverity({ ...(row || {}), ...(linkedRequestRow || {}), ...(matchedCheck || {}) })
       };
     });
@@ -7697,7 +7697,7 @@ function WriteUpWorkspace({
   const handleDetailFieldBlur = (field) => {
     if (!canEdit || !selectedRow?.requestId) return;
     const value = detailDraft[field] ?? "";
-    if (value === detailSavedRef.current[field]) return; // no change â†’ skip write
+    if (value === detailSavedRef.current[field]) return; // no change → skip write
     detailSavedRef.current = { ...detailSavedRef.current, [field]: value };
     onSaveRequestWorkDetails(selectedRow.requestId, { [field]: value });
   };
@@ -7773,7 +7773,7 @@ function WriteUpWorkspace({
         sortOrder: t.sortOrder ?? null,
         status: t.checked ? "complete" : "inprogress"
       }));
-      // Optimistic â€” instant tab highlight / invoice gate / request statuses.
+      // Optimistic — instant tab highlight / invoice gate / request statuses.
       onTasksSnapshotChange(tasks);
       onRequestStatusesChange(requestStatuses);
       onCompletionChange(deriveCompletionStatus(tasks));
@@ -7818,7 +7818,7 @@ function WriteUpWorkspace({
     return files;
   }, [jobData?.files, jobData?.job_files, jobData?.documents]);
 
-  // Detail-panel textarea style â€” borderless surface field per the Border/Layer law.
+  // Detail-panel textarea style — borderless surface field per the Border/Layer law.
   const detailTextareaStyle = {
     width: "100%",
     minHeight: "72px",
@@ -7879,7 +7879,7 @@ function WriteUpWorkspace({
       </div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Summary row â€” request KPIs + Mark All Complete action */}
+        {/* Summary row — request KPIs + Mark All Complete action */}
         <div className="jc-req-summary">
           <div className="jc-req-statgrid">
             <div style={statBoxStyle}><span style={statLabelStyle}>Requests Complete</span><span style={statValueStyle}>{requestStats.complete}/{requestStats.totalRequests}</span></div>
@@ -7919,8 +7919,8 @@ function WriteUpWorkspace({
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
                       <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
-                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "â€”"}</td>
-                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
+                      <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
                   );
@@ -7946,7 +7946,7 @@ function WriteUpWorkspace({
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
                         <td style={{ color: "var(--text-1)" }}>{req.text}</td>
-                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "â€”"}</td>
+                        <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>
                     );
@@ -8023,7 +8023,7 @@ function WriteUpWorkspace({
                       <td style={{ width: "52px", minWidth: "52px", fontWeight: 600, verticalAlign: "top", textAlign: "center", whiteSpace: "nowrap" }}>{row.numberLabel}</td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                          <span style={{ color: "var(--text-1)" }}>{row.description || "â€”"}</span>
+                          <span style={{ color: "var(--text-1)" }}>{row.description || "—"}</span>
                           <span className="app-badge" style={{ ...row.statusBadgeStyle, alignSelf: "flex-start" }}>{row.statusLabel}</span>
                         </div>
                       </td>
@@ -8102,7 +8102,7 @@ function WriteUpWorkspace({
                 Save this request first to record fault / diagnosis / rectification.
               </div>}
 
-              {/* Bottom info strip â€” labour time, parts, attachments, customer approval */}
+              {/* Bottom info strip — labour time, parts, attachments, customer approval */}
               <div className="jc-req-infostrip">
                 <div style={detailCardStyle}>
                   <div style={detailCardLabelStyle}>Labour Time</div>
@@ -8927,7 +8927,7 @@ function SchedulingTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* â”€â”€ Dashboard Row 1: Technician Assignment | Job Progress | Appointment Information â”€â”€ */}
+      {/* ── Dashboard Row 1: Technician Assignment | Job Progress | Appointment Information ── */}
       <div style={schedulingThreeColumnRowStyle}>
         <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
         <JobProgressSection jobData={jobData} />
@@ -9075,12 +9075,12 @@ function SchedulingTab({
         </DevLayoutSection>
       </div>
 
-      {/* â”€â”€ Row: Customer Updates | Customer Reported Issues | Customer & Vehicle â”€â”€ */}
+      {/* ── Row: Customer Updates | Customer Reported Issues | Customer & Vehicle ── */}
       {/* auto-fit keeps the row three-up on wide desktop and stacks it on narrow screens (CLAUDE.md §3.6) */}
       <div style={schedulingThreeColumnRowStyle}>
         <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
 
-        {/* â”€â”€ Section 2: Customer Reported Issues â”€â”€ */}
+        {/* ── Section 2: Customer Reported Issues ── */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-reported-issues"
           sectionType="content-card"
@@ -9199,7 +9199,7 @@ function SchedulingTab({
         </DevLayoutSection>
       </div>
 
-      {/* â”€â”€ Section 5: Actions â”€â”€ */}
+      {/* ── Section 5: Actions ── */}
       <DevLayoutSection
         sectionKey="jobcard-tab-scheduling-actions"
         sectionType="toolbar"
@@ -9442,13 +9442,13 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
                   <td style={{ padding: "12px 16px", fontWeight: 600 }}>
                     {line.goodsInNumber || "GIN"}
                   </td>
-                  <td style={{ padding: "12px 16px" }}>{line.partNumber || "â€”"}</td>
+                  <td style={{ padding: "12px 16px" }}>{line.partNumber || "—"}</td>
                   <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>{line.description || "No description"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>{line.quantity ?? 0}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.retailPrice)}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>{formatMoney(line.costPrice)}</td>
                   <td style={{ padding: "12px 16px" }}>
-                    {line.invoiceNumber || "â€”"}
+                    {line.invoiceNumber || "—"}
                   </td>
                   <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                     {formatDateTime(line.createdAt)}
@@ -9502,9 +9502,9 @@ const moneyFormatter = new Intl.NumberFormat("en-GB", {
 });
 
 const formatMoney = (value) => {
-  if (value === null || value === undefined || value === "") return "â€”";
+  if (value === null || value === undefined || value === "") return "—";
   const amount = Number(value);
-  if (Number.isNaN(amount)) return "â€”";
+  if (Number.isNaN(amount)) return "—";
   return moneyFormatter.format(amount);
 };
 
@@ -10320,7 +10320,7 @@ function VHCTab({
   const hasAwaitingCustomerDecision = useMemo(() => {
     // Routed through the engine in Phase 1: projectVhcItem normalises the row,
     // getDisplayStatus computes the same dotStateKey buildVhcRowStatusView used
-    // to compute inline. Behaviour is byte-identical â€” "awaiting" still means
+    // to compute inline. Behaviour is byte-identical — "awaiting" still means
     // pending decision with labour AND parts filled in (the gate for "Send VHC").
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     return checks.some((check) => {
@@ -10441,7 +10441,7 @@ function VHCTab({
   activeVhcTab === "summary" ?
   <>
       {/* "Customer VHC: <status>" badge now lives in the job-card customer */}
-      {/* summary card â€” see JobCardDetailPageUi jobcard-summary-customer. */}
+      {/* summary card — see JobCardDetailPageUi jobcard-summary-customer. */}
       {/* VHC required toggle — moved here from the Customer Requests tab so it */}
       {/* lives alongside the VHC tabs and stays reachable even when VHC is */}
       {/* marked Not Required (the tab no longer hides). */}
@@ -10468,7 +10468,7 @@ function VHCTab({
       title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
         {generatingLink ? "..." : copied ? "Copied" : "Copy"}
       </button>
-      {/* TODO: After testing, lock the Send button to fire only once per job â€” */}
+      {/* TODO: After testing, lock the Send button to fire only once per job — */}
       {/* relabel to "Sent" and disable after a successful first send (track via */}
       {/* jobData.vhc_sent_at or a local state mirror) so the same email can't */}
       {/* be re-sent. For now multiple sends are allowed for debugging. */}
@@ -12130,7 +12130,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </DevLayoutSection>
       }
 
-      {/* Techs / Staff Off popup â€” portal-rendered so it centers on the viewport, not the tab */}
+      {/* Techs / Staff Off popup — portal-rendered so it centers on the viewport, not the tab */}
       {showTechsPopup && typeof document !== "undefined" && createPortal(
         <div
           style={{ ...popupOverlayStyles, zIndex: 1300 }}
@@ -12155,7 +12155,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
               </h3>
               <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
-                Click an available technician to clock them onto Job #{normalizedJobNumber || "â€”"}.
+                Click an available technician to clock them onto Job #{normalizedJobNumber || "—"}.
                 {techAbsences.length > 0 ? ` ${techAbsences.length} with approved time off today.` : ""}
               </p>
             </div>
@@ -12208,7 +12208,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   pillLabel = "On this job";
                 } else if (isOnAnotherJob) {
                   toneClass = "app-badge--danger";
-                  pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "â€”"}`;
+                  pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`;
                 } else if (canClockOn) {
                   toneClass = "app-badge--success-strong";
                   pillLabel = isThisRowSubmitting ? "Clocking on..." : "Clock on";
@@ -12257,7 +12257,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 const secondaryLine = isOff ?
                 absence.role :
                 isOnAnotherJob ?
-                `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "â€”"}` :
+                `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}` :
                 tech.description || "Technician";
 
                 return (
@@ -12652,7 +12652,7 @@ function DocumentsTab({
 
   return (
     <div>
-      {/* Document preview popup â€” portalled to document.body so position:fixed is
+      {/* Document preview popup — portalled to document.body so position:fixed is
             always relative to the viewport, not any transformed ancestor */}
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
@@ -12845,7 +12845,7 @@ function DocumentsTab({
             <div>
               <h3 style={{ margin: 0, fontSize: "15px", color: "var(--accent-strong)" }}>Valet Upload Picture</h3>
               <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-1)" }}>
-                Upload wash/valet photos for Job #{valetJobNumber || "â€”"}.
+                Upload wash/valet photos for Job #{valetJobNumber || "—"}.
               </p>
             </div>
             <ValetClockingPanel

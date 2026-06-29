@@ -17,7 +17,6 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { MGT_REPORT_PERMISSION } from "@/lib/reporting/kpiDefinitions/management";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
@@ -56,20 +55,15 @@ function ExecutiveReportContent() {
         <title>Executive Reports - HNPSystem</title>
       </Head>
 
-      <div>
-        <h1 style={{ margin: "0 0 4px", fontSize: "1.4rem", color: "var(--accentText)" }}>Management &amp; Executive Reports</h1>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
-          Whole-company executive reporting on the shared reporting platform. Company revenue and VHC upsell contribution
-          are live; site recovery, growth, department comparison and forecast inputs compose the department packages&apos; R1
-          KPIs with their documented caveats. Profitability, capacity utilisation, cost-to-serve, the dwell-ranked
-          bottleneck and SLA attainment are clearly flagged as blocked until profitability/capacity/SLA modelling and the
-          status-history spine land. Access is restricted to Dealer Principal, Directors and Senior Management.
-        </p>
-      </div>
-
-      <ReportFilterBar filter={filter} onPatch={patch} departmentLabel={MGT_DEPARTMENT.label} />
-
-      <TabGroup items={MGT_TABS} value={tab} onChange={setTab} ariaLabel="Executive report sections" />
+      <ReportFilterBar
+        filter={filter}
+        onPatch={patch}
+        departmentLabel={MGT_DEPARTMENT.label}
+        tabItems={MGT_TABS}
+        tabValue={tab}
+        onTabChange={setTab}
+        tabAriaLabel="Executive report sections"
+      />
 
       {drill && (
         <ReportSection title={`Drill-down: ${drill.label}`}>

@@ -6,19 +6,28 @@
 // one breakdown-card implementation for the package.
 
 import React from "react";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import KpiValueCard from "../KpiValueCard";
 import ProvenanceFooter from "../ProvenanceFooter";
 import { useKpiValues } from "@/hooks/reporting/useReporting";
+import { reportDevKey } from "../reportDevOverlay";
 
 export default function AdminBreakdownCards({ filter, kpiId, cards = [], keys = null }) {
   const { loading, error, byId } = useKpiValues([kpiId], filter);
   const result = byId[kpiId] || {};
   const breakdown = result.breakdown || {};
   const wanted = keys ? cards.filter((card) => keys.includes(card.key)) : cards;
+  const gridKey = reportDevKey("report-breakdown-grid", kpiId);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+      <DevLayoutSection
+        sectionKey={gridKey}
+        sectionType="section-shell"
+        backgroundToken="transparent"
+        data-dev-text-preview={`${kpiId} breakdown grid`}
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}
+      >
         {wanted.map((card) => (
           <KpiValueCard
             key={card.key}
@@ -33,9 +42,10 @@ export default function AdminBreakdownCards({ filter, kpiId, cards = [], keys = 
               warnings: result.warnings || [],
               provenance: result.provenance,
             }}
+            loading={loading}
           />
         ))}
-      </div>
+      </DevLayoutSection>
       {error && <div style={{ color: "var(--danger-base)", fontSize: "0.8rem" }}>{error}</div>}
       <ProvenanceFooter meta={result.provenance} warnings={result.warnings} compact />
     </div>
