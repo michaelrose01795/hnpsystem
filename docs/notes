@@ -2,7 +2,7 @@
 CHeck global setting
 
 Phase 16 
-
+TODO
 Put into GPT for prompt to be made from the "--UI FIX--"
 also fix the dropdown list not following the in app style etc within "Date range Last 30 days Trend granularity Daily Search Filter records… Departmen Workshop" section, mka esure these not two ways the in app style works, only have one ui style each feature can follow. also implement when a new page/section is created that card and sections are added to the dev overlay so when the dev overlay is selected the new secitons/page/cards etc everything is shown within the dev overlay without asking for extra steps. 
 

@@ -102,6 +102,57 @@ html.staff-scope .app-toggle--radio:checked::after {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Native checkbox styling — applies to every bare <input type="checkbox">
+   across the staff app. Relocated here from staffglobal.css (2026-06) so the
+   checkbox ring + drawn tick live in the canonical Toggle family file.
+   Checkboxes are one of the five allowed "ring" border use-cases; the checked
+   tick is a CSS drawing primitive, not card chrome. */
+html.staff-scope input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  /* Checkboxes are one of the five allowed "ring" use-cases. */
+  border: var(--checkbox-ring);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+html.staff-scope input[type="checkbox"]:checked {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+html.staff-scope input[type="checkbox"]:checked::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--surface);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+html.staff-scope input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--grey-accent-light);
+  background: var(--surface);
+}
+
+html.staff-scope input[type="checkbox"]:disabled:checked {
+  background: var(--grey-accent);
+  border-color: var(--grey-accent);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Trace mode — loud teal outlines on every toggle/check/radio. */
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-toggle="1"])
   :where(

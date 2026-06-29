@@ -205,7 +205,6 @@ html.staff-scope .app-layout-main-column {
 
 html.staff-scope .app-topbar-shell {
   background: var(--nav-shell-bg);
-  border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
   padding: 0 var(--space-5);
   position: relative;
@@ -269,7 +268,6 @@ html.staff-scope .app-page-card {
   min-width: 0;
   background: var(--page-card-bg);
   border-radius: var(--page-card-radius);
-  border: var(--page-card-border);
   padding: var(--page-card-padding);
   overflow: visible;
   box-shadow: none;
@@ -297,7 +295,6 @@ html.staff-scope .app-page-stack {
 
 html.staff-scope .app-section-card {
   background: var(--section-card-bg);
-  border: var(--section-card-border);
   border-radius: var(--section-card-radius);
   padding: var(--section-card-padding);
   display: flex;
@@ -334,7 +331,6 @@ html.staff-scope .app-layout-section-shell {
   padding: var(--section-card-padding);
   border-radius: var(--section-card-radius);
   background: var(--theme);
-  border: var(--section-card-border);
   box-shadow: none;
   background-image: none;
   backdrop-filter: none;
@@ -348,7 +344,6 @@ html.staff-scope .app-layout-card {
   padding: var(--section-card-padding);
   border-radius: var(--section-card-radius);
   background: var(--section-card-bg);
-  border: var(--section-card-border);
   box-shadow: none;
   background-image: none;
   backdrop-filter: none;
@@ -592,7 +587,6 @@ html.staff-scope .app-header-row {
 
 html.staff-scope .app-sidebar {
   background: var(--nav-shell-bg);
-  border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
 }
 
@@ -858,52 +852,9 @@ html.staff-scope :where(
 /* ========================================================= */
 /* === Custom Checkbox Styles === */
 /* ========================================================= */
-
-/* Style checkboxes to match theme */
-html.staff-scope input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 18px;
-  height: 18px;
-  /* Checkboxes are one of the four allowed "ring" use-cases. */
-  border: var(--checkbox-ring);
-  border-radius: 4px;
-  background: var(--surface);
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-html.staff-scope input[type="checkbox"]:checked {
-  background: var(--accent-strong);
-  border-color: var(--accent-strong);
-}
-
-html.staff-scope input[type="checkbox"]:checked::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--surface);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-html.staff-scope input[type="checkbox"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  border-color: var(--grey-accent-light);
-  background: var(--surface);
-}
-
-html.staff-scope input[type="checkbox"]:disabled:checked {
-  background: var(--grey-accent);
-  border-color: var(--grey-accent);
-}
+/* Native checkbox styling lives in the canonical Toggle family file:
+   src/styles/families/toggles.css (checkbox is one of the five allowed
+   "ring" border use-cases; the checked-state tick is a drawing primitive). */
 
 /* Keep phone inputs visually consistent with other form fields across the app. */
 html.staff-scope input[type="tel"] {
@@ -2005,7 +1956,7 @@ html.staff-scope .login-card > div {
 
 html.staff-scope [data-theme="dark"] .login-card > div {
   background: var(--surface) !important;
-  border-color: transparent !important;
+  border: none !important;
 }
 
 html.staff-scope .login-form {
@@ -4876,7 +4827,7 @@ html.staff-scope .vhc-parts-identified-table tbody tr td {
   color: var(--text-1);
   vertical-align: middle;
   border: none;
-  border-bottom: 1px solid var(--theme);
+  border-bottom: var(--separating-line);
   transition: background-color 0.18s ease;
 }
 
@@ -4893,7 +4844,7 @@ html.staff-scope .vhc-parts-identified-table tbody tr td:last-child {
    keep their existing inline styles. */
 html.staff-scope .vhc-parts-identified-expanded {
   padding: 20px 24px 24px;
-  border-top: 1px solid var(--theme);
+  border-top: var(--separating-line);
   /* background is set inline per-row to match the clicked row's hover colour */
 }
 
@@ -5022,7 +4973,7 @@ html.staff-scope .app-table-shell--with-headings tbody tr:nth-child(even) {
 }
 
 html.staff-scope .app-table-shell--with-headings tbody td {
-  border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
+  border-top: var(--separating-line) !important;
   border-bottom: none !important;
   background: transparent !important;
   background-image: none !important;
@@ -5052,7 +5003,7 @@ html.staff-scope .app-table-shell--rows-only tbody tr:nth-child(even) {
 }
 
 html.staff-scope .app-table-shell--rows-only tbody td {
-  border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
+  border-top: var(--separating-line) !important;
   border-bottom: none !important;
   background: transparent !important;
   background-image: none !important;
@@ -5071,10 +5022,6 @@ html.staff-scope .app-table-shell--rows-only tbody td:last-child {
 }
 
 /* ---------- Dark theme ---------- */
-html.staff-scope [data-theme="dark"] .app-table-shell,
-html.staff-scope [data-theme="dark"] .app-table-shell-scroll {
-  border-color: rgba(var(--accent-purple-rgb, 122, 92, 250), 0.2);
-}
 
 html.staff-scope [data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
 html.staff-scope [data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
@@ -5614,7 +5561,7 @@ html.staff-scope .video-editor-popup {
   max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap) * 2)));
   background: var(--surface);
   color: var(--surfaceText);
-  border: 1px solid var(--primary-border);
+  border: 1px solid transparent;
   border-radius: var(--radius-xl);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
   display: grid;
@@ -5625,7 +5572,7 @@ html.staff-scope .video-editor-popup {
 
 html.staff-scope .video-editor-popup__header {
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--primary-border);
+  border-bottom: 1px solid transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5661,7 +5608,7 @@ html.staff-scope .video-editor-popup__footer {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--primary-border);
+  border-top: 1px solid transparent;
   background: var(--control-bg);
   flex-wrap: wrap;
 }
@@ -5692,8 +5639,8 @@ html.staff-scope .video-editor-player {
   background: #000;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--hud-divider);
-  box-shadow: var(--hud-shadow-lg);
+  border: 1px solid transparent;
+  box-shadow: var(--hud-shadow-lg), inset 0 0 0 1px var(--hud-divider);
 }
 
 html.staff-scope .video-editor-player__video {
@@ -5758,7 +5705,7 @@ html.staff-scope .video-editor-player__clip-range {
 html.staff-scope .video-editor-timeline {
   background: var(--surface);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--primary-border);
+  border: 1px solid transparent;
   padding: var(--space-4);
   color: var(--surfaceText);
 }
@@ -5786,7 +5733,7 @@ html.staff-scope .video-editor-timeline__track {
   height: 56px;
   border-radius: var(--radius-md);
   background: var(--control-bg);
-  border: 1px solid var(--primary-border);
+  border: 1px solid transparent;
   margin-bottom: 18px;
 }
 
@@ -5799,7 +5746,7 @@ html.staff-scope .video-editor-timeline__switch {
   width: 44px;
   height: var(--control-height);
   border-radius: var(--control-radius);
-  border: 1px solid var(--primary-border);
+  border: 1px solid transparent;
 }
 
 html.staff-scope .video-editor-timeline__tool-button {
@@ -5843,7 +5790,7 @@ html.staff-scope .start-new-chat-popup .chat-user-option {
 html.staff-scope .start-new-chat-popup .chat-user-option:hover,
 html.staff-scope .start-new-chat-popup .chat-user-option:focus-visible {
   background-color: var(--theme) !important;
-  border-color: rgba(var(--accent-base-rgb), 0.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-base-rgb), 0.4) !important;
 }
 
 @media (max-width: 768px) {

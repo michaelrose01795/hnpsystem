@@ -9,7 +9,6 @@ export default function ComplianceSection({ title, subtitle, children, style }) 
   return (
     <LayerTheme
       as="section"
-      className="app-section-card"
       gap="12px"
       style={style}
     >

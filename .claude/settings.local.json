@@ -308,7 +308,8 @@
       "PowerShell($out = node tools/scripts/check-borders.js 2>$null; $hits = $out | Select-String -Pattern \"reporting/management|reports/overview|kpiDefinitions/management|KpiBreakdownCards\"; if \\($hits\\) { Write-Output \"VIOLATIONS IN PHASE 14 FILES:\"; $hits } else { Write-Output \"OK: zero border violations in any Phase 14 file\" }; Write-Output \\(\"Total violation lines: \" + \\($out | Select-String -Pattern ':\\\\d+:'\\).Count\\))",
       "Bash(echo \"BUILD_EXIT=$?\")",
       "Bash(wc -l src/lib/database/schema/addtodatabase.sql)",
-      "Bash(head -20 src/lib/database/schema/addtodatabase.sql)"
+      "Bash(head -20 src/lib/database/schema/addtodatabase.sql)",
+      "PowerShell(npm uninstall react-select)"
     ],
     "deny": [],
     "ask": [],

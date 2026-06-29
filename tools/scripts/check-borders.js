@@ -101,6 +101,33 @@ function rel(file) {
 const BORDER_PROP_RE_GLOBAL = /\b(border(?:-?(top|bottom|left|right))?(?:-?color)?)\s*:\s*([^,;}\n]+)/gi;
 const BORDER_RADIUS_NAME_RE = /^border-?(radius|collapse|spacing|image)/i;
 
+// Lines that fall inside an `@media print { ... }` block. Printed output obeys
+// different rendering rules (like the allowlisted HTML email templates): solid
+// borders on printed tables/boxes are functional, not decorative card chrome.
+function computePrintBlockLines(lines) {
+  const inside = new Set();
+  let depth = 0; // running brace depth across the file
+  let printDepth = -1; // brace depth at which the active @media print opened
+  let armed = false; // saw `@media … print` on the current line, awaiting `{`
+  lines.forEach((line, index) => {
+    if (printDepth === -1 && /@media[^{}]*\bprint\b/i.test(line)) armed = true;
+    for (const ch of line) {
+      if (ch === "{") {
+        if (armed && printDepth === -1) {
+          printDepth = depth;
+          armed = false;
+        }
+        depth++;
+      } else if (ch === "}") {
+        depth--;
+        if (printDepth !== -1 && depth === printDepth) printDepth = -1;
+      }
+    }
+    if (printDepth !== -1) inside.add(index);
+  });
+  return inside;
+}
+
 const violations = [];
 
 for (const root of SEARCH_ROOTS) {
@@ -109,7 +136,10 @@ for (const root of SEARCH_ROOTS) {
     if (ALLOWLIST.has(relative)) continue;
     const source = fs.readFileSync(file, "utf8");
     const lines = source.split(/\r?\n/);
+    const printLines = computePrintBlockLines(lines);
     lines.forEach((line, index) => {
+      // Borders inside an @media print block are functional print styling.
+      if (printLines.has(index)) return;
       // Strip line-end comments before pattern matching to avoid being thrown
       // off by `// note about the border`.
       const stripped = line.replace(/\/\/.*$/, "").replace(/\/\*[\s\S]*?\*\//g, "");
