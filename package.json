@@ -73,14 +73,14 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.61.1",
     "@types/node": "24.10.0",
-    "baseline-browser-mapping": "^2.9.17",
+    "baseline-browser-mapping": "^2.10.40",
     "eslint": "^9.38.0",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "^16.2.9",
     "playwright": "^1.58.2",
     "typescript": "5.9.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "dompurify": "3.4.7",
