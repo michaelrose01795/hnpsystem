@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import GlobalSearch from "@/components/GlobalSearch";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
+import SupportControl from "@/components/support/SupportControl";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
@@ -367,6 +368,14 @@ export default function StaffTopbar({
             >
               <NextActionPrompt />
             </div>
+
+            {/* Help & Diagnostics ("?") — hidden in the presentation deck so the
+                demo shell doesn't file real reports. */}
+            {!presentationShell && (
+              <div style={{ flexShrink: 0 }}>
+                <SupportControl />
+              </div>
+            )}
 
             {userRoles.includes("admin manager") && (
               <Link

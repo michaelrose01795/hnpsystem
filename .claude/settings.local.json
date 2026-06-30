@@ -325,7 +325,8 @@
       "Bash(grep -c -E \"^CHECK$|^TODO$|jobcard-tab-customer-requests\" \"docs/Support/help-diagnostics-system-plan.md\")",
       "Bash(echo \"--- exit=$? ---\")",
       "Bash(echo \"lint exit: $?\")",
-      "Bash(echo \"eslint exit: $?\")"
+      "Bash(echo \"eslint exit: $?\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const d={...p.dependencies,...p.devDependencies}; console.log\\(JSON.stringify\\(Object.keys\\(d\\).filter\\(k=>/jsdom|testing-library|react-dom|react\\\\b|vitest|happy-dom|next-test/i.test\\(k\\)\\).reduce\\(\\(a,k\\)=>\\(a[k]=d[k],a\\),{}\\),null,2\\)\\)\")"
     ],
     "deny": [],
     "ask": [],

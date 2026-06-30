@@ -21,8 +21,8 @@
 |---|---|---|---|
 | 1 | Foundation & data model | ✅ Done | SQL migration, sanitiser (+tests), DB helper, private storage bucket. |
 | 2 | Capture runtime | ✅ Done | Capture lib + context provider + tests done. `_app.js` provider mount applied (flagged + approved). |
-| 3 | UI: "?" control + popup + POST route | ⏳ Next | |
-| 4 | Error boundaries | ⬜ Pending | |
+| 3 | UI: "?" control + popup + POST route | ✅ Done | Text-only "?" in StaffTopbar, lazy modal, screenshot capture+redact, authenticated POST route, audit log. |
+| 4 | Error boundaries | ⏳ Next | |
 | 5 | Version / code-state pinning | ⬜ Pending | Needs `next.config` env exposure. |
 | 6 | Dev viewer, triage & audit | ⬜ Pending | |
 | 7 | Hardening (rate limit, retention, RLS review, E2E) | ⬜ Pending | |
@@ -98,6 +98,75 @@
   node-testable without jsdom. Plan implied one provider file; this is a cleaner, behaviour-identical split.
 - Docs relocated to `docs/Support/` (plan + progress) per user request; user scratchpad `docs/Support/1st`
   left untouched.
+
+---
+
+### Phase 3 — UI: "?" control + popup + POST route (complete)
+
+**Created**
+- `src/lib/support/reportSubmission.js` — pure, server-side submit helpers (no I/O,
+  no next-auth) so the route boundary is unit-testable: `SUPPORT_CATEGORIES`
+  catalogue (value+label), `buildReportInsert({ body, session })` (validates,
+  **re-sanitises diagnostics server-side**, enforces the size cap, takes reporter
+  identity from the **session not the client**, derives `route`/`section_key`/
+  `source_file`/`source_line`/`app_version`/commit columns from the sanitised
+  blob), and `decodeScreenshot(dataUrl)` (validates image MIME + size cap, returns
+  an upload buffer or `file:null`).
+- `src/lib/support/reportSubmission.test.js` — 16 Vitest cases: validation,
+  identity-from-session (ignores attacker-supplied reporter fields), **secret
+  redaction of a planted JWT / Stripe key / password / token query-param**, column
+  derivation, and screenshot decode (valid/none/non-image/non-data-url/oversize).
+- `src/pages/api/support/reports.js` — authenticated `POST` via
+  `createHandler({ allowedRoles: [] })` (any signed-in user; 401 otherwise).
+  Decodes+validates the screenshot first (clean 400, no orphan row), assembles via
+  `buildReportInsert`, persists **only through `src/lib/database/support.js`**,
+  uploads the screenshot to the **private `support-reports` bucket** then attaches
+  the path (upload failure does not fail the already-saved report), and writes the
+  append-only `writeAuditLog({ action: "support_report_create", entityType:
+  "support_report", … })`. `bodyParser` raised to 8 MB for the base64 screenshot.
+- `src/components/support/SupportControl.js` — the text-only **"?"** button
+  (44×44 touch target, ghost button) that calls `openSupportReport()` and
+  **lazy-loads** the modal via `next/dynamic({ ssr:false })`.
+- `src/components/support/SupportReportModal.js` — built on the shared `PopupModal`,
+  modelled on `NextActionPrompt`. Category select + optional title + required
+  description + screenshot field + **transparency disclosure of the data
+  *categories* attached** (never values). Submits the Phase 2 `snapshot` as
+  `diagnostics`; success/error surfaced via `AlertContext` (`pushAlert`) + inline
+  `app-status-message`.
+- `src/components/support/SupportScreenshotField.js` — explicit, **user-previewed +
+  user-redactable** capture: `getDisplayMedia` grabs one frame (capped to 1600px),
+  shown on a canvas; the user drags black redaction boxes, and only the
+  **flattened** PNG (redactions baked in) is emitted. Graceful when capture is
+  unsupported/cancelled. No silent capture.
+
+**Edited**
+- `src/components/layout/StaffTopbar.js` — rendered `<SupportControl />` in the
+  right column next to `<NextActionPrompt />`, hidden when `presentationShell`.
+  StaffTopbar is **not** a CLAUDE.md §7 flagged-global file; the plan (§2)
+  designates this right column as the mount point, so no approval gate was needed.
+
+**Verification**
+- `npx vitest run src/lib/support/` → 44/44 pass (Phase 1+2+3).
+- `npm run check:borders` / `check:layers` / `check:encoding` → all pass.
+- `npx eslint` on all Phase 3 files → 0 errors, 0 warnings.
+- `npm run uk:check` → no violations in any Phase 3 file (remaining hits are
+  pre-existing `.agents/skills/**` docs, untouched).
+
+**Deviations from plan**
+- **UI test is logic-level, not React-rendered.** The repo has no jsdom /
+  @testing-library and Vitest runs in the `node` environment; adding a DOM test
+  runner is an out-of-scope global dependency change. The privacy-critical and
+  submit-flow logic is covered via the pure `reportSubmission` helpers instead. The
+  plan already assigns the rendered submit-flow + privacy-regression E2E to
+  Playwright in **Phase 7 (§14)** — deferring the browser-rendered UI test there is
+  consistent, not a silent drop.
+- Reporter identity (`reporter_user_id`/`username`/`roles`) is taken from the
+  NextAuth session server-side and **overrides** anything the client sends — a
+  hardening choice beyond the plan's wording.
+
+**Manual action outstanding**
+- Phase 1's `000_support.sql` must be applied in Supabase (table + private bucket
+  are auto-ensured on first upload, but the table is created by that migration).
 
 ---
 
