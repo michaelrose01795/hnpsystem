@@ -8966,6 +8966,15 @@ export default function VhcDetailsPanel({
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Shared hidden file input for every row's "Add media" button. The
+            target concern is stashed on a ref before this is triggered. */}
+        <input
+          ref={rowMediaUploadInputRef}
+          type="file"
+          accept="image/*,video/*"
+          style={{ display: "none" }}
+          onChange={handleRowMediaUploadChange}
+        />
         {/* Customer-facing main video — the end-of-check walkaround. Carries the
             same --theme surface chrome as the request media rows (radius-md,
             10px padding) so it follows their style. Left blank when no video. */}
