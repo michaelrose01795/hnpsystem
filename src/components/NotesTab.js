@@ -2,11 +2,8 @@
 // file location: src/components/NotesTab.js
 //
 // Layout (follows the Service History tab redesign + staffglobal.css conventions):
-//   1. Overview LayerSurface  → stat tiles (total / pinned / internal / customer
-//      view / last updated) plus a search bar and "Add note" button.
-//   2. Filter LayerSurface    → All / Pinned / Internal / Customer Visible /
-//      Workshop / Parts / Advisor / Manager toggle pills (.app-btn + is-active).
-//   3. 70/30 split            → left: notes list + inline composer; right: the
+//   1. Flat toolbar row       → compact stats plus search and "Add note" button.
+//   2. 70/30 split            → left: notes list + inline composer; right: the
 //      selected note's detail (category, created/updated, activity timeline,
 //      "Visible to" roles with an Edit access toggle).
 //
@@ -46,20 +43,6 @@ const eyebrowStyle = {
   color: "var(--accentText)",
   fontWeight: 700,
 };
-const labelStyle = {
-  fontSize: "0.65rem",
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "rgba(var(--text-1-rgb), 0.6)",
-  fontWeight: 700,
-};
-const valueStyle = {
-  fontSize: "1.4rem",
-  fontWeight: 700,
-  color: "var(--text-1)",
-  lineHeight: 1.1,
-  wordBreak: "break-word",
-};
 const metaStyle = { fontSize: "0.8rem", color: "rgba(var(--text-1-rgb), 0.7)" };
 const fieldLabelStyle = {
   fontSize: "0.6rem",
@@ -67,6 +50,38 @@ const fieldLabelStyle = {
   textTransform: "uppercase",
   color: "rgba(var(--text-1-rgb), 0.6)",
   fontWeight: 700,
+};
+
+const statLabelStyle = {
+  fontSize: "10px",
+  letterSpacing: "0.04em",
+  lineHeight: 1,
+  textTransform: "uppercase",
+  color: "var(--grey-accent)",
+  fontWeight: 700,
+  whiteSpace: "nowrap",
+};
+
+const statValueStyle = {
+  fontSize: "18px",
+  fontWeight: 700,
+  color: "var(--accentText)",
+  lineHeight: 1,
+  wordBreak: "break-word",
+};
+
+const statTileStyle = {
+  backgroundColor: "var(--surface)",
+  borderRadius: "var(--radius-sm)",
+  padding: "8px 10px",
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  columnGap: "8px",
+  rowGap: "2px",
+  minWidth: 0,
+  minHeight: "44px",
 };
 
 /* ---- filter definitions ---- */
@@ -637,10 +652,7 @@ export default function NotesTabNew({
 
   const statTiles = [
     { label: "Total Notes", value: stats.total },
-    { label: "Pinned", value: stats.pinned },
-    { label: "Internal", value: stats.internal },
     { label: "Customer View", value: stats.customerView },
-    { label: "Last Updated", value: stats.lastUpdated, small: true },
   ];
 
   const splitColumns = isMobile ? "1fr" : "minmax(0, 7fr) minmax(0, 3fr)";
@@ -661,89 +673,78 @@ export default function NotesTabNew({
         </div>
       )}
 
-      {/* ============================================================= */}
-      {/* 1. Overview — stats + search + add note                       */}
-      {/* ============================================================= */}
-      <LayerSurface
-        sectionKey="jobcard-notes-overview"
-        parentKey="jobcard-tab-notes"
-        gap="var(--space-4)"
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "8px",
+          flexWrap: "wrap",
+        }}
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-3)",
-            flexWrap: "wrap",
-          }}
-        >
-          <p style={eyebrowStyle}>Notes</p>
-          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
-            <DropdownField
-              options={filterOptions}
-              value={activeFilter}
-              onValueChange={(value) => setActiveFilter(value)}
-              ariaLabel="Filter notes"
-              size="sm"
-              style={{ width: "200px", maxWidth: "100%" }}
-            />
-            <SearchBar
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
-              placeholder="Search notes…"
-              ariaLabel="Search notes"
-              style={{ width: "240px", maxWidth: "100%" }}
-            />
-            <button
-              type="button"
-              className="app-btn app-btn--secondary"
-              onClick={() => setShowHistory((current) => !current)}
-            >
-              {showHistory ? "Hide history" : "Show history"}
-            </button>
-            {canEdit && (
-              <button
-                type="button"
-                className="app-btn app-btn--primary"
-                onClick={() => {
-                  setShowAddNote(true);
-                  if (typeof window !== "undefined") {
-                    window.requestAnimationFrame(() => {
-                      document
-                        .getElementById("jobcard-note-composer")
-                        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    });
-                  }
-                }}
-              >
-                + Add note
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
             display: "grid",
-            gap: "var(--space-3)",
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            gap: "8px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            flex: "1 1 320px",
+            minWidth: 0,
           }}
         >
           {statTiles.map((tile) => (
-            <LayerTheme key={tile.label} radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-2)">
-              <span style={labelStyle}>{tile.label}</span>
-              <span style={tile.small ? { ...valueStyle, fontSize: "0.95rem", fontWeight: 600 } : valueStyle}>
-                {tile.value}
-              </span>
-            </LayerTheme>
+            <div key={tile.label} style={statTileStyle}>
+              <span style={statLabelStyle}>{tile.label}</span>
+              <span style={statValueStyle}>{tile.value}</span>
+            </div>
           ))}
         </div>
-      </LayerSurface>
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
+          <DropdownField
+            options={filterOptions}
+            value={activeFilter}
+            onValueChange={(value) => setActiveFilter(value)}
+            ariaLabel="Filter notes"
+            size="sm"
+            style={{ width: "200px", maxWidth: "100%" }}
+          />
+          <SearchBar
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery("")}
+            placeholder="Search notes…"
+            ariaLabel="Search notes"
+            style={{ width: "240px", maxWidth: "100%" }}
+          />
+          <button
+            type="button"
+            className="app-btn app-btn--secondary"
+            onClick={() => setShowHistory((current) => !current)}
+          >
+            {showHistory ? "Hide history" : "Show history"}
+          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className="app-btn app-btn--primary"
+              onClick={() => {
+                setShowAddNote(true);
+                if (typeof window !== "undefined") {
+                  window.requestAnimationFrame(() => {
+                    document
+                      .getElementById("jobcard-note-composer")
+                      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  });
+                }
+              }}
+            >
+              + Add note
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* ============================================================= */}
-      {/* 2. 70/30 split — list (left) / detail (right)                 */}
+      {/* 1. 70/30 split — list (left) / detail (right)                 */}
       {/* ============================================================= */}
       <div
         style={{
@@ -756,7 +757,7 @@ export default function NotesTabNew({
         {/* ---- LEFT 70%: composer + notes list ---- */}
         <LayerSurface
           sectionKey="jobcard-notes-list"
-          parentKey="jobcard-tab-notes"
+          parentKey="jobcard-tab-content-shell"
           gap="var(--space-4)"
           style={{ minWidth: 0 }}
         >
@@ -1049,7 +1050,7 @@ export default function NotesTabNew({
         {/* ---- RIGHT 30%: selected note detail ---- */}
         <LayerSurface
           sectionKey="jobcard-notes-detail"
-          parentKey="jobcard-tab-notes"
+          parentKey="jobcard-tab-content-shell"
           gap="var(--space-4)"
           style={{ minWidth: 0, position: isMobile ? "static" : "sticky", top: "12px" }}
         >
@@ -1298,7 +1299,7 @@ export default function NotesTabNew({
       {showHistory && (
         <LayerSurface
           sectionKey="jobcard-tab-notes-history"
-          parentKey="jobcard-tab-notes"
+          parentKey="jobcard-tab-content-shell"
           gap="var(--layout-card-gap)"
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>

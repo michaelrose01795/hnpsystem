@@ -60,24 +60,39 @@ const titleStyle = {
 const jobKey = (job) => job?.id ?? job?.jobNumber;
 
 /* ════════════════════════════════════════════════════════════════════════
-   SummaryStatsRow — top "Overview" section: six summary metrics for the
-   vehicle's full job history, derived by useVehicleHistoryAnalytics.
-   Layer alternation: <LayerSurface> section → <LayerTheme> metric tiles.
+   SummaryStatsRow — compact KPI strip for the vehicle's full job history,
+   derived by useVehicleHistoryAnalytics.
    ════════════════════════════════════════════════════════════════════════ */
 const summaryLabelStyle = {
-  fontSize: "0.65rem",
-  letterSpacing: "0.12em",
+  fontSize: "10px",
+  letterSpacing: "0.04em",
+  lineHeight: 1,
   textTransform: "uppercase",
-  color: "rgba(var(--text-1-rgb), 0.6)",
+  color: "var(--grey-accent)",
   fontWeight: 700,
+  whiteSpace: "nowrap",
 };
 
 const summaryValueStyle = {
-  fontSize: "1.5rem",
+  fontSize: "18px",
   fontWeight: 700,
-  color: "var(--text-1)",
-  lineHeight: 1.1,
+  color: "var(--accentText)",
+  lineHeight: 1,
   wordBreak: "break-word",
+};
+
+const summaryTileStyle = {
+  backgroundColor: "var(--surface)",
+  borderRadius: "var(--radius-sm)",
+  padding: "8px 10px",
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  columnGap: "8px",
+  rowGap: "2px",
+  minWidth: 0,
+  minHeight: "44px",
 };
 
 function SummaryStatsRow({ analytics }) {
@@ -91,32 +106,22 @@ function SummaryStatsRow({ analytics }) {
   ];
 
   return (
-    <LayerSurface
-      sectionKey="jobcard-service-history-summary"
-      parentKey="jobcard-tab-service-history"
-      gap="var(--space-4)"
+    <div
+      style={{
+        display: "grid",
+        gap: "8px",
+        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+        flex: "1 1 640px",
+        minWidth: 0,
+      }}
     >
-      <p style={eyebrowStyle}>Overview</p>
-      <div
-        style={{
-          display: "grid",
-          gap: "var(--space-3)",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-        }}
-      >
-        {tiles.map((tile) => (
-          <LayerTheme
-            key={tile.label}
-            radius="var(--radius-sm)"
-            padding="var(--space-4)"
-            gap="var(--space-2)"
-          >
-            <span style={summaryLabelStyle}>{tile.label}</span>
-            <span style={summaryValueStyle}>{tile.value ?? DASH}</span>
-          </LayerTheme>
-        ))}
-      </div>
-    </LayerSurface>
+      {tiles.map((tile) => (
+        <div key={tile.label} style={summaryTileStyle}>
+          <span style={summaryLabelStyle}>{tile.label}</span>
+          <span style={summaryValueStyle}>{tile.value ?? DASH}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -756,13 +761,6 @@ function ExportHistoryModal({ isOpen, onClose, history = [], selectedJob }) {
 /* ════════════════════════════════════════════════════════════════════════
    ServiceHistoryTab — default export, the tab orchestrator.
    ════════════════════════════════════════════════════════════════════════ */
-const headerTitleStyle = {
-  margin: 0,
-  fontSize: "1.1rem",
-  fontWeight: 700,
-  color: "var(--text-1)",
-};
-
 export default function ServiceHistoryTab({ vehicleJobHistory }) {
   const history = useMemo(
     () => (Array.isArray(vehicleJobHistory) ? vehicleJobHistory : []),
@@ -795,14 +793,14 @@ export default function ServiceHistoryTab({ vehicleJobHistory }) {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "space-between",
-          gap: "var(--space-3)",
+          gap: "8px",
           flexWrap: "wrap",
         }}
       >
-        <h2 style={headerTitleStyle}>Service History</h2>
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+        <SummaryStatsRow analytics={analytics} />
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginLeft: "auto" }}>
           <button
             type="button"
             className="app-btn app-btn--secondary"
@@ -822,8 +820,6 @@ export default function ServiceHistoryTab({ vehicleJobHistory }) {
           </button>
         </div>
       </div>
-
-      <SummaryStatsRow analytics={analytics} />
 
       {/* 50/50 split: history tree on the left, the selected-job detail and the
           mileage trend grouped together on the right. auto-fit + minmax keeps the

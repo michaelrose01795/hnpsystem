@@ -46,6 +46,50 @@ const SummaryTile = ({ label, children, tone }) => (
   </LayerTheme>
 );
 
+const CompactStatTile = ({ label, children }) => (
+  <div
+    style={{
+      backgroundColor: "var(--surface)",
+      borderRadius: "var(--radius-sm)",
+      padding: "8px 10px",
+      display: "flex",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      columnGap: "8px",
+      rowGap: "2px",
+      minWidth: 0,
+      minHeight: "44px",
+    }}
+  >
+    <span
+      style={{
+        fontSize: "10px",
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        lineHeight: 1,
+        color: "var(--grey-accent)",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      {label}
+    </span>
+    <span
+      style={{
+        fontSize: "18px",
+        fontWeight: 700,
+        lineHeight: 1,
+        color: "var(--accentText)",
+      }}
+    >
+      {children}
+    </span>
+  </div>
+);
+
 // One per-request line-items table: a Labour row plus a row per part.
 const RequestSection = ({ row, isProforma, onOpenEditor }) => {
   const request = row.displayRequest;
@@ -285,21 +329,14 @@ export default function InvoiceWorkspace({
       </LayerSurface>
 
       {/* ── Summary ──────────────────────────────────────────────── */}
-      <LayerSurface radius="var(--radius-sm)" gap="var(--space-3)">
-        <h3 style={{ margin: 0, fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-1)" }}>
-          Invoice Summary
-        </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "var(--space-3)" }}>
-          <SummaryTile label="Invoice Number">{invoice.invoice_number || "—"}</SummaryTile>
-          <SummaryTile label="Invoice Date">{formatDate(invoice.invoice_date)}</SummaryTile>
-          <SummaryTile label="Due Date">{formatDate(invoice.due_date)}</SummaryTile>
-          <SummaryTile label="Invoice Total">{formatCurrency(invoiceTotal)}</SummaryTile>
-          <SummaryTile label="Balance Due" tone={balanceDue > 0 ? "var(--danger-dark)" : "var(--success-dark)"}>
-            {formatCurrency(balanceDue)}
-          </SummaryTile>
-          <SummaryTile label="Payment Status">{paymentStatusLabel}</SummaryTile>
-        </div>
-      </LayerSurface>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px" }}>
+        <CompactStatTile label="Invoice Number">{invoice.invoice_number || "—"}</CompactStatTile>
+        <CompactStatTile label="Invoice Date">{formatDate(invoice.invoice_date)}</CompactStatTile>
+        <CompactStatTile label="Due Date">{formatDate(invoice.due_date)}</CompactStatTile>
+        <CompactStatTile label="Invoice Total">{formatCurrency(invoiceTotal)}</CompactStatTile>
+        <CompactStatTile label="Balance Due">{formatCurrency(balanceDue)}</CompactStatTile>
+        <CompactStatTile label="Payment Status">{paymentStatusLabel}</CompactStatTile>
+      </div>
 
       {/* ── Per-request sections ─────────────────────────────────── */}
       {rows.length === 0 ? (

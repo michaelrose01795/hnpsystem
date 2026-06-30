@@ -1566,6 +1566,21 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   );
 }
 
+function LoanCarTableFrame({ children, isTrackingMode, mode }) {
+  if (!isTrackingMode) return <>{children}</>;
+  return (
+    <LayerTheme
+      as="section"
+      sectionKey={`${mode}-loan-car-appointments-table-scroll`}
+      sectionType="data-table"
+      radius="var(--radius-sm)"
+      padding="var(--section-card-padding)"
+      gap="0">
+      {children}
+    </LayerTheme>
+  );
+}
+
 export default function LoanCarSchedulePanel({
   jobData = null,
   highlightedJobNumber = "",
@@ -1736,17 +1751,6 @@ export default function LoanCarSchedulePanel({
 
   const content = (
     <>
-      {mode !== "tracking" ? (
-        <div>
-          <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "18px", fontWeight: 700 }}>
-            Loan Car Booking
-          </h3>
-          <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "13px" }}>
-            Click a day and loan vehicle to view or book the loan period.
-          </p>
-        </div>
-      ) : null}
-
       {mode === "tracking" && showFleetManager ? <FleetManager cars={cars} onSave={handleSaveCar} onDelete={handleDeleteCar} onBook={handleSaveBooking} /> : null}
 
       {isTrackingMode ? (
@@ -1782,13 +1786,7 @@ export default function LoanCarSchedulePanel({
         `}</style>
       ) : null}
 
-      <LayerTheme
-        as="section"
-        sectionKey={`${mode}-loan-car-appointments-table-scroll`}
-        sectionType="data-table"
-        radius="var(--radius-sm)"
-        padding="var(--section-card-padding)"
-        gap="0">
+      <LoanCarTableFrame isTrackingMode={isTrackingMode} mode={mode}>
         <div
           ref={scrollRef}
           className={[
@@ -1804,9 +1802,9 @@ export default function LoanCarSchedulePanel({
             overflowX: "auto",
             overflowY: "auto",
             WebkitOverflowScrolling: "touch",
-            backgroundColor: "var(--theme)",
+            backgroundColor: isTrackingMode ? "var(--theme)" : undefined,
             maxHeight: "560px",
-            borderRadius: "var(--radius-md)",
+            borderRadius: isTrackingMode ? "var(--radius-md)" : undefined,
             "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
           }}>
           <table
@@ -1823,13 +1821,13 @@ export default function LoanCarSchedulePanel({
               borderCollapse: "separate",
               borderSpacing: 0,
               backgroundColor: isTrackingMode ? "var(--surface)" : "var(--theme)",
-              borderRadius: "var(--radius-md)",
+              borderRadius: isTrackingMode ? "var(--radius-md)" : undefined,
               // In tracking mode the table carries no `--with-headings` class, so
               // its inline overflow applies. `hidden` would make the table its own
               // clip container and the sticky thead would stick to the (non-scrolling)
               // table instead of the scroll div. `visible` matches the staffglobal
               // `--with-headings` rule (overflow: visible) so the heading stays pinned.
-              overflow: isTrackingMode ? "visible" : "hidden",
+              overflow: isTrackingMode ? "visible" : undefined,
             }}>
             <colgroup>
               <col style={{ width: `${dayColumnWidth}px` }} />
@@ -2088,7 +2086,7 @@ export default function LoanCarSchedulePanel({
             </tbody>
           </table>
         </div>
-      </LayerTheme>
+      </LoanCarTableFrame>
 
       {!loading && cars.length === 0 ? (
         <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
@@ -2118,20 +2116,5 @@ export default function LoanCarSchedulePanel({
     </>
   );
 
-  if (mode === "tracking") {
-    return content;
-  }
-
-  return (
-    <LayerSurface
-      as="section"
-      sectionKey="job-card-loan-car-schedule-panel"
-      sectionType="section-shell"
-      parentKey="jobcard-tab-loan-car"
-      radius="var(--radius-sm)"
-      padding="var(--section-card-padding)"
-      gap="var(--layout-card-gap)">
-      {content}
-    </LayerSurface>
-  );
+  return content;
 }

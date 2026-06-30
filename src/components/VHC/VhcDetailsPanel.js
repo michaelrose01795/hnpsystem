@@ -122,6 +122,38 @@ const TAB_OPTIONS = [
   { id: "media", label: "Media" },
 ];
 
+const VHC_COMPACT_STAT_TILE_STYLE = {
+  borderRadius: "var(--radius-sm)",
+  padding: "8px 10px",
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  columnGap: "8px",
+  rowGap: "2px",
+  minWidth: 0,
+  minHeight: "44px",
+};
+
+const VHC_COMPACT_STAT_LABEL_STYLE = {
+  fontSize: "10px",
+  fontWeight: 700,
+  letterSpacing: "0.04em",
+  lineHeight: 1,
+  textTransform: "uppercase",
+  color: "var(--grey-accent)",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+const VHC_COMPACT_STAT_VALUE_STYLE = {
+  fontSize: "18px",
+  fontWeight: 800,
+  color: "var(--accentText)",
+  lineHeight: 1,
+};
+
 const PRE_PICK_LOCATION_OPTIONS_FULL = [
   { value: "", label: "Not assigned" },
   { value: "service_rack_1", label: "Service Rack 1" },
@@ -1309,6 +1341,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
                               padding: "10px 12px",
                               display: "flex",
                               flexDirection: "column",
+                              justifyContent: "center",
                               gap: "6px",
                               minHeight: "64px",
                             }}
@@ -1349,6 +1382,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
                             padding: "10px 12px",
                             display: "flex",
                             flexDirection: "column",
+                            justifyContent: "center",
                             gap: "4px",
                             minHeight: "64px",
                           }}
@@ -1517,6 +1551,18 @@ export default function VhcDetailsPanel({
   const [mediaLinkSaving, setMediaLinkSaving] = useState(false);
   const [creatingMediaLocation, setCreatingMediaLocation] = useState(false);
   const [newMediaLocationName, setNewMediaLocationName] = useState("");
+  // Media-tab reported-row controls. Each red/amber concern row carries an
+  // "Add media" (upload straight onto that concern) and a "Move media"
+  // (relink existing media into that concern) action.
+  // Hidden file input reused by every row; the target concern is stashed on a
+  // ref just before the input is triggered so the change handler knows where
+  // the upload should be linked.
+  const rowMediaUploadInputRef = useRef(null);
+  const rowMediaUploadTargetRef = useRef(null);
+  // concernId currently uploading (for the row's button label/spinner).
+  const [rowMediaUploadConcernId, setRowMediaUploadConcernId] = useState(null);
+  // concernId whose "Move media" picker is currently expanded (only one open).
+  const [moveMediaPickerConcernId, setMoveMediaPickerConcernId] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const activeTabLabel = TAB_OPTIONS.find((tab) => tab.id === activeTab)?.label || "";
   const [itemEntries, setItemEntries] = useState({});
@@ -6143,6 +6189,71 @@ export default function VhcDetailsPanel({
     handleSetMediaLink(file, { concernId, label: name, section: "", status: "", custom: true });
   }, [newMediaLocationName, handleSetMediaLink]);
 
+  // Normalise a reported concern into the JSONB concern-link stored on a media
+  // file's vhc_concern_link, so an "Add media" upload and a "Move media" relink
+  // land under the exact same row key the media tab groups by.
+  const buildConcernLink = useCallback((concern) => {
+    if (!concern) return null;
+    return {
+      concernId: concern.concernId,
+      label: concern.label,
+      section: concern.section || "",
+      status: concern.status || "",
+      category: concern.category || "",
+      categoryLabel: concern.categoryLabel || "",
+    };
+  }, []);
+
+  // Media-tab row "Add media": stash the target concern, then open the shared
+  // hidden file input. The change handler picks the concern back up.
+  const handleRowAddMediaClick = useCallback((concern) => {
+    rowMediaUploadTargetRef.current = concern || null;
+    rowMediaUploadInputRef.current?.click();
+  }, []);
+
+  // Upload the chosen file straight onto the stashed concern so it appears in
+  // that reported row immediately (after the reload-token bump re-fetches).
+  const handleRowMediaUploadChange = useCallback(
+    async (event) => {
+      const file = event?.target?.files?.[0];
+      if (event?.target) event.target.value = "";
+      const concern = rowMediaUploadTargetRef.current;
+      rowMediaUploadTargetRef.current = null;
+      if (!file || !concern) return;
+      try {
+        setRowMediaUploadConcernId(String(concern.concernId));
+        setPhotoUploadError("");
+        await uploadVhcMediaFile({
+          file,
+          jobId: job?.id || null,
+          jobNumber: resolvedJobNumber,
+          userId: dbUserId || authUserId || "system",
+          visibleToCustomer: true,
+          concernLink: buildConcernLink(concern),
+        });
+        setPhotosReloadToken((token) => token + 1);
+      } catch (err) {
+        console.error("Row media upload failed:", err);
+        setPhotoUploadError(err?.message || "Upload failed");
+      } finally {
+        setRowMediaUploadConcernId(null);
+      }
+    },
+    [job?.id, resolvedJobNumber, dbUserId, authUserId, buildConcernLink],
+  );
+
+  // Media-tab row "Move media": relink an existing media file (from the
+  // unlinked bucket or another concern row) onto this concern, then close the
+  // picker. Reuses the same persist path as the preview popup's relink control.
+  const handleMoveMediaToConcern = useCallback(
+    async (file, concern) => {
+      if (!file || !concern) return;
+      await handleSetMediaLink(file, buildConcernLink(concern));
+      setMoveMediaPickerConcernId(null);
+    },
+    [handleSetMediaLink, buildConcernLink],
+  );
+
   // Flip a media file's customer visibility, then optimistically patch + reload.
   const handleToggleMediaVisibility = useCallback(async (file) => {
     if (!file?.file_id) return;
@@ -8609,8 +8720,69 @@ export default function VhcDetailsPanel({
       );
     };
 
-    const renderRequestRow = (key, label, section, status, photos, videos) => {
+    // Flat list of every relocatable media file (each concern group's media +
+    // the unlinked bucket — the pinned customer video is intentionally left
+    // out). Used by a row's "Move media" picker to offer media from ANY other
+    // row, tagging each with where it currently lives.
+    const movableMedia = [
+      ...groups.flatMap((group) => [
+        ...group.videos.map((file) => ({ file, kind: "video", originId: String(group.key), originLabel: group.label })),
+        ...group.photos.map((file) => ({ file, kind: "photo", originId: String(group.key), originLabel: group.label })),
+      ]),
+      ...unlinkedVideos.map((file) => ({ file, kind: "video", originId: null, originLabel: "Unlinked media" })),
+      ...unlinkedPhotos.map((file) => ({ file, kind: "photo", originId: null, originLabel: "Unlinked media" })),
+    ];
+
+    // Compact selectable thumbnail used inside the "Move media" picker.
+    const renderMoveCandidate = (candidate, concern) => {
+      const { file, kind, originLabel } = candidate;
+      return (
+        <button
+          type="button"
+          key={file.file_id}
+          onClick={() => handleMoveMediaToConcern(file, concern)}
+          disabled={mediaLinkSaving}
+          title={`Move here — currently in ${originLabel}`}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            width: "84px",
+            flex: "0 0 auto",
+            padding: "4px",
+            border: "none",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--surface)",
+            cursor: mediaLinkSaving ? "wait" : "pointer",
+            textAlign: "left",
+          }}
+        >
+          <div style={{ position: "relative", width: "100%", height: "56px", borderRadius: "var(--radius-sm)", overflow: "hidden", background: "var(--theme)" }}>
+            {kind === "video" ? (
+              <video src={file.file_url} preload="metadata" muted style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ) : (
+              <img src={file.file_url} alt="VHC media" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            )}
+          </div>
+          <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {originLabel}
+          </span>
+        </button>
+      );
+    };
+
+    // row: { key, label, section, status, photos, videos, concern }
+    // concern is non-null for red/amber reported rows (which carry the Add /
+    // Move media controls); null for the unlinked row and custom-location rows.
+    const renderRequestRow = (row) => {
+      const { key, label, section, status, photos, videos, concern } = row;
       const badge = severityBadge(status);
+      const showControls = !readOnly && Boolean(concern);
+      const uploading = rowMediaUploadConcernId === String(concern?.concernId);
+      const pickerOpen = moveMediaPickerConcernId === key;
+      // Candidates already linked to THIS concern are excluded — you can only
+      // move media in from somewhere else.
+      const moveCandidates = pickerOpen ? movableMedia.filter((candidate) => candidate.originId !== key) : [];
       // Videos lead, then photos — numbered continuously across the strip.
       let mediaIndex = -1;
       return (
@@ -8668,6 +8840,70 @@ export default function VhcDetailsPanel({
                 {videos.length} {videos.length === 1 ? "Video" : "Videos"}
               </span>
             </div>
+
+            {/* Add media (upload onto this concern) + Move media (relink existing
+                media in from another row). Reported red/amber rows only. */}
+            {showControls ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleRowAddMediaClick(concern)}
+                    disabled={uploading}
+                    style={{
+                      padding: "5px 10px",
+                      borderRadius: "var(--input-radius)",
+                      border: "none",
+                      background: "rgba(var(--primary-rgb), 0.10)",
+                      color: "var(--primary-selected)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      cursor: uploading ? "wait" : "pointer",
+                      opacity: uploading ? 0.65 : 1,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {uploading ? "Uploading…" : "+ Add media"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMoveMediaPickerConcernId((current) => (current === key ? null : key))}
+                    style={{
+                      padding: "5px 10px",
+                      borderRadius: "var(--input-radius)",
+                      border: "none",
+                      background: pickerOpen ? "rgba(var(--primary-rgb), 0.14)" : "rgba(var(--primary-rgb), 0.06)",
+                      color: "var(--text-1)",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {pickerOpen ? "Close" : "⇄ Move media"}
+                  </button>
+                </div>
+
+                {pickerOpen ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "8px", borderRadius: "var(--radius-sm)", background: "var(--surface)" }}>
+                    {moveCandidates.length === 0 ? (
+                      <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                        No other media to move here.
+                      </span>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-1)", opacity: 0.55, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Tap to move here
+                        </span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxHeight: "188px", overflowY: "auto" }}>
+                          {moveCandidates.map((candidate) => renderMoveCandidate(candidate, concern))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {/* Vertical rule separating the concern info from its media strip */}
@@ -8676,14 +8912,57 @@ export default function VhcDetailsPanel({
           {/* Right — the photos + videos taken for that request, in a horizontally
               scrolling thumbnail strip (overflows sideways instead of wrapping). */}
           <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", alignItems: "stretch", flexWrap: "nowrap", gap: "10px", overflowX: "auto", overflowY: "hidden", paddingBottom: "4px" }}>
-            {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
-            {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
+            {videos.length === 0 && photos.length === 0 ? (
+              <span style={{ alignSelf: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.55 }}>
+                No media attached yet.
+              </span>
+            ) : (
+              <>
+                {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
+                {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
+              </>
+            )}
           </div>
         </div>
       );
     };
 
-    const hasRequestMedia = groups.length > 0 || unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
+    // Build the row list: one row for EVERY red/amber reported concern (media
+    // attached or not), so the office can see — and act on — every reportable
+    // item up front. Concerns with media merge in their grouped photos/videos.
+    const groupByKey = new Map(groups.map((group) => [String(group.key), group]));
+    const reportedKeys = new Set();
+    const reportedRows = reportedConcerns.map((concern) => {
+      const id = String(concern.concernId);
+      reportedKeys.add(id);
+      const group = groupByKey.get(id);
+      return {
+        key: id,
+        label: concern.label,
+        section: concern.section || "",
+        status: concern.status,
+        photos: group?.photos || [],
+        videos: group?.videos || [],
+        concern,
+      };
+    });
+    // Groups that have media but no matching reported concern (custom media
+    // locations, or links whose underlying concern has since changed) — keep
+    // them visible so their media is never orphaned off-screen.
+    const extraRows = groups
+      .filter((group) => !reportedKeys.has(String(group.key)))
+      .map((group) => ({
+        key: String(group.key),
+        label: group.label,
+        section: group.section,
+        status: group.status,
+        photos: group.photos,
+        videos: group.videos,
+        concern: null,
+      }));
+    const concernRows = [...reportedRows, ...extraRows];
+
+    const hasRequestMedia = concernRows.length > 0 || unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -9023,16 +9302,13 @@ export default function VhcDetailsPanel({
                       key={tile.key}
                       className="app-layout-stat-card"
                       style={{
-                        alignItems: "flex-start",
-                        gap: "2px",
-                        minHeight: "auto",
-                        padding: "6px 10px",
+                        ...VHC_COMPACT_STAT_TILE_STYLE,
                       }}
                     >
-                      <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: "var(--text-1)" }}>
+                      <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
                         {tile.label}
                       </span>
-                      <span style={{ fontSize: "14px", fontWeight: 800, color: tile.tone, lineHeight: 1.1 }}>
+                      <span style={{ ...VHC_COMPACT_STAT_VALUE_STYLE, color: tile.tone }}>
                         {tile.value}
                       </span>
                     </div>
@@ -9059,17 +9335,14 @@ export default function VhcDetailsPanel({
                       key={tile.label}
                       className="app-layout-stat-card"
                       style={{
-                        alignItems: "flex-start",
-                        gap: "2px",
-                        minHeight: "auto",
-                        padding: "6px 10px",
+                        ...VHC_COMPACT_STAT_TILE_STYLE,
                       }}
                     >
-                      <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-1)", lineHeight: 1.1 }}>
-                        {tile.value}
-                      </span>
-                      <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: "var(--text-1)", opacity: 0.7, whiteSpace: "nowrap" }}>
+                      <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
                         {tile.label}
+                      </span>
+                      <span style={VHC_COMPACT_STAT_VALUE_STYLE}>
+                        {tile.value}
                       </span>
                     </div>
                   ))}
@@ -9174,23 +9447,18 @@ export default function VhcDetailsPanel({
                         <div
                           key={tile.key}
                           style={{
+                            ...VHC_COMPACT_STAT_TILE_STYLE,
                             background: tile.bg,
-                            borderRadius: "var(--radius-md)",
-                            padding: "10px 12px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                            minWidth: 0,
                           }}
                         >
-                          <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: tile.color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
                             {tile.label}
                           </span>
-                          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-accent)", lineHeight: 1 }}>
+                          <span style={VHC_COMPACT_STAT_VALUE_STYLE}>
                             {tile.count}
                           </span>
                           {tile.value !== null && tile.value > 0 ? (
-                            <span style={{ fontSize: "12px", fontWeight: 600, color: tile.color, whiteSpace: "nowrap" }}>
+                            <span style={{ flexBasis: "100%", fontSize: "12px", fontWeight: 700, color: tile.color, lineHeight: 1.1, textAlign: "right", whiteSpace: "nowrap" }}>
                               {formatCurrency(tile.value)}
                             </span>
                           ) : null}

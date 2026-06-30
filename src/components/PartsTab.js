@@ -2013,8 +2013,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           margin: 0,
           padding: 0,
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-          gap: "10px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: "8px",
         }}
       >
         {[
@@ -2025,32 +2025,43 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           { label: "Removed", value: partsSummary.removed },
           { label: "Total Parts", value: partsSummary.total },
         ].map((item) => (
-          <LayerSurface
+          <li
             key={item.label}
-            as="li"
-            sectionKey={`jobcard-parts-metric-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-            sectionType="stat-card"
-            parentKey="jobcard-tab-parts"
-            radius="var(--radius-sm)"
-            padding="12px"
-            gap="2px"
-            style={{ alignItems: "flex-start" }}
+            data-dev-section="1"
+            data-dev-section-key={`jobcard-parts-metric-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+            data-dev-section-type="stat-card"
+            data-dev-section-parent="jobcard-tab-parts"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "var(--radius-sm)",
+              padding: "8px 10px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              columnGap: "8px",
+              rowGap: "2px",
+              minWidth: 0,
+              minHeight: "44px",
+            }}
           >
-            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.1 }}>
-              {item.value}
-            </span>
             <span
               style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--text-1)",
-                opacity: 0.7,
+                fontSize: "10px",
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                lineHeight: 1,
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                color: "var(--grey-accent)",
+                whiteSpace: "nowrap",
               }}
             >
               {item.label}
             </span>
-          </LayerSurface>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 }}>
+              {item.value}
+            </span>
+          </li>
         ))}
       </ul>
 

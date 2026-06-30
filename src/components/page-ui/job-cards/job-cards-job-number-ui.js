@@ -489,27 +489,38 @@ export default function JobCardDetailPageUi(props) {
 
           <LayerTheme sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
-          overflow: "hidden"
+          overflow: "hidden",
+          minHeight: "68px",
+          justifyContent: "center"
         }}>
             <div style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: "8px"
+            alignItems: "stretch",
+            gap: "10px",
+            flex: 1,
+            width: "100%"
           }}>
               <div style={{
               flex: 1,
-              minWidth: 0
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center"
             }}>
                 <div style={{
-                fontSize: "11px",
-                color: "var(--danger)",
-                marginBottom: "4px"
-              }}>DECLINED</div>
-                <div style={{
-                fontSize: "16px",
+                fontSize: "12px",
+                lineHeight: 1.1,
                 fontWeight: "700",
                 color: "var(--danger)",
-                marginBottom: "4px"
+                marginBottom: "6px"
+              }}>DECLINED</div>
+                <div style={{
+                fontSize: "20px",
+                lineHeight: 1.1,
+                fontWeight: "700",
+                color: "var(--danger)",
+                marginBottom: 0
               }}>
                   {formatCurrency(vhcFinancialTotals.declined)}
                 </div>
@@ -522,18 +533,25 @@ export default function JobCardDetailPageUi(props) {
               <div style={{
               flex: 1,
               minWidth: 0,
-              textAlign: "right"
+              textAlign: "right",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "flex-end"
             }}>
                 <div style={{
-                fontSize: "11px",
-                color: "var(--success)",
-                marginBottom: "4px"
-              }}>AUTHORISED</div>
-                <div style={{
-                fontSize: "16px",
+                fontSize: "12px",
+                lineHeight: 1.1,
                 fontWeight: "700",
                 color: "var(--success)",
-                marginBottom: "4px"
+                marginBottom: "6px"
+              }}>AUTHORISED</div>
+                <div style={{
+                fontSize: "20px",
+                lineHeight: 1.1,
+                fontWeight: "700",
+                color: "var(--success)",
+                marginBottom: 0
               }}>
                   {formatCurrency(vhcFinancialTotals.authorized)}
                 </div>
@@ -546,6 +564,7 @@ export default function JobCardDetailPageUi(props) {
           alignItems: "stretch",
           minWidth: 0,
           overflow: "hidden",
+          minHeight: "68px",
           cursor: canEditTrackingLocations ? "pointer" : "default",
           opacity: canEditTrackingLocations ? 1 : 0.75
         }}>
@@ -553,20 +572,26 @@ export default function JobCardDetailPageUi(props) {
           if (canEditTrackingLocations) {
             setTrackerQuickModalOpen(true);
           }
-        }} style={{ display: "flex", flexDirection: "row", alignItems: "stretch", flex: 1, gap: 0 }}>
+        }} style={{ display: "flex", flexDirection: "row", alignItems: "stretch", flex: 1, width: "100%", gap: "10px" }}>
             <div style={{
             flex: 1,
-            minWidth: 0
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
           }}>
               <div style={{
-              fontSize: "11px",
+              fontSize: "12px",
+              lineHeight: 1.1,
+              fontWeight: "700",
               color: "var(--text-1)",
-              marginBottom: "4px"
+              marginBottom: "6px"
             }}>
                 Key location
               </div>
               <div style={{
-              fontSize: "13px",
+              fontSize: "17px",
+              lineHeight: 1.15,
               fontWeight: "700",
               color: "var(--text-1)",
               overflow: "hidden",
@@ -584,17 +609,24 @@ export default function JobCardDetailPageUi(props) {
             <div style={{
             flex: 1,
             minWidth: 0,
-            textAlign: "right"
+            textAlign: "right",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-end"
           }}>
               <div style={{
-              fontSize: "11px",
+              fontSize: "12px",
+              lineHeight: 1.1,
+              fontWeight: "700",
               color: "var(--text-1)",
-              marginBottom: "4px"
+              marginBottom: "6px"
             }}>
                 Car location
               </div>
               <div style={{
-              fontSize: "13px",
+              fontSize: "17px",
+              lineHeight: 1.15,
               fontWeight: "700",
               color: "var(--text-1)",
               overflow: "hidden",
@@ -749,15 +781,13 @@ export default function JobCardDetailPageUi(props) {
           })} />
           </div>
 
-          <div className="app-page-stack" style={{
-          display: activeTab === "loan-car" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-loan-car" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-page="Job card detail" data-dev-tab="Loan Car" data-dev-card-section="loan car tab" data-dev-text-preview="Loan car tab">
+          {activeTab === "loan-car" && <>
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
-                <strong>Locked: Loan Car</strong>
-                <span>{generalReadOnlyLockDescription}</span>
-              </div>}
+              <strong>Locked: Loan Car</strong>
+              <span>{generalReadOnlyLockDescription}</span>
+            </div>}
             <LoanCarSchedulePanel jobData={jobData} highlightedJobNumber={jobData?.jobNumber || jobNumber} highlightedReg={jobData?.reg || ""} />
-          </div>
+          </>}
 
           <div className="app-page-stack" style={{
           display: activeTab === "service-history" ? undefined : "none"
@@ -779,15 +809,13 @@ export default function JobCardDetailPageUi(props) {
           })} actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} invoiceReady={invoicePrerequisitesMet} />
             </div>}
 
-          <div className="app-page-stack" style={{
-          display: activeTab === "notes" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-notes" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-page="Job card detail" data-dev-tab="Notes" data-dev-card-section="notes tab" data-dev-text-preview="Notes tab" data-dev-auto-outline="cards">
+          {activeTab === "notes" && <>
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
-                <strong>Locked: Notes</strong>
-                <span>{generalReadOnlyLockDescription}</span>
-              </div>}
+              <strong>Locked: Notes</strong>
+              <span>{generalReadOnlyLockDescription}</span>
+            </div>}
             <NotesTabNew jobData={jobData} canEdit={canEdit} actingUserNumericId={actingUserNumericId} onNotesChange={handleNotesChange} onNoteAdded={handleNoteAdded} highlightNoteIds={highlightedNoteIds} noteHistoryJobs={vehicleJobHistory} />
-          </div>
+          </>}
 
           {/* Write-up tab now renders the per-request WriteUpWorkspace (replaced
               the legacy WriteUpForm). The outer stack flips visibility. */}

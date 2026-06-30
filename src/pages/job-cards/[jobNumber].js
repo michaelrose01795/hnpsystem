@@ -5217,7 +5217,10 @@ function CustomerRequestsTab({
     };
   }, [requestPillButtonStyle]);
   const getStatusPillStyle = useCallback((normalizedStatus = "") => {
-    const isSuccess = ["added_to_job", "completed", "done", "authorized", "authorised"].includes(normalizedStatus);
+    // "Authorised" deliberately omitted here so it falls through to the default
+    // pill style (var(--theme) bg / var(--info) text) — i.e. the same styling as
+    // the "In Progress" status, per request.
+    const isSuccess = ["added_to_job", "completed", "done"].includes(normalizedStatus);
     const isDanger = ["removed", "declined", "cancelled", "canceled"].includes(normalizedStatus);
     const isWarning = ["not_started", "on_hold", "hold", "pending"].includes(normalizedStatus);
     return {
@@ -6138,16 +6141,15 @@ function CustomerRequestsTab({
   }, [combinedRequestRows, selectedRequestKey]);
 
   // Plain (token-backed, borderless) surface styles for the new layout.
-  // Compact stat tiles: fixed width so every tile matches, label on top with
-  // the count stacked onto its own row below. They sit left-aligned on a single
-  // wrapping row alongside the Edit/Save controls.
+  // Compact stat tiles: fixed width so every tile matches. Label and counter sit
+  // centre-aligned on the same row when space allows, then wrap cleanly on mobile.
   // Stat tile: a grid item whose width is controlled by the responsive
   // .jc-request-overview-statgrid grid. Title + counter sit on one row
   // (space-between) when the tile is wide enough; flex-wrap drops the counter
   // onto its own line below the title once the tile gets too narrow to fit both.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0 };
-  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
-  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--theme)", lineHeight: 1 }; // counter uses --theme per design
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0, minHeight: "44px" };
+  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1, textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
+  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 };
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -6376,9 +6378,6 @@ function CustomerRequestsTab({
           <div style={detailPanelStyle}>
             {selectedRow ?
             <>
-              {/* Title + status badges and the action buttons share one row.
-                  Buttons sit to the right via marginLeft:auto, wrapping below on
-                  narrow widths. */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>{selectedRow.title}</h3>
                 {/* Authorised (additional work) rows show only the 44px-high
@@ -6387,12 +6386,6 @@ function CustomerRequestsTab({
                 {selectedRow.kind === "authorised"
                   ? <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">Authorised</span>
                   : <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
-                  <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
-                  <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
-                  <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("notes")}>Add Notes</button>
-                  <button type="button" className="app-btn app-btn--primary" disabled={!canEdit || !selectedRow.requestId || selectedRow.normalizedStatus === "completed"} onClick={() => onUpdateRequestStatus(selectedRow.requestId, "completed")}>{selectedRow.normalizedStatus === "completed" ? "Completed" : "Mark Complete"}</button>
-                </div>
               </div>
 
               {/* Meta line */}
@@ -6745,7 +6738,10 @@ function WriteUpWorkspace({
     };
   }, [requestPillButtonStyle]);
   const getStatusPillStyle = useCallback((normalizedStatus = "") => {
-    const isSuccess = ["added_to_job", "completed", "done", "authorized", "authorised"].includes(normalizedStatus);
+    // "Authorised" deliberately omitted here so it falls through to the default
+    // pill style (var(--theme) bg / var(--info) text) — i.e. the same styling as
+    // the "In Progress" status, per request.
+    const isSuccess = ["added_to_job", "completed", "done"].includes(normalizedStatus);
     const isDanger = ["removed", "declined", "cancelled", "canceled"].includes(normalizedStatus);
     const isWarning = ["not_started", "on_hold", "hold", "pending"].includes(normalizedStatus);
     return {
@@ -7705,9 +7701,9 @@ function WriteUpWorkspace({
   }, [combinedRequestRows, selectedRequestKey]);
 
   // Plain (token-backed, borderless) surface styles for the new layout.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 };
-  const statLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)" };
-  const statValueStyle = { fontSize: "20px", fontWeight: 700, color: "var(--text-1)" };
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0, minHeight: "44px" };
+  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1, textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
+  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 };
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -8100,14 +8096,6 @@ function WriteUpWorkspace({
                 <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>
               </div>
 
-              {/* Action buttons - one row */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
-                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
-                <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("notes")}>Add Notes</button>
-                <button type="button" className="app-btn app-btn--primary" disabled={!canEdit || !selectedRow.requestId || selectedRow.normalizedStatus === "completed"} onClick={() => handleToggleRequestComplete(selectedRow)}>{selectedRow.normalizedStatus === "completed" ? "Completed" : "Mark Complete"}</button>
-              </div>
-
               {/* Fault Reported (auto-filled from description) / Diagnosis / Rectification */}
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Fault Reported</label>
@@ -8197,8 +8185,7 @@ function WriteUpWorkspace({
           }
           html.staff-scope .jc-req-markall-btn {
             flex: 0 0 auto;
-            align-self: stretch;
-            height: auto;
+            align-self: center;
             white-space: nowrap;
           }
           html.staff-scope .jc-req-split {
@@ -11757,9 +11744,6 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
   disabledMessageOverride ||
   "This job card is read-only. Clocking entries can only be added by staff with edit access.");
 
-  // Flat labour rate (incl. VAT) used to cost the clocked time on the KPI strip.
-  const CLOCKING_LABOUR_RATE_GBP = 162;
-
   // Headline KPI figures derived from the totals ClockingHistorySection lifts up.
   // "Sold vs actual" model: clocked = hours worked, allocated = sold/budget,
   // remaining = sold − clocked, efficiency = sold ÷ clocked.
@@ -11775,54 +11759,33 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
     null;
   const efficiency =
     summary.efficiency !== null && summary.efficiency !== undefined ? summary.efficiency : null;
-  const clockedCost = clockedHours * CLOCKING_LABOUR_RATE_GBP;
-
   const formatHours = (value) =>
   value === null || value === undefined ? "—" : `${Number(value).toFixed(2)}h`;
-  const formatGbp = (value) =>
-  new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    maximumFractionDigits: 0
-  }).format(value || 0);
 
   const clockingKpiCards = [
   {
     key: "clocked",
     label: "Clocked time & cost",
     value: formatHours(clockedHours),
-    sub: `${formatGbp(clockedCost)} @ ${formatGbp(CLOCKING_LABOUR_RATE_GBP)}/h`,
-    valueColor: "var(--text-1)"
+    valueColor: "var(--accentText)"
   },
   {
     key: "remaining",
     label: "Time remaining",
     value: formatHours(remainingHours),
-    sub:
-    remainingHours !== null && remainingHours < 0 ?
-    `Over allocated by ${Math.abs(remainingHours).toFixed(2)}h` :
-    "Of allocated time",
-    valueColor:
-    remainingHours !== null && remainingHours < 0 ? "var(--danger-dark)" : "var(--text-1)"
+    valueColor: "var(--accentText)"
   },
   {
     key: "allocated",
     label: "Allocated time",
     value: formatHours(allocatedHours),
-    sub: "Sold / budgeted hours",
-    valueColor: "var(--text-1)"
+    valueColor: "var(--accentText)"
   },
   {
     key: "efficiency",
     label: "Labour efficiency",
     value: efficiency === null ? "—" : `${efficiency}%`,
-    sub: efficiency === null ? "Needs clocked time" : efficiency >= 100 ? "On or under budget" : "Over budget",
-    valueColor:
-    efficiency === null ?
-    "var(--text-1)" :
-    efficiency >= 100 ?
-    "var(--success)" :
-    "var(--warning-dark)"
+    valueColor: "var(--accentText)"
   }];
 
 
@@ -11838,9 +11801,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         gap: "18px"
       }}>
 
-      {/* Top section: headline clocking KPIs (sold vs actual). Stat cards use the
-          canonical .app-layout-stat-card (--theme) so they alternate off the
-          --surface panel per the staffglobal layer rules. */}
+      {/* Top section: headline clocking KPIs (sold vs actual). */}
       {jobId && normalizedJobNumber &&
       <DevLayoutSection
         sectionKey="jobcard-tab-clocking-summary"
@@ -11854,30 +11815,45 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         }}>
 
           {clockingKpiCards.map((card) =>
-        <div key={card.key} className="app-layout-stat-card">
+        <div
+          key={card.key}
+          className="app-layout-stat-card"
+          style={{
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "row",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            columnGap: "8px",
+            rowGap: "2px",
+            minWidth: 0,
+            minHeight: "44px"
+          }}>
               <span
             style={{
-              fontSize: "0.72rem",
+              fontSize: "10px",
               fontWeight: 700,
               textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--grey-accent)"
+              letterSpacing: "0.04em",
+              lineHeight: 1,
+              color: "var(--grey-accent)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis"
             }}>
 
                 {card.label}
               </span>
               <span
             style={{
-              fontSize: "1.6rem",
+              fontSize: "18px",
               fontWeight: 700,
-              lineHeight: 1.1,
+              lineHeight: 1,
               color: card.valueColor
             }}>
 
                 {card.value}
-              </span>
-              <span style={{ fontSize: "0.82rem", fontWeight: 500, color: "var(--grey-accent)" }}>
-                {card.sub}
               </span>
             </div>
         )}
