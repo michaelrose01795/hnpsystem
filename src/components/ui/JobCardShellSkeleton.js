@@ -146,11 +146,12 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
         <SkeletonBlock width="100%" height="54px" borderRadius={radius} />
       </div>
 
-      {/* Vehicle & Customer Info Bar — section-shell (filtered by fingerprint) wraps four
-          individually annotated content-card divs so each card appears as its own block */}
+      {/* Vehicle & Customer Info Bar — the summary-shell wrapper has been removed;
+          the four content cards now sit directly inside the page shell (transparent
+          grid, no padding) so they span edge to edge. */}
       <section
         data-dev-section="1"
-        data-dev-section-key="jobcard-summary-shell"
+        data-dev-section-key="jobcard-summary-row"
         data-dev-section-type="section-shell"
         data-dev-section-parent="jobcard-page-shell"
         style={{
@@ -158,9 +159,6 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
           gap: "10px",
           flexShrink: 0,
-          backgroundColor: shellBg,
-          borderRadius: radius,
-          padding: "8px",
         }}
       >
         {[130, 130, 130, 130].map((h, i) => (
@@ -169,7 +167,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
             data-dev-section="1"
             data-dev-section-key={`jobcard-info-card-${i}`}
             data-dev-section-type="content-card"
-            data-dev-section-parent="jobcard-summary-shell"
+            data-dev-section-parent="jobcard-page-shell"
             style={{ borderRadius: radiusXs, height: `${h}px` }}
           >
             <SkeletonBlock width="100%" height="100%" borderRadius={radiusXs} />

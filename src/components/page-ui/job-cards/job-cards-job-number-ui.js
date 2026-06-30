@@ -378,14 +378,18 @@ export default function JobCardDetailPageUi(props) {
 
         </LayerTheme>
 
-        {/* ✅ Vehicle & Customer Info Bar */}
-        <LayerTheme as="section" sectionKey="jobcard-summary-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--radius-sm)" padding="8px" gap="10px" style={{
+        {/* ✅ Vehicle & Customer Info Bar — the summary-shell card has been
+            removed; the four cards now sit directly inside the page shell,
+            spanning edge to edge (transparent grid, no padding) and rendering
+            on the --theme layer instead of --surface. */}
+        <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+        gap: "10px",
         flexShrink: 0,
         margin: 0
       }}>
-          <LayerSurface sectionKey="jobcard-summary-vehicle" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
+          <LayerTheme sectionKey="jobcard-summary-vehicle" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden"
         }}>
@@ -440,9 +444,9 @@ export default function JobCardDetailPageUi(props) {
             <div style={summarySecondaryTextStyle}>
               {String(jobData.make || jobData.makeModel || `${jobData.make} ${jobData.model}` || "N/A")}
             </div>
-          </LayerSurface>
+          </LayerTheme>
 
-          <LayerSurface sectionKey="jobcard-summary-customer" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
+          <LayerTheme sectionKey="jobcard-summary-customer" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden",
           cursor: jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer ? "pointer" : "default"
@@ -481,9 +485,9 @@ export default function JobCardDetailPageUi(props) {
             </span>
             ) : null}
           </div>
-          </LayerSurface>
+          </LayerTheme>
 
-          <LayerSurface sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
+          <LayerTheme sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden"
         }}>
@@ -535,9 +539,9 @@ export default function JobCardDetailPageUi(props) {
                 </div>
               </div>
             </div>
-          </LayerSurface>
+          </LayerTheme>
 
-          <LayerSurface sectionKey="jobcard-summary-locations" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
+          <LayerTheme sectionKey="jobcard-summary-locations" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           flexDirection: "row",
           alignItems: "stretch",
           minWidth: 0,
@@ -601,8 +605,8 @@ export default function JobCardDetailPageUi(props) {
               </div>
             </div>
           </div>
-          </LayerSurface>
-        </LayerTheme>
+          </LayerTheme>
+        </div>
 
         {/* ✅ Tabs Navigation */}
         <section style={{

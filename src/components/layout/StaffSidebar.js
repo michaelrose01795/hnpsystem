@@ -601,7 +601,9 @@ export default function Sidebar({
           {isCollapsed ? (
             // Collapsed rail uses the square desktop-app icon (the same image
             // offered on the desktop-download card) rather than the wide wordmark.
-            <img
+            // Routed through BrandLogo so the icon recolours to the active theme
+            // accent, matching the expanded wordmark instead of staying a fixed red.
+            <BrandLogo
               src="/images/logo/desktop.png"
               alt="H&P"
               style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}

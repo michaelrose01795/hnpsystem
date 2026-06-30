@@ -90,16 +90,20 @@ export default function BrandLogo({
   style,
   width,
   height,
+  // Base image to recolour. Defaults to the wide wordmark, but callers (e.g. the
+  // collapsed sidebar rail) can pass the square desktop icon so it recolours to
+  // the active theme accent the same way the wordmark does.
+  src: srcProp = LIGHT_LOGO_SRC,
   ...rest
 }) {
   // `effectiveAccent` follows any active theme override (e.g. the red /login
   // theme) so the logo recolours to match what is actually on screen — not the
   // user's stored accent preference.
   const { resolvedMode, effectiveAccent } = useTheme();
-  const [src, setSrc] = useState(() => LIGHT_LOGO_SRC);
+  const [src, setSrc] = useState(() => srcProp);
 
   const mode = resolvedMode === "dark" ? "dark" : "light";
-  const baseSrc = LIGHT_LOGO_SRC;
+  const baseSrc = srcProp;
 
   const targetRgb = useMemo(() => {
     const paletteMap =

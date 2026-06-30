@@ -6141,9 +6141,13 @@ function CustomerRequestsTab({
   // Compact stat tiles: fixed width so every tile matches, label on top with
   // the count stacked onto its own row below. They sit left-aligned on a single
   // wrapping row alongside the Edit/Save controls.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px", width: "112px", flex: "0 0 auto", minWidth: 0 };
-  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--text-1)", lineHeight: 1 };
+  // Stat tile: a grid item whose width is controlled by the responsive
+  // .jc-request-overview-statgrid grid. Title + counter sit on one row
+  // (space-between) when the tile is wide enough; flex-wrap drops the counter
+  // onto its own line below the title once the tile gets too narrow to fit both.
+  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0 };
+  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
+  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--theme)", lineHeight: 1 }; // counter uses --theme per design
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -6151,17 +6155,20 @@ function CustomerRequestsTab({
   return (
     <div className="jc-customer-requests">
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Stats + actions row — compact, left-aligned. "Customer Requests"
-            heading removed; the Edit/Save controls share this single wrapping
-            row with the stat tiles. Each tile is a fixed width with its count
-            stacked onto its own line. */}
+        {/* Stats + actions row. The stat tiles live in a responsive equal-width
+            grid (.jc-request-overview-statgrid) that fills all the width up to the
+            left of the Edit/Save controls. Each tile shows its title and counter on
+            one line when wide enough and wraps the counter below the title when the
+            tile gets too narrow. */}
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "8px" }}>
-          <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
-          <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
-          <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
-          <div style={statBoxStyle}><span style={statLabelStyle}>Pre-picked</span><span style={statValueStyle}>{requestStats.prePicked}</span></div>
-          <div style={statBoxStyle}><span style={statLabelStyle}>In Progress</span><span style={statValueStyle}>{requestStats.inProgress}</span></div>
-          <div style={statBoxStyle}><span style={statLabelStyle}>Complete</span><span style={statValueStyle}>{requestStats.complete}</span></div>
+          <div className="jc-req-statgrid jc-request-overview-statgrid" style={{ flex: "1 1 320px", minWidth: 0 }}>
+            <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
+            <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
+            <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
+            <div style={statBoxStyle}><span style={statLabelStyle}>Pre-picked</span><span style={statValueStyle}>{requestStats.prePicked}</span></div>
+            <div style={statBoxStyle}><span style={statLabelStyle}>In Progress</span><span style={statValueStyle}>{requestStats.inProgress}</span></div>
+            <div style={statBoxStyle}><span style={statLabelStyle}>Complete</span><span style={statValueStyle}>{requestStats.complete}</span></div>
+          </div>
           {canEdit && !editing &&
           <button
             onClick={() => setEditing(true)}
@@ -6245,7 +6252,7 @@ function CustomerRequestsTab({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
+                      <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</div></td>
                       <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
@@ -6272,7 +6279,7 @@ function CustomerRequestsTab({
                     const hasHours = req.time !== "" && req.time !== null && req.time !== undefined;
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
-                        <td style={{ color: "var(--text-1)" }}>{req.text}</td>
+                        <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text}</div></td>
                         <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>
@@ -6349,10 +6356,15 @@ function CustomerRequestsTab({
                   return (
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
-                      <td style={{ color: "var(--text-1)" }}>{row.description || "—"}</td>
+                      <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{row.description || "—"}</div></td>
                       <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
                       <td>{formatHoursDisplay(row.hours)}</td>
-                      <td><span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span></td>
+                      {/* Authorised (additional work) rows display only "Authorised"
+                          in this section — not the derived workflow status. Declined/
+                          reported VHC items never reach here (see authorisedRows). */}
+                      <td>{row.kind === "authorised"
+                        ? <span className="app-badge app-badge--success">Authorised</span>
+                        : <span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span>}</td>
                     </tr>
                   );
                 })}
@@ -6369,8 +6381,12 @@ function CustomerRequestsTab({
                   narrow widths. */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>{selectedRow.title}</h3>
-                {selectedRow.kind === "authorised" && <span className="app-badge app-badge--success">Authorised</span>}
-                <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>
+                {/* Authorised (additional work) rows show only the 44px-high
+                    "Authorised" status chip — never the small workflow status
+                    pill. Customer-request rows keep their normal status pill. */}
+                {selectedRow.kind === "authorised"
+                  ? <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">Authorised</span>
+                  : <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
                   <button type="button" className="app-btn app-btn--primary" onClick={() => onNavigateTab("clocking")}>Start Work</button>
                   <button type="button" className="app-btn app-btn--secondary" onClick={() => onNavigateTab("parts")}>Request Parts</button>
@@ -6447,12 +6463,15 @@ function CustomerRequestsTab({
             gap: 10px;
           }
           html.staff-scope .jc-req-statgrid.jc-request-overview-statgrid {
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(118px, 1fr);
-            grid-template-columns: none;
+            /* Equal-width tiles that fill the available width and reflow with the
+               screen: as many >=130px columns as fit, each sharing the leftover
+               space (1fr), wrapping to new rows when they no longer fit. Grid
+               stretch keeps every tile in a row the same height. */
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            grid-auto-flow: row;
             gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 2px;
+            overflow-x: visible;
+            padding-bottom: 0;
           }
           html.staff-scope .jc-customer-requests .jc-req-split {
             display: grid;
@@ -6463,6 +6482,29 @@ function CustomerRequestsTab({
           html.staff-scope .jc-req-table-wrap {
             min-width: 0;
             overflow-x: auto;
+          }
+          /* Keep the requests table inside its card: fixed layout means the
+             explicit per-column widths are honoured and the unsized "Request"
+             column absorbs the remaining width and wraps, instead of the table
+             growing wider than the card. */
+          html.staff-scope .jc-req-table-wrap table.app-data-table {
+            width: 100%;
+            table-layout: fixed;
+          }
+          /* Long request/description text wraps but is capped at exactly two
+             lines; past two lines the cell scrolls internally so the row height
+             never changes. Two full lines stay visible before the scroll. */
+          html.staff-scope .jc-req-desc-cell {
+            white-space: normal;
+            vertical-align: top;
+          }
+          html.staff-scope .jc-req-desc-clip {
+            line-height: 1.4;
+            max-height: 2.8em; /* 2 lines × 1.4 line-height — both lines fully shown */
+            overflow-y: auto;
+            overflow-x: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-word;
           }
           html.staff-scope .jc-req-row {
             transition: background-color 0.15s ease;
@@ -7918,7 +7960,7 @@ function WriteUpWorkspace({
                   return (
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
-                      <td style={{ color: "var(--text-1)" }}>{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</td>
+                      <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</div></td>
                       <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
@@ -7945,7 +7987,7 @@ function WriteUpWorkspace({
                     const hasHours = req.time !== "" && req.time !== null && req.time !== undefined;
                     return (
                       <tr key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}>
-                        <td style={{ color: "var(--text-1)" }}>{req.text}</td>
+                        <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text}</div></td>
                         <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                         <td><DropdownField value={req.paymentType} onChange={(e) => handleUpdateAuthorisedEditRow(index, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" disabled={!req.requestId && !req.vhcItemId} /></td>
                       </tr>

@@ -14,8 +14,6 @@ import { reportDevKey } from "./reportDevOverlay";
 
 const PRETTY = (k) =>
   String(k)
-    .replace(/^report_summary$/, "Summary")
-    .replace(/^report_context$/, "Context")
     .replace(/_/g, " ")
     .replace(/\bgbp\b/i, "GBP")
     .replace(/^\w/, (c) => c.toUpperCase());
@@ -73,100 +71,6 @@ const formatDateTime = (value, key) => {
   return `${date} - ${time}`;
 };
 
-const firstPresent = (row, keys) => {
-  for (const key of keys) {
-    const value = row?.[key];
-    if (value !== null && value !== undefined && value !== "") return value;
-  }
-  return null;
-};
-
-const nestedFirstPresent = (row, paths) => {
-  for (const path of paths) {
-    const value = path.split(".").reduce((acc, key) => acc?.[key], row);
-    if (value !== null && value !== undefined && value !== "") return value;
-  }
-  return null;
-};
-
-const joinParts = (parts) => parts.filter((part) => part !== null && part !== undefined && part !== "").join(" - ");
-
-const money = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  return n.toLocaleString("en-GB", { style: "currency", currency: "GBP" });
-};
-
-const dateForSummary = (row) =>
-  formatDateTime(
-    firstPresent(row, [
-      "completed_at",
-      "created_at",
-      "updated_at",
-      "checked_in_at",
-      "invoice_date",
-      "payment_date",
-      "attempted_at",
-      "occurred_at",
-      "scheduled_time",
-      "due_date",
-      "last_seen",
-    ]),
-    "date"
-  );
-
-const deriveReportSummary = (row, label, entityType) => {
-  const invoice = firstPresent(row, ["invoice_number"]) || nestedFirstPresent(row, ["invoices.invoice_number"]);
-  if (invoice) {
-    return joinParts([
-      `Invoice ${invoice}`,
-      firstPresent(row, ["job_number"]) || nestedFirstPresent(row, ["invoices.job_number"]),
-      money(firstPresent(row, ["grand_total", "invoice_total", "total"])),
-    ]);
-  }
-
-  const part = firstPresent(row, ["part_number", "part_number_snapshot", "name", "part_name_snapshot", "description", "issue_title"]);
-  if (part && String(entityType || "").includes("part")) {
-    return joinParts([
-      part,
-      firstPresent(row, ["status", "movement_type"]),
-      firstPresent(row, ["quantity_requested", "quantity_ordered", "quantity_fitted", "quantity", "qty_in_stock"]),
-    ]);
-  }
-
-  const vehicle = joinParts([
-    firstPresent(row, ["vehicle_reg", "reg_number", "registration"]),
-    firstPresent(row, ["vehicle_make_model", "make_model", "make", "model"]),
-  ]);
-  const job = firstPresent(row, ["job_number"]) || (row?.job_id ? `Job ${row.job_id}` : null);
-  if (job || vehicle) {
-    return joinParts([job, vehicle, firstPresent(row, ["customer", "customer_name"])]);
-  }
-
-  const actor = firstPresent(row, ["email", "actor_role", "user_id", "actor_user_id"]);
-  if (actor) {
-    return joinParts([actor, firstPresent(row, ["action", "outcome", "access", "defect", "failure_reason"])]);
-  }
-
-  const account = firstPresent(row, ["account_number", "account_id", "billing_name"]);
-  if (account) {
-    return joinParts([account, firstPresent(row, ["status", "payment_status"]), money(firstPresent(row, ["balance", "credit_limit"]))]);
-  }
-
-  return joinParts([label, firstPresent(row, ["rank", "monitor", "category", "status"]), dateForSummary(row)]);
-};
-
-const deriveReportContext = (row) => {
-  const amount = money(firstPresent(row, ["grand_total", "invoice_total", "labour_total", "parts_total", "amount", "balance", "unit_cost", "unit_price", "total"]));
-  const status = joinParts([
-    firstPresent(row, ["status", "payment_status", "completion_status", "outcome", "wash_state", "mobile_outcome"]),
-    firstPresent(row, ["severity", "category", "defect"]),
-  ]);
-  const timing = dateForSummary(row);
-  const quantity = firstPresent(row, ["quantity_requested", "quantity_ordered", "quantity_fitted", "quantity", "qty_in_stock", "jobs", "tests", "audited_actions"]);
-  return joinParts([status, amount, quantity != null ? `Qty ${quantity}` : null, timing]);
-};
-
 const displayCell = (value, key) => {
   if (value == null) return cell(value);
   const formattedDate = formatDateTime(value, key);
@@ -175,7 +79,7 @@ const displayCell = (value, key) => {
 };
 
 function DrilldownTableSkeleton() {
-  const columns = ["Summary", "Context", "Status", "Date", "Value"];
+  const columns = ["Record", "Customer", "Status", "Date", "Value"];
   return (
     <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
       <SkeletonKeyframes />
@@ -213,15 +117,7 @@ export default function ReportDrilldownTable({ kpiId, label, filter, onClose, pa
   const { loading, error, rows, count, entityType, warnings } = useDrilldown(kpiId, filter, { enabled: Boolean(kpiId) });
   const [query, setQuery] = useState("");
 
-  const displayRows = useMemo(
-    () =>
-      rows.map((row) => ({
-        report_summary: deriveReportSummary(row || {}, label || kpiId, entityType),
-        report_context: deriveReportContext(row || {}),
-        ...(row || {}),
-      })),
-    [rows, label, kpiId, entityType]
-  );
+  const displayRows = useMemo(() => rows.map((row) => row || {}), [rows]);
 
   const columns = useMemo(() => {
     const seen = [];
