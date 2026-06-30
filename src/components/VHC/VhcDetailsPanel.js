@@ -9047,24 +9047,45 @@ export default function VhcDetailsPanel({
             Single row: equal-width stat tiles kept to the left, Upload Media
             button pushed to the far right. order: 1 keeps it above the
             Customer Video card (order: 2). */}
-        {/* One row per request that has media, plus any unlinked photos.
-            order: 3 keeps this below the summary (1) and customer video (2). */}
+        {/* One row per reported red/amber concern (with or without media),
+            then any media-bearing rows with no matching concern, then the
+            unlinked bucket. order: 3 keeps this below the summary (1) and
+            customer video (2). */}
         <div style={{ order: 3, display: "flex", flexDirection: "column", gap: "12px" }}>
           {!hasRequestMedia ? (
-            <EmptyStateMessage message="No photos or videos have been linked to a request." />
+            <EmptyStateMessage message="No reported items or media for this check yet." />
           ) : (
             <>
-              {groups.map((group) =>
-                renderRequestRow(group.key, group.label, group.section, group.status, group.photos, group.videos),
-              )}
+              {concernRows.map((row) => renderRequestRow(row))}
               {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) &&
-                renderRequestRow("__unlinked__", "Unlinked media", "", "", unlinkedPhotos, unlinkedVideos)}
+                renderRequestRow({
+                  key: "__unlinked__",
+                  label: "Unlinked media",
+                  section: "",
+                  status: "",
+                  photos: unlinkedPhotos,
+                  videos: unlinkedVideos,
+                  concern: null,
+                })}
             </>
           )}
         </div>
       </div>
     );
-  }, [mediaLibrary, readOnly, handleToggleMainVideo, handleOpenPhotoPreview, mainVideoSavingId]);
+  }, [
+    mediaLibrary,
+    reportedConcerns,
+    readOnly,
+    handleToggleMainVideo,
+    handleOpenPhotoPreview,
+    mainVideoSavingId,
+    rowMediaUploadConcernId,
+    moveMediaPickerConcernId,
+    mediaLinkSaving,
+    handleRowAddMediaClick,
+    handleRowMediaUploadChange,
+    handleMoveMediaToConcern,
+  ]);
 
   if (!resolvedJobNumber) {
     return renderStatusMessage("Provide a job number to view VHC details.");

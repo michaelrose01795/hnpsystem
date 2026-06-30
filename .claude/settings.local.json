@@ -318,7 +318,8 @@
       "Bash(node \"C:/Users/micha/AppData/Local/Temp/claude/c--hnpsystem/c221ca4e-826c-4936-8a65-38214f29c414/scratchpad/fix-mojibake.js\" \"src/pages/job-cards/[jobNumber].js\")",
       "Bash(npx eslint *)",
       "Bash(awk 'NR>=5556 && NR<=6760 && /^function [A-Z]/ {print NR\": \"$0}' \"c:/Users/micha/hnpsystem/src/pages/job-cards/[jobNumber].js\")",
-      "Bash(awk -F: '$1>=5038 && $1<=6558')"
+      "Bash(awk -F: '$1>=5038 && $1<=6558')",
+      "Bash(node -e \"require\\('@babel/core'\\).transformFileSync\\('src/components/VHC/VhcDetailsPanel.js',{presets:[['@babel/preset-react'],['@babel/preset-env',{targets:{node:'current'}}]]}\\); console.log\\('parse OK'\\)\")"
     ],
     "deny": [],
     "ask": [],
