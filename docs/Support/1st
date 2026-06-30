@@ -1,0 +1,872 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+I want to make a full debugging popup, this is going to be a user friend as possible, where it works the same as the report button with ChatGPT where it uses a screenshot of the app, and a description of what happened. And then it needs to also (not for the user to see but only the dev to see) all of the key information what when wrong and how what code was being used etc but this need to be the best debugging system within the app and for it to be updated everytime the repo has a change so the debugging section knows exactly what’s what etc. this need to be the best ever.  Create a Claude prompt for Claude to work out everything required for ChatGPT to then start making phases to role this most intelligent debugging and help section as possible. The “?” Button will be a single text with no surrounding button etc within the toolbar of the app. Create the prompt to start this etc 
+
+Create a repo-aware plan for an intelligent in-app debugging and help system: add a user-friendly “?” text control in the app toolbar which opens a report-style popup where users can attach an app screenshot and describe what happened, while privately capturing developer-only diagnostic context such as route, role, browser/device, console errors, recent app actions, failed requests, relevant component/page context, build/version/commit info, feature flags, auth/session state, safe logs, and linked code ownership without exposing sensitive data to users; inspect the current repo and produce a phased rollout plan for ChatGPT to implement next, including data model, privacy/sanitisation rules, UI/UX flow, dev-only debug viewer, repo-change/version tracking so reports stay tied to the exact code state, error boundaries, API logging, audit trail, permissions, storage strategy, performance impact, and testing approach.
+
+
+
+Pasted markdown.md
+File
+
+This is an excellent foundation. I read through it and it's already very well thought out. 
+
+
+The one thing I'd change is the overall vision.
+
+At the moment it's essentially a bug reporting system.
+
+I'd evolve it into something much bigger, something that becomes an intelligent support platform built directly into HNPSystem.
+
+Instead of simply collecting logs, I'd have Claude first design an architecture where the system behaves almost like having an AI support engineer permanently inside the application.
+
+I'd have the next planning phase answer questions like:
+
+Intelligent diagnosis
+Not just collect data.
+
+Have the system attempt to understand what happened.
+
+For example it should automatically detect:
+
+API failures
+
+permission failures
+
+React render crashes
+
+hydration errors
+
+missing data
+
+Supabase failures
+
+authentication issues
+
+database constraint failures
+
+CSS/layout bugs
+
+infinite renders
+
+memory leaks
+
+slow pages
+
+long API response times
+
+duplicate requests
+
+broken images
+
+missing assets
+
+network connectivity
+
+browser compatibility
+
+feature flag issues
+
+and classify the report automatically.
+
+AI generated developer summary
+Instead of dumping logs.
+
+Generate something like
+
+Customer attempted to authorise a VHC.
+
+POST /api/vhc/approve returned HTTP 500.
+
+Database insert failed because labour_rate_id was null.
+
+Component:
+CustomerDecisionPanel
+
+Related files:
+
+• CustomerDecisionPanel.js
+
+• vhcApproval.js
+
+• api/vhc/approve.js
+
+Confidence:
+94%
+
+That immediately saves developers huge amounts of time.
+
+AI generated probable causes
+Instead of only saying what happened.
+
+Rank likely causes.
+
+Example
+
+94%
+Missing foreign key
+
+76%
+Role permission failed
+
+41%
+Supabase timeout
+
+21%
+Null prop
+
+Automatic reproduction
+Build a timeline automatically.
+
+For example
+
+14:20:11
+
+Opened Job Card 28117
+
+↓
+
+Selected VHC
+
+↓
+
+Clicked Approve
+
+↓
+
+API Request
+
+↓
+
+500 Error
+
+↓
+
+Popup shown
+
+↓
+
+User opened Help
+
+↓
+
+Screenshot captured
+
+↓
+
+Report submitted
+
+That makes reproducing issues much easier.
+
+Repository intelligence
+Instead of only storing the commit hash.
+
+Create an index of the whole repository.
+
+Know
+
+components
+
+routes
+
+APIs
+
+database tables
+
+Supabase functions
+
+permissions
+
+feature ownership
+
+CSS ownership
+
+shared UI components
+
+dependencies
+
+Every deployment refreshes this automatically.
+
+The debugging system then understands the architecture instead of simply attaching file names.
+
+Dependency graph
+When an issue occurs it should know
+
+Changing this file also affects
+
+Job Cards
+
+Workshop Dashboard
+
+VHC
+
+Customer Portal
+
+This is incredibly valuable before making fixes.
+
+Automatic blame detection
+For example
+
+This bug first appeared after
+
+Commit
+
+7f31a9d
+
+3 days ago
+
+Modified
+
+CustomerDecisionPanel
+
+Related reports
+
+14
+
+Potential regression
+
+93%
+
+Similar issue detection
+Before creating a new report
+
+It should search
+
+existing reports
+
+resolved reports
+
+audit logs
+
+previous crashes
+
+and tell the developer
+
+This appears to match Support Report #381.
+
+Self health monitoring
+The app should constantly score itself.
+
+For example
+
+Health Score
+
+98%
+
+API
+
+100%
+
+Database
+
+99%
+
+Permissions
+
+96%
+
+Frontend
+
+97%
+
+Memory
+
+99%
+
+Performance
+
+95%
+
+Live diagnostics
+A developer mode could show live information such as:
+
+active route
+
+active component
+
+current user
+
+current role
+
+database queries
+
+active API requests
+
+websocket events
+
+render count
+
+component render time
+
+React profiler
+
+memory usage
+
+CPU usage
+
+cache hits
+
+cache misses
+
+Almost like Chrome DevTools, but tailored specifically to HNPSystem.
+
+AI assistant
+The biggest addition I'd make.
+
+When a report is submitted, the AI should analyse everything it has collected and produce:
+
+a plain English explanation
+
+the probable cause
+
+confidence score
+
+affected modules
+
+affected users
+
+likely fix
+
+risk of the fix
+
+suggested tests
+
+similar previous reports
+
+priority
+
+estimated complexity
+
+recommended developer
+
+This turns the system from a passive reporting tool into an active debugging assistant.
+
+I'd also rename the overall project
+Rather than Help & Diagnostics, I'd call it something like:
+
+Intelligent Diagnostics Platform (my favourite)
+
+Developer Intelligence System
+
+Smart Diagnostics
+
+AI Support Platform
+
+Intelligent Support Centre
+
+Application Intelligence Platform
+
+"Intelligent Diagnostics Platform" fits particularly well because it leaves room for future capabilities like AI triage, predictive monitoring, regression detection, automated health scoring, and eventually even AI-generated pull requests for straightforward fixes. It becomes a core platform within HNPSystem rather than just another support feature.
+
+
+ok from now on give a tile of the prompt phase 1,2,3 etc and then the prompt ot give claude, have it like a back and forth conversation and changes to the app to also implement this system 
+
+Memory updated
+Thought for a couple of seconds
+Got it. From now on I’ll format Claude prompts like this:
+
+Phase 1, Foundation Planning
+Prompt goes here as one ready-to-copy sentence.
+
+Then Phase 2, Phase 3, etc, each one following on from the last like a staged conversation with Claude.
+
+
+Implement the "Help & Diagnostics" feature for the HNPSystem Next.js (Pages Router) + Supabase app exactly as specified in docs/help-diagnostics-system-plan.md, building it phase by phase (1→7) and following CLAUDE.md in full — namely: add a user-friendly "?" control in the StaffTopbar right column that opens a lazy-loaded SupportReportModal (built on the existing PopupModal, modelled on NextActionPrompt) where any authenticated user can enter a category/title/description and optionally attach a user-previewed, user-redactable screenshot, while a SupportDiagnosticsProvider mounted in _app.js silently captures a sanitised developer-only diagnostics bundle (route, role, device, capped console/error/failed-fetch/recent-action ring buffers, code ownership resolved via DEV_LAYOUT_SECTION_SOURCE_MAP, build/commit/version, feature flags, allow-listed session state) that is double-scrubbed client- and server-side through a shared src/lib/support/sanitise.js, persisted via a new src/lib/database/support.js helper into a new support_reports table with screenshots in a private support-reports bucket, exposed only to DEV_FULL_ACCESS_ROLES through role-guarded /api/support/* routes and a /dev/support-reports admin viewer, with an app-level error boundary feeding the buffer, commit/version pinning via next.config, audit logging through the existing writeAuditLog, and Vitest + Playwright coverage including a privacy-regression test — never exposing secrets, tokens, cookies, or non-allowlisted env, never doing silent screen capture, never querying Supabase outside the helper, and passing npm run check:borders, check:layers, and uk:check.
+
+create prompt to this to figure everyhting out and to start implementing everything etc
+
+Phase 1, Help & Diagnostics Implementation Start
+Read CLAUDE.md and docs/help-diagnostics-system-plan.md in full, inspect the current repo, then begin implementing the Help & Diagnostics system phase by phase starting with the smallest safe foundation first, keeping the feature separate from the existing Reporting/KPI system, reusing existing popup, auth, role, audit, storage, dev-layout and styling patterns, and stopping to flag any risky global architecture change before making it.
+
+
+Help & Diagnostics System — Phased Rollout Plan
+Status: Plan for implementation (hand-off to ChatGPT / implementer).
+Author context: Repo-aware plan generated from inspection of HNPSystem on 2026-06-30.
+Read CLAUDE.md in full before writing any code. Every UI surface in this
+feature must obey the Layer/Border laws, token system, and DB/auth rules in that file.
+
+0. Naming — avoid the collision
+The repo already has a large "Reporting" platform (KPI/analytics — see docs/Report System/ and
+src/lib/database/reporting/). Do not call this feature "reports" or "reporting." Use a distinct
+namespace throughout:
+
+Feature name: Help & Diagnostics (user-facing: "Help / Report a problem").
+
+Code namespace: support (DB table support_reports, lib src/lib/support/, API src/pages/api/support/).
+
+Dev viewer route: /dev/support-reports.
+
+This keeps it cleanly separated from the existing reporting/KPI code and docs.
+
+1. What we're building (one sentence)
+A user-friendly "?" control in the app toolbar that opens a report-style popup where a user can
+attach a screenshot and describe what happened, while the system privately captures a rich
+developer-only diagnostic bundle (route, role, device, console errors, recent actions, failed
+requests, component/code ownership, build/commit, feature flags, sanitised auth/session state) tied
+to the exact code state — surfaced only to admins/devs in a dedicated viewer.
+
+2. Repo assets we will reuse (do NOT rebuild these)
+The inspection found existing infrastructure that this feature should lean on rather than reinvent:
+
+Need	Existing asset	Path
+Toolbar mount point	Right column of the topbar (presentational)	src/components/layout/StaffTopbar.js (right column ~lines 336–381)
+App shell / state owner	StaffLayout (owns viewport, sidebar, mode state)	src/components/layout/StaffLayout.js
+Modal base	PopupModal + ModalPortal (portal, backdrop, scroll-lock, z-index 9999)	src/components/popups/popupStyleApi.js, src/components/popups/ModalPortal.js
+Form-popup reference	NextActionPrompt (button → form popup, local state, Esc)	src/components/popups/NextActionPrompt.js
+Confirmation UI	ConfirmationDialog	src/components/popups/ConfirmationDialog.js
+Toast / acknowledgement	AlertContext + TopbarAlerts (pub/sub, dismiss, copy-dev-info)	src/context/AlertContext.js, src/components/TopbarAlerts.js
+Session + roles	useUser() → { user, roles, dbUserId, ... }	src/context/UserContext.js
+Code ownership map	DEV_LAYOUT_SECTION_SOURCE_MAP — sectionKey → {file, line, route}	src/lib/dev-layout/sectionSourceMap.generated.js (+ generator tools/scripts/generate-dev-layout-section-source-map.js)
+Stable element signature	buildAuditKey (route + sectionKey + DOM path + text hash, survives reshuffles)	src/lib/dev-layout/auditTags.js
+Dev overlay context	DevLayoutOverlayContext / DevLayoutOverlay	src/components/dev-layout-overlay/DevLayoutOverlay.js
+API wrapper	createHandler({ allowedRoles, methods }) + withRoleGuard	src/lib/api/createHandler.js, src/lib/auth/roleGuard.js
+DB clients	supabaseService (service-role, server) / supabaseClient (anon)	src/lib/database/supabaseClient.js
+Append-only audit	writeAuditLog(...) — hash-chained, redacts passwords/NI/card numbers	src/lib/audit/auditLog.js
+Storage pattern	ensureBucket + service-role upload, then metadata row	src/lib/storage/storageService.js, vhcMediaBucketService.js
+Roles / dev gate	DEV_FULL_ACCESS_ROLES, hasAnyRole, isAdminManagerRole	src/lib/auth/roles.js, roleGuard.js
+Key insight: the data-dev-section-key / sectionKey convention already in use across the app
+gives us code ownership for free — when a user reports a problem we can resolve the nearest
+section key from the clicked/visible DOM and look up the exact file:line via
+DEV_LAYOUT_SECTION_SOURCE_MAP. This is the backbone of "linked code ownership."
+
+Gaps to fill
+No global error boundary — only job-cards/[jobNumber].js and its UI file have componentDidCatch. We must add an app-level boundary (Phase 4).
+
+No commit/version env exposed — app deploys on Vercel (process.env.VERCEL used in [...nextauth].js, proxy.js) but VERCEL_GIT_COMMIT_SHA is not surfaced to the client yet (Phase 5).
+
+No centralised logging — logging is ad-hoc console.error. We add a thin client-side ring buffer, not a logging framework.
+
+No external error tracking (no Sentry). This feature is the in-house substitute.
+
+3. Data model
+All new tables follow repo conventions (schemaReference.sql): snake_case, UUID PK via
+gen_random_uuid() for new tables, created_at/updated_at as timestamp with time zone DEFAULT now(),
+status as text with a CHECK constraint, FKs named {table}_{col}_fkey.
+
+3.1 support_reports (user-visible portion + private bundle)
+CREATE TABLE public.support_reports (
+  id              uuid NOT NULL DEFAULT gen_random_uuid(),
+  -- user-supplied
+  title           text,
+  description     text NOT NULL,
+  category        text DEFAULT 'bug'
+                    CHECK (category IN ('bug','question','suggestion','visual','data','other')),
+  -- attachment (screenshot) — stored in bucket, path only here
+  screenshot_path text,                       -- e.g. support-reports/{id}/screenshot.png
+  -- reporter identity (denormalised snapshot; FK kept loose to survive user deletion)
+  reporter_user_id   integer,                 -- REFERENCES users(user_id), nullable
+  reporter_username  text,
+  reporter_roles     text[],                  -- snapshot of roles at report time
+  -- triage
+  status          text NOT NULL DEFAULT 'new'
+                    CHECK (status IN ('new','triaged','in_progress','resolved','wont_fix','duplicate')),
+  severity        text DEFAULT 'unset'
+                    CHECK (severity IN ('unset','low','medium','high','critical')),
+  assigned_to     integer,                    -- REFERENCES users(user_id)
+  -- linkage
+  route           text,                       -- router.asPath at report time
+  section_key     text,                       -- nearest data-dev-section-key (code ownership anchor)
+  source_file     text,                       -- resolved from DEV_LAYOUT_SECTION_SOURCE_MAP
+  source_line     integer,
+  -- code-state pinning (Phase 5)
+  app_version     text,                        -- package.json version
+  commit_sha      text,                        -- VERCEL_GIT_COMMIT_SHA
+  commit_ref      text,                        -- branch
+  build_id        text,                        -- Next.js buildId
+  -- the private diagnostic blob (already sanitised before insert)
+  diagnostics     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at      timestamp with time zone DEFAULT now(),
+  updated_at      timestamp with time zone DEFAULT now(),
+  CONSTRAINT support_reports_pkey PRIMARY KEY (id),
+  CONSTRAINT support_reports_reporter_fkey FOREIGN KEY (reporter_user_id) REFERENCES public.users(user_id),
+  CONSTRAINT support_reports_assigned_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id)
+);
+CREATE INDEX support_reports_status_idx   ON public.support_reports (status, created_at DESC);
+CREATE INDEX support_reports_reporter_idx ON public.support_reports (reporter_user_id);
+CREATE INDEX support_reports_section_idx  ON public.support_reports (section_key);
+3.2 support_report_comments (triage thread, optional Phase 6)
+CREATE TABLE public.support_report_comments (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  report_id   uuid NOT NULL,
+  author_id   integer,
+  body        text NOT NULL,
+  created_at  timestamp with time zone DEFAULT now(),
+  CONSTRAINT support_report_comments_pkey PRIMARY KEY (id),
+  CONSTRAINT support_report_comments_report_fkey FOREIGN KEY (report_id)
+    REFERENCES public.support_reports(id) ON DELETE CASCADE
+);
+3.3 diagnostics JSONB shape (private — never shown to reporter)
+{
+  "captured_at": "2026-06-30T12:00:00Z",
+  "route": { "asPath": "/job-cards/00076?tab=requests", "pathname": "/job-cards/[jobNumber]", "query": {"...": "..."} },
+  "code_ownership": { "section_key": "jobcard-tab-customer-requests", "file": "src/components/page-ui/.../job-cards-job-number-ui.js", "line": 710, "breadcrumb": ["...","..."] },
+  "device": { "ua": "...", "platform": "...", "viewport": {"w":1280,"h":800}, "dpr": 2, "isMobile": false, "online": true, "lang": "en-GB" },
+  "session": { "authStatus": "authenticated", "roles": ["service manager"], "dbUserId": 42, "isDevLogin": false },
+  "feature_flags": { "NEXT_PUBLIC_DEV_AUTH_BYPASS": false, "presentationMode": false },
+  "build": { "version": "0.1.0", "commit_sha": "abc123", "commit_ref": "main", "build_id": "..." },
+  "console_errors": [ { "level": "error", "msg": "...", "stack": "...(sanitised)", "ts": 1719... } ],
+  "failed_requests": [ { "method":"GET", "url":"/api/...", "status":500, "ms":812, "ts":1719... } ],
+  "recent_actions": [ { "type":"route_change", "from":"/a", "to":"/b", "ts":... }, { "type":"click", "label":"Edit Requests", "section_key":"...", "ts":... } ],
+  "unhandled_errors": [ { "message":"...", "stack":"...", "componentStack":"...", "ts":... } ],
+  "perf": { "memoryUsedMB": 180, "navType": "navigate" }
+}
+Audit linkage: every status change / assignment / view of a private bundle calls the existing
+writeAuditLog({ action, actorUserId, actorRole, entityType:'support_report', entityId, diff, ... })
+from src/lib/audit/auditLog.js. No new audit table — reuse the hash-chained one.
+
+4. Privacy & sanitisation rules (THE most important section)
+The reporter must never see the diagnostics blob. The diagnostics blob must never contain
+secrets or third-party PII beyond what's needed to debug. Enforce in this order:
+
+Two-tier payload. The popup builds two objects: userVisible (title, description, category,
+screenshot) and diagnostics (everything else). The diagnostics object is assembled client-side
+but scrubbed both client- and server-side before persistence (defence in depth).
+
+Allowlist, not denylist, for session/flags. Only copy known-safe fields: roles, dbUserId,
+authStatus, isDevLogin. Never copy NextAuth tokens, JWTs, cookies, NEXTAUTH_SECRET,
+SUPABASE_SERVICE_ROLE_KEY, or any process.env value that isn't NEXT_PUBLIC_* and on an explicit allowlist.
+
+Redaction pass (reuse the redaction approach already in src/lib/audit/auditLog.js). Run a
+regex/key scrubber over all strings in console_errors, failed_requests.url, recent_actions,
+and stack traces to strip: bearer/JWT tokens (/eyJ[\w-]+\.[\w-]+\.[\w-]+/), API keys
+(sk_, service_role, long hex/base64 blobs), emails (mask to a***@domain), NI numbers,
+card-number patterns, query-string ?token=/?key=/?secret= values, and Authorization headers.
+
+Request bodies are NOT captured — only method, URL (path, query stripped of secret keys),
+status code, and duration. Never log request/response bodies.
+
+Screenshot is user-initiated only. No automatic/silent screen capture. The user must click
+"Attach screenshot" and the image is captured client-side (see §6). Show the user a preview so
+they can see exactly what is being sent and redact (draw black boxes) before submitting.
+
+Server-side re-scrub on ingest. The API route runs the same sanitiser again on diagnostics
+before insert — the client is untrusted. Reject payloads over a size cap (e.g. 256 KB JSON).
+
+Storage isolation. Screenshots go to a private bucket (support-reports), never public.
+Signed URLs (short TTL) generated server-side only for admin viewer.
+
+Retention. Add support_reports to the existing retention runner (tools/scripts/run-retention.js)
+— e.g. purge resolved/wont_fix reports + screenshots after N days. Document the window.
+
+RLS. Enable Row Level Security on support_reports: a reporter may INSERT and SELECT only
+their own rows' user-visible columns (via a view); the diagnostics column is only readable by
+the service-role / admin API. Simplest safe approach: never expose the table to the anon client at
+all — all reads/writes go through role-guarded API routes using supabaseService.
+
+5. UI / UX flow
+All UI must comply with CLAUDE.md §3 (LayerSurface/LayerTheme alternation, no borders on
+surfaces, tokens only, responsive, 44px touch targets). Reuse PopupModal, model the form on
+NextActionPrompt, acknowledge via AlertContext.
+
+The "?" control — a text/icon button ("?") in the topbar right column of
+StaffTopbar.js, placed between GlobalSearch and NextActionPrompt. It is purely
+presentational; it calls a callback passed down from StaffLayout, or (preferred) consumes a
+new lightweight SupportReportContext mounted in _app.js so any component can call
+openSupportReport({ prefill }). Always visible to all authenticated users.
+
+Open → popup (SupportReportModal, new, under src/components/support/):
+
+Step 1: short friendly intro + a category chooser (bug / question / visual / data / other).
+
+Step 2: title (optional) + description (required, the "describe what happened" box).
+
+Step 3: Attach screenshot (optional but encouraged): "Capture this screen" button →
+client-side capture (see §6) → preview with simple redaction (draw rectangles) → confirm.
+
+A subtle, collapsed "What we'll send to the developers" disclosure that lists the categories
+of diagnostic data (route, device, recent errors) in plain language — for transparency/GDPR — but
+not the raw values. (Privacy-by-design + user trust.)
+
+Submit button (primary). Esc/backdrop closes (inherited from PopupModal).
+
+On submit: show optimistic "Sending…", then a success toast via AlertContext
+("Thanks — your report #1234 was sent to the team"). On failure, keep the popup open with the
+text intact and show an inline StatusMessage error.
+
+Diagnostics capture happens silently the moment the popup opens (snapshot the ring buffers,
+route, device) so it reflects the state before the user started typing.
+
+6. Diagnostic capture mechanics (client runtime)
+Implement a small always-on collector mounted high in _app.js (SupportDiagnosticsProvider) that
+maintains bounded ring buffers (cheap, capped, never persisted unless a report is filed):
+
+Console errors/warns: monkey-patch console.error/console.warn (preserve originals) → push
+to a capped buffer (last ~25). Strip immediately.
+
+Unhandled errors: window.addEventListener('error'|'unhandledrejection') → buffer.
+
+Failed requests: wrap window.fetch (and optionally XHR) to record {method,url,status,ms}
+for non-2xx responses only; URL path + scrubbed query. Cap last ~25. No bodies.
+
+Recent actions: subscribe to router.events (route changes) + a lightweight global click
+listener that resolves the nearest [data-dev-section-key]/sectionKey ancestor and records a
+human label + section key. Cap last ~30.
+
+Device/viewport/session/flags: read on demand at capture time from navigator, window,
+useUser(), and the NEXT_PUBLIC_* allowlist.
+
+Code ownership: at capture, resolve the section key under the report trigger (or the most
+recently interacted section) and look it up in DEV_LAYOUT_SECTION_SOURCE_MAP to attach
+file/line/breadcrumb. Reuse the resolver logic in auditTags.js (buildAuditKey).
+
+Screenshot: prefer DOM-to-image of the app root. Options, in order of preference:
+
+Browser-native navigator.mediaDevices.getDisplayMedia (user picks the tab — most accurate, but
+extra click + permission). 2. A lightweight DOM snapshot (no new heavy dep — if html2canvas-class
+library is undesirable, capture a serialised DOM + computed styles is overkill; recommend
+getDisplayMedia for v1, DOM-rasterise later). Capture client-side; upload as part of submit.
+Keep image dimensions/quality capped (e.g. max 1600px wide, JPEG/PNG, < 2 MB) to bound payload.
+
+7. Dev-only debug viewer
+A role-gated admin page at /dev/support-reports (and detail /dev/support-reports/[id]),
+consistent with the existing src/pages/dev/* pages and gated with ProtectedRoute +
+DEV_FULL_ACCESS_ROLES (admin / owner / admin manager).
+
+List view: table (use existing table/section patterns, --separating-line row rules) with
+status, severity, category, route, reporter, section_key, commit_sha (short), created_at; filters
+by status/severity/category/route; search by text.
+
+Detail view: user-visible content + screenshot (signed URL) + the full diagnostics blob
+rendered as collapsible sections. Code ownership block shows file:line as a clickable
+reference and the breadcrumb. Include a "copy dev bundle" button (reuse the copy-dev-info
+affordance already in TopbarAlerts).
+
+Triage actions: change status/severity, assign, add comment (Phase 6). Every action writes to
+the hash-chained audit log.
+
+Pin to code state: show commit_sha/ref/build_id prominently so a dev knows the exact code the
+user saw (links to GitHub commit if a repo URL env is configured).
+
+8. Repo-change / version tracking (pin reports to exact code state)
+So reports stay tied to the exact code state:
+
+Expose build metadata. In next.config.*, set env/publicRuntimeConfig (or
+generateBuildId) to surface: NEXT_PUBLIC_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA,
+NEXT_PUBLIC_COMMIT_REF = process.env.VERCEL_GIT_COMMIT_REF, NEXT_PUBLIC_APP_VERSION (from
+package.json), and capture Next's buildId. For local dev, fall back to git rev-parse HEAD
+at build via the existing tools/scripts pattern.
+
+Stamp every report with app_version, commit_sha, commit_ref, build_id (columns in §3.1).
+
+Code-ownership freshness. DEV_LAYOUT_SECTION_SOURCE_MAP is generated
+(generate-dev-layout-section-source-map.js, run on predev/prebuild via the existing
+presentation:sync-style hook). Ensure the generator runs in CI/build so source_file/source_line
+reflect the committed code at report time. Store the section_key (stable) as the durable
+anchor and the resolved file as a convenience snapshot — if files move later, re-resolving by
+key against the historical commit gives the correct location.
+
+Optionally store a short content hash of the resolved component file at capture time to detect
+drift between report and current code.
+
+9. Error boundaries
+Add an app-level error boundary wrapping the page content inside StaffLayout (or in
+_app.js), modelled on the existing class boundary in job-cards/[jobNumber].js. On catch it:
+(a) renders a friendly fallback ("Something went wrong"), (b) pushes the error+componentStack into
+the diagnostics ring buffer, and (c) offers a "Report this problem" button that opens the
+support popup pre-filled with the captured error.
+
+Keep the existing job-card boundaries; nest the global one above them.
+
+Boundaries cannot catch event-handler/async errors — those are covered by the
+window error listeners in §6.
+
+10. API & server logging
+New routes under src/pages/api/support/, all built with createHandler / withRoleGuard:
+
+POST /api/support/reports — auth required (any logged-in user). Validates, re-sanitises
+diagnostics, uploads screenshot via supabaseService to the support-reports bucket
+(ensureBucket pattern), inserts row via a new DB helper, writes an audit entry, returns
+{ success:true, id, reference }. Enforce size cap + basic rate limit (e.g. per-user N/min).
+
+GET /api/support/reports — admin only (DEV_FULL_ACCESS_ROLES). List + filters.
+
+GET /api/support/reports/[id] — admin only. Returns full bundle + signed screenshot URL.
+
+PATCH /api/support/reports/[id] — admin only. Status/severity/assignee; audit-logged.
+
+DB helper: src/lib/database/support.js (matches the <domain>.js convention) — all Supabase
+queries live here, never in pages/components. Functions: createSupportReport, listSupportReports,
+getSupportReport, updateSupportReport.
+
+Sanitiser lib: src/lib/support/sanitise.js — shared by client and API (single source of truth
+for the redaction rules in §4). Unit-tested.
+
+Server logging: keep the existing console.error("[support] ...", err) convention; the report
+is the structured record. No new logging framework.
+
+11. Audit trail & permissions
+Audit: reuse writeAuditLog for: report created (actor = reporter), bundle viewed (actor =
+admin — important for the privacy story: who looked at diagnostics), status/severity/assignee
+changed, report deleted/purged. entityType: 'support_report'.
+
+Permissions matrix:
+
+Action	Who
+Open "?" popup / submit a report	Any authenticated user
+See own report's user-visible status	Reporter (optional, Phase 6)
+View report list / diagnostics bundle	DEV_FULL_ACCESS_ROLES (admin/owner/admin manager)
+Triage (status/severity/assign/comment)	Admin/owner
+Purge / retention	Service-role job only
+Gate the dev pages with ProtectedRoute; gate APIs with withRoleGuard. Never trust client role
+claims — re-derive from session server-side.
+
+12. Storage strategy
+Bucket: new private support-reports bucket (do not reuse job-files/vhc-customer-media
+— keeps retention/ACL separate). Path: support-reports/{reportId}/screenshot.{ext}.
+
+Create via the ensureBucket helper pattern (storageService.js), public: false.
+
+Upload server-side with supabaseService after the row exists (so path includes the report id);
+store only the path in screenshot_path. Serve to admins via short-TTL signed URLs.
+
+Cap file size at the API; reject non-image MIME types.
+
+13. Performance impact
+Ring buffers are tiny and capped — negligible memory, no network until a report is filed.
+
+fetch/console patching adds a thin synchronous wrapper; keep it allocation-light and guard with
+a feature flag so it can be disabled.
+
+Screenshot is the only heavy op and is user-initiated, off the hot path. Cap resolution/size.
+
+No always-on uploads, no telemetry beaconing. Provider does zero work when idle.
+
+Lazy-load the SupportReportModal (dynamic import) so the popup code isn't in the initial bundle.
+
+14. Testing approach
+Use the existing stacks: Vitest (npm run test:unit) for logic, Playwright (npm run test)
+for flows.
+
+Unit (Vitest): the sanitiser (§4) — feed payloads containing JWTs, API keys, emails, NI/card
+numbers, secret query params, and assert they're redacted; size-cap rejection; section-key →
+file resolution against DEV_LAYOUT_SECTION_SOURCE_MAP; build-metadata stamping.
+
+Integration: API routes — auth gating (anon rejected, non-admin can POST but not GET list),
+server-side re-sanitisation actually strips secrets even if client sends them, storage upload path.
+
+E2E (Playwright): open "?" → fill form → (mock) screenshot → submit → success toast; admin
+logs in → sees report in /dev/support-reports → opens detail → diagnostics present, secrets
+absent; non-admin cannot reach the dev viewer; error boundary fallback renders and its "Report"
+button pre-fills.
+
+Repo checks: must pass npm run check:borders, npm run check:layers, and npm run uk:check
+(UK English) — all new UI obeys the design laws.
+
+Privacy regression test: a dedicated test that submits a report with planted secrets in
+console/fetch buffers and asserts the persisted row contains none of them.
+
+15. Phased rollout (implementation order)
+Each phase is independently shippable and leaves the app working.
+
+Phase 1 — Foundation & data model
+Create support_reports table + indexes (SQL migration following repo convention).
+
+Add src/lib/database/support.js helper (CRUD) and src/lib/support/sanitise.js (with tests).
+
+Create private support-reports storage bucket via ensureBucket.
+
+Exit: can insert/read a sanitised report via helper from a script/test.
+
+Phase 2 — Capture runtime
+SupportDiagnosticsProvider in _app.js: ring buffers (console, errors, failed fetch, actions),
+device/session/flags snapshot, code-ownership resolver via DEV_LAYOUT_SECTION_SOURCE_MAP.
+
+SupportReportContext with openSupportReport().
+
+Exit: buffers populate; captureDiagnostics() returns a clean, sanitised bundle (unit-tested).
+
+Phase 3 — UI: the "?" control + popup
+Add "?" button to StaffTopbar.js right column (wired to context).
+
+SupportReportModal (lazy-loaded) built on PopupModal, modelled on NextActionPrompt; screenshot
+capture + preview/redaction; success/error via AlertContext/StatusMessage.
+
+POST /api/support/reports route (createHandler) with server re-sanitise + upload + audit.
+
+Exit: any user can file a report end-to-end; secrets verified absent in DB.
+
+Phase 4 — Error boundaries
+App-level error boundary (modelled on the job-card one) feeding the diagnostics buffer and offering
+a pre-filled "Report this problem" action.
+
+Exit: a thrown render error shows fallback + can be reported.
+
+Phase 5 — Version / code-state pinning
+Surface NEXT_PUBLIC_COMMIT_SHA/_REF/APP_VERSION/buildId via next.config; stamp reports.
+
+Ensure source-map generator runs in build; store section_key + resolved file (+ optional file hash).
+
+Exit: every new report carries commit/version and accurate code ownership.
+
+Phase 6 — Dev viewer, triage & audit
+/dev/support-reports list + detail (admin-gated), filters, signed screenshot URLs.
+
+GET/PATCH admin APIs; status/severity/assign/comment; writeAuditLog on every mutation + bundle view.
+
+Exit: admins triage reports; all access/changes audited.
+
+Phase 7 — Hardening
+Rate limiting + size caps; retention rule in run-retention.js; RLS review; full Playwright +
+privacy regression suite; performance sanity check.
+
+Exit: feature production-ready, documented in docs/.
+
+16. Files to create (summary)
+src/lib/support/sanitise.js                       # shared redaction (single source of truth)
+src/lib/support/diagnostics.js                    # capture + buffer helpers (client)
+src/lib/database/support.js                        # DB CRUD helper
+src/context/SupportReportContext.js                # openSupportReport() + diagnostics provider
+src/components/support/SupportReportButton.js      # the "?" control (used by StaffTopbar)
+src/components/support/SupportReportModal.js       # the report popup (lazy)
+src/components/support/ScreenshotCapture.js        # capture + preview/redact
+src/components/support/AppErrorBoundary.js         # app-level boundary (Phase 4)
+src/pages/api/support/reports/index.js             # POST + admin GET list
+src/pages/api/support/reports/[id].js              # admin GET detail + PATCH
+src/pages/dev/support-reports/index.js             # admin list viewer
+src/pages/dev/support-reports/[id].js              # admin detail viewer
+supabase migration: support_reports (+ comments, Phase 6)
+17. Files to edit
+src/pages/_app.js                  # mount SupportReportContext + SupportDiagnosticsProvider (+ boundary)
+src/components/layout/StaffTopbar.js   # add "?" button in right column
+src/components/layout/StaffLayout.js   # pass-through if not using context-only wiring
+next.config.*                      # expose commit/version env
+tools/scripts/run-retention.js     # add support_reports retention (Phase 7)
+18. Hard constraints (do not violate)
+Obey CLAUDE.md in full: LayerSurface/LayerTheme alternation, no borders on surfaces, tokens
+only (no hex), responsive + 44px touch targets, UK English. Run check:borders/check:layers/uk:check.
+
+No raw Supabase in pages/components — all queries in src/lib/database/support.js.
+
+Never expose service-role key, tokens, cookies, or non-allowlisted env to the client or the bundle.
+
+No silent screen capture — screenshots are explicit, user-previewed, user-redactable.
+
+Reuse existing popup/alert/audit/storage/role infrastructure — do not introduce Sentry or a new
+logging framework.
+
+Flag any change to global files (Layout, Sidebar, Section, Card, theme.css, globals.css,
+context providers) per CLAUDE.md §7 before proceeding.
+
+
+Close
