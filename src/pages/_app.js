@@ -37,6 +37,7 @@ import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
 import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
+import { SupportDiagnosticsProvider } from "@/context/SupportReportContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import CookieBanner from "@/components/CookieBanner";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
@@ -548,7 +549,9 @@ export default function MyApp({ Component, pageProps }) {
                       <JobsProvider>
                         <ClockingProvider>
                           <RosterProvider initialRosterData={pageProps.initialRosterData}>
-                            <AppWrapper Component={Component} pageProps={pageProps} />
+                            <SupportDiagnosticsProvider>
+                              <AppWrapper Component={Component} pageProps={pageProps} />
+                            </SupportDiagnosticsProvider>
                           </RosterProvider>
                         </ClockingProvider>
                       </JobsProvider>
