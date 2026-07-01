@@ -28,7 +28,7 @@ import {
   listSupportReports,
   getSupportReportStats,
 } from "@/lib/database/support";
-import { hasAnyRole, DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { hasDevPlatformAccess } from "@/lib/auth/roles";
 import { normaliseListFilters } from "@/lib/support/triageValidation";
 import {
   uploadSupportScreenshot,
@@ -67,9 +67,10 @@ const toInt = (value) => {
 
 // The POST endpoint is open to any authenticated user (report submission), but
 // the GET list is developer-only. createHandler applies one allow-list to the
-// whole route, so the list gates itself here against DEV_FULL_ACCESS_ROLES.
+// whole route, so the list gates itself here against the strict DEV_PLATFORM_ROLES
+// (`dev`) — Phase 8 re-gate. The reporter POST below is untouched.
 const isDeveloper = (session) =>
-  session?.devBypass === true || hasAnyRole(session?.user?.roles || [], DEV_FULL_ACCESS_ROLES);
+  hasDevPlatformAccess(session?.user?.roles || []);
 
 // GET /api/support/reports — developer Support Centre list (+ optional stats).
 async function handleGet(req, res, session) {

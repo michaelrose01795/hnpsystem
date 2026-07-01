@@ -1,9 +1,9 @@
 // file location: src/pages/api/support/reports/[id].js
 //
 // Phase 6 — developer-only Support Centre detail + triage endpoint. Gated to
-// DEV_FULL_ACCESS_ROLES by createHandler (the whole route is dev-only, unlike the
-// open POST on ../reports.js). Every developer action is audit-logged via the
-// shared hash-chained writeAuditLog.
+// the strict DEV_PLATFORM_ROLES (`dev`) by createHandler (Phase 8 re-gate; the
+// whole route is dev-only, unlike the open POST on ../reports.js). Every
+// developer action is audit-logged via the shared hash-chained writeAuditLog.
 //
 //   GET   → full report (diagnostics + dev-only investigation), signed screenshot
 //           URLs (short-TTL), the comment thread, and the audit history.
@@ -19,7 +19,7 @@ import {
   listSupportReportAudit,
 } from "@/lib/database/support";
 import { getSupportScreenshotSignedUrl } from "@/lib/storage/supportMediaBucketService";
-import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
 const clientIp = (req) => {
@@ -120,6 +120,6 @@ async function handlePatch(req, res, session) {
 }
 
 export default createHandler({
-  allowedRoles: DEV_FULL_ACCESS_ROLES,
+  allowedRoles: DEV_PLATFORM_ROLES,
   methods: { GET: handleGet, PATCH: handlePatch },
 });

@@ -11,6 +11,11 @@ const DEFAULT_DEV_LOGIN_USER = "michael";
 const PRESENTATION_CATEGORY_VALUE = "__presentation__";
 const ROLE_TREE_DEMO_VALUE = "__role-tree-demo__";
 const ROLE_TREE_DEMO_HREF = "/vision/role-tree-demo";
+// Phase 8 — synthetic "Developer" area. Selecting it short-circuits the normal
+// department/user tree and mints the strict `dev` role via NextAuth (see
+// login.js → handleDevPlatformSelect). It is NOT a roleCategories entry, so it
+// can never appear in the HR role-assignment surfaces.
+const DEV_PLATFORM_CATEGORY_VALUE = "__dev-platform__";
 
 const normalizeValue = (value) =>
   String(value || "")
@@ -111,6 +116,7 @@ export default function LoginDropdown({
   roleCategories,
   onSingleUserDepartmentLogin,
   onPresentationSelect,
+  onDevPlatformSelect,
   className = "",
 }) {
   const formatUserName = (role, user) => {
@@ -279,6 +285,11 @@ export default function LoginDropdown({
         value: ROLE_TREE_DEMO_VALUE,
         label: "Role Tree Demo",
       },
+      {
+        key: DEV_PLATFORM_CATEGORY_VALUE,
+        value: DEV_PLATFORM_CATEGORY_VALUE,
+        label: "Developer",
+      },
     ],
     [roleCategories]
   );
@@ -342,6 +353,10 @@ export default function LoginDropdown({
             if (typeof window !== "undefined") {
               window.location.href = ROLE_TREE_DEMO_HREF;
             }
+            return;
+          }
+          if (nextCategory === DEV_PLATFORM_CATEGORY_VALUE) {
+            onDevPlatformSelect?.();
             return;
           }
           setSelectedCategory(nextCategory);

@@ -38,6 +38,16 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
   )
 );
 
+// Developer Platform role (Phase 8). This role exists ONLY inside the Dev Login
+// (minted in code by the synthetic "Developer" area → NextAuth credentials,
+// gated by isDevAuthAllowed()). It is deliberately NOT part of roleCategories
+// (so it can never be picked in the HR role-assignment surfaces) and NOT part of
+// DEV_FULL_ACCESS_ROLES (so it never leaks in via presentation mode). Every
+// developer-only Developer Platform surface (the Support Centre + its APIs)
+// gates strictly on this role.
+export const DEV_PLATFORM_ROLE = "dev";
+export const DEV_PLATFORM_ROLES = [DEV_PLATFORM_ROLE];
+
 export function normalizeRoles(roles = []) {
   return roles.map((role) => role?.toString().toLowerCase().trim()).filter(Boolean);
 }
@@ -65,4 +75,9 @@ export function canAccessHrManagerDashboard(userRoles) {
 
 export function isMobileTechnician(userRoles) {
   return hasAnyRole(userRoles, MOBILE_TECH_ROLES);
+}
+
+// Developer Platform access gate (Phase 8). Strict: only the `dev` role passes.
+export function hasDevPlatformAccess(userRoles) {
+  return hasAnyRole(userRoles, DEV_PLATFORM_ROLES);
 }

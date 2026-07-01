@@ -131,3 +131,48 @@ BEGIN
     );
   END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- Phase 8 (Developer Platform) — server-synced saved views + developer
+-- preferences. These upgrade the previously device-local savedViews.js store to
+-- personal + shared team workspaces persisted per developer. Same privacy model
+-- as above: RLS enabled with NO permissive policies — all access is via the
+-- dev-gated, service-role API routes (src/lib/database/supportSavedViews.js).
+--
+-- Ownership is keyed by a TEXT `owner_key` (the session user id, stringified)
+-- rather than an integer FK to users, because the `dev` role is synthetic: it is
+-- minted in code by the Dev Login and has no users row (its key is the literal
+-- 'dev-platform'). A real numeric user carrying the dev role simply keys by their
+-- stringified user_id. Owner scoping is enforced in the data layer.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.support_saved_views (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_key   text NOT NULL,
+  name        text NOT NULL,
+  -- 'personal' → visible only to the owner; 'shared' → visible to the whole team.
+  scope       text NOT NULL DEFAULT 'personal'
+                CHECK (scope IN ('personal','shared')),
+  -- which platform surface the view belongs to (e.g. 'support').
+  surface     text NOT NULL DEFAULT 'support',
+  -- normalised filter object (validated by savedViewValidation.js before insert).
+  filters     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_saved_views_pkey PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS support_saved_views_owner_idx
+  ON public.support_saved_views (owner_key, updated_at DESC);
+CREATE INDEX IF NOT EXISTS support_saved_views_shared_idx
+  ON public.support_saved_views (surface, scope);
+
+CREATE TABLE IF NOT EXISTS public.support_user_preferences (
+  owner_key   text NOT NULL,
+  -- free-form, validated developer + notification preferences.
+  preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_user_preferences_pkey PRIMARY KEY (owner_key)
+);
+
+ALTER TABLE public.support_saved_views      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_user_preferences ENABLE ROW LEVEL SECURITY;

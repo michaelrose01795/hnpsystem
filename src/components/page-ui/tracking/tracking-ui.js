@@ -8,7 +8,6 @@ export default function TrackingDashboardUi(props) {
     DropdownField,
     EquipmentToolsModal,
     EquipmentHistoryModal,
-    InlineLoading,
     KEY_LOCATIONS,
     LocationEntryModal,
     LocationSearchModal,
@@ -35,7 +34,6 @@ export default function TrackingDashboardUi(props) {
     handleSaveEquipment,
     handleSaveOilStock,
     isMobileView,
-    loadActiveTab,
     loading,
     loanCarFleetManagerOpen,
     loanCarMonth,
@@ -43,7 +41,6 @@ export default function TrackingDashboardUi(props) {
     MonthPickerField,
     oilCategoryFilter,
     oilCategoryFilters,
-    refreshLoading,
     oilStockModal,
     oilStockHistoryModal,
     openEntryModal,
@@ -64,11 +61,16 @@ export default function TrackingDashboardUi(props) {
     sharedSearchPlaceholder,
     sharedSearchValue,
     tabs,
-    trackerLastUpdatedLabel,
     trackerLocationFilter,
     trackerLocationFilters,
+    trackerQuickFilter,
+    trackerQuickFilters,
+    setTrackerQuickFilter,
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
+
+  const shouldStackHeaderControls = isMobileView;
+  const compactSearchTabs = activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock";
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -92,17 +94,25 @@ export default function TrackingDashboardUi(props) {
     }}>
           <div style={{
         display: "flex",
+        flexDirection: shouldStackHeaderControls ? "column" : "row",
         justifyContent: "space-between",
         alignItems: "center",
         gap: "12px",
-        flexWrap: "wrap",
-        width: "100%"
+        flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        overflowX: shouldStackHeaderControls ? "visible" : "auto",
+        overflowY: "visible",
+        scrollbarWidth: "thin"
       }}>
               {tabs.length > 1 && (
               <DevLayoutSection sectionKey="tracking-page-tabs" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "inline-flex",
-          width: "fit-content",
+          flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
+          width: shouldStackHeaderControls ? "100%" : "fit-content",
           maxWidth: "100%",
+          minWidth: 0,
           background: "transparent",
           padding: 0
         }}>
@@ -115,11 +125,12 @@ export default function TrackingDashboardUi(props) {
               <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "flex",
           gap: "var(--space-sm)",
-          flexWrap: "wrap",
+          flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
-          flex: "1 1 auto",
+          flex: shouldStackHeaderControls ? "1 1 100%" : "1 1 auto",
           minWidth: 0,
-          justifyContent: "center"
+          maxWidth: "100%",
+          justifyContent: shouldStackHeaderControls ? "stretch" : "center"
         }}>
                   <SearchBar
             value={sharedSearchValue}
@@ -128,9 +139,9 @@ export default function TrackingDashboardUi(props) {
             placeholder={sharedSearchPlaceholder}
             ariaLabel={sharedSearchPlaceholder}
             style={{
-              flex: activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock" ? "0 1 clamp(180px, 32vw, 420px)" : "1 1 clamp(180px, 48vw, 720px)",
-              minWidth: isMobileView ? "100%" : "180px",
-              maxWidth: activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock" ? "420px" : "720px"
+              flex: shouldStackHeaderControls ? "1 1 100%" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
+              minWidth: shouldStackHeaderControls ? "100%" : "160px",
+              maxWidth: shouldStackHeaderControls ? "100%" : compactSearchTabs ? "360px" : "520px"
             }} />
                   {activeTab === "tracker" && DropdownField && (
                   <DropdownField
@@ -141,9 +152,23 @@ export default function TrackingDashboardUi(props) {
               placeholder="All locations"
               size="sm"
               style={{
-                flex: "0 1 220px",
-                minWidth: isMobileView ? "100%" : "180px",
-                maxWidth: isMobileView ? "100%" : "240px"
+                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
+                minWidth: shouldStackHeaderControls ? "100%" : "160px",
+                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
+              }} />
+                  )}
+                  {activeTab === "tracker" && DropdownField && (
+                  <DropdownField
+              value={trackerQuickFilter}
+              onValueChange={setTrackerQuickFilter}
+              options={trackerQuickFilters}
+              ariaLabel="Filter tracker by status"
+              placeholder="All"
+              size="sm"
+              style={{
+                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
+                minWidth: shouldStackHeaderControls ? "100%" : "160px",
+                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
               }} />
                   )}
                   {activeTab === "equipment" && DropdownField && (
@@ -155,9 +180,9 @@ export default function TrackingDashboardUi(props) {
               placeholder="All equipment"
               size="sm"
               style={{
-                flex: "0 1 220px",
-                minWidth: isMobileView ? "100%" : "180px",
-                maxWidth: isMobileView ? "100%" : "240px"
+                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
+                minWidth: shouldStackHeaderControls ? "100%" : "160px",
+                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
               }} />
                   )}
                   {activeTab === "oil-stock" && DropdownField && (
@@ -169,39 +194,34 @@ export default function TrackingDashboardUi(props) {
               placeholder="All categories"
               size="sm"
               style={{
-                flex: "0 1 220px",
-                minWidth: isMobileView ? "100%" : "180px",
-                maxWidth: isMobileView ? "100%" : "240px"
+                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
+                minWidth: shouldStackHeaderControls ? "100%" : "160px",
+                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
               }} />
                   )}
                   {activeTab === "loan-cars" && MonthPickerField && (
+                  <div style={{
+              flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
+              minWidth: shouldStackHeaderControls ? "100%" : "max-content"
+            }}>
                   <MonthPickerField
               value={loanCarMonth}
               onValueChange={(nextValue) => setLoanCarMonth(nextValue)}
               aria-label={`Select loan car month, currently ${loanCarMonth}`} />
+                  </div>
                   )}
               </DevLayoutSection>
               <div style={{
           display: "flex",
           gap: "var(--space-sm)",
-          flexWrap: "wrap",
+          flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
-          marginLeft: "auto"
+          justifyContent: shouldStackHeaderControls ? "stretch" : "flex-end",
+          flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
+          marginLeft: shouldStackHeaderControls ? 0 : "auto",
+          minWidth: shouldStackHeaderControls ? "100%" : "max-content",
+          whiteSpace: "nowrap"
         }}>
-                  <Button variant="secondary" size="sm" onClick={loadActiveTab}>
-                    Refresh
-                  </Button>
-                  {activeTab === "tracker" && (
-                  <span style={{
-            color: "var(--text-1)",
-            fontSize: "var(--text-caption)",
-            fontWeight: 700,
-            whiteSpace: "nowrap"
-          }}>
-                    Last Updated {trackerLastUpdatedLabel}
-                  </span>
-                  )}
-                  {refreshLoading && <InlineLoading width={100} label="Refreshing" />}
                   {activeTab === "tracker" && (
                   <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
                     Add location

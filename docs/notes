@@ -11,8 +11,7 @@ health check section check
 
 
 TODO
-Check media tab within the VHC section for the rows of all reported items etc.
-
+have it so "Vhc Media Shell | 1.2.1.1.1.6.1.1.3.1 | key vhc-media-shell | file src/components/VHC/VhcDetailsPanel.js:9983 | route /job-cards/00076 | where Job card detail > VHC tab > VHC panel | parent vhc-tab-content 1.2.1.1.1.6.1.1.3 | 4 children" seciton shows all of the reported amber and red items, atm its only shown two rows, however it should be showing all of the rows/issues reported. haev it so the "Unlinked media" row is at the top of the section when its got items in but at the very bottom when it doesnt, make sure its not above the customer video section. have it os the "Customer Video Main walkaround taken at the end of the health check" seciton shows like the "Unlinked media" row for example remove the "Main walkaround taken at the end of the health check" text and have it so the ui style of the row is the same etc. 
 
 
 00076

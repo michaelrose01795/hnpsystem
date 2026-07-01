@@ -1,14 +1,15 @@
 // file location: src/pages/api/support/reports/[id]/comments.js
 //
 // Phase 6 — developer notes / internal comments for a support report. Dev-only
-// (DEV_FULL_ACCESS_ROLES). Adding a comment is audit-logged.
+// (strict DEV_PLATFORM_ROLES — the `dev` role, Phase 8 re-gate). Adding a
+// comment is audit-logged.
 //
 //   GET  → the comment thread (oldest first).
 //   POST → add a developer note. Author identity comes from the session.
 
 import createHandler from "@/lib/api/createHandler";
 import { listSupportReportComments, addSupportReportComment } from "@/lib/database/support";
-import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
 const clientIp = (req) => {
@@ -64,6 +65,6 @@ async function handlePost(req, res, session) {
 }
 
 export default createHandler({
-  allowedRoles: DEV_FULL_ACCESS_ROLES,
+  allowedRoles: DEV_PLATFORM_ROLES,
   methods: { GET: handleGet, POST: handlePost },
 });

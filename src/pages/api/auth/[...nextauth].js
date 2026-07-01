@@ -51,6 +51,7 @@ const buildAuthOptions = (req) => ({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
         userId: { label: "User ID", type: "text" },
+        devPlatform: { label: "Developer Platform", type: "text" },
       },
       async authorize(credentials) {
         // Lazy-load login-only dependencies here (see module-top note). These
@@ -87,6 +88,42 @@ const buildAuthOptions = (req) => ({
                 isDevLogin: true,
               };
             }
+          }
+
+          // Developer Platform login (Phase 8) — mints the synthetic `dev`
+          // role. Same gate as the dev-by-id login (isDevAuthAllowed(): false
+          // in production unless ALLOW_DEV_AUTH=1). The role is created in code
+          // here and never comes from a users row, so it can never be assigned
+          // to a real staff member. Records a dev_platform_session audit entry.
+          if (credentials?.devPlatform === "1") {
+            if (!isDevAuthAllowed()) {
+              await recordAttempt({
+                endpoint: "login",
+                email: null,
+                ip,
+                userAgent,
+                succeeded: false,
+                failureReason: "dev_platform_disabled",
+              });
+              return null;
+            }
+            await writeAuditLog({
+              action: "dev_platform_session",
+              actorRole: "dev",
+              entityType: "dev_platform",
+              entityId: null,
+              diff: { event: "session_start" },
+              ip,
+              userAgent,
+            }).catch(() => {});
+            return {
+              id: "dev-platform",
+              name: "Developer",
+              email: "",
+              role: "dev",
+              roles: ["dev"],
+              isDevLogin: true,
+            };
           }
 
           // Dev login by user ID — gated. Refuses in production unless

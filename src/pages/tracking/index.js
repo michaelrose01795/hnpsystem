@@ -12,7 +12,6 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
-import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { Button, InputField, StatusMessage } from "@/components/ui";
@@ -22,6 +21,7 @@ import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface inner-section primitive
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summary-tile primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
@@ -162,6 +162,26 @@ const OIL_STOCK_CATEGORY_FILTERS = [
 
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
+
+const renderTrackingSummaryItem = (item) => (
+  <LayerTheme
+    key={item.label}
+    className="app-summary-item"
+    radius="var(--radius-sm)"
+    padding="8px 10px"
+    gap="2px var(--space-sm)"
+    style={{
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      minHeight: "44px",
+      minWidth: 0
+    }}>
+    <span className="app-summary-label">{item.label}</span>
+    <strong className="app-summary-value">{item.value}</strong>
+  </LayerTheme>
+);
 
 const CHECK_DURATION_OPTIONS = [
 ...Array.from({ length: 11 }, (_, index) => {
@@ -489,11 +509,20 @@ const emptyForm = {
   reg: "",
   customer: "",
   serviceType: "",
+  makeModel: "",
+  colour: "",
+  vehicleDisplay: "",
+  updatedAt: null,
   vehicleLocation: "N/A",
   keyLocation: "N/A",
   keyTip: "",
   status: "Waiting For Collection",
   notes: ""
+};
+
+const getVehicleSummaryLabel = (entry = {}) => {
+  if (entry.vehicleDisplay) return entry.vehicleDisplay;
+  return [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
 };
 
 const formatRelativeTime = (timestamp) => {
@@ -606,20 +635,8 @@ const getTrackerRiskScore = (entry = {}) => {
   );
 };
 
-const formatTrackerTimestamp = (timestamp) => {
-  if (!timestamp) return "Not refreshed yet";
-  const parsed = new Date(timestamp);
-  if (Number.isNaN(parsed.getTime())) return "Not refreshed yet";
-  return parsed.toLocaleString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "short"
-  });
-};
-
 const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = false }) => {
-  const vehicleMeta = [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
+  const vehicleMeta = getVehicleSummaryLabel(entry);
   void isMobileView;
 
   return (
@@ -1579,11 +1596,14 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     ...entry,
+    vehicleDisplay: entry?.vehicleDisplay || getVehicleSummaryLabel(entry || {}),
     vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
     keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
     status: entry?.status || "Waiting For Collection"
   }));
   const [matchedExisting, setMatchedExisting] = useState(Boolean(entry)); // tracks whether form auto-filled from existing entry
+  const vehicleDisplay = form.vehicleDisplay || getVehicleSummaryLabel(form) || "";
+  const lastMovedLabel = form.updatedAt ? formatRelativeTime(form.updatedAt) : "Pending";
   const vehicleLocationOptions = useMemo(
     () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
     [form.vehicleLocation]
@@ -1626,6 +1646,9 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           customer: field === "customer" ? value : match.customer || prev.customer,
           serviceType: match.serviceType || prev.serviceType,
           colour: match.colour || prev.colour,
+          makeModel: match.makeModel || prev.makeModel,
+          vehicleDisplay: getVehicleSummaryLabel(match) || prev.vehicleDisplay,
+          updatedAt: match.updatedAt || prev.updatedAt,
           vehicleLocation: match.vehicleLocation || prev.vehicleLocation,
           keyLocation: normalizeKeyLocationLabel(match.keyLocation) || prev.keyLocation,
           status: match.status || prev.status,
@@ -1677,6 +1700,49 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           <h2 style={{ margin: 0 }}>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
         </div>
 
+        <LayerTheme
+          radius="var(--radius-sm)"
+          padding="12px"
+          gap="10px"
+          style={{ minWidth: 0 }}>
+          <strong style={{ color: "var(--text-1)", fontSize: "var(--text-h4)", lineHeight: 1.2 }}>
+            Job {form.jobNumber || "Unknown job"}
+          </strong>
+          <dl
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: "8px 12px",
+              margin: 0,
+              minWidth: 0
+            }}>
+            {[
+              ["Registration", form.reg || "Unknown reg"],
+              ["Customer", form.customer || "Customer pending"],
+              ["Vehicle", vehicleDisplay || "Make/Model/Colour pending"],
+              ["Last moved", lastMovedLabel]
+            ].map(([label, value]) =>
+            <div key={label} style={{ minWidth: 0 }}>
+              <dt style={{ color: "var(--text-1)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {label}
+              </dt>
+              <dd
+                style={{
+                  margin: "2px 0 0",
+                  color: "var(--text-1)",
+                  fontSize: "var(--text-caption)",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}>
+                {value}
+              </dd>
+            </div>
+            )}
+          </dl>
+        </LayerTheme>
+
         <div
           style={{
             display: "grid",
@@ -1685,10 +1751,10 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           }}>
 
           {[
-          { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
+          { label: "Job Number", field: "jobNumber", placeholder: "00040" },
           { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
           { label: "Customer", field: "customer", placeholder: "Customer name" },
-          { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." }].
+          { label: "Vehicle", field: "vehicleDisplay", placeholder: "MERCEDES-BENZ • BLACK" }].
           map((input) =>
           <InputField
             key={input.field}
@@ -1708,7 +1774,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           }}>
 
           <DropdownField
-            label="Vehicle Location"
+            label="Car location"
             options={vehicleLocationOptions}
             value={form.vehicleLocation}
             onValueChange={(value) => handleChange("vehicleLocation", value)}
@@ -1716,13 +1782,24 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             size="md" />
 
           <DropdownField
-            label="Key Location"
+            label="Key location"
             required
             options={keyLocationOptions}
             value={form.keyLocation}
             onValueChange={(value) => handleChange("keyLocation", value)}
             placeholder="Select key location"
             size="md" />
+
+          <LayerSurface
+            radius="var(--radius-sm)"
+            padding="10px 12px"
+            gap="2px"
+            style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Last moved</p>
+            <strong style={{ color: "var(--text-1)", fontSize: "var(--text-body)", lineHeight: 1.2 }}>
+              {lastMovedLabel}
+            </strong>
+          </LayerSurface>
 
         </div>
 
@@ -1771,8 +1848,6 @@ export default function TrackingDashboard() {
   const [activeTab, setActiveTab] = useState("tracker");
   const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
-  const [equipmentLoading, setEquipmentLoading] = useState(false);
-  const [oilLoading, setOilLoading] = useState(false);
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
@@ -1784,14 +1859,13 @@ export default function TrackingDashboard() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
   const [loanCarFleetManagerOpen, setLoanCarFleetManagerOpen] = useState(false);
-  const [loanCarRefreshKey, setLoanCarRefreshKey] = useState(0);
+  const loanCarRefreshKey = 0;
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
   const [equipmentTypeFilter, setEquipmentTypeFilter] = useState("all");
   const [oilSearchTerm, setOilSearchTerm] = useState("");
   const [oilCategoryFilter, setOilCategoryFilter] = useState("all");
   const [trackerQuickFilter, setTrackerQuickFilter] = useState("all");
   const [trackerLocationFilter, setTrackerLocationFilter] = useState("all");
-  const [trackerLastUpdatedAt, setTrackerLastUpdatedAt] = useState(null);
 
   // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
@@ -1820,7 +1894,6 @@ export default function TrackingDashboard() {
       }
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
-      setTrackerLastUpdatedAt(new Date().toISOString());
     } catch (fetchError) {
       console.error("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
@@ -1886,7 +1959,6 @@ export default function TrackingDashboard() {
 
   const loadEquipmentChecks = useCallback(async () => {
     if (!isWorkshopManager) return;
-    setEquipmentLoading(true);
     try {
       const response = await fetch(EQUIPMENT_API_ENDPOINT);
       if (!response.ok) {
@@ -1900,14 +1972,11 @@ export default function TrackingDashboard() {
     } catch (loadError) {
       console.error("Equipment data load error", loadError);
       setEquipmentChecks([]);
-    } finally {
-      setEquipmentLoading(false);
     }
   }, [isWorkshopManager]);
 
   const loadOilChecks = useCallback(async () => {
     if (!isWorkshopManager) return;
-    setOilLoading(true);
     try {
       const response = await fetch(OIL_STOCK_API_ENDPOINT);
       if (!response.ok) {
@@ -1921,8 +1990,6 @@ export default function TrackingDashboard() {
     } catch (loadError) {
       console.error("Oil/stock data load error", loadError);
       setOilChecks([]);
-    } finally {
-      setOilLoading(false);
     }
   }, [isWorkshopManager]);
 
@@ -1931,22 +1998,6 @@ export default function TrackingDashboard() {
     loadEquipmentChecks();
     loadOilChecks();
   }, [isWorkshopManager, loadEquipmentChecks, loadOilChecks]);
-
-  const loadActiveTab = useCallback(() => {
-    if (activeTab === "equipment") {
-      loadEquipmentChecks();
-      return;
-    }
-    if (activeTab === "oil-stock") {
-      loadOilChecks();
-      return;
-    }
-    if (activeTab === "loan-cars") {
-      setLoanCarRefreshKey((key) => key + 1);
-      return;
-    }
-    loadEntries();
-  }, [activeTab, loadEntries, loadEquipmentChecks, loadOilChecks]);
 
   const sharedSearchValue = useMemo(() => {
     if (activeTab === "equipment") return equipmentSearchTerm;
@@ -1980,12 +2031,6 @@ export default function TrackingDashboard() {
     if (activeTab === "loan-cars") return "Search loan cars";
     return "Search active jobs";
   }, [activeTab]);
-
-  const refreshLoading =
-    activeTab === "equipment" ? equipmentLoading :
-    activeTab === "oil-stock" ? oilLoading :
-    activeTab === "tracker" ? loading :
-    false;
 
   const handleEquipmentCheck = useCallback(
     async (id) => {
@@ -2551,37 +2596,8 @@ export default function TrackingDashboard() {
       style={{ width: "100%" }}>
 
         <div className="app-summary-grid">
-          {trackerSummaryItems.map((item) =>
-          <div key={item.label} className="app-summary-item">
-              <span className="app-summary-label">{item.label}</span>
-              <strong className="app-summary-value">{item.value}</strong>
-            </div>
-          )}
+          {trackerSummaryItems.map(renderTrackingSummaryItem)}
         </div>
-      </DevLayoutSection>
-
-      <DevLayoutSection
-      sectionKey="tracking-active-jobs-filters"
-      parentKey="tracking-page-body"
-      sectionType="filter-row"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-sm)",
-        flexWrap: "wrap",
-        width: "100%",
-        minWidth: 0
-      }}>
-
-        <TabGroup
-        items={TRACKER_QUICK_FILTERS.map((filter) => ({
-          label: filter.label,
-          value: filter.id
-        }))}
-        value={trackerQuickFilter}
-        onChange={setTrackerQuickFilter}
-        ariaLabel="Tracker quick filters"
-        className="tab-api--wrap" />
       </DevLayoutSection>
 
       {entries.length === 0 &&
@@ -2694,13 +2710,16 @@ export default function TrackingDashboard() {
                 jobNumber: entry.jobNumber,
                 reg: entry.reg,
                 customer: entry.customer,
+                makeModel: entry.makeModel,
                 colour: entry.colour,
+                vehicleDisplay: getVehicleSummaryLabel(entry),
                 serviceType: entry.serviceType,
                 vehicleLocation: entry.vehicleLocation,
                 keyLocation: entry.keyLocation,
                 status: entry.status,
                 keyTip: entry.keyTip,
-                notes: entry.notes
+                notes: entry.notes,
+                updatedAt: entry.updatedAt
               })} />
 
             </DevLayoutSection>);
@@ -2722,12 +2741,7 @@ export default function TrackingDashboard() {
       style={{ width: "100%" }}>
 
         <div className="app-summary-grid">
-          {equipmentSummaryItems.map((item) =>
-          <div key={item.label} className="app-summary-item">
-              <span className="app-summary-label">{item.label}</span>
-              <strong className="app-summary-value">{item.value}</strong>
-            </div>
-          )}
+          {equipmentSummaryItems.map(renderTrackingSummaryItem)}
         </div>
       </DevLayoutSection>
 
@@ -2801,7 +2815,9 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gridTemplateColumns: isMobileView ? "minmax(0, min(100%, 260px))" : "repeat(auto-fill, 260px)",
+          justifyContent: "start",
+          alignItems: "stretch",
           gap: "16px",
           minWidth: 0
         }}>
@@ -2960,12 +2976,7 @@ export default function TrackingDashboard() {
       style={{ width: "100%" }}>
 
         <div className="app-summary-grid">
-          {oilSummaryItems.map((item) =>
-          <div key={item.label} className="app-summary-item">
-              <span className="app-summary-label">{item.label}</span>
-              <strong className="app-summary-value">{item.value}</strong>
-            </div>
-          )}
+          {oilSummaryItems.map(renderTrackingSummaryItem)}
         </div>
       </DevLayoutSection>
 
@@ -3263,10 +3274,8 @@ export default function TrackingDashboard() {
       handleSave={handleSave}
       handleSaveEquipment={handleSaveEquipment}
       handleSaveOilStock={handleSaveOilStock}
-      InlineLoading={InlineLoading}
       isMobileView={isMobileView}
       KEY_LOCATIONS={KEY_LOCATIONS}
-      loadActiveTab={loadActiveTab}
       loading={loading}
       loanCarFleetManagerOpen={loanCarFleetManagerOpen}
       loanCarMonth={loanCarMonth}
@@ -3281,7 +3290,6 @@ export default function TrackingDashboard() {
       OilStockModal={OilStockModal}
       OilStockHistoryModal={OilStockHistoryModal}
       openEntryModal={openEntryModal}
-      refreshLoading={refreshLoading}
       renderActiveTabContent={renderActiveTabContent}
       SearchBar={SearchBar}
       searchModal={searchModal}
@@ -3296,6 +3304,7 @@ export default function TrackingDashboard() {
       setSimplifiedModal={setSimplifiedModal}
       setSharedSearchValue={setSharedSearchValue}
       setTrackerLocationFilter={setTrackerLocationFilter}
+      setTrackerQuickFilter={setTrackerQuickFilter}
       sharedSearchPlaceholder={sharedSearchPlaceholder}
       sharedSearchValue={sharedSearchValue}
       simplifiedModal={simplifiedModal}
@@ -3303,9 +3312,10 @@ export default function TrackingDashboard() {
       StatusMessage={StatusMessage}
       TabGroup={TabGroup}
       tabs={tabs}
-      trackerLastUpdatedLabel={formatTrackerTimestamp(trackerLastUpdatedAt)}
       trackerLocationFilter={trackerLocationFilter}
       trackerLocationFilters={TRACKER_LOCATION_FILTERS}
+      trackerQuickFilter={trackerQuickFilter}
+      trackerQuickFilters={TRACKER_QUICK_FILTERS}
       TrackingRouteSkeleton={TrackingRouteSkeleton}
     />
   );

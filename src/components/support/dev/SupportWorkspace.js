@@ -32,7 +32,8 @@ import {
   SAVED_VIEW_PRESETS,
   deriveBadges,
 } from "@/lib/support/adminView";
-import { loadSavedViews, addSavedView, removeSavedView } from "@/lib/support/savedViews";
+import useSavedViews from "@/components/dev-platform/useSavedViews";
+import { useAlerts } from "@/context/AlertContext";
 
 const relTime = (iso) => {
   const t = Date.parse(iso || "");
@@ -94,7 +95,10 @@ function ReportRow({ report, onOpen, active }) {
 export default function SupportWorkspace() {
   const router = useRouter();
   const { reports, count, stats, loading, error, filters, setFilters, view, setView, refresh } = useSupportReports();
-  const [savedViews, setSavedViews] = useState(() => loadSavedViews());
+  // Phase 8 — saved views are now server-synced (personal + shared), with a
+  // device-local fallback when the server/migration is unavailable.
+  const { views: savedViews, saveView, removeView } = useSavedViews({ surface: "support" });
+  const { pushAlert } = useAlerts();
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
 
@@ -119,15 +123,26 @@ export default function SupportWorkspace() {
 
   const openReport = useCallback((id) => router.push(`/dev/support-reports/${id}`), [router]);
 
-  const saveCurrentView = useCallback(() => {
+  const saveCurrentView = useCallback(async () => {
     const name = typeof window !== "undefined" ? window.prompt("Name this view") : null;
     if (!name) return;
-    const next = addSavedView(
-      { name, filters: { ...filters, sort: view.sort, openOnly: view.openOnly, regressionsOnly: view.regressionsOnly } },
-      undefined
-    );
-    setSavedViews(next);
-  }, [filters, view]);
+    const shared =
+      typeof window !== "undefined" && window.confirm("Share this view with the whole team? (Cancel = personal)");
+    const res = await saveView({
+      name,
+      filters: { ...filters, sort: view.sort, openOnly: view.openOnly, regressionsOnly: view.regressionsOnly },
+      scope: shared ? "shared" : "personal",
+    });
+    if (res?.local) pushAlert("Saved locally — the server was unavailable.", "warning");
+  }, [filters, view, saveView, pushAlert]);
+
+  const removeSavedViewById = useCallback(
+    async (id) => {
+      const res = await removeView(id);
+      if (!res?.ok) pushAlert(res?.error || "Could not remove the view.", "error");
+    },
+    [removeView, pushAlert]
+  );
 
   // Keyboard shortcuts: j/k move, Enter open, r refresh, / focus search.
   useSupportKeyboard(
@@ -208,11 +223,13 @@ export default function SupportWorkspace() {
           ))}
           {savedViews.map((v) => (
             <span key={v.id} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-              <DevButton small variant="ghost" tone="success-base" onClick={() => applyView(v)}>{v.name}</DevButton>
+              <DevButton small variant="ghost" tone={v.shared ? "accentText" : "success-base"} onClick={() => applyView(v)}>
+                {v.shared ? `👥 ${v.name}` : v.name}
+              </DevButton>
               <button
                 type="button"
-                title="Remove saved view"
-                onClick={() => setSavedViews(removeSavedView(v.id, undefined))}
+                title={v.shared ? "Remove shared view (owner only)" : "Remove saved view"}
+                onClick={() => removeSavedViewById(v.id)}
                 style={{ background: "transparent", color: "var(--text-1)", opacity: 0.5, cursor: "pointer", fontSize: "12px", minHeight: 32, padding: "0 4px" }}
               >
                 ✕

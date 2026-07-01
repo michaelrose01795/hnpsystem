@@ -9,12 +9,13 @@
 //   - build / code-state metadata is populated,
 //   - RLS is being enforced by service-role-only routing.
 //
-// Dev-gated the same way as the Support Centre (DEV_FULL_ACCESS_ROLES). Returns
-// only statuses + short notes — never diagnostics content, never secrets. A
-// non-ok roll-up returns HTTP 503 so an uptime probe can alert on it.
+// Dev-gated the same way as the Support Centre (strict DEV_PLATFORM_ROLES — the
+// `dev` role, Phase 8 re-gate). Returns only statuses + short notes — never
+// diagnostics content, never secrets. A non-ok roll-up returns HTTP 503 so an
+// uptime probe can alert on it.
 
 import createHandler from "@/lib/api/createHandler";
-import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { getSupportBucketStatus } from "@/lib/storage/supportMediaBucketService";
 import {
@@ -89,8 +90,8 @@ async function handleGet(req, res) {
   });
 }
 
-// Dev-gated: only DEV_FULL_ACCESS_ROLES may probe subsystem health.
+// Dev-gated: only the strict `dev` role (DEV_PLATFORM_ROLES) may probe subsystem health.
 export default createHandler({
-  allowedRoles: DEV_FULL_ACCESS_ROLES,
+  allowedRoles: DEV_PLATFORM_ROLES,
   methods: { GET: handleGet },
 });
