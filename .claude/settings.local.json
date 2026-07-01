@@ -338,7 +338,12 @@
       "PowerShell(npx eslint src/lib/support/investigation.js src/lib/support/investigationRegistry.js src/lib/support/incidentClustering.js src/lib/support/investigationCache.js src/lib/support/reportSubmission.js src/lib/support/diagnosticAnalysis.js src/lib/database/support.js src/pages/api/support/reports.js 2>&1)",
       "Bash(node tools/scripts/generate-dev-layout-section-source-map.js)",
       "Bash(node tools/scripts/enforce-uk-english.js src/lib/support/rateLimit.js src/lib/support/healthChecks.js src/lib/support/privacyRegression.test.js src/pages/api/support/health.js)",
-      "Bash(node tools/scripts/enforce-uk-english.js --all)"
+      "Bash(node tools/scripts/enforce-uk-english.js --all)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --tree-filter '\"C:/Users/micha/AppData/Local/Temp/claude/c--Users-micha-hnpsystem/8546d149-081b-4df0-a694-df900f5d05e0/scratchpad/neutralise-secret.sh\"' origin/main..HEAD)",
+      "Bash(git diff-files *)",
+      "Bash(git stash *)",
+      "Bash(git update-ref *)",
+      "Bash(git checkout *)"
     ],
     "deny": [],
     "ask": [],

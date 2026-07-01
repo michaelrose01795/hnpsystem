@@ -2321,7 +2321,10 @@ export default function VhcDetailsPanel({
       }),
     [job, sections, vhcChecksData, jobParts, vhcIdAliases, authorizedViewRows]
   );
-  const quoteSeverityLists = summaryQuoteModel.severityLists || {};
+  const quoteSeverityLists = useMemo(
+    () => summaryQuoteModel.severityLists || {},
+    [summaryQuoteModel]
+  );
   const quoteTotals = summaryQuoteModel.totals || { red: 0, amber: 0, green: 0, authorized: 0, declined: 0 };
   const wheelTreadLookup = useMemo(() => {
     const lookup = new Map();
@@ -6121,10 +6124,94 @@ export default function VhcDetailsPanel({
   // Flat list of every red/amber reported concern across all VHC sections —
   // the relink dropdown's "reported item" options. Built from the live vhcData
   // via the same collector the per-section camera button uses.
-  const reportedConcerns = useMemo(() => {
+  const builderReportedConcerns = useMemo(() => {
     const sectionKeys = ["wheels", "brakes", "service", "external", "internal", "underside"];
     return sectionKeys.flatMap((key) => collectSectionConcerns(key, vhcData || {}));
   }, [vhcData]);
+
+  // Full list of reported red/amber VHC rows for the media tab and relink
+  // dropdown. This uses the same quote-line model as the Summary tab, so DB
+  // rows and non-builder VHC issues are included instead of only the raw
+  // builder concern arrays.
+  const reportedConcerns = useMemo(() => {
+    const severityRank = (status) => (status === "red" ? 0 : status === "amber" ? 1 : 2);
+    const normaliseMatch = (value = "") =>
+      String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const legacyMatches = (item, status) => {
+      const labels = [
+        item?.concernText,
+        item?.customerDescription,
+        item?.label,
+        item?.notes,
+      ]
+        .map(normaliseMatch)
+        .filter(Boolean);
+      const sectionLabels = [
+        item?.sectionName,
+        item?.categoryLabel,
+        item?.category?.label,
+      ]
+        .map(normaliseMatch)
+        .filter(Boolean);
+      return builderReportedConcerns.filter((concern) => {
+        const concernStatus = normaliseColour(concern?.status);
+        if (concernStatus !== status) return false;
+        const concernLabel = normaliseMatch(concern?.label);
+        const concernSection = normaliseMatch(concern?.categoryLabel || concern?.section);
+        const labelMatches = labels.includes(concernLabel);
+        const sectionMatches = !concernSection || sectionLabels.includes(concernSection);
+        return labelMatches && sectionMatches;
+      });
+    };
+    const sourceRows = [
+      ...(quoteSeverityLists.red || []),
+      ...(quoteSeverityLists.amber || []),
+      ...(quoteSeverityLists.authorized || []),
+      ...(quoteSeverityLists.completed || []),
+      ...(quoteSeverityLists.declined || []),
+    ];
+    const byId = new Map();
+    sourceRows.forEach((item) => {
+      const status = normaliseColour(
+        item?.severity ||
+          item?.vhcCheck?.severity ||
+          item?.vhcCheck?.display_status ||
+          item?.severityKey ||
+          item?.rawSeverity
+      );
+      if (status !== "red" && status !== "amber") return;
+      const concernId = String(item?.rowId || item?.canonicalId || item?.id || "").trim();
+      if (!concernId || byId.has(concernId)) return;
+      const aliases = new Set([
+        concernId,
+        item?.id,
+        item?.canonicalId,
+        item?.rowId,
+        item?.vhcCheck?.vhc_id,
+      ].filter((value) => value !== null && value !== undefined && String(value).trim() !== "").map(String));
+      legacyMatches(item, status).forEach((match) => {
+        if (match?.concernId !== null && match?.concernId !== undefined) {
+          aliases.add(String(match.concernId));
+        }
+      });
+      byId.set(concernId, {
+        concernId,
+        aliases: Array.from(aliases),
+        label: item?.label || item?.issue_title || "Recorded item",
+        description: item?.concernText || item?.notes || "",
+        section: item?.categoryLabel || item?.sectionName || "",
+        category: item?.categoryId || item?.category?.id || "",
+        categoryLabel: item?.categoryLabel || item?.sectionName || "",
+        status,
+        sortRank: severityRank(status),
+      });
+    });
+    return Array.from(byId.values()).sort((a, b) => {
+      const severityDiff = a.sortRank - b.sortRank;
+      if (severityDiff !== 0) return severityDiff;
+      return `${a.section} ${a.label}`.localeCompare(`${b.section} ${b.label}`);
+    });
+  }, [builderReportedConcerns, quoteSeverityLists]);
 
   // Custom "media locations" already created on THIS job (custom concern links
   // saved on its job_files). Job-scoped by construction — they live on this
@@ -8667,8 +8754,9 @@ export default function VhcDetailsPanel({
       </button>
     );
 
-    const renderVideoThumb = (file, index) => {
+    const renderVideoThumb = (file, index, options = {}) => {
       const saving = mainVideoSavingId === file.file_id;
+      const isMainRow = options.rowKind === "main-video";
       return (
         <figure
           key={file.file_id}
@@ -8697,7 +8785,7 @@ export default function VhcDetailsPanel({
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
               <button
                 type="button"
-                onClick={() => handleToggleMainVideo(file.file_id, true)}
+                onClick={() => handleToggleMainVideo(file.file_id, !isMainRow)}
                 disabled={saving}
                 style={{
                   padding: "4px 8px",
@@ -8712,7 +8800,7 @@ export default function VhcDetailsPanel({
                   whiteSpace: "nowrap",
                 }}
               >
-                {saving ? "Saving…" : "Set as main video"}
+                {saving ? "Saving..." : isMainRow ? "Remove from main" : "Set as main video"}
               </button>
             </div>
           ) : null}
@@ -8775,7 +8863,7 @@ export default function VhcDetailsPanel({
     // concern is non-null for red/amber reported rows (which carry the Add /
     // Move media controls); null for the unlinked row and custom-location rows.
     const renderRequestRow = (row) => {
-      const { key, label, section, status, photos, videos, concern } = row;
+      const { key, label, section, status, photos, videos, concern, kind } = row;
       const badge = severityBadge(status);
       const showControls = !readOnly && Boolean(concern);
       const uploading = rowMediaUploadConcernId === String(concern?.concernId);
@@ -8918,7 +9006,7 @@ export default function VhcDetailsPanel({
               </span>
             ) : (
               <>
-                {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex); })}
+                {videos.map((file) => { mediaIndex += 1; return renderVideoThumb(file, mediaIndex, { rowKind: kind }); })}
                 {photos.map((file) => { mediaIndex += 1; return renderPhotoThumb(file, mediaIndex); })}
               </>
             )}
@@ -8934,8 +9022,9 @@ export default function VhcDetailsPanel({
     const reportedKeys = new Set();
     const reportedRows = reportedConcerns.map((concern) => {
       const id = String(concern.concernId);
-      reportedKeys.add(id);
-      const group = groupByKey.get(id);
+      const aliases = Array.isArray(concern.aliases) && concern.aliases.length > 0 ? concern.aliases.map(String) : [id];
+      const group = aliases.map((alias) => groupByKey.get(alias)).find(Boolean);
+      aliases.forEach((alias) => reportedKeys.add(String(alias)));
       return {
         key: id,
         label: concern.label,
@@ -8947,7 +9036,7 @@ export default function VhcDetailsPanel({
       };
     });
     // Groups that have media but no matching reported concern (custom media
-    // locations, or links whose underlying concern has since changed) — keep
+    // locations, or links whose underlying concern has since changed) - keep
     // them visible so their media is never orphaned off-screen.
     const extraRows = groups
       .filter((group) => !reportedKeys.has(String(group.key)))
@@ -8961,8 +9050,21 @@ export default function VhcDetailsPanel({
         concern: null,
       }));
     const concernRows = [...reportedRows, ...extraRows];
+    const unlinkedRow = {
+      key: "__unlinked__",
+      label: "Unlinked media",
+      section: "",
+      status: "",
+      photos: unlinkedPhotos,
+      videos: unlinkedVideos,
+      concern: null,
+    };
+    const hasUnlinkedMedia = unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
+    const requestRows = hasUnlinkedMedia
+      ? [unlinkedRow, ...concernRows]
+      : [...concernRows, unlinkedRow];
 
-    const hasRequestMedia = concernRows.length > 0 || unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
+    const hasRequestMedia = concernRows.length > 0 || hasUnlinkedMedia;
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -8975,98 +9077,25 @@ export default function VhcDetailsPanel({
           style={{ display: "none" }}
           onChange={handleRowMediaUploadChange}
         />
-        {/* Customer-facing main video — the end-of-check walkaround. Carries the
-            same --theme surface chrome as the request media rows (radius-md,
-            10px padding) so it follows their style. Left blank when no video. */}
-        <div style={{ order: 2, display: "flex", flexDirection: "column", gap: "10px", background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "10px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Customer Video</h3>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-              Main walkaround taken at the end of the health check
-            </span>
-          </div>
-          {mainVideos.length === 0 ? null : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              {mainVideos.map((file) => (
-                <div
-                  key={file.file_id}
-                  style={{ borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--surface)" }}
-                >
-                  <video
-                    src={file.file_url}
-                    controls
-                    preload="metadata"
-                    style={{ width: "100%", height: "200px", objectFit: "cover", display: "block", background: "var(--surface)" }}
-                  />
-                  <div style={{ padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "12px", color: "var(--text-1)", opacity: 0.7 }}>
-                      {formatDateTime(file.uploaded_at)}
-                    </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      {file.visible_to_customer !== undefined && (
-                        <span title={file.visible_to_customer ? "Visible to customer" : "Internal only"}>
-                          {file.visible_to_customer ? "👁️" : "🔒"}
-                        </span>
-                      )}
-                      {!readOnly && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleMainVideo(file.file_id, false)}
-                          disabled={mainVideoSavingId === file.file_id}
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: "var(--input-radius)",
-                            border: "none",
-                            background: "rgba(var(--primary-rgb), 0.06)",
-                            color: "var(--text-1)",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            cursor: mainVideoSavingId === file.file_id ? "wait" : "pointer",
-                            opacity: mainVideoSavingId === file.file_id ? 0.65 : 1,
-                          }}
-                        >
-                          {mainVideoSavingId === file.file_id ? "Saving…" : "Remove from main"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div style={{ order: 2 }}>
+          {renderRequestRow({
+            key: "__customer_video__",
+            label: "Customer Video",
+            section: "",
+            status: "",
+            photos: [],
+            videos: mainVideos,
+            concern: null,
+            kind: "main-video",
+          })}
         </div>
 
-        {/* Stats + upload — no longer wrapped in its own surface card. The
-            content now sits directly in the main media tab area (per request).
-            Single row: equal-width stat tiles kept to the left, Upload Media
-            button pushed to the far right. order: 1 keeps it above the
-            Customer Video card (order: 2). */}
-        {/* One row per reported red/amber concern (with or without media),
-            then any media-bearing rows with no matching concern, then the
-            unlinked bucket. order: 3 keeps this below the summary (1) and
-            customer video (2). */}
         <div style={{ order: 3, display: "flex", flexDirection: "column", gap: "12px" }}>
           {!hasRequestMedia ? (
             <EmptyStateMessage message="No reported items or media for this check yet." />
           ) : (
             <>
-              {concernRows.map((row) => renderRequestRow(row))}
-              {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) &&
-                renderRequestRow({
-                  key: "__unlinked__",
-                  label: "Unlinked media",
-                  section: "",
-                  status: "",
-                  photos: unlinkedPhotos,
-                  videos: unlinkedVideos,
-                  concern: null,
-                })}
+              {requestRows.map((row) => renderRequestRow(row))}
             </>
           )}
         </div>
