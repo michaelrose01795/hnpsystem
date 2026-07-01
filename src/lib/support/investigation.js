@@ -24,8 +24,9 @@
 // blob, so it is never exposed to reporters. PURE + node-testable (inject `now`).
 
 import { analyseDiagnostics } from "@/lib/support/diagnosticAnalysis";
-import { buildFingerprint, findSimilarReports, repeatedFailures } from "@/lib/support/incidentClustering";
+import { buildFingerprint, findSimilarReports, repeatedFailures, versionRange } from "@/lib/support/incidentClustering";
 import { collectInvestigationProviders } from "@/lib/support/investigationRegistry";
+import { detectCodeDrift, verifySectionMap, describeBuild } from "@/lib/support/buildInfo";
 
 const arr = (v) => (Array.isArray(v) ? v : []);
 const uniq = (list) => Array.from(new Set(list.filter(Boolean)));
@@ -250,12 +251,25 @@ function buildRegressionTests(ownership, affected) {
 // ---------------------------------------------------------------------------
 // GitHub-ready summary.
 // ---------------------------------------------------------------------------
-function buildSummary({ explanation, severity, priority, rootCauses, inspect, sequence, similarIncidents, affected }) {
+function buildSummary({ explanation, severity, priority, rootCauses, inspect, sequence, similarIncidents, affected, codeState, versions }) {
   const lines = [];
   lines.push(`## ${affected.module || "App"} incident — ${severity.toUpperCase()} / ${priority}`);
   lines.push("");
   lines.push(explanation);
   lines.push("");
+  if (codeState && (codeState.capturedLabel || codeState.deployedLabel)) {
+    lines.push("### Deployed code state");
+    lines.push(`- Captured on: ${codeState.capturedLabel || "unknown"}`);
+    if (codeState.deployedBuild && Object.keys(codeState.deployedBuild).length) {
+      lines.push(`- Currently deployed: ${codeState.deployedLabel || "unknown"}`);
+    }
+    if (codeState.drift?.drifted) lines.push(`- ⚠️ Drift: ${codeState.drift.note}`);
+    if (codeState.sourceMap?.status === "drift") lines.push("- ⚠️ Section map does not match the deployed build — regenerate it.");
+    if (versions?.firstSeenVersion) {
+      lines.push(`- First seen: ${versions.firstSeenVersion}${versions.spansMultipleVersions ? ` → last seen: ${versions.lastSeenVersion}` : ""}${versions.isRegression ? " (recurred across releases)" : ""}`);
+    }
+    lines.push("");
+  }
   if (rootCauses.length) {
     lines.push("### Probable root causes");
     rootCauses.forEach((c, i) => lines.push(`${i + 1}. ${c.cause} _(${Math.round(c.confidence * 100)}%)_`));
@@ -290,8 +304,9 @@ function buildSummary({ explanation, severity, priority, rootCauses, inspect, se
  * @param {object} snapshot sanitised diagnostics bundle
  * @param {{
  *   analysis?: object,               // pre-computed analyseDiagnostics() (optional)
- *   priorReports?: Array,            // [{ id, fingerprint, route, createdAt }]
+ *   priorReports?: Array,            // [{ id, fingerprint, route, createdAt, appVersion?, commitSha? }]
  *   now?: string,                    // ISO string (injected for determinism)
+ *   currentBuild?: object,           // readBuildInfo() for the LIVE deployment (drift detection)
  * }} [options]
  * @returns {object} investigation
  */
@@ -303,6 +318,29 @@ export function buildInvestigation(snapshot = {}, options = {}) {
   const fingerprint = buildFingerprint(snapshot);
   const ownership = buildOwnership(snapshot, affected);
   const rootCauses = buildRootCauses(snapshot, analysis);
+
+  // Phase 5 — code-state pinning. The build the report was CAPTURED against, the
+  // LIVE deployment (injected server-side at ingest), whether the code drifted
+  // between them, and whether the resolved file:line came from the deployed map.
+  const capturedBuild = (snapshot?.build && typeof snapshot.build === "object") ? snapshot.build : {};
+  const currentBuild = (options.currentBuild && typeof options.currentBuild === "object") ? options.currentBuild : {};
+  const drift = detectCodeDrift(capturedBuild, currentBuild);
+  const sourceMap = verifySectionMap(capturedBuild);
+  const codeState = {
+    capturedBuild,
+    deployedBuild: currentBuild,
+    capturedLabel: describeBuild(capturedBuild),
+    deployedLabel: describeBuild(currentBuild),
+    drift,
+    sourceMap,
+  };
+  // First app version the incident appeared in + latest it was reproduced on.
+  // Foundation for cross-release regression tracking (§8).
+  const versions = versionRange(fingerprint, priorReports, {
+    version: capturedBuild.version || null,
+    commitSha: capturedBuild.commit_sha || null,
+    at: options.now || null,
+  });
 
   const modules = uniq([affected.module]);
   const severity = scoreSeverity(snapshot, analysis);
@@ -334,6 +372,8 @@ export function buildInvestigation(snapshot = {}, options = {}) {
     sequence,
     similarIncidents,
     affected,
+    codeState,
+    versions,
   });
 
   const providers = collectInvestigationProviders({ snapshot, analysis, priorReports, fingerprint, affected });
@@ -360,6 +400,10 @@ export function buildInvestigation(snapshot = {}, options = {}) {
     repeatedFailures: repeated,
     manualTests,
     regressionTests,
+    // Phase 5 — deployed code state, drift, source-map verification, and the
+    // first/last app version the incident was seen in (cross-release tracking).
+    codeState,
+    versionHistory: versions,
     summary,
     fingerprint,
     ...(Object.keys(providers).length ? { providers } : {}),

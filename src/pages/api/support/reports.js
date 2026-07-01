@@ -31,6 +31,8 @@ import {
 } from "@/lib/storage/supportMediaBucketService";
 import { buildReportInsert, decodeScreenshots } from "@/lib/support/reportSubmission";
 import { getOrBuildInvestigation } from "@/lib/support/investigationCache";
+import { readBuildInfo } from "@/lib/support/buildInfo";
+import { getSectionSourceMapHash } from "@/lib/dev-layout/sectionSourceMap";
 import { isWithinSizeCap } from "@/lib/support/sanitise";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
@@ -71,8 +73,13 @@ async function handlePost(req, res, session) {
   //     over the size cap (drop it rather than fail the report).
   try {
     const priorReports = await listRecentReportFingerprints(50);
+    // The code state THIS server is currently running, so the investigation can
+    // detect drift between what the reporter captured and the live deployment
+    // (Phase 5). Non-secret; re-sanitised with the rest of the blob.
+    const currentBuild = readBuildInfo(process.env, { sectionMapHash: getSectionSourceMapHash() });
     const { investigation } = getOrBuildInvestigation(input.diagnostics, {
       priorReports,
+      currentBuild,
       now: new Date().toISOString(),
     });
     const enriched = { ...input.diagnostics, investigation, fingerprint: investigation.fingerprint };

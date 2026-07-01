@@ -1,8 +1,43 @@
+// Help & Diagnostics — Phase 5 (code-state pinning). Resolve the deployed code
+// state from Vercel's build-time git env (falling back to any explicitly-set
+// NEXT_PUBLIC_* override, then a safe default) so every support report can be
+// stamped with the exact commit it was captured against. These values are
+// NON-SECRET deploy metadata only — never tokens, keys, or cookies. They are
+// read once here at build time and inlined into the client bundle via `env`.
+const gitEnv = process.env; // Build-time environment (Vercel injects VERCEL_GIT_* here)
+const COMMIT_SHA =
+  gitEnv.NEXT_PUBLIC_COMMIT_SHA || gitEnv.VERCEL_GIT_COMMIT_SHA || ""; // Full deployed commit SHA
+const COMMIT_REF =
+  gitEnv.NEXT_PUBLIC_COMMIT_REF || gitEnv.VERCEL_GIT_COMMIT_REF || ""; // Branch / tag deployed
+const APP_VERSION =
+  gitEnv.NEXT_PUBLIC_APP_VERSION ||
+  gitEnv.npm_package_version ||
+  (COMMIT_SHA ? COMMIT_SHA.slice(0, 7) : "dev"); // Human-facing version label
+const DEPLOY_ENV =
+  gitEnv.NEXT_PUBLIC_DEPLOY_ENV || gitEnv.VERCEL_ENV || "development"; // production | preview | development
+const DEPLOY_URL =
+  gitEnv.NEXT_PUBLIC_DEPLOY_URL || gitEnv.VERCEL_URL || ""; // Deployment host (no scheme)
+// Build id is deterministic from the commit when available so the same commit
+// always maps to the same buildId (used by generateBuildId below + stamping).
+const BUILD_ID =
+  gitEnv.NEXT_PUBLIC_BUILD_ID || (COMMIT_SHA ? COMMIT_SHA.slice(0, 12) : ""); // Next buildId seed
+// Timestamp of THIS build. Set explicitly in CI for reproducibility; otherwise
+// stamped at config-eval time. Non-secret.
+const DEPLOYED_AT = gitEnv.NEXT_PUBLIC_DEPLOYED_AT || new Date().toISOString(); // ISO build time
+// Hash of the dev-layout section source map that shipped in THIS build, so a
+// captured report's file:line can be verified against / drift-detected from the
+// deployed map. Populated by the source-map generator in CI (safe default "").
+const SECTION_MAP_HASH = gitEnv.NEXT_PUBLIC_SECTION_MAP_HASH || ""; // Deployed section-map hash
+
 const nextConfig = { // Exported Next.js configuration object
   reactStrictMode: true, // Enable React strict mode for highlighting potential issues
   devIndicators: false, // Disable the Next.js dev tools indicator overlay for this project
-  
+
   turbopack: {}, // CRITICAL FIX: Add empty turbopack config to silence Next.js 16 error and enable Turbopack by default
+
+  // Pin Next's buildId to the deployed commit when known so client-captured
+  // diagnostics and the served bundle share one identifier (else Next's random id).
+  generateBuildId: async () => BUILD_ID || null, // null → Next falls back to its default
   
   images: { // Configure remote image domains
     remotePatterns: [ // Allow generic HTTPS image sources
@@ -18,6 +53,16 @@ const nextConfig = { // Exported Next.js configuration object
     NEXT_PUBLIC_KEYCLOAK_REALM: process.env.NEXT_PUBLIC_KEYCLOAK_REALM, // Keycloak realm identifier
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID, // Client ID for Keycloak auth
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "", // Fallback to empty string for optional API URL
+    // Help & Diagnostics (Phase 5) — deployed code-state metadata (non-secret).
+    // Consumed by src/lib/support/buildInfo.js → the support diagnostics `build`.
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION, // Human-facing version label
+    NEXT_PUBLIC_COMMIT_SHA: COMMIT_SHA, // Full deployed commit SHA
+    NEXT_PUBLIC_COMMIT_REF: COMMIT_REF, // Deployed branch / tag
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID, // Deterministic build id (commit-derived)
+    NEXT_PUBLIC_DEPLOY_ENV: DEPLOY_ENV, // production | preview | development
+    NEXT_PUBLIC_DEPLOY_URL: DEPLOY_URL, // Deployment host (no scheme)
+    NEXT_PUBLIC_DEPLOYED_AT: DEPLOYED_AT, // ISO build timestamp
+    NEXT_PUBLIC_SECTION_MAP_HASH: SECTION_MAP_HASH, // Deployed section-map hash (for drift detection)
   }, // Close env block
 
   compiler: { // Keep console output minimal in production bundles

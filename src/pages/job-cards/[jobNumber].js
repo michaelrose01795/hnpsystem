@@ -6140,16 +6140,7 @@ function CustomerRequestsTab({
     return combinedRequestRows.find((r) => r.key === selectedRequestKey) || combinedRequestRows[0];
   }, [combinedRequestRows, selectedRequestKey]);
 
-  // Plain (token-backed, borderless) surface styles for the new layout.
-  // Compact stat tiles: fixed width so every tile matches. Label and counter sit
-  // centre-aligned on the same row when space allows, then wrap cleanly on mobile.
-  // Stat tile: a grid item whose width is controlled by the responsive
-  // .jc-request-overview-statgrid grid. Title + counter sit on one row
-  // (space-between) when the tile is wide enough; flex-wrap drops the counter
-  // onto its own line below the title once the tile gets too narrow to fit both.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0, minHeight: "44px" };
-  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1, textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
-  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 };
+  // Plain token-backed, borderless detail surfaces for the new layout.
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -6162,14 +6153,14 @@ function CustomerRequestsTab({
             left of the Edit/Save controls. Each tile shows its title and counter on
             one line when wide enough and wraps the counter below the title when the
             tile gets too narrow. */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "8px" }}>
-          <div className="jc-req-statgrid jc-request-overview-statgrid" style={{ flex: "1 1 320px", minWidth: 0 }}>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Total Requests</span><span style={statValueStyle}>{requestStats.totalRequests}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Total Hours</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Clocked Hrs</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Pre-picked</span><span style={statValueStyle}>{requestStats.prePicked}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>In Progress</span><span style={statValueStyle}>{requestStats.inProgress}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Complete</span><span style={statValueStyle}>{requestStats.complete}</span></div>
+        <div className="app-summary-section">
+          <div className="app-summary-grid jc-req-statgrid jc-request-overview-statgrid">
+            <div className="app-summary-item"><span className="app-summary-label">Total Requests</span><span className="app-summary-value">{requestStats.totalRequests}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Total Hours</span><span className="app-summary-value">{formatHoursDisplay(requestStats.totalHours)}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Clocked Hrs</span><span className="app-summary-value">{formatHoursDisplay(requestStats.clockedHours)}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Pre-picked</span><span className="app-summary-value">{requestStats.prePicked}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">In Progress</span><span className="app-summary-value">{requestStats.inProgress}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Complete</span><span className="app-summary-value">{requestStats.complete}</span></div>
           </div>
           {canEdit && !editing &&
           <button

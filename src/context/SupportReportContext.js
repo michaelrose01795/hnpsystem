@@ -38,6 +38,8 @@ import {
 } from "@/lib/support/diagnostics";
 import { collectProviderDiagnostics } from "@/lib/support/diagnosticRegistry";
 import { registerBuiltinDiagnosticProviders } from "@/lib/support/providers";
+import { readBuildInfo } from "@/lib/support/buildInfo";
+import { getSectionSourceMapHash } from "@/lib/dev-layout/sectionSourceMap";
 
 const noop = () => {};
 
@@ -52,14 +54,13 @@ const SupportReportContext = createContext({
   recordDiagnosticEvent: noop,
 });
 
-// Build the static build/version info available today. Phase 5 will populate
-// commit/ref/buildId via next.config; until then these are best-effort.
-const readBuildInfo = () => ({
-  version: process.env.NEXT_PUBLIC_APP_VERSION || undefined,
-  commit_sha: process.env.NEXT_PUBLIC_COMMIT_SHA || undefined,
-  commit_ref: process.env.NEXT_PUBLIC_COMMIT_REF || undefined,
-  build_id: process.env.NEXT_PUBLIC_BUILD_ID || undefined,
-});
+// Phase 5 — resolve the exact deployed code state (version / commit / ref /
+// build id / deployment env + URL + timestamp) that next.config.mjs inlined into
+// the bundle, plus the hash of the section-source-map actually shipped in THIS
+// build (so a report's file:line can be verified / drift-checked against the
+// deployed map). Pure resolution lives in src/lib/support/buildInfo.js.
+const readClientBuildInfo = () =>
+  readBuildInfo(process.env, { sectionMapHash: getSectionSourceMapHash() });
 
 const readFlags = () => ({
   NEXT_PUBLIC_DEV_AUTH_BYPASS: process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true",
@@ -143,7 +144,7 @@ export function SupportDiagnosticsProvider({ children }) {
         session: sessionSnapshot,
         flags: readFlags(),
         device: snapshotDevice(),
-        build: readBuildInfo(),
+        build: readClientBuildInfo(),
         providers,
       });
     },

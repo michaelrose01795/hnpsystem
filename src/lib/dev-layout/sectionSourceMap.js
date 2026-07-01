@@ -1,4 +1,14 @@
-import { DEV_LAYOUT_SECTION_SOURCE_MAP } from "@/lib/dev-layout/sectionSourceMap.generated";
+import {
+  DEV_LAYOUT_SECTION_SOURCE_MAP,
+  DEV_LAYOUT_SECTION_SOURCE_MAP_HASH,
+} from "@/lib/dev-layout/sectionSourceMap.generated";
+
+// Stable hash of the section source map that shipped in THIS bundle. Help &
+// Diagnostics (Phase 5) reads it to pin code-ownership resolution to the deployed
+// map and to detect drift. Older generated files predate the constant → fall back
+// to an empty string rather than crash.
+export const getSectionSourceMapHash = () =>
+  DEV_LAYOUT_SECTION_SOURCE_MAP_HASH || "";
 
 const escapeRegExp = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

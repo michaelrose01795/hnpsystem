@@ -224,20 +224,31 @@ export async function getSupportReport(id) {
  * stays cheap and never widens the diagnostics exposure surface. Best-effort:
  * returns [] on any error so report creation is never blocked.
  *
+ * Also selects the durable `app_version` / `commit_sha` columns (never the full
+ * diagnostics blob) so the investigation engine can compute the first/last app
+ * version an incident was seen in (Phase 5 — cross-release regression tracking).
+ *
  * @param {number} [limit]
- * @returns {Promise<Array<{ id: string, route: string|null, createdAt: string, fingerprint: object }>>}
+ * @returns {Promise<Array<{ id: string, route: string|null, createdAt: string, appVersion: string|null, commitSha: string|null, fingerprint: object }>>}
  */
 export async function listRecentReportFingerprints(limit = 50) {
   try {
     const { data, error } = await getClient()
       .from("support_reports")
-      .select("id, route, created_at, fingerprint:diagnostics->fingerprint")
+      .select("id, route, created_at, app_version, commit_sha, fingerprint:diagnostics->fingerprint")
       .order("created_at", { ascending: false })
       .limit(Math.min(Number.isInteger(limit) ? limit : 50, 200));
     if (error) throw error;
     return (data || [])
       .filter((r) => r.fingerprint && typeof r.fingerprint === "object")
-      .map((r) => ({ id: r.id, route: r.route, createdAt: r.created_at, fingerprint: r.fingerprint }));
+      .map((r) => ({
+        id: r.id,
+        route: r.route,
+        createdAt: r.created_at,
+        appVersion: r.app_version || null,
+        commitSha: r.commit_sha || null,
+        fingerprint: r.fingerprint,
+      }));
   } catch (error) {
     console.error("[support] listRecentReportFingerprints error:", error?.message || error);
     return [];

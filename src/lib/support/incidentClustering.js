@@ -155,6 +155,83 @@ export function findSimilarReports(fingerprint, priorReports = [], { threshold =
     .slice(0, limit);
 }
 
+const toMs = (v) => {
+  const t = Date.parse(String(v || ""));
+  return Number.isFinite(t) ? t : null;
+};
+
+/**
+ * Determine the FIRST app version an incident appeared in and the LATEST version
+ * it was reproduced on, by matching prior reports to the current fingerprint and
+ * ordering the matched occurrences (prior + current) by capture time. This is the
+ * foundation for cross-release regression tracking (Help & Diagnostics §8): once
+ * a fix ships, a later matching report in a newer version flags a regression.
+ *
+ * Prior reports must carry { fingerprint, appVersion?, commitSha?, createdAt? }.
+ *
+ * @param {object} fingerprint current incident fingerprint
+ * @param {Array} priorReports
+ * @param {{ version?: string, commitSha?: string, at?: string }} [current] the report being ingested
+ * @param {{ threshold?: number }} [opts]
+ * @returns {{
+ *   occurrences: number,
+ *   firstSeenVersion: string|null, firstSeenCommit: string|null, firstSeenAt: string|null,
+ *   lastSeenVersion: string|null, lastSeenCommit: string|null, lastSeenAt: string|null,
+ *   versions: string[], spansMultipleVersions: boolean, isRegression: boolean
+ * }}
+ */
+export function versionRange(fingerprint = {}, priorReports = [], current = {}, { threshold = 0.5 } = {}) {
+  const occurrences = [];
+  // The current report always counts as an occurrence.
+  occurrences.push({
+    version: current?.version || null,
+    commit: current?.commitSha || null,
+    at: current?.at || null,
+    isCurrent: true,
+  });
+  for (const r of arr(priorReports)) {
+    const { score } = similarity(fingerprint, r?.fingerprint || {});
+    if (score < threshold) continue;
+    occurrences.push({
+      version: r?.appVersion || null,
+      commit: r?.commitSha || null,
+      at: r?.createdAt || null,
+      isCurrent: false,
+    });
+  }
+
+  // Order by capture time; occurrences with no timestamp sink to the end so a
+  // dated occurrence always wins first/last.
+  const ordered = occurrences
+    .map((o, i) => ({ ...o, _ms: toMs(o.at), _i: i }))
+    .sort((a, b) => {
+      if (a._ms == null && b._ms == null) return a._i - b._i;
+      if (a._ms == null) return 1;
+      if (b._ms == null) return -1;
+      return a._ms - b._ms;
+    });
+
+  const first = ordered[0] || {};
+  const last = ordered[ordered.length - 1] || {};
+  const versions = uniq(occurrences.map((o) => o.version));
+  const commits = uniq(occurrences.map((o) => o.commit));
+
+  return {
+    occurrences: occurrences.length,
+    firstSeenVersion: first.version || null,
+    firstSeenCommit: first.commit || null,
+    firstSeenAt: first.at || null,
+    lastSeenVersion: last.version || null,
+    lastSeenCommit: last.commit || null,
+    lastSeenAt: last.at || null,
+    versions,
+    spansMultipleVersions: versions.length > 1,
+    // Recurring across more than one build/commit → a candidate regression: the
+    // same incident reappeared after the code moved on.
+    isRegression: occurrences.length > 1 && (versions.length > 1 || commits.length > 1),
+  };
+}
+
 /**
  * Count prior reports that failed on the same route and/or component — the
  * "repeated failures" signal (independent of the fuzzy similarity score).
