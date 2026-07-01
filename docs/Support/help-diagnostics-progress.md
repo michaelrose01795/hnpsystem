@@ -376,6 +376,80 @@ extensible. Still **before** Phase 5 (no version/code-state pinning started).
 
 ---
 
+### Investigation engine (developer-only, pre-Phase 5, complete)
+
+Evolved the popup from an intelligent report generator into a full **investigation
+engine**. Developer-only, computed **server-side at ingest** and stored inside the
+**RLS-locked `diagnostics` blob** — never returned to reporters, never shown in the
+popup. Still **before** Phase 5 (no version/code-state pinning started).
+
+**Created**
+- `src/lib/support/investigation.js` (+ `.test.js`, 11 cases) —
+  `buildInvestigation(snapshot, { priorReports, now, analysis })`: plain-English
+  explanation, ordered event **sequence**, **root causes ranked by confidence**,
+  primary **incident**, suspected **database/API/frontend ownership** (API routes
+  from failed requests, DB tables guessed from `/api/<resource>`), **severity**
+  (critical→low), **priority** (P1–P4), **user impact**, **regression risk**,
+  **fix complexity**, **reproducible confidence**, **affected modules**,
+  **debugging order**, **inspect-first** files/components/API routes/DB tables,
+  **similar incidents** + **repeated failures**, recommended **manual tests** and
+  **automated regression tests**, and a **GitHub-ready summary**. Deterministic
+  (injected `now`); reads only sanitised data.
+- `src/lib/support/incidentClustering.js` (+ `.test.js`, 9 cases) — multi-signal
+  duplicate detection that clusters across **route, section, component, error
+  signatures, request signatures, screenshot hashes, behaviour** (not text):
+  `buildFingerprint`, `similarity` (weighted, with reasons), `findSimilarReports`,
+  `repeatedFailures`, `stableHash` (djb2).
+- `src/lib/support/investigationRegistry.js` (+ `.test.js`, 5 cases) — the
+  **investigation** extension point (separate from the diagnostic registry):
+  `registerInvestigationProvider` / `collectInvestigationProviders`. Faulty
+  providers swallowed; empties dropped; fragments merged under
+  `investigation.providers.<id>`. Future modules enrich investigations without
+  touching the core.
+- `src/lib/support/investigationCache.js` (+ `.test.js`, 4 cases) —
+  `investigationKey` + `getOrBuildInvestigation` memoise results (bounded store);
+  the key changes when diagnostics OR the prior-report set change, so a new
+  similar incident invalidates a stale result.
+
+**Edited**
+- `src/lib/support/diagnosticAnalysis.js` — exported `normaliseSignature` for
+  reuse by the clustering + investigation layers.
+- `src/lib/support/reportSubmission.js` (+ tests updated) — every screenshot now
+  contributes an `attachments[]` entry `{ order, hash, annotation? }`; the
+  `hash` (stable image-bytes hash) feeds cross-report clustering.
+- `src/lib/database/support.js` — added `listRecentReportFingerprints(limit)`
+  which selects **only** the JSON `fingerprint` subfield (never full diagnostics),
+  best-effort (returns [] on error so ingest is never blocked).
+- `src/pages/api/support/reports.js` — at ingest, fetches prior fingerprints,
+  builds the investigation via the cache, and embeds `investigation` +
+  `fingerprint` into the diagnostics blob **only when still within the 256 KB
+  cap** (else the report is saved without it). The POST response never includes
+  the investigation.
+- `docs/Support/help-diagnostics-system-plan.md` — new **§6b** documenting the
+  investigation engine, clustering, the investigation extension interface, the
+  cache, and the ingest wiring.
+
+**Verification**
+- `npx vitest run src/lib/support/` → **125/125** pass (all support phases + passes).
+- `npm run check:borders` / `check:layers` / `check:encoding` → all pass.
+- `npx eslint` on all changed files → 0 errors, 0 warnings.
+
+**Privacy**
+- The investigation reads only already-sanitised data, is re-scrubbed with the
+  rest of the diagnostics blob, and lives solely in the RLS-locked `diagnostics`
+  column — reporters never receive it (POST returns only `{ id, screenshotCount }`).
+  `listRecentReportFingerprints` never selects the full diagnostics blob.
+
+**Deviations / notes**
+- No reporter-facing UI was added for the investigation (correct — it is
+  developer-only); a dev viewer to render it is **Phase 6**. The engine + storage +
+  extension points are complete and tested now.
+- Screenshot clustering uses an exact content hash (djb2 over the data URL), not a
+  perceptual hash — identical images cluster; near-duplicates do not (a perceptual
+  hash would need an image-processing dependency we deliberately avoid).
+
+---
+
 ## Standing handoff prompt
 
 > Paste this verbatim into ChatGPT, attaching **both** `docs/Support/help-diagnostics-system-plan.md`

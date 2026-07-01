@@ -217,6 +217,33 @@ export async function getSupportReport(id) {
   }
 }
 
+/**
+ * Fetch lightweight fingerprints of recent reports for cross-report incident
+ * clustering (the investigation engine's "similar previous incidents"). Selects
+ * only the JSON `fingerprint` subfield — never the full diagnostics blob — so it
+ * stays cheap and never widens the diagnostics exposure surface. Best-effort:
+ * returns [] on any error so report creation is never blocked.
+ *
+ * @param {number} [limit]
+ * @returns {Promise<Array<{ id: string, route: string|null, createdAt: string, fingerprint: object }>>}
+ */
+export async function listRecentReportFingerprints(limit = 50) {
+  try {
+    const { data, error } = await getClient()
+      .from("support_reports")
+      .select("id, route, created_at, fingerprint:diagnostics->fingerprint")
+      .order("created_at", { ascending: false })
+      .limit(Math.min(Number.isInteger(limit) ? limit : 50, 200));
+    if (error) throw error;
+    return (data || [])
+      .filter((r) => r.fingerprint && typeof r.fingerprint === "object")
+      .map((r) => ({ id: r.id, route: r.route, createdAt: r.created_at, fingerprint: r.fingerprint }));
+  } catch (error) {
+    console.error("[support] listRecentReportFingerprints error:", error?.message || error);
+    return [];
+  }
+}
+
 const STATUSES = new Set(["new", "triaged", "in_progress", "resolved", "wont_fix", "duplicate"]);
 const SEVERITIES = new Set(["unset", "low", "medium", "high", "critical"]);
 

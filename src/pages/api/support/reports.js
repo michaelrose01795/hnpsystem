@@ -21,11 +21,17 @@
 // `screenshot` string is still accepted).
 
 import createHandler from "@/lib/api/createHandler";
-import { createSupportReport, setSupportReportScreenshots } from "@/lib/database/support";
+import {
+  createSupportReport,
+  setSupportReportScreenshots,
+  listRecentReportFingerprints,
+} from "@/lib/database/support";
 import {
   uploadSupportScreenshot,
 } from "@/lib/storage/supportMediaBucketService";
 import { buildReportInsert, decodeScreenshots } from "@/lib/support/reportSubmission";
+import { getOrBuildInvestigation } from "@/lib/support/investigationCache";
+import { isWithinSizeCap } from "@/lib/support/sanitise";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
 export const config = {
@@ -56,6 +62,24 @@ async function handlePost(req, res, session) {
     return res.status(400).json({ success: false, message: built.error });
   }
   const { input } = built;
+
+  // 2b. Developer-only INVESTIGATION. Built from the already-sanitised diagnostics
+  //     plus lightweight fingerprints of recent reports (for "similar previous
+  //     incidents"), then embedded in the diagnostics blob — which is RLS-locked
+  //     and never returned to the reporter, so the investigation stays dev-only.
+  //     Best-effort: never block report creation, and never let it push the blob
+  //     over the size cap (drop it rather than fail the report).
+  try {
+    const priorReports = await listRecentReportFingerprints(50);
+    const { investigation } = getOrBuildInvestigation(input.diagnostics, {
+      priorReports,
+      now: new Date().toISOString(),
+    });
+    const enriched = { ...input.diagnostics, investigation, fingerprint: investigation.fingerprint };
+    if (isWithinSizeCap(enriched)) input.diagnostics = enriched;
+  } catch (error) {
+    console.error("[support] investigation build failed:", error?.message || error);
+  }
 
   // 3. Persist (helper re-sanitises + size-caps a third time, then inserts).
   const created = await createSupportReport(input);

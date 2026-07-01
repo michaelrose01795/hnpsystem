@@ -16,6 +16,7 @@
 
 import { sanitiseDiagnostics, isWithinSizeCap } from "@/lib/support/sanitise";
 import { normalizeRoles } from "@/lib/auth/roles";
+import { stableHash } from "@/lib/support/incidentClustering";
 
 // User-facing category list (value + plain-English label). The popup renders
 // these; the server validates against the value set. Values mirror the CHECK
@@ -86,15 +87,20 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
 
   const title = body?.title ? String(body.title).trim().slice(0, MAX_TITLE) : null;
 
-  // Screenshot ATTACHMENT METADATA (order + user annotation). The actual image
-  // paths are added to the columns after upload; here we capture the per-image
-  // annotation aligned by order, merged into the diagnostics blob so it is
-  // scrubbed in the same pass and counted against the size cap. (Storage paths
-  // are NOT known yet — the admin viewer pairs screenshot_paths[order] with
-  // attachments[order].)
+  // Screenshot ATTACHMENT METADATA (order + user annotation + content hash). The
+  // actual image paths are added to the columns after upload; here we capture the
+  // per-image annotation and a stable hash of the image bytes, aligned by order,
+  // merged into the diagnostics blob (scrubbed in the same pass, counted against
+  // the size cap). The hash feeds cross-report incident clustering; the admin
+  // viewer pairs screenshot_paths[order] with attachments[order].
   const attachments = screenshotEntries(body?.screenshots)
-    .map((entry, order) => ({ order, annotation: screenshotAnnotation(entry) }))
-    .filter((a) => a.annotation);
+    .map((entry, order) => {
+      const src = screenshotSrc(entry);
+      if (!src) return null;
+      const annotation = screenshotAnnotation(entry);
+      return { order, hash: stableHash(src), ...(annotation ? { annotation } : {}) };
+    })
+    .filter(Boolean);
 
   // Defence in depth: re-scrub the client-supplied diagnostics at the route
   // boundary and enforce the size cap before anything else looks at it.

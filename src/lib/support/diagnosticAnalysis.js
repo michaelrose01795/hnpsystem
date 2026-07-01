@@ -25,8 +25,9 @@ const num = (v) => (Number.isFinite(v) ? v : null);
 const arr = (v) => (Array.isArray(v) ? v : []);
 
 // Collapse volatile bits (numbers, uuids, hex) so "the same error" groups even
-// when ids/line numbers differ.
-function signature(str) {
+// when ids/line numbers differ. Exported so the investigation/clustering layers
+// reuse the exact same normalisation.
+export function normaliseSignature(str) {
   return String(str || "")
     .toLowerCase()
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, "<id>")
@@ -35,6 +36,7 @@ function signature(str) {
     .trim()
     .slice(0, 120);
 }
+const signature = normaliseSignature;
 
 const statusClass = (status) => {
   const s = num(status);

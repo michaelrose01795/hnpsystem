@@ -204,6 +204,71 @@ re-sanitisation apply unchanged.
 
 ---
 
+## 6b. Investigation engine (developer-only) — **(pre-Phase-5 investigation pass)**
+
+A senior-developer-style investigation built on top of the analysis engine. It is
+**developer-only**: it is computed **server-side at report ingest** and stored
+**inside the RLS-locked `diagnostics` blob** (never returned to reporters, never
+shown in the reporter popup). It reads only already-sanitised data, so it adds no
+new privacy surface.
+
+### `src/lib/support/investigation.js` — `buildInvestigation(snapshot, opts)`
+Deterministic (inject `now`); returns:
+- `explanation` — plain-English "what most likely happened".
+- `sequence` — the exact ordered events (analysis timeline) with the trigger flagged.
+- `rootCauses[]` — candidate causes ranked by confidence (probable cause + each
+  5xx/network request + each render error), de-duplicated.
+- `incident` — the primary grouped incident (from the analysis engine).
+- `ownership` — `{ primary: "api"|"frontend", api[], database[], frontend[] }`
+  (API routes from failed requests; DB tables guessed from `/api/<resource>`).
+- `severity` (critical/high/medium/low), `priority` (P1–P4), `userImpact`,
+  `regressionRisk`, `fixComplexity` (trivial/small/medium/large),
+  `reproducibleConfidence` (0–0.95), `affectedModules[]`.
+- `debuggingOrder[]`, `inspectFirst { files, components, apiRoutes, dbTables }`.
+- `similarIncidents[]` + `repeatedFailures` (via clustering, below).
+- `manualTests[]`, `regressionTests[]` — recommended tests to add after the fix.
+- `summary` — a GitHub / issue-tracker-ready markdown block.
+- `fingerprint` — the incident fingerprint (also stored at `diagnostics.fingerprint`).
+- `providers` — fragments from investigation providers (below).
+
+### `src/lib/support/incidentClustering.js` — multi-signal duplicate detection
+Clusters incidents across **route, section, component, error signatures, request
+signatures, screenshot hashes, and behaviour** — not just description text.
+`buildFingerprint(snapshot)`, `similarity(a,b)` (weighted, with reasons),
+`findSimilarReports(fp, priorReports)`, `repeatedFailures(fp, priorReports)`, and
+`stableHash` (djb2). Screenshot hashes come from `diagnostics.attachments[].hash`
+(computed server-side from the image bytes in `reportSubmission`).
+
+### `src/lib/support/investigationRegistry.js` — investigation extension point
+Separate from the diagnostic registry. Any module registers an **investigation
+provider** to enrich investigations without touching the support core:
+
+```js
+import { registerInvestigationProvider } from "@/lib/support/investigationRegistry";
+registerInvestigationProvider({
+  id: "jobcard",
+  investigate({ snapshot, analysis, priorReports, fingerprint, affected }) {
+    // synchronous, defensive (never throw), JSON-able, dev hints only.
+    return { suggestedTables: ["job_cards"], notes: ["Check status transitions"] };
+  },
+});
+```
+Fragments appear under `investigation.providers.<id>`.
+
+### `src/lib/support/investigationCache.js` — avoid duplicate analysis
+`investigationKey(snapshot, priorReports)` (stable hash) + `getOrBuildInvestigation`
+memoise results (bounded LRU-ish store); the key changes when the diagnostics OR
+the prior-report set changes, so new similar incidents invalidate stale results.
+
+### Ingest wiring
+`POST /api/support/reports` fetches `listRecentReportFingerprints(50)` (selects only
+the JSON `fingerprint` subfield — never full diagnostics), builds the investigation
+via the cache, and embeds `investigation` + `fingerprint` into the diagnostics blob
+**only if still within the 256 KB cap** (else the report is saved without it). The
+POST response never includes the investigation.
+
+---
+
 ## 7. Dev-only debug viewer — **Phase 6**
 
 Role-gated `/dev/support-reports` (+ `[id]`) gated by `ProtectedRoute` + `DEV_FULL_ACCESS_ROLES`:

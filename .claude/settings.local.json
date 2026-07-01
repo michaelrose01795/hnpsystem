@@ -333,7 +333,9 @@
       "PowerShell(npx eslint src/components/support/SupportErrorBoundary.js 2>&1)",
       "PowerShell(npx vitest run src/lib/support/actionSummary.test.js src/lib/support/supportDraft.test.js 2>&1)",
       "PowerShell(npx eslint src/lib/support/actionSummary.js src/lib/support/supportDraft.js src/lib/support/reportSubmission.js src/components/support/SupportScreenshotField.js src/components/support/SupportReportModal.js src/pages/api/support/reports.js src/lib/database/support.js 2>&1)",
-      "PowerShell(npx vitest run src/lib/support/diagnosticRegistry.test.js src/lib/support/providers/providers.test.js src/lib/support/diagnosticAnalysis.test.js 2>&1)"
+      "PowerShell(npx vitest run src/lib/support/diagnosticRegistry.test.js src/lib/support/providers/providers.test.js src/lib/support/diagnosticAnalysis.test.js 2>&1)",
+      "PowerShell(npx vitest run src/lib/support/investigationRegistry.test.js src/lib/support/incidentClustering.test.js src/lib/support/investigation.test.js src/lib/support/investigationCache.test.js 2>&1)",
+      "PowerShell(npx eslint src/lib/support/investigation.js src/lib/support/investigationRegistry.js src/lib/support/incidentClustering.js src/lib/support/investigationCache.js src/lib/support/reportSubmission.js src/lib/support/diagnosticAnalysis.js src/lib/database/support.js src/pages/api/support/reports.js 2>&1)"
     ],
     "deny": [],
     "ask": [],

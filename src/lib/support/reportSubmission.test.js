@@ -95,22 +95,27 @@ describe("buildReportInsert — diagnostics re-sanitisation (defence in depth)",
     expect(json).not.toContain("sk_live_abcdefgh12345678");
   });
 
-  it("embeds (scrubbed) screenshot annotations into diagnostics.attachments by order", () => {
+  it("embeds screenshot annotations + a content hash into diagnostics.attachments by order", () => {
     const result = buildReportInsert({
       body: {
         description: "x",
         diagnostics: {},
         screenshots: [
           { src: "data:image/png;base64,AAAA", annotation: "the broken Save button" },
-          { src: "data:image/png;base64,BBBB", annotation: "" }, // no annotation → dropped
+          { src: "data:image/png;base64,BBBB", annotation: "" }, // no annotation, but still hashed
         ],
       },
       session: session(),
     });
     expect(result.ok).toBe(true);
-    expect(result.input.diagnostics.attachments).toEqual([
-      { order: 0, annotation: "the broken Save button" },
-    ]);
+    const attachments = result.input.diagnostics.attachments;
+    expect(attachments).toHaveLength(2);
+    expect(attachments[0]).toMatchObject({ order: 0, annotation: "the broken Save button" });
+    expect(attachments[0].hash).toEqual(expect.any(String));
+    expect(attachments[1]).toMatchObject({ order: 1 });
+    expect(attachments[1].annotation).toBeUndefined();
+    // Different images → different hashes (feeds cross-report clustering).
+    expect(attachments[0].hash).not.toBe(attachments[1].hash);
   });
 
   it("scrubs secrets planted inside a screenshot annotation", () => {
