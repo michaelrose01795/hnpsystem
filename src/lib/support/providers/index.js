@@ -6,7 +6,7 @@
 //
 // Feature teams add their own providers the same way — see
 // src/lib/support/diagnosticRegistry.js for the contract and
-// docs/Support/help-diagnostics-system-plan.md for the extension-point guide.
+// docs/Support/help-diagnostics.md for the extension-point guide.
 
 import { registerDiagnosticProvider } from "@/lib/support/diagnosticRegistry";
 import uiStateProvider from "@/lib/support/providers/uiStateProvider";

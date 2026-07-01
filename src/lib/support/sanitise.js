@@ -11,7 +11,7 @@
 // The module is pure (no imports, no I/O) so it runs identically in the
 // browser and in Node, and is trivially unit-testable.
 //
-// Design rules (see docs/help-diagnostics-system-plan.md §4):
+// Design rules (see docs/Support/help-diagnostics.md §4):
 //   - Allowlist for structured fields (session/flags) — never copy unknown keys.
 //   - Value-pattern scrubbing for every free-text string (console errors,
 //     stack traces, URLs, action labels) to strip tokens/keys/PII.

@@ -11,7 +11,7 @@
 -- be exposed to the reporter. RLS is enabled with NO permissive policies, so
 -- the anon/auth keys cannot read or write it at all — every read/write goes
 -- through role-guarded API routes using the service-role key (which bypasses
--- RLS). See docs/help-diagnostics-system-plan.md §4 and §11.
+-- RLS). See docs/Support/help-diagnostics.md §4 and §11.
 
 CREATE TABLE IF NOT EXISTS public.support_reports (
   id              uuid NOT NULL DEFAULT gen_random_uuid(),
