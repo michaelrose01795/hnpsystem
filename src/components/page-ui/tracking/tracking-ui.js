@@ -5,7 +5,9 @@ export default function TrackingDashboardUi(props) {
     Button,
     CAR_LOCATIONS,
     DevLayoutSection,
+    DropdownField,
     EquipmentToolsModal,
+    EquipmentHistoryModal,
     InlineLoading,
     KEY_LOCATIONS,
     LocationEntryModal,
@@ -21,6 +23,9 @@ export default function TrackingDashboardUi(props) {
     entries,
     entryModal,
     equipmentModal,
+    equipmentHistoryModal,
+    equipmentTypeFilter,
+    equipmentTypeFilters,
     error,
     handleDeleteEquipment,
     handleDeleteOilStock,
@@ -42,14 +47,20 @@ export default function TrackingDashboardUi(props) {
     searchModal,
     setActiveTab,
     setEquipmentModal,
+    setEquipmentHistoryModal,
+    setEquipmentTypeFilter,
     setLoanCarFleetManagerOpen,
     setOilStockModal,
     setSimplifiedModal,
     setSharedSearchValue,
+    setTrackerLocationFilter,
     simplifiedModal,
     sharedSearchPlaceholder,
     sharedSearchValue,
     tabs,
+    trackerLastUpdatedLabel,
+    trackerLocationFilter,
+    trackerLocationFilters,
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
 
@@ -111,10 +122,38 @@ export default function TrackingDashboardUi(props) {
             placeholder={sharedSearchPlaceholder}
             ariaLabel={sharedSearchPlaceholder}
             style={{
-              flex: "1 1 clamp(180px, 48vw, 720px)",
+              flex: activeTab === "tracker" ? "0 1 clamp(180px, 32vw, 420px)" : "1 1 clamp(180px, 48vw, 720px)",
               minWidth: isMobileView ? "100%" : "180px",
-              maxWidth: "720px"
+              maxWidth: activeTab === "tracker" ? "420px" : "720px"
             }} />
+                  {activeTab === "tracker" && DropdownField && (
+                  <DropdownField
+              value={trackerLocationFilter}
+              onValueChange={setTrackerLocationFilter}
+              options={trackerLocationFilters}
+              ariaLabel="Filter tracker by location"
+              placeholder="All locations"
+              size="sm"
+              style={{
+                flex: "0 1 220px",
+                minWidth: isMobileView ? "100%" : "180px",
+                maxWidth: isMobileView ? "100%" : "240px"
+              }} />
+                  )}
+                  {activeTab === "equipment" && DropdownField && (
+                  <DropdownField
+              value={equipmentTypeFilter}
+              onValueChange={setEquipmentTypeFilter}
+              options={equipmentTypeFilters}
+              ariaLabel="Filter equipment by type"
+              placeholder="All equipment"
+              size="sm"
+              style={{
+                flex: "0 1 220px",
+                minWidth: isMobileView ? "100%" : "180px",
+                maxWidth: isMobileView ? "100%" : "240px"
+              }} />
+                  )}
                   {activeTab === "loan-cars" && MonthPickerField && (
                   <MonthPickerField
               value={loanCarMonth}
@@ -132,6 +171,16 @@ export default function TrackingDashboardUi(props) {
                   <Button variant="secondary" size="sm" onClick={loadActiveTab}>
                     Refresh
                   </Button>
+                  {activeTab === "tracker" && (
+                  <span style={{
+            color: "var(--text-1)",
+            fontSize: "var(--text-caption)",
+            fontWeight: 700,
+            whiteSpace: "nowrap"
+          }}>
+                    Last Updated {trackerLastUpdatedLabel}
+                  </span>
+                  )}
                   {refreshLoading && <InlineLoading width={100} label="Refreshing" />}
                   {activeTab === "tracker" && (
                   <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
@@ -181,6 +230,11 @@ export default function TrackingDashboardUi(props) {
     open: false,
     item: null
   })} onSave={handleSaveEquipment} onDelete={handleDeleteEquipment} />}
+
+      {equipmentHistoryModal?.open && EquipmentHistoryModal && <EquipmentHistoryModal item={equipmentHistoryModal.item} onClose={() => setEquipmentHistoryModal({
+    open: false,
+    item: null
+  })} />}
 
       {oilStockModal.open && <OilStockModal initialData={oilStockModal.item} onClose={() => setOilStockModal({
     open: false,

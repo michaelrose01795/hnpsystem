@@ -25,7 +25,11 @@ import {
   createSupportReport,
   setSupportReportScreenshots,
   listRecentReportFingerprints,
+  listSupportReports,
+  getSupportReportStats,
 } from "@/lib/database/support";
+import { hasAnyRole, DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { normaliseListFilters } from "@/lib/support/triageValidation";
 import {
   uploadSupportScreenshot,
 } from "@/lib/storage/supportMediaBucketService";
@@ -49,6 +53,32 @@ const clientIp = (req) => {
   if (typeof fwd === "string" && fwd.length) return fwd.split(",")[0].trim();
   return req.socket?.remoteAddress || null;
 };
+
+// The POST endpoint is open to any authenticated user (report submission), but
+// the GET list is developer-only. createHandler applies one allow-list to the
+// whole route, so the list gates itself here against DEV_FULL_ACCESS_ROLES.
+const isDeveloper = (session) =>
+  session?.devBypass === true || hasAnyRole(session?.user?.roles || [], DEV_FULL_ACCESS_ROLES);
+
+// GET /api/support/reports — developer Support Centre list (+ optional stats).
+async function handleGet(req, res, session) {
+  if (!isDeveloper(session)) {
+    return res.status(403).json({ success: false, message: "Insufficient permissions" });
+  }
+  const q = req.query || {};
+  const filters = normaliseListFilters(q);
+  const result = await listSupportReports(filters);
+  if (!result.success) {
+    return res.status(500).json({ success: false, message: result.error?.message || "Query failed" });
+  }
+
+  const payload = { success: true, data: result.data, count: result.count };
+  if (q.withStats === "1" || q.withStats === "true") {
+    const stats = await getSupportReportStats();
+    if (stats.success) payload.stats = stats.stats;
+  }
+  return res.status(200).json(payload);
+}
 
 async function handlePost(req, res, session) {
   // 1. Validate the screenshots before creating anything (accepts the new
@@ -143,5 +173,5 @@ async function handlePost(req, res, session) {
 // an empty allow-list as "authenticated is sufficient").
 export default createHandler({
   allowedRoles: [],
-  methods: { POST: handlePost },
+  methods: { POST: handlePost, GET: handleGet },
 });

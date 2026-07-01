@@ -2,31 +2,42 @@
 import { getDatabaseClient } from "@/lib/database/client";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-const serializeEquipment = (record) => ({
-  id: record.id,
-  name: record.name,
-  lastChecked: record.last_checked,
-  nextDue: record.next_due,
-  intervalDays: record.interval_days,
-  intervalMonths: record.interval_months,
-  intervalLabel: record.interval_label,
-  createdBy: record.created_by,
-  createdAt: record.created_at,
-  updatedAt: record.updated_at,
-});
+const getUserDisplayName = (user) => {
+  if (!user) return "";
+  return user.name || [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email || "";
+};
+
+const serializeEquipment = (record) => {
+  const createdByUser = Array.isArray(record.users) ? record.users[0] : record.users;
+  const createdByName = getUserDisplayName(createdByUser);
+  return {
+    id: record.id,
+    name: record.name,
+    lastChecked: record.last_checked,
+    nextDue: record.next_due,
+    intervalDays: record.interval_days,
+    intervalMonths: record.interval_months,
+    intervalLabel: record.interval_label,
+    createdBy: record.created_by,
+    createdByName,
+    lastCheckedByName: createdByName,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+};
 
 const sanitisePayload = (payload) => {
   const entries = Object.entries(payload).filter(([, value]) => value !== undefined);
   return Object.fromEntries(entries);
 };
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   const supabase = getDatabaseClient();
 
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("tracking_equipment_tools")
-      .select("*")
+      .select("*, users:created_by(first_name,last_name,name,email)")
       .order("updated_at", { ascending: false });
 
     if (error) {

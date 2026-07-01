@@ -139,12 +139,33 @@ Supporting modules: `incidentClustering.js` (multi-signal `buildFingerprint`/`si
 `investigationRegistry.js` (per-module investigation providers), `investigationCache.js`
 (memoises by snapshot + prior-report-set key).
 
-## 7. Dev-only viewer — **Phase 6 (pending)**
+## 7. Developer Support Centre — **Phase 6 (done)**
 
-Role-gated `/dev/support-reports` (+ `[id]`) via `ProtectedRoute` + `DEV_FULL_ACCESS_ROLES`:
-list with filters; detail with screenshot (signed URL), full diagnostics, clickable
-code-ownership `file:line`, the investigation + `codeState`/`versionHistory`, copy-dev-bundle,
-and triage actions (status/severity/assign/comment) — all audit-logged.
+Role-gated `/dev/support-reports` (+ `[id]`) via `ProtectedRoute` + `DEV_FULL_ACCESS_ROLES`
+(the API is gated the same way). A full issue-management workspace, not a bare list:
+
+- **Workspace** (`SupportWorkspace.js`): dashboard stat cards (open / unassigned / regressions /
+  critical / 24h / total — each a one-click filter), advanced filtering (search + status /
+  severity / category + sort), **saved views** (presets + user views persisted locally), and an
+  **impact-sorted queue** with automatic **New / Regression / Recurring / Duplicate / Drift**
+  badges. Keyboard shortcuts (`/` search, `j`/`k` move, `Enter` open, `r` refresh).
+- **Detail** (`SupportReportDetail.js`): triage (status / severity / assign-to-me / duplicate
+  linking, all **optimistic**), the developer investigation (root causes, confidence, debugging
+  order, recommended tests, issue-tracker summary), **code-state / drift + affected version
+  history**, code ownership with clickable source refs + affected routes/components/API/tables,
+  screenshots (signed URLs + annotations), an expandable **event timeline**, a full
+  **diagnostics explorer** (device / session / flags / providers / console / requests / errors /
+  privacy), **developer notes** (comments), and **activity/audit history**. Copy/export tools:
+  dev bundle, markdown, and a one-click **GitHub issue** (opens when `NEXT_PUBLIC_GITHUB_REPO`
+  is set, else copies).
+- **Audit**: every developer action is written to the append-only, hash-chained audit log —
+  `support_report_view` (private-bundle access), `support_report_update` (triage),
+  `support_report_comment`.
+
+Intelligence lives in the pure, tested `src/lib/support/adminView.js` (badges / impact sort /
+duplicate grouping / view presets), `supportExport.js` (issue / bundle / markdown), and
+`savedViews.js` (local persistence); data + optimistic mutations in the
+`src/components/support/dev/` hooks.
 
 ## 8. Version / code-state pinning — **Phase 5 (done)**
 
@@ -200,9 +221,10 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 
 | Concern | Module(s) | Notes |
 |---|---|---|
-| Schema / migration | `src/lib/database/schema/support/000_support.sql` (+ `schemaReference.sql`) | `support_reports` + `support_report_comments`; RLS, no policies; idempotent. |
+| Schema / migration | `src/lib/database/schema/support/000_support.sql` (+ `schemaReference.sql`) | `support_reports` (+ `duplicate_of`) + `support_report_comments` (+ `author_username`); RLS, no policies; idempotent. |
 | Privacy scrubber | `src/lib/support/sanitise.js` | Single source of truth; key-name + value-pattern redaction; 256 KB cap. |
-| DB helper | `src/lib/database/support.js` | CRUD; `listRecentReportFingerprints` (fingerprint + `app_version`/`commit_sha` only). |
+| DB helper | `src/lib/database/support.js` | CRUD + list/search/sort, stats, comments, per-report audit, triage (status/severity/assign/duplicate), fingerprints. |
+| Triage validation | `src/lib/support/triageValidation.js` | Pure enum/patch/list-filter validation, split out so it's testable without the Supabase client. |
 | Private storage | `src/lib/storage/supportMediaBucketService.js` | `public:false` bucket; short-TTL signed URLs; MIME/size validation. |
 | Capture core | `src/lib/support/diagnostics.js` | Ring buffers + `installBrowserCapture` + `captureDiagnostics`. |
 | Capture provider | `src/context/SupportReportContext.js` | Mounted in `_app.js`; owns the store; stamps `build`. |
@@ -212,8 +234,11 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | Diagnostic registry | `src/lib/support/diagnosticRegistry.js`, `providers/{uiStateProvider,devMetadataProvider,index}.js` | Extension point + built-ins. |
 | Investigation engine | `src/lib/support/investigation.js`, `incidentClustering.js`, `investigationRegistry.js`, `investigationCache.js` | Dev-only; server-side at ingest; `codeState` + `versionHistory`. |
 | Submit helpers | `src/lib/support/reportSubmission.js` | Pure; re-sanitise, identity-from-session, column derivation, screenshot decode. |
-| API route | `src/pages/api/support/reports.js` | Authenticated `POST`; upload; investigation; audit. |
-| UI | `src/components/support/{SupportControl,SupportReportModal,SupportScreenshotField}.js` | "?" button + popup + multi-screenshot redact/annotate. |
+| Submit API | `src/pages/api/support/reports.js` | Authenticated `POST` (submit); **dev-gated `GET`** (Support Centre list + stats). |
+| **Support Centre API** | `src/pages/api/support/reports/[id].js`, `reports/[id]/comments.js` | Dev-only `GET` detail (signed URLs + comments + audit) / `PATCH` triage / comments `GET`/`POST` — all audit-logged. |
+| **Support Centre logic** | `src/lib/support/adminView.js`, `supportExport.js`, `savedViews.js` | Pure: badges / impact sort / duplicate grouping / view presets; GitHub-issue / bundle / markdown export; local saved-view persistence. |
+| **Support Centre UI** | `src/pages/dev/support-reports/{index,[id]}.js`, `src/components/support/dev/*` | Workspace + detail + shared primitives (`supportDevUi.js`), data hooks (`useSupportAdmin.js`), keyboard shortcuts (`useSupportKeyboard.js`), triage panel. |
+| Reporter UI | `src/components/support/{SupportControl,SupportReportModal,SupportScreenshotField}.js` | "?" button + popup + multi-screenshot redact/annotate. |
 | Error boundary | `src/components/support/SupportErrorBoundary.js`, `src/lib/support/errorBoundaryDiagnostics.js` | Shell-mounted; recovery screen. |
 | Draft persistence | `src/lib/support/supportDraft.js` | Local-only; never leaves the device. |
 
@@ -231,6 +256,14 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
    persist via helper (3rd sanitise) → upload screenshots to private bucket → `writeAuditLog`.
 5. **Response** — only `{ id, screenshotCount }`. The investigation stays server-side/RLS-locked.
 
+**Developer read/triage flow (Phase 6):** the Support Centre calls the dev-gated
+`GET /api/support/reports` (list light rows + investigation-derived JSON subfields + stats),
+groups duplicates and impact-sorts client-side, and on a report opens
+`GET /api/support/reports/[id]` (full diagnostics + signed screenshot URLs + comments + audit;
+writes a `support_report_view` audit). Triage `PATCH` and comment `POST` are optimistic and each
+write an audit entry. The full diagnostics blob only ever leaves the DB through these dev-gated,
+service-role routes — never a client key.
+
 ## Phase status
 
 | Phase | Title | Status |
@@ -242,22 +275,24 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | — | Popup polish (DropdownField, auto-description, draft, multi-screenshot) | ✅ Done |
 | — | Diagnostic assistant + extension registry | ✅ Done |
 | — | Investigation engine (clustering, registry, cache) | ✅ Done |
-| **5** | **Version / code-state pinning + drift + version range** | ✅ **Done** |
-| 6 | Dev viewer, triage & audit | ⬜ Pending |
+| 5 | Version / code-state pinning + drift + version range | ✅ Done |
+| **6** | **Developer Support Centre (workspace, detail, triage, export, audit)** | ✅ **Done** |
 | 7 | Hardening (rate limit, retention, RLS review, E2E + privacy regression) | ⬜ Pending |
 
-**Verification (current):** `npx vitest run src/lib/support/` → **141 pass** (14 files).
+**Verification (current):** `npx vitest run src/lib/support/` → **170 pass** (18 files).
 `check:borders` / `check:layers` / `check:encoding` pass. `uk:check` clean for all support
-files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean (0 errors).
+files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean (0 errors, 0 warnings).
+Playwright: `e2e/workflows/support-centre.spec.js` covers permission gating + the triage
+workflow (run with a dev server + DB via `npm run test:workflows`).
 
 ## Outstanding work
 
-- **Phase 6 — Dev viewer, triage & audit.** Build `/dev/support-reports` (+ `[id]`) as above.
-  It will render the Phase 5 `codeState`/`versionHistory` and clickable `file:line`. Do **not**
-  start Phase 7 (hardening) or the viewer until Phase 5 is confirmed complete (it now is).
-- **Phase 7 — Hardening.** Rate-limit the POST, add retention to `run-retention.js`, RLS review,
-  Playwright submit-flow + admin-gating + **privacy-regression** tests (planted-secret assertion),
-  React-rendered UI tests.
+- **Phase 7 — Hardening (next; do not start until Phase 6 is confirmed complete — it now is).**
+  Rate-limit the POST, add retention to `tools/scripts/run-retention.js` (delete old reports +
+  their private screenshots), RLS review, and Playwright coverage for the submit flow +
+  **privacy-regression** test (persisted rows contain none of a planted secret) + React-rendered
+  UI tests. The Support Centre permission/triage E2E already exists
+  (`e2e/workflows/support-centre.spec.js`) and can be extended there.
 
 ## Known limitations
 
@@ -274,12 +309,22 @@ files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean (0 err
   images cluster; near-duplicates do not (a perceptual hash needs an image dependency we avoid).
 - **Per-component render frequency is approximated** by recent route churn (no render
   instrumentation by design).
+- **Support Centre stats are folded in JS** over a bounded window (≤1000 recent rows), not a
+  SQL `GROUP BY` — fine for a dev tool, not for very large tables.
+- **Duplicate grouping is exact-key** (canonical fingerprint hash) in the list; fuzzy
+  near-duplicate matching stays in the investigation engine's `similarIncidents`.
+- **Assignment is assign-to-me / unassign** (+ raw user id) — there is no user-picker directory
+  yet; the assignee shows as `User #id` when it isn't the current user.
+- **Source references copy `file:line`** (no in-app source viewer / editor deep-link), and the
+  one-click GitHub issue only *opens* when `NEXT_PUBLIC_GITHUB_REPO` is set (otherwise it copies).
+- **The E2E triage workflow self-skips** when no reports exist (E2E may run against a stub DB).
 
 ## Manual actions outstanding
 
 - **Apply the migration** — run `src/lib/database/schema/support/000_support.sql` in the
-  Supabase SQL editor (repo applies SQL manually). Idempotent; includes the
-  `screenshot_paths text[]` `ADD COLUMN IF NOT EXISTS`.
+  Supabase SQL editor (repo applies SQL manually). Idempotent; now also adds the Phase 6
+  columns `support_reports.duplicate_of` (+ self-FK / index) and
+  `support_report_comments.author_username` via `ADD COLUMN IF NOT EXISTS` — safe to re-run.
 - **CI: stamp the section-map hash** — have the build run the section-source-map generator and
   capture its `SECTION_MAP_HASH=…` output into `NEXT_PUBLIC_SECTION_MAP_HASH` so
   `verifySectionMap` can report `match`/`drift` in production. (Vercel already injects
@@ -300,6 +345,19 @@ Ideas surfaced but **deliberately out of scope** — do not implement without a 
 - **Perceptual screenshot hashing** for near-duplicate incident clustering.
 - **Wire the map generator into the build script** (`prebuild`) so the shipped map is always
   fresh and its hash is always stamped.
+- **User-picker assignment**: assign to any user via the users directory (name search), not just
+  assign-to-me; resolve `assigned_to` → username in the list/detail.
+- **Server-side / materialised stats**: move the dashboard aggregation to SQL (or a periodic
+  materialised view) so it scales beyond the windowed in-JS fold.
+- **Bulk triage**: multi-select in the queue to change status/severity/assignee for many reports
+  at once (with one audit entry per report).
+- **Server-synced saved views + shared team views** (currently local-only per device).
+- **In-app source viewer / editor deep-links** (e.g. `vscode://` or a GitHub blob link at the
+  captured commit) so `file:line` is truly click-to-open, honouring detected code drift.
+- **Regression auto-reopen**: when a `resolved` report's fingerprint reappears in a newer
+  `app_version`, auto-reopen and notify — building on `versionHistory.isRegression`.
+- **Two-way issue-tracker integration** (create/link/sync via the GitHub/Jira API rather than a
+  prefilled new-issue URL).
 
 ---
 

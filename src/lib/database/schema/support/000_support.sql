@@ -60,6 +60,25 @@ CREATE TABLE IF NOT EXISTS public.support_reports (
 ALTER TABLE public.support_reports
   ADD COLUMN IF NOT EXISTS screenshot_paths text[];
 
+-- Phase 6 (dev Support Centre) — duplicate grouping / report linking. Points a
+-- report at the canonical report it duplicates (nullable; self-reference kept
+-- loose via ON DELETE SET NULL so deleting the canonical report doesn't cascade).
+ALTER TABLE public.support_reports
+  ADD COLUMN IF NOT EXISTS duplicate_of uuid;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'support_reports_duplicate_of_fkey'
+  ) THEN
+    ALTER TABLE public.support_reports
+      ADD CONSTRAINT support_reports_duplicate_of_fkey
+      FOREIGN KEY (duplicate_of) REFERENCES public.support_reports(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS support_reports_duplicate_of_idx
+  ON public.support_reports (duplicate_of);
+
 CREATE INDEX IF NOT EXISTS support_reports_status_idx
   ON public.support_reports (status, created_at DESC);
 CREATE INDEX IF NOT EXISTS support_reports_reporter_idx
@@ -67,17 +86,24 @@ CREATE INDEX IF NOT EXISTS support_reports_reporter_idx
 CREATE INDEX IF NOT EXISTS support_reports_section_idx
   ON public.support_reports (section_key);
 
--- Triage thread (used from Phase 6; created now so the FK is stable).
+-- Triage thread (developer notes / internal comments — Phase 6).
 CREATE TABLE IF NOT EXISTS public.support_report_comments (
   id          uuid NOT NULL DEFAULT gen_random_uuid(),
   report_id   uuid NOT NULL,
   author_id   integer,
+  -- denormalised author name snapshot so the thread survives user deletion and
+  -- avoids a users join on every read.
+  author_username text,
   body        text NOT NULL,
   created_at  timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT support_report_comments_pkey PRIMARY KEY (id),
   CONSTRAINT support_report_comments_report_fkey FOREIGN KEY (report_id)
     REFERENCES public.support_reports(id) ON DELETE CASCADE
 );
+
+-- Additive column for comment tables created before author_username existed.
+ALTER TABLE public.support_report_comments
+  ADD COLUMN IF NOT EXISTS author_username text;
 
 CREATE INDEX IF NOT EXISTS support_report_comments_report_idx
   ON public.support_report_comments (report_id, created_at);

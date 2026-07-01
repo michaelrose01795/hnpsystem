@@ -137,6 +137,17 @@ const DEFAULT_EQUIPMENT_CHECKS = [];
 
 const DEFAULT_OIL_CHECKS = [];
 
+const EQUIPMENT_DUE_SOON_DAYS = 14;
+
+const EQUIPMENT_TYPE_FILTERS = [
+{ key: "all", value: "all", label: "All equipment" },
+{ key: "lifts", value: "lifts", label: "Lifts" },
+{ key: "mot", value: "mot", label: "MOT" },
+{ key: "diagnostic", value: "diagnostic", label: "Diagnostic" },
+{ key: "air-con", value: "air-con", label: "Air Con" },
+{ key: "workshop-tools", value: "workshop-tools", label: "Workshop Tools" }];
+
+
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
 
@@ -297,6 +308,89 @@ const getDueLabel = (value) => {
   return `Due in ${days} day${days === 1 ? "" : "s"}`;
 };
 
+const isSameDate = (left, right) => {
+  if (!left || !right) return false;
+  const leftDate = left instanceof Date ? left : new Date(left);
+  const rightDate = right instanceof Date ? right : new Date(right);
+  if (Number.isNaN(leftDate.getTime()) || Number.isNaN(rightDate.getTime())) return false;
+  return (
+    leftDate.getFullYear() === rightDate.getFullYear() &&
+    leftDate.getMonth() === rightDate.getMonth() &&
+    leftDate.getDate() === rightDate.getDate()
+  );
+};
+
+const getEquipmentDueState = (item = {}) => {
+  if (!item.nextDue) {
+    return {
+      id: "due-soon",
+      groupId: "due-soon",
+      groupLabel: "Due Soon",
+      label: "Schedule pending",
+      color: "var(--warning)",
+      sortTime: 0
+    };
+  }
+
+  const parsed = new Date(item.nextDue);
+  if (Number.isNaN(parsed.getTime())) {
+    return {
+      id: "due-soon",
+      groupId: "due-soon",
+      groupLabel: "Due Soon",
+      label: "Schedule pending",
+      color: "var(--warning)",
+      sortTime: 0
+    };
+  }
+
+  const diff = parsed.getTime() - Date.now();
+  if (diff <= 0) {
+    return {
+      id: "overdue",
+      groupId: "overdue",
+      groupLabel: "Overdue",
+      label: "Overdue",
+      color: "var(--danger)",
+      sortTime: parsed.getTime()
+    };
+  }
+
+  const days = Math.ceil(diff / MS_PER_DAY);
+  if (days <= EQUIPMENT_DUE_SOON_DAYS) {
+    return {
+      id: "due-soon",
+      groupId: "due-soon",
+      groupLabel: "Due Soon",
+      label: `Due in ${days} day${days === 1 ? "" : "s"}`,
+      color: "var(--warning)",
+      sortTime: parsed.getTime()
+    };
+  }
+
+  return {
+    id: "up-to-date",
+    groupId: "up-to-date",
+    groupLabel: "Up To Date",
+    label: "Up to date",
+    color: "var(--success-dark)",
+    sortTime: parsed.getTime()
+  };
+};
+
+const getEquipmentType = (item = {}) => {
+  const name = String(item.name || "").toLowerCase();
+  if (/\blift|ramp|hoist/.test(name)) return "lifts";
+  if (/\bmot\b|brake tester|emissions|roller/.test(name)) return "mot";
+  if (/diagnostic|diag|scanner|scan tool|odis|vcds/.test(name)) return "diagnostic";
+  if (/air\s*con|aircon|a\/c|refrigerant/.test(name)) return "air-con";
+  return "workshop-tools";
+};
+
+const getEquipmentAuditName = (item = {}) => {
+  return item.lastCheckedByName || item.checkedByName || item.createdByName || (item.createdBy ? `User #${item.createdBy}` : "Not recorded");
+};
+
 const nextDueFrom = (reference, intervalDays = 7) => {
   const baseTime =
   reference instanceof Date ? reference.getTime() : Number(reference || Date.now());
@@ -330,6 +424,117 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
+const TRACKER_OVERDUE_HOURS = 4;
+
+const TRACKER_QUICK_FILTERS = [
+{ id: "all", label: "All" },
+{ id: "overdue", label: "Overdue" },
+{ id: "unknown", label: "Unknown Location" },
+{ id: "workshop", label: "Workshop" },
+{ id: "collection", label: "Collection" },
+{ id: "customer-waiting", label: "Customer Waiting" }];
+
+
+const TRACKER_LOCATION_FILTERS = [
+{ key: "all", value: "all", label: "All locations" },
+{ key: "service-desk", value: "service-desk", label: "Service Desk" },
+{ key: "workshop-board", value: "workshop-board", label: "Workshop Board" },
+{ key: "collection", value: "collection", label: "Collection" },
+{ key: "workshop-bays", value: "workshop-bays", label: "Workshop Bays" },
+{ key: "other", value: "other", label: "Other locations" },
+{ key: "unknown", value: "unknown", label: "Unknown location" }];
+
+
+const normalizeTrackerText = (value = "") => String(value || "").trim().toLowerCase();
+
+const getMovementAgeHours = (entry) => {
+  const updated = new Date(entry?.updatedAt || 0).getTime();
+  if (!updated) return 0;
+  return Math.max(0, (Date.now() - updated) / (1000 * 60 * 60));
+};
+
+const getTrackerLocationFlags = (entry = {}) => {
+  const keyLocation = normalizeTrackerText(normalizeKeyLocationLabel(entry.keyLocation));
+  const vehicleLocation = normalizeTrackerText(entry.vehicleLocation);
+  const status = normalizeTrackerText(entry.status || entry.jobStatus || entry.serviceType);
+  const combined = [keyLocation, vehicleLocation, status].filter(Boolean).join(" ");
+  const missingKey = !keyLocation || keyLocation === "n/a" || keyLocation === "na" || keyLocation === "pending";
+  const missingVehicle = !vehicleLocation || vehicleLocation === "n/a" || vehicleLocation === "na" || vehicleLocation === "unallocated";
+  const isUnknown = missingKey || missingVehicle || combined.includes("unknown");
+  const isWorkshop =
+  combined.includes("workshop") ||
+  combined.includes("red board") ||
+  combined.includes("valet") ||
+  combined.includes("paint") ||
+  combined.includes("prep");
+  const isCollection =
+  combined.includes("collection") ||
+  combined.includes("complete") ||
+  combined.includes("ready for release") ||
+  combined.includes("ready for collection");
+  const isCustomerWaiting =
+  combined.includes("waiting") ||
+  combined.includes("customer waiting") ||
+  combined.includes("waiter");
+  const keysMoved =
+  Boolean(keyLocation) &&
+  keyLocation !== "n/a" &&
+  keyLocation !== "na" &&
+  !keyLocation.includes("service showroom") &&
+  !keyLocation.includes("sales show room");
+  const isOverdue = getMovementAgeHours(entry) >= TRACKER_OVERDUE_HOURS;
+
+  return {
+    isUnknown,
+    isWorkshop,
+    isCollection,
+    isCustomerWaiting,
+    keysMoved,
+    isOverdue,
+    missingKey,
+    missingVehicle
+  };
+};
+
+const getTrackerGroup = (entry = {}) => {
+  const flags = getTrackerLocationFlags(entry);
+  const keyLocation = normalizeTrackerText(normalizeKeyLocationLabel(entry.keyLocation));
+  const vehicleLocation = normalizeTrackerText(entry.vehicleLocation);
+  const combined = [keyLocation, vehicleLocation].filter(Boolean).join(" ");
+
+  if (flags.isUnknown) return { id: "unknown", label: "Unknown Location" };
+  if (flags.isCollection) return { id: "collection", label: "Collection" };
+  if (combined.includes("red board") || combined.includes("cupboard") || keyLocation.includes("workshop")) {
+    return { id: "workshop-board", label: "Workshop Board" };
+  }
+  if (flags.isWorkshop) return { id: "workshop-bays", label: "Workshop Bays" };
+  if (combined.includes("service")) return { id: "service-desk", label: "Service Desk" };
+  return { id: "other", label: "Other Locations" };
+};
+
+const getTrackerRiskScore = (entry = {}) => {
+  const flags = getTrackerLocationFlags(entry);
+  const ageHours = getMovementAgeHours(entry);
+  return (
+    (flags.isUnknown ? 100000 : 0) +
+    (flags.keysMoved ? 50000 : 0) +
+    (flags.isOverdue ? 20000 : 0) +
+    Math.min(19999, Math.round(ageHours * 100))
+  );
+};
+
+const formatTrackerTimestamp = (timestamp) => {
+  if (!timestamp) return "Not refreshed yet";
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) return "Not refreshed yet";
+  return parsed.toLocaleString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "short"
+  });
+};
+
 const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = false }) => {
   const vehicleMeta = [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
   void isMobileView;
@@ -350,7 +555,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         transition: "all 0.2s ease",
         width: "100%",
         maxWidth: "100%",
-        minWidth: 0
+        minWidth: 0,
+        minHeight: "214px",
+        height: "100%"
       }}>
 
       <LayerSurface
@@ -370,35 +577,40 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             textOverflow: "ellipsis"
           }}>
 
-          {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
+          Job {entry.jobNumber || "Unknown job"}
         </strong>
-        <div
+        <dl
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "10px",
-            minWidth: 0
+            display: "grid",
+            gridTemplateColumns: isMobileView ? "1fr" : "repeat(2, minmax(0, 1fr))",
+            gap: "4px 12px",
+            margin: "4px 0 0",
+            minWidth: 0,
+            fontSize: "var(--text-caption)",
+            color: "var(--text-1)"
           }}>
 
-          <p
-            style={{
-              margin: 0,
-              fontSize: "clamp(0.66rem, 1vw, 0.78rem)",
-              color: "var(--text-1)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              minWidth: 0,
-              flex: 1
-            }}>
+          {[
+          ["Registration", entry.reg || "Unknown reg"],
+          ["Customer", entry.customer || "Customer pending"],
+          ["Vehicle", vehicleMeta || "Make/Model/Colour pending"],
+          ["Last moved", formatRelativeTime(entry.updatedAt)]].map(([label, value]) =>
+          <div key={label} style={{ minWidth: 0 }}>
+              <dt style={{ fontWeight: 700, textTransform: "uppercase", opacity: 0.72 }}>{label}</dt>
+              <dd
+              style={{
+                margin: "2px 0 0",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
 
-            {vehicleMeta || "Make/Model/Colour pending"}
-          </p>
-          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--text-1)", whiteSpace: "nowrap", flexShrink: 0 }}>
-            Last moved {formatRelativeTime(entry.updatedAt)}
-          </p>
-        </div>
+                {value}
+              </dd>
+            </div>
+          )}
+        </dl>
       </LayerSurface>
 
       <div
@@ -736,6 +948,65 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
 
+    </div>);
+
+};
+
+const EquipmentHistoryModal = ({ item, onClose }) => {
+  useBodyModalLock(Boolean(item));
+
+  if (!item) return null;
+
+  const rows = [
+  ["Status", getEquipmentDueState(item).label],
+  ["Last checked", formatDateOnlyLabel(item.lastChecked)],
+  ["Next due", formatDateOnlyLabel(item.nextDue)],
+  ["Check interval", getDurationDisplay(item)],
+  ["Last Checked By", getEquipmentAuditName(item)],
+  ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
+
+  return (
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+      <div
+        style={{
+          ...popupCardStyles,
+          width: "min(520px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px"
+        }}>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Equipment history
+            </p>
+            <h2 style={{ margin: "4px 0 0", color: "var(--accentText)" }}>{item.name}</h2>
+          </div>
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
+            ×
+          </Button>
+        </div>
+
+        <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+          {rows.map(([label, value]) =>
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "var(--space-sm)",
+              color: "var(--text-1)",
+              fontSize: "var(--text-body-sm)"
+            }}>
+
+              <span>{label}</span>
+              <strong style={{ textAlign: "right" }}>{value}</strong>
+            </div>
+          )}
+        </LayerSurface>
+      </div>
     </div>);
 
 };
@@ -1335,6 +1606,7 @@ export default function TrackingDashboard() {
   const [simplifiedModal, setSimplifiedModal] = useState({ open: false, initialData: null });
   const [highlightedJobNumber, setHighlightedJobNumber] = useState(null);
   const [equipmentModal, setEquipmentModal] = useState({ open: false, item: null });
+  const [equipmentHistoryModal, setEquipmentHistoryModal] = useState({ open: false, item: null });
   const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => user?.roles || [], [user]);
@@ -1368,7 +1640,11 @@ export default function TrackingDashboard() {
   const [loanCarFleetManagerOpen, setLoanCarFleetManagerOpen] = useState(false);
   const [loanCarRefreshKey, setLoanCarRefreshKey] = useState(0);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
+  const [equipmentTypeFilter, setEquipmentTypeFilter] = useState("all");
   const [oilSearchTerm, setOilSearchTerm] = useState("");
+  const [trackerQuickFilter, setTrackerQuickFilter] = useState("all");
+  const [trackerLocationFilter, setTrackerLocationFilter] = useState("all");
+  const [trackerLastUpdatedAt, setTrackerLastUpdatedAt] = useState(null);
 
   // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
@@ -1397,6 +1673,7 @@ export default function TrackingDashboard() {
       }
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
+      setTrackerLastUpdatedAt(new Date().toISOString());
     } catch (fetchError) {
       console.error("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
@@ -1839,10 +2116,9 @@ export default function TrackingDashboard() {
     };
   }, [handleAutoMovement]);
 
-  // Entries assigned to the signed-in user float to the top of the list so a
-  // technician sees their own jobs (the same set surfaced on /job-cards/myjobs)
-  // first when finding keys / cars. Within each group we keep the existing
-  // most-recently-updated ordering.
+  // Priority audit: this page previously sorted assigned-to-me jobs first, then
+  // newest movement. Keep that useful personal tie-breaker, but put location
+  // risk ahead of it so unknown/stale/key-moved records cannot be buried.
   const activeEntries = useMemo(() => {
     const isMine = (entry) => {
       if (!dbUserId) return false;
@@ -1852,6 +2128,8 @@ export default function TrackingDashboard() {
     return entries.
     filter((entry) => entry.jobId).
     sort((a, b) => {
+      const riskDiff = getTrackerRiskScore(b) - getTrackerRiskScore(a);
+      if (riskDiff !== 0) return riskDiff;
       const mineA = isMine(a) ? 1 : 0;
       const mineB = isMine(b) ? 1 : 0;
       if (mineA !== mineB) return mineB - mineA; // user's own jobs first
@@ -1865,6 +2143,8 @@ export default function TrackingDashboard() {
     const query = trackerSearchTerm.trim().toLowerCase();
 
     return activeEntries.filter((entry) => {
+      const flags = getTrackerLocationFlags(entry);
+      const group = getTrackerGroup(entry);
       const matchesSearch =
       !query ||
       [
@@ -1885,9 +2165,103 @@ export default function TrackingDashboard() {
         return false;
       }
 
+      if (trackerLocationFilter !== "all" && group.id !== trackerLocationFilter) {
+        return false;
+      }
+
+      if (trackerQuickFilter === "overdue") return flags.isOverdue;
+      if (trackerQuickFilter === "unknown") return flags.isUnknown;
+      if (trackerQuickFilter === "workshop") return flags.isWorkshop;
+      if (trackerQuickFilter === "collection") return flags.isCollection;
+      if (trackerQuickFilter === "customer-waiting") return flags.isCustomerWaiting;
+
       return true;
     });
-  }, [activeEntries, trackerSearchTerm]);
+  }, [activeEntries, trackerLocationFilter, trackerQuickFilter, trackerSearchTerm]);
+
+  const trackerSummaryItems = useMemo(() => {
+    const totalActiveJobs = activeEntries.length;
+    const keysMissing = activeEntries.filter((entry) => getTrackerLocationFlags(entry).missingKey).length;
+    const carsOffSite = activeEntries.filter((entry) => {
+      const location = normalizeTrackerText(entry.vehicleLocation);
+      return Boolean(location) && !["n/a", "na", "service", "workshop", "in workshop", "ready for release"].includes(location);
+    }).length;
+    const overdueMovements = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isOverdue).length;
+    const unknownLocations = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isUnknown).length;
+    const customerWaiting = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isCustomerWaiting).length;
+
+    return [
+    { label: "Total Active Jobs", value: totalActiveJobs },
+    { label: "Keys Missing", value: keysMissing },
+    { label: "Cars Off-site", value: carsOffSite },
+    { label: "Overdue Movements", value: overdueMovements },
+    { label: "Unknown Location", value: unknownLocations },
+    { label: "Customer Waiting", value: customerWaiting }];
+
+  }, [activeEntries]);
+
+  const groupedTrackerEntries = useMemo(() => {
+    const groups = new Map();
+    filteredActiveEntries.forEach((entry) => {
+      const group = getTrackerGroup(entry);
+      if (!groups.has(group.id)) {
+        groups.set(group.id, { ...group, entries: [] });
+      }
+      groups.get(group.id).entries.push(entry);
+    });
+    return Array.from(groups.values());
+  }, [filteredActiveEntries]);
+
+  const filteredEquipmentChecks = useMemo(() => {
+    const term = equipmentSearchTerm.trim().toLowerCase();
+    return equipmentChecks.
+    filter((check) => {
+      if (equipmentTypeFilter !== "all" && getEquipmentType(check) !== equipmentTypeFilter) {
+        return false;
+      }
+      if (term && ![check.name, check.status, getEquipmentDueState(check).label, getEquipmentAuditName(check)].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
+        return false;
+      }
+      return true;
+    }).
+    sort((a, b) => {
+      const stateOrder = { overdue: 0, "due-soon": 1, "up-to-date": 2 };
+      const stateA = getEquipmentDueState(a);
+      const stateB = getEquipmentDueState(b);
+      if (stateOrder[stateA.groupId] !== stateOrder[stateB.groupId]) {
+        return stateOrder[stateA.groupId] - stateOrder[stateB.groupId];
+      }
+      if (stateA.sortTime !== stateB.sortTime) {
+        return stateA.sortTime - stateB.sortTime;
+      }
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+  }, [equipmentChecks, equipmentSearchTerm, equipmentTypeFilter]);
+
+  const equipmentSummaryItems = useMemo(() => {
+    const dueStates = equipmentChecks.map((check) => getEquipmentDueState(check));
+    return [
+    { label: "Due Soon", value: dueStates.filter((state) => state.groupId === "due-soon").length },
+    { label: "Overdue", value: dueStates.filter((state) => state.groupId === "overdue").length },
+    { label: "Checked Today", value: equipmentChecks.filter((check) => isSameDate(check.lastChecked, new Date())).length },
+    { label: "Total Equipment/Tools", value: equipmentChecks.length }];
+
+  }, [equipmentChecks]);
+
+  const groupedEquipmentChecks = useMemo(() => {
+    const groupOrder = ["overdue", "due-soon", "up-to-date"];
+    const groups = new Map(groupOrder.map((id) => {
+      const label = id === "overdue" ? "Overdue" : id === "due-soon" ? "Due Soon" : "Up To Date";
+      return [id, { id, label, entries: [] }];
+    }));
+
+    filteredEquipmentChecks.forEach((check) => {
+      const state = getEquipmentDueState(check);
+      groups.get(state.groupId)?.entries.push(check);
+    });
+
+    return Array.from(groups.values()).filter((group) => group.entries.length > 0);
+  }, [filteredEquipmentChecks]);
 
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
 
@@ -1972,6 +2346,47 @@ export default function TrackingDashboard() {
 
   const renderTrackerContent = () =>
   <>
+      <DevLayoutSection
+      sectionKey="tracking-active-jobs-summary"
+      parentKey="tracking-page-body"
+      sectionType="stat-card"
+      className="app-summary-section"
+      style={{ width: "100%" }}>
+
+        <div className="app-summary-grid">
+          {trackerSummaryItems.map((item) =>
+          <div key={item.label} className="app-summary-item">
+              <span className="app-summary-label">{item.label}</span>
+              <strong className="app-summary-value">{item.value}</strong>
+            </div>
+          )}
+        </div>
+      </DevLayoutSection>
+
+      <DevLayoutSection
+      sectionKey="tracking-active-jobs-filters"
+      parentKey="tracking-page-body"
+      sectionType="filter-row"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--space-sm)",
+        flexWrap: "wrap",
+        width: "100%",
+        minWidth: 0
+      }}>
+
+        <TabGroup
+        items={TRACKER_QUICK_FILTERS.map((filter) => ({
+          label: filter.label,
+          value: filter.id
+        }))}
+        value={trackerQuickFilter}
+        onChange={setTrackerQuickFilter}
+        ariaLabel="Tracker quick filters"
+        className="tab-api--wrap" />
+      </DevLayoutSection>
+
       {entries.length === 0 &&
     <DevLayoutSection
       sectionKey="tracking-active-jobs-empty-state"
@@ -2017,27 +2432,59 @@ export default function TrackingDashboard() {
           No active jobs match your search or filters.
         </DevLayoutSection>
     }
-      <DevLayoutSection
-      sectionKey="tracking-active-jobs-list"
+      {groupedTrackerEntries.map((group) =>
+    <DevLayoutSection
+      key={group.id}
+      sectionKey={`tracking-active-jobs-group-${group.id}`}
       parentKey="tracking-page-body"
-      sectionType="list"
+      sectionType="section-shell"
       style={{
-        display: "grid",
-        gridTemplateColumns:
-        !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
-        gap: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
         width: "100%",
         maxWidth: "100%",
         minWidth: 0
       }}>
 
-        {filteredActiveEntries.map((entry, index) => {
+        <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: "var(--space-sm)",
+          minWidth: 0
+        }}>
+
+          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
+            {group.label}
+          </h2>
+          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
+            {group.entries.length}
+          </span>
+        </div>
+
+        <DevLayoutSection
+        sectionKey={`tracking-active-jobs-list-${group.id}`}
+        parentKey={`tracking-active-jobs-group-${group.id}`}
+        sectionType="list"
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+          !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+          gap: "20px",
+          width: "100%",
+          maxWidth: "100%",
+          minWidth: 0
+        }}>
+
+          {group.entries.map((entry, index) => {
         const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
         return (
           <DevLayoutSection
             key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
-            sectionKey={`tracking-active-jobs-card-${index + 1}`}
-            parentKey="tracking-active-jobs-list"
+            sectionKey={`tracking-active-jobs-card-${group.id}-${index + 1}`}
+            parentKey={`tracking-active-jobs-list-${group.id}`}
             sectionType="content-card">
 
               <CombinedTrackerCard
@@ -2062,58 +2509,114 @@ export default function TrackingDashboard() {
             </DevLayoutSection>);
 
       })}
+        </DevLayoutSection>
       </DevLayoutSection>
+    )}
     </>;
 
 
   const renderEquipmentContent = () =>
   <>
       <DevLayoutSection
-      sectionKey="tracking-equipment-grid"
+      sectionKey="tracking-equipment-summary"
       parentKey="tracking-page-body"
-      sectionType="grid"
+      sectionType="stat-card"
+      className="app-summary-section"
+      style={{ width: "100%" }}>
+
+        <div className="app-summary-grid">
+          {equipmentSummaryItems.map((item) =>
+          <div key={item.label} className="app-summary-item">
+              <span className="app-summary-label">{item.label}</span>
+              <strong className="app-summary-value">{item.value}</strong>
+            </div>
+          )}
+        </div>
+      </DevLayoutSection>
+
+      {equipmentChecks.length === 0 &&
+      <DevLayoutSection
+      sectionKey="tracking-equipment-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
       style={{
-        display: "grid",
-        gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
-        gap: "16px",
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        textAlign: "center",
+        color: "var(--text-1)"
+      }}>
+
+          Equipment service list is empty.
+        </DevLayoutSection>
+      }
+
+      {equipmentChecks.length > 0 && filteredEquipmentChecks.length === 0 &&
+      <DevLayoutSection
+      sectionKey="tracking-equipment-filter-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
+      style={{
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        textAlign: "center",
+        color: "var(--text-1)"
+      }}>
+
+          No equipment/tools match your search or filters.
+        </DevLayoutSection>
+      }
+
+      {groupedEquipmentChecks.map((group) =>
+    <DevLayoutSection
+      key={group.id}
+      sectionKey={`tracking-equipment-group-${group.id}`}
+      parentKey="tracking-page-body"
+      sectionType="section-shell"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        width: "100%",
+        maxWidth: "100%",
         minWidth: 0
       }}>
 
-        {equipmentChecks.length === 0 &&
-      <DevLayoutSection
-        sectionKey="tracking-equipment-empty-state"
-        parentKey="tracking-equipment-grid"
-        sectionType="empty-state"
+        <div
         style={{
-          gridColumn: "1 / -1",
-          padding: "12px",
-          borderRadius: "var(--radius-sm)",
-          textAlign: "center",
-          color: "var(--text-1)"
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: "var(--space-sm)",
+          minWidth: 0
         }}>
 
-            Equipment service list is empty.
-          </DevLayoutSection>
-      }
-        {equipmentChecks.
-      filter((check) => {
-        const term = equipmentSearchTerm.trim().toLowerCase();
-        if (term && ![check.name, check.status].filter(Boolean).some((value) => value.toLowerCase().includes(term))) {
-          return false;
-        }
-        return true;
-      }).
-      map((check, index) => {
-        const dueLabel = getDueLabel(check.nextDue);
-        const isDue = dueLabel === "Due now";
-        const statusLabel = (check.status || "").toLowerCase();
-        const badgeColor = statusLabel.includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
+          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
+            {group.label}
+          </h2>
+          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
+            {group.entries.length}
+          </span>
+        </div>
+
+        <DevLayoutSection
+        sectionKey={`tracking-equipment-grid-${group.id}`}
+        parentKey={`tracking-equipment-group-${group.id}`}
+        sectionType="grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "16px",
+          minWidth: 0
+        }}>
+
+          {group.entries.map((check, index) => {
+        const dueState = getEquipmentDueState(check);
         const durationLabel = getDurationDisplay(check);
         return (
           <DevLayoutSection
             key={check.id}
-            sectionKey={`tracking-equipment-card-${index + 1}`}
-            parentKey="tracking-equipment-grid"
+            sectionKey={`tracking-equipment-card-${group.id}-${index + 1}`}
+            parentKey={`tracking-equipment-grid-${group.id}`}
             sectionType="content-card"
             role="button"
             tabIndex={0}
@@ -2138,21 +2641,22 @@ export default function TrackingDashboard() {
               width: "100%",
               maxWidth: "100%",
               minWidth: 0,
-              height: "220px",
+              minHeight: "250px",
+              height: "100%",
               overflow: "hidden"
             }}>
 
               <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                alignItems: "start",
                 gap: "10px",
-                minHeight: "28px",
+                minHeight: "42px",
                 minWidth: 0
               }}>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ minWidth: 0 }}>
                   <strong
                   style={{
                     display: "block",
@@ -2166,62 +2670,86 @@ export default function TrackingDashboard() {
 
                     {check.name}
                   </strong>
+                  <span style={{ display: "block", marginTop: "2px", fontSize: "var(--text-caption)", color: "var(--text-1)", fontWeight: 700, textTransform: "uppercase" }}>
+                    {EQUIPMENT_TYPE_FILTERS.find((option) => option.value === getEquipmentType(check))?.label || "Workshop Tools"}
+                  </span>
                 </div>
-                <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
-                  {check.status || dueLabel}
+                <span
+                style={{
+                  minWidth: "104px",
+                  textAlign: "right",
+                  fontSize: "var(--text-caption)",
+                  fontWeight: 700,
+                  color: dueState.color,
+                  flexShrink: 0
+                }}>
+
+                  {dueState.label}
                 </span>
               </div>
               <div style={{ display: "grid", gap: "6px", flex: 1 }}>
+                {[
+                ["Last checked", formatDateOnlyLabel(check.lastChecked)],
+                ["Next due", formatDateOnlyLabel(check.nextDue)],
+                ["Check interval", durationLabel],
+                ["Last Checked By", getEquipmentAuditName(check)]].map(([label, value]) =>
                 <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
+                  key={label}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "var(--space-sm)",
+                    fontSize: "var(--text-body-sm)",
+                    color: "var(--text-1)",
+                    minWidth: 0
+                  }}>
 
-                  <span>Last checked</span>
-                  <strong>{formatDateOnlyLabel(check.lastChecked)}</strong>
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
-
-                  <span>Next due</span>
-                  <strong>{formatDateOnlyLabel(check.nextDue)}</strong>
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
-
-                  <span>Check interval</span>
-                  <strong>{durationLabel}</strong>
-                </div>
+                    <span style={{ flexShrink: 0 }}>{label}</span>
+                    <strong style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
+                      {value}
+                    </strong>
+                  </div>
+                )}
               </div>
-              <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleEquipmentCheck(check.id);
-              }}
-              style={{ marginTop: "auto", width: "100%" }}>
+              <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobileView ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: "var(--space-sm)",
+                marginTop: "auto"
+              }}>
 
-                Log check
-              </Button>
+                <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEquipmentHistoryModal({ open: true, item: check });
+                }}
+                style={{ width: "100%" }}>
+
+                  View History
+                </Button>
+                <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleEquipmentCheck(check.id);
+                }}
+                style={{ width: "100%" }}>
+
+                  Log check
+                </Button>
+              </div>
             </DevLayoutSection>);
 
       })}
+        </DevLayoutSection>
       </DevLayoutSection>
+    )}
     </>;
 
 
@@ -2452,11 +2980,16 @@ export default function TrackingDashboard() {
       closeEntryModal={closeEntryModal}
       closeSearchModal={closeSearchModal}
       DevLayoutSection={DevLayoutSection}
+      DropdownField={DropdownField}
+      equipmentHistoryModal={equipmentHistoryModal}
+      EquipmentHistoryModal={EquipmentHistoryModal}
       entries={entries}
       entryModal={entryModal}
       equipmentModal={equipmentModal}
       EquipmentToolsModal={EquipmentToolsModal}
       error={error}
+      equipmentTypeFilter={equipmentTypeFilter}
+      equipmentTypeFilters={EQUIPMENT_TYPE_FILTERS}
       handleDeleteEquipment={handleDeleteEquipment}
       handleDeleteOilStock={handleDeleteOilStock}
       handleLocationSelect={handleLocationSelect}
@@ -2483,10 +3016,13 @@ export default function TrackingDashboard() {
       searchModal={searchModal}
       setActiveTab={setActiveTab}
       setEquipmentModal={setEquipmentModal}
+      setEquipmentHistoryModal={setEquipmentHistoryModal}
+      setEquipmentTypeFilter={setEquipmentTypeFilter}
       setLoanCarFleetManagerOpen={setLoanCarFleetManagerOpen}
       setOilStockModal={setOilStockModal}
       setSimplifiedModal={setSimplifiedModal}
       setSharedSearchValue={setSharedSearchValue}
+      setTrackerLocationFilter={setTrackerLocationFilter}
       sharedSearchPlaceholder={sharedSearchPlaceholder}
       sharedSearchValue={sharedSearchValue}
       simplifiedModal={simplifiedModal}
@@ -2494,6 +3030,9 @@ export default function TrackingDashboard() {
       StatusMessage={StatusMessage}
       TabGroup={TabGroup}
       tabs={tabs}
+      trackerLastUpdatedLabel={formatTrackerTimestamp(trackerLastUpdatedAt)}
+      trackerLocationFilter={trackerLocationFilter}
+      trackerLocationFilters={TRACKER_LOCATION_FILTERS}
       TrackingRouteSkeleton={TrackingRouteSkeleton}
     />
   );
