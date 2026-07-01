@@ -291,6 +291,63 @@ two `src/lib/database/support.js` helpers that reuse the **existing** columns + 
 subfields the Support Centre list already exposes) or the live sanitised snapshot. No new column, no
 new store, no widening of the diagnostics surface.
 
+## 10c. Developer Platform — Integration, Extensibility & Hardening — **Phase 10 (done)**
+
+The final phase turns the platform into a complete engineering operations surface.
+**Purely additive** — one idempotent migration (five new tables, RLS-on/no-policies)
+and minimal, flagged shell edits; no `_app.js` / `next.config` / `theme` / `globals`
+change. Everything reads only already-sanitised / dev-only data, so no new privacy surface.
+
+- **Two-way GitHub integration** — a server-side, injectable-`fetch` client
+  (`githubClient.js`; token from the **server-only** `SUPPORT_GITHUB_TOKEN`, never
+  `NEXT_PUBLIC`) creates issues from a report, links existing issues/PRs/commits, and
+  syncs their live state; links persist in `support_github_links`. Pure
+  `githubCorrelation.js` builds blob/commit/compare/issue deep-links **pinned to the
+  captured commit** (works with no token). Surfaced in the report detail
+  (`SupportGithubPanel.js`); every action audited. "Link by URL" needs no token;
+  "create"/"sync" require it and fail with a clear message when unconfigured.
+- **AI-assisted investigation without external AI** — `assistedInvestigation.js` is a
+  deterministic heuristic that reads the existing dev investigation and composes a
+  developer summary, probable fix, affected systems, implementation suggestions,
+  regression warnings and a verification checklist (+ markdown export). Rendered in the
+  detail (`SupportAssistedPanel.js`). No third-party call, no data leaves the box.
+- **Plugin architecture** — `pluginRegistry.js` unifies the two existing registries
+  (diagnostic + investigation) and adds a third **engineering-tool** registry behind one
+  `registerPlugin({ kind, id, … })` facade + a `getPluginInventory()` the `/dev/plugins`
+  page renders. Future diagnostics/tools register **without touching the core**.
+- **Intelligent notifications** — `notificationRules.js` (pure event→rule matching +
+  composition) + `supportNotifications.js` (delivery/persistence) drive per-recipient
+  `support_notifications` with owner-scoped subscription rules
+  (`support_notification_rules`). **Live delivery over SSE** (`notifications/stream.js`)
+  updates the topbar bell without polling (poll fallback if SSE is stripped).
+- **Command palette + global quick actions** — `commandPalette.js` (pure fuzzy
+  ranking) + `CommandPalette.js` (Ctrl/⌘-K overlay, full keyboard/ARIA) mounted in the
+  platform shell; navigation commands derive from the nav model automatically.
+- **Engineering knowledge centre** — `knowledgeCentre.js` links recurring incidents (by
+  fingerprint) to curated write-ups (`support_knowledge_entries`) and suggests
+  documenting undocumented recurring clusters; managed at `/dev/knowledge`.
+- **Deployment readiness + release approvals** — `deploymentReadiness.js` scores each
+  release 0–100 (open-critical / regression / drift-weighted) with a grade +
+  recommendation; `/dev/readiness` gates approvals (persisted in
+  `support_release_approvals`; an override of a "blocked" release is recorded honestly).
+  **Productivity metrics** (`productivityMetrics.js`, `/dev/productivity`): throughput,
+  resolution time, backlog age, per-developer contribution.
+- **Complete developer activity/audit** — `activityAudit.js` shapes the hash-chained
+  `audit_log` into a feed + a **coverage** roll-up (which expected dev actions are
+  logged); `/dev/activity`. Every new mutation writes a `dev_platform_action` /
+  `github_*` / `knowledge_*` / `release_approval` / `notification_rule_*` audit entry.
+- **Interactive source navigation** — the assisted + GitHub panels expose clickable
+  `file:line` refs and commit-pinned blob deep-links (`githubCorrelation`).
+- **Enterprise polish** — all new surfaces are borderless LayerSurface/LayerTheme,
+  token-only, 44px targets, keyboard-navigable (palette ↑/↓/Enter/Esc; bell
+  Esc/outside-click), responsive, UK-English; dashboards lazy; SSE degrades to poll;
+  server helpers degrade to empty when the migration is absent.
+
+**Verification (Phase 10):** 220 new Vitest tests across the new
+`src/lib/dev-platform/*` + `src/lib/support/notificationRules` modules (all green); a new
+`e2e/workflows/dev-platform-integration.spec.js` (permission-gate + API-shape + dashboard
+render). `check:borders` / `check:layers` pass on all new UI.
+
 ## 10. Hard constraints (do not violate)
 
 - Obey **CLAUDE.md** in full (LayerSurface/LayerTheme, no surface borders, tokens, responsive +
@@ -348,6 +405,13 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | **Intelligence DB helpers (Phase 9)** | `src/lib/database/support.js` (`listReportsForIntelligence`, `bulkUpdateSupportReports`) | Bounded light-row window for aggregation; single-statement bulk triage returning updated ids for per-report audit. |
 | **Intelligence API (Phase 9)** | `src/pages/api/support/intelligence.js`, `src/pages/api/support/reports/bulk.js` | Dev-gated `GET` server-side aggregation (audited) / dev-gated `POST` bulk triage + auto-reopen (per-report audit). |
 | **Intelligence UI (Phase 9)** | `src/pages/dev/{intelligence,releases,ownership,performance}.js`, `src/components/dev-platform/{useIntelligence,DeveloperPicker}.js` | Four dashboards + data hook + searchable developer picker (canonical `DropdownField`). Nav entries in `devPlatformNav.js`. |
+| **Phase 10 schema** | `src/lib/database/schema/support/000_support.sql` (Phase 10 block) | `support_github_links`, `support_notifications`, `support_notification_rules`, `support_release_approvals`, `support_knowledge_entries`; RLS on / no policies; idempotent. |
+| **Phase 10 engines** | `src/lib/dev-platform/{assistedInvestigation,deploymentReadiness,productivityMetrics,knowledgeCentre,pluginRegistry,commandPalette,activityAudit,githubCorrelation,githubClient}.js`, `src/lib/support/notificationRules.js` | Pure/injectable: assisted write-up · readiness scoring · productivity metrics · knowledge derivation · plugin facade+tool registry · command palette model · audit-feed shaping+coverage · GitHub deep-links · injectable GitHub API client · notification rule matching. Each has a `*.test.js` (220 tests). |
+| **Phase 10 DB helpers** | `src/lib/database/{supportGithub,supportNotifications,supportReleases,supportKnowledge,supportActivity,supportTableProbe}.js` | Service-role, owner-scoped CRUD + `deliverEvent` fan-out; audit-log read; shared graceful-degradation table probe. |
+| **Phase 10 APIs** | `src/pages/api/support/{platform,activity}.js`, `reports/[id]/github.js`, `notifications/{index,rules,stream}.js`, `releases/approvals.js`, `knowledge/{index,[id]}.js` | Dev-gated aggregation (readiness/productivity/knowledge) · activity feed · two-way GitHub · notifications + rules + **SSE stream** · release approvals · knowledge CRUD. All audited (reads on the platform/activity surfaces; every mutation). |
+| **Phase 10 shell + hooks** | `src/components/dev-platform/{CommandPalette,DevNotificationBell,useNotifications,usePlatformResource}.js` | Ctrl/⌘-K palette provider (mounted in `DevPlatformLayout`) + topbar bell (SSE-driven) + notifications hook (SSE + poll fallback) + generic GET hook. |
+| **Phase 10 pages** | `src/pages/dev/{readiness,productivity,knowledge,notifications,activity,plugins}.js` | Deployment readiness + approvals · productivity · knowledge centre · notification history+rules · activity/audit + coverage · plugin inventory. Nav entries in `devPlatformNav.js`; all `ProtectedRoute`-gated to `DEV`. |
+| **Phase 10 detail panels** | `src/components/support/dev/{SupportAssistedPanel,SupportGithubPanel}.js` | Assisted investigation + two-way GitHub / source deep-links, rendered inside `SupportReportDetail.js`. |
 
 ## Data flow
 
@@ -408,33 +472,42 @@ only). No new capture path, column, or store is introduced.
 | 5 | Version / code-state pinning + drift + version range | ✅ Done |
 | **6** | **Developer Support Centre (workspace, detail, triage, export, audit)** | ✅ **Done** |
 | **7** | **Hardening (rate limit + abuse, retention/cleanup, RLS review, health checks, privacy regression, E2E)** | ✅ **Done** |
-| **8** | **Developer Platform — Foundation, Access & Live Operations** (`dev` role + strict access migration, workspace shell, live diagnostics, application health, search/filter substrate, saved workspaces, preferences) | 🚧 **Foundational core done** (palette / notification delivery / quick-actions = immediate follow-up) |
+| **8** | **Developer Platform — Foundation, Access & Live Operations** (`dev` role + strict access migration, workspace shell, live diagnostics, application health, search/filter substrate, saved workspaces, preferences) | ✅ **Done** (the deferred palette / notification *delivery* / quick-actions / SSE follow-up shipped in **Phase 10**) |
 | **9** | **Developer Platform — Intelligence** (investigation & release dashboards, intelligent issue management, regression tracking, code ownership + dependency mapping, performance profiling, API tracing) | ✅ **Done** (DB query-level timing store flagged/deferred — see limitations) |
-| **10** | **Developer Platform — Integration, Extensibility & Enterprise Hardening** (deep GitHub integration, plugin architecture, full developer-action audit sweep, enterprise responsiveness/accessibility) | ⏳ Planned |
+| **10** | **Developer Platform — Integration, Extensibility & Enterprise Hardening** (two-way GitHub, AI-assisted investigation, plugin architecture, notifications+rules+SSE, command palette, knowledge centre, readiness/approvals, productivity, activity/audit sweep, source nav, enterprise polish) | ✅ **Done** — see [§10c](#10c-developer-platform--integration-extensibility--hardening--phase-10-done). GitHub two-way needs `SUPPORT_GITHUB_TOKEN` to transact (manual action). |
 
 **Phases 1–7 are delivered and production-ready** — capture, analysis, investigation, version
 pinning, the developer Support Centre, and the hardening layer are all in place, tested, and
 privacy-verified end to end. **Phase 8's foundational core is now delivered** (the `dev` role +
 strict re-gate, the `/dev` platform shell + home, the live-operations and application-health
 dashboards, the shared search/filter engine, server-synced saved views + preferences, and the
-platform audit baseline). The remaining Phase 8 items (command palette, notification *delivery*,
-quick actions) are the **immediate Phase 8 follow-up** (see [Outstanding work](#outstanding-work)).
-**Phase 9 (intelligence) is now delivered** — the investigation/release/ownership/performance
+platform audit baseline). The deferred Phase 8 items (command palette, notification *delivery*,
+quick actions, SSE streaming) **shipped as part of Phase 10**.
+**Phase 9 (intelligence) is delivered** — the investigation/release/ownership/performance
 dashboards, intelligent bulk issue management + developer picker, cross-release regression tracking +
 auto-reopen, and server-side aggregation (see [§10b](#10b-developer-platform-intelligence--phase-9-done)).
-**Phase 10 remains planned** and is scoped in the
-[Developer Platform roadmap](#developer-platform-roadmap--the-final-three-phases).
+**Phase 10 (integration, extensibility & hardening) is now delivered** — two-way GitHub, AI-assisted
+investigation, the plugin architecture, notifications + rules + SSE, the command palette, the
+knowledge centre, deployment readiness + approvals, productivity metrics, the developer activity/audit
+sweep, and interactive source navigation (see
+[§10c](#10c-developer-platform--integration-extensibility--hardening--phase-10-done)). **The full
+three-phase Developer Platform programme (8 → 9 → 10) is complete;** only genuinely-postponed
+enhancements remain in the [Future Improvements backlog](#future-improvements-backlog).
 
-**Verification (current):** `npm run test:unit` → **338 pass** (33 files) — Phase 9 adds
-`src/lib/dev-platform/{intelligence,releaseIntelligence,ownershipGraph,performanceInsights,bulkTriage,developerDirectory}.test.js`
-(48 new tests) on top of Phase 8's search-engine / saved-view / roles suites. The one failing suite in
-the run — `reportingActivation.test.js` — is a pre-existing, unrelated missing-SQL-file issue in the
-Reporting platform, not the support feature.
+**Verification (current):** `npm run test:unit` (`vitest run`) → **558 pass** (43 files); the one
+failing suite — `reportingActivation.test.js` — is a pre-existing, unrelated missing-SQL-file issue in
+the Reporting platform, not the support feature. **Phase 10 adds 220 tests** across
+`src/lib/dev-platform/{assistedInvestigation,deploymentReadiness,productivityMetrics,knowledgeCentre,pluginRegistry,commandPalette,activityAudit,githubCorrelation,githubClient}.test.js`
++ `src/lib/support/notificationRules.test.js` (one real defect found + fixed: a `knowledgeCentre`
+sort mutated the caller's array). *Env note:* the default Vitest **threads** pool intermittently
+fails worker init in this sandbox (`Cannot read properties of undefined (reading 'config')` on every
+file, untouched ones included); `vitest run --pool=forks` runs clean — a tooling/environment flake,
+not a test defect.
 `check:borders` / `check:layers` / `check:encoding` pass. `uk:check` clean for all support +
 dev-platform files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean on all
 changed files. Playwright: the **unauthenticated permission-gate** tests in
-`e2e/workflows/support-centre.spec.js` still pass (and are now stronger — a broad staff role no
-longer gets in). The **authenticated-developer** tests in that spec sign in via the shared
+`e2e/workflows/support-centre.spec.js` and the new `e2e/workflows/dev-platform-integration.spec.js`
+pass; the **authenticated-developer** tests in every dev-platform spec sign in via the shared
 `e2e/.auth/user.json` (a broad dev-access staff user), which the strict re-gate now excludes — so
 that auth fixture must be switched to a `dev`-role session (the `devPlatform:"1"` credential mint)
 before those tests pass again. Tracked in [Manual actions](#manual-actions-outstanding).
@@ -453,15 +526,16 @@ All remaining work — including every item previously tracked as a granular fut
 consolidated here into exactly **three comprehensive phases**. **Implementation order is strict:
 8 → 9 → 10.**
 
-### Phase 8 — Foundation, Access & Live Operations  🚩 *(holds the only global-architecture change)* — 🚧 *foundational core delivered*
+### Phase 8 — Foundation, Access & Live Operations  🚩 *(holds the only global-architecture change)* — ✅ *delivered*
 
 **Goal:** stand up the platform skeleton, the new role, and the always-on observability + UX
 plumbing every later surface builds on.
 
-**Delivered this pass:** the `dev` role + strict re-gate, the `/dev` shell + home, live-ops +
+**Delivered:** the `dev` role + strict re-gate, the `/dev` shell + home, live-ops +
 health dashboards, the shared search engine, server-synced saved views + preferences, and the
-audit baseline. **Still to do (immediate Phase 8 follow-up):** command palette / quick actions,
-notification *delivery* (preferences are already stored), and a push/stream Live Ops upgrade.
+audit baseline. The deferred follow-ups — **command palette / quick actions**, **notification
+*delivery*** (on top of the stored preferences), and the **push/stream upgrade** (SSE for the
+notification bell) — **shipped in [Phase 10](#10c-developer-platform--integration-extensibility--hardening--phase-10-done)**.
 The HR-assignment exclusion is enforced structurally (the `dev` role is never in `roleCategories`
 which is the only source `EmployeesTab.js` reads) and asserted by `src/lib/auth/roles.test.js`, so
 no edit to `EmployeesTab.js` / `EmployeeProfilePanel.js` was required.
@@ -524,9 +598,18 @@ cross-release regression alerting / auto-reopen; in-app source-reference viewer.
 **Dependencies:** requires **Phase 8** (role, shell, search/filter substrate, live data).
 **Flags:** none for existing tables — flag any new store a DB/perf-tracing provider needs.
 
-### Phase 10 — Integration, Extensibility & Enterprise Hardening
+### Phase 10 — Integration, Extensibility & Enterprise Hardening — ✅ *delivered*
 
 **Goal:** connect outward, make the platform extensible, and hit the enterprise quality bar.
+**Delivered this pass** — see [§10c](#10c-developer-platform--integration-extensibility--hardening--phase-10-done):
+two-way GitHub (create/link/sync + commit-pinned deep-links), AI-assisted investigation (no external
+AI), the unified plugin architecture (+ engineering-tool registry), notifications + subscription rules
++ SSE delivery, the command palette + quick actions, the knowledge centre, deployment readiness +
+release approvals, productivity metrics, the developer activity/audit sweep + coverage, and interactive
+source navigation. One idempotent migration (five tables) + minimal flagged shell edits; no
+global-architecture file changed. The only remaining item is a **formal Lighthouse/axe audit** (the
+surfaces are built to the accessibility bar — ARIA, keyboard, 44px, responsive — but a certified pass is
+backlogged as a dedicated QA task); GitHub two-way needs `SUPPORT_GITHUB_TOKEN` to actually transact.
 
 **Scope (grouped):**
 - **Deep GitHub integration** — two-way issue create/link/sync via the GitHub API (not just a
@@ -549,19 +632,22 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
 
 ## Outstanding work
 
-- **Phases 1–7 (the reporting/support system) have no blocking work.**
-- **Phase 8 foundational core is delivered** (role + strict re-gate, `/dev` shell + home,
-  live-ops + health dashboards, shared search engine, server-synced saved views + preferences,
-  audit baseline). The **immediate Phase 8 follow-up** — deliberately deferred, not backlogged —
-  is: a **command palette / quick actions** across the shell, and **notification *delivery*** on
-  top of the already-stored notification *preferences* (`support_user_preferences`). The live-ops
-  feed is currently **polled**; a push/stream upgrade is part of the same follow-up.
-- **Phase 9 (intelligence) is delivered** — investigation/release/ownership/performance dashboards,
-  intelligent bulk issue management, the searchable developer picker, cross-release regression
-  tracking with one-click auto-reopen, and server-side aggregation are all in place, tested, and
-  privacy-clean. No blocking work remains.
-- The remaining program is **Phase 10** (integration, extensibility, enterprise hardening). Genuinely
-  postponed ideas are in the [Future Improvements backlog](#future-improvements-backlog).
+- **Phases 1–10 are delivered — the entire Help & Diagnostics + Developer Platform programme is
+  complete.** Capture, analysis, investigation, version pinning, the Support Centre, hardening, the
+  `dev` platform foundation, intelligence, and the Phase 10 integration/extensibility/hardening layer
+  are all in place, tested (558 unit tests), privacy-clean, and CLAUDE.md-compliant.
+- **The deferred Phase 8 follow-ups are now closed:** the command palette + quick actions ship in the
+  platform shell; notification **delivery** is live (per-recipient `support_notifications` +
+  subscription rules) with **SSE streaming** (topbar bell) replacing polling where the browser
+  supports it (poll fallback otherwise).
+- **No blocking work remains.** What is left is deliberately postponed engineering polish, tracked in
+  the [Future Improvements backlog](#future-improvements-backlog): most notably a **certified
+  Lighthouse/axe accessibility + performance audit** (the surfaces are built to the bar — ARIA,
+  keyboard operation, 44px targets, responsive reflow — but a formal certified pass is its own task),
+  the offline/interrupted-upload resilience matrix, and a jsdom/RTL rendered-component harness.
+- **Manual enablement** (not code work) is listed in [Manual actions](#manual-actions-outstanding):
+  apply the Phase 10 migration, and set `SUPPORT_GITHUB_TOKEN` + `SUPPORT_GITHUB_REPO` to make the
+  GitHub two-way integration transact (it degrades to link-by-URL + prefilled issues without it).
 
 ## Known limitations
 
@@ -645,6 +731,40 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
 - **Dependency/impact graph is report-derived, not a static import graph** (Phase 9) — the route →
   module edges are built from where reports actually landed (the resolved `source_file`), not by
   parsing the codebase's import tree. It shows *observed* impact, not *potential* impact.
+- **GitHub two-way needs a server token to transact** (Phase 10) — "link by URL" and the
+  commit-pinned source deep-links work with no config, but **creating** an issue and **syncing** live
+  state require `SUPPORT_GITHUB_TOKEN` (+ `SUPPORT_GITHUB_REPO`, falling back to
+  `NEXT_PUBLIC_GITHUB_REPO`). Unconfigured, those actions return a clear "not configured" message
+  rather than failing opaquely. The token is **server-only** (never `NEXT_PUBLIC`).
+- **Assisted investigation is deterministic-heuristic, not an LLM** (Phase 10) — by design (no
+  external/paid AI). It composes its summary / probable fix / suggestions / checklist from the
+  structured investigation signals, so it is only as rich as what was captured; it will not "reason"
+  beyond the evidence. This keeps it free, deterministic (testable), and leak-proof.
+- **Notification delivery is DB-persisted + SSE-streamed, not push/email** (Phase 10) — recipients get
+  in-app `support_notifications`; the topbar bell updates live via a content-free SSE unread-count
+  stream (poll fallback). The SSE endpoint runs a **bounded** server-side poll loop (~4 min) then the
+  browser reconnects — adequate for a serverless internal tool; a true pub/sub bus and an email/Slack
+  channel are backlogged. The `deliverEvent` fan-out is **wired end-to-end for release decisions**
+  (a block/approve on `/dev/readiness` fires `release.blocked` / `release.approved`, which appear in the
+  bell via SSE); wiring the `report.created` / `report.critical` / `report.regression` / `report.assigned`
+  events into the ingest + triage paths is the remaining **incremental** step (the rules engine,
+  delivery helper, subscription UI, bell, and SSE stream are all complete and tested).
+- **Release approval + knowledge + GitHub-link data degrade to empty when unmigrated** (Phase 10) —
+  like Phase 8's saved views, the Phase 10 helpers return empty / skip (never throw) until
+  `000_support.sql`'s Phase 10 block is applied, so the dashboards render an empty state rather than
+  erroring.
+- **Deployment readiness + productivity aggregate the same bounded light-row window** (Phase 10) —
+  folded in JS over ≤5000 recent rows (no SQL `GROUP BY`), and "time to resolve" is approximated as
+  `updated_at − created_at` for terminal statuses (no dedicated `resolved_at` column). Accurate for a
+  human-scale internal tool; a materialised rollup + a resolved-at column are backlogged.
+- **Plugin inventory reflects the current process** (Phase 10) — `getPluginInventory()` lists what is
+  registered in the running context. The `/dev/plugins` page registers the built-in diagnostic
+  providers + the nav-derived tools on mount so the inventory is populated client-side; a provider that
+  is only registered inside the browser capture path won't appear in a server render.
+- **A certified Lighthouse/axe pass is still outstanding** (Phase 10) — every new surface is built to
+  the accessibility bar (ARIA roles on the palette/bell/dialogs, full keyboard operation, 44px targets,
+  responsive reflow, token-only colour) and passes `check:borders`/`check:layers`, but a formal audited
+  score + a keyboard-navigation matrix remain a dedicated QA task (backlog).
 
 ## Manual actions outstanding
 
@@ -655,7 +775,16 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   — guarded on `retention_policies` existing — and (Phase 8) creates the **`support_saved_views`**
   and **`support_user_preferences`** tables (RLS on, no policies; `CREATE TABLE IF NOT EXISTS`).
   Until these two run, the Developer Platform saved-views/preferences hooks transparently fall
-  back to the device-local store. Safe to re-run.
+  back to the device-local store. **(Phase 10)** the same file now also creates
+  **`support_github_links`**, **`support_notifications`**, **`support_notification_rules`**,
+  **`support_release_approvals`** and **`support_knowledge_entries`** (RLS on, no policies). Until
+  they run, the GitHub-link / notifications / release-approval / knowledge surfaces degrade to empty.
+  Safe to re-run.
+- **Set the GitHub integration secrets to enable two-way sync** (Phase 10) — set the **server-only**
+  `SUPPORT_GITHUB_TOKEN` (a fine-grained PAT / app token with `issues:write`) and `SUPPORT_GITHUB_REPO`
+  = `owner/repo` (or reuse `NEXT_PUBLIC_GITHUB_REPO`). Without them, the report detail still links
+  artifacts by URL and offers commit-pinned source deep-links + prefilled issues; with them, "Create
+  issue" and "Sync" transact against the GitHub API. Never expose the token as `NEXT_PUBLIC_*`.
 - **Enable the Developer Platform where you want it reachable** (Phase 8) — the synthetic
   "Developer" Dev-Login mint is gated by `isDevAuthAllowed()`, so it works automatically outside
   production and only in production when `ALLOW_DEV_AUTH=1` is set. This is the intended gate now
@@ -674,7 +803,9 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   pass unchanged. This now also covers the Phase 9 spec
   (`e2e/workflows/dev-platform-intelligence.spec.js`): its permission-gate + validator tests pass
   unauthenticated, but the intelligence-API-shape + dashboard-render tests need the same `dev`-role
-  fixture.
+  fixture. **(Phase 10)** the new `e2e/workflows/dev-platform-integration.spec.js` follows the same
+  split — its permission-gate tests pass unauthenticated; the platform/activity/knowledge/notification/
+  approval/GitHub API-shape + readiness/plugins render tests need the `dev`-role fixture.
 - **CI: stamp the section-map hash** — have the build run the section-source-map generator and
   capture its `SECTION_MAP_HASH=…` output into `NEXT_PUBLIC_SECTION_MAP_HASH` so
   `verifySectionMap` can report `match`/`drift` in production. (Vercel already injects
@@ -682,22 +813,38 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
 
 ## Future Improvements backlog
 
-**This backlog has been reorganised.** The previously granular future phases are consolidated into
-the three comprehensive phases in the
-[Developer Platform roadmap](#developer-platform-roadmap--the-final-three-phases). In-scope ideas
-that used to live here have been **folded into a phase**:
+**The three-phase Developer Platform programme (8 → 9 → 10) is complete** — every in-scope idea that
+used to live here has shipped in a phase:
 
-- **→ Phase 8:** server-synced + shared team saved views.
+- **→ Phase 8 (delivered):** server-synced + shared team saved views.
 - **→ Phase 9 (delivered):** cross-release regression alerting / auto-reopen; bulk triage;
   user-picker assignment; server-side stats/trend aggregation; investigation/release/ownership/
-  performance dashboards. *(The in-app source-reference **viewer** — opening the file, not copying the
-  ref — remains open; the clickable ref that copies `file:line` ships, a viewer/editor deep-link does
-  not.)*
-- **→ Phase 10:** two-way issue-tracker integration; GitHub source deep-links; the accessibility /
-  responsiveness portion of the former QA pass.
+  performance dashboards.
+- **→ Phase 10 (delivered):** two-way GitHub issue create/link/sync; GitHub commit-pinned source
+  deep-links; the plugin architecture; notifications + subscription rules + SSE; the command palette +
+  quick actions; the knowledge centre; deployment readiness + release approvals; productivity metrics;
+  the developer activity/audit sweep + coverage; AI-assisted (no-external-AI) investigation.
 
-The items below are **intentionally postponed beyond the three-phase program** — genuine future
+The items below are **intentionally postponed beyond the three-phase programme** — genuine future
 enhancements, not planned work. Do not implement without a dedicated phase of their own.
+
+- **Certified Lighthouse/axe accessibility + performance audit**: a formal audited score + a
+  keyboard-navigation matrix + a bundle-size deep-dive across every platform surface (the surfaces are
+  *built* to the bar — ARIA, keyboard, 44px, responsive, token-only — but the certified pass is its own
+  QA task).
+- **True notification pub/sub + external channels**: replace the bounded SSE poll-loop with a real
+  event bus (Redis/Postgres `LISTEN/NOTIFY`) and add email/Slack delivery on top of the stored
+  subscription rules; wire `deliverEvent` into every remaining ingest/triage path.
+- **GitHub sync depth**: webhook-driven state sync (instead of on-demand), PR/commit auto-correlation
+  from the captured build, and issue-comment mirroring back into the report thread.
+- **In-app source viewer / editor deep-link**: open the file at `file:line` inside the app (the
+  clickable ref copies the path and links to the GitHub blob at the captured commit; an embedded viewer
+  does not ship).
+- **Resolved-at column + materialised intelligence rollups**: a dedicated `resolved_at` timestamp and
+  a SQL `GROUP BY` / materialised view so productivity + intelligence + readiness stats stay exact on
+  very large historical tables (currently a bounded in-JS window with an `updated_at` approximation).
+- **Static import-graph dependency mapping**: complement the report-derived route→module graph with a
+  build-time import-tree parse so *potential* (not just observed) impact is visible.
 
 - **Shared / distributed rate-limit store**: replace the process-local sliding window with a Redis
   or DB-backed counter for strict cross-instance enforcement (current limiter is per-instance).

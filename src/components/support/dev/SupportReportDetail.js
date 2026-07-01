@@ -28,6 +28,8 @@ import {
 } from "@/components/support/dev/supportDevUi";
 import { STATUS_META, SEVERITY_META, CATEGORY_META, deriveBadges } from "@/lib/support/adminView";
 import { buildGithubIssue, buildDevBundle, buildMarkdownReport, reportDeepLink } from "@/lib/support/supportExport";
+import SupportAssistedPanel from "@/components/support/dev/SupportAssistedPanel";
+import SupportGithubPanel from "@/components/support/dev/SupportGithubPanel";
 
 const arr = (v) => (Array.isArray(v) ? v : []);
 const fmt = (iso) => {
@@ -454,8 +456,10 @@ export default function SupportReportDetail({ id }) {
       </Panel>
 
       <InvestigationPanel inv={inv} />
+      <SupportAssistedPanel report={data} />
       <CodeStatePanel inv={inv} build={diagnostics.build} />
       <OwnershipPanel report={data} inv={inv} diagnostics={diagnostics} />
+      <SupportGithubPanel reportId={id} report={data} />
       <ScreenshotsPanel screenshots={screenshots} />
       <TimelinePanel diagnostics={diagnostics} />
       <DiagnosticsExplorer diagnostics={diagnostics} />

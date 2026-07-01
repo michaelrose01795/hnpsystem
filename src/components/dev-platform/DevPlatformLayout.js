@@ -21,7 +21,39 @@ import useIsMobile from "@/hooks/useIsMobile";
 import { useUser } from "@/context/UserContext";
 import { DEV_PLATFORM_NAV } from "@/components/dev-platform/devPlatformNav";
 import DevHealthPill from "@/components/dev-platform/DevHealthPill";
+import DevNotificationBell from "@/components/dev-platform/DevNotificationBell";
+import { CommandPaletteProvider, useCommandPalette } from "@/components/dev-platform/CommandPalette";
 import { toneTint } from "@/components/support/dev/supportDevUi";
+
+// Topbar "⌘K" trigger — rendered inside CommandPaletteProvider so it can open it.
+function PaletteButton() {
+  const { open } = useCommandPalette();
+  return (
+    <button
+      type="button"
+      onClick={open}
+      aria-label="Open command palette"
+      title="Command palette (Ctrl/⌘ K)"
+      className="app-btn app-btn--ghost"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        minHeight: 44,
+        padding: "8px 12px",
+        borderRadius: "var(--radius-md)",
+        fontSize: "var(--text-body-sm)",
+        fontWeight: 600,
+        cursor: "pointer",
+        color: "var(--text-1)",
+        background: toneTint("text-1", 10),
+      }}
+    >
+      <span aria-hidden>⌘K</span>
+      <span style={{ opacity: 0.7 }}>Search</span>
+    </button>
+  );
+}
 
 function NavLink({ item, active }) {
   return (
@@ -65,6 +97,7 @@ export default function DevPlatformLayout({ children, activeKey }) {
   const userLabel = user?.username || user?.name || "Developer";
 
   return (
+    <CommandPaletteProvider>
     <div
       className="app-page-shell"
       style={{
@@ -98,6 +131,8 @@ export default function DevPlatformLayout({ children, activeKey }) {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          <PaletteButton />
+          <DevNotificationBell />
           <Link
             href="/newsfeed"
             style={{
@@ -167,6 +202,7 @@ export default function DevPlatformLayout({ children, activeKey }) {
         </div>
       </div>
     </div>
+    </CommandPaletteProvider>
   );
 }
 

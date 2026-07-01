@@ -176,3 +176,135 @@ CREATE TABLE IF NOT EXISTS public.support_user_preferences (
 
 ALTER TABLE public.support_saved_views      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- ---------------------------------------------------------------------------
+-- Phase 10 (Developer Platform — Integration, Extensibility & Hardening).
+-- Five additive tables for: two-way GitHub linkage, in-app notification
+-- delivery + subscription rules, release approval / deployment-readiness
+-- records, and the engineering knowledge centre. Same privacy model as every
+-- other support table: RLS ENABLED with NO permissive policies, so all access
+-- is via the dev-gated, service-role API routes. All owner scoping is keyed by
+-- the same TEXT `owner_key` used by the Phase 8 saved views (the synthetic
+-- `dev` role has no users row). Every statement is idempotent
+-- (CREATE TABLE / INDEX IF NOT EXISTS) so this file stays safe to re-run.
+-- ---------------------------------------------------------------------------
+
+-- Two-way GitHub linkage. One row per artifact (issue / PR / commit /
+-- deployment) linked to a support report. `synced_at` records the last time the
+-- live GitHub state (title/state) was refreshed via the GitHub API.
+CREATE TABLE IF NOT EXISTS public.support_github_links (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  report_id   uuid NOT NULL,
+  kind        text NOT NULL DEFAULT 'issue'
+                CHECK (kind IN ('issue','pull_request','commit','deployment')),
+  repo        text NOT NULL,          -- "owner/repo"
+  number      integer,                -- issue / PR number (null for commit/deployment)
+  sha         text,                   -- commit sha (null for issue/PR)
+  url         text NOT NULL,
+  title       text,
+  state       text,                   -- open / closed / merged / success ...
+  meta        jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_by  text,                   -- owner_key of the linking developer
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at  timestamp with time zone NOT NULL DEFAULT now(),
+  synced_at   timestamp with time zone,
+  CONSTRAINT support_github_links_pkey PRIMARY KEY (id),
+  CONSTRAINT support_github_links_report_fkey FOREIGN KEY (report_id)
+    REFERENCES public.support_reports(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS support_github_links_report_idx
+  ON public.support_github_links (report_id, kind);
+-- Prevent duplicate links to the same artifact on the same report.
+CREATE UNIQUE INDEX IF NOT EXISTS support_github_links_unique_idx
+  ON public.support_github_links (report_id, kind, url);
+
+-- In-app notification delivery. One row per recipient (owner_key); a broadcast
+-- is fanned out to a row per subscriber by the delivery layer, so reads stay a
+-- simple owner-scoped query. Content-free of secrets (title/body/link only).
+CREATE TABLE IF NOT EXISTS public.support_notifications (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_key   text NOT NULL,
+  kind        text NOT NULL DEFAULT 'info',
+  title       text NOT NULL,
+  body        text,
+  link        text,
+  severity    text NOT NULL DEFAULT 'info'
+                CHECK (severity IN ('info','success','warning','critical')),
+  entity_type text,
+  entity_id   text,
+  read_at     timestamp with time zone,
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_notifications_pkey PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS support_notifications_owner_idx
+  ON public.support_notifications (owner_key, read_at, created_at DESC);
+
+-- Notification subscription / delivery rules. When a platform event fires the
+-- delivery layer matches it against these rules (event + jsonb filters) to
+-- decide who is notified and how (channels; only 'inapp' is wired in Phase 10).
+CREATE TABLE IF NOT EXISTS public.support_notification_rules (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_key   text NOT NULL,
+  event       text NOT NULL,          -- e.g. 'report.created','report.regression','release.blocked'
+  filters     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  channels    text[] NOT NULL DEFAULT ARRAY['inapp']::text[],
+  enabled     boolean NOT NULL DEFAULT true,
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_notification_rules_pkey PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS support_notification_rules_owner_idx
+  ON public.support_notification_rules (owner_key);
+CREATE INDEX IF NOT EXISTS support_notification_rules_event_idx
+  ON public.support_notification_rules (event, enabled);
+
+-- Release approval / deployment-readiness records. One canonical row per
+-- release (keyed by release_key — commit sha where available, else version),
+-- carrying the computed readiness score at approval time and the approver.
+CREATE TABLE IF NOT EXISTS public.support_release_approvals (
+  id              uuid NOT NULL DEFAULT gen_random_uuid(),
+  release_key     text NOT NULL,
+  app_version     text,
+  commit_sha      text,
+  status          text NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending','approved','blocked')),
+  readiness_score integer,
+  approver_key    text,
+  notes           text,
+  meta            jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at      timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at      timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_release_approvals_pkey PRIMARY KEY (id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS support_release_approvals_key_idx
+  ON public.support_release_approvals (release_key);
+
+-- Engineering knowledge centre. Curated write-ups linking recurring incidents
+-- (by fingerprint) to their fixes / previous investigations. report_ids and
+-- links are JSON-able cross-references (no diagnostics blob is copied in).
+CREATE TABLE IF NOT EXISTS public.support_knowledge_entries (
+  id          uuid NOT NULL DEFAULT gen_random_uuid(),
+  fingerprint text,
+  title       text NOT NULL,
+  body        text,
+  category    text,
+  tags        text[],
+  report_ids  uuid[],
+  links       jsonb NOT NULL DEFAULT '[]'::jsonb,
+  author_key  text,
+  status      text NOT NULL DEFAULT 'published'
+                CHECK (status IN ('draft','published','archived')),
+  created_at  timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT support_knowledge_entries_pkey PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS support_knowledge_entries_fingerprint_idx
+  ON public.support_knowledge_entries (fingerprint);
+CREATE INDEX IF NOT EXISTS support_knowledge_entries_status_idx
+  ON public.support_knowledge_entries (status, updated_at DESC);
+
+ALTER TABLE public.support_github_links        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_notifications       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_notification_rules  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_release_approvals   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_knowledge_entries   ENABLE ROW LEVEL SECURITY;
