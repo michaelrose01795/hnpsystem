@@ -148,6 +148,18 @@ const EQUIPMENT_TYPE_FILTERS = [
 { key: "workshop-tools", value: "workshop-tools", label: "Workshop Tools" }];
 
 
+const OIL_STOCK_CATEGORY_FILTERS = [
+{ key: "all", value: "all", label: "All categories" },
+{ key: "engine-oil", value: "engine-oil", label: "Engine Oil" },
+{ key: "hybrid-oil", value: "hybrid-oil", label: "Hybrid Oil" },
+{ key: "adblue", value: "adblue", label: "AdBlue" },
+{ key: "screenwash", value: "screenwash", label: "Screenwash" },
+{ key: "brake-cleaner", value: "brake-cleaner", label: "Brake Cleaner" },
+{ key: "consumables", value: "consumables", label: "Consumables" },
+{ key: "fluids", value: "fluids", label: "Fluids" },
+{ key: "workshop-supplies", value: "workshop-supplies", label: "Workshop Supplies" }];
+
+
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
 
@@ -298,16 +310,6 @@ const formatDateOnlyLabel = (value) => {
   });
 };
 
-const getDueLabel = (value) => {
-  if (!value) return "Schedule pending";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Schedule pending";
-  const diff = parsed.getTime() - Date.now();
-  if (diff <= 0) return "Due now";
-  const days = Math.ceil(diff / MS_PER_DAY);
-  return `Due in ${days} day${days === 1 ? "" : "s"}`;
-};
-
 const isSameDate = (left, right) => {
   if (!left || !right) return false;
   const leftDate = left instanceof Date ? left : new Date(left);
@@ -389,6 +391,87 @@ const getEquipmentType = (item = {}) => {
 
 const getEquipmentAuditName = (item = {}) => {
   return item.lastCheckedByName || item.checkedByName || item.createdByName || (item.createdBy ? `User #${item.createdBy}` : "Not recorded");
+};
+
+const getOilStockCategory = (item = {}) => {
+  const text = `${item.title || ""} ${item.stock || ""}`.toLowerCase();
+  if (/hybrid|0w-20|0w20|phev|ev oil/.test(text)) return "hybrid-oil";
+  if (/engine oil|\boil\b|5w|0w|10w|15w/.test(text)) return "engine-oil";
+  if (/adblue|ad blue|urea/.test(text)) return "adblue";
+  if (/screen\s*wash|screenwash|washer fluid/.test(text)) return "screenwash";
+  if (/brake cleaner|brake clean/.test(text)) return "brake-cleaner";
+  if (/coolant|antifreeze|fluid|atf|gearbox|brake fluid|power steering/.test(text)) return "fluids";
+  if (/glove|wipe|rag|paper|mask|consumable/.test(text)) return "consumables";
+  return "workshop-supplies";
+};
+
+const getOilStockStatus = (item = {}) => {
+  const stockText = String(item.stock || "").trim().toLowerCase();
+  const titleText = String(item.title || "").trim().toLowerCase();
+  const combined = `${titleText} ${stockText}`;
+  const nextCheck = item.nextCheck ? new Date(item.nextCheck) : null;
+  const nextCheckTime = nextCheck && !Number.isNaN(nextCheck.getTime()) ? nextCheck.getTime() : Number.MAX_SAFE_INTEGER;
+  const dueNow = nextCheckTime <= Date.now();
+  const ordered = /ordered|on order|awaiting|delivery|due in|eta|back\s*order/.test(combined);
+  const numericStockMatch = stockText.match(/(?:^|\s)(\d+(?:\.\d+)?)(?:\s|x|l|litre|ltr|bottle|can|unit|$)/);
+  const numericStock = numericStockMatch ? Number(numericStockMatch[1]) : null;
+  const lowStock =
+  /low|empty|none|out of stock|no stock|reorder|order stock|refill|required|urgent/.test(combined) ||
+  (Number.isFinite(numericStock) && numericStock <= 1);
+
+  if (lowStock) {
+    return {
+      id: "low-stock",
+      groupId: "low-stock",
+      groupLabel: "Low Stock",
+      label: "Low Stock",
+      color: "var(--danger)",
+      recommendedAction: ordered ? "Awaiting Delivery" : "Order Stock",
+      primaryAction: "Mark Received",
+      sortPriority: 0,
+      sortTime: nextCheckTime
+    };
+  }
+
+  if (dueNow) {
+    return {
+      id: "due-now",
+      groupId: "low-stock",
+      groupLabel: "Low Stock",
+      label: "Due Now",
+      color: "var(--warning)",
+      recommendedAction: "Check Level",
+      primaryAction: "Mark Checked",
+      sortPriority: 1,
+      sortTime: nextCheckTime
+    };
+  }
+
+  if (ordered) {
+    return {
+      id: "ordered",
+      groupId: "ordered",
+      groupLabel: "Ordered",
+      label: "Ordered",
+      color: "var(--warning)",
+      recommendedAction: "Awaiting Delivery",
+      primaryAction: "Mark Received",
+      sortPriority: 2,
+      sortTime: nextCheckTime
+    };
+  }
+
+  return {
+    id: "up-to-date",
+    groupId: "up-to-date",
+    groupLabel: "Up To Date",
+    label: "Up to date",
+    color: "var(--success-dark)",
+    recommendedAction: "",
+    primaryAction: "Mark Checked",
+    sortPriority: 3,
+    sortTime: nextCheckTime
+  };
 };
 
 const nextDueFrom = (reference, intervalDays = 7) => {
@@ -1189,6 +1272,68 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
 
 };
 
+const OilStockHistoryModal = ({ item, onClose }) => {
+  useBodyModalLock(Boolean(item));
+
+  if (!item) return null;
+
+  const status = getOilStockStatus(item);
+  const rows = [
+  ["Status", status.label],
+  ["Stock amount", item.stock || "—"],
+  ["Last check", formatDateOnlyLabel(item.lastCheck)],
+  ["Next check", formatDateOnlyLabel(item.nextCheck)],
+  ["Last topped up", formatDateOnlyLabel(item.lastToppedUp)],
+  ["Check interval", getDurationDisplay(item)],
+  ...(status.recommendedAction ? [["Recommended Action", status.recommendedAction]] : []),
+  ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
+
+  return (
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+      <div
+        style={{
+          ...popupCardStyles,
+          width: "min(520px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px"
+        }}>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Oil / stock history
+            </p>
+            <h2 style={{ margin: "4px 0 0", color: "var(--accentText)" }}>{item.title}</h2>
+          </div>
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
+            ×
+          </Button>
+        </div>
+
+        <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+          {rows.map(([label, value]) =>
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "var(--space-sm)",
+              color: "var(--text-1)",
+              fontSize: "var(--text-body-sm)"
+            }}>
+
+              <span>{label}</span>
+              <strong style={{ textAlign: "right" }}>{value}</strong>
+            </div>
+          )}
+        </LayerSurface>
+      </div>
+    </div>);
+
+};
+
 const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   useBodyModalLock(true);
 
@@ -1608,6 +1753,7 @@ export default function TrackingDashboard() {
   const [equipmentModal, setEquipmentModal] = useState({ open: false, item: null });
   const [equipmentHistoryModal, setEquipmentHistoryModal] = useState({ open: false, item: null });
   const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
+  const [oilStockHistoryModal, setOilStockHistoryModal] = useState({ open: false, item: null });
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => user?.roles || [], [user]);
   const isWorkshopManager = hasAnyRole(userRoles, WORKSHOP_CONTROLLER_ROLES);
@@ -1642,6 +1788,7 @@ export default function TrackingDashboard() {
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
   const [equipmentTypeFilter, setEquipmentTypeFilter] = useState("all");
   const [oilSearchTerm, setOilSearchTerm] = useState("");
+  const [oilCategoryFilter, setOilCategoryFilter] = useState("all");
   const [trackerQuickFilter, setTrackerQuickFilter] = useState("all");
   const [trackerLocationFilter, setTrackerLocationFilter] = useState("all");
   const [trackerLastUpdatedAt, setTrackerLastUpdatedAt] = useState(null);
@@ -2263,6 +2410,56 @@ export default function TrackingDashboard() {
     return Array.from(groups.values()).filter((group) => group.entries.length > 0);
   }, [filteredEquipmentChecks]);
 
+  const filteredOilChecks = useMemo(() => {
+    const term = oilSearchTerm.trim().toLowerCase();
+    return oilChecks.
+    filter((item) => {
+      if (oilCategoryFilter !== "all" && getOilStockCategory(item) !== oilCategoryFilter) {
+        return false;
+      }
+      if (term && ![item.title, item.stock, getOilStockStatus(item).label, getOilStockStatus(item).recommendedAction].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
+        return false;
+      }
+      return true;
+    }).
+    sort((a, b) => {
+      const statusA = getOilStockStatus(a);
+      const statusB = getOilStockStatus(b);
+      if (statusA.sortPriority !== statusB.sortPriority) {
+        return statusA.sortPriority - statusB.sortPriority;
+      }
+      if (statusA.sortTime !== statusB.sortTime) {
+        return statusA.sortTime - statusB.sortTime;
+      }
+      return String(a.title || "").localeCompare(String(b.title || ""));
+    });
+  }, [oilChecks, oilCategoryFilter, oilSearchTerm]);
+
+  const oilSummaryItems = useMemo(() => {
+    const statuses = oilChecks.map((item) => getOilStockStatus(item));
+    return [
+    { label: "Low Stock", value: statuses.filter((status) => status.groupId === "low-stock").length },
+    { label: "Ordered", value: statuses.filter((status) => status.groupId === "ordered").length },
+    { label: "Checked Today", value: oilChecks.filter((item) => isSameDate(item.lastCheck, new Date())).length },
+    { label: "Total Oil/Stock Items", value: oilChecks.length }];
+
+  }, [oilChecks]);
+
+  const groupedOilChecks = useMemo(() => {
+    const groupOrder = [
+    ["low-stock", "Low Stock"],
+    ["ordered", "Ordered"],
+    ["up-to-date", "Up To Date"]];
+    const groups = new Map(groupOrder.map(([id, label]) => [id, { id, label, entries: [] }]));
+
+    filteredOilChecks.forEach((item) => {
+      const status = getOilStockStatus(item);
+      groups.get(status.groupId)?.entries.push(item);
+    });
+
+    return Array.from(groups.values()).filter((group) => group.entries.length > 0);
+  }, [filteredOilChecks]);
+
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
 
   const openEntryModal = (type, entry = null) => setEntryModal({ open: true, type, entry });
@@ -2756,51 +2953,106 @@ export default function TrackingDashboard() {
   const renderOilContent = () =>
   <>
       <DevLayoutSection
-      sectionKey="tracking-oil-grid"
+      sectionKey="tracking-oil-summary"
       parentKey="tracking-page-body"
-      sectionType="grid"
+      sectionType="stat-card"
+      className="app-summary-section"
+      style={{ width: "100%" }}>
+
+        <div className="app-summary-grid">
+          {oilSummaryItems.map((item) =>
+          <div key={item.label} className="app-summary-item">
+              <span className="app-summary-label">{item.label}</span>
+              <strong className="app-summary-value">{item.value}</strong>
+            </div>
+          )}
+        </div>
+      </DevLayoutSection>
+
+      {oilChecks.length === 0 &&
+      <DevLayoutSection
+      sectionKey="tracking-oil-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
       style={{
-        display: "grid",
-        gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
-        gap: "16px",
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        textAlign: "center",
+        color: "var(--text-1)"
+      }}>
+
+          Oil stock checklist is empty.
+        </DevLayoutSection>
+      }
+
+      {oilChecks.length > 0 && filteredOilChecks.length === 0 &&
+      <DevLayoutSection
+      sectionKey="tracking-oil-filter-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
+      style={{
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        textAlign: "center",
+        color: "var(--text-1)"
+      }}>
+
+          No oil/stock items match your search or filters.
+        </DevLayoutSection>
+      }
+
+      {groupedOilChecks.map((group) =>
+    <DevLayoutSection
+      key={group.id}
+      sectionKey={`tracking-oil-group-${group.id}`}
+      parentKey="tracking-page-body"
+      sectionType="section-shell"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        width: "100%",
+        maxWidth: "100%",
         minWidth: 0
       }}>
 
-        {oilChecks.length === 0 &&
-      <DevLayoutSection
-        sectionKey="tracking-oil-empty-state"
-        parentKey="tracking-oil-grid"
-        sectionType="empty-state"
+        <div
         style={{
-          gridColumn: "1 / -1",
-          padding: "12px",
-          borderRadius: "var(--radius-sm)",
-          textAlign: "center",
-          color: "var(--text-1)"
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: "var(--space-sm)",
+          minWidth: 0
         }}>
 
-            Oil stock checklist is empty.
-          </DevLayoutSection>
-      }
-        {oilChecks.
-      filter((item) => {
-        const term = oilSearchTerm.trim().toLowerCase();
-        if (term && ![item.title, item.stock].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
-          return false;
-        }
-        return true;
-      }).
-      map((item, index) => {
-        const dueLabel = getDueLabel(item.nextCheck);
-        const isDue = dueLabel === "Due now";
+          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
+            {group.label}
+          </h2>
+          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
+            {group.entries.length}
+          </span>
+        </div>
+
+        <DevLayoutSection
+        sectionKey={`tracking-oil-grid-${group.id}`}
+        parentKey={`tracking-oil-group-${group.id}`}
+        sectionType="grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "16px",
+          minWidth: 0
+        }}>
+
+          {group.entries.map((item, index) => {
+        const stockStatus = getOilStockStatus(item);
         const durationLabel = getDurationDisplay(item);
         const isTopUpActive = activeTopUpId === item.id;
-        const badgeColor = isDue ? "var(--danger)" : "var(--success-dark)";
         return (
           <DevLayoutSection
             key={item.id}
-            sectionKey={`tracking-oil-card-${index + 1}`}
-            parentKey="tracking-oil-grid"
+            sectionKey={`tracking-oil-card-${group.id}-${index + 1}`}
+            parentKey={`tracking-oil-grid-${group.id}`}
             sectionType="content-card"
             role="button"
             tabIndex={0}
@@ -2825,21 +3077,22 @@ export default function TrackingDashboard() {
               width: "100%",
               maxWidth: "100%",
               minWidth: 0,
-              height: isTopUpActive ? "auto" : "260px",
+              minHeight: isTopUpActive ? "320px" : "286px",
+              height: "100%",
               overflow: "hidden"
             }}>
 
               <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                alignItems: "start",
                 gap: "10px",
-                minHeight: "28px",
+                minHeight: "42px",
                 minWidth: 0
               }}>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ minWidth: 0 }}>
                   <strong
                   style={{
                     display: "block",
@@ -2853,56 +3106,47 @@ export default function TrackingDashboard() {
 
                     {item.title}
                   </strong>
+                  <span style={{ display: "block", marginTop: "2px", fontSize: "var(--text-caption)", color: "var(--text-1)", fontWeight: 700, textTransform: "uppercase" }}>
+                    {OIL_STOCK_CATEGORY_FILTERS.find((option) => option.value === getOilStockCategory(item))?.label || "Workshop Supplies"}
+                  </span>
                 </div>
-                <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
-                  {dueLabel}
+                <span
+                style={{
+                  minWidth: "104px",
+                  textAlign: "right",
+                  fontSize: "var(--text-caption)",
+                  fontWeight: 700,
+                  color: stockStatus.color,
+                  flexShrink: 0
+                }}>
+
+                  {stockStatus.label}
                 </span>
               </div>
               <div style={{ display: "grid", gap: "6px", flex: 1 }}>
+                {[
+                ["Stock amount", item.stock || "—"],
+                ["Last check", formatDateOnlyLabel(item.lastCheck)],
+                ["Next check", formatDateOnlyLabel(item.nextCheck)],
+                ["Check interval", durationLabel],
+                ...(stockStatus.recommendedAction ? [["Recommended Action", stockStatus.recommendedAction]] : [])].map(([label, value]) =>
                 <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
+                  key={label}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "var(--space-sm)",
+                    fontSize: "var(--text-body-sm)",
+                    color: "var(--text-1)",
+                    minWidth: 0
+                  }}>
 
-                  <span>Stock amount</span>
-                  <strong>{item.stock || "—"}</strong>
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
-
-                  <span>Last check</span>
-                  <strong>{formatDateOnlyLabel(item.lastCheck)}</strong>
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
-
-                  <span>Next check</span>
-                  <strong>{formatDateOnlyLabel(item.nextCheck)}</strong>
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
-
-                  <span>Check interval</span>
-                  <strong>{durationLabel}</strong>
-                </div>
+                    <span style={{ flexShrink: 0 }}>{label}</span>
+                    <strong style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
+                      {value}
+                    </strong>
+                  </div>
+                )}
               </div>
               {isTopUpActive &&
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
@@ -2929,6 +3173,26 @@ export default function TrackingDashboard() {
                 </div>
             }
               {!isTopUpActive &&
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobileView ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: "var(--space-sm)",
+                marginTop: "auto"
+              }}>
+
+                <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setOilStockHistoryModal({ open: true, item });
+                }}
+                style={{ width: "100%" }}>
+
+                  View History
+                </Button>
             <Button
               type="button"
               variant="primary"
@@ -2938,15 +3202,18 @@ export default function TrackingDashboard() {
                 setActiveTopUpId(item.id);
                 setTopUpValue(item.stock || "");
               }}
-              style={{ marginTop: "auto", width: "100%" }}>
+              style={{ width: "100%" }}>
 
-                  Mark checked
+                  {stockStatus.primaryAction}
                 </Button>
+              </div>
             }
             </DevLayoutSection>);
 
       })}
+        </DevLayoutSection>
       </DevLayoutSection>
+    )}
     </>;
 
 
@@ -3007,8 +3274,12 @@ export default function TrackingDashboard() {
       MonthPickerField={MonthPickerField}
       LocationEntryModal={LocationEntryModal}
       LocationSearchModal={LocationSearchModal}
+      oilCategoryFilter={oilCategoryFilter}
+      oilCategoryFilters={OIL_STOCK_CATEGORY_FILTERS}
       oilStockModal={oilStockModal}
+      oilStockHistoryModal={oilStockHistoryModal}
       OilStockModal={OilStockModal}
+      OilStockHistoryModal={OilStockHistoryModal}
       openEntryModal={openEntryModal}
       refreshLoading={refreshLoading}
       renderActiveTabContent={renderActiveTabContent}
@@ -3019,7 +3290,9 @@ export default function TrackingDashboard() {
       setEquipmentHistoryModal={setEquipmentHistoryModal}
       setEquipmentTypeFilter={setEquipmentTypeFilter}
       setLoanCarFleetManagerOpen={setLoanCarFleetManagerOpen}
+      setOilCategoryFilter={setOilCategoryFilter}
       setOilStockModal={setOilStockModal}
+      setOilStockHistoryModal={setOilStockHistoryModal}
       setSimplifiedModal={setSimplifiedModal}
       setSharedSearchValue={setSharedSearchValue}
       setTrackerLocationFilter={setTrackerLocationFilter}

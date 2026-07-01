@@ -383,6 +383,58 @@ export async function updateSupportReport(id, updates = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Retention (Phase 7). Reports older than the policy window are deleted along
+// with their private screenshots. These helpers select only the id + screenshot
+// paths (never the diagnostics blob) so the retention runner can remove storage
+// objects before deleting rows. Comments cascade-delete via the FK.
+// ---------------------------------------------------------------------------
+
+/**
+ * List reports created before `cutoffIso`, returning only id + screenshot paths
+ * (the runner needs the paths to delete storage objects first). Never selects the
+ * diagnostics blob.
+ * @param {string} cutoffIso — ISO timestamp; rows with created_at < this are returned.
+ * @param {number} [limit] — batch size (defaults 500, capped 2000).
+ * @returns {Promise<{ success: boolean, data: Array<{ id: string, screenshot_path: string|null, screenshot_paths: string[]|null }>, error?: { message: string } }>}
+ */
+export async function listSupportReportsForRetention(cutoffIso, limit = 500) {
+  try {
+    if (!cutoffIso) throw new Error("cutoff is required");
+    const cap = Math.min(Number.isInteger(limit) ? limit : 500, 2000);
+    const { data, error } = await getClient()
+      .from("support_reports")
+      .select("id, screenshot_path, screenshot_paths")
+      .lt("created_at", cutoffIso)
+      .order("created_at", { ascending: true })
+      .limit(cap);
+    if (error) throw error;
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error("[support] listSupportReportsForRetention error:", error?.message || error);
+    return { success: false, data: [], error: { message: error?.message || "Query failed" } };
+  }
+}
+
+/**
+ * Delete a batch of reports by id (comments cascade via FK). Storage objects must
+ * be removed separately before calling this (see the retention runner).
+ * @param {string[]} ids
+ * @returns {Promise<{ success: boolean, deleted: number, error?: { message: string } }>}
+ */
+export async function deleteSupportReports(ids) {
+  try {
+    const list = (Array.isArray(ids) ? ids : []).filter((v) => typeof v === "string" && v);
+    if (list.length === 0) return { success: true, deleted: 0 };
+    const { error } = await getClient().from("support_reports").delete().in("id", list);
+    if (error) throw error;
+    return { success: true, deleted: list.length };
+  } catch (error) {
+    console.error("[support] deleteSupportReports error:", error?.message || error);
+    return { success: false, deleted: 0, error: { message: error?.message || "Delete failed" } };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Comments (developer notes / internal triage thread) — Phase 6.
 // ---------------------------------------------------------------------------
 const MAX_COMMENT = 5000;

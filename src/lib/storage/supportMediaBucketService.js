@@ -147,4 +147,29 @@ export async function deleteSupportScreenshot(storagePath) {
   }
 }
 
+/**
+ * Health probe (Phase 7): confirm the private support-reports bucket exists and
+ * is not public. Returns a { status, note } shape for the support health check —
+ * never throws. Does not create the bucket (read-only probe).
+ * @returns {Promise<{ status: "ok"|"warn"|"fail", note: string }>}
+ */
+export async function getSupportBucketStatus() {
+  try {
+    if (!supabaseService) {
+      return { status: "warn", note: "service-role client not configured (dev/CI stub)" };
+    }
+    const { data, error } = await supabaseService.storage.getBucket(BUCKET_NAME);
+    if (error || !data) {
+      return { status: "fail", note: `bucket "${BUCKET_NAME}" missing: ${error?.message || "not found"}` };
+    }
+    if (data.public) {
+      // A public support bucket would expose user screenshots — treat as a failure.
+      return { status: "fail", note: `bucket "${BUCKET_NAME}" is PUBLIC — screenshots exposed` };
+    }
+    return { status: "ok", note: `private bucket "${BUCKET_NAME}" present` };
+  } catch (error) {
+    return { status: "fail", note: error?.message || "bucket probe threw" };
+  }
+}
+
 export { BUCKET_NAME, MAX_BYTES, SIGNED_URL_TTL_SECONDS, ALLOWED_MIME };

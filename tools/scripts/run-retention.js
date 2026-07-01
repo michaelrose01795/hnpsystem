@@ -91,6 +91,47 @@ const HANDLERS = {
     return { rowsProcessed, rowsActioned: dryRun ? 0 : rowsProcessed };
   },
 
+  // Help & Diagnostics reports (Phase 7). A support report is an operational
+  // bug/question record; after 180 days it has no ongoing value and its private
+  // diagnostics blob + screenshots should not linger. Deletes the rows (comments
+  // cascade via FK) AND removes each report's screenshots from the private
+  // support-reports bucket. Screenshots are removed FIRST so an interrupted run
+  // never orphans storage objects behind a deleted row.
+  support_report: async ({ dryRun }) => {
+    const cutoff = new Date(Date.now() - 180 * 86400000).toISOString();
+    const { data, error } = await sb
+      .from("support_reports")
+      .select("id, screenshot_path, screenshot_paths")
+      .lt("created_at", cutoff)
+      .order("created_at", { ascending: true })
+      .limit(2000);
+    if (error) throw new Error(`support_reports select: ${error.message}`);
+    const rows = data || [];
+    const rowsProcessed = rows.length;
+    if (dryRun || rowsProcessed === 0) {
+      return { rowsProcessed, rowsActioned: 0 };
+    }
+
+    // 1. Remove screenshots from the private bucket (best-effort per object; a
+    //    missing object must not abort the row deletion).
+    const paths = [];
+    for (const r of rows) {
+      if (r.screenshot_path) paths.push(r.screenshot_path);
+      if (Array.isArray(r.screenshot_paths)) paths.push(...r.screenshot_paths.filter(Boolean));
+    }
+    if (paths.length) {
+      const { error: rmError } = await sb.storage.from("support-reports").remove(paths);
+      if (rmError) console.warn(`[retention] support-reports storage remove: ${rmError.message}`);
+    }
+
+    // 2. Delete the rows (comments cascade via FK).
+    const ids = rows.map((r) => r.id);
+    const { error: delError } = await sb.from("support_reports").delete().in("id", ids);
+    if (delError) throw new Error(`support_reports delete: ${delError.message}`);
+
+    return { rowsProcessed, rowsActioned: rowsProcessed };
+  },
+
   // Audit log retention is "archive then delete". For now we only delete
   // beyond the 7y mark. An archive job to cold storage is a follow-up.
   audit_log: async ({ dryRun }) => {

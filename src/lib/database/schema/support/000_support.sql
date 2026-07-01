@@ -114,3 +114,20 @@ CREATE INDEX IF NOT EXISTS support_report_comments_report_idx
 -- blob can never leak to a client.
 ALTER TABLE public.support_reports         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_report_comments ENABLE ROW LEVEL SECURITY;
+
+-- Phase 7 (hardening) — retention policy row so tools/scripts/run-retention.js
+-- picks up the `support_report` handler (which deletes reports + their private
+-- screenshots older than 180 days). Guarded on the retention_policies table
+-- existing so this migration stays self-contained and idempotent even in an
+-- environment where the compliance module has not been applied.
+DO $$
+BEGIN
+  IF to_regclass('public.retention_policies') IS NOT NULL THEN
+    INSERT INTO public.retention_policies (entity_type, retention_period, action, notes)
+    SELECT 'support_report', '180 days', 'delete',
+           'Help & Diagnostics reports + private screenshots. Handler: tools/scripts/run-retention.js.'
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public.retention_policies WHERE entity_type = 'support_report'
+    );
+  END IF;
+END $$;

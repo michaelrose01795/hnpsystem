@@ -13,6 +13,7 @@ export default function TrackingDashboardUi(props) {
     LocationEntryModal,
     LocationSearchModal,
     OilStockModal,
+    OilStockHistoryModal,
     SearchBar,
     SimplifiedTrackingModal,
     StatusMessage,
@@ -40,8 +41,11 @@ export default function TrackingDashboardUi(props) {
     loanCarMonth,
     setLoanCarMonth,
     MonthPickerField,
+    oilCategoryFilter,
+    oilCategoryFilters,
     refreshLoading,
     oilStockModal,
+    oilStockHistoryModal,
     openEntryModal,
     renderActiveTabContent,
     searchModal,
@@ -50,7 +54,9 @@ export default function TrackingDashboardUi(props) {
     setEquipmentHistoryModal,
     setEquipmentTypeFilter,
     setLoanCarFleetManagerOpen,
+    setOilCategoryFilter,
     setOilStockModal,
+    setOilStockHistoryModal,
     setSimplifiedModal,
     setSharedSearchValue,
     setTrackerLocationFilter,
@@ -122,9 +128,9 @@ export default function TrackingDashboardUi(props) {
             placeholder={sharedSearchPlaceholder}
             ariaLabel={sharedSearchPlaceholder}
             style={{
-              flex: activeTab === "tracker" ? "0 1 clamp(180px, 32vw, 420px)" : "1 1 clamp(180px, 48vw, 720px)",
+              flex: activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock" ? "0 1 clamp(180px, 32vw, 420px)" : "1 1 clamp(180px, 48vw, 720px)",
               minWidth: isMobileView ? "100%" : "180px",
-              maxWidth: activeTab === "tracker" ? "420px" : "720px"
+              maxWidth: activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock" ? "420px" : "720px"
             }} />
                   {activeTab === "tracker" && DropdownField && (
                   <DropdownField
@@ -147,6 +153,20 @@ export default function TrackingDashboardUi(props) {
               options={equipmentTypeFilters}
               ariaLabel="Filter equipment by type"
               placeholder="All equipment"
+              size="sm"
+              style={{
+                flex: "0 1 220px",
+                minWidth: isMobileView ? "100%" : "180px",
+                maxWidth: isMobileView ? "100%" : "240px"
+              }} />
+                  )}
+                  {activeTab === "oil-stock" && DropdownField && (
+                  <DropdownField
+              value={oilCategoryFilter}
+              onValueChange={setOilCategoryFilter}
+              options={oilCategoryFilters}
+              ariaLabel="Filter oil and stock by category"
+              placeholder="All categories"
               size="sm"
               style={{
                 flex: "0 1 220px",
@@ -240,6 +260,11 @@ export default function TrackingDashboardUi(props) {
     open: false,
     item: null
   })} onSave={handleSaveOilStock} onDelete={handleDeleteOilStock} />}
+
+      {oilStockHistoryModal?.open && OilStockHistoryModal && <OilStockHistoryModal item={oilStockHistoryModal.item} onClose={() => setOilStockHistoryModal({
+    open: false,
+    item: null
+  })} />}
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

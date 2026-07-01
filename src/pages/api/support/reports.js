@@ -34,6 +34,12 @@ import {
   uploadSupportScreenshot,
 } from "@/lib/storage/supportMediaBucketService";
 import { buildReportInsert, decodeScreenshots } from "@/lib/support/reportSubmission";
+import {
+  checkRateLimit,
+  rateLimitKey,
+  pruneRateStore,
+  defaultSupportRateStore,
+} from "@/lib/support/rateLimit";
 import { getOrBuildInvestigation } from "@/lib/support/investigationCache";
 import { readBuildInfo } from "@/lib/support/buildInfo";
 import { getSectionSourceMapHash } from "@/lib/dev-layout/sectionSourceMap";
@@ -52,6 +58,11 @@ const clientIp = (req) => {
   const fwd = req.headers["x-forwarded-for"];
   if (typeof fwd === "string" && fwd.length) return fwd.split(",")[0].trim();
   return req.socket?.remoteAddress || null;
+};
+
+const toInt = (value) => {
+  const n = Number.parseInt(value, 10);
+  return Number.isInteger(n) ? n : null;
 };
 
 // The POST endpoint is open to any authenticated user (report submission), but
@@ -81,6 +92,36 @@ async function handleGet(req, res, session) {
 }
 
 async function handlePost(req, res, session) {
+  // 0. Rate limit + abuse detection (Phase 7). Keyed by the authenticated user id
+  //    (falling back to client IP) so a caller cannot dodge the limit by rotating
+  //    one or the other. A rejected caller gets a 429 + Retry-After; a caller that
+  //    keeps hammering past the abuse threshold is audit-logged once so an admin
+  //    can see the pattern. Records no request content — only key + timestamps.
+  const ip = clientIp(req);
+  const rlKey = rateLimitKey({ userId: session?.user?.id, ip });
+  const rl = checkRateLimit({ key: rlKey, store: defaultSupportRateStore });
+  pruneRateStore(defaultSupportRateStore);
+  if (!rl.allowed) {
+    if (rl.abuse) {
+      // Best-effort audit; never blocks the 429 response.
+      await writeAuditLog({
+        action: "support_report_rate_limited",
+        actorUserId: toInt(session?.user?.id),
+        actorRole: session?.user?.roles?.[0] || null,
+        entityType: "support_report",
+        entityId: null,
+        diff: { reason: "abuse", hits: rl.count },
+        ip,
+        userAgent: req.headers["user-agent"] || null,
+      }).catch(() => {});
+    }
+    res.setHeader("Retry-After", Math.ceil(rl.retryAfterMs / 1000));
+    return res.status(429).json({
+      success: false,
+      message: "You're sending reports too quickly. Please wait a moment and try again.",
+    });
+  }
+
   // 1. Validate the screenshots before creating anything (accepts the new
   //    `screenshots` array; falls back to a legacy single `screenshot`).
   const shots = decodeScreenshots(req.body?.screenshots ?? req.body?.screenshot);

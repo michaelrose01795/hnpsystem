@@ -22,7 +22,7 @@ const sanitisePayload = (payload) => {
   return Object.fromEntries(entries);
 };
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   const supabase = getDatabaseClient();
 
   if (req.method === "GET") {

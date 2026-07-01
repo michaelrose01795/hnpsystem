@@ -14,7 +14,7 @@
 // and enforces the size cap here at the route boundary (defence in depth, in
 // addition to the third pass inside createSupportReport()).
 
-import { sanitiseDiagnostics, isWithinSizeCap } from "@/lib/support/sanitise";
+import { sanitiseDiagnostics, isWithinSizeCap, scrubString } from "@/lib/support/sanitise";
 import { normalizeRoles } from "@/lib/auth/roles";
 import { stableHash } from "@/lib/support/incidentClustering";
 
@@ -85,7 +85,11 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
     ? body.category
     : DEFAULT_SUPPORT_CATEGORY;
 
-  const title = body?.title ? String(body.title).trim().slice(0, MAX_TITLE) : null;
+  // Phase 7 (hardening): the user-authored title/description are user-visible, but
+  // a reporter can still paste a token/PII into them, so run the SAME value scrub
+  // used on the diagnostics blob over them before they persist. Uniform guarantee:
+  // no kept string — captured or typed — carries a raw secret.
+  const title = body?.title ? scrubString(String(body.title).trim()).slice(0, MAX_TITLE) : null;
 
   // Screenshot ATTACHMENT METADATA (order + user annotation + content hash). The
   // actual image paths are added to the columns after upload; here we capture the
@@ -135,7 +139,7 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
     ok: true,
     input: {
       title,
-      description: description.slice(0, MAX_DESCRIPTION),
+      description: scrubString(description).slice(0, MAX_DESCRIPTION),
       category,
       reporterUserId,
       reporterUsername,

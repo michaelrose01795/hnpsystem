@@ -93,3 +93,52 @@ test.describe('Support Centre — authenticated developer', () => {
     expect(res.status()).toBe(400);
   });
 });
+
+// Phase 7 (hardening) — health endpoint + end-to-end privacy regression.
+test.describe('Support hardening — health check', () => {
+  test('health endpoint is developer-gated', async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: undefined });
+    const res = await ctx.request.get('/api/support/health');
+    expect([401, 403]).toContain(res.status());
+    await ctx.close();
+  });
+
+  test('health endpoint returns a status roll-up for a dev', async ({ request }) => {
+    const res = await request.get('/api/support/health');
+    // 200 when ok/warn, 503 when a subsystem fails — both return the shape.
+    expect([200, 503]).toContain(res.status());
+    const body = await res.json();
+    expect(body).toHaveProperty('status');
+    expect(body).toHaveProperty('checks');
+    // The privacy canary must never be failing in a healthy deploy.
+    expect(body.checks.sanitiser.status).toBe('ok');
+  });
+});
+
+test.describe('Support hardening — privacy regression (end to end)', () => {
+  test('a planted secret submitted in a report is scrubbed before storage', async ({ request }) => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlMmUifQ.plantedsig_e2e_abcdef';
+    const submit = await request.post('/api/support/reports', {
+      data: {
+        description: `E2E privacy probe with token ${jwt}`,
+        category: 'bug',
+        diagnostics: {
+          captured_at: new Date().toISOString(),
+          console_errors: [`Authorization: Bearer ${jwt}`],
+          session: { roles: ['dev'], token: jwt },
+        },
+      },
+    });
+    // Stub DBs may reject the insert — skip rather than fail in that environment.
+    test.skip(!submit.ok(), 'Submit unavailable in this environment');
+    const created = await submit.json();
+    const id = created?.data?.id;
+    test.skip(!id, 'No report id returned');
+
+    const detail = await request.get(`/api/support/reports/${id}`);
+    expect(detail.ok()).toBeTruthy();
+    const raw = await detail.text();
+    // The planted JWT must appear nowhere in the persisted, admin-visible payload.
+    expect(raw).not.toContain(jwt);
+  });
+});

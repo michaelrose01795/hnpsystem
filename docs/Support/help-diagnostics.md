@@ -98,6 +98,17 @@ Every layer added since (analysis, providers, investigation, build/version pinni
 **only already-sanitised data**, is re-run through the shared sanitiser, and respects the
 size cap + server re-sanitisation — so no new privacy surface is introduced.
 
+10. **User-authored free text is scrubbed too** (Phase 7) — the reporter's own `title`
+    and `description` are user-visible, but a reporter can still paste a token/PII into
+    them, so `buildReportInsert` now runs the **same value scrub** (`scrubString`) over them
+    before persistence. The guarantee is uniform: no kept string — captured *or* typed —
+    carries a pattern-detectable secret. (An arbitrary password typed into prose has no
+    detectable shape and is only redactable by secret **key name**; this residual limitation
+    is documented and covered by the privacy-regression suite.)
+11. **Runtime privacy canary** (Phase 7) — `/api/support/health` runs the live sanitiser over
+    planted secrets on every probe, so a deploy that ships a broken sanitiser goes red
+    *before* a real secret can leak.
+
 ## 5. UI / UX flow
 
 "?" control in `StaffTopbar` → lazy `SupportReportModal` (built on `PopupModal`): category
@@ -200,6 +211,41 @@ borderless recovery screen (Try again / Reload / pre-filled Report). Reusable fo
 boundaries. Runtime exceptions + unhandled rejections are already captured by Phase 2's window
 listeners, so the boundary never re-listens (no double-recording).
 
+## 9b. Hardening — **Phase 7 (done)**
+
+The final production-hardening pass. No new user-facing feature — it makes the existing
+system abuse-resistant, self-cleaning, self-verifying, and provably private.
+
+- **Rate limiting + abuse detection** (`rateLimit.js`): a pure sliding-window limiter keyed by
+  the authenticated user id (falling back to client IP so a caller can't dodge by rotating one
+  or the other). `handlePost` in `reports.js` calls it before any work: over the window cap →
+  **HTTP 429 + `Retry-After`**; sustained hammering past the abuse threshold → a single
+  `support_report_rate_limited` **audit entry** so an admin sees the pattern. The store is
+  process-local and self-pruning; it records **no** request content (key + timestamps only).
+- **Retention / cleanup** (`run-retention.js` `support_report` handler + `support.js` helpers
+  `listSupportReportsForRetention` / `deleteSupportReports`): reports older than **180 days** are
+  deleted (comments cascade via FK) **and** their screenshots are removed from the private
+  bucket **first**, so an interrupted run never orphans storage behind a deleted row. Wired into
+  the existing policy-driven runner (`retention:dry-run` / `retention:apply`); a
+  `support_report` `retention_policies` row is seeded idempotently by the migration.
+- **Health checks** (`healthChecks.js` + dev-gated `GET /api/support/health`): rolls up a
+  **sanitiser canary** (live scrub of planted secrets — fails the deploy before a real leak),
+  DB reachability via the service role, private-bucket presence + not-public, RLS invariant, and
+  build/code-state pinning. `fail` → HTTP 503 for uptime probes; returns only statuses + notes.
+- **RLS / permissions review**: confirmed both tables keep RLS **on with no permissive
+  policies** — the anon/auth keys can't touch them; every read/write is a service-role, role-
+  guarded route. The submit route is authenticated-only; list/detail/triage/comments/health are
+  `DEV_FULL_ACCESS_ROLES`-gated. The health `rls` check surfaces this invariant at runtime.
+- **Privacy regression suite** (`privacyRegression.test.js`): plants known secrets in every
+  carrier (free-text, secret-named keys, nested objects, arrays, URLs, provider fragments,
+  screenshot annotations, the typed description) and asserts **no pattern-detectable secret
+  survives** either sanitisation layer. This pass also **closed a real gap** it found — the
+  user-typed `title`/`description` were previously stored un-scrubbed; they now run through the
+  shared value scrub (§4.10).
+- **E2E** (`e2e/workflows/support-centre.spec.js`): adds health-endpoint gating + a dev status-
+  roll-up assertion, and an **end-to-end privacy probe** (submit a report carrying a planted
+  JWT → fetch it back via the dev detail API → assert the secret appears nowhere).
+
 ## 10. Hard constraints (do not violate)
 
 - Obey **CLAUDE.md** in full (LayerSurface/LayerTheme, no surface borders, tokens, responsive +
@@ -223,9 +269,9 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 |---|---|---|
 | Schema / migration | `src/lib/database/schema/support/000_support.sql` (+ `schemaReference.sql`) | `support_reports` (+ `duplicate_of`) + `support_report_comments` (+ `author_username`); RLS, no policies; idempotent. |
 | Privacy scrubber | `src/lib/support/sanitise.js` | Single source of truth; key-name + value-pattern redaction; 256 KB cap. |
-| DB helper | `src/lib/database/support.js` | CRUD + list/search/sort, stats, comments, per-report audit, triage (status/severity/assign/duplicate), fingerprints. |
+| DB helper | `src/lib/database/support.js` | CRUD + list/search/sort, stats, comments, per-report audit, triage (status/severity/assign/duplicate), fingerprints, **retention list/delete (Phase 7)**. |
 | Triage validation | `src/lib/support/triageValidation.js` | Pure enum/patch/list-filter validation, split out so it's testable without the Supabase client. |
-| Private storage | `src/lib/storage/supportMediaBucketService.js` | `public:false` bucket; short-TTL signed URLs; MIME/size validation. |
+| Private storage | `src/lib/storage/supportMediaBucketService.js` | `public:false` bucket; short-TTL signed URLs; MIME/size validation; delete + **health probe (`getSupportBucketStatus`, Phase 7)**. |
 | Capture core | `src/lib/support/diagnostics.js` | Ring buffers + `installBrowserCapture` + `captureDiagnostics`. |
 | Capture provider | `src/context/SupportReportContext.js` | Mounted in `_app.js`; owns the store; stamps `build`. |
 | **Build / code-state** | `src/lib/support/buildInfo.js` | `readBuildInfo` / `verifySectionMap` / `detectCodeDrift` / `describeBuild`. |
@@ -233,8 +279,11 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | Analysis engine | `src/lib/support/diagnosticAnalysis.js`, `actionSummary.js` | Incidents/trigger/probable cause; enriched description. |
 | Diagnostic registry | `src/lib/support/diagnosticRegistry.js`, `providers/{uiStateProvider,devMetadataProvider,index}.js` | Extension point + built-ins. |
 | Investigation engine | `src/lib/support/investigation.js`, `incidentClustering.js`, `investigationRegistry.js`, `investigationCache.js` | Dev-only; server-side at ingest; `codeState` + `versionHistory`. |
-| Submit helpers | `src/lib/support/reportSubmission.js` | Pure; re-sanitise, identity-from-session, column derivation, screenshot decode. |
-| Submit API | `src/pages/api/support/reports.js` | Authenticated `POST` (submit); **dev-gated `GET`** (Support Centre list + stats). |
+| Submit helpers | `src/lib/support/reportSubmission.js` | Pure; re-sanitise, identity-from-session, column derivation, screenshot decode; **title/description value-scrub (Phase 7)**. |
+| **Rate limiting** | `src/lib/support/rateLimit.js` | Pure sliding-window limiter + abuse detection; process-local self-pruning store. |
+| **Health checks** | `src/lib/support/healthChecks.js`, `src/pages/api/support/health.js` | Sanitiser canary + DB/storage/RLS/build probes; dev-gated; 503 on fail. |
+| **Retention runner** | `tools/scripts/run-retention.js` (`support_report` handler) | Deletes reports + private screenshots older than 180d; policy-driven; dry-run default. |
+| Submit API | `src/pages/api/support/reports.js` | Authenticated `POST` (submit, **rate-limited**); **dev-gated `GET`** (Support Centre list + stats). |
 | **Support Centre API** | `src/pages/api/support/reports/[id].js`, `reports/[id]/comments.js` | Dev-only `GET` detail (signed URLs + comments + audit) / `PATCH` triage / comments `GET`/`POST` — all audit-logged. |
 | **Support Centre logic** | `src/lib/support/adminView.js`, `supportExport.js`, `savedViews.js` | Pure: badges / impact sort / duplicate grouping / view presets; GitHub-issue / bundle / markdown export; local saved-view persistence. |
 | **Support Centre UI** | `src/pages/dev/support-reports/{index,[id]}.js`, `src/components/support/dev/*` | Workspace + detail + shared primitives (`supportDevUi.js`), data hooks (`useSupportAdmin.js`), keyboard shortcuts (`useSupportKeyboard.js`), triage panel. |
@@ -250,6 +299,8 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
    + `build` (with section-map hash) + provider fragments + buffers, **sanitises**, attaches
    `analysis`. Description auto-fills from it (editable).
 3. **Submit** — client POSTs `{ description, category, diagnostics, screenshots[] }`.
+   The route first applies the **rate limiter** (Phase 7): over the window → 429 + `Retry-After`;
+   sustained abuse → one audit entry.
 4. **Ingest** (`reports.js`): decode/validate screenshots → `buildReportInsert` (re-sanitise,
    identity-from-session, derive columns incl. build) → build the **investigation** with prior
    fingerprints + live `currentBuild` → embed `investigation`+`fingerprint` if within cap →
@@ -277,27 +328,34 @@ service-role routes — never a client key.
 | — | Investigation engine (clustering, registry, cache) | ✅ Done |
 | 5 | Version / code-state pinning + drift + version range | ✅ Done |
 | **6** | **Developer Support Centre (workspace, detail, triage, export, audit)** | ✅ **Done** |
-| 7 | Hardening (rate limit, retention, RLS review, E2E + privacy regression) | ⬜ Pending |
+| **7** | **Hardening (rate limit + abuse, retention/cleanup, RLS review, health checks, privacy regression, E2E)** | ✅ **Done** |
 
-**Verification (current):** `npx vitest run src/lib/support/` → **170 pass** (18 files).
+**All planned phases are delivered.** The feature is production-ready: capture, analysis,
+investigation, version pinning, the developer Support Centre, and the hardening layer are all
+in place, tested, and privacy-verified end to end.
+
+**Verification (current):** `npx vitest run src/lib/support/` → **196 pass** (21 files) — Phase 7
+adds `rateLimit.test.js`, `healthChecks.test.js`, and the `privacyRegression.test.js` suite.
 `check:borders` / `check:layers` / `check:encoding` pass. `uk:check` clean for all support
-files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean (0 errors, 0 warnings).
-Playwright: `e2e/workflows/support-centre.spec.js` covers permission gating + the triage
-workflow (run with a dev server + DB via `npm run test:workflows`).
+files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean on all changed files.
+Playwright: `e2e/workflows/support-centre.spec.js` covers permission gating, the triage
+workflow, health-endpoint gating, and an end-to-end privacy probe (run with a dev server + DB
+via `npm run test:workflows`).
 
 ## Outstanding work
 
-- **Phase 7 — Hardening (next; do not start until Phase 6 is confirmed complete — it now is).**
-  Rate-limit the POST, add retention to `tools/scripts/run-retention.js` (delete old reports +
-  their private screenshots), RLS review, and Playwright coverage for the submit flow +
-  **privacy-regression** test (persisted rows contain none of a planted secret) + React-rendered
-  UI tests. The Support Centre permission/triage E2E already exists
-  (`e2e/workflows/support-centre.spec.js`) and can be extended there.
+- **None blocking.** All seven phases are complete. Remaining opportunities are quality-of-life
+  and scale items captured in the [Future Improvements backlog](#future-improvements-backlog)
+  (server-side stats, user-picker assignment, perceptual screenshot hashing, cross-release
+  regression auto-reopen, React-rendered component tests, a shared/persistent rate-limit store,
+  and full performance/accessibility audit passes). None are required for production use; each
+  needs its own scoped phase before implementation.
 
 ## Known limitations
 
-- **Tests are logic-level, not React-rendered** — no jsdom/RTL in the repo; the rendered
-  crash→recovery→report + submit flow is assigned to Playwright in Phase 7.
+- **Component tests are logic-level + Playwright, not React-rendered** — no jsdom/RTL in the
+  repo, so the rendered crash→recovery→report flow is covered by Playwright rather than unit
+  RTL tests. A jsdom/RTL harness for the reporter modal + recovery screen stays in the backlog.
 - **Drift/version pinning depends on deploy env** — locally `commit_sha` is empty (defaults to
   `dev`/version), so drift returns `unknown` and `versionRange` groups by version only. Full
   fidelity requires Vercel's `VERCEL_GIT_*` (auto in prod/preview) and CI feeding the generator's
@@ -318,13 +376,39 @@ workflow (run with a dev server + DB via `npm run test:workflows`).
 - **Source references copy `file:line`** (no in-app source viewer / editor deep-link), and the
   one-click GitHub issue only *opens* when `NEXT_PUBLIC_GITHUB_REPO` is set (otherwise it copies).
 - **The E2E triage workflow self-skips** when no reports exist (E2E may run against a stub DB).
+- **Rate limiting is process-local** (Phase 7) — the sliding-window store lives in one
+  serverless instance's memory, so it resets on cold start and doesn't coordinate across
+  instances. Adequate for a human-scale internal dev tool + the abuse-audit signal; a shared
+  store (Redis / a DB counter) is backlogged for multi-instance strict enforcement.
+- **Retention window is a fixed 180 days** in the `support_report` handler (not read from the
+  policy row's descriptive `retention_period` text). Changing it is a one-line code edit; a
+  machine-readable period column is a future enhancement.
+- **Free-text secret scrubbing is pattern-based** — a token/PII with a recognisable shape (JWT,
+  Bearer, prefixed key, NINO, card, email) is stripped from the typed title/description, but an
+  arbitrary password typed in prose has no detectable shape and is only redactable by secret
+  **key name**. Documented and asserted by the privacy-regression suite.
+- **Health `rls` check is an invariant assertion, not a live `pg_policies` query** — it reports
+  that access is service-role-only by design (the tables have RLS on, no policies) rather than
+  re-querying the catalogue, which would need extra grants.
+- **Performance / accessibility / resilience were reviewed, not exhaustively audited** — capture
+  uses capped ring buffers, the Support Centre list is windowed + lazy, and the reporter modal is
+  lazy-loaded; a formal Lighthouse/axe pass + offline/interrupted-upload resilience matrix is
+  backlogged as a dedicated QA phase rather than claimed here.
 
 ## Manual actions outstanding
 
 - **Apply the migration** — run `src/lib/database/schema/support/000_support.sql` in the
-  Supabase SQL editor (repo applies SQL manually). Idempotent; now also adds the Phase 6
-  columns `support_reports.duplicate_of` (+ self-FK / index) and
-  `support_report_comments.author_username` via `ADD COLUMN IF NOT EXISTS` — safe to re-run.
+  Supabase SQL editor (repo applies SQL manually). Idempotent; adds the Phase 6 columns
+  `support_reports.duplicate_of` (+ self-FK / index) and `support_report_comments.author_username`
+  via `ADD COLUMN IF NOT EXISTS`, and (Phase 7) seeds the `support_report` **retention policy row**
+  — guarded on `retention_policies` existing, so it's a no-op where the compliance module isn't
+  applied. Safe to re-run.
+- **Schedule retention** — run `npm run retention:dry-run` to preview, then
+  `npm run retention:apply` on a cron (e.g. Vercel Cron / a scheduled job) so reports +
+  screenshots older than 180 days are cleaned automatically. Requires
+  `SUPABASE_SERVICE_ROLE_KEY` + `NEXT_PUBLIC_SUPABASE_URL`.
+- **Wire the health check into uptime monitoring** — point an authenticated dev probe at
+  `GET /api/support/health` (503 on any subsystem failure, including the sanitiser canary).
 - **CI: stamp the section-map hash** — have the build run the section-source-map generator and
   capture its `SECTION_MAP_HASH=…` output into `NEXT_PUBLIC_SECTION_MAP_HASH` so
   `verifySectionMap` can report `match`/`drift` in production. (Vercel already injects
@@ -334,6 +418,19 @@ workflow (run with a dev server + DB via `npm run test:workflows`).
 
 Ideas surfaced but **deliberately out of scope** — do not implement without a dedicated phase.
 
+- **Shared / distributed rate-limit store**: replace the process-local sliding window with a
+  Redis or DB-backed counter for strict cross-instance enforcement (current limiter is
+  per-instance; see Known limitations).
+- **Machine-readable retention period**: read the delete window from a numeric policy column
+  instead of the fixed 180-day constant in the handler.
+- **React-rendered component tests (jsdom / RTL)**: a rendering harness for the reporter modal,
+  screenshot redactor, and crash→recovery screen (currently Playwright-only for rendered flows).
+- **Formal performance + accessibility + resilience QA pass**: a dedicated phase for a
+  Lighthouse/axe audit, keyboard-navigation matrix, mobile/tablet verification, and an
+  offline / interrupted-upload / concurrent-edit resilience matrix (reviewed informally in
+  Phase 7, not exhaustively audited).
+- **Bundle-size deep-dive**: measure and trim the Support Centre / investigation bundles beyond
+  the existing lazy-loading of the reporter modal.
 - **Cross-release regression alerting** (Phase 6+): when a `resolved` report's fingerprint
   reappears in a newer `app_version`, auto-reopen / flag it as a regression using the existing
   `versionHistory.isRegression` signal; surface a per-incident version timeline in the viewer.
