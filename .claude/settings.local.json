@@ -343,7 +343,8 @@
       "Bash(git diff-files *)",
       "Bash(git stash *)",
       "Bash(git update-ref *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(node -e \"const m=require\\('./src/lib/dev-layout/sectionSourceMap.generated.js'\\); const k=Object.keys\\(m\\); console.log\\(k\\); const arr=m.DEV_LAYOUT_SECTION_SOURCE_MAP||[]; console.log\\('len',arr.length\\); console.log\\(JSON.stringify\\(arr.slice\\(0,3\\),null,1\\)\\);\")"
     ],
     "deny": [],
     "ask": [],

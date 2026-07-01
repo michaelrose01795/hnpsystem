@@ -382,6 +382,65 @@ export async function updateSupportReport(id, updates = {}) {
   }
 }
 
+/**
+ * List a bounded window of recent reports for the Developer Platform INTELLIGENCE
+ * dashboards (Phase 9). Returns the same LIGHT rows as the Support Centre list —
+ * the derived investigation JSON subfields + build columns + reporter/assignee
+ * identity — but never the heavy, RLS-locked diagnostics blob. Everything the
+ * pure aggregation engines (intelligence.js / releaseIntelligence.js /
+ * ownershipGraph.js / developerDirectory.js) consume is here; the aggregation
+ * itself runs server-side in the intelligence API. Ordered newest-first.
+ *
+ * @param {{ window?: number }} [opts]
+ * @returns {Promise<{ success: boolean, data: object[], count: number, error?: { message: string } }>}
+ */
+export async function listReportsForIntelligence({ window = 1000 } = {}) {
+  try {
+    const cap = Math.min(Number.isInteger(window) ? window : 1000, 5000);
+    const { data, error, count } = await getClient()
+      .from("support_reports")
+      .select(LIST_COLUMNS_WITH_INVESTIGATION, { count: "exact" })
+      .order("created_at", { ascending: false })
+      .limit(cap);
+    if (error) throw error;
+    return { success: true, data: data || [], count: count || 0 };
+  } catch (error) {
+    console.error("[support] listReportsForIntelligence error:", error?.message || error);
+    return { success: false, data: [], count: 0, error: { message: error?.message || "Query failed" } };
+  }
+}
+
+/**
+ * Bulk triage (Phase 9). Validates ONE patch (via buildTriagePatch) and applies
+ * it to every id in a single UPDATE ... IN (...) statement, returning the ids that
+ * were actually updated so the API layer can write one audit entry per report.
+ * duplicate-of is intentionally not bulk-settable (see bulkTriage.js).
+ *
+ * @param {string[]} ids
+ * @param {{ status?: string, severity?: string, assignedTo?: number|null }} updates
+ * @returns {Promise<{ success: boolean, updatedIds: string[], error?: { message: string } }>}
+ */
+export async function bulkUpdateSupportReports(ids, updates = {}) {
+  try {
+    const list = (Array.isArray(ids) ? ids : []).filter((v) => typeof v === "string" && v);
+    if (list.length === 0) return { success: true, updatedIds: [] };
+    const patch = buildTriagePatch(updates);
+    if (Object.keys(patch).length === 0) throw new Error("No valid fields to update");
+    patch.updated_at = new Date().toISOString();
+
+    const { data, error } = await getClient()
+      .from("support_reports")
+      .update(patch)
+      .in("id", list)
+      .select("id");
+    if (error) throw error;
+    return { success: true, updatedIds: (data || []).map((r) => r.id) };
+  } catch (error) {
+    console.error("[support] bulkUpdateSupportReports error:", error?.message || error);
+    return { success: false, updatedIds: [], error: { message: error?.message || "Update failed" } };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Retention (Phase 7). Reports older than the policy window are deleted along
 // with their private screenshots. These helpers select only the id + screenshot

@@ -246,6 +246,51 @@ system abuse-resistant, self-cleaning, self-verifying, and provably private.
   roll-up assertion, and an **end-to-end privacy probe** (submit a report carrying a planted
   JWT → fetch it back via the dev detail API → assert the secret appears nowhere).
 
+## 10b. Developer Platform intelligence — **Phase 9 (done)**
+
+Turns the captured data into analytical developer dashboards on top of the Phase 8
+substrate. **Purely additive** — no schema migration, no global-architecture change: new
+pure `src/lib/dev-platform/` engines, two dev-gated API routes, four `/dev/*` dashboards, and
+two `src/lib/database/support.js` helpers that reuse the **existing** columns + the derived
+`diagnostics->investigation->…` JSON subfields (never the RLS-locked blob).
+
+- **Intelligence engine** (`intelligence.js`): pure cross-report analytics over the LIGHT rows —
+  `rollup` (open/regressions/drift/avg-confidence/distinct problem areas), `trendSeries` (daily
+  buckets), `problemAreas` (route/section impact ranking with recency weighting), `clusterIncidents`
+  (recurring fingerprint clusters), and `predictiveInsights` (areas whose volume is *rising* vs the
+  prior window — surfaced before they escalate). `buildIntelligence` composes the payload.
+- **Release intelligence** (`releaseIntelligence.js`): reconstructs a **deployment registry** from
+  the version/commit columns Phase 5 stamps, scores per-release quality, builds a **deployment
+  timeline** (with quality delta per deploy), tracks **incidents across releases**
+  (`incidentVersionTimeline`), and computes **auto-reopen candidates** — a resolved/won't-fix report
+  flagged as a regression → recommend reopening (patch `status → triaged`).
+- **Ownership graph** (`ownershipGraph.js`): reuses the code ownership the capture engine already
+  resolves for free (`source_file`/`source_line` via `data-dev-section-key` → section map) into an
+  **ownership explorer** (files ranked by open+total, with clickable source refs), **module impact**
+  roll-ups, a weighted **route → module dependency/impact graph**, and **affected features**.
+- **Performance insights** (`performanceInsights.js`): PURE over a single sanitised snapshot (the
+  exact Live Ops bundle) — `endpointStats` (failing/slow endpoints), `requestTimeline`, `perfMetrics`
+  (dev-metadata timing/memory/network), and `executionFlow`. **Names + durations only, never
+  request bodies** — no new capture path, no new privacy surface.
+- **Issue management** (`bulkTriage.js` + `developerDirectory.js`): pure **bulk-triage validation**
+  (reuses `buildTriagePatch`; de-dupes + caps ids; `duplicate_of` intentionally not bulk-settable)
+  and a **searchable developer directory** built from the reporter/assignee identities already on the
+  reports (the `dev` role is synthetic — no users directory to page).
+- **APIs**: dev-gated `GET /api/support/intelligence` runs `buildIntelligence`/`buildReleaseIntelligence`/
+  `buildOwnershipMap`/`buildDeveloperDirectory` **server-side** over `listReportsForIntelligence`
+  (bounded window; audited `dev_platform_view`); dev-gated `POST /api/support/reports/bulk` applies a
+  validated patch via `bulkUpdateSupportReports` and writes **one audit entry per report** (serves
+  both manual bulk triage and the one-click regression auto-reopen).
+- **Dashboards** (`/dev/intelligence`, `/dev/releases`, `/dev/ownership`, `/dev/performance`) via the
+  Phase 8 shell + `useIntelligence` hook + `DeveloperPicker` (built on the canonical `DropdownField`).
+  Intelligence + Releases + Ownership read the server aggregates; Performance profiles the **live
+  session** client-side. All strictly `dev`-gated, CLAUDE.md-compliant (LayerSurface/LayerTheme,
+  borderless, tokens, 44px).
+
+**Privacy:** every engine reads only already-sanitised, dev-only derived values (the same JSON
+subfields the Support Centre list already exposes) or the live sanitised snapshot. No new column, no
+new store, no widening of the diagnostics surface.
+
 ## 10. Hard constraints (do not violate)
 
 - Obey **CLAUDE.md** in full (LayerSurface/LayerTheme, no surface borders, tokens, responsive +
@@ -299,6 +344,10 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | **Saved views + prefs API** | `src/pages/api/support/saved-views/{index,[id]}.js`, `src/pages/api/support/preferences.js` | Dev-gated (`DEV_PLATFORM_ROLES`) list/create/update/delete + get/put prefs; audit-logged. |
 | **Saved views + prefs UI** | `src/components/dev-platform/{useSavedViews,usePreferences}.js` | Server-sync hooks with device-local fallback; `SupportWorkspace.js` now saves views server-side (personal + shared). |
 | **Dev Platform audit** | `src/lib/support/devPlatformAudit.js` | `dev_platform_session` / `dev_platform_view` / `dev_platform_action` via the shared hash-chained `writeAuditLog`. |
+| **Intelligence engines (Phase 9)** | `src/lib/dev-platform/{intelligence,releaseIntelligence,ownershipGraph,performanceInsights,bulkTriage,developerDirectory}.js` | Pure cross-report analytics + release/regression + ownership graph + perf/tracing + bulk-triage validation + developer directory. Each has a `*.test.js` beside it. |
+| **Intelligence DB helpers (Phase 9)** | `src/lib/database/support.js` (`listReportsForIntelligence`, `bulkUpdateSupportReports`) | Bounded light-row window for aggregation; single-statement bulk triage returning updated ids for per-report audit. |
+| **Intelligence API (Phase 9)** | `src/pages/api/support/intelligence.js`, `src/pages/api/support/reports/bulk.js` | Dev-gated `GET` server-side aggregation (audited) / dev-gated `POST` bulk triage + auto-reopen (per-report audit). |
+| **Intelligence UI (Phase 9)** | `src/pages/dev/{intelligence,releases,ownership,performance}.js`, `src/components/dev-platform/{useIntelligence,DeveloperPicker}.js` | Four dashboards + data hook + searchable developer picker (canonical `DropdownField`). Nav entries in `devPlatformNav.js`. |
 
 ## Data flow
 
@@ -336,6 +385,15 @@ roll-up. **Saved views + preferences** are server-synced through the dev-gated
 identity and any real numeric user both work), each mutation writing a `dev_platform_action`
 audit; the client hooks fall back to the device-local store if the server/migration is absent.
 
+**Developer Platform intelligence flow (Phase 9):** the Intelligence / Releases / Ownership dashboards
+call the dev-gated `GET /api/support/intelligence`, which reads a bounded window of light rows
+(`listReportsForIntelligence`) and runs the pure `src/lib/dev-platform/` engines **server-side**,
+returning ready-to-render aggregates (audited `dev_platform_view`). Bulk triage and one-click
+regression auto-reopen POST to the dev-gated `/api/support/reports/bulk`, which validates one patch and
+writes **one audit entry per updated report**. The Performance dashboard needs no server call — it runs
+`performanceInsights.js` over the live `captureDiagnostics()` snapshot client-side (names + durations
+only). No new capture path, column, or store is introduced.
+
 ## Phase status
 
 | Phase | Title | Status |
@@ -351,7 +409,7 @@ audit; the client hooks fall back to the device-local store if the server/migrat
 | **6** | **Developer Support Centre (workspace, detail, triage, export, audit)** | ✅ **Done** |
 | **7** | **Hardening (rate limit + abuse, retention/cleanup, RLS review, health checks, privacy regression, E2E)** | ✅ **Done** |
 | **8** | **Developer Platform — Foundation, Access & Live Operations** (`dev` role + strict access migration, workspace shell, live diagnostics, application health, search/filter substrate, saved workspaces, preferences) | 🚧 **Foundational core done** (palette / notification delivery / quick-actions = immediate follow-up) |
-| **9** | **Developer Platform — Intelligence** (investigation & release dashboards, intelligent issue management, regression tracking, code ownership + dependency mapping, performance profiling, API/DB tracing) | ⏳ Planned |
+| **9** | **Developer Platform — Intelligence** (investigation & release dashboards, intelligent issue management, regression tracking, code ownership + dependency mapping, performance profiling, API tracing) | ✅ **Done** (DB query-level timing store flagged/deferred — see limitations) |
 | **10** | **Developer Platform — Integration, Extensibility & Enterprise Hardening** (deep GitHub integration, plugin architecture, full developer-action audit sweep, enterprise responsiveness/accessibility) | ⏳ Planned |
 
 **Phases 1–7 are delivered and production-ready** — capture, analysis, investigation, version
@@ -360,15 +418,18 @@ privacy-verified end to end. **Phase 8's foundational core is now delivered** (t
 strict re-gate, the `/dev` platform shell + home, the live-operations and application-health
 dashboards, the shared search/filter engine, server-synced saved views + preferences, and the
 platform audit baseline). The remaining Phase 8 items (command palette, notification *delivery*,
-quick actions) are the **immediate Phase 8 follow-up** (see [Outstanding work](#outstanding-work));
-**Phases 9–10 are still planned** and scoped in the
+quick actions) are the **immediate Phase 8 follow-up** (see [Outstanding work](#outstanding-work)).
+**Phase 9 (intelligence) is now delivered** — the investigation/release/ownership/performance
+dashboards, intelligent bulk issue management + developer picker, cross-release regression tracking +
+auto-reopen, and server-side aggregation (see [§10b](#10b-developer-platform-intelligence--phase-9-done)).
+**Phase 10 remains planned** and is scoped in the
 [Developer Platform roadmap](#developer-platform-roadmap--the-final-three-phases).
 
-**Verification (current):** `npm run test:unit` → **290 pass** (27 files) — Phase 8 adds
-`src/lib/dev-platform/searchEngine.test.js`, `src/lib/support/savedViewValidation.test.js`, and
-`src/lib/auth/roles.test.js` (which asserts the `dev` role is absent from `roleCategories` and
-`DEV_FULL_ACCESS_ROLES`). The one failing suite in the run — `reportingActivation.test.js` — is a
-pre-existing, unrelated missing-SQL-file issue in the Reporting platform, not the support feature.
+**Verification (current):** `npm run test:unit` → **338 pass** (33 files) — Phase 9 adds
+`src/lib/dev-platform/{intelligence,releaseIntelligence,ownershipGraph,performanceInsights,bulkTriage,developerDirectory}.test.js`
+(48 new tests) on top of Phase 8's search-engine / saved-view / roles suites. The one failing suite in
+the run — `reportingActivation.test.js` — is a pre-existing, unrelated missing-SQL-file issue in the
+Reporting platform, not the support feature.
 `check:borders` / `check:layers` / `check:encoding` pass. `uk:check` clean for all support +
 dev-platform files (only pre-existing `.agents/skills/**` hits remain). `eslint` clean on all
 changed files. Playwright: the **unauthenticated permission-gate** tests in
@@ -431,9 +492,18 @@ no edit to `EmployeesTab.js` / `EmployeeProfilePanel.js` was required.
 **Flags:** the global auth change (approved above); a **new `support_saved_views` DB migration**
 (flag before applying).
 
-### Phase 9 — Intelligence: Investigation, Releases, Ownership, Performance & Tracing
+### Phase 9 — Intelligence: Investigation, Releases, Ownership, Performance & Tracing — ✅ *delivered*
 
 **Goal:** turn captured data into analytical developer dashboards on top of the Phase 8 substrate.
+
+**Delivered this pass** (see [§10b](#10b-developer-platform-intelligence--phase-9-done)): the six pure
+`src/lib/dev-platform/` engines, the dev-gated intelligence + bulk APIs, and the four `/dev/*`
+dashboards (Intelligence, Releases, Ownership, Performance) — including bulk triage, the searchable
+developer picker, regression auto-reopen, server-side aggregation, and live-session performance
+tracing. **No schema migration and no global-architecture change were required.** The only item that
+would need a new persistence surface — cross-session **DB query-level timing** — was **flagged and
+deferred** (see [Known limitations](#known-limitations) / [backlog](#future-improvements-backlog));
+Phase 9 delivers request-level tracing over already-captured data instead.
 
 **Scope (grouped):**
 - **Investigation dashboards + intelligent issue management** — aggregate `investigation.js` /
@@ -486,9 +556,12 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   is: a **command palette / quick actions** across the shell, and **notification *delivery*** on
   top of the already-stored notification *preferences* (`support_user_preferences`). The live-ops
   feed is currently **polled**; a push/stream upgrade is part of the same follow-up.
-- The remaining program is **Phase 9** (intelligence) then **Phase 10** (integration,
-  extensibility, enterprise hardening), delivered strictly in that order. Genuinely postponed
-  ideas are in the [Future Improvements backlog](#future-improvements-backlog).
+- **Phase 9 (intelligence) is delivered** — investigation/release/ownership/performance dashboards,
+  intelligent bulk issue management, the searchable developer picker, cross-release regression
+  tracking with one-click auto-reopen, and server-side aggregation are all in place, tested, and
+  privacy-clean. No blocking work remains.
+- The remaining program is **Phase 10** (integration, extensibility, enterprise hardening). Genuinely
+  postponed ideas are in the [Future Improvements backlog](#future-improvements-backlog).
 
 ## Known limitations
 
@@ -510,8 +583,10 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   SQL `GROUP BY` — fine for a dev tool, not for very large tables.
 - **Duplicate grouping is exact-key** (canonical fingerprint hash) in the list; fuzzy
   near-duplicate matching stays in the investigation engine's `similarIncidents`.
-- **Assignment is assign-to-me / unassign** (+ raw user id) — there is no user-picker directory
-  yet; the assignee shows as `User #id` when it isn't the current user.
+- **Assignment now has a searchable developer picker** (Phase 9) — but the directory is derived from
+  the reporter/assignee identities already present on the reports (the `dev` role is synthetic, with
+  no `users` directory to page), so a developer who has never touched the queue won't appear until they
+  do. The assignee still shows as `User #id` when only a numeric id (no username) is known.
 - **Source references copy `file:line`** (no in-app source viewer / editor deep-link), and the
   one-click GitHub issue only *opens* when `NEXT_PUBLIC_GITHUB_REPO` is set (otherwise it copies).
 - **The E2E triage workflow self-skips** when no reports exist (E2E may run against a stub DB).
@@ -552,6 +627,24 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
 - **Server-synced saved views/preferences degrade to device-local** (Phase 8) — if the migration
   isn't applied or the service-role client is absent, the hooks transparently fall back to the
   original `savedViews.js` local store, so the Support Centre never breaks.
+- **Intelligence aggregates over a bounded window folded in JS** (Phase 9) — the intelligence API
+  reads ≤5000 recent light rows and the pure engines aggregate them in memory (no SQL `GROUP BY` /
+  materialised view). Fine for a human-scale internal dev tool; a materialised/SQL-side rollup is
+  backlogged for very large tables. Problem-area / cluster / release stats are therefore accurate over
+  the window, not the full historical table.
+- **Performance profiling is live-session-only** (Phase 9) — the Performance dashboard aggregates the
+  current browser session's sanitised snapshot (names + durations, no bodies), like Live Ops. It does
+  **not** persist a cross-session performance history, and **DB query-level timing is deliberately not
+  captured** — a query-timing diagnostic provider would need a **new persistence/trace store**, which
+  Phase 9 does not introduce (flagged; see backlog). API/request-level tracing over already-captured
+  `failed_requests` is delivered instead.
+- **Regression auto-reopen is developer-triggered, not automatic** (Phase 9) — the Releases dashboard
+  surfaces every closed report that recurred on a newer build and reopens them in one click (a bulk
+  `status → triaged` with per-report audit). It does not silently mutate reports on ingest; the
+  developer stays in control, and every reopen is audit-logged.
+- **Dependency/impact graph is report-derived, not a static import graph** (Phase 9) — the route →
+  module edges are built from where reports actually landed (the resolved `source_file`), not by
+  parsing the codebase's import tree. It shows *observed* impact, not *potential* impact.
 
 ## Manual actions outstanding
 
@@ -578,7 +671,10 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   dev-access staff user now excluded by the strict re-gate. Update the Playwright auth-setup to
   establish a `dev`-role session (sign in with the `devPlatform:"1"` credential, or seed a `dev`
   storage state) so the workspace/list/triage tests pass again. The permission-gate tests already
-  pass unchanged.
+  pass unchanged. This now also covers the Phase 9 spec
+  (`e2e/workflows/dev-platform-intelligence.spec.js`): its permission-gate + validator tests pass
+  unauthenticated, but the intelligence-API-shape + dashboard-render tests need the same `dev`-role
+  fixture.
 - **CI: stamp the section-map hash** — have the build run the section-source-map generator and
   capture its `SECTION_MAP_HASH=…` output into `NEXT_PUBLIC_SECTION_MAP_HASH` so
   `verifySectionMap` can report `match`/`drift` in production. (Vercel already injects
@@ -592,8 +688,11 @@ the three comprehensive phases in the
 that used to live here have been **folded into a phase**:
 
 - **→ Phase 8:** server-synced + shared team saved views.
-- **→ Phase 9:** cross-release regression alerting / auto-reopen; bulk triage; user-picker
-  assignment; server-side / materialised stats; in-app source-reference viewer.
+- **→ Phase 9 (delivered):** cross-release regression alerting / auto-reopen; bulk triage;
+  user-picker assignment; server-side stats/trend aggregation; investigation/release/ownership/
+  performance dashboards. *(The in-app source-reference **viewer** — opening the file, not copying the
+  ref — remains open; the clickable ref that copies `file:line` ships, a viewer/editor deep-link does
+  not.)*
 - **→ Phase 10:** two-way issue-tracker integration; GitHub source deep-links; the accessibility /
   responsiveness portion of the former QA pass.
 
@@ -617,6 +716,15 @@ enhancements, not planned work. Do not implement without a dedicated phase of th
 - **Perceptual screenshot hashing** for near-duplicate incident clustering.
 - **Wire the map generator into the build script** (`prebuild`) so the shipped map is always fresh
   and its hash is always stamped (CI/tooling task).
+- **DB query-level timing provider + persisted performance trace store** (flagged out of Phase 9):
+  a diagnostic provider that records query names + durations (no values) and a store that persists
+  cross-session performance traces, so the Performance dashboard can chart history and slow queries
+  rather than only the live session. Needs a **new store** — deliberately not introduced in Phase 9.
+- **Materialised / SQL-side intelligence aggregation**: replace the bounded in-JS window fold with a
+  SQL `GROUP BY` / materialised view so problem-area / cluster / release stats stay accurate across
+  very large historical tables.
+- **Static import-graph dependency mapping**: complement the report-derived route→module graph with a
+  build-time import-tree parse so *potential* (not just observed) impact is visible.
 
 ---
 
