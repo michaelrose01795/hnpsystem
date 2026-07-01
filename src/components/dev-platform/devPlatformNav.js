@@ -74,10 +74,10 @@ export const DEV_PLATFORM_NAV = [
   },
   {
     key: "support",
-    label: "Support Centre",
-    href: "/dev/support-reports",
+    label: "Support",
+    href: "/dev/support",
     icon: "🛟",
-    description: "Triage and investigate Help & Diagnostics reports.",
+    description: "Support reports, investigations, health, notifications, activity and settings — grouped into tabs.",
   },
   {
     key: "saved-views",

@@ -358,7 +358,10 @@
       "Bash(node -p \"Object.keys\\(require\\('./package.json'\\).devDependencies||{}\\).filter\\(k=>/vit/.test\\(k\\)\\).map\\(k=>k+'@'+require\\('./package.json'\\).devDependencies[k]\\).join\\('  '\\)\")",
       "Bash(node -p \"JSON.stringify\\(require\\('./package.json'\\).scripts,null,0\\)\")",
       "Bash(echo \"=== exit $? ===\")",
-      "Bash(echo \"=== eslint exit $? ===\")"
+      "Bash(echo \"=== eslint exit $? ===\")",
+      "Bash(grep -E \"\\\\.js$\")",
+      "Bash(curl -s -o /tmp/dev_page.html -w \"HTTP %{http_code}\\\\n\" http://localhost:63380/dev)",
+      "Bash(curl -s -D - -o /dev/null http://localhost:63380/dev)"
     ],
     "deny": [],
     "ask": [],

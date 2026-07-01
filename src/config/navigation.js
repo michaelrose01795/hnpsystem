@@ -401,6 +401,18 @@ const baseSidebarSections = [
     ],
   },
   {
+    // Developer Platform entry — visible ONLY to the synthetic `dev` role
+    // (Dev-Login mint). It never appears for staff: `dev` is not in
+    // roleCategories and is excluded from DEV_FULL_ACCESS_ROLES, so no staff
+    // session carries it. Routes to the platform home; /dev is already in the
+    // route allow-list for dev sessions.
+    label: "Developer",
+    category: "departments",
+    items: [
+      { label: "Developer Platform", href: "/dev", roles: ["dev"] },
+    ],
+  },
+  {
     label: "Account",
     category: "account",
     items: [

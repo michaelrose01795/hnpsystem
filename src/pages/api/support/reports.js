@@ -45,6 +45,7 @@ import { readBuildInfo } from "@/lib/support/buildInfo";
 import { getSectionSourceMapHash } from "@/lib/dev-layout/sectionSourceMap";
 import { isWithinSizeCap } from "@/lib/support/sanitise";
 import { writeAuditLog } from "@/lib/audit/auditLog";
+import { sendSupportReportNotification } from "@/lib/support/supportReportNotifier";
 
 export const config = {
   api: {
@@ -203,6 +204,22 @@ async function handlePost(req, res, session) {
     },
     ip: clientIp(req),
     userAgent: req.headers["user-agent"] || null,
+  });
+
+  // 6. Best-effort internal notification email (Phase 11). Carries only the
+  //    already-sanitised persisted columns (never the diagnostics blob), and
+  //    NEVER throws — the report is already saved, so email failure/absence of
+  //    SMTP must not affect the response.
+  await sendSupportReportNotification({
+    req,
+    report: {
+      id: reportId,
+      ...input,
+      status: created.data?.status,
+      severity: created.data?.severity,
+      created_at: created.data?.created_at,
+    },
+    screenshotCount,
   });
 
   return res.status(201).json({

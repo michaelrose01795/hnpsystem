@@ -1,216 +1,45 @@
 // file location: src/components/dev-platform/DevPlatformLayout.js
 //
-// Phase 8 — the shared shell for the internal Developer Platform. Every /dev/*
-// surface opts into it via `Page.getLayout = withDevPlatformLayout({ activeKey })`
-// so the shell (topbar + nav rail) stays mounted while only the inner content
-// swaps — the same persistent-shell pattern as the staff <Layout>.
+// Phase 8 shell → Phase 11.1: the Developer Platform now renders inside the
+// normal staff <Layout> (the same sidebar + topbar + page card as every other
+// staffglobal.css page) instead of a bespoke full-page shell. The platform's
+// areas are a top tab group (DevPlatformTabs) at the top of the page content;
+// the page's own content renders below it. `withDevPlatformLayout` returns the
+// same <Layout> root as the default staff getLayout, so the shell stays mounted
+// across navigations.
 //
-// CLAUDE.md compliance:
-//   - the outer frame is the plain `.app-page-shell` layout container (NOT a
-//     card), so the topbar / nav rail / page content are sibling surfaces that
-//     each start fresh at <LayerSurface> — no two-consecutive-surface bug;
-//   - every card/panel is <LayerSurface> / <LayerTheme> (borderless, tokens);
-//   - nav links are 44px touch targets; the rail reflows to a horizontal strip
-//     on mobile via useIsMobile.
+// CLAUDE.md: <Layout> / <Sidebar> are NOT modified — the platform simply opts
+// into them. The tab group is a borderless LayerSurface; the page content is
+// whatever the /dev/* page renders (LayerSurface/LayerTheme sections), sitting in
+// the standard staff page-card / page-stack shell the staff layout provides.
 
 import React from "react";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import LayerSurface from "@/components/ui/LayerSurface";
-import useIsMobile from "@/hooks/useIsMobile";
-import { useUser } from "@/context/UserContext";
-import { DEV_PLATFORM_NAV } from "@/components/dev-platform/devPlatformNav";
-import DevHealthPill from "@/components/dev-platform/DevHealthPill";
-import DevNotificationBell from "@/components/dev-platform/DevNotificationBell";
-import { CommandPaletteProvider, useCommandPalette } from "@/components/dev-platform/CommandPalette";
-import { toneTint } from "@/components/support/dev/supportDevUi";
+import Layout from "@/components/Layout";
+import DevPlatformTabs from "@/components/dev-platform/DevPlatformTabs";
 
-// Topbar "⌘K" trigger — rendered inside CommandPaletteProvider so it can open it.
-function PaletteButton() {
-  const { open } = useCommandPalette();
-  return (
-    <button
-      type="button"
-      onClick={open}
-      aria-label="Open command palette"
-      title="Command palette (Ctrl/⌘ K)"
-      className="app-btn app-btn--ghost"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        minHeight: 44,
-        padding: "8px 12px",
-        borderRadius: "var(--radius-md)",
-        fontSize: "var(--text-body-sm)",
-        fontWeight: 600,
-        cursor: "pointer",
-        color: "var(--text-1)",
-        background: toneTint("text-1", 10),
-      }}
-    >
-      <span aria-hidden>⌘K</span>
-      <span style={{ opacity: 0.7 }}>Search</span>
-    </button>
-  );
-}
-
-function NavLink({ item, active }) {
-  return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        minHeight: 44,
-        padding: "8px 12px",
-        borderRadius: "var(--radius-md)",
-        textDecoration: "none",
-        fontSize: "var(--text-body-sm)",
-        fontWeight: active ? 700 : 600,
-        whiteSpace: "nowrap",
-        color: active ? "var(--accentText)" : "var(--text-1)",
-        // Selected state is a tinted background (no surface border — Border Law).
-        background: active ? toneTint("accentText", 14) : "transparent",
-      }}
-    >
-      <span aria-hidden style={{ fontSize: "16px", lineHeight: 1 }}>{item.icon}</span>
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</span>
-    </Link>
-  );
-}
-
+// Inner shell: the top tab group + the active page content. No page frame of its
+// own — the staff <Layout> already provides the sidebar, topbar and page card.
 export default function DevPlatformLayout({ children, activeKey }) {
-  const isMobile = useIsMobile(900);
-  const router = useRouter();
-  const { user, logout } = useUser();
-
-  const resolvedKey =
-    activeKey ||
-    DEV_PLATFORM_NAV.find(
-      (item) => item.href !== "/dev" && router.asPath.startsWith(item.href)
-    )?.key ||
-    "home";
-
-  const userLabel = user?.username || user?.name || "Developer";
-
   return (
-    <CommandPaletteProvider>
-    <div
-      className="app-page-shell"
-      style={{
-        // Match the app's page gutter (CLAUDE.md §3.5).
-        padding: "8px 8px 32px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--page-stack-gap, 12px)",
-      }}
-    >
-      {/* Topbar (sibling surface) */}
-      <LayerSurface
-        as="header"
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "var(--space-md)",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <strong style={{ fontSize: "var(--text-h3, 18px)", color: "var(--accentText)" }}>
-              Developer Platform
-            </strong>
-            <DevHealthPill />
-          </div>
-          <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
-            Internal engineering tooling · signed in as {userLabel}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <PaletteButton />
-          <DevNotificationBell />
-          <Link
-            href="/newsfeed"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 44,
-              padding: "8px 14px",
-              borderRadius: "var(--radius-md)",
-              textDecoration: "none",
-              fontSize: "var(--text-body-sm)",
-              fontWeight: 600,
-              color: "var(--text-1)",
-              background: toneTint("text-1", 10),
-            }}
-          >
-            Exit to app
-          </Link>
-          <button
-            type="button"
-            onClick={() => logout?.()}
-            className="app-btn app-btn--ghost"
-            style={{
-              minHeight: 44,
-              padding: "8px 14px",
-              borderRadius: "var(--radius-md)",
-              fontSize: "var(--text-body-sm)",
-              fontWeight: 600,
-              cursor: "pointer",
-              color: "var(--accentText)",
-              background: toneTint("accentText", 10),
-            }}
-          >
-            Sign out
-          </button>
-        </div>
-      </LayerSurface>
-
-      {/* Body: nav rail (sibling surface) + page content */}
-      <div
-        style={{
-          display: isMobile ? "flex" : "grid",
-          flexDirection: isMobile ? "column" : undefined,
-          gridTemplateColumns: isMobile ? undefined : "minmax(200px, 240px) 1fr",
-          gap: "var(--page-stack-gap, 12px)",
-          alignItems: "start",
-        }}
-      >
-        <LayerSurface
-          as="nav"
-          aria-label="Developer Platform"
-          style={{
-            gap: "4px",
-            position: isMobile ? "static" : "sticky",
-            top: isMobile ? undefined : "8px",
-            flexDirection: isMobile ? "row" : "column",
-            flexWrap: isMobile ? "wrap" : undefined,
-            overflowX: isMobile ? "auto" : undefined,
-          }}
-        >
-          {DEV_PLATFORM_NAV.map((item) => (
-            <NavLink key={item.key} item={item} active={item.key === resolvedKey} />
-          ))}
-        </LayerSurface>
-
-        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
-          {children}
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
+      <DevPlatformTabs activeKey={activeKey} />
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
+        {children}
       </div>
     </div>
-    </CommandPaletteProvider>
   );
 }
 
-// getLayout factory. Returning the SAME <DevPlatformLayout> element type across
-// dev routes keeps the shell mounted; only `activeKey` + children change.
+// getLayout factory. Root is the shared <Layout> (identical element type to the
+// default staff getLayout), so React keeps the sidebar/topbar mounted across all
+// navigations; only `activeKey` + children change inside.
 export function withDevPlatformLayout(options = {}) {
   const { activeKey } = options;
   return function getLayout(page) {
-    return <DevPlatformLayout activeKey={activeKey}>{page}</DevPlatformLayout>;
+    return (
+      <Layout>
+        <DevPlatformLayout activeKey={activeKey}>{page}</DevPlatformLayout>
+      </Layout>
+    );
   };
 }

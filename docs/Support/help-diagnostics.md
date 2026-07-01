@@ -348,6 +348,59 @@ change. Everything reads only already-sanitised / dev-only data, so no new priva
 `e2e/workflows/dev-platform-integration.spec.js` (permission-gate + API-shape + dashboard
 render). `check:borders` / `check:layers` pass on all new UI.
 
+## 11. Access, Support hub tabs & submit notification — **Phase 11 (done)**
+
+Makes the finished platform reachable and legible, and closes the loop to a human on every
+submission. **Purely additive** — no schema change; the only global-file edit is one sidebar-config
+entry (flagged + approved). Nothing reads the RLS-locked diagnostics blob, so no new privacy surface.
+
+- **Staff-shell platform + top tabs + stats home** — the Developer Platform no longer renders a bespoke
+  full-page shell. `withDevPlatformLayout` now wraps every `/dev/*` page in the normal staff `<Layout>`
+  (same sidebar + topbar + page card as any staffglobal.css page — `Layout`/`Sidebar` themselves are
+  untouched), and the 16 platform areas render as an **icon-less top tab group**
+  (`src/components/dev-platform/DevPlatformTabs.js`) at the top of the page content instead of the old
+  left nav rail / custom topbar (health pill · palette button · notification bell were retired from the
+  shell). The **home** (`/dev`) is now a **live statistics dashboard**
+  (`src/components/dev-platform/sections/DevOverviewStats.js`) over the incoming reports — headline
+  counts (total / open / unassigned / regressions / last 24h / last 7d) + status / severity / category
+  breakdowns, read from the existing dev-gated `getSupportReportStats` — not a redirect/tile grid.
+- **Dev entry from the normal app** — a **Developer** sidebar section (`src/config/navigation.js`) with a
+  single **Developer Platform → `/dev`** item gated `roles: ["dev"]`. It is visible *only* to the
+  synthetic `dev` session (the role is absent from `roleCategories` and `DEV_FULL_ACCESS_ROLES`, so no
+  staff session carries it) and asserted by `src/config/navigation.test.js`. `StaffSidebar`'s existing
+  `hasAccess()` does the gating; `StaffSidebar.js` / `StaffLayout.js` are untouched. `/dev` is already in
+  the dev route allow-list, so `PageAccessGuard` is unaffected.
+- **Support hub with top-left tabs** — a new `/dev/support` page (`SupportHubPage`) renders
+  `SupportHub` (`src/components/dev-platform/SupportHub.js`): a borderless top-left tab bar grouping the
+  support areas — **Overview · Reports · Investigations · Health · Notifications · Activity · Settings** —
+  driven by the pure `src/lib/dev-platform/supportSectionTabs.js` model (unit-tested). Only the active
+  tab mounts (so only it fetches); the active tab is mirrored in `?tab=` (shallow, deep-linkable). Each
+  tab renders the **same** component its standalone `/dev/*` page renders — the per-area views were
+  extracted into `src/components/dev-platform/sections/` (`HealthSection`, `NotificationsSection`,
+  `ActivitySection`, `PreferencesSection`, `InvestigationsSection`, plus the new `SupportOverviewSection`
+  jump tiles), and each standalone page slimmed to a thin `ProtectedRoute` + `getLayout` wrapper (the
+  same shape `dev/support-reports/index.js` already had). Reports reuses `SupportWorkspace` directly. The
+  Developer Platform nav `support` entry now points at `/dev/support`; the standalone pages (incl.
+  `/dev/support-reports` + `[id]` detail) remain for deep-links. `DevPlatformLayout` (the shared rail)
+  is unchanged.
+- **Submit notification email** — when any authenticated user submits a report, the route fires a
+  best-effort internal email (to a **hardcoded** `michaelrose01795@icloud.com`) built by the **pure**
+  `src/lib/support/supportReportEmail.js` and sent by `src/lib/support/supportReportNotifier.js` via the
+  existing `sendDmsEmail` + `renderEmailShell` house style. The email carries **only** already-sanitised
+  persisted columns — report id, reporter name/role, category label, submitted time, route, section,
+  `source_file:line`, severity/status, the (re-scrubbed, HTML-escaped, capped) description, screenshot
+  count, and an open link to the report detail — **never** the diagnostics blob, tokens or cookies. The
+  notifier **never throws** and **never blocks** report creation: it skips silently when SMTP is
+  unconfigured and logs+swallows any send failure (the report is already saved). Covered by
+  `src/lib/support/supportReportEmail.test.js` (payload completeness, secret-scrub, HTML-escape,
+  diagnostics-never-leaks, skip-when-unconfigured, swallow-on-failure).
+
+**Verification (Phase 11):** 18 new Vitest tests across `supportSectionTabs.test.js`,
+`supportReportEmail.test.js` and `navigation.test.js` (all green run per-file — the sandbox's
+multi-file worker-init flake is unchanged and unrelated). `check:borders` / `check:layers` /
+`check:encoding` pass; `eslint` + `uk:check` clean on every new/changed file. The reporter "?" popup
+(`SupportControl` / `SupportReportModal`) is untouched.
+
 ## 10. Hard constraints (do not violate)
 
 - Obey **CLAUDE.md** in full (LayerSurface/LayerTheme, no surface borders, tokens, responsive +
@@ -394,8 +447,8 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | Draft persistence | `src/lib/support/supportDraft.js` | Local-only; never leaves the device. |
 | **Dev Platform role** | `src/lib/auth/roles.js` (`DEV_PLATFORM_ROLE`/`DEV_PLATFORM_ROLES`/`hasDevPlatformAccess`) | Phase 8 strict `dev` role — absent from `roleCategories` + `DEV_FULL_ACCESS_ROLES`. |
 | **Dev Platform mint** | `src/pages/api/auth/[...nextauth].js`, `src/pages/login.js`, `src/components/LoginDropdown.js` (+ `page-ui/login-ui.js`) | Synthetic "Developer" Dev-Login area → `signIn(devPlatform:"1")`; NextAuth branch mints `roles:["dev"]`, gated by `isDevAuthAllowed()`; audits `dev_platform_session`. |
-| **Dev Platform shell** | `src/components/dev-platform/{DevPlatformLayout,devPlatformNav,DevHealthPill}.js` | Borderless shared shell (topbar + live health pill + nav rail) applied via per-page `getLayout` — no `_app.js` edit. |
-| **Dev Platform pages** | `src/pages/dev/{index,live-ops,health,saved-views,preferences}.js` | Home tiles + live-ops feed (polls `captureDiagnostics()`) + health tiles + saved-views manager + preferences; all `ProtectedRoute`-gated to `DEV`. |
+| **Dev Platform shell** | `src/components/dev-platform/{DevPlatformLayout,DevPlatformTabs,devPlatformNav}.js` | **Phase 11.1:** `withDevPlatformLayout` wraps `/dev/*` in the normal staff `<Layout>` (sidebar+topbar+page card) + an icon-less top tab group (`DevPlatformTabs`) — the old bespoke shell / nav rail / dev topbar retired. No `_app.js` / `Layout` / `Sidebar` edit. |
+| **Dev Platform pages** | `src/pages/dev/{index,live-ops,health,saved-views,preferences}.js` | Home is a **live report-statistics dashboard** (`DevOverviewStats`, Phase 11.1) — not a tile grid; plus live-ops feed (polls `captureDiagnostics()`) + health tiles + saved-views manager + preferences; all `ProtectedRoute`-gated to `DEV`. |
 | **Search substrate** | `src/lib/dev-platform/searchEngine.js` | Pure generic `applyQuery(items,{q,searchFields,filters,matchers,sort,sorters})` reused across platform surfaces. |
 | **Saved views + prefs data** | `src/lib/database/supportSavedViews.js`, `src/lib/support/savedViewValidation.js` | Service-role, owner-`owner_key`-scoped CRUD + upsert prefs; graceful degradation; pure validation/normalisation split. |
 | **Saved views + prefs API** | `src/pages/api/support/saved-views/{index,[id]}.js`, `src/pages/api/support/preferences.js` | Dev-gated (`DEV_PLATFORM_ROLES`) list/create/update/delete + get/put prefs; audit-logged. |
@@ -412,6 +465,10 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
 | **Phase 10 shell + hooks** | `src/components/dev-platform/{CommandPalette,DevNotificationBell,useNotifications,usePlatformResource}.js` | Ctrl/⌘-K palette provider (mounted in `DevPlatformLayout`) + topbar bell (SSE-driven) + notifications hook (SSE + poll fallback) + generic GET hook. |
 | **Phase 10 pages** | `src/pages/dev/{readiness,productivity,knowledge,notifications,activity,plugins}.js` | Deployment readiness + approvals · productivity · knowledge centre · notification history+rules · activity/audit + coverage · plugin inventory. Nav entries in `devPlatformNav.js`; all `ProtectedRoute`-gated to `DEV`. |
 | **Phase 10 detail panels** | `src/components/support/dev/{SupportAssistedPanel,SupportGithubPanel}.js` | Assisted investigation + two-way GitHub / source deep-links, rendered inside `SupportReportDetail.js`. |
+| **Dev sidebar entry (Phase 11)** | `src/config/navigation.js` (+ `navigation.test.js`) | "Developer" section → `Developer Platform /dev`, gated `roles:["dev"]`; visible only to the synthetic dev session. Global sidebar-config edit (flagged/approved). |
+| **Support hub tab model (Phase 11)** | `src/lib/dev-platform/supportSectionTabs.js` (+ `.test.js`) | Pure ordered tab model (overview/reports/investigations/health/notifications/activity/settings) + `resolveSupportTab` for `?tab=`. |
+| **Support hub UI (Phase 11)** | `src/pages/dev/support.js`, `src/components/dev-platform/SupportHub.js`, `src/components/dev-platform/sections/{SupportOverviewSection,HealthSection,NotificationsSection,ActivitySection,PreferencesSection,InvestigationsSection}.js` | `/dev/support` hub with borderless top-left tabs; per-area views extracted from the `/dev/*` pages (which slimmed to thin wrappers); Reports reuses `SupportWorkspace`. Nav `support` entry repointed in `devPlatformNav.js`. |
+| **Submit notification (Phase 11)** | `src/lib/support/supportReportEmail.js` (+ `.test.js`), `src/lib/support/supportReportNotifier.js` | Pure builder (sanitised, escaped, diagnostics-free) + best-effort, never-throwing sender to a hardcoded dev inbox; wired into `api/support/reports.js` `handlePost`. Reuses `sendDmsEmail` / `renderEmailShell`. |
 
 ## Data flow
 
@@ -427,7 +484,10 @@ Everything that exists today. Tests live beside each module (`*.test.js`, Vitest
    identity-from-session, derive columns incl. build) → build the **investigation** with prior
    fingerprints + live `currentBuild` → embed `investigation`+`fingerprint` if within cap →
    persist via helper (3rd sanitise) → upload screenshots to private bucket → `writeAuditLog`.
-5. **Response** — only `{ id, screenshotCount }`. The investigation stays server-side/RLS-locked.
+5. **Notify** (Phase 11) — best-effort `sendSupportReportNotification` fires a sanitised internal email
+   (persisted columns only, never the diagnostics blob) to a developer inbox. It never throws and
+   never blocks: skips when SMTP is unconfigured, logs+swallows any failure (the report is already saved).
+6. **Response** — only `{ id, screenshotCount }`. The investigation stays server-side/RLS-locked.
 
 **Developer read/triage flow (Phase 6):** the Support Centre calls the dev-gated
 `GET /api/support/reports` (list light rows + investigation-derived JSON subfields + stats),
@@ -475,6 +535,7 @@ only). No new capture path, column, or store is introduced.
 | **8** | **Developer Platform — Foundation, Access & Live Operations** (`dev` role + strict access migration, workspace shell, live diagnostics, application health, search/filter substrate, saved workspaces, preferences) | ✅ **Done** (the deferred palette / notification *delivery* / quick-actions / SSE follow-up shipped in **Phase 10**) |
 | **9** | **Developer Platform — Intelligence** (investigation & release dashboards, intelligent issue management, regression tracking, code ownership + dependency mapping, performance profiling, API tracing) | ✅ **Done** (DB query-level timing store flagged/deferred — see limitations) |
 | **10** | **Developer Platform — Integration, Extensibility & Enterprise Hardening** (two-way GitHub, AI-assisted investigation, plugin architecture, notifications+rules+SSE, command palette, knowledge centre, readiness/approvals, productivity, activity/audit sweep, source nav, enterprise polish) | ✅ **Done** — see [§10c](#10c-developer-platform--integration-extensibility--hardening--phase-10-done). GitHub two-way needs `SUPPORT_GITHUB_TOKEN` to transact (manual action). |
+| **11** | **Access, Support hub tabs & submit notification** (dev sidebar entry → `/dev`; `/dev/support` hub grouping the support areas into top-left tabs; best-effort sanitised email to a developer inbox on every submission) | ✅ **Done** — see [§11](#11-access-support-hub-tabs--submit-notification--phase-11-done). Email needs SMTP configured to send (skips silently otherwise). |
 
 **Phases 1–7 are delivered and production-ready** — capture, analysis, investigation, version
 pinning, the developer Support Centre, and the hardening layer are all in place, tested, and
@@ -632,9 +693,10 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
 
 ## Outstanding work
 
-- **Phases 1–10 are delivered — the entire Help & Diagnostics + Developer Platform programme is
+- **Phases 1–11 are delivered — the entire Help & Diagnostics + Developer Platform programme is
   complete.** Capture, analysis, investigation, version pinning, the Support Centre, hardening, the
-  `dev` platform foundation, intelligence, and the Phase 10 integration/extensibility/hardening layer
+  `dev` platform foundation, intelligence, the Phase 10 integration/extensibility/hardening layer, and the
+  Phase 11 access + Support-hub-tabs + submit-notification layer
   are all in place, tested (558 unit tests), privacy-clean, and CLAUDE.md-compliant.
 - **The deferred Phase 8 follow-ups are now closed:** the command palette + quick actions ship in the
   platform shell; notification **delivery** is live (per-recipient `support_notifications` +
@@ -765,6 +827,14 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   the accessibility bar (ARIA roles on the palette/bell/dialogs, full keyboard operation, 44px targets,
   responsive reflow, token-only colour) and passes `check:borders`/`check:layers`, but a formal audited
   score + a keyboard-navigation matrix remain a dedicated QA task (backlog).
+- **Submit-notification recipient is hardcoded** (Phase 11) — the internal email always goes to
+  `michaelrose01795@icloud.com` (a one-line constant in `supportReportEmail.js`); it is **not**
+  env-configurable and does not honour the per-recipient `support_notification_rules`. It also **only
+  sends when SMTP is configured** (`isSmtpConfigured()`); otherwise it skips silently and the submission
+  still succeeds. A rules-driven / multi-recipient / env-configured channel is a future enhancement.
+- **Support hub tabs are single-active + client-fetched** (Phase 11) — only the active tab mounts, so
+  switching tabs re-fetches that area's data (no cross-tab cache); the grouping is a UI convenience over
+  the same dev-gated APIs the standalone `/dev/*` pages use, which remain the canonical deep-link targets.
 
 ## Manual actions outstanding
 
@@ -780,6 +850,11 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   **`support_release_approvals`** and **`support_knowledge_entries`** (RLS on, no policies). Until
   they run, the GitHub-link / notifications / release-approval / knowledge surfaces degrade to empty.
   Safe to re-run.
+- **Configure SMTP for the submit notification** (Phase 11) — the internal "new support report" email
+  reuses the existing mailer, so it needs `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` (optional
+  `SMTP_FROM` / `SMTP_COMPANY_NAME`). Without them the notifier skips silently and report submission is
+  unaffected. The recipient (`michaelrose01795@icloud.com`) is a hardcoded constant in
+  `src/lib/support/supportReportEmail.js` — edit there to change it.
 - **Set the GitHub integration secrets to enable two-way sync** (Phase 10) — set the **server-only**
   `SUPPORT_GITHUB_TOKEN` (a fine-grained PAT / app token with `issues:write`) and `SUPPORT_GITHUB_REPO`
   = `owner/repo` (or reuse `NEXT_PUBLIC_GITHUB_REPO`). Without them, the report detail still links
