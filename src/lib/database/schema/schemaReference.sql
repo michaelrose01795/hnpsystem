@@ -1696,7 +1696,8 @@ CREATE TABLE public.support_reports (
   title text,
   description text NOT NULL,
   category text NOT NULL DEFAULT 'bug'::text CHECK (category IN ('bug','question','suggestion','visual','data','other')),
-  screenshot_path text,
+  screenshot_path text,          -- primary/first screenshot (legacy single-image column)
+  screenshot_paths text[],       -- full ordered list of attached screenshot object paths
   reporter_user_id integer,
   reporter_username text,
   reporter_roles text[],

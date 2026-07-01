@@ -33,8 +33,11 @@ import {
   installBrowserCapture,
   captureDiagnostics as assembleDiagnostics,
   recordAction,
+  recordError,
   snapshotDevice,
 } from "@/lib/support/diagnostics";
+import { collectProviderDiagnostics } from "@/lib/support/diagnosticRegistry";
+import { registerBuiltinDiagnosticProviders } from "@/lib/support/providers";
 
 const noop = () => {};
 
@@ -45,6 +48,8 @@ const SupportReportContext = createContext({
   openSupportReport: noop,
   closeSupportReport: noop,
   captureDiagnostics: () => ({}),
+  recordRenderError: noop,
+  recordDiagnosticEvent: noop,
 });
 
 // Build the static build/version info available today. Phase 5 will populate
@@ -74,8 +79,11 @@ export function SupportDiagnosticsProvider({ children }) {
   const [prefill, setPrefill] = useState(null);
   const [snapshot, setSnapshot] = useState(null);
 
-  // Install browser capture (console/error/fetch/click) once on mount.
+  // Install browser capture (console/error/fetch/click) once on mount, and
+  // register the built-in diagnostic providers (UI state + dev metadata). Feature
+  // teams can register their own providers anywhere; see diagnosticRegistry.js.
   useEffect(() => {
+    registerBuiltinDiagnosticProviders();
     const uninstall = installBrowserCapture(storeRef.current, { now: () => Date.now() });
     return uninstall;
   }, []);
@@ -114,6 +122,16 @@ export function SupportDiagnosticsProvider({ children }) {
         dbUserId: Number.isInteger(dbUserId) ? dbUserId : null,
         isDevLogin: Boolean(user?.isDevLogin),
       };
+      const isDev =
+        Boolean(user?.isDevLogin) || process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+      // Collect per-feature diagnostics from every registered provider. Faulty
+      // providers are swallowed inside collectProviderDiagnostics.
+      const providers = collectProviderDiagnostics({
+        win: typeof window !== "undefined" ? window : undefined,
+        doc: typeof document !== "undefined" ? document : undefined,
+        store: storeRef.current,
+        isDev,
+      });
       return assembleDiagnostics(storeRef.current, {
         capturedAt: new Date().toISOString(),
         route: {
@@ -126,9 +144,51 @@ export function SupportDiagnosticsProvider({ children }) {
         flags: readFlags(),
         device: snapshotDevice(),
         build: readBuildInfo(),
+        providers,
       });
     },
     [router, user, dbUserId, sessionStatus, latestSectionKey]
+  );
+
+  // Phase 4 — the SupportErrorBoundary feeds caught React render errors and
+  // recovery attempts into THIS store so they ride along in the next captured
+  // bundle. Runtime exceptions + unhandled promise rejections are already
+  // captured by installBrowserCapture's window listeners, so the boundary never
+  // adds its own window listeners — it only contributes the render error (with
+  // component stack) and the recovery timeline, avoiding duplicate events.
+  const recordRenderError = useCallback(
+    ({ error, componentStack } = {}) => {
+      const message = error?.message || String(error ?? "Render error");
+      recordError(storeRef.current, {
+        message,
+        stack: error?.stack,
+        componentStack,
+        ts: Date.now(),
+      });
+      // Mirror it onto the action timeline so it is visible in recent_actions,
+      // tagged with the section the user last interacted with (code ownership
+      // is resolved from this at capture time).
+      recordAction(storeRef.current, {
+        type: "render_error",
+        label: message,
+        sectionKey: latestSectionKey(),
+        ts: Date.now(),
+      });
+    },
+    [latestSectionKey]
+  );
+
+  // Record a recovery attempt (retry / reload / open-report) as a timeline event.
+  const recordDiagnosticEvent = useCallback(
+    (event = {}) => {
+      recordAction(storeRef.current, {
+        type: event.type || "action",
+        label: event.label,
+        sectionKey: event.sectionKey || latestSectionKey(),
+        ts: Date.now(),
+      });
+    },
+    [latestSectionKey]
   );
 
   const openSupportReport = useCallback(
@@ -155,8 +215,19 @@ export function SupportDiagnosticsProvider({ children }) {
       openSupportReport,
       closeSupportReport,
       captureDiagnostics,
+      recordRenderError,
+      recordDiagnosticEvent,
     }),
-    [isOpen, prefill, snapshot, openSupportReport, closeSupportReport, captureDiagnostics]
+    [
+      isOpen,
+      prefill,
+      snapshot,
+      openSupportReport,
+      closeSupportReport,
+      captureDiagnostics,
+      recordRenderError,
+      recordDiagnosticEvent,
+    ]
   );
 
   return <SupportReportContext.Provider value={value}>{children}</SupportReportContext.Provider>;

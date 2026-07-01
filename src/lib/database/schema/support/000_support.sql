@@ -20,8 +20,11 @@ CREATE TABLE IF NOT EXISTS public.support_reports (
   description     text NOT NULL,
   category        text NOT NULL DEFAULT 'bug'
                     CHECK (category IN ('bug','question','suggestion','visual','data','other')),
-  -- attachment (screenshot) — object path inside the private support-reports bucket
+  -- attachment (screenshot) — object path inside the private support-reports bucket.
+  -- screenshot_path keeps the FIRST/primary image (legacy single-image column);
+  -- screenshot_paths holds the full ordered list once a report has several.
   screenshot_path text,
+  screenshot_paths text[],
   -- reporter identity (denormalised snapshot; FK kept loose to survive user deletion)
   reporter_user_id  integer,
   reporter_username text,
@@ -52,6 +55,10 @@ CREATE TABLE IF NOT EXISTS public.support_reports (
   CONSTRAINT support_reports_assigned_fkey FOREIGN KEY (assigned_to)
     REFERENCES public.users(user_id)
 );
+
+-- Additive columns for tables created before this column existed (idempotent).
+ALTER TABLE public.support_reports
+  ADD COLUMN IF NOT EXISTS screenshot_paths text[];
 
 CREATE INDEX IF NOT EXISTS support_reports_status_idx
   ON public.support_reports (status, created_at DESC);

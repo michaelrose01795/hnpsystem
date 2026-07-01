@@ -326,7 +326,14 @@
       "Bash(echo \"--- exit=$? ---\")",
       "Bash(echo \"lint exit: $?\")",
       "Bash(echo \"eslint exit: $?\")",
-      "Bash(node -e \"const p=require\\('./package.json'\\); const d={...p.dependencies,...p.devDependencies}; console.log\\(JSON.stringify\\(Object.keys\\(d\\).filter\\(k=>/jsdom|testing-library|react-dom|react\\\\b|vitest|happy-dom|next-test/i.test\\(k\\)\\).reduce\\(\\(a,k\\)=>\\(a[k]=d[k],a\\),{}\\),null,2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\); const d={...p.dependencies,...p.devDependencies}; console.log\\(JSON.stringify\\(Object.keys\\(d\\).filter\\(k=>/jsdom|testing-library|react-dom|react\\\\b|vitest|happy-dom|next-test/i.test\\(k\\)\\).reduce\\(\\(a,k\\)=>\\(a[k]=d[k],a\\),{}\\),null,2\\)\\)\")",
+      "PowerShell(npx vitest run src/lib/support/ 2>&1)",
+      "PowerShell(npx eslint src/lib/support/errorBoundaryDiagnostics.js src/lib/support/errorBoundaryDiagnostics.test.js src/components/support/SupportErrorBoundary.js src/context/SupportReportContext.js src/pages/_app.js 2>&1)",
+      "PowerShell(npm run check:encoding 2>&1)",
+      "PowerShell(npx eslint src/components/support/SupportErrorBoundary.js 2>&1)",
+      "PowerShell(npx vitest run src/lib/support/actionSummary.test.js src/lib/support/supportDraft.test.js 2>&1)",
+      "PowerShell(npx eslint src/lib/support/actionSummary.js src/lib/support/supportDraft.js src/lib/support/reportSubmission.js src/components/support/SupportScreenshotField.js src/components/support/SupportReportModal.js src/pages/api/support/reports.js src/lib/database/support.js 2>&1)",
+      "PowerShell(npx vitest run src/lib/support/diagnosticRegistry.test.js src/lib/support/providers/providers.test.js src/lib/support/diagnosticAnalysis.test.js 2>&1)"
     ],
     "deny": [],
     "ask": [],

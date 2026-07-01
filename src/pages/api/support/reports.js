@@ -15,16 +15,17 @@
 //      its path. Upload failure does not fail the report (it is already saved).
 //   5. Write the append-only audit log entry for the create.
 //
-// Body shape (JSON): { title?, description, category, diagnostics, screenshot? }
+// Body shape (JSON): { title?, description, category, diagnostics, screenshots? }
 // where `diagnostics` is the sanitised snapshot from the support context and
-// `screenshot` is an optional base64 image data URL.
+// `screenshots` is an optional array of base64 image data URLs (a legacy single
+// `screenshot` string is still accepted).
 
 import createHandler from "@/lib/api/createHandler";
-import { createSupportReport, setSupportReportScreenshot } from "@/lib/database/support";
+import { createSupportReport, setSupportReportScreenshots } from "@/lib/database/support";
 import {
   uploadSupportScreenshot,
 } from "@/lib/storage/supportMediaBucketService";
-import { buildReportInsert, decodeScreenshot } from "@/lib/support/reportSubmission";
+import { buildReportInsert, decodeScreenshots } from "@/lib/support/reportSubmission";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
 export const config = {
@@ -42,10 +43,11 @@ const clientIp = (req) => {
 };
 
 async function handlePost(req, res, session) {
-  // 1. Validate the screenshot before creating anything.
-  const shot = decodeScreenshot(req.body?.screenshot);
-  if (!shot.ok) {
-    return res.status(400).json({ success: false, message: shot.error });
+  // 1. Validate the screenshots before creating anything (accepts the new
+  //    `screenshots` array; falls back to a legacy single `screenshot`).
+  const shots = decodeScreenshots(req.body?.screenshots ?? req.body?.screenshot);
+  if (!shots.ok) {
+    return res.status(400).json({ success: false, message: shots.error });
   }
 
   // 2. Validate + assemble the insert (re-sanitises diagnostics, identity from session).
@@ -64,15 +66,22 @@ async function handlePost(req, res, session) {
   }
   const reportId = created.data?.id;
 
-  // 4. Upload the screenshot (best-effort — the report is already saved).
-  let screenshotAttached = false;
-  if (shot.file && reportId) {
-    try {
-      const { storagePath } = await uploadSupportScreenshot(shot.file, reportId);
-      const updated = await setSupportReportScreenshot(reportId, storagePath);
-      screenshotAttached = Boolean(updated.success);
-    } catch (error) {
-      console.error("[support] screenshot attach failed:", error?.message || error);
+  // 4. Upload the screenshots (best-effort — the report is already saved). Each
+  //    upload is independent; any that fail are simply omitted from the list.
+  let screenshotCount = 0;
+  if (shots.files.length && reportId) {
+    const uploadedPaths = [];
+    for (const file of shots.files) {
+      try {
+        const { storagePath } = await uploadSupportScreenshot(file, reportId);
+        uploadedPaths.push(storagePath);
+      } catch (error) {
+        console.error("[support] screenshot upload failed:", error?.message || error);
+      }
+    }
+    if (uploadedPaths.length) {
+      const updated = await setSupportReportScreenshots(reportId, uploadedPaths);
+      if (updated.success) screenshotCount = uploadedPaths.length;
     }
   }
 
@@ -87,7 +96,7 @@ async function handlePost(req, res, session) {
       category: input.category,
       route: input.route,
       section_key: input.sectionKey,
-      has_screenshot: screenshotAttached,
+      screenshot_count: screenshotCount,
     },
     ip: clientIp(req),
     userAgent: req.headers["user-agent"] || null,
@@ -95,7 +104,7 @@ async function handlePost(req, res, session) {
 
   return res.status(201).json({
     success: true,
-    data: { id: reportId, screenshotAttached },
+    data: { id: reportId, screenshotCount },
   });
 }
 

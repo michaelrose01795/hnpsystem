@@ -18,6 +18,7 @@
 
 import { sanitiseDiagnostics, scrubString } from "@/lib/support/sanitise";
 import { findDevLayoutSectionSources } from "@/lib/dev-layout/sectionSourceMap";
+import { analyseDiagnostics } from "@/lib/support/diagnosticAnalysis";
 
 // Buffer caps — small on purpose (cheap, bounded memory, never persisted unless
 // a report is filed). See plan §6.
@@ -211,9 +212,9 @@ export function snapshotDevice(win = typeof window !== "undefined" ? window : un
  * @param {ReturnType<typeof createDiagnosticsStore>} store
  * @param {{
  *   route?: object, sectionKey?: string, session?: object, flags?: object,
- *   device?: object, build?: object, capturedAt?: string
+ *   device?: object, build?: object, capturedAt?: string, providers?: object
  * }} [context]
- * @returns {object} sanitised diagnostics bundle
+ * @returns {object} sanitised diagnostics bundle (with `analysis` attached)
  */
 export function captureDiagnostics(store, context = {}) {
   const bundle = {
@@ -224,6 +225,9 @@ export function captureDiagnostics(store, context = {}) {
     session: pickAllowed(context.session, SESSION_ALLOWLIST),
     feature_flags: pickAllowed(context.flags, FLAG_ALLOWLIST),
     build: context.build || undefined,
+    // Extensible per-feature diagnostics from registered providers (Phase: the
+    // intelligent assistant). Already plain objects; sanitised below with the rest.
+    providers: context.providers && Object.keys(context.providers).length ? context.providers : undefined,
     console_errors: store?.console?.toArray?.() || [],
     failed_requests: store?.requests?.toArray?.() || [],
     recent_actions: store?.actions?.toArray?.() || [],
@@ -231,7 +235,12 @@ export function captureDiagnostics(store, context = {}) {
   };
   // Defence in depth: the buffers already scrubbed, but re-run the full
   // sanitiser over the assembled object (and drop undefineds via JSON).
-  return sanitiseDiagnostics(bundle);
+  const sanitised = sanitiseDiagnostics(bundle);
+  // Attach the assistant's analysis. It is derived ONLY from the already-sanitised
+  // fields above, so it introduces no new privacy surface; the server re-sanitises
+  // the whole blob on ingest regardless.
+  sanitised.analysis = analyseDiagnostics(sanitised);
+  return sanitised;
 }
 
 // ---------------------------------------------------------------------------

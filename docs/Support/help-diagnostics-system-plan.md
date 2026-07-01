@@ -141,6 +141,69 @@ Screenshot (Phase 3): prefer `getDisplayMedia`; cap dimensions/size.
 
 ---
 
+## 6a. Diagnostic assistant + extension points — **(pre-Phase-5 intelligence pass)**
+
+Two pure, node-testable layers sit on top of the Phase 2 capture so the popup can
+reason about a snapshot, and so **future features can contribute diagnostics
+without touching the popup or capture core**.
+
+### Analysis engine — `src/lib/support/diagnosticAnalysis.js`
+`analyseDiagnostics(snapshot)` (pure; reads only the already-sanitised snapshot,
+so it adds **no new privacy surface**) returns:
+- `incidents[]` — console errors / failed requests / render exceptions grouped by
+  time-proximity (`INCIDENT_GAP_MS`) into one incident; each has a `trigger` (the
+  earliest event), `cascade` flag (different errors followed the trigger), and
+  `duplicateCount`.
+- `primaryIncidentId` — most-severe / largest / most-recent incident.
+- `duplicates[]` — identical-signature events seen more than once (signatures
+  collapse digits/uuids so "the same error" groups).
+- `probableCause` — `{ summary, confidence (0–0.95), evidence[] }`, a heuristic
+  score from trigger kind + cascade + duplicates.
+- `affected` — `{ page, pathname, route, sectionKey, component, codeOwnership }`
+  (component name parsed from the first component stack in the incident).
+- `timeline[]` — merged actions + errors in time order, with the single trigger
+  flagged (`isTrigger`).
+- `counts` — console/request/error/action totals.
+
+`buildEnrichedDescription(snapshot, analysis?)` writes the popup's pre-filled
+description (probable cause + confidence + affected + a marked-trigger timeline),
+replacing the old bare action list. It is attached to every captured snapshot as
+`snapshot.analysis` inside `captureDiagnostics()`.
+
+### Extension registry — `src/lib/support/diagnosticRegistry.js`
+The extension point for **any** feature to add its own diagnostics:
+
+```js
+import { registerDiagnosticProvider } from "@/lib/support/diagnosticRegistry";
+registerDiagnosticProvider({
+  id: "jobcard",            // unique; re-registering replaces
+  label: "Job card state",
+  devOnly: false,           // true → only collected when capture context isDev
+  collect({ doc, win, store, snapshot, isDev }) {
+    // MUST be synchronous, side-effect-free, defensive (never throw — a throw is
+    // swallowed so one bad provider can't break a report), and return a plain
+    // JSON-able object of NAMES/booleans, never secrets or raw user values.
+    return { activeJobNumber: doc?.querySelector?.("[data-job-number]")?.textContent };
+  },
+});
+```
+
+At capture, `SupportReportContext` calls `collectProviderDiagnostics({ win, doc,
+store, isDev })` and the results are merged into the snapshot under
+`providers.<id>` (then sanitised with everything else). Built-ins live in
+`src/lib/support/providers/` and register via `registerBuiltinDiagnosticProviders()`
+on provider mount:
+- **`ui-state`** — active tab, modal state, filter selections, and form-field
+  *identity + filled boolean* (NEVER values). Excludes the support popup itself.
+- **`dev-metadata`** (`devOnly`) — performance timing, memory pressure, network
+  quality, repeated API failures, recent route churn.
+
+**Privacy:** providers follow the "names/booleans, not values" rule; everything
+they return is still run through the shared sanitiser, and the size cap + server
+re-sanitisation apply unchanged.
+
+---
+
 ## 7. Dev-only debug viewer — **Phase 6**
 
 Role-gated `/dev/support-reports` (+ `[id]`) gated by `ProtectedRoute` + `DEV_FULL_ACCESS_ROLES`:

@@ -22,8 +22,8 @@
 | 1 | Foundation & data model | ✅ Done | SQL migration, sanitiser (+tests), DB helper, private storage bucket. |
 | 2 | Capture runtime | ✅ Done | Capture lib + context provider + tests done. `_app.js` provider mount applied (flagged + approved). |
 | 3 | UI: "?" control + popup + POST route | ✅ Done | Text-only "?" in StaffTopbar, lazy modal, screenshot capture+redact, authenticated POST route, audit log. |
-| 4 | Error boundaries | ⏳ Next | |
-| 5 | Version / code-state pinning | ⬜ Pending | Needs `next.config` env exposure. |
+| 4 | Error boundaries | ✅ Done | App-wide `SupportErrorBoundary` (shell-mounted, flagged + approved), render-error + recovery-timeline capture into the diagnostics provider, recovery screen (retry / reload / pre-filled report), reusable for nested page boundaries. |
+| 5 | Version / code-state pinning | ⏳ Next | Needs `next.config` env exposure. |
 | 6 | Dev viewer, triage & audit | ⬜ Pending | |
 | 7 | Hardening (rate limit, retention, RLS review, E2E) | ⬜ Pending | |
 
@@ -167,6 +167,212 @@
 **Manual action outstanding**
 - Phase 1's `000_support.sql` must be applied in Supabase (table + private bucket
   are auto-ensured on first upload, but the table is created by that migration).
+
+---
+
+### Phase 4 — Error boundaries (complete)
+
+**Created**
+- `src/lib/support/errorBoundaryDiagnostics.js` — pure, node-testable helpers for
+  the boundary: `BOUNDARY_EVENTS` (caught/retry/reload/report), `errorMessage`,
+  `topComponentFromStack` (names the failing component from a React component
+  stack), `buildBoundaryReportPrefill` (bug-category title + description for the
+  pre-filled report), `buildBoundaryEvent` (typed/clamped timeline event matching
+  `recordAction`'s generic shape). No window/document access; records nothing
+  itself — only builds plain objects the boundary feeds into the existing store.
+- `src/lib/support/errorBoundaryDiagnostics.test.js` — 12 Vitest cases: helper
+  behaviour (message/stack parsing, prefill title clamp + component naming, event
+  clamping) **plus diagnostics integration**: a recorded render error surfaces in
+  `unhandled_errors` with its component stack and **scrubbed stack** (planted
+  `sk_live_…` redacted), and recovery attempts surface in `recent_actions` in
+  order **without duplication** (one caught error → exactly one error entry).
+- `src/components/support/SupportErrorBoundary.js` — the boundary. Inner class
+  (`getDerivedStateFromError` / `componentDidCatch`) modelled on the existing
+  `JobCardErrorBoundary`, plus a functional wrapper that wires the Phase 2
+  context. Catches React render errors + component stacks; feeds them to the
+  shared store via `recordRenderError`; records each recovery attempt
+  (`recordDiagnosticEvent`). Renders a borderless `LayerSurface` recovery screen
+  (CLAUDE.md §3) with **Try again / Reload app / Report a problem** (44px touch
+  targets); "Report" opens the Phase 3 popup **pre-filled** with the error
+  context. Auto-resets on route change (`resetKey`). Reusable: accepts a custom
+  `fallback` render-prop and can wrap individual page subtrees for nested
+  boundaries. `hostSupportModal` lets the shell boundary host the report popup
+  when the StaffTopbar (its normal host) is unmounted — nested boundaries leave
+  it false so there is no duplicate modal.
+
+**Edited**
+- `src/context/SupportReportContext.js` — exposed two additive context methods
+  used only by the boundary: `recordRenderError({ error, componentStack })`
+  (records the render error into the shared store **and** mirrors it onto the
+  action timeline tagged with the last section key) and `recordDiagnosticEvent`
+  (records a recovery attempt). The boundary adds **no window listeners** —
+  runtime exceptions + unhandled promise rejections are already captured by
+  Phase 2's `installBrowserCapture`, so re-listening would double-record them.
+- `src/pages/_app.js` — **flagged global change (CLAUDE.md §7 — application
+  shell), approved per the Phase 4 task**: wrapped `<AppWrapper>` with
+  `<SupportErrorBoundary hostSupportModal>` **inside** the existing
+  `<SupportDiagnosticsProvider>` (so the boundary reads the diagnostics context).
+  Additive; no provider order changes.
+
+**Verification**
+- `npx vitest run src/lib/support/` → 56/56 pass (Phase 1+2+3+4).
+- `npm run check:borders` / `check:layers` / `check:encoding` → all pass.
+- `npx eslint` on all Phase 4 files (+ `_app.js`, context) → 0 errors, 0 warnings.
+
+**Deviations from plan**
+- **Boundary test is logic-level, not React-rendered** — same rationale as Phase
+  3 (no jsdom / React DOM runner in the repo; the rendered crash→recovery→report
+  flow is assigned to Playwright in Phase 7). The privacy-critical and
+  capture-integration logic is covered via the pure `errorBoundaryDiagnostics`
+  helpers replayed against the real diagnostics store.
+- Runtime exceptions + unhandled rejections are **not** re-captured by the
+  boundary (they are already captured app-wide in Phase 2); the boundary's unique
+  contribution is the React render error + component stack + recovery timeline.
+
+---
+
+### Popup polish (pre-Phase 5, complete)
+
+A round of UX/usefulness improvements to the Phase 3 report popup, done **before**
+starting Phase 5 (version pinning). No version/code-state pinning was started.
+
+**Created**
+- `src/lib/support/actionSummary.js` (+ `.test.js`, 7 cases) — pure
+  `describeAction` + `buildDescriptionDraft(snapshot)`: turns the last 10 captured
+  actions (plus page + detected error / failed-request counts) into a plain-English
+  description draft. Reads only the already-sanitised snapshot — no new privacy
+  surface. Tested for per-type phrasing, the last-10 cap, and empty snapshots.
+- `src/lib/support/supportDraft.js` (+ `.test.js`, 8 cases) — pure, storage-injected
+  draft persistence (`loadDraft` / `saveDraft` / `clearDraft` / `normaliseDraft` /
+  `isDraftEmpty`). Caps description (5000) + screenshot count (6); drops screenshots
+  rather than throwing on a storage-quota error; ignores corrupt JSON. Nothing
+  leaves the device.
+
+**Edited**
+- `src/components/support/SupportReportModal.js` — (1) category now uses the
+  **canonical shared `DropdownField`** (no raw `<select>`); (2) **optional Title
+  field removed**; (3) the required `*` sits **inline** with "What happened?";
+  (4) the description **auto-fills** from `buildDescriptionDraft` and stays fully
+  editable (user edits are never clobbered by the auto-fill); (5) **Clear** button
+  resets the draft + screenshots; (6) the draft is **auto-saved** on every change
+  and cleared only on Send report / Clear; (7) submits `screenshots` (array);
+  (8) hides itself (`visibility:hidden`, stays mounted) while a capture runs.
+- `src/components/support/SupportScreenshotField.js` — rebuilt as a multi-image
+  gallery (`SupportScreenshotsField`): **auto-starts** a capture on open, a
+  **"+ Add another"** control captures extra shots (capped at 6), the popup is
+  **hidden during each capture** so it's never in the shot, and per-shot
+  **drag-to-redact** is preserved (only the flattened PNG is emitted). Restored
+  draft images show as static previews. Graceful fallback when capture is
+  unsupported or auto-start is blocked.
+- `src/lib/support/reportSubmission.js` (+ tests, 5 new cases) — added
+  `decodeScreenshots(array)` (keeps single `decodeScreenshot`); validates every
+  entry, fails the whole batch on any bad/oversized image (no half-attached
+  report), caps at `MAX_SCREENSHOTS = 6`. Re-sanitisation + identity-from-session
+  unchanged.
+- `src/lib/database/support.js` — `createSupportReport` now accepts
+  `screenshotPaths[]` (first → legacy `screenshot_path`, full list →
+  `screenshot_paths`); added `setSupportReportScreenshots`; both list/detail column
+  sets include `screenshot_paths`.
+- `src/pages/api/support/reports.js` — accepts `screenshots[]` (legacy single
+  `screenshot` still tolerated), uploads each to the private bucket independently
+  (failures simply omitted), attaches the path list, audit `diff.screenshot_count`.
+- `src/lib/database/schema/support/000_support.sql` + `schemaReference.sql` — added
+  `screenshot_paths text[]` (with an idempotent `ALTER TABLE … ADD COLUMN IF NOT
+  EXISTS` for already-created tables).
+- `CLAUDE.md` §3.4 + new **§3.4a "Dropdowns — THE LAW"** — documents the reusable
+  rule: every dropdown must be the shared `DropdownField` (never a raw `<select>`).
+
+**Verification**
+- `npx vitest run src/lib/support/` → 75/75 pass.
+- `npm run check:borders` / `check:layers` / `check:encoding` → all pass.
+- `npx eslint` on all changed files → 0 errors, 0 warnings.
+
+**Privacy**
+- All record-time + capture-time + server-side (×3) sanitisation, screenshot
+  redaction, and the size cap are unchanged. The auto-filled description is built
+  only from the already-sanitised snapshot; the local draft never leaves the
+  device.
+
+**Manual action outstanding**
+- Apply the updated `000_support.sql` in Supabase — it now adds the
+  `screenshot_paths text[]` column (idempotent; safe to re-run).
+
+---
+
+### Diagnostic assistant + extension system (pre-Phase 5, complete)
+
+Turned the popup into an intelligent assistant and made the diagnostics system
+extensible. Still **before** Phase 5 (no version/code-state pinning started).
+
+**Created**
+- `src/lib/support/diagnosticAnalysis.js` (+ `.test.js`, 10 cases) — pure
+  `analyseDiagnostics(snapshot)`: groups related console errors / failed requests /
+  render exceptions into **incidents** by time-proximity, finds the **trigger**
+  (earliest event), detects **duplicates** (signature collapses ids/numbers) and
+  **cascades**, estimates a **probable cause + confidence (0–0.95) + evidence**,
+  and resolves the **affected page / pathname / route / section key / component /
+  code owner**. `buildEnrichedDescription()` writes the meaningful description
+  draft (cause + affected + marked-trigger timeline). Reads only sanitised fields.
+- `src/lib/support/diagnosticRegistry.js` (+ `.test.js`, 9 cases) — the
+  **extension point**: `registerDiagnosticProvider` / `getDiagnosticProviders` /
+  `clearDiagnosticProviders` / `collectProviderDiagnostics`. Providers are
+  `{ id, label, devOnly, collect(context) }`; faulty providers are swallowed,
+  `devOnly` ones run only when `isDev`, empties are dropped. Future features
+  register a provider — no popup/capture changes needed.
+- `src/lib/support/providers/{uiStateProvider,devMetadataProvider,index}.js`
+  (+ `providers.test.js`, 6 cases) — built-ins. **ui-state**: active tab, modal
+  state, filter selections, and form-field *identity + filled boolean* (NEVER the
+  typed value; the support popup is excluded). **dev-metadata** (`devOnly`):
+  performance timing, memory pressure, network quality, repeated API failures,
+  recent route churn. `registerBuiltinDiagnosticProviders()` wires both.
+
+**Edited**
+- `src/lib/support/diagnostics.js` — `captureDiagnostics` now accepts
+  `context.providers` (merged into the bundle pre-sanitise) and attaches
+  `snapshot.analysis = analyseDiagnostics(sanitised)` (derived from sanitised data
+  only). 
+- `src/context/SupportReportContext.js` — registers the built-in providers on
+  mount and, at capture, runs `collectProviderDiagnostics({ win, doc, store,
+  isDev })` (isDev = devLogin or NEXT_PUBLIC_DEV_AUTH_BYPASS), passing the result
+  through to the snapshot.
+- `src/components/support/SupportReportModal.js` — auto-fill now uses
+  `buildEnrichedDescription`; added a read-only **“Diagnostic assistant” panel**
+  (probable cause + confidence badge + likely component/file), shown only at ≥30%
+  confidence. Screenshots are now `{ src, annotation }`.
+- `src/components/support/SupportScreenshotField.js` — per-image **annotation**
+  field, **↑/↓ reorder**, **Remove**, **duplicate detection** (identical PNG →
+  skipped with a notice), and capture now uses the stream's **intrinsic
+  device-pixel dimensions** (correct across browser zoom + multi-monitor; the user
+  picks the surface in the browser picker).
+- `src/lib/support/supportDraft.js` (+ tests updated) — draft `screenshots` are
+  now `{ src, annotation }` (legacy bare data-URLs coerced); annotation capped.
+  The draft already survives refresh/crash and clears only on Send / Clear.
+- `src/lib/support/reportSubmission.js` (+ tests, +4 cases) — `decodeScreenshots`
+  reads `{ src }` entries; per-image **annotations are embedded (scrubbed) into
+  `diagnostics.attachments` by order** so the admin viewer can pair
+  `screenshot_paths[i]` with `attachments[i].annotation`. Helpers
+  `screenshotEntries/Src/Annotation` exported.
+- `docs/Support/help-diagnostics-system-plan.md` — new **§6a** documenting the
+  analysis engine + the provider extension points and their privacy contract.
+
+**Verification**
+- `npx vitest run src/lib/support/` → **101/101** pass (Phase 1–4 + both pre-5 passes).
+- `npm run check:borders` / `check:layers` / `check:encoding` → all pass.
+- `npx eslint` on all changed files → 0 errors, 0 warnings.
+
+**Privacy**
+- The analysis + providers read only already-sanitised / non-value data
+  (form-field *identity*, not values), everything they emit is re-run through the
+  shared sanitiser, the 256 KB cap + ×3 server re-sanitisation are unchanged, and
+  screenshot redaction/dedup still bake before send. Local draft never leaves the
+  device.
+
+**Deviations / notes**
+- Per-component render-frequency is approximated by recent route churn (true
+  per-component counts would need render instrumentation we deliberately avoid).
+- Multi-screenshot persistence uses the `screenshot_paths text[]` column
+  (confirmed re-added to the migration); annotations live in
+  `diagnostics.attachments` aligned by order.
 
 ---
 

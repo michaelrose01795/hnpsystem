@@ -123,8 +123,27 @@ Before writing or changing any code:
 | `ProtectedRoute` | `src/components/ProtectedRoute.js` | Role-gated page wrapper |
 | `Sidebar` | `src/components/Sidebar.js` | Global sidebar — do not duplicate |
 | `Layout` | `src/components/Layout.js` | Global page layout shell |
+| `DropdownField` | `src/components/ui/dropdownAPI/DropdownField.js` | **The** canonical dropdown — see §3.4a |
+| `MultiSelectDropdown` | `src/components/ui/dropdownAPI/MultiSelectDropdown.js` | Multi-select variant of the canonical dropdown |
 
 Before building any new UI element, search `src/components/` for an existing match.
+
+### 3.4a Dropdowns — THE LAW
+
+**Every dropdown / select control in the app MUST be the shared `DropdownField`** (or
+`MultiSelectDropdown` for multi-select). This guarantees one consistent in-app dropdown
+style and behaviour (theme tokens, keyboard/ARIA, mobile touch targets, dev-overlay
+tracing) everywhere.
+
+1. **Never** render a raw `<select>` for user-facing UI. Migrate existing ones to
+   `DropdownField` (it accepts `<option>` children as a drop-in migration path).
+2. Pass options as `options={[{ value, label, description?, disabled? }]}` (or `<option>`
+   children). Read the choice from `onChange(event)` via `event.target.value` — it emits a
+   `<select>`-compatible synthetic event — or from `onValueChange(value, option)`.
+3. Do not restyle dropdowns with one-off CSS. The look lives in the dropdown family
+   (`src/styles/families/dropdowns.css`) + control tokens. New shared rules belong there.
+4. Native `<select>` is allowed only in non-product contexts already exempt from the design
+   system (e.g. functional diagram primitives / dev tooling).
 
 ### 3.5 Spacing Rules
 - Use `var(--page-stack-gap)` for gaps between stacked section cards.

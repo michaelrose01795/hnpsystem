@@ -21,7 +21,7 @@ function getClient() {
 
 // Columns returned to admins. `diagnostics` is included only on detail reads.
 const LIST_COLUMNS =
-  "id, title, description, category, screenshot_path, reporter_user_id, reporter_username, reporter_roles, status, severity, assigned_to, route, section_key, source_file, source_line, app_version, commit_sha, commit_ref, build_id, created_at, updated_at";
+  "id, title, description, category, screenshot_path, screenshot_paths, reporter_user_id, reporter_username, reporter_roles, status, severity, assigned_to, route, section_key, source_file, source_line, app_version, commit_sha, commit_ref, build_id, created_at, updated_at";
 const DETAIL_COLUMNS = `${LIST_COLUMNS}, diagnostics`;
 
 const CATEGORIES = new Set(["bug", "question", "suggestion", "visual", "data", "other"]);
@@ -35,6 +35,7 @@ const CATEGORIES = new Set(["bug", "question", "suggestion", "visual", "data", "
  *   description: string,
  *   category?: string,
  *   screenshotPath?: string,
+ *   screenshotPaths?: string[],
  *   reporterUserId?: number|null,
  *   reporterUsername?: string,
  *   reporterRoles?: string[],
@@ -72,11 +73,18 @@ export async function createSupportReport(input) {
       ? input.reporterRoles.map((r) => String(r)).slice(0, 50)
       : null;
 
+    const screenshotPaths = Array.isArray(input?.screenshotPaths)
+      ? input.screenshotPaths.filter((p) => typeof p === "string" && p).map((p) => p.slice(0, 500))
+      : [];
+
     const row = {
       title: input?.title ? String(input.title).slice(0, 300) : null,
       description,
       category,
-      screenshot_path: input?.screenshotPath || null,
+      // Keep the legacy single column populated with the first image for
+      // backward compatibility; screenshot_paths carries the full ordered list.
+      screenshot_path: input?.screenshotPath || screenshotPaths[0] || null,
+      screenshot_paths: screenshotPaths.length ? screenshotPaths : null,
       reporter_user_id: reporterUserId,
       reporter_username: input?.reporterUsername
         ? String(input.reporterUsername).slice(0, 200)
@@ -125,6 +133,36 @@ export async function setSupportReportScreenshot(id, screenshotPath) {
     return { success: true, data };
   } catch (error) {
     console.error("[support] setSupportReportScreenshot error:", error?.message || error);
+    return { success: false, error: { message: error?.message || "Update failed" } };
+  }
+}
+
+/**
+ * Attach the full ordered list of screenshot paths to a report (used after the
+ * uploads complete). Also keeps the legacy `screenshot_path` pointed at the first.
+ * @param {string} id
+ * @param {string[]} screenshotPaths
+ * @returns {Promise<{ success: boolean, data?: object, error?: { message: string } }>}
+ */
+export async function setSupportReportScreenshots(id, screenshotPaths) {
+  try {
+    const paths = Array.isArray(screenshotPaths)
+      ? screenshotPaths.filter((p) => typeof p === "string" && p).map((p) => p.slice(0, 500))
+      : [];
+    const { data, error } = await getClient()
+      .from("support_reports")
+      .update({
+        screenshot_path: paths[0] || null,
+        screenshot_paths: paths.length ? paths : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select(DETAIL_COLUMNS)
+      .single();
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error("[support] setSupportReportScreenshots error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Update failed" } };
   }
 }

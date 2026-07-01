@@ -11,10 +11,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildReportInsert,
   decodeScreenshot,
+  decodeScreenshots,
   SUPPORT_CATEGORIES,
   SUPPORT_CATEGORY_VALUES,
   DEFAULT_SUPPORT_CATEGORY,
   SCREENSHOT_MAX_BYTES,
+  MAX_SCREENSHOTS,
 } from "@/lib/support/reportSubmission";
 
 const session = (over = {}) => ({
@@ -93,6 +95,36 @@ describe("buildReportInsert — diagnostics re-sanitisation (defence in depth)",
     expect(json).not.toContain("sk_live_abcdefgh12345678");
   });
 
+  it("embeds (scrubbed) screenshot annotations into diagnostics.attachments by order", () => {
+    const result = buildReportInsert({
+      body: {
+        description: "x",
+        diagnostics: {},
+        screenshots: [
+          { src: "data:image/png;base64,AAAA", annotation: "the broken Save button" },
+          { src: "data:image/png;base64,BBBB", annotation: "" }, // no annotation → dropped
+        ],
+      },
+      session: session(),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.input.diagnostics.attachments).toEqual([
+      { order: 0, annotation: "the broken Save button" },
+    ]);
+  });
+
+  it("scrubs secrets planted inside a screenshot annotation", () => {
+    const result = buildReportInsert({
+      body: {
+        description: "x",
+        diagnostics: {},
+        screenshots: [{ src: "data:image/png;base64,AAAA", annotation: "token sk_live_abcdefgh12345678" }],
+      },
+      session: session(),
+    });
+    expect(JSON.stringify(result.input.diagnostics)).not.toContain("sk_live_abcdefgh12345678");
+  });
+
   it("derives route / code-ownership / build columns from the sanitised blob", () => {
     const result = buildReportInsert({
       body: {
@@ -159,6 +191,48 @@ describe("decodeScreenshot", () => {
     const result = decodeScreenshot(oversized);
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/too large/i);
+  });
+});
+
+describe("decodeScreenshots", () => {
+  const PNG_1PX =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+  it("returns an empty list when nothing is attached", () => {
+    expect(decodeScreenshots(null)).toEqual({ ok: true, files: [] });
+    expect(decodeScreenshots([])).toEqual({ ok: true, files: [] });
+    expect(decodeScreenshots(undefined)).toEqual({ ok: true, files: [] });
+  });
+
+  it("decodes an array of valid images", () => {
+    const result = decodeScreenshots([PNG_1PX, PNG_1PX]);
+    expect(result.ok).toBe(true);
+    expect(result.files).toHaveLength(2);
+    expect(result.files.every((f) => f.mimeType === "image/png")).toBe(true);
+  });
+
+  it("tolerates a legacy single screenshot string", () => {
+    const result = decodeScreenshots(PNG_1PX);
+    expect(result.ok).toBe(true);
+    expect(result.files).toHaveLength(1);
+  });
+
+  it("reads the src from { src, annotation } entries", () => {
+    const result = decodeScreenshots([{ src: PNG_1PX, annotation: "here" }]);
+    expect(result.ok).toBe(true);
+    expect(result.files).toHaveLength(1);
+  });
+
+  it("fails the whole batch if any entry is invalid (no half-attached report)", () => {
+    const result = decodeScreenshots([PNG_1PX, "data:text/html;base64,PHNjcmlwdD4="]);
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/format/i);
+  });
+
+  it("rejects more than the maximum number of screenshots", () => {
+    const result = decodeScreenshots(Array.from({ length: MAX_SCREENSHOTS + 1 }, () => PNG_1PX));
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/too many/i);
   });
 });
 

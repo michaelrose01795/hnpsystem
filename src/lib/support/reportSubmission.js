@@ -37,12 +37,33 @@ const MAX_DESCRIPTION = 5000;
 
 // Screenshot constraints — must match the private bucket service caps.
 export const SCREENSHOT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_SCREENSHOTS = 6; // upper bound on attachments per report
 const SCREENSHOT_DATA_URL_RE = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=\s]+)$/;
 
 const toInt = (value) => {
   const n = Number.parseInt(value, 10);
   return Number.isInteger(n) ? n : null;
 };
+
+const MAX_ANNOTATION = 500;
+
+// A screenshot entry may be a bare data-URL string (legacy) or an object
+// { src, annotation }. These helpers read either shape.
+export function screenshotEntries(input) {
+  if (Array.isArray(input)) return input;
+  if (input == null || input === "") return [];
+  return [input];
+}
+export function screenshotSrc(entry) {
+  if (typeof entry === "string") return entry;
+  return entry && typeof entry === "object" ? entry.src : null;
+}
+export function screenshotAnnotation(entry) {
+  if (entry && typeof entry === "object" && typeof entry.annotation === "string") {
+    return entry.annotation.trim().slice(0, MAX_ANNOTATION);
+  }
+  return "";
+}
 
 /**
  * Validate + assemble the createSupportReport() input from an untrusted request
@@ -65,10 +86,21 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
 
   const title = body?.title ? String(body.title).trim().slice(0, MAX_TITLE) : null;
 
+  // Screenshot ATTACHMENT METADATA (order + user annotation). The actual image
+  // paths are added to the columns after upload; here we capture the per-image
+  // annotation aligned by order, merged into the diagnostics blob so it is
+  // scrubbed in the same pass and counted against the size cap. (Storage paths
+  // are NOT known yet — the admin viewer pairs screenshot_paths[order] with
+  // attachments[order].)
+  const attachments = screenshotEntries(body?.screenshots)
+    .map((entry, order) => ({ order, annotation: screenshotAnnotation(entry) }))
+    .filter((a) => a.annotation);
+
   // Defence in depth: re-scrub the client-supplied diagnostics at the route
   // boundary and enforce the size cap before anything else looks at it.
   const rawDiagnostics =
-    body?.diagnostics && typeof body.diagnostics === "object" ? body.diagnostics : {};
+    body?.diagnostics && typeof body.diagnostics === "object" ? { ...body.diagnostics } : {};
+  if (attachments.length) rawDiagnostics.attachments = attachments;
   const diagnostics = sanitiseDiagnostics(rawDiagnostics);
   if (!isWithinSizeCap(diagnostics)) {
     return { ok: false, error: "Diagnostics payload exceeds the size limit." };
@@ -149,4 +181,30 @@ export function decodeScreenshot(dataUrl) {
   }
 
   return { ok: true, file: { buffer, mimeType } };
+}
+
+/**
+ * Decode a list of user-previewed screenshot data URLs into upload buffers.
+ * Accepts the new `screenshots` array (preferred) and tolerates a legacy single
+ * `screenshot` value. Returns ok:true with files:[] when none were attached.
+ * Any malformed / oversized / non-image entry fails the whole batch with a clean
+ * error (so the route never produces a half-attached report). Caps the count.
+ *
+ * @param {string[]|string|null|undefined} input
+ * @returns {{ ok: true, files: { buffer: Buffer, mimeType: string }[] } | { ok: false, error: string }}
+ */
+export function decodeScreenshots(input) {
+  const list = screenshotEntries(input);
+  if (list.length === 0) return { ok: true, files: [] };
+  if (list.length > MAX_SCREENSHOTS) {
+    return { ok: false, error: `Too many screenshots (max ${MAX_SCREENSHOTS}).` };
+  }
+
+  const files = [];
+  for (const entry of list) {
+    const decoded = decodeScreenshot(screenshotSrc(entry));
+    if (!decoded.ok) return { ok: false, error: decoded.error };
+    if (decoded.file) files.push(decoded.file);
+  }
+  return { ok: true, files };
 }

@@ -38,6 +38,7 @@ import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
 import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import { SupportDiagnosticsProvider } from "@/context/SupportReportContext";
+import SupportErrorBoundary from "@/components/support/SupportErrorBoundary";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import CookieBanner from "@/components/CookieBanner";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
@@ -550,7 +551,12 @@ export default function MyApp({ Component, pageProps }) {
                         <ClockingProvider>
                           <RosterProvider initialRosterData={pageProps.initialRosterData}>
                             <SupportDiagnosticsProvider>
-                              <AppWrapper Component={Component} pageProps={pageProps} />
+                              {/* App-wide Help & Diagnostics error boundary (Phase 4).
+                                  hostSupportModal: the boundary hosts the report popup
+                                  when the shell (and its StaffTopbar host) is unmounted. */}
+                              <SupportErrorBoundary hostSupportModal>
+                                <AppWrapper Component={Component} pageProps={pageProps} />
+                              </SupportErrorBoundary>
                             </SupportDiagnosticsProvider>
                           </RosterProvider>
                         </ClockingProvider>
