@@ -2,9 +2,17 @@
    Image-backed layout editor for the /tracking map. Editor sections are
    rendered from saved data over the site image. Loaded globally via src/pages/_app.js. */
 
+.tracking-map-modal-card {
+  width: min(1180px, calc(100vw - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2)));
+  max-height: calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2));
+  border-radius: 28px;
+  overflow: hidden;
+}
+
 .tracking-map-shell {
   width: 100%;
-  min-height: 720px;
+  height: min(860px, calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2)));
+  min-height: 0;
   padding: 24px;
   border-radius: 28px;
   background:
@@ -12,6 +20,8 @@
     linear-gradient(135deg, rgba(20, 20, 24, 0.94), rgba(10, 10, 12, 0.98));
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .tracking-map-toolbar {
@@ -45,7 +55,8 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1313 / 1070;
-  min-height: 620px;
+  min-height: 0;
+  flex: 1 1 0;
   border-radius: 34px;
   background: #fff url("/images/tracking/site-map-background.png") center / 100% 100% no-repeat;
   overflow: hidden;
@@ -249,13 +260,19 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
   margin-bottom: 12px;
 }
 
 .tracking-map-props {
+  min-height: 52px;
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.06);
+}
+
+.tracking-map-props--empty {
+  align-content: center;
 }
 
 .tracking-map-editbar-spacer {
@@ -310,13 +327,52 @@
 }
 
 @media (max-width: 900px) {
+  .tracking-map-modal-card {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 18px;
+  }
+
   .tracking-map-shell {
-    padding: 14px;
+    height: calc(100dvh - 16px);
+    padding: 12px;
+    border-radius: 18px;
     min-height: 0;
   }
 
+  .tracking-map-toolbar {
+    margin-bottom: 10px;
+  }
+
   .tracking-map-stage {
-    min-height: 420px;
+    border-radius: 18px;
+  }
+
+  .tracking-map-actions,
+  .tracking-map-editbar,
+  .tracking-map-props {
+    gap: 6px;
+  }
+
+  .tracking-map-button {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .tracking-map-button--sm,
+  .tracking-map-input,
+  .tracking-map-readout {
+    height: 30px;
+  }
+
+  .tracking-map-input--wide {
+    width: min(170px, 50vw);
+  }
+
+  .tracking-map-props {
+    min-height: 50px;
+    padding: 8px 10px;
   }
 
   .map-item-label {

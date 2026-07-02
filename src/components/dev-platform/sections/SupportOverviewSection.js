@@ -41,9 +41,6 @@ function JumpTile({ tab, onSelect }) {
         <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>
           {tab.label}
         </div>
-        <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
-          {tab.description}
-        </p>
       </LayerSurface>
     </button>
   );
@@ -56,13 +53,6 @@ export default function SupportOverviewSection({ onSelectTab }) {
       title="Support hub"
       subtitle="Everything for triaging and investigating Help & Diagnostics reports, laid out in the sections below — use a tile to jump to one."
     >
-      <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
-        Staff report problems from anywhere using the “?” control in the app toolbar. Those reports land
-        here for the developer team: triage them under <strong>Reports</strong>, dig into recurring
-        incidents under <strong>Investigations</strong>, watch subsystem status under{" "}
-        <strong>Health</strong>, and manage delivery under <strong>Notifications</strong> and{" "}
-        <strong>Settings</strong>.
-      </p>
       <div
         style={{
           display: "grid",

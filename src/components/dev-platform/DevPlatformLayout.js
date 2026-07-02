@@ -21,7 +21,7 @@ import DevPlatformTabs from "@/components/dev-platform/DevPlatformTabs";
 // own — the staff <Layout> already provides the sidebar, topbar and page card.
 export default function DevPlatformLayout({ children, activeKey }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
+    <div className="app-dev-platform" style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
       <DevPlatformTabs activeKey={activeKey} />
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
         {children}

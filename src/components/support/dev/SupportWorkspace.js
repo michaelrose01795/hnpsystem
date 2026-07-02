@@ -10,11 +10,11 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useSupportReports } from "@/components/support/dev/useSupportAdmin";
 import { useSupportKeyboard } from "@/components/support/dev/useSupportKeyboard";
 import {
-  Panel,
   StatCard,
   Pill,
   BadgeRow,
@@ -50,6 +50,20 @@ const relTime = (iso) => {
 };
 
 const withDefault = (options, placeholder) => [{ value: "", label: placeholder }, ...options];
+
+function WorkspaceCard({ title, actions, children, sectionKey }) {
+  return (
+    <LayerSurface sectionKey={sectionKey} style={{ gap: "var(--space-md)" }}>
+      {(title || actions) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          {title ? <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>{title}</div> : null}
+          {actions ? <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>{actions}</div> : null}
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>{children}</div>
+    </LayerSurface>
+  );
+}
 
 function ReportRow({ report, onOpen, active }) {
   const status = STATUS_META[report.status] || { label: report.status, tone: "text-1" };
@@ -169,21 +183,18 @@ export default function SupportWorkspace() {
   ];
 
   return (
-    <LayerSurface sectionKey="support-centre-workspace" style={{ gap: "var(--page-stack-gap)" }}>
+    <LayerTheme sectionKey="support-centre-workspace" style={{ gap: "var(--page-stack-gap)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-md)", flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: "var(--text-h2, 22px)", fontWeight: 800, color: "var(--accentText)" }}>Support Centre</div>
-          <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.75 }}>
-            Help &amp; Diagnostics reports · {count} total · press <kbd>/</kbd> to search, <kbd>j</kbd>/<kbd>k</kbd> to move, <kbd>Enter</kbd> to open
-          </div>
         </div>
         <DevButton onClick={refresh} tone="accentText">Refresh</DevButton>
       </div>
 
       <DashboardGrid min={420}>
       {/* Dashboard */}
-      <Panel title="Dashboard" sectionKey="support-centre-dashboard">
+      <WorkspaceCard title="Dashboard" sectionKey="support-centre-dashboard">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           {statCards.map((c) => (
             <StatCard
@@ -195,10 +206,10 @@ export default function SupportWorkspace() {
             />
           ))}
         </div>
-      </Panel>
+      </WorkspaceCard>
 
       {/* Filters + saved views */}
-      <Panel
+      <WorkspaceCard
         title="Filters"
         sectionKey="support-centre-filters"
         actions={<DevButton small onClick={saveCurrentView}>Save view</DevButton>}
@@ -239,11 +250,11 @@ export default function SupportWorkspace() {
             </span>
           ))}
         </div>
-      </Panel>
+      </WorkspaceCard>
       </DashboardGrid>
 
       {/* Queue */}
-      <Panel title={`Queue (${reports.length})`} sectionKey="support-centre-queue">
+      <WorkspaceCard title={`Queue (${reports.length})`} sectionKey="support-centre-queue">
         {loading ? (
           <LoadingBlock rows={5} />
         ) : error ? (
@@ -257,7 +268,7 @@ export default function SupportWorkspace() {
             ))}
           </div>
         )}
-      </Panel>
-    </LayerSurface>
+      </WorkspaceCard>
+    </LayerTheme>
   );
 }

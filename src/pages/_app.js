@@ -91,6 +91,7 @@ function AppWrapper({ Component, pageProps }) {
   // should keep the floating notes widget like any other staff page.
   const isCustomerRoute = pathname === "/customer" || pathname.startsWith("/customer/");
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
+  const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   const hideNotesWidget =
     isPresentationRoute ||
     isCustomerRoute ||
@@ -108,10 +109,12 @@ function AppWrapper({ Component, pageProps }) {
     const body = document.body;
     root.classList.toggle("website-scope", isWebsiteRoute);
     root.classList.toggle("staff-scope", !isWebsiteRoute);
+    root.classList.toggle("dev-scope", isDevRoute);
     body?.classList.toggle("website-scope", isWebsiteRoute);
     body?.classList.toggle("staff-scope", !isWebsiteRoute);
+    body?.classList.toggle("dev-scope", isDevRoute);
     return undefined;
-  }, [isWebsiteRoute]);
+  }, [isWebsiteRoute, isDevRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.

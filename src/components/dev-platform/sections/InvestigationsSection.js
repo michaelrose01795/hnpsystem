@@ -28,6 +28,9 @@ import {
 
 const SEV_TONE = ["text-1", "success-base", "warning-base", "danger-base", "danger-base"];
 
+// Fixed per support page layout report: Intelligence panels should sit 10px apart.
+const PANEL_STACK_STYLE = { display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 };
+
 function TrendBars({ series = [] }) {
   const max = Math.max(1, ...series.map((b) => b.count));
   return (
@@ -121,7 +124,7 @@ export default function InvestigationsSection() {
   const problemAreas = intel?.problemAreas || [];
 
   return (
-    <>
+    <div style={PANEL_STACK_STYLE}>
       <Panel
         title="Intelligence"
         subtitle={`${intel?.reportCount || 0} report(s) analysed · generated ${new Date(intel?.generatedAt || Date.now()).toLocaleTimeString()}`}
@@ -228,6 +231,6 @@ export default function InvestigationsSection() {
           </div>
         </Panel>
       )}
-    </>
+    </div>
   );
 }

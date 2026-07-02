@@ -13,7 +13,7 @@ const STORAGE_KEY = "hnp-tracking-site-map-layout-v2";
 
 const VALID_TYPES = new Set(["road", "building", "parking", "grass", "fence"]);
 const MIN_ITEM_SIZE = 2;
-const MAX_PARKING_SPACES = 200;
+export const MAX_PARKING_SPACES = 200;
 
 export const DEFAULT_LAYOUT = [];
 
@@ -74,6 +74,10 @@ const sanitizeItem = (item) => {
 };
 
 export function calculateParkingSpaces(item = {}) {
+  const explicitSpaces = Number(item.spaces);
+  if (Number.isFinite(explicitSpaces)) {
+    return Math.min(MAX_PARKING_SPACES, Math.max(1, Math.round(explicitSpaces)));
+  }
   const w = Math.max(0, Number(item.w) || 0);
   const h = Math.max(0, Number(item.h) || 0);
   const area = w * h;

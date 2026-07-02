@@ -59,6 +59,7 @@ export default function Card({
             )}
             {subtitle && (
               <div
+                className="app-dev-section-description"
                 style={{
                   fontSize: "var(--text-body-sm)",
                   color: "var(--text-1)",

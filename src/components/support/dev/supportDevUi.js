@@ -60,6 +60,7 @@ export function BadgeRow({ badges = [], style }) {
 // nest <SubSurface> for an inner surface (keeps LayerTheme→LayerSurface alt.).
 // ---------------------------------------------------------------------------
 export function Panel({ title, subtitle, actions, children, sectionKey, style, contentStyle }) {
+  void subtitle;
   return (
     <LayerTheme sectionKey={sectionKey} style={{ gap: "var(--space-md)", ...style }}>
       {(title || actions) && (
@@ -67,9 +68,6 @@ export function Panel({ title, subtitle, actions, children, sectionKey, style, c
           <div>
             {title && (
               <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>{title}</div>
-            )}
-            {subtitle && (
-              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8, marginTop: "2px" }}>{subtitle}</div>
             )}
           </div>
           {actions ? <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>{actions}</div> : null}

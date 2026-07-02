@@ -20,11 +20,7 @@ export default function TrackingMapModal({ onClose, onRefresh, pins }) {
       aria-modal="true"
       aria-label="Dealership site map">
 
-      <div
-        style={{
-          width: "min(1180px, 100%)",
-          borderRadius: "28px" // matches .tracking-map-shell so the scroll container never shows square corners
-        }}>
+      <div className="tracking-map-modal-card">
 
         <TrackingMap pins={pins} onRefresh={onRefresh} onClose={onClose} />
       </div>

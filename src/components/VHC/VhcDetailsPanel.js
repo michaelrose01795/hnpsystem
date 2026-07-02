@@ -8866,6 +8866,7 @@ export default function VhcDetailsPanel({
       const { key, label, section, status, photos, videos, concern, kind } = row;
       const badge = severityBadge(status);
       const showControls = !readOnly && Boolean(concern);
+      const showMediaCounts = kind !== "main-video";
       const uploading = rowMediaUploadConcernId === String(concern?.concernId);
       const pickerOpen = moveMediaPickerConcernId === key;
       // Candidates already linked to THIS concern are excluded — you can only
@@ -8920,14 +8921,16 @@ export default function VhcDetailsPanel({
               </span>
             ) : null}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-                {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
-              </span>
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-                {videos.length} {videos.length === 1 ? "Video" : "Videos"}
-              </span>
-            </div>
+            {showMediaCounts ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                  {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                  {videos.length} {videos.length === 1 ? "Video" : "Videos"}
+                </span>
+              </div>
+            ) : null}
 
             {/* Add media (upload onto this concern) + Move media (relink existing
                 media in from another row). Reported red/amber rows only. */}

@@ -125,7 +125,7 @@ function VideoThumb({ file, index }) {
   );
 }
 
-function RequestRow({ label, section, status, photos, videos }) {
+function RequestRow({ label, section, status, photos, videos, hideMediaCounts = false }) {
   const badge = severityBadge(status);
   let mediaIndex = -1;
   return (
@@ -173,14 +173,16 @@ function RequestRow({ label, section, status, photos, videos }) {
           </span>
         ) : null}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-            {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
-          </span>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-            {videos.length} {videos.length === 1 ? "Video" : "Videos"}
-          </span>
-        </div>
+        {hideMediaCounts ? null : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+              {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
+            </span>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+              {videos.length} {videos.length === 1 ? "Video" : "Videos"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Right — the photos + videos captured for that request */}
@@ -278,7 +280,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {mainVideos.length > 0 && (
-            <RequestRow label="Customer Video" section="Main walkaround" status="" photos={[]} videos={mainVideos} />
+            <RequestRow label="Customer Video" section="Main walkaround" status="" photos={[]} videos={mainVideos} hideMediaCounts />
           )}
           {groups.map((group) => (
             <RequestRow

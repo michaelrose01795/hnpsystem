@@ -47,6 +47,9 @@ const MIN_SEVERITY_OPTIONS = [
   { value: "critical", label: "Critical" },
 ];
 
+// Fixed per support page layout report: the three notification panels should sit 10px apart.
+const PANEL_STACK_STYLE = { display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 };
+
 export default function NotificationsSection() {
   const { pushAlert } = useAlerts();
 
@@ -127,7 +130,7 @@ export default function NotificationsSection() {
   };
 
   return (
-    <>
+    <div style={PANEL_STACK_STYLE}>
       <Panel
         title="Recent notifications"
         subtitle={`${unread} unread of ${notifications.length} shown.`}
@@ -245,6 +248,6 @@ export default function NotificationsSection() {
           </div>
         </SubSurface>
       </Panel>
-    </>
+    </div>
   );
 }

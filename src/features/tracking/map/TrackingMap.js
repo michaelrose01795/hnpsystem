@@ -10,6 +10,7 @@ import {
   createMapItem,
   getDefaultLayout,
   loadTrackingMapLayout,
+  MAX_PARKING_SPACES,
   saveTrackingMapLayout,
 } from "@/features/tracking/map/trackingMapLayout";
 
@@ -268,43 +269,60 @@ export default function TrackingMap({ pins = [], onRefresh, onClose }) {
         </div>
       )}
 
-      {editMode && selectedItem && (
-        <div className="tracking-map-props">
-          <span className="tracking-map-props-label">{TYPE_LABEL[selectedItem.type]} selected</span>
-          <label className="tracking-map-field">
-            <span className="tracking-map-props-label">Label</span>
-            <input
-              type="text"
-              className="tracking-map-input tracking-map-input--wide"
-              value={selectedItem.label || ""}
-              onChange={(event) => updateItem(selectedItem.id, { label: event.target.value })}
-              placeholder="Optional label"
-            />
-          </label>
-          {selectedItem.type === "parking" && (
-            <div className="tracking-map-field">
-              <span className="tracking-map-props-label">Spaces</span>
-              <span className="tracking-map-readout">{calculateParkingSpaces(selectedItem)}</span>
-            </div>
+      {editMode && (
+        <div className={`tracking-map-props${selectedItem ? "" : " tracking-map-props--empty"}`}>
+          {selectedItem ? (
+            <>
+              <span className="tracking-map-props-label">{TYPE_LABEL[selectedItem.type]} selected</span>
+              <label className="tracking-map-field">
+                <span className="tracking-map-props-label">Label</span>
+                <input
+                  type="text"
+                  className="tracking-map-input tracking-map-input--wide"
+                  value={selectedItem.label || ""}
+                  onChange={(event) => updateItem(selectedItem.id, { label: event.target.value })}
+                  placeholder="Optional label"
+                />
+              </label>
+              {selectedItem.type === "parking" && (
+                <label className="tracking-map-field">
+                  <span className="tracking-map-props-label">Spaces</span>
+                  <input
+                    type="number"
+                    className="tracking-map-input"
+                    min={1}
+                    max={MAX_PARKING_SPACES}
+                    value={calculateParkingSpaces(selectedItem)}
+                    onChange={(event) =>
+                      updateItem(selectedItem.id, {
+                        spaces: clamp(Number(event.target.value) || 1, 1, MAX_PARKING_SPACES),
+                      })
+                    }
+                  />
+                </label>
+              )}
+              <label className="tracking-map-field">
+                <span className="tracking-map-props-label">Rotate deg</span>
+                <input
+                  type="number"
+                  className="tracking-map-input"
+                  min={-180}
+                  max={180}
+                  value={Math.round(selectedItem.rotate || 0)}
+                  onChange={(event) => updateItem(selectedItem.id, { rotate: clamp(Number(event.target.value) || 0, -180, 180) })}
+                />
+              </label>
+              <button
+                type="button"
+                className="tracking-map-button tracking-map-button--sm tracking-map-button--danger"
+                onClick={() => deleteItem(selectedItem.id)}
+              >
+                Delete section
+              </button>
+            </>
+          ) : (
+            <span className="tracking-map-props-label">Select a section to edit its label and rotation</span>
           )}
-          <label className="tracking-map-field">
-            <span className="tracking-map-props-label">Rotate deg</span>
-            <input
-              type="number"
-              className="tracking-map-input"
-              min={-180}
-              max={180}
-              value={Math.round(selectedItem.rotate || 0)}
-              onChange={(event) => updateItem(selectedItem.id, { rotate: clamp(Number(event.target.value) || 0, -180, 180) })}
-            />
-          </label>
-          <button
-            type="button"
-            className="tracking-map-button tracking-map-button--sm tracking-map-button--danger"
-            onClick={() => deleteItem(selectedItem.id)}
-          >
-            Delete section
-          </button>
         </div>
       )}
 

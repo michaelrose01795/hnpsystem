@@ -184,6 +184,22 @@ html.staff-scope .personal-widget-grid > * {
 }
 
 /* ========================================================= */
+/* === Developer Platform Section Headers                 === */
+/* ========================================================= */
+/* /dev pages use terse section headers only. Keep this global guard scoped to
+   the dev route shell so newly added dev descriptions stay hidden without
+   affecting staff pages elsewhere. */
+html.staff-scope.dev-scope .app-dev-section-description,
+html.staff-scope.dev-scope .app-page-header__subtitle,
+html.staff-scope.dev-scope .app-staff-card__subtitle,
+html.staff-scope.dev-scope .app-job-summary-panel__subtitle,
+html.staff-scope.dev-scope .app-empty-state__description,
+html.staff-scope.dev-scope .app-modal__description,
+html.staff-scope.dev-scope .app-drawer__description {
+  display: none;
+}
+
+/* ========================================================= */
 /* === Shared Summary Section UI                          === */
 /* ========================================================= */
 html.staff-scope .app-summary-section {
