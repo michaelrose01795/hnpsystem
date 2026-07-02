@@ -21,6 +21,7 @@ import {
   EmptyState,
   LoadingBlock,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 import {
   STATUS_META,
@@ -82,11 +83,11 @@ function ReportRow({ report, onOpen, active }) {
         <BadgeRow badges={badges} />
       </div>
       <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
-        {report.route ? <span>🧭 {report.route}</span> : null}
-        {report.reporter_username ? <span>👤 {report.reporter_username}</span> : null}
-        {report.app_version ? <span>🏷️ {report.app_version}</span> : null}
+        {report.route ? <span>{report.route}</span> : null}
+        {report.reporter_username ? <span>{report.reporter_username}</span> : null}
+        {report.app_version ? <span>{report.app_version}</span> : null}
         {report.inv_priority ? <span>{report.inv_priority}</span> : null}
-        <span>🕑 {relTime(report.created_at)}</span>
+        <span>{relTime(report.created_at)}</span>
       </div>
     </button>
   );
@@ -177,9 +178,10 @@ export default function SupportWorkspace() {
             Help &amp; Diagnostics reports · {count} total · press <kbd>/</kbd> to search, <kbd>j</kbd>/<kbd>k</kbd> to move, <kbd>Enter</kbd> to open
           </div>
         </div>
-        <DevButton onClick={refresh} tone="accentText">↻ Refresh</DevButton>
+        <DevButton onClick={refresh} tone="accentText">Refresh</DevButton>
       </div>
 
+      <DashboardGrid min={420}>
       {/* Dashboard */}
       <Panel title="Dashboard" sectionKey="support-centre-dashboard">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
@@ -199,7 +201,7 @@ export default function SupportWorkspace() {
       <Panel
         title="Filters"
         sectionKey="support-centre-filters"
-        actions={<DevButton small onClick={saveCurrentView}>＋ Save view</DevButton>}
+        actions={<DevButton small onClick={saveCurrentView}>Save view</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
           <input
@@ -224,7 +226,7 @@ export default function SupportWorkspace() {
           {savedViews.map((v) => (
             <span key={v.id} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
               <DevButton small variant="ghost" tone={v.shared ? "accentText" : "success-base"} onClick={() => applyView(v)}>
-                {v.shared ? `👥 ${v.name}` : v.name}
+                {v.shared ? `Shared · ${v.name}` : v.name}
               </DevButton>
               <button
                 type="button"
@@ -232,21 +234,22 @@ export default function SupportWorkspace() {
                 onClick={() => removeSavedViewById(v.id)}
                 style={{ background: "transparent", color: "var(--text-1)", opacity: 0.5, cursor: "pointer", fontSize: "12px", minHeight: 32, padding: "0 4px" }}
               >
-                ✕
+                Remove
               </button>
             </span>
           ))}
         </div>
       </Panel>
+      </DashboardGrid>
 
       {/* Queue */}
       <Panel title={`Queue (${reports.length})`} sectionKey="support-centre-queue">
         {loading ? (
           <LoadingBlock rows={5} />
         ) : error ? (
-          <EmptyState icon="⚠️" title="Couldn't load reports" message={error} action={<DevButton onClick={refresh}>Try again</DevButton>} />
+          <EmptyState title="Couldn't load reports" message={error} action={<DevButton onClick={refresh}>Try again</DevButton>} />
         ) : reports.length === 0 ? (
-          <EmptyState icon="✅" title="No reports match" message="Nothing matches the current filters. Adjust the filters or clear them." action={<DevButton onClick={() => applyView({ filters: {} })}>Clear filters</DevButton>} />
+          <EmptyState title="No reports match" message="Nothing matches the current filters. Adjust the filters or clear them." action={<DevButton onClick={() => applyView({ filters: {} })}>Clear filters</DevButton>} />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {reports.map((r, i) => (

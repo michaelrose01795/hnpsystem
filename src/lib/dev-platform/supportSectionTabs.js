@@ -5,50 +5,44 @@
 // section) and SupportOverviewSection (jump tiles). Pure + data-only so the
 // grouping is unit-testable without rendering.
 //
-// Each tab: { key, label, icon, description }. `key` is used in the ?tab=
+// Each tab: { key, label, description }. `key` is used in the ?tab=
 // query param (validated with isSupportSectionTab) and as the React key.
+// (Icons/emojis intentionally dropped — labels only.)
 
 export const SUPPORT_SECTION_TABS = Object.freeze([
   {
     key: "overview",
     label: "Overview",
-    icon: "🧭",
     description: "Support hub summary and quick links.",
   },
   {
     key: "reports",
     label: "Reports",
-    icon: "🛟",
     description: "Triage and investigate Help & Diagnostics reports.",
   },
   {
     key: "investigations",
     label: "Investigations",
-    icon: "🧠",
     description: "Problem areas, incident clusters, trends and predictive insights.",
   },
   {
     key: "health",
     label: "Health",
-    icon: "🩺",
     description: "Subsystem health roll-up: sanitiser, database, storage, RLS, build.",
   },
   {
     key: "notifications",
     label: "Notifications",
-    icon: "🔔",
     description: "Notification history and subscription rules.",
   },
   {
     key: "activity",
     label: "Activity",
-    icon: "🧾",
     description: "Hash-chained developer action log and audit coverage.",
   },
   {
     key: "settings",
     label: "Settings",
-    icon: "⚙️",
     description: "Developer and notification preferences.",
   },
 ]);

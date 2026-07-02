@@ -164,27 +164,43 @@ export default function StaffUiShowcasePage() {
               </div>
             </LayerTheme>
 
-            <LayerTheme>
-              <table className="app-data-table app-data-table--rounded">
-                <thead><tr><th>Pattern</th><th>Status</th><th>Finding</th></tr></thead>
-                <tbody>
-                  {auditRows.map(([pattern, state, finding]) => (
-                    <tr key={pattern}>
-                      <td>{pattern}</td>
-                      <td><AuditBadge tone={state === "Supported" ? "success" : state === "Missing" ? "danger" : "warning"}>{state}</AuditBadge></td>
-                      <td>{finding}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <StaffPagination
-                page={page}
-                pageCount={3}
-                onPrevious={() => setPage((current) => Math.max(1, current - 1))}
-                onNext={() => setPage((current) => Math.min(3, current + 1))}
-                onPageChange={setPage}
-              />
-            </LayerTheme>
+            <Grid min="420px">
+              <LayerTheme>
+                <table className="app-data-table app-data-table--rounded">
+                  <thead><tr><th>Pattern</th><th>Status</th><th>Finding</th></tr></thead>
+                  <tbody>
+                    {auditRows.map(([pattern, state, finding]) => (
+                      <tr key={pattern}>
+                        <td>{pattern}</td>
+                        <td><AuditBadge tone={state === "Supported" ? "success" : state === "Missing" ? "danger" : "warning"}>{state}</AuditBadge></td>
+                        <td>{finding}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <StaffPagination
+                  page={page}
+                  pageCount={3}
+                  onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+                  onNext={() => setPage((current) => Math.min(3, current + 1))}
+                  onPageChange={setPage}
+                />
+              </LayerTheme>
+
+              <LayerTheme>
+                <StaffAlert tone="warning" title="Remaining non-global patterns">
+                  These are audit findings only. No live feature pages were migrated in this pass.
+                </StaffAlert>
+                <table className="app-data-table app-data-table--rounded">
+                  <thead><tr><th>Pattern</th><th>Report</th></tr></thead>
+                  <tbody>
+                    {remainingPatterns.map(([pattern, finding]) => (
+                      <tr key={pattern}><td>{pattern}</td><td>{finding}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </LayerTheme>
+            </Grid>
 
             <Grid min="300px">
               <LayerTheme>
@@ -239,20 +255,6 @@ export default function StaffUiShowcasePage() {
                   </div>
                 </LayerSurface>
               </Grid>
-            </LayerTheme>
-
-            <LayerTheme>
-              <StaffAlert tone="warning" title="Remaining non-global patterns">
-                These are audit findings only. No live feature pages were migrated in this pass.
-              </StaffAlert>
-              <table className="app-data-table app-data-table--rounded">
-                <thead><tr><th>Pattern</th><th>Report</th></tr></thead>
-                <tbody>
-                  {remainingPatterns.map(([pattern, finding]) => (
-                    <tr key={pattern}><td>{pattern}</td><td>{finding}</td></tr>
-                  ))}
-                </tbody>
-              </table>
             </LayerTheme>
           </div>
         </LayerSurface>

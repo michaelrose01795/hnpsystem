@@ -26,6 +26,7 @@ import {
   EmptyState,
   LoadingBlock,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -241,8 +242,8 @@ function ReadinessView() {
 
   if (error) {
     return (
-      <Panel title="Deployment readiness" actions={<DevButton small onClick={reload}>⟳ Retry</DevButton>}>
-        <EmptyState icon="⚠️" title="Could not load readiness" message={error} />
+      <Panel title="Deployment readiness" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+        <EmptyState title="Could not load readiness" message={error} />
       </Panel>
     );
   }
@@ -254,21 +255,22 @@ function ReadinessView() {
       <Panel
         title="Deployment readiness"
         subtitle={`${data?.reportCount ?? 0} report(s) analysed across ${releases.length} release(s)`}
-        actions={<DevButton small onClick={reload}>⟳ Refresh</DevButton>}
+        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
       />
 
       {releases.length === 0 ? (
         <Panel>
           <EmptyState
-            icon="🚦"
             title="No releases to assess"
             message="Readiness scoring populates once deployments with captured reports exist."
           />
         </Panel>
       ) : (
-        releases.map((release) => (
-          <ReleaseCard key={release.releaseKey || release.appVersion} release={release} onDecision={onDecision} />
-        ))
+        <DashboardGrid min={460}>
+          {releases.map((release) => (
+            <ReleaseCard key={release.releaseKey || release.appVersion} release={release} onDecision={onDecision} />
+          ))}
+        </DashboardGrid>
       )}
     </>
   );

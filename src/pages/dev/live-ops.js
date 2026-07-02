@@ -19,6 +19,7 @@ import {
   Pill,
   DevButton,
   EmptyState,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -73,7 +74,7 @@ function EventRow({ time, primary, secondary, tone }) {
 
 function EventList({ items, renderRow, emptyMessage }) {
   if (!items || items.length === 0) {
-    return <EmptyState icon="✅" title="Nothing recent" message={emptyMessage} />;
+    return <EmptyState title="Nothing recent" message={emptyMessage} />;
   }
   // Newest first for a live feed.
   return <div>{[...items].reverse().map(renderRow)}</div>;
@@ -135,10 +136,10 @@ function LiveOpsView() {
         actions={
           <>
             <DevButton small onClick={() => setPaused((p) => !p)}>
-              {paused ? "▶ Resume" : "⏸ Pause"}
+              {paused ? "Resume" : "Pause"}
             </DevButton>
             <DevButton small onClick={() => { refresh(); probeHealth(); }}>
-              ⟳ Refresh
+              Refresh
             </DevButton>
           </>
         }
@@ -168,6 +169,7 @@ function LiveOpsView() {
         </SubSurface>
       </Panel>
 
+      <DashboardGrid min={440}>
       <Panel title="Runtime events" subtitle={`${recentActions.length} recent action(s) — route changes and interactions`}>
         <EventList
           items={recentActions}
@@ -218,6 +220,7 @@ function LiveOpsView() {
           )}
         />
       </Panel>
+      </DashboardGrid>
     </>
   );
 }

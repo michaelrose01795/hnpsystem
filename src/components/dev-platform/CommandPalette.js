@@ -29,10 +29,10 @@ function buildQuickActions(router, close) {
     router.push(href);
   };
   return [
-    { id: "action:new-report", title: "Report a problem (open reporter)", subtitle: "Opens the Help & Diagnostics reporter", group: "Actions", icon: "＋", keywords: ["report", "bug", "new", "help"], run: () => { close(); router.push("/newsfeed?support=1"); } },
-    { id: "action:refresh", title: "Refresh this page", subtitle: "Reload the current dashboard's data", group: "Actions", icon: "⟳", keywords: ["refresh", "reload"], run: () => { close(); router.reload(); } },
-    { id: "action:knowledge-new", title: "New knowledge entry", subtitle: "Document a recurring incident", group: "Actions", icon: "📚", keywords: ["knowledge", "doc", "write"], run: () => go("/dev/knowledge?new=1") },
-    { id: "action:exit", title: "Exit to app", subtitle: "Leave the Developer Platform", group: "Actions", icon: "↩", keywords: ["exit", "leave", "app"], run: () => go("/newsfeed") },
+    { id: "action:new-report", title: "Report a problem (open reporter)", subtitle: "Opens the Help & Diagnostics reporter", group: "Actions", keywords: ["report", "bug", "new", "help"], run: () => { close(); router.push("/newsfeed?support=1"); } },
+    { id: "action:refresh", title: "Refresh this page", subtitle: "Reload the current dashboard's data", group: "Actions", keywords: ["refresh", "reload"], run: () => { close(); router.reload(); } },
+    { id: "action:knowledge-new", title: "New knowledge entry", subtitle: "Document a recurring incident", group: "Actions", keywords: ["knowledge", "doc", "write"], run: () => go("/dev/knowledge?new=1") },
+    { id: "action:exit", title: "Exit to app", subtitle: "Leave the Developer Platform", group: "Actions", keywords: ["exit", "leave", "app"], run: () => go("/newsfeed") },
   ];
 }
 
@@ -130,7 +130,7 @@ export function CommandPaletteProvider({ children }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKey}
-              placeholder="Search commands… (↑↓ to move, Enter to run, Esc to close)"
+              placeholder="Search commands… (arrow keys to move, Enter to run, Esc to close)"
               aria-label="Search commands"
               className="app-input"
               style={{
@@ -171,8 +171,7 @@ export function CommandPaletteProvider({ children }) {
                       background: i === active ? toneTint("accentText", 14) : "transparent",
                     }}
                   >
-                    <span aria-hidden style={{ fontSize: "16px", width: 20, textAlign: "center" }}>{cmd.icon || "•"}</span>
-                    <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                       <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: i === active ? "var(--accentText)" : "var(--text-1)" }}>{cmd.title}</span>
                       {cmd.subtitle ? (
                         <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmd.subtitle}</span>

@@ -110,8 +110,8 @@ export default function InvestigationsSection() {
   }
   if (error) {
     return (
-      <Panel title="Intelligence" actions={<DevButton small onClick={reload}>⟳ Retry</DevButton>}>
-        <EmptyState icon="⚠️" title="Could not load intelligence" message={error} />
+      <Panel title="Intelligence" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+        <EmptyState title="Could not load intelligence" message={error} />
       </Panel>
     );
   }
@@ -125,7 +125,7 @@ export default function InvestigationsSection() {
       <Panel
         title="Intelligence"
         subtitle={`${intel?.reportCount || 0} report(s) analysed · generated ${new Date(intel?.generatedAt || Date.now()).toLocaleTimeString()}`}
-        actions={<DevButton small onClick={reload}>⟳ Refresh</DevButton>}
+        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Open" value={r.open ?? 0} tone="accentText" />
@@ -157,7 +157,7 @@ export default function InvestigationsSection() {
 
       <Panel title="Problem areas" subtitle="Routes / sections producing the most (and most severe) reports">
         {problemAreas.length === 0 ? (
-          <EmptyState icon="✅" title="No problem areas" message="No reports to rank yet." />
+          <EmptyState title="No problem areas" message="No reports to rank yet." />
         ) : (
           problemAreas.map((a) => (
             <SubSurface key={a.key} style={{ gap: "6px" }}>
@@ -181,7 +181,7 @@ export default function InvestigationsSection() {
         subtitle="Recurring incidents grouped by fingerprint — select to bulk-triage"
       >
         {clusters.length === 0 ? (
-          <EmptyState icon="🧩" title="No recurring clusters" message="Every incident so far is unique." />
+          <EmptyState title="No recurring clusters" message="Every incident so far is unique." />
         ) : (
           clusters.map((c) => (
             <SubSurface key={c.key} style={{ flexDirection: "row", alignItems: "flex-start", gap: "var(--space-sm)" }}>

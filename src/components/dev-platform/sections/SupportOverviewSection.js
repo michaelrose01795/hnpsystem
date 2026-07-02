@@ -22,7 +22,7 @@ function JumpTile({ tab, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(tab.key)}
-      aria-label={`Open ${tab.label}`}
+      aria-label={`Jump to ${tab.label}`}
       style={{
         display: "block",
         width: "100%",
@@ -38,11 +38,8 @@ function JumpTile({ tab, onSelect }) {
       }}
     >
       <LayerSurface style={{ gap: "6px", height: "100%", minHeight: 44 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span aria-hidden style={{ fontSize: "22px", lineHeight: 1 }}>{tab.icon}</span>
-          <span style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>
-            {tab.label}
-          </span>
+        <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>
+          {tab.label}
         </div>
         <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
           {tab.description}
@@ -57,7 +54,7 @@ export default function SupportOverviewSection({ onSelectTab }) {
   return (
     <Panel
       title="Support hub"
-      subtitle="Everything for triaging and investigating Help & Diagnostics reports, grouped into the tabs above."
+      subtitle="Everything for triaging and investigating Help & Diagnostics reports, laid out in the sections below — use a tile to jump to one."
     >
       <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
         Staff report problems from anywhere using the “?” control in the app toolbar. Those reports land

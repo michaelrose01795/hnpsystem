@@ -221,7 +221,7 @@ export function assistedInvestigationMarkdown(assisted = {}) {
     lines.push("");
   }
   if (arr(assisted.regressionWarnings).length) {
-    lines.push("### ⚠️ Regression warnings");
+    lines.push("### Regression warnings");
     assisted.regressionWarnings.forEach((w) => lines.push(`- ${w}`));
     lines.push("");
   }

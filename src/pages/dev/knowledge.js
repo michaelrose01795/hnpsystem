@@ -24,6 +24,7 @@ import {
   EmptyState,
   LoadingBlock,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -147,7 +148,7 @@ function KnowledgeView() {
       <Panel
         title="Knowledge Centre"
         subtitle="Curated documentation for recurring incidents, plus live derivation from captured reports."
-        actions={<DevButton small onClick={reloadAll}>⟳ Refresh</DevButton>}
+        actions={<DevButton small onClick={reloadAll}>Refresh</DevButton>}
       >
         {derivationRes.loading ? (
           <LoadingBlock rows={1} />
@@ -161,6 +162,7 @@ function KnowledgeView() {
         )}
       </Panel>
 
+      <DashboardGrid min={440}>
       <Panel
         title="Suggested to document"
         subtitle="Recurring incidents that are not yet covered by a knowledge entry."
@@ -168,7 +170,7 @@ function KnowledgeView() {
         {derivationRes.loading ? (
           <LoadingBlock rows={2} />
         ) : suggestions.length === 0 ? (
-          <EmptyState icon="✅" title="Nothing outstanding" message="Every recurring incident is already documented." />
+          <EmptyState title="Nothing outstanding" message="Every recurring incident is already documented." />
         ) : (
           suggestions.map((s) => (
             <SubSurface
@@ -201,7 +203,7 @@ function KnowledgeView() {
         {entriesRes.loading ? (
           <LoadingBlock rows={3} />
         ) : entries.length === 0 ? (
-          <EmptyState icon="📚" title="No entries yet" message="Document a recurring incident using the form below to build the knowledge base." />
+          <EmptyState title="No entries yet" message="Document a recurring incident using the form below to build the knowledge base." />
         ) : (
           entries.map((e) => (
             <SubSurface key={e.id} style={{ gap: "6px" }}>
@@ -229,6 +231,7 @@ function KnowledgeView() {
           ))
         )}
       </Panel>
+      </DashboardGrid>
 
       <div ref={formRef}>
         <Panel

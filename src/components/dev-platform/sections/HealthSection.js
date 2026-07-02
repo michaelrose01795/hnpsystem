@@ -21,20 +21,19 @@ const TONE = { ok: "success-base", warn: "warning-base", fail: "danger-base" };
 const SUMMARY_LABEL = { ok: "All systems healthy", warn: "Degraded — review warnings", fail: "One or more subsystems failing" };
 
 const CHECK_META = {
-  sanitiser: { icon: "🛡️", label: "Sanitiser canary" },
-  database: { icon: "🗄️", label: "Database" },
-  storage: { icon: "📦", label: "Private storage" },
-  rls: { icon: "🔒", label: "Row-level security" },
-  build: { icon: "🏷️", label: "Build / code-state" },
+  sanitiser: { label: "Sanitiser canary" },
+  database: { label: "Database" },
+  storage: { label: "Private storage" },
+  rls: { label: "Row-level security" },
+  build: { label: "Build / code-state" },
 };
 
 function CheckTile({ name, check }) {
-  const meta = CHECK_META[name] || { icon: "•", label: name };
+  const meta = CHECK_META[name] || { label: name };
   return (
     <LayerSurface style={{ gap: "8px", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>
-          <span aria-hidden style={{ fontSize: "18px" }}>{meta.icon}</span>
+        <span style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>
           {meta.label}
         </span>
         <Pill label={check?.status || "?"} tone={TONE[check?.status] || "text-1"} strong />
@@ -79,7 +78,7 @@ export default function HealthSection() {
     <Panel
       title="Application health"
       subtitle={data?.checkedAt ? `Checked ${new Date(data.checkedAt).toLocaleString()}` : "Subsystem roll-up"}
-      actions={<DevButton small onClick={probe}>⟳ Re-check</DevButton>}
+      actions={<DevButton small onClick={probe}>Re-check</DevButton>}
     >
       {status ? (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -93,9 +92,9 @@ export default function HealthSection() {
       {loading && !data ? (
         <LoadingBlock rows={3} />
       ) : error ? (
-        <EmptyState icon="⚠️" title="Health unavailable" message={error} action={<DevButton small onClick={probe}>Try again</DevButton>} />
+        <EmptyState title="Health unavailable" message={error} action={<DevButton small onClick={probe}>Try again</DevButton>} />
       ) : checkEntries.length === 0 ? (
-        <EmptyState icon="🩺" title="No checks reported" />
+        <EmptyState title="No checks reported" />
       ) : (
         <div
           style={{

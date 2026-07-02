@@ -1015,7 +1015,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
           </h4>
           {itemKey &&
           <span style={{ fontSize: "10px", color: "var(--primary)", fontWeight: 700 }}>
-              Where used →
+              Where used
             </span>
           }
         </button>
@@ -1026,8 +1026,8 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
           title={noteOpen ? "Close note" : "Add a note"}
           style={{
             flexShrink: 0,
-            width: "26px",
-            height: "26px",
+            minWidth: "44px",
+            height: "28px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1035,13 +1035,14 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
             border: "1px solid var(--primary-border)",
             background: hasNote ? "var(--theme, var(--surface))" : "var(--surface)",
             color: hasNote ? "var(--accent-base, var(--primary))" : "var(--text-1)",
-            fontSize: "14px",
+            fontSize: "11px",
+            fontWeight: 700,
             cursor: "pointer",
             lineHeight: 1,
-            padding: 0
+            padding: "0 8px"
           }}>
           
-            {hasNote ? "\u270E" : "\u002B"}
+            {hasNote ? "Edit" : "Add"}
           </button>
         }
       </div>
@@ -1779,6 +1780,7 @@ function ShowcaseCategoryHeader({ category, visible }) {
   if (!visible) return null;
   return (
     <div
+      className="showcase-category-header"
       style={{
         padding: "6px 0 4px",
         marginBottom: "8px",
@@ -1917,12 +1919,35 @@ function GlobalUiShowcase() {
           gap: var(--space-sm);
           margin-bottom: var(--space-md);
         }
+        /* Masonry-style multi-column layout so the showcase fills wide
+           screens instead of a single tall stack. Category headers and the
+           full-width control cards span every column; individual showcase
+           cards flow into columns and never split across a column break. */
+        .user-diagnostic-showcase {
+          column-gap: var(--space-md);
+          column-width: 340px;
+        }
+        .user-diagnostic-showcase > .showcase-filter-card,
+        .user-diagnostic-showcase > .showcase-comparison-card,
+        .user-diagnostic-showcase > .showcase-category-header {
+          column-span: all;
+          break-inside: avoid;
+        }
         .user-diagnostic-showcase .app-section-card,
         .showcase-section-card {
           background: #fdf2f8 !important;
           box-shadow: none;
           border: none;
-          margin-bottom: var(--page-stack-gap);
+          margin: 0 0 var(--space-md);
+          break-inside: avoid;
+          -webkit-column-break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        @media (max-width: 700px) {
+          .user-diagnostic-showcase {
+            column-width: auto;
+            column-count: 1;
+          }
         }
         /* Default = NO border around showcase demo wrappers.
            Sections that legitimately demonstrate a border opt in via
@@ -2542,12 +2567,12 @@ function GlobalUiShowcase() {
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--danger-text)", textTransform: "uppercase", letterSpacing: "var(--tracking-caps)" }}>Email *</label>
           <input className="app-input" defaultValue="bad@" style={{ border: "none" }} />
-          <div style={{ fontSize: "11px", color: "var(--danger-text)" }}>⚠ Enter a valid email address</div>
+          <div style={{ fontSize: "11px", color: "var(--danger-text)" }}>Enter a valid email address</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px" }}>
           <label style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--success-text)", textTransform: "uppercase", letterSpacing: "var(--tracking-caps)" }}>Username</label>
           <input className="app-input" defaultValue="alice" style={{ border: "none" }} />
-          <div style={{ fontSize: "11px", color: "var(--success-text)" }}>✓ Username available</div>
+          <div style={{ fontSize: "11px", color: "var(--success-text)" }}>Username available</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px" }}>
           <label style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "var(--tracking-caps)" }}>Title</label>
@@ -3229,7 +3254,7 @@ function GlobalUiShowcase() {
             <div style={{ display: "flex", gap: "6px" }}><Button variant="primary" size="sm">OK</Button></div>
           </div>
           <div style={{ padding: "14px", background: "var(--success-surface)", border: "none", borderRadius: "var(--radius-md)" }}>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-text)", marginBottom: "4px" }}>✓ Saved successfully</div>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-text)", marginBottom: "4px" }}>Saved successfully</div>
             <div style={{ fontSize: "12px", color: "var(--text-1)" }}>Success confirmation modal body.</div>
           </div>
         </div>
@@ -3330,7 +3355,7 @@ function GlobalUiShowcase() {
       {isSectionVisible("empty-state-standard") &&
       <ShowcaseSection title="Empty State (standard pattern)" itemKey="empty-state-standard" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ padding: "24px", textAlign: "center", background: "var(--surface)", borderRadius: "var(--radius-md)", border: "1px dashed var(--primary-border)" }}>
-          <div style={{ fontSize: "28px", marginBottom: "8px" }}>📭</div>
+          <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-1)", marginBottom: "8px" }}>Empty</div>
           <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)", marginBottom: "4px" }}>No results yet</div>
           <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "10px" }}>Try adjusting your filters or adding a record.</div>
           <Button variant="primary" size="sm">Add record</Button>
@@ -3344,10 +3369,10 @@ function GlobalUiShowcase() {
       <ShowcaseSection title="Toast Notifications (proposed)" itemKey="toast-notifications" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {[
-          { tone: "success", bg: "var(--success-surface)", fg: "var(--success-text)", border: "none", msg: "✓ Record saved" },
-          { tone: "error", bg: "var(--danger-surface)", fg: "var(--danger-text)", border: "none", msg: "✕ Something went wrong" },
-          { tone: "info", bg: "var(--theme-status)", fg: "var(--info)", border: "var(--primary-border)", msg: "ℹ New message" },
-          { tone: "warning", bg: "var(--warning-surface)", fg: "var(--warning-text)", border: "none", msg: "⚠ Action required" }].
+          { tone: "success", bg: "var(--success-surface)", fg: "var(--success-text)", border: "none", msg: "Record saved" },
+          { tone: "error", bg: "var(--danger-surface)", fg: "var(--danger-text)", border: "none", msg: "Something went wrong" },
+          { tone: "info", bg: "var(--theme-status)", fg: "var(--info)", border: "var(--primary-border)", msg: "New message" },
+          { tone: "warning", bg: "var(--warning-surface)", fg: "var(--warning-text)", border: "none", msg: "Action required" }].
           map((t) =>
           <div key={t.tone} style={{ padding: "10px 12px", background: t.bg, color: t.fg, border: `1px solid ${t.border}`, borderRadius: "var(--radius-sm)", fontSize: "12px", fontWeight: 600, boxShadow: "0 6px 18px rgba(0,0,0,0.08)" }}>
               {t.msg}
@@ -3425,7 +3450,7 @@ function GlobalUiShowcase() {
           <span>Home</span><span>/</span><span>Accounts</span><span>/</span><span style={{ color: "var(--primary)", fontWeight: 700 }}>Invoices</span>
         </div>
         <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
-          {["‹", "1", "2", "3", "…", "10", "›"].map((p, i) =>
+          {["Prev", "1", "2", "3", "…", "10", "Next"].map((p, i) =>
           <button key={i} type="button" style={{ minWidth: "28px", height: "28px", padding: "0 8px", borderRadius: "var(--radius-xs)", border: "1px solid var(--primary-border)", background: p === "2" ? "var(--primary)" : "var(--surface)", color: p === "2" ? "var(--text-2)" : "var(--text-1)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>{p}</button>
           )}
         </div>
@@ -3485,15 +3510,15 @@ function GlobalUiShowcase() {
       <ShowcaseSection title="Icon System (proposed wrapper)" itemKey="icon-system" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-            <Button variant="primary"><span style={{ marginRight: "6px" }}>+</span>Icon left</Button>
-            <Button variant="secondary">Icon right<span style={{ marginLeft: "6px" }}>→</span></Button>
-            <button type="button" aria-label="Menu" style={{ width: "40px", height: "40px", display: "inline-flex", alignItems: "center", justifyContent: "center", background: "var(--control-bg)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", cursor: "pointer", fontSize: "18px" }}>≡</button>
+            <Button variant="primary">Icon left</Button>
+            <Button variant="secondary">Icon right</Button>
+            <button type="button" aria-label="Menu" style={{ width: "40px", height: "40px", display: "inline-flex", alignItems: "center", justifyContent: "center", background: "var(--control-bg)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", cursor: "pointer", fontSize: "11px", fontWeight: 700 }}>Menu</button>
           </div>
           <div style={{ display: "flex", gap: "14px", alignItems: "center", fontSize: "18px" }}>
-            <span style={{ color: "var(--success)" }}>✓</span>
-            <span style={{ color: "var(--warning)" }}>!</span>
-            <span style={{ color: "var(--danger)" }}>✕</span>
-            <span style={{ color: "var(--info)" }}>ℹ</span>
+            <span style={{ color: "var(--success)", fontSize: "11px", fontWeight: 700 }}>Pass</span>
+            <span style={{ color: "var(--warning)", fontSize: "11px", fontWeight: 700 }}>Warn</span>
+            <span style={{ color: "var(--danger)", fontSize: "11px", fontWeight: 700 }}>Fail</span>
+            <span style={{ color: "var(--info)", fontSize: "11px", fontWeight: 700 }}>Info</span>
           </div>
           <div style={{ fontSize: "10px", color: "var(--text-1)" }}>
             Proposal: wrap an SVG library (e.g. lucide-react) in src/components/ui/Icon.js with size + tone props.

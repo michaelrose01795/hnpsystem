@@ -24,6 +24,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface 
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summary-tile primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
+import TrackingMapModal from "@/features/tracking/map/TrackingMapModal"; // CSS-only dealership site map overlay
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
 
 const CAR_LOCATIONS = [
@@ -1831,6 +1832,7 @@ export default function TrackingDashboard() {
   const [equipmentHistoryModal, setEquipmentHistoryModal] = useState({ open: false, item: null });
   const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
   const [oilStockHistoryModal, setOilStockHistoryModal] = useState({ open: false, item: null });
+  const [trackingMapOpen, setTrackingMapOpen] = useState(false); // Key/Parking site-map overlay
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => user?.roles || [], [user]);
   const isWorkshopManager = hasAnyRole(userRoles, WORKSHOP_CONTROLLER_ROLES);
@@ -3316,6 +3318,10 @@ export default function TrackingDashboard() {
       trackerLocationFilters={TRACKER_LOCATION_FILTERS}
       trackerQuickFilter={trackerQuickFilter}
       trackerQuickFilters={TRACKER_QUICK_FILTERS}
+      trackingMapOpen={trackingMapOpen}
+      setTrackingMapOpen={setTrackingMapOpen}
+      TrackingMapModal={TrackingMapModal}
+      handleTrackingMapRefresh={loadEntries}
       TrackingRouteSkeleton={TrackingRouteSkeleton}
     />
   );

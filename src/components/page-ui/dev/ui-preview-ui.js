@@ -45,7 +45,7 @@ export function UiPreviewShell({ uiKey, label, children }) {
             fontWeight: 600
           }}>
 
-          ← all UIs
+          All UIs
         </Link>
       </div>
       <div>{children}</div>
@@ -75,7 +75,7 @@ export function UiPreviewIndex({ groups }) {
               <ul
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))",
                 gap: 8,
                 margin: 0,
                 padding: 0,

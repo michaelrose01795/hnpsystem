@@ -25,6 +25,7 @@ import {
   ConfidenceBar,
   EmptyState,
   LoadingBlock,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 import { STATUS_META, SEVERITY_META, CATEGORY_META, deriveBadges } from "@/lib/support/adminView";
 import { buildGithubIssue, buildDevBundle, buildMarkdownReport, reportDeepLink } from "@/lib/support/supportExport";
@@ -402,7 +403,7 @@ export default function SupportReportDetail({ id }) {
   if (loading) {
     return (
       <LayerSurface style={{ gap: "var(--page-stack-gap)" }}>
-        <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>← Back</DevButton>
+        <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>Back</DevButton>
         <LoadingBlock rows={6} />
       </LayerSurface>
     );
@@ -410,7 +411,7 @@ export default function SupportReportDetail({ id }) {
   if (error || !data) {
     return (
       <LayerSurface>
-        <EmptyState icon="⚠️" title="Report not found" message={error || "This report may have been deleted."} action={<DevButton onClick={() => router.push("/dev/support-reports")}>Back to list</DevButton>} />
+        <EmptyState title="Report not found" message={error || "This report may have been deleted."} action={<DevButton onClick={() => router.push("/dev/support-reports")}>Back to list</DevButton>} />
       </LayerSurface>
     );
   }
@@ -425,7 +426,7 @@ export default function SupportReportDetail({ id }) {
       {/* Header */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>← Back to Support Centre</DevButton>
+          <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>Back to Support Centre</DevButton>
           <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
             <CopyButton text={() => bundle.text} label="Copy dev bundle" small={false} />
             <CopyButton text={() => buildMarkdownReport(data, { baseUrl: typeof window !== "undefined" ? window.location.origin : "" })} label="Copy markdown" small={false} />
@@ -457,14 +458,18 @@ export default function SupportReportDetail({ id }) {
 
       <InvestigationPanel inv={inv} />
       <SupportAssistedPanel report={data} />
-      <CodeStatePanel inv={inv} build={diagnostics.build} />
-      <OwnershipPanel report={data} inv={inv} diagnostics={diagnostics} />
+      <DashboardGrid min={420}>
+        <CodeStatePanel inv={inv} build={diagnostics.build} />
+        <OwnershipPanel report={data} inv={inv} diagnostics={diagnostics} />
+      </DashboardGrid>
       <SupportGithubPanel reportId={id} report={data} />
       <ScreenshotsPanel screenshots={screenshots} />
-      <TimelinePanel diagnostics={diagnostics} />
+      <DashboardGrid min={420}>
+        <TimelinePanel diagnostics={diagnostics} />
+        <ActivityPanel audit={audit} />
+      </DashboardGrid>
       <DiagnosticsExplorer diagnostics={diagnostics} />
       <CommentsPanel comments={comments} onAdd={addComment} />
-      <ActivityPanel audit={audit} />
     </LayerSurface>
   );
 }

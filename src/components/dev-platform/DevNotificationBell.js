@@ -12,7 +12,6 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import useNotifications from "@/components/dev-platform/useNotifications";
 import { toneTint } from "@/components/support/dev/supportDevUi";
 
-const SEVERITY_ICON = { info: "ℹ️", success: "✅", warning: "⚠️", critical: "🚨" };
 const SEVERITY_TONE = { info: "text-1", success: "success-base", warning: "warning-base", critical: "danger-base" };
 
 export default function DevNotificationBell() {
@@ -47,15 +46,16 @@ export default function DevNotificationBell() {
           position: "relative",
           minHeight: 44,
           minWidth: 44,
-          padding: "8px 12px",
+          padding: "8px 14px",
           borderRadius: "var(--radius-md)",
           cursor: "pointer",
           background: toneTint("text-1", 10),
           color: "var(--text-1)",
-          fontSize: "18px",
+          fontSize: "var(--text-body-sm)",
+          fontWeight: 600,
         }}
       >
-        <span aria-hidden>🔔</span>
+        <span>Alerts</span>
         {unread > 0 && (
           <span
             aria-hidden
@@ -128,14 +128,13 @@ export default function DevNotificationBell() {
                       background: n.read_at ? "transparent" : toneTint(tone, 12),
                     }}
                   >
-                    <span aria-hidden style={{ fontSize: "16px" }}>{SEVERITY_ICON[n.severity] || "•"}</span>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontSize: "var(--text-body-sm)", fontWeight: n.read_at ? 500 : 700, color: "var(--text-1)" }}>{n.title}</div>
                       {n.body ? <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>{n.body}</div> : null}
                     </div>
                     {!n.read_at && (
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" style={{ background: "transparent", cursor: "pointer", color: "var(--text-1)", opacity: 0.6, fontSize: "14px", alignSelf: "flex-start" }}>
-                        ✓
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" style={{ background: "transparent", cursor: "pointer", color: "var(--accentText)", opacity: 0.8, fontSize: "var(--text-body-xs)", fontWeight: 700, alignSelf: "flex-start", whiteSpace: "nowrap" }}>
+                        Read
                       </button>
                     )}
                   </div>

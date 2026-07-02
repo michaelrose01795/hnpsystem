@@ -21,6 +21,7 @@ import {
   LoadingBlock,
   DevButton,
   SourceRef,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -38,8 +39,8 @@ function OwnershipView() {
   }
   if (error) {
     return (
-      <Panel title="Code Ownership" actions={<DevButton small onClick={reload}>⟳ Retry</DevButton>}>
-        <EmptyState icon="⚠️" title="Could not load ownership map" message={error} />
+      <Panel title="Code Ownership" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+        <EmptyState title="Could not load ownership map" message={error} />
       </Panel>
     );
   }
@@ -53,8 +54,8 @@ function OwnershipView() {
     <>
       <Panel
         title="Code Ownership"
-        subtitle="Resolved from data-dev-section-key → source map — no extra instrumentation"
-        actions={<DevButton small onClick={reload}>⟳ Refresh</DevButton>}
+        subtitle="Resolved from data-dev-section-key to source map — no extra instrumentation"
+        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Files touched" value={files.length} tone="accentText" />
@@ -74,9 +75,10 @@ function OwnershipView() {
         </Panel>
       )}
 
+      <DashboardGrid min={420}>
       <Panel title="Ownership explorer" subtitle="Source files ranked by open + total reports">
         {files.length === 0 ? (
-          <EmptyState icon="🗺️" title="No ownership data" message="Reports need a resolved source file (section key) to map." />
+          <EmptyState title="No ownership data" message="Reports need a resolved source file (section key) to map." />
         ) : (
           files.map((f) => (
             <SubSurface key={f.file} style={{ gap: "6px" }}>
@@ -114,7 +116,7 @@ function OwnershipView() {
 
       <Panel title="Dependency / impact map" subtitle="Which routes exercise which modules (weighted)">
         {edges.length === 0 ? (
-          <EmptyState icon="🔗" title="No route→module links" message="Links form as reports resolve both a route and a source file." />
+          <EmptyState title="No route-to-module links" message="Links form as reports resolve both a route and a source file." />
         ) : (
           edges.map((e) => (
             <SubSurface key={`${e.route}¦${e.module}`} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
@@ -131,6 +133,7 @@ function OwnershipView() {
           ))
         )}
       </Panel>
+      </DashboardGrid>
     </>
   );
 }

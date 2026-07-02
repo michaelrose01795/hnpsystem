@@ -433,7 +433,7 @@ export default function UserDiagnosticDevPageUi(props) {
             lines.push(`## ${section}`);
             lines.push("");
             for (const f of sectionFails) {
-              lines.push(`### ✗ ${f.label}`);
+              lines.push(`### FAILED: ${f.label}`);
               lines.push(`- **Detail:** ${f.detail}`);
               if (f.data) {
                 lines.push("- **Data:**");
@@ -475,7 +475,7 @@ export default function UserDiagnosticDevPageUi(props) {
         minWidth: 0
       }}>
       {groupedResults.map(group => <div key={group.section} style={{
-        marginBottom: "24px"
+        marginBottom: "16px"
       }}>
           <h3 style={{
           fontSize: "13px",
@@ -489,9 +489,10 @@ export default function UserDiagnosticDevPageUi(props) {
             {group.section}
           </h3>
           <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px"
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+          gap: "10px",
+          alignItems: "start"
         }}>
             {group.items.map(result => <DevLayoutSection key={result._index} sectionKey={`user-diagnostic/result-${result._index}`} sectionType="content-card" parentKey="user-diagnostic/results" backgroundToken="surface" style={{
             background: "var(--surface)",

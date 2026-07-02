@@ -57,7 +57,6 @@ export function buildDefaultCommands(ctx = {}) {
     title: `Go to ${item.label}`,
     subtitle: item.description,
     group: "Navigate",
-    icon: item.icon,
     href: item.href,
     keywords: [item.key, item.label, "open", "go"],
     run: () => navigate(item.href),

@@ -74,8 +74,8 @@ function CoveragePanel({ coverage }) {
         }}
       >
         {complete
-          ? "✓ Coverage complete — every expected developer action has been logged."
-          : `⚠ ${missing.length} expected action${missing.length === 1 ? "" : "s"} not yet observed in this environment.`}
+          ? "Coverage complete — every expected developer action has been logged."
+          : `${missing.length} expected action${missing.length === 1 ? "" : "s"} not yet observed in this environment.`}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -84,7 +84,7 @@ function CoveragePanel({ coverage }) {
           return (
             <Pill
               key={action}
-              label={`${isCovered ? "✓ " : ""}${action}`}
+              label={action}
               tone={isCovered ? "success-base" : "danger-base"}
               strong
             />
@@ -147,13 +147,12 @@ function RecentActivityPanel({ loading, byDay, count, onReload }) {
     <Panel
       title="Recent activity"
       subtitle={`${count ?? 0} events, grouped by day, newest first.`}
-      actions={<DevButton small onClick={onReload}>⟳ Refresh</DevButton>}
+      actions={<DevButton small onClick={onReload}>Refresh</DevButton>}
     >
       {loading ? (
         <LoadingBlock rows={4} />
       ) : !byDay || byDay.length === 0 ? (
         <EmptyState
-          icon="🧾"
           title="No activity recorded"
           message="The hash-chained audit_log may be empty in this environment — developer actions appear here once they are logged."
         />

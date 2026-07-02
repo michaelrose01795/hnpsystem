@@ -83,15 +83,14 @@ function SavedViewsView() {
           ? "Showing device-local views (server unavailable or migration not applied)."
           : "Personal and shared team workspaces, synced to the server."
       }
-      actions={<DevButton small onClick={refresh}>⟳ Refresh</DevButton>}
+      actions={<DevButton small onClick={refresh}>Refresh</DevButton>}
     >
       {source === "loading" ? (
         <LoadingBlock rows={3} />
       ) : views.length === 0 ? (
         <EmptyState
-          icon="🔖"
           title="No saved views yet"
-          message="Open the Support Centre, set some filters, and use “＋ Save view” to create one (personal or shared)."
+          message="Open the Support Centre, set some filters, and use “Save view” to create one (personal or shared)."
           action={
             <Link href="/dev/support-reports" style={{ textDecoration: "none" }}>
               <DevButton small>Go to Support Centre</DevButton>

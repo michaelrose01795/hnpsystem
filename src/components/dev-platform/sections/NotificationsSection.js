@@ -21,10 +21,10 @@ import {
 } from "@/components/support/dev/supportDevUi";
 
 const SEVERITY_META = {
-  info: { icon: "ℹ️", tone: "accentText" },
-  success: { icon: "✅", tone: "success-base" },
-  warning: { icon: "⚠️", tone: "warning-base" },
-  critical: { icon: "🚨", tone: "danger-base" },
+  info: { tone: "accentText" },
+  success: { tone: "success-base" },
+  warning: { tone: "warning-base" },
+  critical: { tone: "danger-base" },
 };
 
 const severityMeta = (severity) => SEVERITY_META[severity] || SEVERITY_META.info;
@@ -140,7 +140,7 @@ export default function NotificationsSection() {
         {historyRes.loading ? (
           <LoadingBlock rows={4} />
         ) : notifications.length === 0 ? (
-          <EmptyState icon="🔔" title="No notifications" message="Platform events will appear here as they happen." />
+          <EmptyState title="No notifications" message="Platform events will appear here as they happen." />
         ) : (
           notifications.map((n) => {
             const meta = severityMeta(n.severity);
@@ -156,7 +156,6 @@ export default function NotificationsSection() {
                   background: isUnread ? `color-mix(in srgb, var(--${meta.tone}) 12%, var(--surface))` : "var(--surface)",
                 }}
               >
-                <span style={{ fontSize: "18px", lineHeight: 1.4 }} aria-hidden>{meta.icon}</span>
                 <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{n.title}</span>
@@ -183,7 +182,7 @@ export default function NotificationsSection() {
         {rulesRes.loading ? (
           <LoadingBlock rows={3} />
         ) : rules.length === 0 ? (
-          <EmptyState icon="🧭" title="No rules yet" message="Create a subscription rule below to be notified about platform events." />
+          <EmptyState title="No rules yet" message="Create a subscription rule below to be notified about platform events." />
         ) : (
           rules.map((r) => {
             const isDefault = r.owner_key === "*";

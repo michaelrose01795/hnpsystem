@@ -5,6 +5,7 @@ import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is rai
 import "@/styles/theme.css"; // register CSS variables before globals
 import "@/styles/staffglobal.css"; // staff/admin app global base styles
 import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
+import "@/features/tracking/map/trackingMap.css"; // /tracking site-map diagram (Pages Router requires plain-CSS imports here)
 import { Inter } from "next/font/google";
 import React, { useEffect } from "react"; // import React helpers
 

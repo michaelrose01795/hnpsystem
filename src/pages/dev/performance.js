@@ -28,6 +28,7 @@ import {
   KeyValueGrid,
   EmptyState,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -64,7 +65,7 @@ function PerformanceView() {
       <Panel
         title="Performance"
         subtitle={updatedAt ? `Live session profile · captured ${updatedAt.toLocaleTimeString()}` : "Profiling…"}
-        actions={<DevButton small onClick={refresh}>⟳ Recapture</DevButton>}
+        actions={<DevButton small onClick={refresh}>Recapture</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="TTFB" value={fmtMs(m.ttfbMs)} tone="accentText" />
@@ -75,9 +76,10 @@ function PerformanceView() {
         </div>
       </Panel>
 
+      <DashboardGrid min={420}>
       <Panel title="Failing / slow endpoints" subtitle="Captured non-2xx requests grouped by endpoint (no bodies)">
         {endpoints.length === 0 ? (
-          <EmptyState icon="✅" title="No failing requests" message="Nothing non-2xx captured this session." />
+          <EmptyState title="No failing requests" message="Nothing non-2xx captured this session." />
         ) : (
           endpoints.map((e) => (
             <SubSurface key={e.endpoint} style={{ flexDirection: "row", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
@@ -100,7 +102,7 @@ function PerformanceView() {
 
       <Panel title="Request timeline" subtitle="Captured requests in time order">
         {timeline.length === 0 ? (
-          <EmptyState icon="📉" title="No request trace" message="No failing requests to trace this session." />
+          <EmptyState title="No request trace" message="No failing requests to trace this session." />
         ) : (
           <div>
             {timeline.map((t, i) => (
@@ -130,7 +132,7 @@ function PerformanceView() {
 
       <Panel title="Execution flow" subtitle="The route changes + interactions that led here">
         {flow.length === 0 ? (
-          <EmptyState icon="🧭" title="No recent actions" message="Navigate around and recapture to see the flow." />
+          <EmptyState title="No recent actions" message="Navigate around and recapture to see the flow." />
         ) : (
           flow.map((f, i) => (
             <KeyValueGrid key={`${f.ts}-${i}`}>
@@ -143,6 +145,7 @@ function PerformanceView() {
           ))
         )}
       </Panel>
+      </DashboardGrid>
     </>
   );
 }

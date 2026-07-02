@@ -35,6 +35,8 @@ const ALLOWLIST = new Set([
   "src/components/dev-layout-overlay/DevLayoutOverlay.module.css",
   "src/components/dev-layout-overlay/DevLayoutOverlay.js",
   "src/features/jobCards/components/JobWorkflowDiagnostics.js",
+  // Dealership site-map diagram — roads/buildings/pins are drawn with borders.
+  "src/features/tracking/map/trackingMap.css",
   // Presentation overlays — the coloured highlight ring IS the feature.
   "src/features/presentation/PresentationHighlight.js",
   "src/features/presentation/PresentationDevOverlay.js",

@@ -66,6 +66,10 @@ export default function TrackingDashboardUi(props) {
     trackerQuickFilter,
     trackerQuickFilters,
     setTrackerQuickFilter,
+    trackingMapOpen,
+    setTrackingMapOpen,
+    TrackingMapModal,
+    handleTrackingMapRefresh,
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
 
@@ -222,6 +226,11 @@ export default function TrackingDashboardUi(props) {
           minWidth: shouldStackHeaderControls ? "100%" : "max-content",
           whiteSpace: "nowrap"
         }}>
+                  {activeTab === "tracker" && setTrackingMapOpen && (
+                  <Button variant="secondary" size="sm" onClick={() => setTrackingMapOpen(true)}>
+                    Map
+                  </Button>
+                  )}
                   {activeTab === "tracker" && (
                   <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
                     Add location
@@ -285,6 +294,8 @@ export default function TrackingDashboardUi(props) {
     open: false,
     item: null
   })} />}
+
+      {trackingMapOpen && TrackingMapModal && <TrackingMapModal onClose={() => setTrackingMapOpen(false)} onRefresh={handleTrackingMapRefresh} />}
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

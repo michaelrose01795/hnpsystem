@@ -21,6 +21,7 @@ import {
   EmptyState,
   LoadingBlock,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -50,8 +51,8 @@ function ProductivityView() {
 
   if (error) {
     return (
-      <Panel title="Productivity" actions={<DevButton small onClick={reload}>⟳ Retry</DevButton>}>
-        <EmptyState icon="⚠️" title="Could not load productivity" message={error} />
+      <Panel title="Productivity" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+        <EmptyState title="Could not load productivity" message={error} />
       </Panel>
     );
   }
@@ -72,7 +73,7 @@ function ProductivityView() {
       <Panel
         title="Productivity"
         subtitle={windowSubtitle}
-        actions={<DevButton small onClick={reload}>⟳ Refresh</DevButton>}
+        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Created" value={num(totals.created)} tone="accentText" />
@@ -86,9 +87,10 @@ function ProductivityView() {
         </div>
       </Panel>
 
+      <DashboardGrid min={440}>
       <Panel title="Throughput" subtitle="Created vs. resolved per day">
         {throughput.length === 0 ? (
-          <EmptyState icon="📈" title="No throughput yet" message="Daily created/resolved counts appear once activity is recorded." />
+          <EmptyState title="No throughput yet" message="Daily created/resolved counts appear once activity is recorded." />
         ) : (
           throughput.map((row) => (
             <SubSurface
@@ -107,7 +109,7 @@ function ProductivityView() {
 
       <Panel title="By developer" subtitle="Assigned, resolved and average resolve time per developer">
         {byDeveloper.length === 0 ? (
-          <EmptyState icon="🧑‍💻" title="No developer breakdown" message="Per-developer metrics appear once reports are assigned and resolved." />
+          <EmptyState title="No developer breakdown" message="Per-developer metrics appear once reports are assigned and resolved." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {/* Header row */}
@@ -158,6 +160,7 @@ function ProductivityView() {
           </div>
         )}
       </Panel>
+      </DashboardGrid>
     </>
   );
 }

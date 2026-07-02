@@ -1,9 +1,57 @@
 
 ---------SUPPORT-------------
-get gluade ot give .md file on everything done and then chatgpt to impove it even more with all the backend and midend data etc req 
+Test does it work 
 
+have it so theres a 10px gap between "Dev Support Auto Content Card 9 | 1.2.1.1.9 | key dev-support-auto-content-card-9 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:190 (dynamic pattern) | route /dev/support | where New rule Subscribe to a platform event, optionally filtered by minimum severity. Create Event Report created Minimum severity (optional) Any severity | parent app-layout-page-card 1.2.1.1" "Dev Support Auto Content Card 8 | 1.2.1.1.8 | key dev-support-auto-content-card-8 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:190 (dynamic pattern) | route /dev/support | where Subscription rules Rules marked “team default” apply to everyone and are read-only. No rules yet Create a subscription rule below to be notified about platform events. | parent app-layout-page-card 1.2.1.1" "Dev Support Auto Content Card 7 | 1.2.1.1.7 | key dev-support-auto-content-card-7 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:190 (dynamic pattern) | route /dev/support | where Recent notifications 0 unread of 0 shown. Mark all read No notifications Platform events will appear here as they happen. | parent app-layout-page-card 1.2.1.1". and the same for the "Intelligence
+1 report(s) analysed · generated 13:28:21
+Refresh
+1
+Open
+0
+Regressions
+1
+Unassigned
+0
+Code drift
+1
+Problem areas
+30%
+Avg confidence
+Report volume
+Daily reports over the trailing window (red = regressions present)
+06-19
+06-20
+06-21
+06-22
+06-23
+06-24
+06-25
+06-26
+06-27
+06-28
+06-29
+06-30
+07-01
+07-02
+Problem areas
+Routes / sections producing the most (and most severe) reports
+/newsfeed
+1 total
+1 open
+section: app-layout-topbar
+src/components/layout/StaffTopbar.js:86
+Incident clusters
+Recurring incidents grouped by fingerprint — select to bulk-triage
+No recurring clusters
+Every incident so far is unique." sections. 
+
+have it so the "Support Centre Workspace | 1.2.1.1.3 | key support-centre-workspace | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:190 (dynamic pattern) | route /dev/support | where Support Centre Help & Diagnostics reports · 1 total · press / to search, j / k to move, Enter to open Refresh | parent app-layout-page-card 1.2.1.1 | 3 children" background card is "--theme" colour background and the cards within that are "--surface" colour.
+
+Reomve the descriptions from all of the sections within the /dev pages. make sure this doesnt happen again when a new page/section is created, add this to the staffglobal.css settings etc. 
 
 --------------------------
+Car tracking parking map 
+
 
 
 CHECK

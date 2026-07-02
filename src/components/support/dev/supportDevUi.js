@@ -85,6 +85,29 @@ export function SubSurface({ children, style }) {
 }
 
 // ---------------------------------------------------------------------------
+// Dashboard grid — a responsive auto-fit grid used to tile Panels / cards so
+// dev dashboards fill wide screens instead of stacking every panel full-width
+// in a single column. `min` is the smallest column width before wrapping; on
+// narrow screens it collapses to one column automatically.
+// ---------------------------------------------------------------------------
+export function DashboardGrid({ children, min = 320, gap = "var(--page-stack-gap, 12px)", style }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
+        gap,
+        alignItems: "start",
+        minWidth: 0,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Key/value grid — the workhorse for diagnostics readouts.
 // ---------------------------------------------------------------------------
 export function KeyValue({ label, value, mono = false, tone }) {
@@ -137,13 +160,14 @@ export function StatCard({ label, value, tone = "accentText", hint, onClick, act
 // ---------------------------------------------------------------------------
 // Empty + loading states.
 // ---------------------------------------------------------------------------
-export function EmptyState({ icon = "🗂️", title = "Nothing here", message, action }) {
+// Empty state — text only (no icon/emoji). A compact centred block used when a
+// panel has nothing to show. Callers pass title/message/action.
+export function EmptyState({ title = "Nothing here", message, action }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-sm)", padding: "var(--space-xl, 32px)", textAlign: "center" }}>
-      <div style={{ fontSize: "28px" }} aria-hidden>{icon}</div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-xs)", padding: "var(--space-lg, 24px) var(--space-md)", textAlign: "center" }}>
       <div style={{ fontWeight: 700, color: "var(--accentText)" }}>{title}</div>
-      {message ? <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8, maxWidth: "40ch" }}>{message}</div> : null}
-      {action}
+      {message ? <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8, maxWidth: "48ch" }}>{message}</div> : null}
+      {action ? <div style={{ marginTop: "var(--space-xs)" }}>{action}</div> : null}
     </div>
   );
 }
@@ -220,7 +244,7 @@ export function CopyButton({ text, label = "Copy", copiedLabel = "Copied", small
   }, [text, pushAlert]);
   return (
     <DevButton onClick={onCopy} small={small} tone={tone} title="Copy to clipboard">
-      {done ? `✓ ${copiedLabel}` : label}
+      {done ? copiedLabel : label}
     </DevButton>
   );
 }

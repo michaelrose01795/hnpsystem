@@ -35,64 +35,7 @@ export default function StatusSnapshotDevPage() {
 
   if (!canShowDevPages()) {
     return <StatusSnapshotDevPageUi view="section1" />;
-
-
-
-
-
   }
 
   return <StatusSnapshotDevPageUi view="section2" error={error} fetchSnapshot={fetchSnapshot} jobInput={jobInput} loading={loading} setJobInput={setJobInput} snapshot={snapshot} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

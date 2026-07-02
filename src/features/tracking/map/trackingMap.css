@@ -1,0 +1,447 @@
+/* src/features/tracking/map/trackingMap.css
+   Dealership site-map diagram + layout editor for the /tracking Key/Parking
+   tab. This is a functional drawing primitive (like TyreDiagram/BrakeDiagram):
+   the hex colours and borders below DRAW the map (tarmac, grass, buildings),
+   they are not decorative card chrome. Allowlisted in
+   tools/scripts/check-borders.js. Loaded globally via src/pages/_app.js
+   (Next.js Pages Router only allows plain-CSS imports there).
+
+   Section positions/sizes are NOT in this file — every road/building/parking
+   section is a data item (% coordinates) from trackingMapLayout.js rendered
+   with inline left/top/width/height. Classes here only carry the paint. */
+
+.tracking-map-shell {
+  width: 100%;
+  min-height: 720px;
+  padding: 24px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 35%),
+    linear-gradient(135deg, rgba(20, 20, 24, 0.94), rgba(10, 10, 12, 0.98));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.tracking-map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.tracking-map-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tracking-map-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.tracking-map-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The drawing canvas — a fixed-proportion stage everything is positioned
+   inside with % offsets, so the whole map scales responsively. */
+.tracking-map-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 620px;
+  border-radius: 34px;
+  background: #f7f7f5;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.12),
+    inset 0 16px 45px rgba(0, 0, 0, 0.12);
+}
+
+/* While editing: stop touch scrolling from fighting section drags. */
+.tracking-map-stage--edit {
+  touch-action: none;
+}
+
+.tracking-map-stage--edit .map-item {
+  cursor: move;
+}
+
+/* Irregular site outline — clip-path gives the plot its real-world shape,
+   the blurred inner ring reads as the hedge/fence line. */
+.site-boundary {
+  position: absolute;
+  inset: 4% 3% 5% 3%;
+  border-radius: 18% 12% 16% 10% / 12% 14% 18% 16%;
+  background:
+    radial-gradient(circle at 18% 88%, rgba(48, 83, 48, 0.32), transparent 15%),
+    radial-gradient(circle at 88% 10%, rgba(56, 83, 54, 0.36), transparent 16%),
+    linear-gradient(135deg, #c4c0b5, #aaa79d);
+  clip-path: polygon(
+    23% 0%, 69% 2%, 72% 0%, 96% 4%, 100% 16%,
+    94% 22%, 88% 28%, 88% 44%, 96% 49%, 91% 61%,
+    94% 74%, 88% 100%, 6% 97%, 0% 86%, 8% 45%,
+    6% 36%, 11% 16%, 18% 5%
+  );
+  overflow: hidden;
+}
+
+.site-boundary::before {
+  content: "";
+  position: absolute;
+  inset: 1.4%;
+  border-radius: inherit;
+  border: 8px solid rgba(38, 59, 36, 0.45); /* hedge line — diagram stroke, not card chrome */
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* Subtle aggregate speckle over the concrete yard. */
+.map-yard-texture {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-radial-gradient(circle at 20% 30%, rgba(60, 60, 60, 0.1) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(25deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 18px);
+  opacity: 0.55;
+}
+
+/* ---- Layout items (positions/sizes injected inline from layout data) ---- */
+
+.map-item {
+  position: absolute;
+}
+
+.map-item--selected {
+  outline: 2px dashed #7cc4ff;
+  outline-offset: 2px;
+  z-index: 40;
+}
+
+/* Centered name pill on any labelled section. */
+.map-item-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(12, 12, 14, 0.72);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+/* Corner drag handle shown on the selected section. */
+.map-resize-handle {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 5;
+}
+
+/* ---- Tarmac roads / parking areas ---- */
+
+.road {
+  position: absolute;
+  background: #30343a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -8px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* Variant paint for the original hand-drawn shapes. */
+
+.road-main-top {
+  border-radius: 80px 24px 24px 80px;
+  transform: skewX(-2deg);
+}
+
+.road-top-curve {
+  border-radius: 999px 999px 40px 40px;
+}
+
+.road-top-curve::before {
+  content: "";
+  position: absolute;
+  left: -17%;
+  top: 0;
+  width: 24%;
+  height: 220%;
+  border-radius: 80px 0 0 80px;
+  border-left: 48px solid #30343a; /* curved tarmac sweep drawn with border arcs */
+  border-top: 36px solid #30343a;
+  transform: rotate(-18deg);
+}
+
+.road-right-yard {
+  border-radius: 8% 22% 18% 10%;
+}
+
+.road-right-yard::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  top: -45%;
+  width: 62%;
+  height: 50%;
+  background: #30343a;
+  border-radius: 12px;
+}
+
+.road-top-right-pad {
+  border-radius: 26% 40% 34% 30%;
+}
+
+.road-bottom {
+  border-radius: 0 0 42px 42px;
+}
+
+/* Internal customer/parking loop — a ring drawn with a thick border. */
+.road-left-loop {
+  border-radius: 46% 42% 44% 44%;
+  border: 42px solid #30343a; /* the loop road IS this border stroke */
+  background: transparent;
+}
+
+.road-left-loop::after {
+  content: "";
+  position: absolute;
+  right: -19%;
+  top: 18%;
+  width: 28%;
+  height: 36%;
+  border-radius: 0 999px 999px 0;
+  border-right: 34px solid #30343a; /* loop exit spur drawn with border arcs */
+  border-top: 32px solid #30343a;
+  border-bottom: 32px solid #30343a;
+}
+
+.road-left-entry {
+  border-radius: 80px 8px 8px 80px;
+}
+
+.road-centre-link {
+  border-radius: 16px;
+}
+
+/* ---- Landscaping ---- */
+
+.grass-island {
+  position: absolute;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.06) 0 3px, transparent 3px 8px),
+    linear-gradient(135deg, #4f613a, #657344);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    inset 0 10px 20px rgba(0, 0, 0, 0.22);
+}
+
+/* ---- Buildings — ribbed roof texture via repeating gradient ---- */
+
+.building {
+  position: absolute;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.24) 0 6px,
+      rgba(0, 0, 0, 0.08) 6px 11px
+    ),
+    linear-gradient(180deg, #d7d8d6, #9fa2a2);
+  border: 1px solid rgba(30, 30, 30, 0.38); /* building footprint outline — diagram stroke */
+  box-shadow:
+    0 12px 18px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* ---- Parking sections — painted bay lines in a scaling grid ---- */
+
+.map-parking {
+  position: absolute;
+  border-radius: 6px;
+  background: rgba(49, 55, 62, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08); /* painted section outline — diagram stroke */
+}
+
+.map-parking-grid {
+  position: absolute;
+  inset: 3px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+  gap: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.map-parking-space {
+  border: 1px solid rgba(255, 255, 255, 0.25); /* painted bay line — diagram stroke */
+  border-radius: 2px;
+  min-height: 6px;
+}
+
+/* ---- Vehicle / key pins ---- */
+
+.map-vehicle-pin {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ff3b30;
+  border: 3px solid #fff; /* pin halo ring — diagram stroke, not card chrome */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  z-index: 30;
+}
+
+.map-vehicle-pin::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 22px;
+  top: -7px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pin-1 { left: 73%; top: 80%; }
+.pin-2 { left: 21%; top: 72%; }
+.pin-3 { left: 62%; top: 47%; }
+
+/* ---- Toolbar / editor buttons (dark map shell needs its own pill look) ---- */
+
+.tracking-map-button {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16); /* shell is always dark — themed ring tokens would disappear here */
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tracking-map-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tracking-map-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tracking-map-button--sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.tracking-map-button--primary {
+  background: var(--accentMain);
+  border-color: transparent;
+}
+
+.tracking-map-button--primary:hover {
+  background: var(--accentMain);
+  filter: brightness(1.1);
+}
+
+.tracking-map-button--danger {
+  background: rgba(255, 59, 48, 0.25);
+  border-color: rgba(255, 59, 48, 0.4);
+}
+
+.tracking-map-button--danger:hover {
+  background: rgba(255, 59, 48, 0.38);
+}
+
+/* ---- Editor bars ---- */
+
+.tracking-map-editbar,
+.tracking-map-props {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tracking-map-props {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tracking-map-editbar-spacer {
+  flex: 1 1 auto;
+}
+
+.tracking-map-props-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tracking-map-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tracking-map-input {
+  height: 32px;
+  width: 74px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16); /* dark editor panel — themed input ring would disappear here */
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 12px;
+}
+
+.tracking-map-input--wide {
+  width: 180px;
+}
+
+.tracking-map-input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (max-width: 900px) {
+  .tracking-map-shell {
+    padding: 14px;
+    min-height: 0;
+  }
+
+  .tracking-map-stage {
+    min-height: 420px;
+  }
+
+  .map-item-label {
+    display: none;
+  }
+}

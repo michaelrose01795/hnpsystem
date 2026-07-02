@@ -28,6 +28,7 @@ import {
   Pill,
   StatCard,
   EmptyState,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -92,7 +93,7 @@ function PluginRow({ plugin }) {
             padding: "0 4px",
           }}
         >
-          Open →
+          Open
         </Link>
       ) : null}
     </div>
@@ -105,7 +106,6 @@ function KindPanel({ kind, plugins }) {
     <Panel title={meta.title} subtitle={meta.note}>
       {plugins.length === 0 ? (
         <EmptyState
-          icon="🧩"
           title={meta.empty}
           message="This is an extension point — modules register via registerPlugin({ kind, id, ... }) without editing the core."
         />
@@ -165,9 +165,11 @@ function PluginsView() {
         </div>
       </Panel>
 
-      <KindPanel kind="diagnostic" plugins={groups.diagnostic} />
-      <KindPanel kind="investigation" plugins={groups.investigation} />
-      <KindPanel kind="tool" plugins={groups.tool} />
+      <DashboardGrid min={360}>
+        <KindPanel kind="diagnostic" plugins={groups.diagnostic} />
+        <KindPanel kind="investigation" plugins={groups.investigation} />
+        <KindPanel kind="tool" plugins={groups.tool} />
+      </DashboardGrid>
 
       <Panel title="Extending the platform" subtitle="One architecture, three extension kinds.">
         <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.9, lineHeight: 1.6, maxWidth: "70ch" }}>

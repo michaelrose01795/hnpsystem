@@ -46,7 +46,7 @@ function Breakdown({ title, subtitle, map, labels, tones }) {
   return (
     <Panel title={title} subtitle={subtitle}>
       {entries.length === 0 ? (
-        <EmptyState icon="—" title="Nothing yet" />
+        <EmptyState title="Nothing yet" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
           {entries.map(([key, count]) => (
@@ -101,7 +101,7 @@ export default function DevOverviewStats() {
         subtitle="Live overview of Help & Diagnostics reports coming in from staff."
         actions={
           <>
-            <DevButton small onClick={load}>⟳ Refresh</DevButton>
+            <DevButton small onClick={load}>Refresh</DevButton>
             <DevButton small variant="solid" onClick={openReports}>Open reports</DevButton>
           </>
         }
@@ -109,7 +109,7 @@ export default function DevOverviewStats() {
         {loading && !stats ? (
           <LoadingBlock rows={2} />
         ) : error ? (
-          <EmptyState icon="⚠️" title="Statistics unavailable" message={error} action={<DevButton small onClick={load}>Try again</DevButton>} />
+          <EmptyState title="Statistics unavailable" message={error} action={<DevButton small onClick={load}>Try again</DevButton>} />
         ) : (
           <div
             style={{

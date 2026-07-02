@@ -22,6 +22,7 @@ import {
   EmptyState,
   LoadingBlock,
   DevButton,
+  DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
 const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
@@ -59,8 +60,8 @@ function ReleasesView() {
   }
   if (error) {
     return (
-      <Panel title="Releases" actions={<DevButton small onClick={reload}>⟳ Retry</DevButton>}>
-        <EmptyState icon="⚠️" title="Could not load release intelligence" message={error} />
+      <Panel title="Releases" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+        <EmptyState title="Could not load release intelligence" message={error} />
       </Panel>
     );
   }
@@ -75,7 +76,7 @@ function ReleasesView() {
       <Panel
         title="Releases"
         subtitle={`${rel?.releaseCount || 0} release(s) reconstructed from captured reports`}
-        actions={<DevButton small onClick={reload}>⟳ Refresh</DevButton>}
+        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Releases" value={rel?.releaseCount || 0} tone="accentText" />
@@ -106,9 +107,10 @@ function ReleasesView() {
         </Panel>
       )}
 
-      <Panel title="Deployment timeline" subtitle="Oldest → newest, with quality change per deploy">
+      <DashboardGrid min={420}>
+      <Panel title="Deployment timeline" subtitle="Oldest to newest, with quality change per deploy">
         {timeline.length === 0 ? (
-          <EmptyState icon="🚀" title="No deployments yet" message="Version/commit pinning populates in deployed environments." />
+          <EmptyState title="No deployments yet" message="Version/commit pinning populates in deployed environments." />
         ) : (
           timeline.map((t) => (
             <SubSurface key={t.key} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
@@ -122,7 +124,7 @@ function ReleasesView() {
                 {t.regressions > 0 && <Pill label={`${t.regressions} regression`} tone="danger-base" strong />}
                 <Pill label={`quality ${t.qualityScore}`} tone={qualityTone(t.qualityScore)} strong />
                 {t.qualityDelta != null && (
-                  <Pill label={`${t.qualityDelta >= 0 ? "▲" : "▼"} ${Math.abs(t.qualityDelta)}`} tone={t.qualityDelta >= 0 ? "success-base" : "danger-base"} />
+                  <Pill label={`${t.qualityDelta >= 0 ? "+" : "−"}${Math.abs(t.qualityDelta)}`} tone={t.qualityDelta >= 0 ? "success-base" : "danger-base"} />
                 )}
               </div>
             </SubSurface>
@@ -146,10 +148,11 @@ function ReleasesView() {
           </SubSurface>
         ))}
       </Panel>
+      </DashboardGrid>
 
       <Panel title="Incidents across releases" subtitle="Recurring incidents and the version span they cover">
         {incidents.length === 0 ? (
-          <EmptyState icon="🧬" title="No cross-release incidents" message="No incident has recurred across releases yet." />
+          <EmptyState title="No cross-release incidents" message="No incident has recurred across releases yet." />
         ) : (
           incidents.map((inc) => (
             <SubSurface key={inc.key} style={{ gap: "4px" }}>

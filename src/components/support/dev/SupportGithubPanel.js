@@ -13,7 +13,7 @@ import { correlateReport } from "@/lib/dev-platform/githubCorrelation";
 import { postJson } from "@/components/dev-platform/usePlatformResource";
 import { useAlerts } from "@/context/AlertContext";
 
-const KIND_ICON = { issue: "🐛", pull_request: "🔀", commit: "📌", deployment: "🚀" };
+const KIND_LABEL = { issue: "Issue", pull_request: "PR", commit: "Commit", deployment: "Deploy" };
 const STATE_TONE = { open: "success-base", closed: "danger-base", merged: "accentText", success: "success-base" };
 
 export default function SupportGithubPanel({ reportId, report }) {
@@ -86,9 +86,9 @@ export default function SupportGithubPanel({ reportId, report }) {
       actions={
         <>
           <DevButton small onClick={onCreate} disabled={busy || !configured} title={configured ? "Create a GitHub issue from this report" : "Set SUPPORT_GITHUB_TOKEN to enable"}>
-            ＋ Create issue
+            Create issue
           </DevButton>
-          <DevButton small onClick={load} disabled={busy}>⟳</DevButton>
+          <DevButton small onClick={load} disabled={busy}>Refresh</DevButton>
         </>
       }
     >
@@ -113,7 +113,7 @@ export default function SupportGithubPanel({ reportId, report }) {
                 alignItems: "center",
               }}
             >
-              🔗 {s.label}
+              {s.label}
             </a>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function SupportGithubPanel({ reportId, report }) {
       {loading ? (
         <LoadingBlock rows={2} />
       ) : links.length === 0 ? (
-        <EmptyState icon="🔗" title="No linked artifacts" message="Create an issue from this report, or paste a GitHub URL above to link an existing issue, PR or commit." />
+        <EmptyState title="No linked artifacts" message="Create an issue from this report, or paste a GitHub URL above to link an existing issue, PR or commit." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {links.map((l) => (
@@ -153,7 +153,7 @@ export default function SupportGithubPanel({ reportId, report }) {
                 flexWrap: "wrap",
               }}
             >
-              <span aria-hidden>{KIND_ICON[l.kind] || "🔗"}</span>
+              <Pill label={KIND_LABEL[l.kind] || l.kind || "Link"} tone="text-1" />
               <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accentText)", fontSize: "var(--text-body-sm)", textDecoration: "none", minWidth: 0, flex: 1, wordBreak: "break-word" }}>
                 {l.title || `${l.kind} ${l.number ? `#${l.number}` : l.sha ? l.sha.slice(0, 7) : ""}`}
               </a>
