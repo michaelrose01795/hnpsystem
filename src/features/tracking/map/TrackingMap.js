@@ -1,51 +1,61 @@
 // file location: src/features/tracking/map/TrackingMap.js
 // CSS-only dealership site map for the /tracking Key/Parking tab, with a
-// built-in layout editor (Edit → drag / resize / add / delete sections →
-// Save captures every position as the fixed layout — see trackingMapLayout.js).
-// Styles live in ./trackingMap.css, imported globally from src/pages/_app.js
-// (the Pages Router only allows plain-CSS imports there).
+// built-in layout editor. Edits are saved as they happen so a reload keeps
+// added, deleted, moved, resized, rotated, and relabelled sections.
+// Styles live in ./trackingMap.css, imported globally from src/pages/_app.js.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  calculateParkingSpaces,
   createMapItem,
   getDefaultLayout,
   loadTrackingMapLayout,
   saveTrackingMapLayout,
 } from "@/features/tracking/map/trackingMapLayout";
 
-// Default pins shown until live positions are wired in. x/y are % offsets
-// inside .tracking-map-stage so pins scale with the map.
-const DEFAULT_PINS = [
-  { id: "pin-1", className: "pin-1", label: "Car on site" },
-  { id: "pin-2", className: "pin-2", label: "Key held" },
-  { id: "pin-3", className: "pin-3", label: "Awaiting movement" },
-];
-
-const TYPE_CLASS = { road: "road", building: "building", grass: "grass-island", parking: "map-parking" };
-const TYPE_LABEL = { road: "Road", building: "Building", grass: "Grass", parking: "Parking" };
+const TYPE_CLASS = { road: "road", building: "building", grass: "grass-island", parking: "map-parking", fence: "fence-line" };
+const TYPE_LABEL = { road: "Road", building: "Building", grass: "Grass", parking: "Parking", fence: "Fence" };
+const RADIUS_ALLOWED_TYPES = new Set(["building", "parking"]);
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-const clampSpaces = (spaces) => clamp(Math.round(Number(spaces) || 1), 1, 200);
+const MIN_ITEM_SIZE = 2;
 
-export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose }) {
+export default function TrackingMap({ pins = [], onRefresh, onClose }) {
   const [items, setItems] = useState(() => loadTrackingMapLayout());
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [saveState, setSaveState] = useState("saved");
   const stageRef = useRef(null);
-  const dragRef = useRef(null); // active move/resize gesture
+  const dragRef = useRef(null);
+  const didMountRef = useRef(false);
 
   const selectedItem = items.find((item) => item.id === selectedId) || null;
 
-  const updateItem = (id, patch) =>
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-
-  const deleteItem = (id) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    setSelectedId((current) => (current === id ? null : current));
+  const persistItems = (nextItems) => {
+    const saved = saveTrackingMapLayout(nextItems);
+    setSaveState(saved ? "saved" : "error");
   };
 
-  // Delete/Backspace removes the selected section — ignored while typing in
-  // the properties inputs so editing a label never deletes the section.
+  const setAndPersistItems = (updater) => {
+    setItems((prev) => (typeof updater === "function" ? updater(prev) : updater));
+  };
+
+  const updateItem = (id, patch) =>
+    setAndPersistItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+
+  const deleteItem = useCallback((id) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    setSelectedId((current) => (current === id ? null : current));
+  }, []);
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    persistItems(items);
+  }, [items]);
+
   useEffect(() => {
     if (!editMode || !selectedId) return undefined;
     const handleKeyDown = (event) => {
@@ -55,7 +65,7 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editMode, selectedId]);
+  }, [deleteItem, editMode, selectedId]);
 
   const beginDrag = (event, item, mode) => {
     if (!editMode) return;
@@ -70,30 +80,34 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
       rect: stage.getBoundingClientRect(),
       startX: event.clientX,
       startY: event.clientY,
-      orig: { x: item.x, y: item.y, w: item.w, h: item.h },
+      orig: { x: item.x, y: item.y, w: item.w, h: item.h, rotate: Number(item.rotate) || 0 },
     };
-    // Route the rest of the gesture to this element even when the pointer
-    // outruns it mid-drag.
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const handlePointerMove = (event) => {
     const drag = dragRef.current;
     if (!drag) return;
-    const dx = ((event.clientX - drag.startX) / drag.rect.width) * 100;
-    const dy = ((event.clientY - drag.startY) / drag.rect.height) * 100;
+    const dxPx = event.clientX - drag.startX;
+    const dyPx = event.clientY - drag.startY;
     if (drag.mode === "resize") {
+      const angle = (drag.orig.rotate * Math.PI) / 180;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const localDx = ((dxPx * cos + dyPx * sin) / drag.rect.width) * 100;
+      const localDy = ((-dxPx * sin + dyPx * cos) / drag.rect.height) * 100;
       updateItem(drag.id, {
-        w: clamp(drag.orig.w + dx, 2, 120),
-        h: clamp(drag.orig.h + dy, 2, 120),
+        w: clamp(drag.orig.w + localDx, MIN_ITEM_SIZE, 100 - drag.orig.x),
+        h: clamp(drag.orig.h + localDy, MIN_ITEM_SIZE, 100 - drag.orig.y),
       });
-    } else {
-      // Loose clamp — sections may intentionally hang past the clipped boundary.
-      updateItem(drag.id, {
-        x: clamp(drag.orig.x + dx, -40, 100),
-        y: clamp(drag.orig.y + dy, -40, 100),
-      });
+      return;
     }
+    const dx = (dxPx / drag.rect.width) * 100;
+    const dy = (dyPx / drag.rect.height) * 100;
+    updateItem(drag.id, {
+      x: clamp(drag.orig.x + dx, 0, 100 - drag.orig.w),
+      y: clamp(drag.orig.y + dy, 0, 100 - drag.orig.h),
+    });
   };
 
   const endDrag = () => {
@@ -102,34 +116,33 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
 
   const addItem = (type, overrides) => {
     const item = createMapItem(type, overrides);
-    setItems((prev) => [...prev, item]);
+    setAndPersistItems((prev) => [...prev, item]);
     setSelectedId(item.id);
   };
 
   const handleSaveLayout = () => {
-    saveTrackingMapLayout(items);
+    persistItems(items);
     setEditMode(false);
     setSelectedId(null);
   };
 
-  const handleCancelEdit = () => {
-    setItems(loadTrackingMapLayout()); // discard unsaved edits
+  const handleCloseEditor = () => {
+    setItems(loadTrackingMapLayout());
     setEditMode(false);
     setSelectedId(null);
   };
 
-  const handleResetLayout = () => {
-    if (!window.confirm("Reset the map to the default layout? (Takes effect when you press Save.)")) return;
-    setItems(getDefaultLayout());
+  const handleClearMap = () => {
+    if (!window.confirm("Clear the whole map? This saves a blank layout.")) return;
+    const blankLayout = getDefaultLayout();
+    setAndPersistItems(blankLayout);
     setSelectedId(null);
   };
 
-  // Export the layout so it can be pasted over DEFAULT_LAYOUT in
-  // trackingMapLayout.js — that bakes it in for every user, not just this browser.
   const handleCopyLayout = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(items, null, 2));
-      alert("Layout JSON copied. Paste it over DEFAULT_LAYOUT in trackingMapLayout.js to hardcode it for everyone.");
+      alert("Layout JSON copied.");
     } catch {
       alert("Could not copy the layout JSON to the clipboard.");
     }
@@ -153,16 +166,19 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
           top: `${item.y}%`,
           width: `${item.w}%`,
           height: `${item.h}%`,
+          transformOrigin: "top left",
           ...(item.rotate ? { transform: `rotate(${item.rotate}deg)` } : null),
-          ...(item.radius ? { borderRadius: item.radius } : null),
+          ...(item.radius && RADIUS_ALLOWED_TYPES.has(item.type) ? { borderRadius: item.radius } : null),
         }}
         onPointerDown={editMode ? (event) => beginDrag(event, item, "move") : undefined}
         onPointerMove={editMode ? handlePointerMove : undefined}
-        onPointerUp={editMode ? endDrag : undefined}>
-
+        onPointerUp={editMode ? endDrag : undefined}
+        onPointerCancel={editMode ? endDrag : undefined}
+        onLostPointerCapture={editMode ? endDrag : undefined}
+      >
         {item.type === "parking" && (
           <div className="map-parking-grid">
-            {Array.from({ length: clampSpaces(item.spaces) }, (_, index) => (
+            {Array.from({ length: calculateParkingSpaces(item) }, (_, index) => (
               <span key={index} className="map-parking-space" />
             ))}
           </div>
@@ -174,7 +190,10 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
             aria-label="Resize section"
             onPointerDown={(event) => beginDrag(event, item, "resize")}
             onPointerMove={handlePointerMove}
-            onPointerUp={endDrag} />
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onLostPointerCapture={endDrag}
+          />
         )}
       </div>
     );
@@ -187,7 +206,7 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
           <div className="tracking-map-title">Site Map</div>
           <div className="tracking-map-subtitle">
             {editMode
-              ? "Edit mode — drag to move, corner handle to resize, Save to lock positions in"
+              ? `Edit mode - changes save automatically${saveState === "error" ? " (save failed)" : ""}`
               : "Key and car tracking location overview"}
           </div>
         </div>
@@ -209,8 +228,8 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
             </button>
           )}
           {editMode && (
-            <button type="button" className="tracking-map-button" onClick={handleCancelEdit}>
-              Cancel
+            <button type="button" className="tracking-map-button" onClick={handleCloseEditor}>
+              Close editor
             </button>
           )}
           {onClose && (
@@ -233,18 +252,18 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("grass")}>
             + Grass
           </button>
-          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("parking", { spaces: 10, w: 18, h: 5 })}>
-            + Parking ×10
+          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("fence")}>
+            + Fence line
           </button>
-          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("parking", { spaces: 50, w: 30, h: 12 })}>
-            + Parking ×50
+          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("parking")}>
+            + Parking
           </button>
           <span className="tracking-map-editbar-spacer" />
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={handleCopyLayout}>
             Copy layout
           </button>
-          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={handleResetLayout}>
-            Reset to default
+          <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={handleClearMap}>
+            Clear map
           </button>
         </div>
       )}
@@ -259,34 +278,31 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
               className="tracking-map-input tracking-map-input--wide"
               value={selectedItem.label || ""}
               onChange={(event) => updateItem(selectedItem.id, { label: event.target.value })}
-              placeholder="Optional label" />
+              placeholder="Optional label"
+            />
           </label>
           {selectedItem.type === "parking" && (
-            <label className="tracking-map-field">
+            <div className="tracking-map-field">
               <span className="tracking-map-props-label">Spaces</span>
-              <input
-                type="number"
-                className="tracking-map-input"
-                min={1}
-                max={200}
-                value={clampSpaces(selectedItem.spaces)}
-                onChange={(event) => updateItem(selectedItem.id, { spaces: clampSpaces(event.target.value) })} />
-            </label>
+              <span className="tracking-map-readout">{calculateParkingSpaces(selectedItem)}</span>
+            </div>
           )}
           <label className="tracking-map-field">
-            <span className="tracking-map-props-label">Rotate°</span>
+            <span className="tracking-map-props-label">Rotate deg</span>
             <input
               type="number"
               className="tracking-map-input"
               min={-180}
               max={180}
               value={Math.round(selectedItem.rotate || 0)}
-              onChange={(event) => updateItem(selectedItem.id, { rotate: clamp(Number(event.target.value) || 0, -180, 180) })} />
+              onChange={(event) => updateItem(selectedItem.id, { rotate: clamp(Number(event.target.value) || 0, -180, 180) })}
+            />
           </label>
           <button
             type="button"
             className="tracking-map-button tracking-map-button--sm tracking-map-button--danger"
-            onClick={() => deleteItem(selectedItem.id)}>
+            onClick={() => deleteItem(selectedItem.id)}
+          >
             Delete section
           </button>
         </div>
@@ -295,12 +311,9 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
       <div
         ref={stageRef}
         className={`tracking-map-stage${editMode ? " tracking-map-stage--edit" : ""}`}
-        // Clicking empty tarmac/yard clears the selection.
-        onPointerDown={editMode ? () => setSelectedId(null) : undefined}>
-
+        onPointerDown={editMode ? () => setSelectedId(null) : undefined}
+      >
         <div className="site-boundary">
-          <div className="map-yard-texture" />
-
           {items.map(renderItem)}
 
           {!editMode &&
@@ -308,9 +321,9 @@ export default function TrackingMap({ pins = DEFAULT_PINS, onRefresh, onClose })
               <div
                 key={pin.id}
                 className={`map-vehicle-pin ${pin.className || ""}`.trim()}
-                // Custom % coordinates win over the preset pin-N classes.
                 style={pin.x != null && pin.y != null ? { left: `${pin.x}%`, top: `${pin.y}%` } : undefined}
-                data-label={pin.label} />
+                data-label={pin.label}
+              />
             ))}
         </div>
       </div>
