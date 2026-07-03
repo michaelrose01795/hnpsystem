@@ -6919,6 +6919,215 @@ html.staff-scope .app-alert__body {
   line-height: 1.45;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Toast stack (TopbarAlerts) — Phase 2, Frontend Feedback & Error System.
+   The floating top-right notification stack. Individual toasts reuse the
+   shared .app-alert surface (borderless, tone-tinted per the Border Sweep);
+   the stack itself adds fixed positioning, entrance motion, a tone icon, a
+   dismiss control, and an optional dev-info row. All styling is token-driven
+   and lives here (not inline in the component).
+   Driver: src/components/TopbarAlerts.js · src/context/AlertContext.js
+   Tokens: --z-toast, --page-gutter-y, tone surface/strong pairs, --space-*.
+   ───────────────────────────────────────────────────────────────────────── */
+html.staff-scope .app-toast-stack {
+  position: fixed;
+  /* Sits just below the fixed topbar; matches the previous inline offset. */
+  top: calc(var(--page-gutter-y) + 75px + 12px);
+  right: 24px;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: min(400px, calc(100vw - 48px));
+  max-width: 400px;
+  /* Empty gaps stay click-through; each toast re-enables pointer events. */
+  pointer-events: none;
+}
+
+/* Persistent, always-mounted screen-reader live region (visually hidden). */
+html.staff-scope .app-toast-stack__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Each toast is the shared .app-alert surface + stack-only affordances. */
+html.staff-scope .app-toast-stack .app-alert {
+  pointer-events: auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: app-toast-in 0.22s ease;
+}
+
+html.staff-scope .app-toast-stack .app-alert:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Info tone (the .app-alert base is already --theme; kept explicit for parity
+   with the success/warning/danger variants defined above). */
+html.staff-scope .app-alert--info {
+  background: var(--theme);
+}
+
+/* Message row: tone icon + text + dismiss. */
+html.staff-scope .app-alert__main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+html.staff-scope .app-alert__icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Tone is signalled by icon glyph + colour (never colour alone). */
+html.staff-scope .app-alert--info .app-alert__icon {
+  background: var(--secondary);
+  color: var(--accent-strong);
+}
+html.staff-scope .app-alert--success .app-alert__icon {
+  background: var(--success-surface);
+  color: var(--success-strong);
+}
+html.staff-scope .app-alert--warning .app-alert__icon {
+  background: var(--warning-surface);
+  color: var(--warning-strong);
+}
+html.staff-scope .app-alert--danger .app-alert__icon {
+  background: var(--danger-surface);
+  color: var(--danger-strong);
+}
+
+html.staff-scope .app-alert__message {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-1);
+}
+
+/* Dismiss control — ghost, borderless (Border Sweep: buttons carry no
+   decorative outline; the focus ring is a box-shadow). */
+html.staff-scope .app-alert__dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.7;
+}
+html.staff-scope .app-alert__dismiss:hover {
+  opacity: 1;
+}
+html.staff-scope .app-alert__dismiss:focus-visible {
+  outline: none;
+  opacity: 1;
+  box-shadow: var(--focus-ring);
+}
+
+/* Dev-info row (still visible to all users — role gating is Phase 4). */
+html.staff-scope .app-alert__dev {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding-top: var(--space-xs);
+}
+
+html.staff-scope .app-alert__dev-label {
+  font-size: var(--text-caption);
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* Copy-for-dev button — the only allowed outline is the ghost-button ring. */
+html.staff-scope .app-alert__copy-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: var(--ghostbutton-ring);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+html.staff-scope .app-alert__copy-btn:hover {
+  opacity: 1;
+}
+html.staff-scope .app-alert__copy-btn:focus-visible {
+  outline: none;
+  opacity: 1;
+  box-shadow: var(--focus-ring);
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced-motion: no slide/fade entrance. */
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-toast-stack .app-alert {
+    animation: none;
+  }
+}
+
+/* Mobile: span the viewport with small gutters; larger dismiss touch target. */
+@media (max-width: 768px) {
+  html.staff-scope .app-toast-stack {
+    top: calc(var(--page-gutter-y-mobile) + 75px + 12px);
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+  html.staff-scope .app-alert__dismiss {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 html.staff-scope .app-vhc-row,
 html.staff-scope .app-parts-request-row {
   display: flex;

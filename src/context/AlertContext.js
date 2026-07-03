@@ -15,15 +15,14 @@ export function AlertProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Auto-dismiss timing now lives in the renderer (TopbarAlerts) so it can be
+    // paused on hover/focus — see Phase 2, Frontend Feedback & Error System.
+    // The context is purely the alert store: it appends and removes by id.
     const unsubscribe = subscribeToAlerts((alert) => {
       setAlerts((prev) => [...prev, alert]);
-      if (alert.autoClose !== false && typeof window !== "undefined") {
-        const duration = alert.duration || 5000;
-        window.setTimeout(() => dismissAlert(alert.id), duration);
-      }
     });
     return unsubscribe;
-  }, [dismissAlert]);
+  }, []);
 
   const value = useMemo(
     () => ({
