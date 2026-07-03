@@ -1,5 +1,6 @@
 // file location: src/lib/api/client.js
 import { buildApiUrl } from "@/utils/apiClient";
+import { apiErrorFromResponse, toApiError } from "@/lib/api/apiError";
 
 const buildQueryString = (params = {}) => {
   const searchParams = new URLSearchParams();
@@ -50,18 +51,24 @@ export const apiRequest = async (
     body: body ? JSON.stringify(body) : undefined,
   };
 
-  const response = await fetch(url, requestInit);
+  let response;
+  try {
+    response = await fetch(url, requestInit);
+  } catch (networkError) {
+    // Never reached the server (offline, DNS, aborted). Normalise to a typed
+    // ApiError (friendlyKey NETWORK/TIMEOUT) — message is preserved, so any
+    // existing `catch (err) { … err.message … }` still sees the same text.
+    throw toApiError(networkError, { url, method });
+  }
+
   const payload = await parseJson(response);
 
   if (!response.ok) {
-    const message =
-      payload?.message ||
-      payload?.error ||
-      `${response.status} ${response.statusText}`;
-    const error = new Error(message);
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
+    // Phase 5: throw a typed ApiError. It still extends Error and still carries
+    // the same `message`, `.status`, and `.payload` as the legacy throw, plus a
+    // `code` and a `friendlyKey` so callers can reportApiError(err) with zero
+    // hand-written copy.
+    throw apiErrorFromResponse(response, payload);
   }
 
   return payload;

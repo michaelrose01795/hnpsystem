@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAlerts } from "@/context/AlertContext";
+import { useUser } from "@/context/UserContext";
+import { canViewDiagnostics } from "@/lib/auth/roles";
 
 // Legacy inline tones — used only by <AlertBadge> (not the toast stack).
 const toneStyles = {
@@ -93,7 +95,7 @@ export function AlertBadge() {
  * dismiss (Esc, and Enter/Space when the toast itself is focused) and reports
  * hover/focus so the parent can pause its auto-dismiss timer.
  */
-function ToastItem({ alert, onDismiss, onPause, onResume }) {
+function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics }) {
   const tone = getToastTone(alert.type);
   const hoveredRef = useRef(false);
   const focusedRef = useRef(false);
@@ -163,8 +165,19 @@ function ToastItem({ alert, onDismiss, onPause, onResume }) {
         </button>
       </div>
 
-      {/* Dev copy row — only shown when devInfo is present (role gating: Phase 4) */}
-      {alert.devInfo ? (
+      {/* Reference code — shown to EVERYONE so staff can quote it to support.
+          The technical devInfo behind it is diagnostic-role gated below. */}
+      {alert.referenceCode ? (
+        <div className="app-alert__ref">
+          Reference code:{" "}
+          <span className="app-alert__ref-code">{alert.referenceCode}</span>
+        </div>
+      ) : null}
+
+      {/* Dev copy row — Phase 4: only rendered for diagnostic roles. Non-diagnostic
+          staff never see the technical devInfo; it is logged against the reference
+          code (diagnosticsLog) for developer tracing instead. */}
+      {showDiagnostics && alert.devInfo ? (
         <div className="app-alert__dev">
           <span className="app-alert__dev-label">Dev info available</span>
           <CopyDevInfoButton devInfo={alert.devInfo} />
@@ -176,6 +189,12 @@ function ToastItem({ alert, onDismiss, onPause, onResume }) {
 
 export default function TopbarAlerts() {
   const { alerts, dismissAlert } = useAlerts();
+  // Phase 4: who may see the technical devInfo row. Read the current user's roles
+  // from UserContext (guarded — the provider may be absent on some shells) and
+  // resolve via roles.js, never a hardcoded role string. useUser() returns the
+  // raw context value (undefined without a provider), hence the optional chain.
+  const user = useUser()?.user;
+  const showDiagnostics = canViewDiagnostics(user?.roles);
 
   // Auto-dismiss timers, keyed by alert id. Owned here (not in AlertContext)
   // so they can be paused on hover/focus. Each entry tracks the remaining time
@@ -266,6 +285,7 @@ export default function TopbarAlerts() {
         <ToastItem
           key={alert.id}
           alert={alert}
+          showDiagnostics={showDiagnostics}
           onDismiss={() => dismissAlert(alert.id)}
           onPause={() => pauseTimer(alert.id)}
           onResume={() => resumeTimer(alert.id)}

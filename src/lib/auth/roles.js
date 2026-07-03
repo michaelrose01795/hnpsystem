@@ -81,3 +81,13 @@ export function isMobileTechnician(userRoles) {
 export function hasDevPlatformAccess(userRoles) {
   return hasAnyRole(userRoles, DEV_PLATFORM_ROLES);
 }
+
+// Diagnostics visibility gate (Phase 4, Frontend Feedback & Error System).
+// Decides who may SEE and COPY the technical `devInfo` on an error toast; every
+// other user still gets the friendly message + the short reference code. Delegates
+// to the purpose-built Developer Platform role so the gate has a single source of
+// truth and no hardcoded role strings live at the call site — widen here (never at
+// the call site) if an approved diagnostic role group is later ratified.
+export function canViewDiagnostics(userRoles) {
+  return hasDevPlatformAccess(userRoles);
+}
