@@ -116,12 +116,16 @@ const formatGoodsInNumber = (sequence) =>
   `${GOODS_IN_NUMBER_PREFIX}${String(sequence).padStart(GOODS_IN_PAD_LENGTH, "0")}`;
 
 const fetchNextGoodsInNumber = async (minimumSequence = 1) => {
+  // Fetch every GIN- record and derive the max sequence numerically. We must
+  // NOT rely on text ordering + a small limit: seeded rows like `GIN-FILL-00062`
+  // sort ABOVE the real `GIN-000XX` numbers in text order (because 'F' > '0'),
+  // so a top-N text slice can be entirely non-numeric junk that parses to null,
+  // making us restart at GIN-00001 and collide with existing rows. Parsing all
+  // rows and letting parseGoodsInSequence reject the non-numeric ones is robust.
   const { data, error } = await supabase
     .from("parts_goods_in")
     .select("goods_in_number")
-    .like("goods_in_number", `${GOODS_IN_NUMBER_PREFIX}%`)
-    .order("goods_in_number", { ascending: false })
-    .limit(25);
+    .like("goods_in_number", `${GOODS_IN_NUMBER_PREFIX}%`);
 
   if (error) {
     console.error("Failed to load latest goods in number:", error);
