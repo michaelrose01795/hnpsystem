@@ -47,10 +47,10 @@ const SPARE_TYPE_LABELS = {
 
 // ✅ Friendly names for the service indicator choices captured in the modal
 const SERVICE_CHOICE_LABELS = {
-  reset: "Service Reminder Reset",
-  not_required: "Service Reminder Not Required",
+  reset: "Reset",
+  not_required: "Not Required",
   no_reminder: "Doesn't Have a Service Reminder",
-  indicator_on: "Service Indicator On",
+  indicator_on: "Indicator On",
 };
 
 // ✅ Friendly names for service related concern sources
@@ -361,20 +361,7 @@ const buildTyreSection = (tyres) => {
     const rows = [];
     const typeLabel = spare.type ? SPARE_TYPE_LABELS[spare.type] || spare.type : null;
     const details = spare.details || {};
-    const hasSpareDetails =
-      Boolean(details.manufacturer) ||
-      Boolean(details.size) ||
-      Boolean(details.load) ||
-      Boolean(details.speed) ||
-      Boolean(formatTreadSegments(details.tread)) ||
-      Boolean(calculateAverageTread(details.tread));
-    const hasTypeSpecificData =
-      (spare.type === "spare" && hasSpareDetails) ||
-      (spare.type === "repair_kit" && Boolean(formatSpareDate(spare))) ||
-      (spare.type === "space_saver" && Boolean(spare.condition)) ||
-      (spare.type === "not_checked" && Boolean(spare.note)) ||
-      spare.type === "boot_full";
-    if (typeLabel && hasTypeSpecificData) rows.push(`Type: ${typeLabel}`);
+    if (typeLabel) rows.push(`Type: ${typeLabel}`);
     if (spare.type === "space_saver" && spare.condition) {
       rows.push(`Condition: ${spare.condition}`);
     }
@@ -431,28 +418,42 @@ const buildBrakesSection = (brakes) => {
   let amber = 0;
   let grey = 0;
 
+  const recordConcernStatus = (concern) => {
+    if (concern.status === "Red") red += 1;
+    if (concern.status === "Amber") amber += 1;
+    if (concern.status === "Grey") grey += 1;
+  };
+
+  const addConcernItems = (heading, concerns = []) => {
+    concerns.forEach((concern) => {
+      recordConcernStatus(concern);
+      items.push({
+        heading: concern.text || heading,
+        status: concern.status,
+        rows: [],
+        concerns: [concern],
+      });
+    });
+  };
+
   const addPadSection = (key, label) => {
     const pad = brakes[key];
     if (!pad) return;
-    const rows = [];
     const statusLabel = normaliseStatus(pad.status);
     const measurementText = formatMeasurementList(pad.measurement);
-    if (measurementText) rows.push(`Pad measurements: ${measurementText}`);
     const statusForSummary =
       measurementText || (statusLabel && statusLabel !== "Green") ? statusLabel : null;
     const concerns = Array.isArray(pad.concerns) ? pad.concerns.map(normaliseConcern).filter(Boolean) : [];
-    concerns.forEach((concern) => {
-      if (concern.status === "Red") red += 1;
-      if (concern.status === "Amber") amber += 1;
-      if (concern.status === "Grey") grey += 1;
-    });
-    if (!statusForSummary && rows.length === 0 && concerns.length === 0) return;
-    items.push({
-      heading: label,
-      status: statusForSummary || determineDominantStatus(concerns.map((concern) => concern.status)),
-      rows,
-      concerns,
-    });
+    if (statusForSummary || measurementText) {
+      items.push({
+        heading: label,
+        status: statusForSummary || "Green",
+        measurement: measurementText,
+        rows: [],
+        concerns: [],
+      });
+    }
+    addConcernItems(label, concerns);
   };
 
   const addDiscSection = (key, label) => {
@@ -479,30 +480,26 @@ const buildBrakesSection = (brakes) => {
         ? visualStatus
         : null;
     const concerns = Array.isArray(disc.concerns) ? disc.concerns.map(normaliseConcern).filter(Boolean) : [];
-    concerns.forEach((concern) => {
-      if (concern.status === "Red") red += 1;
-      if (concern.status === "Amber") amber += 1;
-      if (concern.status === "Grey") grey += 1;
-    });
     const overallStatus = determineDominantStatus([
       measurementStatusForSummary,
       visualStatusForSummary,
-      ...concerns.map((concern) => concern.status),
     ]);
-    if (rows.length === 0 && concerns.length === 0 && !overallStatus) return;
     const measurementSummary =
       activeTab === "visual"
         ? "Visual"
         : thicknessValues
           ? `Measurements: ${thicknessValues}`
           : null;
-    items.push({
-      heading: label,
-      status: overallStatus,
-      measurement: measurementSummary,
-      rows,
-      concerns,
-    });
+    if (rows.length > 0 || overallStatus) {
+      items.push({
+        heading: label,
+        status: overallStatus,
+        measurement: measurementSummary,
+        rows,
+        concerns: [],
+      });
+    }
+    addConcernItems(label, concerns);
   };
 
   addPadSection("frontPads", "Front Pads");
@@ -515,20 +512,16 @@ const buildBrakesSection = (brakes) => {
     const drumConditionLabel = formatDrumConditionLabel(rearDrums.status);
     const drumStatus = normaliseStatus(rearDrums.status);
     const concerns = Array.isArray(rearDrums.concerns) ? rearDrums.concerns.map(normaliseConcern).filter(Boolean) : [];
-    concerns.forEach((concern) => {
-      if (concern.status === "Red") red += 1;
-      if (concern.status === "Amber") amber += 1;
-      if (concern.status === "Grey") grey += 1;
-    });
-    if (drumStatus || concerns.length > 0) {
+    if (drumStatus) {
       items.push({
         heading: "Rear Drums",
         status: drumStatus,
         measurement: drumConditionLabel,
         rows: [],
-        concerns,
+        concerns: [],
       });
     }
+    addConcernItems("Rear Drums", concerns);
   }
 
   if (items.length === 0) return null;

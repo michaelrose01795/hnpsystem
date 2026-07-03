@@ -128,6 +128,21 @@ const containsKeyword = (text, keywords = WASH_KEYWORDS) => {
   return keywords.some((keyword) => lower.includes(keyword));
 };
 
+const normalizePreferenceValue = (value) =>
+String(value || "").
+trim().
+toLowerCase().
+replace(/[^a-z0-9]+/g, " ").
+trim();
+
+const customerHasPreference = (job, preference) => {
+  const target = normalizePreferenceValue(preference);
+  const preferences = Array.isArray(job?.customerPreferences) ? job.customerPreferences : [];
+  return preferences.some((item) => normalizePreferenceValue(item) === target);
+};
+
+const customerHasDoNotWashPreference = (job) => customerHasPreference(job, "Do Not Wash");
+
 const COMPLETE_STATUSES = new Set(["complete", "completed", "done", "waiting_additional_work"]);
 const REQUEST_DONE_STATUSES = new Set(["complete", "completed", "done"]);
 
@@ -266,6 +281,19 @@ const inferMot = (job) => {
 };
 
 const buildChecklist = (job) => {
+  if (customerHasDoNotWashPreference(job)) {
+    const stored = job.maintenanceInfo?.valetChecklist || {};
+    return {
+      vehicleHere: inferVehicleHere(job),
+      workshop: inferWorkshop(job),
+      mot: inferMot(job),
+      wash: false,
+      washState: "no_wash",
+      updatedAt: stored.updatedAt || null,
+      updatedBy: stored.updatedBy || null
+    };
+  }
+
   const stored = job.maintenanceInfo?.valetChecklist || {};
   const washState =
   stored.washState === "complete" || stored.washState === "no_wash" ?
@@ -679,6 +707,10 @@ export default function ValetDashboard() {
         const actor = user?.user_id || user?.id || user?.username || "VALET_SERVICE";
 
         const filteredJobs = (allJobs || []).filter((job) => {
+          if (customerHasDoNotWashPreference(job)) {
+            return false;
+          }
+
           return (
             jobHasWashFlag(job) ||
             jobHasServiceCategory(job) ||

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react"; // import React hooks
 import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
 import PopupModal from "@/components/popups/popupStyleApi";
+import { reportError, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
 
 export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
   // State for all form fields
@@ -38,7 +39,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
 
     // Prevent incomplete submission
     if (!nameTrimmed || !lastTrimmed) {
-      alert("Please enter both first and last names.");
+      reportWarning("Please enter both first and last names.");
       return;
     }
 
@@ -78,8 +79,8 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
       // Close popup
       if (typeof onClose === "function") onClose();
     } catch (error) {
-      console.error("❌ Error adding customer:", error);
-      alert(error.message || "Failed to add customer. Please try again.");
+      // Raw error → devInfo; the user sees a friendly message + reference code.
+      reportError("Failed to add customer. Please try again.", error, { source: "NewCustomerPopup" });
     } finally {
       setLoading(false);
     }

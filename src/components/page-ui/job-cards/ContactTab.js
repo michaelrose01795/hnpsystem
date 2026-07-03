@@ -3,7 +3,7 @@
 // (one file per tab). Previously split across contact/*; behaviour and markup are
 // unchanged. A customer-relationship hub with four sections:
 //   1. Customer Contact  (details + map links + call/text/email/WhatsApp actions)
-//   2. Notes & Preferences (quick toggles + multiselect + customer notes)
+//   2. Notes & Preferences (multiselect + customer notes)
 //   3. Communication History (in-app thread messages as a tracking tree)
 //   4. Quick Message Templates (send templated messages into the in-app thread)
 //
@@ -32,8 +32,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
    ════════════════════════════════════════════════════════════════════════ */
 
 // Full customer-preference list shown in the multiselect dropdown. Stored as a
-// text[] on the customers table (Contact-tab redesign migration). The first four
-// also appear as quick-toggle buttons (see QUICK_PREFERENCES).
+// text[] on the customers table (Contact-tab redesign migration).
 const PREFERENCE_OPTIONS = [
   "VIP Customer",
   "Do Not Wash",
@@ -49,21 +48,12 @@ const PREFERENCE_OPTIONS = [
   "Loyal Customer",
 ];
 
-// Quick-toggle buttons rendered at the top of the Notes & Preferences section.
-// `tone` maps to an .app-tone-* / .app-badge--* family so styling stays tokenised.
-const QUICK_PREFERENCES = [
-  { value: "VIP Customer", label: "VIP Customer", tone: "warning" },
-  { value: "Do Not Wash", label: "Do Not Wash", tone: "danger" },
-  { value: "Waiting Customer", label: "Waiting Customer", tone: "info" },
-  { value: "Courtesy Car", label: "Courtesy Car", tone: "success" },
-];
-
 // Channels for the contact action bar (Call / Text / Email / WhatsApp).
 const CONTACT_ACTIONS = [
-  { id: "call", label: "Call", icon: "📞" },
-  { id: "text", label: "Text", icon: "💬" },
-  { id: "email", label: "Email", icon: "✉️" },
-  { id: "whatsapp", label: "WhatsApp", icon: "🟢" },
+  { id: "call", label: "Call" },
+  { id: "text", label: "Text" },
+  { id: "email", label: "Email" },
+  { id: "whatsapp", label: "WhatsApp" },
 ];
 
 const digitsOnly = (value) => String(value || "").replace(/[^\d+]/g, "");
@@ -592,7 +582,7 @@ function CustomerContactSection({
                 disabled={!hasPrimaryAddress}
                 onClick={() => window.open(toMapsUrl(jobData.customerAddress, jobData.customerPostcode), "_blank", "noopener,noreferrer")}
               >
-                📍 View on map
+                View on map
               </Button>
             </LayerTheme>
 
@@ -615,7 +605,7 @@ function CustomerContactSection({
                 disabled={!hasWorkAddress}
                 onClick={() => window.open(toMapsUrl(jobData.customerWorkAddress, jobData.customerWorkPostcode), "_blank", "noopener,noreferrer")}
               >
-                📍 View on map
+                View on map
               </Button>
             </LayerTheme>
           </div>
@@ -634,7 +624,6 @@ function CustomerContactSection({
                 variant="primary"
                 onClick={() => setActiveAction(action.id)}
               >
-                <span style={{ marginRight: "6px" }}>{action.icon}</span>
                 {action.label}
               </Button>
             ))}
@@ -652,7 +641,7 @@ function CustomerContactSection({
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   CustomerPreferencesSection — quick toggles + multiselect + customer notes.
+   CustomerPreferencesSection — multiselect + customer notes.
    All persist to the customer profile via the shared onSaveCustomerDetails handler.
    ════════════════════════════════════════════════════════════════════════ */
 const prefsLabelStyle = {
@@ -696,11 +685,6 @@ function CustomerPreferencesSection({
 
   const isDirty = !sameSet(prefs, initialPrefs) || notes !== initialNotes;
 
-  const togglePref = (value) => {
-    if (!canEdit) return;
-    setPrefs((prev) => (prev.includes(value) ? prev.filter((p) => p !== value) : [...prev, value]));
-  };
-
   const handleSave = async () => {
     setSaveError("");
     const result = await onSaveCustomerDetails?.({ preferences: prefs, notes });
@@ -729,25 +713,6 @@ function CustomerPreferencesSection({
       </div>
 
       {saveError && <StatusMessage tone="danger">{saveError}</StatusMessage>}
-
-      {/* Quick toggles */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-        {QUICK_PREFERENCES.map((pref) => {
-          const active = prefs.includes(pref.value);
-          return (
-            <Button
-              key={pref.value}
-              variant={active ? "primary" : "secondary"}
-              size="sm"
-              disabled={!canEdit}
-              onClick={() => togglePref(pref.value)}
-            >
-              <span style={{ marginRight: "6px" }}>{active ? "✓" : "＋"}</span>
-              {pref.label}
-            </Button>
-          );
-        })}
-      </div>
 
       {/* Preferences dropdown (fixed min/max width) sits beside the customer
           notes, which flex-fill the remaining row width. Wraps on narrow screens. */}

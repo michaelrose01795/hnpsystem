@@ -11,6 +11,7 @@ import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 import TechConsumableRequestPageUi from "@/components/page-ui/tech/tech-consumables-request-ui"; // Extracted presentation layer.
+import { reportError, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
 
 const pageWrapperStyle = {
   width: "100%", // Fill the available content area like the news feed page
@@ -309,7 +310,7 @@ const TechConsumableRequestPage = () => {
 
     const trimmedName = requestForm.partName.trim();
     if (!trimmedName) {
-      alert("Please provide the name of the consumable you need.");
+      reportWarning("Please provide the name of the consumable you need.");
       return;
     }
 
@@ -347,8 +348,8 @@ const TechConsumableRequestPage = () => {
       setSuccessMessage("Request submitted.");
       fetchRequests();
     } catch (error) {
-      console.error("❌ Failed to submit consumable request", error);
-      alert(error?.message || "Unable to submit request.");
+      // Raw error → devInfo; the user sees a friendly message + reference code.
+      reportError("Unable to submit request.", error, { source: "consumables-request" });
     }
   };
 

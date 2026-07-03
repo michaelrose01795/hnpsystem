@@ -7111,6 +7111,40 @@ html.staff-scope .app-alert__copy-btn:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
+/* Report-this-problem row (Phase 10.1) — shown to EVERYONE on error/warning/
+   reference-coded toasts. Full-width ghost action; the only allowed outline is
+   the ghost-button ring. Flips to a disabled "Reported ✓" once filed. */
+html.staff-scope .app-alert__report {
+  width: 100%;
+  padding-top: var(--space-xs);
+}
+html.staff-scope .app-alert__report-btn {
+  width: 100%;
+  border: var(--ghostbutton-ring);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 36px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+html.staff-scope .app-alert__report-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+html.staff-scope .app-alert__report-btn:focus-visible {
+  outline: none;
+  opacity: 1;
+  box-shadow: var(--focus-ring);
+}
+html.staff-scope .app-alert__report-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 @keyframes app-toast-in {
   from {
     opacity: 0;

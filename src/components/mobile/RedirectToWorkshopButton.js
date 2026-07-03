@@ -3,7 +3,7 @@
 // and hits the mobile redirect API. Preserves job history — no duplicate created.
 
 import React, { useState } from "react";
-import { showAlert } from "@/lib/notifications/alertBus";
+import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
 
 const buttonStyle = {
   padding: "10px 16px",
@@ -42,7 +42,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
 
   async function handleSubmit() {
     if (!reason.trim()) {
-      showAlert("Please provide a reason before redirecting.", "warning");
+      reportWarning("Please provide a reason before redirecting.");
       return;
     }
     setSubmitting(true);
@@ -56,12 +56,12 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message || "Redirect failed");
       }
-      showAlert(`Job ${jobNumber} sent to workshop.`, "success");
+      reportSuccess(`Job ${jobNumber} sent to workshop.`);
       setOpen(false);
       setReason("");
       if (typeof onRedirected === "function") onRedirected();
     } catch (err) {
-      showAlert(err.message || "Redirect failed", "error");
+      reportError("Couldn't send this job to the workshop. Please try again.", err, { source: "RedirectToWorkshopButton", jobNumber });
     } finally {
       setSubmitting(false);
     }

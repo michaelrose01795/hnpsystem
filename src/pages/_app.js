@@ -54,6 +54,7 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { useUser } from "@/context/UserContext";
 import { canAccessPath } from "@/lib/auth/pageAccess";
+import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
@@ -79,6 +80,7 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
+  const asPathClean = (asPathWithoutQuery.split("#")[0] || "").replace(/\/$/, "") || "/";
   // Toggle the presentation-mode runtime flag synchronously on every render
   // so that the very first DB call inside a /presentation/* route already
   // sees the flag and routes through the mock data layer. The flag setter
@@ -90,11 +92,16 @@ function AppWrapper({ Component, pageProps }) {
   // staff-side "/customers" (plural) pages — those are normal staff pages and
   // should keep the floating notes widget like any other staff page.
   const isCustomerRoute = pathname === "/customer" || pathname.startsWith("/customer/");
+  const isPublicVhcReportRoute =
+    isPublicVhcReportPath(pathname) ||
+    isPublicVhcReportPath(asPathClean) ||
+    Component.hideGlobalNotesWidget === true;
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   const hideNotesWidget =
     isPresentationRoute ||
     isCustomerRoute ||
+    isPublicVhcReportRoute ||
     isWebsiteRoute ||
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);

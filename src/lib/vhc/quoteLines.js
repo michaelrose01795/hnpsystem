@@ -64,6 +64,96 @@ const buildDedupeKey = (line) => {
   return parts.join("|");
 };
 
+// Rank decisions so a collapsed duplicate keeps the row that carries the real
+// outcome. A customer decision (authorised / declined / completed) always wins
+// over a still-pending mirror of the same concern.
+const DECISION_RANK = {
+  [DECISION.COMPLETED]: 4,
+  [DECISION.AUTHORIZED]: 3,
+  [DECISION.DECLINED]: 2,
+  [DECISION.PENDING]: 1,
+  [DECISION.NA]: 0,
+};
+
+// Identity of the *concern itself*, independent of which DB row expresses it.
+// Two vhc_checks rows for the same job that share section + heading + description
+// + measurement are the same logical item — e.g. a technician-reported row and a
+// seed/enrichment row that mirrors it. Distinct concerns under one heading (front
+// vs rear wiper blade) keep different descriptions, so they stay separate.
+const buildLogicalIdentityKey = (line) => {
+  const label = String(line.label || "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!label) return null; // Never collapse rows with no heading to key on.
+  const parts = [
+    line.categoryLabel || line.category?.label || line.sectionName || "",
+    label,
+    line.concernText || "",
+    line.notes || "",
+    line.measurement || "",
+  ].map((value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim());
+  return parts.join("|");
+};
+
+// Collapse rows that describe the same logical concern, keeping the one with the
+// strongest decision (then the chargeable / higher-value row). This guarantees a
+// single concern can never surface in two Summary buckets at once (e.g. pending
+// "Red Repairs" and "Approved" simultaneously) when duplicate DB rows exist.
+const collapseLogicalDuplicates = (rows) => {
+  const order = [];
+  const groups = new Map();
+  rows.forEach((line) => {
+    const key = buildLogicalIdentityKey(line);
+    if (!key) {
+      order.push({ single: line });
+      return;
+    }
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push({ key });
+    }
+    groups.get(key).push(line);
+  });
+
+  const pickWinner = (group) =>
+    group.reduce((best, candidate) => {
+      const bestRank = DECISION_RANK[best.approvalStatus] ?? 0;
+      const candidateRank = DECISION_RANK[candidate.approvalStatus] ?? 0;
+      if (candidateRank !== bestRank) return candidateRank > bestRank ? candidate : best;
+      const bestChargeable = isChargeable(best);
+      const candidateChargeable = isChargeable(candidate);
+      if (candidateChargeable !== bestChargeable) return candidateChargeable ? candidate : best;
+      const bestTotal = toNumber(best.total_gbp, 0);
+      const candidateTotal = toNumber(candidate.total_gbp, 0);
+      if (candidateTotal !== bestTotal) return candidateTotal > bestTotal ? candidate : best;
+      return best;
+    });
+
+  return order.map((slot) => {
+    if (slot.single) return slot.single;
+    const group = groups.get(slot.key);
+    if (group.length === 1) return group[0];
+    const winner = pickWinner(group);
+    // Never lose a cost: if the winning row has no value but a dropped duplicate
+    // did, carry the value across so Summary totals stay accurate.
+    if (toNumber(winner.total_gbp, 0) === 0) {
+      const valued = group.find((line) => toNumber(line.total_gbp, 0) > 0);
+      if (valued) {
+        return {
+          ...winner,
+          parts_gbp: valued.parts_gbp,
+          labour_hours: valued.labour_hours,
+          labour_rate_gbp: valued.labour_rate_gbp,
+          labour_gbp: valued.labour_gbp,
+          total_gbp: valued.total_gbp,
+          partsCost: valued.parts_gbp,
+          labourHours: valued.labour_hours,
+          total: valued.total_gbp,
+        };
+      }
+    }
+    return winner;
+  });
+};
+
 const normaliseMatchText = (value = "") =>
   String(value || "")
     .toLowerCase()
@@ -81,6 +171,8 @@ const extractWheelPositionToken = (value = "") => {
   return "";
 };
 
+const WHEEL_TOKEN_TO_KEY = { nsf: "NSF", osf: "OSF", nsr: "NSR", osr: "OSR" };
+
 const extractTyreSizeKey = (value = "") => {
   const raw = String(value || "").toUpperCase();
   const match = raw.match(/(\d{3}\s*\/\s*\d{2}\s*R\s*\d{2})/);
@@ -88,11 +180,175 @@ const extractTyreSizeKey = (value = "") => {
   return match[1].replace(/\s+/g, "");
 };
 
+const formatTyreTextValue = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+};
+
+const formatTyreTreadValue = (value) => {
+  const text = formatTyreTextValue(value);
+  if (!text) return "";
+  const numeric = Number.parseFloat(text);
+  const formatted = Number.isFinite(numeric)
+    ? numeric.toFixed(1).replace(/\.0$/, "")
+    : text;
+  return formatted.toLowerCase().includes("mm") ? formatted : `${formatted}mm`;
+};
+
+const formatTyreTreadMeasurements = (tread = {}) => {
+  if (!tread || typeof tread !== "object") return "";
+  const segments = [
+    ["outer", "Outer"],
+    ["middle", "Middle"],
+    ["inner", "Inner"],
+  ]
+    .map(([key, label]) => {
+      const value = formatTyreTreadValue(tread?.[key]);
+      return value ? `${label} ${value}` : null;
+    })
+    .filter(Boolean);
+  return segments.join(" / ");
+};
+
+const normaliseTyreDetailRow = (value = "") => String(value || "").replace(/\s+/g, " ").trim();
+const TYRE_ROW_SEPARATOR_RE = /\s*(?:\u2022|\u00e2\u20ac\u00a2)\s*/g;
+
+const parseTyreDetailsFromRows = (rows = []) => {
+  const detailRows = [];
+  let make = "";
+  let model = "";
+  let size = "";
+  let loadSpeed = "";
+  let measurement = "";
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const text = normaliseTyreDetailRow(row);
+    if (!text) return;
+    const makeMatch = text.match(/^make:\s*(.+)$/i);
+    if (makeMatch?.[1]) make = makeMatch[1].trim();
+    const modelMatch = text.match(/^model:\s*(.+)$/i);
+    if (modelMatch?.[1]) model = modelMatch[1].trim();
+    const sizeMatch = text.match(/^size:\s*(.+)$/i);
+    if (sizeMatch?.[1]) size = sizeMatch[1].trim();
+    if (/^load\b/i.test(text) || /^speed\b/i.test(text)) {
+      loadSpeed = text.replace(TYRE_ROW_SEPARATOR_RE, " / ").trim();
+    }
+    const treadMatch = text.match(/^tread:\s*(.+)$/i);
+    if (treadMatch?.[1]) {
+      measurement = treadMatch[1].replace(TYRE_ROW_SEPARATOR_RE, " / ").trim();
+    }
+  });
+
+  const sizeParts = [size, loadSpeed].filter(Boolean);
+  if (make) detailRows.push(`Make: ${make}`);
+  if (model) detailRows.push(`Model: ${model}`);
+  if (sizeParts.length > 0) detailRows.push(`Size: ${sizeParts.join(" / ")}`);
+  if (measurement) detailRows.push(`Measurements: ${measurement}`);
+
+  return {
+    tyreMake: make,
+    tyreModel: model,
+    tyreSize: sizeParts.join(" / "),
+    tyreMeasurement: measurement,
+    tyreDetailRows: detailRows,
+  };
+};
+
+const resolveTyreWheelKey = (item = {}) => {
+  const direct = formatTyreTextValue(item?.wheelKey).toLowerCase();
+  if (WHEEL_TOKEN_TO_KEY[direct]) return WHEEL_TOKEN_TO_KEY[direct];
+  const token = extractWheelPositionToken(
+    [
+      item?.label,
+      item?.heading,
+      item?.issue_title,
+      item?.name,
+      item?.title,
+      item?.notes,
+      item?.issue_description,
+      item?.concernText,
+      item?.measurement,
+      ...(Array.isArray(item?.rows) ? item.rows : []),
+    ].join(" ")
+  );
+  return WHEEL_TOKEN_TO_KEY[token] || "";
+};
+
+const buildTyreDetailPayload = (vhcData = {}, item = {}) => {
+  const categoryId = item?.category?.id || item?.categoryId || null;
+  if (categoryId !== "wheels_tyres") return null;
+  const wheelKey = resolveTyreWheelKey(item);
+  const tyre = wheelKey ? vhcData?.wheelsTyres?.[wheelKey] : null;
+  const fallback = parseTyreDetailsFromRows(item.rows);
+  if (!tyre || typeof tyre !== "object") {
+    return wheelKey ? { tyreWheelKey: wheelKey, ...fallback } : null;
+  }
+
+  const make = formatTyreTextValue(tyre.manufacturer || tyre.make || tyre.brand);
+  const model = formatTyreTextValue(tyre.model || tyre.pattern || tyre.tyreModel || tyre.productModel || tyre.range);
+  const size = formatTyreTextValue(tyre.size);
+  const load = formatTyreTextValue(tyre.load);
+  const speed = formatTyreTextValue(tyre.speed);
+  const sizeParts = [size, load ? `Load ${load}` : "", speed ? `Speed ${speed}` : ""].filter(Boolean);
+  const treadMeasurements = formatTyreTreadMeasurements(tyre.tread);
+
+  const rows = [];
+  if (make) rows.push(`Make: ${make}`);
+  if (model) rows.push(`Model: ${model}`);
+  if (sizeParts.length > 0) rows.push(`Size: ${sizeParts.join(" / ")}`);
+  if (treadMeasurements) rows.push(`Measurements: ${treadMeasurements}`);
+  if (typeof tyre.runFlat === "boolean") rows.push(`Run Flat: ${tyre.runFlat ? "Yes" : "No"}`);
+
+  return {
+    tyreWheelKey: wheelKey,
+    tyreMake: make || fallback.tyreMake,
+    tyreModel: model || fallback.tyreModel,
+    tyreSize: sizeParts.join(" / ") || fallback.tyreSize,
+    tyreMeasurement: treadMeasurements || fallback.tyreMeasurement,
+    tyreDetailRows: rows.length > 0 ? rows : fallback.tyreDetailRows,
+  };
+};
+
 const stripMetaSuffix = (value = "") => {
   const text = String(value || "");
   const markerIndex = text.indexOf("VHC_META:");
   if (markerIndex === -1) return text.trim();
   return text.slice(0, markerIndex).trim();
+};
+
+const BRAKE_TEXT_RE = /\b(brake|pad|pads|disc|discs|drum|drums|hub|hubs|caliper|servo)\b/i;
+const EXTERNAL_TEXT_RE = /\b(number\s*plate|plate\s*lamp|wiper|washer|horn|front\s*light|rear\s*light|headlight|tail\s*light|indicator|fog\s*light|door|trim|clutch|transmission)\b/i;
+
+const inferSectionNameForCheck = (sectionName, check = {}) => {
+  const baseSection = sectionName || "Other";
+  const category = resolveCategoryForItem(baseSection);
+  if (category.id !== "brakes_hubs") return baseSection;
+
+  const checkText = [
+    check.issue_title,
+    check.issue_description,
+    check.customer_description,
+    check.note_text,
+  ].join(" ");
+  if (EXTERNAL_TEXT_RE.test(checkText) && !BRAKE_TEXT_RE.test(checkText)) {
+    return "External";
+  }
+
+  return baseSection;
+};
+
+const shouldDetachBrakeMeasurementFromCheck = (sectionName, check = {}) => {
+  const measurement = String(check.measurement || "").trim();
+  if (!measurement) return false;
+  const category = resolveCategoryForItem(sectionName);
+  if (category.id !== "brakes_hubs") return false;
+  const checkText = [
+    check.issue_title,
+    check.issue_description,
+    check.customer_description,
+    check.note_text,
+  ].join(" ");
+  return !BRAKE_TEXT_RE.test(checkText);
 };
 
 const isChargeable = (line) => {
@@ -149,11 +405,18 @@ export const buildVhcQuoteLinesModel = ({
     if (!check?.vhc_id) return;
     checksMap.set(String(check.vhc_id), check);
     if (check.section === "VHC_CHECKSHEET") return;
-    const titleKey = buildSectionTitleKey(check.section || "Other", check.issue_title || "");
-    if (!checksBySectionTitle.has(titleKey)) {
-      checksBySectionTitle.set(titleKey, []);
-    }
-    checksBySectionTitle.get(titleKey).push(check);
+    const rawSectionName = check.section || "Other";
+    const inferredSectionName = inferSectionNameForCheck(rawSectionName, check);
+    const titleKeys = new Set([
+      buildSectionTitleKey(rawSectionName, check.issue_title || ""),
+      buildSectionTitleKey(inferredSectionName, check.issue_title || ""),
+    ]);
+    titleKeys.forEach((titleKey) => {
+      if (!checksBySectionTitle.has(titleKey)) {
+        checksBySectionTitle.set(titleKey, []);
+      }
+      checksBySectionTitle.get(titleKey).push(check);
+    });
   });
   Object.entries(vhcIdAliases || {}).forEach(([displayId, canonicalId]) => {
     const check = checksMap.get(String(canonicalId));
@@ -248,6 +511,7 @@ export const buildVhcQuoteLinesModel = ({
           rowId: check?.vhc_id ? String(check.vhc_id) : null,
           slotCode: check?.slot_code ?? null,
           lineKey: check?.line_key ?? null,
+          ...buildTyreDetailPayload(vhcData, { ...item, category, label: heading }),
         });
 
         processedIds.add(String(id));
@@ -267,8 +531,10 @@ export const buildVhcQuoteLinesModel = ({
     const inferredSeverity = inferredSeverityMap.get(buildSectionTitleKey(check.section || "Other", check.issue_title || ""));
     const severity = severityFromColumn || severityFromDisplay || inferredSeverity || "grey";
 
-    const sectionName = check.section || "Other";
+    const rawSectionName = check.section || "Other";
+    const sectionName = inferSectionNameForCheck(rawSectionName, check);
     const category = resolveCategoryForItem(sectionName);
+    const detachMeasurement = shouldDetachBrakeMeasurementFromCheck(rawSectionName, check);
 
     const customerOverride = (check?.customer_description || "").trim();
     baseItems.push({
@@ -281,7 +547,7 @@ export const buildVhcQuoteLinesModel = ({
       notes: customerOverride || check.issue_description || "",
       concernText: customerOverride || "",
       customerDescription: customerOverride || "",
-      measurement: check.measurement || "",
+      measurement: detachMeasurement ? "" : check.measurement || "",
       rows: [],
       rawSeverity: severity,
       severityKey: severity,
@@ -290,6 +556,13 @@ export const buildVhcQuoteLinesModel = ({
       rowId: id,
       slotCode: check?.slot_code ?? null,
       lineKey: check?.line_key ?? null,
+      ...buildTyreDetailPayload(vhcData, {
+        ...check,
+        category,
+        label: check.issue_title || sectionName || "Recorded item",
+        notes: customerOverride || check.issue_description || "",
+        concernText: customerOverride || "",
+      }),
     });
   });
 
@@ -520,7 +793,10 @@ export const buildVhcQuoteLinesModel = ({
     }
   });
 
-  const deduped = Array.from(dedupedMap.values());
+  // Second pass: collapse duplicate DB rows that describe the same logical concern
+  // (e.g. a technician row plus a seed/enrichment mirror) so one item can never
+  // render in two Summary buckets at once. Keeps the decided row over a pending one.
+  const deduped = collapseLogicalDuplicates(Array.from(dedupedMap.values()));
 
   if (mode === "quotedOnly" && process.env.NODE_ENV !== "production") {
     const preFilterCount = lines.length;

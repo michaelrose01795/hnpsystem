@@ -2,6 +2,47 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAlerts } from "@/context/AlertContext";
 import { useUser } from "@/context/UserContext";
 import { canViewDiagnostics } from "@/lib/auth/roles";
+import { useSupportReport } from "@/context/SupportReportContext";
+import { hasReportedAlert, subscribeFeedbackState } from "@/lib/support/feedbackDevBridge";
+
+// Which toasts get a "Report this problem" action (Phase 10.1): friendly errors,
+// validation/support warnings, and anything carrying a reference code. Success /
+// info toasts don't — there's nothing to report.
+const isReportableAlert = (alert) =>
+  Boolean(alert) && (alert.type === "error" || alert.type === "warning" || Boolean(alert.referenceCode));
+
+// Build the pre-filled support report from a clicked toast. The user-visible
+// description carries only the friendly message + reference code; the private
+// `trigger` (devInfo + origin + alert id) rides in the diagnostics blob the modal
+// attaches — never shown to the reporter, so normal staff still see no technical
+// detail. openSupportReport() adds route/user/role/page/recent-diagnostics.
+function buildToastReportPrefill(alert) {
+  const message = alert?.message || "";
+  const ref = alert?.referenceCode || null;
+  const description = [
+    "I clicked “Report this problem” on this notification:",
+    "",
+    `“${message}”`,
+    ref ? `\nReference: ${ref}` : null,
+    "",
+    "A private technical snapshot (the page I was on, my role, recent actions and any errors) is attached automatically.",
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+
+  return {
+    category: "bug",
+    description,
+    referenceCode: ref,
+    trigger: {
+      origin: "error-toast",
+      referenceCode: ref,
+      message,
+      devInfo: alert?.devInfo || null,
+      alertId: alert?.id,
+    },
+  };
+}
 
 // Legacy inline tones — used only by <AlertBadge> (not the toast stack).
 const toneStyles = {
@@ -95,7 +136,7 @@ export function AlertBadge() {
  * dismiss (Esc, and Enter/Space when the toast itself is focused) and reports
  * hover/focus so the parent can pause its auto-dismiss timer.
  */
-function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics }) {
+function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics, onReport, reported }) {
   const tone = getToastTone(alert.type);
   const hoveredRef = useRef(false);
   const focusedRef = useRef(false);
@@ -137,6 +178,8 @@ function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics }) {
       onDismiss();
     }
   };
+
+  const canReport = isReportableAlert(alert) && typeof onReport === "function";
 
   return (
     <div
@@ -183,6 +226,24 @@ function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics }) {
           <CopyDevInfoButton devInfo={alert.devInfo} />
         </div>
       ) : null}
+
+      {/* Report row — Phase 10.1: one click files a pre-filled support report to
+          the dev/support system (message + reference code + route/user/role/page
+          + recent diagnostics + devInfo, the technical parts attached privately).
+          Disabled once reported so repeated clicks can't file a duplicate. */}
+      {canReport ? (
+        <div className="app-alert__report">
+          <button
+            type="button"
+            className="app-alert__report-btn"
+            onClick={() => onReport(alert)}
+            disabled={reported}
+            aria-label={reported ? "Problem reported" : `Report this problem: ${alert.message}`}
+          >
+            {reported ? "Reported ✓" : "Report this problem"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -195,6 +256,27 @@ export default function TopbarAlerts() {
   // raw context value (undefined without a provider), hence the optional chain.
   const user = useUser()?.user;
   const showDiagnostics = canViewDiagnostics(user?.roles);
+
+  // Phase 10.1 — one-click "Report this problem" from a toast. openSupportReport
+  // (from the support context) opens the shared report modal pre-filled from the
+  // alert; the modal captures route/user/role/page/diagnostics and posts to the
+  // dev/support system. useSupportReport returns the default (noop) context if a
+  // provider is somehow absent, so this stays safe on every shell.
+  const { openSupportReport } = useSupportReport();
+
+  // Re-render when a report is filed so the originating toast flips to
+  // "Reported ✓" (dedup state lives in the feedback bridge, shared with the modal
+  // and the dev diagnostics page).
+  const [, forceTick] = useState(0);
+  useEffect(() => subscribeFeedbackState(() => forceTick((n) => n + 1)), []);
+
+  const handleReport = useCallback(
+    (alert) => {
+      if (!alert || hasReportedAlert(alert.id)) return;
+      openSupportReport({ prefill: buildToastReportPrefill(alert) });
+    },
+    [openSupportReport]
+  );
 
   // Auto-dismiss timers, keyed by alert id. Owned here (not in AlertContext)
   // so they can be paused on hover/focus. Each entry tracks the remaining time
@@ -286,6 +368,8 @@ export default function TopbarAlerts() {
           key={alert.id}
           alert={alert}
           showDiagnostics={showDiagnostics}
+          onReport={handleReport}
+          reported={hasReportedAlert(alert.id)}
           onDismiss={() => dismissAlert(alert.id)}
           onPause={() => pauseTimer(alert.id)}
           onResume={() => resumeTimer(alert.id)}

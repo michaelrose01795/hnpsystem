@@ -1,9 +1,10 @@
 // file location: src/components/VHC/VhcCustomerView.js
-// Shared customer-facing VHC view used by /vhc/customer-preview/[jobNumber] and
+// Shared customer-facing VHC view used by /vhc/customer-preview/[jobNumber],
+// /vhc/customer-view/[jobNumber], /vhc/share/[jobNumber]/[linkCode], and
 // /vhc/customer/[jobNumber]/[linkCode]. Mobile-first, full-width, customer-friendly.
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Head from "next/head";
 import BrandLogo from "@/components/BrandLogo";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -16,14 +17,42 @@ const formatCurrency = (value) => {
 };
 
 const SEVERITY_THEME = {
-  red: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Red Items" },
-  amber: { bg: "var(--warning-surface)", text: "var(--warning)", label: "Amber Items" },
-  green: { bg: "var(--success-surface)", text: "var(--success)", label: "Green Items" },
-  authorized: { bg: "var(--success-surface)", text: "var(--success)", label: "Authorised" },
-  declined: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Declined" }
+  red: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Red Items", toneClass: "app-tone-danger" },
+  amber: { bg: "var(--warning-surface)", text: "var(--warning)", label: "Amber Items", toneClass: "app-tone-warning" },
+  green: { bg: "var(--success-surface)", text: "var(--success)", label: "Green Items", toneClass: "app-tone-success" },
+  authorized: { bg: "var(--success-surface)", text: "var(--success)", label: "Authorised", toneClass: "app-tone-success" },
+  declined: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Declined", toneClass: "app-tone-danger" }
 };
 
-function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
+const normaliseDetailText = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const resolveTyreDetailRows = (item = {}, measurement = "") => {
+  const sourceRows = Array.isArray(item.tyreDetailRows) ? item.tyreDetailRows : [];
+  const seen = new Set();
+  return sourceRows
+    .map((row) => String(row || "").trim())
+    .filter(Boolean)
+    .filter((row) => {
+      const key = normaliseDetailText(row);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return key !== normaliseDetailText(measurement);
+    });
+};
+
+const resolveSpareDetailRows = (item = {}) => {
+  const label = normaliseDetailText(item.label || item.sectionName);
+  if (!label.includes("spare") && !label.includes("repair kit")) return [];
+  return (Array.isArray(item.rows) ? item.rows : [])
+    .map((row) => String(row || "").trim())
+    .filter(Boolean);
+};
+
+function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, isUpdating, hasDivider = true }) {
   const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
   const isDeclined = item.approvalStatus === "declined";
   const total = Number(item.total_gbp ?? item.total ?? 0);
@@ -34,15 +63,22 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
 
   const detailLabel = item.label || item.sectionName || "Recorded item";
   const detailContent = item.concernText || item.notes || "";
+  const reportedDescription = detailContent || detailLabel;
   const measurement = item.measurement || "";
-  const categoryLabel = item.categoryLabel || item.sectionName || "";
+  const tyreDetailRows = resolveTyreDetailRows(item, measurement);
+  const spareDetailRows = resolveSpareDetailRows(item);
+  const supplementaryRows = tyreDetailRows.length > 0 ? tyreDetailRows : spareDetailRows;
 
   // Green items are passing checks — only show description, no pricing or actions
   const isGreen = severity === "green";
 
   const originalSeverity = item.severityKey || item.rawSeverity;
   const rowBg =
-    (isAuthorized || isDeclined)
+    severity === "authorized"
+      ? "var(--success-surface)"
+      : severity === "declined"
+      ? "var(--danger-surface)"
+      : (isAuthorized || isDeclined)
       ? originalSeverity === "red"
         ? "var(--danger-surface)"
         : originalSeverity === "amber"
@@ -54,7 +90,6 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
     <div
       style={{
         padding: "14px 14px",
-        boxShadow: "inset 0 -1px 0 var(--separating-line)",
         background: rowBg,
         display: "flex",
         flexDirection: "column",
@@ -62,28 +97,20 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
       }}
     >
       <div>
-        {categoryLabel && (
-          <div
-            style={{
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--txt-mute)"
-            }}
-          >
-            {categoryLabel}
-          </div>
-        )}
         <div style={{ fontSize: 15, fontWeight: 700, color: "var(--txt-bright)", marginTop: 2 }}>
-          {detailLabel}
+          {reportedDescription}
         </div>
-        {detailContent && (
-          <div style={{ fontSize: 13, color: "var(--txt-soft)", marginTop: 4 }}>
-            {detailContent}
-          </div>
-        )}
         {measurement && (
           <div style={{ fontSize: 12, color: "var(--txt-mute)", marginTop: 4 }}>{measurement}</div>
+        )}
+        {supplementaryRows.length > 0 && (
+          <div style={{ display: "grid", gap: 3, marginTop: 6 }}>
+            {supplementaryRows.map((row) => (
+              <div key={row} style={{ fontSize: 12, color: "var(--txt-soft)", lineHeight: 1.35 }}>
+                {row}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -122,18 +149,23 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
           <button
             type="button"
             disabled={isUpdating}
-            onClick={() => onUpdateStatus(item.id, isAuthorized ? null : "authorized")}
+            onClick={() => {
+              if (isAuthorized) onUpdateStatus?.(item.id, null);
+              else onRequestAuthorise?.(item);
+            }}
             style={{
               flex: 1,
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              background: isAuthorized ? "var(--success-surface)" : "var(--website-elev-2)",
-              color: isAuthorized ? "var(--success)" : "var(--txt-bright)",
+              background: "var(--success-surface)",
+              color: "var(--success)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1
+              opacity: isUpdating ? 0.6 : 1,
+              boxShadow: isAuthorized ? "inset 0 0 0 2px var(--success)" : "inset 0 0 0 1px var(--success)",
+              touchAction: "manipulation"
             }}
           >
             {isAuthorized ? "✓ Authorised" : "Authorise"}
@@ -141,29 +173,42 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
           <button
             type="button"
             disabled={isUpdating}
-            onClick={() => onUpdateStatus(item.id, isDeclined ? null : "declined")}
+            onClick={() => onUpdateStatus?.(item.id, isDeclined ? null : "declined")}
             style={{
               flex: 1,
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              background: isDeclined ? "var(--danger-surface)" : "var(--website-elev-2)",
-              color: isDeclined ? "var(--danger)" : "var(--txt-bright)",
+              background: "var(--danger-surface)",
+              color: "var(--danger)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1
+              opacity: isUpdating ? 0.6 : 1,
+              boxShadow: isDeclined ? "inset 0 0 0 2px var(--danger)" : "inset 0 0 0 1px var(--danger)",
+              touchAction: "manipulation"
             }}
           >
             {isDeclined ? "✗ Declined" : "Decline"}
           </button>
         </div>
       )}
+
+      {hasDivider && (
+        <div
+          aria-hidden="true"
+          style={{
+            height: 1,
+            background: "var(--surface)",
+            marginTop: 2
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function Section({ title, items, severity, interactive, onUpdateStatus, updatingIds }) {
+function Section({ title, items, severity, interactive, onUpdateStatus, onRequestAuthorise, updatingIds }) {
   const theme = SEVERITY_THEME[severity] || { bg: "var(--website-elev-1)", text: "var(--txt-bright)" };
   let authorizedTotal = 0;
   let declinedTotal = 0;
@@ -178,12 +223,9 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
 
   return (
     <div
+      className={theme.toneClass || ""}
       style={{
         borderRadius: "var(--radius-md)",
-        background:
-          severity === "authorized" || severity === "declined"
-            ? "var(--website-elev-1)"
-            : theme.bg,
         overflow: "hidden",
         marginBottom: 14
       }}
@@ -192,7 +234,6 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
         style={{
           padding: "12px 14px",
           fontWeight: 700,
-          color: theme.text,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           fontSize: 12,
@@ -222,14 +263,16 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
       {items.length === 0 ? (
         <div style={{ padding: 14, fontSize: 13, color: "var(--txt-mute)" }}>No items recorded.</div>
       ) : (
-        items.map((item) => (
+        items.map((item, index) => (
           <Row
             key={`${severity}-${item.id}`}
             item={item}
             severity={severity}
             interactive={interactive}
             onUpdateStatus={onUpdateStatus}
+            onRequestAuthorise={onRequestAuthorise}
             isUpdating={updatingIds?.has(item.id)}
+            hasDivider={index < items.length - 1}
           />
         ))
       )}
@@ -239,20 +282,21 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
 
 function TotalsGrid({ totals }) {
   const items = [
-    { label: "Red Work", value: totals.red, color: "var(--danger)" },
-    { label: "Amber Work", value: totals.amber, color: "var(--warning)" },
-    { label: "Authorised", value: totals.authorized, color: "var(--success)" },
-    { label: "Declined", value: totals.declined, color: "var(--txt-soft)" }
+    { label: "Red Work", value: totals.red, color: "var(--danger)", statusClass: "app-status-message--danger" },
+    { label: "Amber Work", value: totals.amber, color: "var(--warning)", statusClass: "app-status-message--warning" },
+    { label: "Authorised", value: totals.authorized, color: "var(--success)", statusClass: "app-status-message--success" },
+    { label: "Declined", value: totals.declined, color: "var(--danger)", statusClass: "app-status-message--danger" }
   ];
   return (
     <LayerSurface
       radius="var(--radius-md)"
-      padding="14px"
-      gap="10px"
-      style={{ marginBottom: 14 }}
+      padding="0"
+      gap="0"
+      style={{ marginBottom: 14, overflow: "hidden" }}
     >
       <div
         style={{
+          padding: "12px 14px",
           fontSize: 12,
           fontWeight: 700,
           letterSpacing: "0.06em",
@@ -266,16 +310,23 @@ function TotalsGrid({ totals }) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 8
+          gap: 8,
+          padding: 0
         }}
       >
         {items.map((it) => (
-          <LayerTheme
+          <div
             key={it.label}
-            radius="var(--radius-sm)"
-            padding="12px"
-            gap="4px"
-            style={{ minHeight: 72 }}
+            className={`app-status-message ${it.statusClass}`}
+            style={{
+              minHeight: 72,
+              padding: "12px 14px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 4,
+              borderRadius: "var(--radius-sm)"
+            }}
           >
             <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>{it.label}</div>
             <div
@@ -288,7 +339,7 @@ function TotalsGrid({ totals }) {
             >
               {formatCurrency(it.value)}
             </div>
-          </LayerTheme>
+          </div>
         ))}
       </div>
     </LayerSurface>
@@ -449,6 +500,177 @@ function VideosTab({ videoFiles }) {
   );
 }
 
+function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline, onClose, isUpdating }) {
+  if (!item) return null;
+
+  const itemTotal = Number(item.total_gbp ?? item.total ?? 0);
+  const currentAuthorizedTotal = Number(authorizedTotal);
+  const safeItemTotal = Number.isFinite(itemTotal) ? itemTotal : 0;
+  const safeCurrentAuthorizedTotal = Number.isFinite(currentAuthorizedTotal) ? currentAuthorizedTotal : 0;
+  const itemAlreadyAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
+  const newAuthorizedTotal = itemAlreadyAuthorized
+    ? safeCurrentAuthorizedTotal
+    : safeCurrentAuthorizedTotal + safeItemTotal;
+  const detailLabel = item.label || item.sectionName || "Recorded item";
+  const detailContent = item.concernText || item.notes || "";
+  const reportedDescription = detailContent || detailLabel;
+
+  return (
+    <div
+      role="presentation"
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "color-mix(in srgb, var(--surface) 78%, transparent)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16
+      }}
+    >
+      <LayerSurface
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vhc-authorise-confirm-title"
+        radius="var(--radius-md)"
+        padding="18px"
+        gap="14px"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: "min(100%, 460px)",
+          boxShadow: "var(--shadow-lg)"
+        }}
+      >
+        <div>
+          <div
+            id="vhc-authorise-confirm-title"
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              color: "var(--txt-bright)",
+              lineHeight: 1.25
+            }}
+          >
+            Confirm authorisation
+          </div>
+          <div style={{ fontSize: 13, color: "var(--txt-soft)", marginTop: 6 }}>
+            Please confirm this work before it is sent to the workshop.
+          </div>
+        </div>
+
+        <LayerTheme radius="var(--radius-sm)" padding="14px" gap="8px">
+          <div style={{ fontSize: 15, color: "var(--txt-bright)", fontWeight: 700 }}>
+            {reportedDescription}
+          </div>
+        </LayerTheme>
+
+        <LayerTheme radius="var(--radius-sm)" padding="14px" gap="10px">
+          <div style={{ fontSize: 12, color: "var(--txt-mute)", fontWeight: 700 }}>
+            Total to authorise
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+              gap: 8
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>Current authorised</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--txt-bright)" }}>
+                {formatCurrency(safeCurrentAuthorizedTotal)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>This item</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--success)" }}>
+                {formatCurrency(safeItemTotal)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>New total</div>
+              <div style={{ fontSize: 22, lineHeight: 1.1, fontWeight: 800, color: "var(--success)" }}>
+                {formatCurrency(newAuthorizedTotal)}
+              </div>
+            </div>
+          </div>
+        </LayerTheme>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: 8
+          }}
+        >
+          <button
+            type="button"
+            disabled={isUpdating}
+            onClick={onConfirm}
+            style={{
+              minHeight: 44,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--success-surface)",
+              color: "var(--success)",
+              boxShadow: "inset 0 0 0 1px var(--success)",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: isUpdating ? "not-allowed" : "pointer",
+              opacity: isUpdating ? 0.6 : 1,
+              touchAction: "manipulation"
+            }}
+          >
+            Confirm authorise
+          </button>
+          <button
+            type="button"
+            disabled={isUpdating}
+            onClick={onDecline}
+            style={{
+              minHeight: 44,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--danger-surface)",
+              color: "var(--danger)",
+              boxShadow: "inset 0 0 0 1px var(--danger)",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: isUpdating ? "not-allowed" : "pointer",
+              opacity: isUpdating ? 0.6 : 1,
+              touchAction: "manipulation"
+            }}
+          >
+            Decline item
+          </button>
+        </div>
+
+        <button
+          type="button"
+          disabled={isUpdating}
+          onClick={onClose}
+          style={{
+            minHeight: 44,
+            padding: "10px 12px",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--website-elev-2)",
+            color: "var(--txt-bright)",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: isUpdating ? "not-allowed" : "pointer",
+            opacity: isUpdating ? 0.6 : 1,
+            touchAction: "manipulation"
+          }}
+        >
+          Back to report
+        </button>
+      </LayerSurface>
+    </div>
+  );
+}
+
 export default function VhcCustomerView({
   jobNumber,
   vehicleInfo,
@@ -467,12 +689,31 @@ export default function VhcCustomerView({
   onBack = null,
   accessMode = "customer"
 }) {
+  const [pendingAuthoriseItem, setPendingAuthoriseItem] = useState(null);
   const tabs = useMemo(() => {
     const list = [{ id: "summary", label: "Summary" }];
     if (photoFiles.length > 0) list.push({ id: "photos", label: `Photos (${photoFiles.length})` });
     if (videoFiles.length > 0) list.push({ id: "videos", label: `Videos (${videoFiles.length})` });
     return list;
   }, [photoFiles.length, videoFiles.length]);
+  const pendingAuthoriseId = pendingAuthoriseItem?.id;
+  const isConfirmUpdating = pendingAuthoriseId ? updatingIds?.has(pendingAuthoriseId) : false;
+
+  const closeAuthoriseConfirm = () => {
+    if (!isConfirmUpdating) setPendingAuthoriseItem(null);
+  };
+
+  const confirmAuthorise = () => {
+    if (!pendingAuthoriseItem?.id) return;
+    onUpdateStatus?.(pendingAuthoriseItem.id, "authorized");
+    setPendingAuthoriseItem(null);
+  };
+
+  const declineFromConfirm = () => {
+    if (!pendingAuthoriseItem?.id) return;
+    onUpdateStatus?.(pendingAuthoriseItem.id, "declined");
+    setPendingAuthoriseItem(null);
+  };
 
   return (
     <>
@@ -501,17 +742,26 @@ export default function VhcCustomerView({
             position: "sticky",
             top: 0,
             zIndex: 50,
-            padding: "10px 14px"
+            padding: 0
           }}
         >
           <div
             style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap"
+              width: "100%",
+              maxWidth: 900,
+              margin: "0 auto",
+              boxSizing: "border-box",
+              padding: "10px 12px 0"
             }}
           >
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap"
+              }}
+            >
             <BrandLogo alt="HP Logo" width={84} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -564,9 +814,6 @@ export default function VhcCustomerView({
               display: "flex",
               gap: 4,
               marginTop: 10,
-              marginLeft: -14,
-              marginRight: -14,
-              padding: "0 14px",
               overflowX: "auto"
             }}
           >
@@ -588,6 +835,7 @@ export default function VhcCustomerView({
                 {tab.label}
               </button>
             ))}
+          </div>
           </div>
         </header>
 
@@ -614,6 +862,7 @@ export default function VhcCustomerView({
                   severity="red"
                   interactive={interactive}
                   onUpdateStatus={onUpdateStatus}
+                  onRequestAuthorise={setPendingAuthoriseItem}
                   updatingIds={updatingIds}
                 />
               )}
@@ -624,6 +873,7 @@ export default function VhcCustomerView({
                   severity="amber"
                   interactive={interactive}
                   onUpdateStatus={onUpdateStatus}
+                  onRequestAuthorise={setPendingAuthoriseItem}
                   updatingIds={updatingIds}
                 />
               )}
@@ -634,6 +884,7 @@ export default function VhcCustomerView({
                   severity="authorized"
                   interactive={interactive}
                   onUpdateStatus={onUpdateStatus}
+                  onRequestAuthorise={setPendingAuthoriseItem}
                   updatingIds={updatingIds}
                 />
               )}
@@ -644,6 +895,7 @@ export default function VhcCustomerView({
                   severity="declined"
                   interactive={interactive}
                   onUpdateStatus={onUpdateStatus}
+                  onRequestAuthorise={setPendingAuthoriseItem}
                   updatingIds={updatingIds}
                 />
               )}
@@ -654,6 +906,7 @@ export default function VhcCustomerView({
                   severity="green"
                   interactive={interactive}
                   onUpdateStatus={onUpdateStatus}
+                  onRequestAuthorise={setPendingAuthoriseItem}
                   updatingIds={updatingIds}
                 />
               )}
@@ -685,6 +938,15 @@ export default function VhcCustomerView({
           </div>
         </footer>
       </div>
+
+      <AuthoriseConfirmModal
+        item={pendingAuthoriseItem}
+        authorizedTotal={totals?.authorized}
+        onConfirm={confirmAuthorise}
+        onDecline={declineFromConfirm}
+        onClose={closeAuthoriseConfirm}
+        isUpdating={isConfirmUpdating}
+      />
     </>
   );
 }

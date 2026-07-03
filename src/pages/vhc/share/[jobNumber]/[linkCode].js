@@ -13,3 +13,4 @@ export default function VhcReadOnlySharePage() {
 VhcReadOnlySharePage.getLayout = function publicLayout(page) {
   return page;
 };
+VhcReadOnlySharePage.hideGlobalNotesWidget = true;

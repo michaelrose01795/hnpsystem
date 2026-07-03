@@ -20,6 +20,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-ui"; // Extracted presentation layer.
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { reportError } from "@/lib/notifications/report"; // Phase 3 reporting helper (Phase 10 migration).
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -317,7 +318,7 @@ export default function ViewJobCards() {
         }
       }
     } else {
-      alert("Error updating status"); // show error message
+      reportError("Couldn't update the job status. Please try again."); // friendly toast + reference code
     }
   };
 

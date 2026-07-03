@@ -28,6 +28,7 @@ import { SUPPORT_CATEGORIES, DEFAULT_SUPPORT_CATEGORY } from "@/lib/support/repo
 import { buildEnrichedDescription } from "@/lib/support/diagnosticAnalysis";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/support/supportDraft";
 import SupportScreenshotsField from "@/components/support/SupportScreenshotField";
+import { recordReportCreated } from "@/lib/support/feedbackDevBridge";
 
 const getStorage = () => {
   try {
@@ -137,6 +138,15 @@ export default function SupportReportModal() {
     setIsSubmitting(true);
     setError(null);
 
+    // Phase 10.1 — when the report was launched from a clicked error/warning
+    // toast, the prefill carries a private `trigger` (origin + reference code +
+    // the friendly message + devInfo). Fold it INTO the diagnostics blob so it
+    // persists with the report and is server-re-sanitised — it is never shown to
+    // the reporter (the modal only discloses the CATEGORIES of attached data), so
+    // normal staff still can't see the technical detail.
+    const trigger = prefill?.trigger || null;
+    const diagnostics = trigger ? { ...(snapshot || {}), trigger } : snapshot || {};
+
     try {
       const response = await fetch("/api/support/reports", {
         method: "POST",
@@ -144,7 +154,7 @@ export default function SupportReportModal() {
         body: JSON.stringify({
           category,
           description: trimmed,
-          diagnostics: snapshot || {},
+          diagnostics,
           screenshots, // array of baked PNG data URLs (may be empty)
         }),
       });
@@ -155,6 +165,15 @@ export default function SupportReportModal() {
       }
 
       clearDraft(getStorage());
+      // Record the created report (origin + reference + alert id) so the toast
+      // that launched it flips to "Reported ✓" (dedup) and the dev diagnostics
+      // page can list reports created from clicked errors.
+      recordReportCreated({
+        origin: trigger?.origin || "support-modal",
+        referenceCode: trigger?.referenceCode,
+        message: trigger?.message || trimmed.slice(0, 120),
+        alertId: trigger?.alertId,
+      });
       pushAlert("✅ Thanks — your report has been sent to the team.", "success");
       closeSupportReport();
     } catch (err) {

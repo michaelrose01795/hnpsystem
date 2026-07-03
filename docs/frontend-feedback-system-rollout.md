@@ -1,9 +1,11 @@
-# Frontend Feedback & Error System — 10-Phase Rollout Plan
+# Frontend Feedback & Error System — The Standard (all 10 phases complete)
 
-**Status:** Planning + Phase 1 (audit) in progress. No app behaviour changes.
-**Scope:** Whole app (staff-scope UI) — errors, alerts/toasts, form validation, loading states, empty states, and support-reporting.
+**Status:** ✅ **COMPLETE — this document is now the permanent standard**, not a plan. All ten phases are implemented; Phase 10 migrated the app onto the primitives and added the CI guardrail (`npm run check:feedback`) that keeps it that way.
+**Scope:** Whole app — errors, alerts/toasts, form validation, loading states, empty states, support-reporting, and error boundaries. Applies to staff, customer, and dev surfaces.
 **Source:** Expands [frontend-error-handling-plan.md](frontend-error-handling-plan.md) from error-handling-only into the full **user-feedback surface**.
 **Last updated:** 2026-07-03
+
+> **If you are building a new page or component, jump to [§6 Adoption checklist](#6-adoption-checklist-for-every-new-page--component).** The rest is the rationale and the phase history.
 
 ---
 
@@ -36,20 +38,20 @@ The single source of truth for the underlying alert/error contracts remains the 
 
 ## 2. Phase map (at a glance)
 
-| Phase | Name | Theme | Blast radius | Global-gate? |
-|---|---|---|---|---|
-| **P1** | **Audit & baseline** | Inventory every feedback pattern; rubric; checklist | None (docs only) | No |
-| P2 | Toast styling + a11y | Migrate `TopbarAlerts` onto `staffglobal.css`; live region, icons, reduced motion | Low | No |
-| P3 | Core helper layer | `reportError`/`reportSuccess`/… + message catalogue | Low–med | No |
-| P4 | Role-aware diagnostics | Client dev-role gate; dev-only detail; reference codes | Low | No |
-| P5 | API/DB choke point | Typed `ApiError`; failure-shape → friendly key mapping | Medium | No |
-| P6 | Loading-state standard | Shared skeleton/spinner primitive + button-busy pattern | Medium | Maybe (shared cmp) |
-| P7 | Empty-state standard | Shared `EmptyState` primitive on lists/tables/grids | Medium | Maybe (shared cmp) |
-| P8 | Validation standard | Inline field errors, disabled submit, a11y association | Medium | No |
-| P9 | Boundaries + support reporting | App-wide `AppErrorBoundary`; failure→report path; reference-code linkage | Med–high | **Yes** (layout) |
-| P10 | Feature migration + guardrails | Sweep features onto the new primitives; docs + CI checks | High (many files) | No |
+| Phase | Name | Status | Key artefacts |
+|---|---|---|---|
+| **P1** | **Audit & baseline** | ✅ | [audit](frontend-feedback-audit-phase1.md) |
+| P2 | Toast styling + a11y | ✅ | `TopbarAlerts` + `.app-alert` in `staffglobal.css` |
+| P3 | Core helper layer | ✅ | [report.js](../src/lib/notifications/report.js) + `errorMessages.js` |
+| P4 | Role-aware diagnostics | ✅ | `canViewDiagnostics`, reference codes, `diagnosticsLog.js` |
+| P5 | API/DB choke point | ✅ | [apiError.js](../src/lib/api/apiError.js), `reportApiError` |
+| P6 | Loading-state standard | ✅ | `LoadingSkeleton` / `InlineLoading`, `<Button busy>` |
+| P7 | Empty-state standard | ✅ | `EmptyState` / `.app-empty-state` |
+| P8 | Validation standard | ✅ | [useFormValidation.js](../src/hooks/useFormValidation.js), `FieldError` |
+| P9 | Boundaries + support reporting | ✅ | `RouteBoundary` / `SectionBoundary`, reference-coded recovery |
+| P10 | Feature migration + guardrails | ✅ | `check:feedback` ratchet, feature sweep, `/dev/feedback-diagnostics` |
 
-Plumbing first (P2–P5), primitives next (P6–P8), integration (P9), then the broad migration (P10). Every phase is independently shippable.
+Plumbing first (P2–P5), primitives next (P6–P8), integration (P9), then the broad migration (P10). Every phase shipped independently.
 
 ---
 
@@ -131,29 +133,60 @@ Plumbing first (P2–P5), primitives next (P6–P8), integration (P9), then the 
 
 ---
 
-## 4. Cross-cutting acceptance criteria
+## 4. The helper reference (what to reach for)
 
-- [ ] No product path shows a raw stack/HTTP/DB string as the primary user message.
-- [ ] All user-initiated failures in migrated features surface a friendly top-right toast.
-- [ ] Toasts, empty states, loading states, and field errors are all styled from `staffglobal.css` tokens; pass `npm run check:borders`.
-- [ ] All feedback surfaces are screen-reader announced/associated, keyboard operable, not colour-only, reduced-motion aware.
-- [ ] Technical detail is visible only to developer/admin roles; every error carries a reference code.
-- [ ] Major lists have empty states; major fetches have loading states; async buttons can't double-fire.
-- [ ] Key forms give inline, accessible validation feedback.
-- [ ] Render crashes are contained by a boundary and reportable.
-- [ ] Background failures do not spam the toast stack.
+One import per surface — never reinvent these.
 
----
+| You need to… | Use | From |
+|---|---|---|
+| Report a failure (friendly msg + reference code + devInfo) | `reportError(keyOrSentence, err, ctx)` | `@/lib/notifications/report` |
+| Report a caught API/DB error (auto friendly-key) | `reportApiError(err, ctx)` | `@/lib/notifications/report` |
+| Confirm success / neutral status / caveat | `reportSuccess` / `reportInfo` / `reportWarning` | `@/lib/notifications/report` |
+| Wrap a `try/catch` around an async action | `withErrorToast(fn, opts)` | `@/lib/notifications/report` |
+| Validate a form (inline, a11y, focus-first-invalid) | `useFormValidation(...)` + `<FieldError>` / `<FormErrorSummary>` | `@/hooks/useFormValidation`, `@/components/ui` |
+| Show loading | `LoadingSkeleton` / `InlineLoading` / `PageSkeleton`, `<Button busy>` | `@/components/ui/LoadingSkeleton`, `@/components/ui/Button` |
+| Show an intentional empty screen | `<EmptyState>` / `.app-empty-state` | `@/components/ui` |
+| Contain a crash locally | `<RouteBoundary>` (page) / `<SectionBoundary>` (leaf) | `@/components/support/SupportErrorBoundary` |
+| Offer a manual report off the StaffTopbar | `<SupportReportLauncher>` | `@/components/support/SupportReportLauncher` |
+| Ask a confirm/prompt | `useConfirmation()` | `@/context/ConfirmationContext` — **never** `window.confirm/prompt` |
+| Inspect live feedback state (dev) | `/dev/feedback-diagnostics` · `window.__HNP_FEEDBACK__` · `window.__HNP_DIAGNOSTICS__` | — |
 
-## 5. Risks & global gates (carried from source plan)
-
-1. **Global-change gates** — P6/P7 (new shared components) and P9 (`StaffLayout`/`Layout`, `AlertContext`) trip `CLAUDE.md §7`. Stop-and-confirm before those.
-2. **Role source** — confirm the "developer/diagnostic" role group in `roles.js`; never hardcode.
-3. **`window.alert` override** — keep the bus fallback; don't regress library code expecting native `alert`.
-4. **Toast fatigue** — enforce the user-initiated flag so background failures stay silent.
-5. **i18n** — catalogue keys enable future translation; ships English only.
-6. **Contrast** — verify tone token pairs meet WCAG AA before P2 exit.
+**Confirmed acceptance criteria (met):** no product path shows a raw stack/HTTP/DB string as the primary message; user-initiated failures surface a friendly toast with a reference code; all feedback surfaces are token-styled (`check:borders` passes), screen-reader announced/associated, keyboard operable, not colour-only, reduced-motion aware; technical detail is `dev`-role-gated; major lists/fetches have empty/loading states; async buttons can't double-fire; key forms validate inline; render crashes are contained + reportable; background failures stay silent.
 
 ---
 
-*Planning + audit only. No application behaviour changes until each phase is approved and implemented per the `CLAUDE.md` pre-flight and output rules.*
+## 5. Intentional exceptions (allowed, on purpose)
+
+These are **not** violations — they are documented and encoded in the guardrails' allowlists.
+
+1. **The global `window.alert` override** ([alertBus.js](../src/lib/notifications/alertBus.js)) stays. It routes any stray `alert()` (incl. third-party/library code) through the toast bus so nothing ever shows a raw browser dialog. Product code must still use the typed helpers; the override is a safety net, not a sanctioned path.
+2. **`useConfirmation()`** is the app confirm/prompt. Bare `confirm(...)` in product code is this helper (destructured), which is fine; only `window.confirm/prompt` is banned.
+3. **Dev / diagnostics surfaces** (`src/pages/dev/**`, `src/components/support/dev/**`, the design-system showcase) may use native dialogs and demonstrate old patterns — they are `EXEMPT` in `check-feedback.js`. Example: the readiness-gate override uses `window.confirm` deliberately.
+4. **Server handlers** (`src/pages/api/**`) have no toast surface; excluded.
+5. **Background / polling failures** are logged (`console.*`), never toasted — a `console.error`-only catch is correct there. The ban is on **user-initiated** actions swallowing errors silently.
+6. **Baseline debt** — files still carrying a legacy `alert()` are listed in `BASELINE_ALLOWLIST` in [check-feedback.js](../tools/scripts/check-feedback.js). They pass today but cannot regress, and each is removed the moment it is migrated (the script warns when a baseline entry goes clean). See the Phase 10 completion note for the current list.
+7. **i18n** — messages ship English; catalogue keys + rule messages are translation-ready.
+
+---
+
+## 6. Adoption checklist (for every new page / component)
+
+Copy this into your PR description.
+
+- [ ] **Errors:** every user-action `catch` calls `reportError` / `reportApiError` (or `withErrorToast`). No `alert()`, no `window.confirm/prompt`, no raw `error.message` shown to the user. Background/polling catches log only.
+- [ ] **Success:** state-changing actions confirm with `reportSuccess` (no ad-hoc banners).
+- [ ] **Validation:** forms use `useFormValidation` (or the helpers + `<FieldError>`), wire `aria-invalid`/`aria-describedby`, disable/guard submit, focus first invalid field. No `if (!x) alert()`.
+- [ ] **Loading:** fetches show `LoadingSkeleton`/`InlineLoading`; async buttons use `<Button busy>` (can't double-fire). No bare `Loading…` text.
+- [ ] **Empty:** lists/tables/grids render `<EmptyState>` when empty (title + next step). No blank screens; no mock/placeholder fallback data.
+- [ ] **Boundaries:** wrap the page in `<RouteBoundary>` and volatile leaves in `<SectionBoundary>`; customer/non-staff routes pass `variant="customer" hostSupportModal`.
+- [ ] **Design system:** token-styled, borderless surfaces (`LayerSurface`/`LayerTheme`), `DropdownField` for selects; passes `npm run check:borders`.
+- [ ] **Guardrail:** `npm run check:feedback` passes (and you did **not** add your file to `BASELINE_ALLOWLIST`).
+
+**Guardrails that enforce this:**
+- `npm run check:feedback` — bans new `alert()` / `window.confirm/prompt` on product surfaces; advisories for raw messages piped into toasts (`--strict` to fail on them).
+- `npm run check:borders` — token/borderless surface enforcement.
+- `npm run lint` — includes React hooks + a11y rules.
+
+---
+
+*This document is the permanent standard. All ten phases are complete; see the per-phase progress notes (`docs/frontend-feedback-phase*.md`) and the [Phase 10 completion note](frontend-feedback-phase10-migration-complete.md) for details, remaining baseline debt, and follow-up work. Any change that reintroduces a banned pattern must pass `check:feedback` — which it will not.*

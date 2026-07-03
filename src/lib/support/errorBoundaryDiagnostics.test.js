@@ -57,6 +57,16 @@ describe("buildBoundaryReportPrefill", () => {
     const prefill = buildBoundaryReportPrefill({ error: new Error("x".repeat(500)) });
     expect(prefill.title.length).toBe(300);
   });
+  it("embeds the reference code in the body and returns it (Phase 9)", () => {
+    const prefill = buildBoundaryReportPrefill({ error: new Error("boom"), referenceCode: "ERR-AB12" });
+    expect(prefill.referenceCode).toBe("ERR-AB12");
+    expect(prefill.description).toContain("Reference: ERR-AB12");
+  });
+  it("omits the reference line when no code is given", () => {
+    const prefill = buildBoundaryReportPrefill({ error: new Error("boom") });
+    expect(prefill.referenceCode).toBeUndefined();
+    expect(prefill.description).not.toContain("Reference:");
+  });
 });
 
 describe("buildBoundaryEvent", () => {
@@ -70,6 +80,22 @@ describe("buildBoundaryEvent", () => {
     const evt = buildBoundaryEvent();
     expect(evt.type).toBe("boundary_caught");
     expect(evt.label).toBeUndefined();
+  });
+  it("prefixes the label with the reference code and keeps it on the event (Phase 9)", () => {
+    const evt = buildBoundaryEvent(BOUNDARY_EVENTS.CAUGHT, { message: "boom", referenceCode: "ERR-AB12" });
+    expect(evt.referenceCode).toBe("ERR-AB12");
+    expect(evt.label.startsWith("[ERR-AB12]")).toBe(true);
+    expect(evt.label.length).toBeLessThanOrEqual(120);
+  });
+});
+
+describe("mintBoundaryReferenceCode", () => {
+  it("mints ERR-prefixed codes that differ across calls", async () => {
+    const { mintBoundaryReferenceCode } = await import("@/lib/support/errorBoundaryDiagnostics");
+    const a = mintBoundaryReferenceCode();
+    const b = mintBoundaryReferenceCode();
+    expect(a).toMatch(/^ERR-/);
+    expect(a).not.toBe(b);
   });
 });
 

@@ -19,6 +19,7 @@ import { friendlyKeyForError } from "@/lib/api/apiError";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 import { logDiagnostic } from "@/lib/notifications/diagnosticsLog";
+import { recordFeedbackError } from "@/lib/support/feedbackDevBridge";
 import { resolveMessage } from "@/lib/notifications/errorMessages";
 
 // De-duplication window: an identical (type, message) reported again within this
@@ -76,6 +77,14 @@ export function reportError(msgOrKey, err = null, context = {}) {
     referenceCode: payload.referenceCode,
     message,
     devInfo: payload.devInfo,
+  });
+  // Phase 10: publish to the dev feedback bridge (/dev/feedback-diagnostics +
+  // window.__HNP_FEEDBACK__) so the latest reference code is always inspectable.
+  recordFeedbackError({
+    referenceCode: payload.referenceCode,
+    message,
+    kind: devContext?.source ? `error:${devContext.source}` : "error",
+    source: devContext?.source,
   });
   return showAlert(payload);
 }

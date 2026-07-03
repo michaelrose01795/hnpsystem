@@ -1108,6 +1108,39 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
   const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
   const isBrakesHubsSection = config.key === "brakesHubs";
+  // Per-severity counts for this section. Each item can carry multiple concerns
+  // (e.g. a red front wiper AND an amber rear wiper on one "Wipers/Washers/Horn"
+  // item), and the expanded panel renders every concern as its own reported
+  // line. So we count each concern individually by colour; when an item has no
+  // concerns we fall back to its own item-level status. Counting only the
+  // item-level status would collapse an item's concerns into one badge and hide
+  // secondary severities (the amber concern in the example above).
+  const isCountableSeverity = (severity) =>
+    severity === "red" || severity === "amber" || severity === "green";
+  const severityCounts = rawItems.reduce(
+    (totals, item) => {
+      const concerns = Array.isArray(item?.concerns) ? item.concerns : [];
+      const concernSeverities = concerns
+        .map((concern) => normaliseColour(concern?.status))
+        .filter(isCountableSeverity);
+      const reported =
+        concernSeverities.length > 0
+          ? concernSeverities
+          : [normaliseColour(item?.colour || item?.status || section?.colour)].filter(
+              isCountableSeverity
+            );
+      reported.forEach((severity) => {
+        totals[severity] += 1;
+      });
+      return totals;
+    },
+    { green: 0, amber: 0, red: 0 }
+  );
+  const severityBadges = [
+    { key: "green", count: severityCounts.green, bg: "var(--success-surface)", fg: "var(--success)", label: "green" },
+    { key: "amber", count: severityCounts.amber, bg: "var(--warning-surface)", fg: "var(--warning)", label: "amber" },
+    { key: "red", count: severityCounts.red, bg: "var(--danger-surface)", fg: "var(--danger)", label: "red" },
+  ].filter((badge) => badge.count > 0);
 
   return (
     <div
@@ -1167,6 +1200,33 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
           <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-accent)" }}>
             {config.label}
           </h3>
+          {severityBadges.length > 0 ? (
+            <div style={{ display: "flex", flexShrink: 0, alignItems: "center", gap: "6px" }}>
+              {severityBadges.map((badge) => (
+                <span
+                  key={badge.key}
+                  aria-label={`${badge.count} ${badge.label} ${badge.count === 1 ? "item" : "items"}`}
+                  title={`${badge.count} ${badge.label} ${badge.count === 1 ? "item" : "items"}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "22px",
+                    height: "22px",
+                    padding: "0 7px",
+                    borderRadius: "var(--radius-pill)",
+                    background: badge.bg,
+                    color: badge.fg,
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  {badge.count}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div
           style={{

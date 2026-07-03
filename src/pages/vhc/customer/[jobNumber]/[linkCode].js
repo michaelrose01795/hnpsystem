@@ -344,3 +344,4 @@ export default function CustomerLinkPage() {
 CustomerLinkPage.getLayout = function publicLayout(page) {
   return page;
 };
+CustomerLinkPage.hideGlobalNotesWidget = true;

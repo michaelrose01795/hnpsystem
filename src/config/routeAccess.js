@@ -55,6 +55,8 @@ export const PUBLIC_PREFIXES = [
   "/presentation",
   "/vhc/customer",
   "/vhc/customer-preview",
+  "/vhc/customer-view",
+  "/vhc/share",
 ];
 
 // Path prefixes that require an authenticated session.
@@ -100,6 +102,16 @@ export const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
 // Shared path matcher: exact match, or `${prefix}/...` segment match.
 export const startsWithPath = (pathname, prefix) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+export const PUBLIC_VHC_REPORT_PREFIXES = [
+  "/vhc/customer",
+  "/vhc/customer-preview",
+  "/vhc/customer-view",
+  "/vhc/share",
+];
+
+export const isPublicVhcReportPath = (pathname = "") =>
+  PUBLIC_VHC_REPORT_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
 
 export const isPublicPath = (pathname) =>
   PUBLIC_PATHS.has(pathname) ||

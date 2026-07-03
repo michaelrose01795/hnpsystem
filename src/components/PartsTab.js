@@ -18,6 +18,7 @@ import {
 } from "@/lib/vhc/requestRowLinking";
 import { getJobRequests } from "@/lib/canonical/fields";
 import { NORMALIZE_ITEM as normalizePartStatus } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
+import { reportApiError, reportWarning } from "@/lib/notifications/report"; // Phase 3/5 reporting helpers (Phase 10 migration).
 
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -580,7 +581,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       await fetchPartsOnOrder();
     } catch (error) {
       console.error("Failed to update ETA:", error);
-      alert(`Error: ${error.message}`);
+      reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, fetchPartsOnOrder]);
 
@@ -614,7 +615,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
     } catch (error) {
       console.error("Failed to mark part as arrived:", error);
-      alert(`Error: ${error.message}`);
+      reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, onRefreshJob, fetchPartsOnOrder]);
 
@@ -1030,7 +1031,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       } catch (error) {
         console.error("Failed to update pre-pick location:", error);
-        alert(`Error: ${error.message}`);
+        reportApiError(error, { source: "PartsTab" });
       }
     },
     [canEdit, onRefreshJob]
@@ -1418,7 +1419,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       } catch (error) {
         console.error("Failed to allocate parts to request:", error);
-        alert(`Error: ${error.message}`);
+        reportApiError(error, { source: "PartsTab" });
       } finally {
         setAllocatingSelection(false);
       }
@@ -1453,11 +1454,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       return;
     }
     if (!assignTargetRequestId) {
-      alert("Select a row in 'Allocate Parts' first.");
+      reportWarning("Select a row in 'Allocate Parts' first.");
       return;
     }
     if (!selectedAssignablePart) {
-      alert("Select a row in 'Parts Added to Job' that is not already allocated or removed.");
+      reportWarning("Select a row in 'Parts Added to Job' that is not already allocated or removed.");
       return;
     }
     handleAssignSelectedToRequest(assignTargetRequestId);
@@ -1497,7 +1498,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       } catch (error) {
         console.error("Failed to unassign part:", error);
-        alert(`Error: ${error.message}`);
+        reportApiError(error, { source: "PartsTab" });
       }
     },
     [canEdit, onRefreshJob]
@@ -1558,7 +1559,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         await refreshCatalogStockState();
       } catch (error) {
         console.error("Failed to remove part:", error);
-        alert(`Error: ${error.message}`);
+        reportApiError(error, { source: "PartsTab" });
         setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
       } finally {
         setPartPopup({ open: false, part: null });
@@ -1708,7 +1709,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setPartDraft(null);
     } catch (error) {
       console.error("Failed to save part details:", error);
-      alert(`Error: ${error.message}`);
+      reportApiError(error, { source: "PartsTab" });
     } finally {
       setSavingPartDetails(false);
     }

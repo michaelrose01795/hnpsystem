@@ -372,7 +372,14 @@
       "Bash(node -e \"require\\('@babel/core'\\)\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,1\\)\\)\")",
       "PowerShell(npx next lint --file src/features/tracking/map/TrackingMap.js --file src/features/tracking/map/TrackingMapModal.js --file src/components/page-ui/tracking/tracking-ui.js --file src/pages/tracking/index.js --file src/pages/_app.js)",
-      "PowerShell(npx eslint src/features/tracking/map/TrackingMap.js src/features/tracking/map/TrackingMapModal.js src/components/page-ui/tracking/tracking-ui.js src/pages/tracking/index.js src/pages/_app.js)"
+      "PowerShell(npx eslint src/features/tracking/map/TrackingMap.js src/features/tracking/map/TrackingMapModal.js src/components/page-ui/tracking/tracking-ui.js src/pages/tracking/index.js src/pages/_app.js)",
+      "Bash(node tools/scripts/check-feedback.js --list)",
+      "Bash(python -)",
+      "Bash(grep -n \"reportApiError\\(error, { source\" src/components/PartsTab.js)",
+      "Bash(node tools/scripts/check-feedback.js)",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(cp /tmp/vhc_probe.mjs ./vhc_probe.mjs)",
+      "Bash(node ./vhc_probe.mjs)"
     ],
     "deny": [],
     "ask": [],

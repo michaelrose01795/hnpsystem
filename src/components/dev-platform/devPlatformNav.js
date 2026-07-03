@@ -28,6 +28,12 @@ export const DEV_PLATFORM_NAV = [
     description: "Subsystem health roll-up: sanitiser, database, storage, RLS, build.",
   },
   {
+    key: "feedback",
+    label: "Feedback & Errors",
+    href: "/dev/feedback-diagnostics",
+    description: "Live Feedback System state: last error, latest reference code, support-report + boundary status.",
+  },
+  {
     key: "intelligence",
     label: "Intelligence",
     href: "/dev/intelligence",
@@ -121,7 +127,7 @@ export function getDevPlatformNavItem(key) {
 // ---------------------------------------------------------------------------
 export const DEV_PLATFORM_GROUPS = [
   { key: "home", label: "Home", children: ["home"] },
-  { key: "operations", label: "Operations", children: ["live-ops", "health", "performance"] },
+  { key: "operations", label: "Operations", children: ["live-ops", "health", "feedback", "performance"] },
   { key: "intelligence", label: "Intelligence", children: ["intelligence", "ownership", "knowledge"] },
   { key: "releases", label: "Releases", children: ["releases", "readiness", "productivity"] },
   { key: "support", label: "Support", children: ["support", "saved-views", "activity"] },

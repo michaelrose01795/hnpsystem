@@ -33,6 +33,7 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
+import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
 
 const PAYMENT_TYPE_OPTIONS = [
 { value: "Customer", label: "Customer" },
@@ -1065,7 +1066,7 @@ export default function CreateJobCardPage() {
 
   const handleSignatureUpload = async (file) => {// upload/update the current user's signature asset
     if (!file || !dbUserId) {
-      alert("Please log in before uploading a signature");
+      reportWarning("Please log in before uploading a signature");
       return;
     }
 
@@ -1094,8 +1095,8 @@ export default function CreateJobCardPage() {
         signature_file_url: publicUrl
       });
     } catch (err) {
-      console.error("Signature upload failed", err);
-      alert(err.message || "Failed to upload signature");
+      // Raw error → devInfo; the user sees a friendly message + reference code.
+      reportError("Failed to upload signature", err, { source: "new-job:signature" });
     } finally {
       setIsUploadingSignature(false);
     }
@@ -1363,17 +1364,17 @@ export default function CreateJobCardPage() {
     // Perform all validations first before touching the database
     try {
       if (!customer) {
-        alert("Please select a customer before saving the job.");
+        reportWarning("Please select a customer before saving the job.");
         return;
       }
 
       if (isCustomerEditing) {// prevent saving while customer edits are unsaved
-        alert("Please save customer edits before creating the job card.");
+        reportWarning("Please save customer edits before creating the job card.");
         return;
       }
 
       if (!vehicle.reg) {
-        alert("Please enter a vehicle registration before saving the job.");
+        reportWarning("Please enter a vehicle registration before saving the job.");
         return;
       }
 
@@ -1382,7 +1383,7 @@ export default function CreateJobCardPage() {
       // only when every rule (service · Suzuki · ≤ 3 yrs · ≤ 40 min drive)
       // passes. Block the save otherwise.
       if (isMobileMechanicUser && !isMobileMechanic) {
-        alert("Mobile mechanics can only create jobs that meet the Mobile Mechanic Eligibility rules. Select Yes on the eligibility section to continue.");
+        reportWarning("Mobile mechanics can only create jobs that meet the Mobile Mechanic Eligibility rules. Select Yes on the eligibility section to continue.");
         return;
       }
 
@@ -1392,7 +1393,7 @@ export default function CreateJobCardPage() {
         map((req) => ({ ...req, text: (req.text || "").trim() })).
         filter((req) => req.text.length > 0);
         if (tabRequests.length === 0) {
-          alert(`Please add at least one job request in Job ${i + 1} before saving.`);
+          reportWarning(`Please add at least one job request in Job ${i + 1} before saving.`);
           setActiveTabIndex(i);
           return;
         }
@@ -1510,8 +1511,8 @@ export default function CreateJobCardPage() {
       `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.job?.jobNumber || j.job?.job_number).join(", ")}` :
       `Job created: ${finalJobNumber}`;
 
-      alert(
-        `${jobsCreatedMessage}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
+      reportSuccess(
+        `${jobsCreatedMessage} — vehicle ${regUpper} saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
       flushSync(() => {
@@ -1520,8 +1521,8 @@ export default function CreateJobCardPage() {
       router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`);
 
     } catch (err) {
-      console.error("❌ Error saving job:", err);
-      alert(`Error saving job: ${err.message}. Please check the details and try again.`);
+      // Raw error → devInfo; the user sees a friendly message + reference code.
+      reportError("Couldn't save the job. Please check the details and try again.", err, { source: "new-job:save" });
       // Do not proceed with any further operations
       // The job and related data were not saved to the database
     }

@@ -13,6 +13,14 @@
 // they only build plain objects that the boundary feeds into the existing
 // diagnostics store (recordError / recordAction) and the existing support modal
 // (openSupportReport). Capture-time + server-side sanitisation still apply.
+//
+// Phase 9 — the boundary now mints a Phase-4-style REFERENCE CODE for every
+// caught render crash (reusing generateReferenceCode from buildErrorAlert, the
+// same minting the toast/error path uses) so a boundary crash is quotable and
+// correlatable exactly like an async error. The code is threaded through the
+// recorded timeline event, the pre-filled report, and the recovery screen.
+
+import { generateReferenceCode } from "@/lib/notifications/buildErrorAlert";
 
 // Timeline event types recorded into the diagnostics store's `actions` ring
 // buffer (surfaces as `recent_actions` in the captured bundle). Kept short so
@@ -23,6 +31,16 @@ export const BOUNDARY_EVENTS = Object.freeze({
   RELOAD: "boundary_reload",
   REPORT: "boundary_report",
 });
+
+/**
+ * Mint a short, human-quotable reference code for a caught render crash. Thin
+ * wrapper over the shared generator so the boundary and the toast/error path
+ * produce the SAME `ERR-…` shape and a developer traces either the same way.
+ * @returns {string}
+ */
+export function mintBoundaryReferenceCode() {
+  return generateReferenceCode();
+}
 
 /**
  * Best-effort human-readable message for any thrown value.
@@ -65,21 +83,28 @@ export function topComponentFromStack(componentStack) {
  * (route, section key, resolved code ownership, the recorded error, recovery
  * timeline) is attached separately by openSupportReport().
  *
- * @param {{ error?: unknown, componentStack?: string }} [args]
- * @returns {{ category: string, title: string, description: string }}
+ * @param {{ error?: unknown, componentStack?: string, referenceCode?: string }} [args]
+ * @returns {{ category: string, title: string, description: string, referenceCode?: string }}
  */
-export function buildBoundaryReportPrefill({ error, componentStack } = {}) {
+export function buildBoundaryReportPrefill({ error, componentStack, referenceCode } = {}) {
   const message = errorMessage(error);
   const component = topComponentFromStack(componentStack);
   const title = (component ? `Crash in ${component}: ${message}` : `App error: ${message}`).slice(0, 300);
   const description = [
     "This screen stopped working and showed the recovery message.",
     "",
+    // Phase 9 — surface the reference code in the body so the sent report and the
+    // code the user saw on screen line up (the code is also on the private
+    // diagnostics snapshot and in the timeline).
+    referenceCode ? `Reference: ${referenceCode}` : null,
+    referenceCode ? "" : null,
     `Error: ${message}`,
     "",
     "A private technical snapshot (the page I was on, where it failed, and the recent errors) is attached automatically.",
-  ].join("\n");
-  return { category: "bug", title, description };
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+  return { category: "bug", title, description, referenceCode: referenceCode || undefined };
 }
 
 /**
@@ -87,13 +112,17 @@ export function buildBoundaryReportPrefill({ error, componentStack } = {}) {
  * recordAction()'s generic (non-route_change) branch.
  *
  * @param {string} kind one of BOUNDARY_EVENTS
- * @param {{ sectionKey?: string, message?: string }} [meta]
- * @returns {{ type: string, label?: string, sectionKey?: string }}
+ * @param {{ sectionKey?: string, message?: string, referenceCode?: string }} [meta]
+ * @returns {{ type: string, label?: string, sectionKey?: string, referenceCode?: string }}
  */
-export function buildBoundaryEvent(kind, { sectionKey, message } = {}) {
+export function buildBoundaryEvent(kind, { sectionKey, message, referenceCode } = {}) {
+  // Prefix the label with the reference code so it is visible in recent_actions
+  // even where only the label is surfaced; keep the raw code on the event too.
+  const label = message ? String(message).slice(0, 120) : undefined;
   return {
     type: kind || BOUNDARY_EVENTS.CAUGHT,
-    label: message ? String(message).slice(0, 120) : undefined,
+    label: referenceCode ? `[${referenceCode}] ${label || ""}`.trim().slice(0, 120) : label,
     sectionKey: sectionKey || undefined,
+    referenceCode: referenceCode || undefined,
   };
 }

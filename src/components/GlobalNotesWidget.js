@@ -15,6 +15,7 @@ import styles from "@/components/GlobalNotesWidget.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { isPublicVhcReportPath } from "@/config/routeAccess";
 
 const BUBBLE_SIZE = 56;
 const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
@@ -205,13 +206,15 @@ function NotesLoadingSkeleton() {
 export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   const { dbUserId, user } = useUser() || {};
   const router = useRouter();
+  const pathname = router?.pathname || "";
+  const asPath = router?.asPath || "";
+  const asPathClean = ((asPath.split("?")[0] || "").split("#")[0] || "").replace(/\/$/, "") || "/";
+  const isPublicVhcReportRoute =
+    isPublicVhcReportPath(pathname) || isPublicVhcReportPath(asPathClean);
   const numericDbUserId = Number(dbUserId);
   const effectiveUserId = presentationDemo
     ? (Number.isInteger(numericDbUserId) ? numericDbUserId : 1)
     : numericDbUserId;
-  // Widen the bubble on the public VHC customer link page so it stays
-  // visible against the locked red theme.
-  const isWideBubblePage = (router?.pathname || "").startsWith("/vhc/customer/[jobNumber]/[linkCode]");
   const [hasHydrated, setHasHydrated] = useState(false);
   const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
   const [panelRect, setPanelRect] = useState(PANEL_DEFAULT);
@@ -1045,7 +1048,12 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     }
   };
 
-  if (!hasHydrated || (!presentationDemo && !Number.isInteger(Number(dbUserId))) || isModalOpen) {
+  if (
+    isPublicVhcReportRoute ||
+    !hasHydrated ||
+    (!presentationDemo && !Number.isInteger(Number(dbUserId))) ||
+    isModalOpen
+  ) {
     return null;
   }
 
@@ -1057,24 +1065,13 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
           isPanelVisible || isPanelMounted ? styles.bubbleOpen : ""
         }`}
         style={{
-          left:
-            isWideBubblePage && typeof window !== "undefined"
-              ? Math.min(bubblePosition.x, Math.max(0, window.innerWidth - 132))
-              : bubblePosition.x,
+          left: bubblePosition.x,
           top: bubblePosition.y,
-          ...(isWideBubblePage
-            ? { width: 132, paddingLeft: 14, paddingRight: 14, borderRadius: 28 }
-            : null)
         }}
         onPointerDown={startBubbleDrag}
         aria-label="Open Notes"
       >
-        <span
-          className={styles.bubbleLabel}
-          style={isWideBubblePage ? { fontSize: 14, letterSpacing: "0.08em" } : undefined}
-        >
-          {isWideBubblePage ? "NOTES" : "N"}
-        </span>
+        <span className={styles.bubbleLabel}>N</span>
       </button>
 
       {isPanelMounted && (

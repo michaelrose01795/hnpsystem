@@ -14,6 +14,7 @@ import VhcCustomerView from "@/components/VHC/VhcCustomerView";
 import LayerSurface from "@/components/ui/LayerSurface";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
+import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -1623,7 +1624,15 @@ export function VhcDirectCustomerPage({ accessMode = "preview" }) {
 }
 
 export default function CustomerPreviewPage() {
-  return <VhcDirectCustomerPage accessMode="preview" />;
+  // Phase 9 — customer-variant boundary: a graceful, non-technical recovery
+  // screen (self-hosting the report popup, no StaffTopbar here) if the VHC view
+  // crashes, instead of a blank customer-facing page.
+  return (
+    <RouteBoundary variant="customer" homeHref="/website" hostSupportModal>
+      <VhcDirectCustomerPage accessMode="preview" />
+    </RouteBoundary>
+  );
 }
 
 CustomerPreviewPage.getLayout = (page) => page;
+CustomerPreviewPage.hideGlobalNotesWidget = true;

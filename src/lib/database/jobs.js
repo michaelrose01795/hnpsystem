@@ -396,7 +396,8 @@ const _getAllJobsUncached = async () => {
           telephone,
           address,
           postcode,
-          contact_preference
+          contact_preference,
+          preferences
         )
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
