@@ -2,6 +2,7 @@
 // Canonical staff UI primitives for common DMS page patterns.
 import React from "react";
 import Button from "./Button";
+import EmptyState from "./EmptyState";
 import LayerSurface from "./LayerSurface";
 import LayerTheme from "./LayerTheme";
 import ModalPortal from "@/components/popups/ModalPortal";
@@ -133,15 +134,18 @@ export function StaffFilterBar({ children, actions, className = "" }) {
   );
 }
 
-export function StaffEmptyState({ title, description, action, tone = "neutral" }) {
+// Thin alias kept for backward compatibility — delegates to the canonical
+// EmptyState primitive so there is a single implementation (Phase 7).
+export function StaffEmptyState({ title, description, action, icon, secondaryAction, variant = "inline" }) {
   return (
-    <LayerSurface className={toneClass("app-empty-state", tone)}>
-      <div className="app-empty-state__copy">
-        {title && <h3 className="app-empty-state__title">{title}</h3>}
-        {description && <p className="app-empty-state__description">{description}</p>}
-      </div>
-      {action && <div className="app-empty-state__action">{action}</div>}
-    </LayerSurface>
+    <EmptyState
+      icon={icon}
+      title={title}
+      description={description}
+      action={action}
+      secondaryAction={secondaryAction}
+      variant={variant}
+    />
   );
 }
 

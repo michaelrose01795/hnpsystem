@@ -620,10 +620,9 @@ export default function ConsumablesTrackerPageUi(props) {
                   <tbody>
                     {logsLoading ? <tr>
                         <td colSpan={5} style={{
-                        padding: "12px",
-                        color: "var(--info)"
+                        padding: "12px"
                       }}>
-                          Loading logs…
+                          <InlineLoading label="Loading logs" />
                         </td>
                       </tr> : monthlyLogs.length === 0 ? <tr>
                         <td colSpan={5} style={{

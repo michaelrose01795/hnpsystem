@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/dashboard/workshop/dashboard-workshop-ui.js
 
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+
 const worklistRowStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(56px, 0.65fr) minmax(0, 1fr) minmax(70px, 0.9fr) auto",
@@ -77,7 +79,7 @@ export default function WorkshopDashboardUi(props) {
           <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content" style={{ gap: "10px" }}>
             <Section sectionKey="workshop-dashboard-daily-checkpoints" parentKey="workshop-dashboard-content" title="Daily checkpoints">
               {loading ? (
-                <p style={{ color: "var(--text-1)" }}>Loading today's metrics...</p>
+                <InlineLoading label="Loading today's metrics" />
               ) : error ? (
                 <p style={{ color: "var(--danger-text)" }}>{error}</p>
               ) : (
@@ -112,7 +114,7 @@ export default function WorkshopDashboardUi(props) {
             <DevLayoutSection sectionKey="workshop-dashboard-worklist-row" parentKey="workshop-dashboard-content" sectionType="section-shell" shell style={twoColSplitStyle}>
               <Section sectionKey="workshop-dashboard-next-jobs-queue" parentKey="workshop-dashboard-worklist-row" title="Next jobs queue" style={{ height: "100%", minHeight: "360px" }}>
                 {loading ? (
-                  <p style={{ color: "var(--text-1)" }}>Loading queue...</p>
+                  <InlineLoading label="Loading queue" />
                 ) : (
                   <div style={listViewportStyle}>
                     {dashboardData.queue.length === 0 ? (
@@ -144,7 +146,7 @@ export default function WorkshopDashboardUi(props) {
 
               <Section sectionKey="workshop-dashboard-outstanding-vhc" parentKey="workshop-dashboard-worklist-row" title="Outstanding VHCs" style={{ height: "100%", minHeight: "360px" }}>
                 {loading ? (
-                  <p style={{ color: "var(--text-1)" }}>Loading VHC backlog...</p>
+                  <InlineLoading label="Loading VHC backlog" />
                 ) : dashboardData.outstandingVhc.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--text-1)" }}>No VHCs awaiting completion.</p>
                 ) : (

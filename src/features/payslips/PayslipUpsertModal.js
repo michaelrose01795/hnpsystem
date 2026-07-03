@@ -9,7 +9,19 @@ import Button from "@/components/ui/Button";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import FieldError from "@/components/ui/FieldError";
+import { runValidation } from "@/lib/validation/validate";
+import { required, min } from "@/lib/validation/rules";
 import { emptyPayslipDraft } from "./payslipUtils";
+
+// Phase 8: money-critical guards — a payslip can no longer be saved with a
+// missing user/date or a zero/negative gross or net figure.
+const PAYSLIP_SCHEMA = {
+  userId: required("Select a user."),
+  paidDate: required("Paid date is required."),
+  grossPay: [required("Gross pay is required."), min(0.01, "Gross pay must be more than zero.")],
+  netPay: [required("Net pay is required."), min(0, "Net pay cannot be negative.")],
+};
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
@@ -157,6 +169,7 @@ export default function PayslipUpsertModal({
   const [draft, setDraft] = useState(() => emptyPayslipDraft());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (!isOpen) return;
@@ -169,6 +182,7 @@ export default function PayslipUpsertModal({
       setDraft(emptyPayslipDraft());
     }
     setError("");
+    setFieldErrors({});
   }, [isOpen, mode, initialPayslip]);
 
   const userOptions = useMemo(
@@ -184,16 +198,30 @@ export default function PayslipUpsertModal({
 
   if (!isOpen) return null;
 
-  const update = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+  const update = (patch) => {
+    setDraft((prev) => ({ ...prev, ...patch }));
+    // Live-clear a field's error as soon as it is edited (after first submit).
+    setFieldErrors((prev) => {
+      const keys = Object.keys(patch).filter((key) => prev[key]);
+      if (!keys.length) return prev;
+      const next = { ...prev };
+      keys.forEach((key) => delete next[key]);
+      return next;
+    });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmitting(true);
     setError("");
-    try {
-      if (!draft.userId) throw new Error("Select a user.");
-      if (!draft.paidDate) throw new Error("Paid date is required.");
 
+    // Inline, accessible validation before we touch the network — no zero-value
+    // or userless payslips can be saved.
+    const validationErrors = await runValidation(draft, PAYSLIP_SCHEMA);
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setSubmitting(true);
+    try {
       const isEdit = mode === "edit" && initialPayslip?.id;
       const url = isEdit ? `/api/payslips/${initialPayslip.id}` : "/api/payslips/admin";
       const method = isEdit ? "PUT" : "POST";
@@ -254,7 +282,10 @@ export default function PayslipUpsertModal({
                 onChange={(event) => update({ userId: event.target.value ? Number(event.target.value) : "" })}
                 options={userOptions}
                 disabled={mode === "edit"}
+                aria-invalid={fieldErrors.userId ? "true" : undefined}
+                aria-describedby={fieldErrors.userId ? "field-userId-error" : undefined}
               />
+              <FieldError id="field-userId-error">{fieldErrors.userId}</FieldError>
             </label>
             <label style={labelStyle}>
               Status
@@ -279,7 +310,10 @@ export default function PayslipUpsertModal({
                 name="paidDate"
                 value={draft.paidDate || ""}
                 onChange={(event) => update({ paidDate: event.target.value })}
+                aria-invalid={fieldErrors.paidDate ? "true" : undefined}
+                aria-describedby={fieldErrors.paidDate ? "field-paidDate-error" : undefined}
               />
+              <FieldError id="field-paidDate-error">{fieldErrors.paidDate}</FieldError>
             </label>
             <label style={labelStyle}>
               Period start
@@ -310,10 +344,22 @@ export default function PayslipUpsertModal({
           {/* Headline figures */}
           <FieldGroup columns="repeat(auto-fit, minmax(160px, 1fr))">
             <label style={labelStyle}>Gross pay
-              <NumberField value={draft.grossPay} onChange={(value) => update({ grossPay: value })} />
+              <NumberField
+                value={draft.grossPay}
+                onChange={(value) => update({ grossPay: value })}
+                aria-invalid={fieldErrors.grossPay ? "true" : undefined}
+                aria-describedby={fieldErrors.grossPay ? "field-grossPay-error" : undefined}
+              />
+              <FieldError id="field-grossPay-error">{fieldErrors.grossPay}</FieldError>
             </label>
             <label style={labelStyle}>Net pay
-              <NumberField value={draft.netPay} onChange={(value) => update({ netPay: value })} />
+              <NumberField
+                value={draft.netPay}
+                onChange={(value) => update({ netPay: value })}
+                aria-invalid={fieldErrors.netPay ? "true" : undefined}
+                aria-describedby={fieldErrors.netPay ? "field-netPay-error" : undefined}
+              />
+              <FieldError id="field-netPay-error">{fieldErrors.netPay}</FieldError>
             </label>
             <label style={labelStyle}>Taxable pay
               <NumberField value={draft.taxablePay} onChange={(value) => update({ taxablePay: value })} />

@@ -1,7 +1,7 @@
 // file location: src/components/page-ui/admin/users/admin-users-ui.js
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { roleCategories } from "@/config/users";
+import EmptyState from "@/components/ui/EmptyState";
 
 const PAGE_SECTION_KEY = "admin-users-page-shell";
 
@@ -60,67 +60,6 @@ const MOCK_COMPANY_PROFILE = {
   payment_reference_hint: "Use invoice number and vehicle registration as the payment reference.",
 };
 
-const MOCK_DB_USERS = [
-  {
-    id: "mock-admin-manager",
-    firstName: "Amelia",
-    lastName: "Hart",
-    email: "amelia.hart@example.test",
-    role: roleCategories.Sales.find((role) => role === "Admin Manager") || roleCategories.Sales[5],
-    phone: "01732 000 301",
-    createdAt: "2026-05-01T09:00:00.000Z",
-    isMock: true,
-  },
-  {
-    id: "mock-service-manager",
-    firstName: "Owen",
-    lastName: "Reed",
-    email: "owen.reed@example.test",
-    role: roleCategories.Retail.find((role) => role === "Service Manager") || roleCategories.Retail[1],
-    phone: "01732 000 302",
-    createdAt: "2026-05-03T10:30:00.000Z",
-    isMock: true,
-  },
-  {
-    id: "mock-accounts-manager",
-    firstName: "Priya",
-    lastName: "Shah",
-    email: "priya.shah@example.test",
-    role: roleCategories.Sales.find((role) => role === "Accounts Manager") || roleCategories.Sales[6],
-    phone: "01732 000 303",
-    createdAt: "2026-05-06T08:45:00.000Z",
-    isMock: true,
-  },
-];
-
-const MOCK_DEPARTMENT_LIST = [
-  { department: "Accounts", names: ["Priya Shah", "Daniel Brooks"] },
-  { department: "Service", names: ["Owen Reed", "Maya Collins"] },
-  { department: "Workshop", names: ["Noah Turner", "Ella Morgan"] },
-  { department: "Parts", names: ["Samira Khan", "George Miller"] },
-];
-
-const MOCK_ROLE_LIST = [
-  {
-    role: roleCategories.Sales.find((role) => role === "Admin Manager") || roleCategories.Sales[5],
-    members: [
-      { id: "mock-admin-manager", displayName: "Amelia Hart", key: "amelia-hart", isMock: true },
-      { id: "mock-owner", displayName: "James Humphries", key: "james-humphries", isMock: true },
-    ],
-  },
-  {
-    role: roleCategories.Retail.find((role) => role === "Service Manager") || roleCategories.Retail[1],
-    members: [
-      { id: "mock-service-manager", displayName: "Owen Reed", key: "owen-reed", isMock: true },
-      { id: "mock-workshop-manager", displayName: "Maya Collins", key: "maya-collins", isMock: true },
-    ],
-  },
-  {
-    role: roleCategories.Sales.find((role) => role === "Accounts Manager") || roleCategories.Sales[6],
-    members: [{ id: "mock-accounts-manager", displayName: "Priya Shah", key: "priya-shah", isMock: true }],
-  },
-];
-
 function hasAnyProfileValue(profile = {}) {
   return Object.values(profile || {}).some((value) => String(value || "").trim());
 }
@@ -174,13 +113,12 @@ export default function AdminUserManagementUi(props) {
   const companyPreview = companyHasValues
     ? Object.fromEntries(Object.keys(MOCK_COMPANY_PROFILE).map((field) => [field, valueOrMock(companyProfile, field)]))
     : MOCK_COMPANY_PROFILE;
-  const visibleDbUsers = dbUsers.length > 0 ? dbUsers : MOCK_DB_USERS;
-  const visibleDepartmentList = departmentList.length > 0 ? departmentList : MOCK_DEPARTMENT_LIST;
-  const visibleRoleList = roleList.length > 0 ? roleList : MOCK_ROLE_LIST;
-  const visibleUserCount = userCount || MOCK_DB_USERS.length;
-  const usingMockDbUsers = dbUsers.length === 0;
-  const usingMockDepartments = departmentList.length === 0;
-  const usingMockRoles = roleList.length === 0;
+  // Phase 7: no mock-data fallback. Empty arrays render a real EmptyState so an
+  // empty roster (or a failed fetch) can never be masked by plausible fake rows.
+  const visibleDbUsers = dbUsers;
+  const visibleDepartmentList = departmentList;
+  const visibleRoleList = roleList;
+  const visibleUserCount = userCount || dbUsers.length;
 
   switch (props.view) {
     case "section1":
@@ -200,7 +138,7 @@ export default function AdminUserManagementUi(props) {
             sectionType="toolbar"
           >
             <p style={{ color: "var(--surfaceTextMuted)", margin: 0 }}>
-              Provision platform accounts and review department ownership with populated preview data available in every section.
+              Provision platform accounts and review department ownership across the sections below.
             </p>
           </DevLayoutSection>
 
@@ -355,19 +293,23 @@ export default function AdminUserManagementUi(props) {
                         <td style={{ borderBottom: "1px solid var(--separating-line)" }}>
                           <button
                             type="button"
-                            disabled={account.isMock}
                             onClick={() => handleUserDelete(account.id, `${account.firstName} ${account.lastName}`.trim())}
-                            className={`app-btn ${account.isMock ? "app-btn--secondary" : "app-btn--danger"}`}
+                            className="app-btn app-btn--danger"
                           >
-                            {account.isMock ? "Preview" : "Remove"}
+                            Remove
                           </button>
                         </td>
                       </tr>
                     ))}
-                    {usingMockDbUsers && (
+                    {visibleDbUsers.length === 0 && (
                       <tr>
-                        <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "var(--surfaceTextMuted)" }}>
-                          Preview users shown while no platform users are available.
+                        <td colSpan={6} style={{ padding: 0 }}>
+                          <EmptyState
+                            variant="bare"
+                            icon="👥"
+                            title="No platform users yet"
+                            description="No user accounts have been provisioned. Use the Add user button to create the first account."
+                          />
                         </td>
                       </tr>
                     )}
@@ -430,7 +372,15 @@ export default function AdminUserManagementUi(props) {
                     </ul>
                   </div>
                 ))}
-                {usingMockDepartments && <div style={{ color: "var(--surfaceTextMuted)" }}>Preview departments shown while no directory data is available.</div>}
+                {visibleDepartmentList.length === 0 && (
+                  <EmptyState
+                    variant="bare"
+                    icon="🗂️"
+                    title="No directory data yet"
+                    description="Department groupings will appear here once employees are assigned to departments."
+                    style={{ gridColumn: "1 / -1" }}
+                  />
+                )}
               </div>
             )}
           </ThemedSection>
@@ -476,8 +426,7 @@ export default function AdminUserManagementUi(props) {
                                 <button
                                   key={`${role}-${member.id || member.displayName}`}
                                   type="button"
-                                  disabled={member.isMock}
-                                  onClick={() => !member.isMock && handleProfileView(member)}
+                                  onClick={() => handleProfileView(member)}
                                   className={`app-btn ${activeUser === member.displayName ? "app-btn--primary" : "app-btn--secondary"}`}
                                 >
                                   {member.displayName}
@@ -490,10 +439,15 @@ export default function AdminUserManagementUi(props) {
                         </td>
                       </tr>
                     ))}
-                    {usingMockRoles && (
+                    {visibleRoleList.length === 0 && (
                       <tr>
-                        <td colSpan={2} style={{ padding: "14px", textAlign: "center", color: "var(--surfaceTextMuted)" }}>
-                          Preview role memberships shown while no roster data is available.
+                        <td colSpan={2} style={{ padding: 0 }}>
+                          <EmptyState
+                            variant="bare"
+                            icon="🧑‍🤝‍🧑"
+                            title="No roster data yet"
+                            description="Role memberships will appear here once users are assigned to roles."
+                          />
                         </td>
                       </tr>
                     )}

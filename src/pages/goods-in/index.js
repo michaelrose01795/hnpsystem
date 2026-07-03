@@ -1864,7 +1864,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           
           {!query.trim() ?
           loading ?
-          <div style={{ padding: "24px", textAlign: "center" }}>Loading suppliers...</div> :
+          <div style={{ padding: "24px", textAlign: "center" }}><InlineLoading label="Loading suppliers" /></div> :
           error ?
           <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div> :
           results.length ?

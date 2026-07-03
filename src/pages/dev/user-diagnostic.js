@@ -36,7 +36,9 @@ import { useUser } from "@/context/UserContext";
 import { canShowDevPages } from "@/lib/dev-tools/config";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
-import { Button, InputField, StatusMessage } from "@/components/ui";
+import { Button, InputField, StatusMessage, EmptyState, FormErrorSummary } from "@/components/ui";
+import useFormValidation from "@/hooks/useFormValidation";
+import { required as requiredRule, email as emailRule, minLength } from "@/lib/validation/rules";
 import { DropdownField, MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
@@ -45,6 +47,7 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import ScrollArea from "@/components/ui/scrollAPI/ScrollArea";
 import { SkeletonBlock, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
+import useBusyAction from "@/hooks/useBusyAction";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 // ── Section: Core Data ──────────────────────────────────────────
@@ -793,7 +796,7 @@ const USAGE_REGISTRY = {
 
   "empty-state-standard": [
   { label: "VHC EmptyStateMessage (per-module, non-standard)", file: "src/components/VHC/VhcSharedComponents.js" },
-  { label: "Proposed Global Standard — src/components/ui/EmptyState.js", file: "src/components/ui/" },
+  { label: "Global Standard (Phase 7) — src/components/ui/EmptyState.js", file: "src/components/ui/EmptyState.js" },
   { label: "To be adopted in refactor (accounts, parts, HR lists)", file: "src/pages/accounts/index.js", route: "/accounts" }],
 
   "confirm-dialogs": [
@@ -809,7 +812,7 @@ const USAGE_REGISTRY = {
 
   "loading-states-expanded": [
   { label: "LoadingSkeleton primitive (current)", file: "src/components/ui/LoadingSkeleton.js" },
-  { label: "Proposed: <Spinner size /> + <ButtonLoading />", file: "src/components/ui/" },
+  { label: "Button-busy (Phase 6): <Button busy> + useBusyAction hook", file: "src/hooks/useBusyAction.js" },
   { label: "Canonical page skeleton — PageSkeleton export", file: "src/components/ui/LoadingSkeleton.js" }],
 
   "navigation-states": [
@@ -1205,6 +1208,60 @@ function ShowcaseToggleButton({ active = false, children, ...props }) {
       {children}
     </Button>);
 
+}
+
+// Live demo of the Phase 8 validation framework: useFormValidation with inline
+// field errors, a grouped summary, focus-on-first-invalid, success rings, and an
+// optional real-time toggle. Submitting a valid form just resets it.
+const VALIDATION_DEMO_SCHEMA = {
+  name: requiredRule("Name is required"),
+  email: [requiredRule("Email is required"), emailRule()],
+  password: [requiredRule("Password is required"), minLength(8, "Use at least 8 characters")],
+};
+
+function FormValidationDemo() {
+  const [realtime, setRealtime] = useState(false);
+  const form = useFormValidation({
+    initialValues: { name: "", email: "", password: "" },
+    schema: VALIDATION_DEMO_SCHEMA,
+    fieldOrder: ["name", "email", "password"],
+    validateOnChange: realtime,
+    onSubmit: (values, { reset }) => reset(),
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
+        <input type="checkbox" checked={realtime} onChange={(event) => setRealtime(event.target.checked)} />
+        Real-time validation while editing
+      </label>
+      {form.summaryErrors.length > 0 && (
+        <FormErrorSummary errors={form.summaryErrors} onFocusField={form.focusField} />
+      )}
+      <form onSubmit={form.handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <InputField label="Name" required error={form.errors.name} {...form.getFieldProps("name")} />
+        <InputField label="Email" type="email" required error={form.errors.email} {...form.getFieldProps("email")} />
+        <InputField label="Password" type="password" required hint="At least 8 characters." error={form.errors.password} {...form.getFieldProps("password")} />
+        <div>
+          <Button type="submit" variant="primary" busy={form.submitting}>Submit</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// Live demo of the Phase 6 button-busy pattern: useBusyAction blocks re-entrant
+// double-clicks while the (simulated) async action is in flight, and <Button busy>
+// disables + shows the inline spinner. Rapid double-clicks fire the work once.
+function BusyButtonDemo() {
+  const [save, saving] = useBusyAction(
+    () => new Promise((resolve) => setTimeout(resolve, 1400))
+  );
+  return (
+    <Button type="button" variant="primary" busy={saving} onClick={save}>
+      {saving ? "Saving…" : "Save (click me twice)"}
+    </Button>
+  );
 }
 
 function buildShowcaseOptions(count, prefix = "Option") {
@@ -1610,6 +1667,7 @@ const SHOWCASE_CATALOG = {
   "non-global-banners": { category: "Feedback & Status", scope: "non-global", terms: "banner alert notification message per-module custom" },
   "toast-notifications": { category: "Feedback & Status", scope: "global", terms: "toast notification snackbar alert proposed transient" },
   "empty-state-standard": { category: "Feedback & Status", scope: "global", terms: "empty state no data placeholder illustration pattern" },
+  "form-validation": { category: "Feedback & Status", scope: "global", terms: "form validation inline field error aria required submit focus summary useFormValidation pattern" },
   // ── Loading & Skeletons ──
   "loading-skeleton": { category: "Loading & Skeletons", scope: "global", terms: "loading skeleton placeholder shimmer pulse block metric card" },
   "loading-states-expanded": { category: "Loading & Skeletons", scope: "global", terms: "loading state spinner progress expanded pattern" },
@@ -2426,6 +2484,14 @@ function GlobalUiShowcase() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
           <Button variant="primary" pill>Pill</Button>
           <Button variant="primary" disabled>Disabled</Button>
+        </div>
+        {/* Phase 6 button-busy pattern: `busy` renders the inline spinner +
+             disables + sets aria-busy; useBusyAction (BusyButtonDemo) blocks
+             re-entrant double-submits. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+          <Button variant="primary" busy>Saving…</Button>
+          <Button variant="secondary" busy>Loading</Button>
+          <BusyButtonDemo />
         </div>
       </ShowcaseSection>
       }
@@ -3354,14 +3420,38 @@ function GlobalUiShowcase() {
       }
       {isSectionVisible("empty-state-standard") &&
       <ShowcaseSection title="Empty State (standard pattern)" itemKey="empty-state-standard" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ padding: "24px", textAlign: "center", background: "var(--surface)", borderRadius: "var(--radius-md)", border: "1px dashed var(--primary-border)" }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-1)", marginBottom: "8px" }}>Empty</div>
-          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)", marginBottom: "4px" }}>No results yet</div>
-          <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "10px" }}>Try adjusting your filters or adding a record.</div>
-          <Button variant="primary" size="sm">Add record</Button>
+        {/* The real EmptyState primitive (src/components/ui/EmptyState.js). One
+             component for every "nothing here" surface: icon, title, description,
+             primary + secondary action, illustration area, and inline / page /
+             bare variants. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <EmptyState
+            icon="🔍"
+            title="No results yet"
+            description="Try adjusting your filters or adding a record."
+            action={<Button variant="primary" size="sm">Add record</Button>}
+            secondaryAction={<Button variant="secondary" size="sm">Clear filters</Button>}
+          />
+          <EmptyState
+            variant="page"
+            icon="📭"
+            title="Your inbox is empty"
+            description="Page-level variant — taller padding for a full-screen empty state."
+          />
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-1)", marginTop: "8px", fontStyle: "italic" }}>
-          Replaces ad-hoc empty states (VHC EmptyStateMessage, etc.) with one primitive.
+          Replaces ad-hoc empty states (VHC EmptyStateMessage, admin/users mock rows, etc.) with one primitive.
+        </div>
+      </ShowcaseSection>
+      }
+      {isSectionVisible("form-validation") &&
+      <ShowcaseSection title="Form Validation (standard pattern)" itemKey="form-validation" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        {/* The real useFormValidation hook + InputField/FieldError/FormErrorSummary
+             (Phase 8). Submit empty to see inline errors, focus-on-first-invalid,
+             and the grouped summary; toggle real-time to validate while typing. */}
+        <FormValidationDemo />
+        <div style={{ fontSize: "10px", color: "var(--text-1)", marginTop: "8px", fontStyle: "italic" }}>
+          Replaces ad-hoc alert() validation with inline, accessible field errors. See src/hooks/useFormValidation.js.
         </div>
       </ShowcaseSection>
       }

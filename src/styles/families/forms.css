@@ -1,0 +1,108 @@
+/* file location: src/styles/families/forms.css
+ *
+ * Canonical home for the Form-validation family (Frontend Feedback System,
+ * Phase 8).
+ *
+ * Components: src/components/ui/FieldError.js, FormErrorSummary.js, InputField.js
+ * Hook:       src/hooks/useFormValidation.js
+ * Showcase:   /dev/user-diagnostic#form-validation
+ *
+ * Border-ban note: invalid/valid field states are drawn with `box-shadow`
+ * rings, NOT `border`, so they stay within the five allowed border use-cases
+ * (CLAUDE.md §3.0a). Tokens only — no hard-coded colours.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Inline field error text (rendered by <FieldError>). */
+html.staff-scope .app-field-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-body-sm, 0.82rem);
+  font-weight: 500;
+  color: var(--danger-text, var(--danger));
+}
+
+/* Small "!" badge — background fill, not a border. */
+html.staff-scope .app-field-error__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Help / hint text under a field. */
+html.staff-scope .app-field-hint {
+  margin: 0;
+  font-size: var(--text-body-sm, 0.82rem);
+  color: var(--text-1);
+  opacity: 0.75;
+}
+
+/* Required-field asterisk in the label. */
+html.staff-scope .app-field-required {
+  color: var(--danger);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Field state rings — box-shadow so the border ban is respected. */
+html.staff-scope .app-input[aria-invalid="true"] {
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+html.staff-scope .app-input[aria-invalid="true"]:focus,
+html.staff-scope .app-input[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 2px var(--danger);
+  outline: none;
+}
+
+html.staff-scope .app-input[data-valid="true"] {
+  box-shadow: 0 0 0 1px var(--success-base);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Grouped validation summary (rendered by <FormErrorSummary>). */
+html.staff-scope .app-form-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-surface);
+  color: var(--danger-text, var(--danger));
+}
+
+html.staff-scope .app-form-summary__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--text-body-sm, 0.85rem);
+}
+
+html.staff-scope .app-form-summary__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+html.staff-scope .app-form-summary__link {
+  color: var(--danger-text, var(--danger));
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: var(--text-body-sm, 0.82rem);
+}
+
+html.staff-scope .app-form-summary__link:hover,
+html.staff-scope .app-form-summary__link:focus-visible {
+  text-decoration: none;
+}

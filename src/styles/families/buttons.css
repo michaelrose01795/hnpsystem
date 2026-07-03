@@ -176,6 +176,30 @@ html.staff-scope .app-btn.is-active {
   color: var(--onAccentText) !important;
 }
 
+/* ========================================================= */
+/* === Busy state — inline spinner for async actions       === */
+/* === (Frontend Feedback System, Phase 6). Rendered by     === */
+/* === <Button busy>; pair with the useBusyAction hook to   === */
+/* === block double-submits. The glyph uses `stroke`, not   === */
+/* === border, so it stays clear of the border ban.        === */
+/* ========================================================= */
+html.staff-scope .app-btn__spinner {
+  flex-shrink: 0;
+  animation: app-spin 0.6s linear infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-btn__spinner {
+    animation-duration: 1.6s;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud pink outlines on every button-family element when the
    dev overlay is in "trace" mode. Suppressed if the button category filter

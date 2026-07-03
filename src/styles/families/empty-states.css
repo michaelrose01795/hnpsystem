@@ -37,9 +37,45 @@ html.staff-scope .app-empty-state__description {
 
 html.staff-scope .app-empty-state__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   margin-top: 8px;
+}
+
+/* Copy stack — keeps title + description grouped and centred. */
+html.staff-scope .app-empty-state__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Icon — a single decorative glyph (emoji / small SVG) above the title. */
+html.staff-scope .app-empty-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--text-1);
+  opacity: 0.75;
+}
+
+/* Illustration — a larger picture/SVG for page-level states. Scales down on
+   narrow screens so the empty state stays responsive. */
+html.staff-scope .app-empty-state__illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 220px;
+  margin-bottom: 4px;
+}
+
+html.staff-scope .app-empty-state__illustration :where(img, svg) {
+  max-width: 100%;
+  height: auto;
 }
 
 html.staff-scope .app-empty-state--inline {
@@ -52,6 +88,14 @@ html.staff-scope .app-empty-state--page {
   padding: 56px 24px;
   background: var(--section-card-bg);
   border-radius: var(--section-card-radius);
+}
+
+/* Bare — no own surface. For embedding inside a card/panel/table cell that
+   already provides the background, so the empty state doesn't render a
+   surface-inside-a-surface. */
+html.staff-scope .app-empty-state--bare {
+  padding: 24px 16px;
+  background: transparent;
 }
 
 /* -------------------------------------------------------------------------- */

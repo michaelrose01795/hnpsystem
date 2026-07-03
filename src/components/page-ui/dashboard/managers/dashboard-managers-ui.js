@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/dashboard/managers/dashboard-managers-ui.js
 
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+
 export default function ManagersDashboardUi(props) {
   const {
     ContentWidth,
@@ -44,7 +46,7 @@ export default function ManagersDashboardUi(props) {
               title="Combined performance"
             >
               {loading ? (
-                <p style={{ margin: 0, color: "var(--text-1)" }}>Gathering completion statistics…</p>
+                <InlineLoading label="Gathering completion statistics" />
               ) : error ? (
                 <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>
               ) : (

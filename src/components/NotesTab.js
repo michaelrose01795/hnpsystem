@@ -33,6 +33,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import useIsMobile from "@/hooks/useIsMobile";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 /* ---- shared text styles (mirrors the Service History tab redesign) ---- */
 const eyebrowStyle = {
@@ -716,8 +717,21 @@ export default function NotesTabNew({
   };
 
   if (loading) {
+    // Skeleton rows keep the tab's shape while notes load, so there is no
+    // layout jump when the real list replaces the placeholder.
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)" }}>Loading notes...</div>
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Loading notes"
+        style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 4px" }}
+      >
+        <SkeletonKeyframes />
+        <SkeletonBlock width="42%" height="16px" />
+        <SkeletonBlock width="100%" height="52px" borderRadius="var(--radius-sm, 8px)" />
+        <SkeletonBlock width="100%" height="52px" borderRadius="var(--radius-sm, 8px)" />
+        <SkeletonBlock width="88%" height="52px" borderRadius="var(--radius-sm, 8px)" />
+      </div>
     );
   }
 
@@ -1415,7 +1429,7 @@ export default function NotesTabNew({
                           </button>
                         </div>
                         {viewersLoading && (
-                          <span style={metaStyle}>Loading viewers…</span>
+                          <InlineLoading width={110} height={12} label="Loading viewers" />
                         )}
                       </div>
                     )}

@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/dashboard/parts/dashboard-parts-ui.js
 
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+
 export default function PartsDashboardUi(props) {
   const {
     LayerSurface,
@@ -59,7 +61,7 @@ export default function PartsDashboardUi(props) {
       return <>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 16px)" }}>
         <ThemedSection title="Request snapshot" subtitle="New and pre-picks today">
-          {loading ? <p style={{ color: "var(--text-2)" }}>Loading request counts…</p> : error ? <p style={{ color: "var(--text-accent)" }}>{error}</p> : data ? <div style={{
+          {loading ? <InlineLoading label="Loading request counts" /> : error ? <p style={{ color: "var(--text-accent)" }}>{error}</p> : data ? <div style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px"
@@ -73,11 +75,11 @@ export default function PartsDashboardUi(props) {
 
         <div style={splitRowStyle}>
           <ThemedSection title="Requests trend" subtitle="Last 7 days">
-            {loading ? <p style={{ color: "var(--text-2)" }}>Loading request trends…</p> : trendData.length === 0 ? <p style={{ color: "var(--text-2)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
+            {loading ? <InlineLoading label="Loading request trends" /> : trendData.length === 0 ? <p style={{ color: "var(--text-2)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
           </ThemedSection>
 
           <ThemedSection title="Stock levels" subtitle="Lowest availability items">
-            {loading ? <p style={{ margin: 0, color: "var(--text-2)" }}>Loading stock alerts…</p> : stockAlerts.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>No low stock alerts yet.</p> : <div style={{
+            {loading ? <InlineLoading label="Loading stock alerts" /> : stockAlerts.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>No low stock alerts yet.</p> : <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "10px"
@@ -103,7 +105,7 @@ export default function PartsDashboardUi(props) {
 
         <div style={splitRowStyle}>
           <ThemedSection title="Requests by status">
-            {loading ? <p style={{ margin: 0, color: "var(--text-2)" }}>Loading request status breakdown…</p> : requestsByStatus.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>Waiting for request data.</p> : <div style={{
+            {loading ? <InlineLoading label="Loading request status breakdown" /> : requestsByStatus.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>Waiting for request data.</p> : <div style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px"
@@ -116,7 +118,7 @@ export default function PartsDashboardUi(props) {
           </ThemedSection>
 
           <ThemedSection title="Recent requests" subtitle="Most recent entries">
-            {loading ? <p style={{ margin: 0, color: "var(--text-2)" }}>Loading recent requests…</p> : <ListBlock title="Recent requests" items={recentRequests} />}
+            {loading ? <InlineLoading label="Loading recent requests" /> : <ListBlock title="Recent requests" items={recentRequests} />}
           </ThemedSection>
         </div>
       </div>

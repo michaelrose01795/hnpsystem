@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/newsfeed-ui.js
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function NewsFeedUi(props) {
   const {
@@ -72,18 +73,13 @@ export default function NewsFeedUi(props) {
               </div>)}
           </div>}
 
-        {!loading && accessibleUpdates.length === 0 && <div className="text-center py-16" style={{
-      border: "none",
-      borderRadius: "var(--radius-md)",
-      backgroundColor: "var(--surface)"
-    }}>
-            <p className="text-sm" style={{
-        color: "var(--text-1)",
-        opacity: 0.7
-      }}>
-              No updates published for your departments yet.
-            </p>
-          </div>}
+        {!loading && accessibleUpdates.length === 0 && (
+          <EmptyState
+            icon="📣"
+            title="No updates yet"
+            description="No updates have been published for your departments yet. New announcements will appear here."
+          />
+        )}
 
         <div style={{
       display: "flex",

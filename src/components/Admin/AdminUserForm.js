@@ -1,6 +1,18 @@
 // file location: src/components/Admin/AdminUserForm.js
-import React, { useState } from "react";
+// Reference implementation for the Phase 8 validation framework.
+// Uses useFormValidation for inline, accessible field errors (no HTML5-only
+// guards), a grouped summary, focus-on-first-invalid, live re-validation after
+// the first submit, a busy submit button (Phase 6), and reporting via the
+// Phase 3/5 helpers (reportSuccess / reportApiError).
+import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import InputField from "@/components/ui/InputField";
+import FieldError from "@/components/ui/FieldError";
+import FormErrorSummary from "@/components/ui/FormErrorSummary";
+import useFormValidation from "@/hooks/useFormValidation";
+import { required, email as emailRule, phone as phoneRule } from "@/lib/validation/rules";
+import { reportSuccess, reportApiError } from "@/lib/notifications/report";
 import { roleCategories } from "@/config/users";
 
 const roles = Array.from(
@@ -19,63 +31,61 @@ const defaultForm = {
   phone: "",
 };
 
-const MOCK_USER_PLACEHOLDERS = {
-  firstName: "Amelia",
-  lastName: "Hart",
-  email: "amelia.hart@example.test",
-  phone: "01732 000 301",
+// Configurable rules (module scope → stable identity for the hook).
+const USER_SCHEMA = {
+  firstName: required("First name is required"),
+  lastName: required("Last name is required"),
+  email: [required("Email is required"), emailRule()],
+  role: required("Select a role"),
+  phone: phoneRule(), // optional — format-checked only when provided
 };
+
+const FIELD_ORDER = ["firstName", "lastName", "email", "role", "phone"];
 
 export default function AdminUserForm({
   onCreated,
   parentSectionKey = "admin-users-page-stack",
   sectionKey = "admin-users-create-user-card",
 }) {
-  const [form, setForm] = useState(defaultForm);
-  const [message, setMessage] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const form = useFormValidation({
+    initialValues: defaultForm,
+    schema: USER_SCHEMA,
+    fieldOrder: FIELD_ORDER,
+    onSubmit: async (values, { setFieldError, reset }) => {
+      try {
+        const response = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: values.firstName,
+            lastName: values.lastName,
+            email: values.email,
+            role: values.role,
+            phone: values.phone,
+          }),
+        });
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          // Prefer an inline, field-level server error where we can attribute it.
+          if (response.status === 409 || /email/i.test(payload?.message || "")) {
+            setFieldError("email", payload?.message || "That email is already in use.");
+            return;
+          }
+          const err = new Error(payload?.message || "Failed to create user");
+          err.status = response.status;
+          throw err;
+        }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setMessage(null);
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          role: form.role,
-          phone: form.phone,
-        }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Failed to create user");
+        reportSuccess(`Created ${payload.data.firstName} ${payload.data.lastName}.`);
+        reset();
+        onCreated?.(payload.data);
+      } catch (err) {
+        // Phase 5 friendly-key mapping; raw message stays in devInfo only.
+        reportApiError(err, { endpoint: "/api/admin/users", action: "admin.createUser" });
       }
-
-      setMessage({ type: "success", text: `Created ${payload.data.firstName} ${payload.data.lastName}` });
-      setForm(defaultForm);
-      onCreated?.(payload.data);
-    } catch (err) {
-      setMessage({ type: "error", text: err.message || "Unable to create user" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleReset = () => {
-    setForm(defaultForm);
-    setMessage(null);
-  };
+    },
+  });
 
   return (
     <LayerTheme
@@ -94,25 +104,47 @@ export default function AdminUserForm({
         </p>
       </div>
 
+      {form.summaryErrors.length > 0 && (
+        <FormErrorSummary errors={form.summaryErrors} onFocusField={form.focusField} />
+      )}
+
       <form
-        onSubmit={handleSubmit}
+        onSubmit={form.handleSubmit}
+        noValidate
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "var(--layout-card-gap)",
         }}
       >
-        <Field label="First name">
-          <input className="app-input" name="firstName" type="text" value={form.firstName} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.firstName} required />
-        </Field>
-        <Field label="Last name">
-          <input className="app-input" name="lastName" type="text" value={form.lastName} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.lastName} required />
-        </Field>
-        <Field label="Email">
-          <input className="app-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.email} required />
-        </Field>
-        <Field label="Department">
-          <select className="app-input" name="department" value={form.department} onChange={handleChange}>
+        <InputField
+          label="First name"
+          type="text"
+          required
+          placeholder="Amelia"
+          error={form.errors.firstName}
+          {...form.getFieldProps("firstName")}
+        />
+        <InputField
+          label="Last name"
+          type="text"
+          required
+          placeholder="Hart"
+          error={form.errors.lastName}
+          {...form.getFieldProps("lastName")}
+        />
+        <InputField
+          label="Email"
+          type="email"
+          required
+          placeholder="amelia.hart@example.test"
+          error={form.errors.email}
+          {...form.getFieldProps("email")}
+        />
+
+        <label style={labelStyle}>
+          <span>Department</span>
+          <select className="app-input" {...form.getFieldProps("department")}>
             <option value="">Select department (optional)</option>
             {departments.map((dept) => (
               <option key={dept} value={dept}>
@@ -120,55 +152,42 @@ export default function AdminUserForm({
               </option>
             ))}
           </select>
-        </Field>
-        <Field label="Role">
-          <select className="app-input" name="role" value={form.role} onChange={handleChange}>
+        </label>
+
+        <label style={labelStyle}>
+          <span>
+            Role
+            <span className="app-field-required" aria-hidden="true">{" *"}</span>
+          </span>
+          <select className="app-input" {...form.getFieldProps("role")}>
             {roles.map((role) => (
               <option key={role.value} value={role.value}>
                 {role.label}
               </option>
             ))}
           </select>
-        </Field>
-        <Field label="Phone">
-          <input
-            className="app-input"
-            name="phone"
-            type="tel"
-            value={form.phone || ""}
-            onChange={handleChange}
-            placeholder={MOCK_USER_PLACEHOLDERS.phone}
-          />
-        </Field>
+          <FieldError id="field-role-error">{form.errors.role}</FieldError>
+        </label>
+
+        <InputField
+          label="Phone"
+          type="tel"
+          placeholder="01732 000 301"
+          hint="Optional — UK format."
+          error={form.errors.phone}
+          {...form.getFieldProps("phone")}
+        />
 
         <div style={{ gridColumn: "1 / -1", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button type="submit" className="app-btn app-btn--primary">
-            {submitting ? "Creating..." : "Create user"}
-          </button>
-          <button type="button" onClick={handleReset} className="app-btn app-btn--secondary">
+          <Button type="submit" variant="primary" busy={form.submitting}>
+            {form.submitting ? "Creating…" : "Create user"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => form.reset()}>
             Reset form
-          </button>
+          </Button>
         </div>
       </form>
-
-      {message && (
-        <div
-          className={`app-status-message ${message.type === "error" ? "app-status-message--danger" : "app-status-message--success"}`}
-          style={{ margin: 0 }}
-        >
-          {message.text}
-        </div>
-      )}
     </LayerTheme>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label style={labelStyle}>
-      <span>{label}</span>
-      {children}
-    </label>
   );
 }
 

@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/job-cards/view/job-cards-view-ui.js
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function ViewJobCardsUi(props) {
   const {
@@ -235,11 +236,8 @@ export default function ViewJobCardsUi(props) {
               color: "var(--text-2)"
             }}>
                   Loading orders...
-                </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
-              textAlign: "center",
-              color: "var(--text-2)"
-            }}>
-                  {emptyStateMessage}
+                </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
+                  <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
                 </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
