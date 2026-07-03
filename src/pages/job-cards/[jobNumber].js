@@ -6256,13 +6256,13 @@ function CustomerRequestsTab({
                 <tr><td colSpan={5} style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>No requests yet.</td></tr>}
               </tbody>
             </table>
-            <div style={{ marginTop: "12px" }}>
+            <div style={{ marginTop: "12px", paddingInline: "var(--layout-card-gap)" }}>
               <button type="button" className="app-btn app-btn--primary" onClick={handleAddRequest}>Add Request</button>
             </div>
 
             {editableAuthorisedRows.length > 0 &&
             <div style={{ marginTop: "18px" }}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-dark)", marginBottom: "10px" }}>Authorised VHC</div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-dark)", marginBottom: "10px", paddingInline: "var(--layout-card-gap)" }}>Authorised VHC</div>
               <table className="app-data-table app-data-table--rounded">
                 <thead>
                   <tr><th>Item</th><th style={{ width: "80px" }}>Hours</th><th style={{ width: "150px" }}>Billed To</th></tr>
@@ -6304,7 +6304,7 @@ function CustomerRequestsTab({
                     };
                     setRequests(updated);
                   }}
-                  inputStyle={{ width: "100%", padding: "8px 10px", border: "none", borderBottom: "var(--input-ring)", borderRadius: "0", fontSize: "14px", color: "var(--text-1)", backgroundColor: "transparent" }} />
+                  inputClassName="app-input" />
               </div>
               <div style={requestDetailsGridStyle}>
                 <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Labour Time (h)</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].time || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "time", e.target.value)} onBlur={() => persistPresetHoursFromRow(requests[selectedEditIndex])} className="app-input" /></div>
@@ -7847,20 +7847,6 @@ function WriteUpWorkspace({
     return files;
   }, [jobData?.files, jobData?.job_files, jobData?.documents]);
 
-  // Detail-panel textarea style — borderless surface field per the Border/Layer law.
-  const detailTextareaStyle = {
-    width: "100%",
-    minHeight: "72px",
-    padding: "10px 12px",
-    borderRadius: "var(--radius-sm)",
-    border: "none",
-    backgroundColor: "var(--theme)",
-    color: "var(--text-1)",
-    fontSize: "14px",
-    fontFamily: "inherit",
-    resize: "vertical"
-  };
-
   return (
     <div>
       {editing &&
@@ -7958,13 +7944,13 @@ function WriteUpWorkspace({
                 <tr><td colSpan={5} style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>No requests yet.</td></tr>}
               </tbody>
             </table>
-            <div style={{ marginTop: "12px" }}>
+            <div style={{ marginTop: "12px", paddingInline: "var(--layout-card-gap)" }}>
               <button type="button" className="app-btn app-btn--primary" onClick={handleAddRequest}>Add Request</button>
             </div>
 
             {editableAuthorisedRows.length > 0 &&
             <div style={{ marginTop: "18px" }}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-dark)", marginBottom: "10px" }}>Authorised VHC</div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-dark)", marginBottom: "10px", paddingInline: "var(--layout-card-gap)" }}>Authorised VHC</div>
               <table className="app-data-table app-data-table--rounded">
                 <thead>
                   <tr><th>Item</th><th style={{ width: "80px" }}>Hours</th><th style={{ width: "150px" }}>Billed To</th></tr>
@@ -8006,7 +7992,7 @@ function WriteUpWorkspace({
                     };
                     setRequests(updated);
                   }}
-                  inputStyle={{ width: "100%", padding: "8px 10px", border: "none", borderBottom: "var(--input-ring)", borderRadius: "0", fontSize: "14px", color: "var(--text-1)", backgroundColor: "transparent" }} />
+                  inputClassName="app-input" />
               </div>
               <div style={requestDetailsGridStyle}>
                 <div style={requestDetailsFieldStyle}><label style={requestDetailsLabelStyle}>Labour Time (h)</label><input type="number" min="0" step="0.01" value={requests[selectedEditIndex].time || ""} onChange={(e) => handleUpdateRequest(selectedEditIndex, "time", e.target.value)} onBlur={() => persistPresetHoursFromRow(requests[selectedEditIndex])} className="app-input" /></div>
@@ -8091,7 +8077,7 @@ function WriteUpWorkspace({
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Fault Reported</label>
                 <textarea
-                  style={detailTextareaStyle}
+                  className="app-input app-input--textarea"
                   value={detailDraft.faultReported}
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, faultReported: e.target.value }))}
@@ -8101,7 +8087,7 @@ function WriteUpWorkspace({
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Diagnosis</label>
                 <textarea
-                  style={detailTextareaStyle}
+                  className="app-input app-input--textarea"
                   value={detailDraft.diagnosis}
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, diagnosis: e.target.value }))}
@@ -8111,7 +8097,7 @@ function WriteUpWorkspace({
               <div style={requestDetailsFieldStyle}>
                 <label style={requestDetailsLabelStyle}>Rectification</label>
                 <textarea
-                  style={detailTextareaStyle}
+                  className="app-input app-input--textarea"
                   value={detailDraft.rectification}
                   disabled={!canEdit || !selectedRow.requestId}
                   onChange={(e) => setDetailDraft((prev) => ({ ...prev, rectification: e.target.value }))}

@@ -84,6 +84,64 @@ const statTileStyle = {
   minHeight: "44px",
 };
 
+const toIntegerOrNull = (value) => {
+  const numericValue = Number(value);
+  return Number.isInteger(numericValue) ? numericValue : null;
+};
+
+const formatRequestStatusLabel = (status) => {
+  const rawStatus = String(status || "").trim();
+  if (!rawStatus) return "Unknown";
+  return rawStatus
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const getRequestText = (request) =>
+  String(request?.text ?? request?.description ?? request?.requestText ?? request ?? "").trim();
+
+const buildRequestOptions = (jobData) => {
+  const structuredRequests = Array.isArray(jobData?.jobRequests)
+    ? jobData.jobRequests
+    : Array.isArray(jobData?.job_requests)
+    ? jobData.job_requests
+    : [];
+
+  if (structuredRequests.length) {
+    return structuredRequests
+      .map((request, index) => {
+        const sortOrder = toIntegerOrNull(request?.sortOrder ?? request?.sort_order) ?? index + 1;
+        return {
+          requestIndex: sortOrder,
+          requestId: request?.requestId ?? request?.request_id ?? null,
+          text: getRequestText(request),
+          hours: request?.hours ?? request?.time ?? null,
+          jobType: request?.jobType ?? request?.job_type ?? request?.paymentType ?? "",
+          status: request?.status ?? "",
+          source: request?.requestSource ?? request?.request_source ?? "",
+          noteText: request?.noteText ?? request?.note_text ?? "",
+          createdAt: request?.createdAt ?? request?.created_at ?? null,
+          updatedAt: request?.updatedAt ?? request?.updated_at ?? null,
+        };
+      })
+      .sort((a, b) => a.requestIndex - b.requestIndex);
+  }
+
+  return normalizeRequests(jobData?.requests).map((request, index) => ({
+    requestIndex: index + 1,
+    requestId: request?.requestId ?? request?.request_id ?? null,
+    text: getRequestText(request),
+    hours: request?.hours ?? request?.time ?? null,
+    jobType: request?.jobType ?? request?.paymentType ?? "",
+    status: request?.status ?? "",
+    source: request?.requestSource ?? "",
+    noteText: request?.noteText ?? "",
+    createdAt: request?.createdAt ?? null,
+    updatedAt: request?.updatedAt ?? null,
+  }));
+};
+
 /* ---- filter definitions ---- */
 const FILTERS = [
   { id: "all", label: "All" },
@@ -161,7 +219,14 @@ export default function NotesTabNew({
   const [showAddViewer, setShowAddViewer] = useState(false);
   const [viewerToAdd, setViewerToAdd] = useState("");
 
-  const requestOptions = useMemo(() => normalizeRequests(jobData?.requests), [jobData?.requests]);
+  const requestOptions = useMemo(() => buildRequestOptions(jobData), [jobData]);
+  const requestOptionsByIndex = useMemo(() => {
+    const byIndex = new Map();
+    requestOptions.forEach((request) => {
+      byIndex.set(request.requestIndex, request);
+    });
+    return byIndex;
+  }, [requestOptions]);
   const authorisedItems = useMemo(
     () =>
       (jobData?.vhcChecks || []).filter(
@@ -470,36 +535,44 @@ export default function NotesTabNew({
     return parts.join(" • ");
   };
 
+  const normalizeLinkIds = (values) =>
+    (Array.isArray(values) ? values : [])
+      .map((value) => toIntegerOrNull(value))
+      .filter((value) => value !== null);
+
   const handleLinkNote = async (note, link) => {
     if (!note?.noteId) return;
-    const currentRequestLinks = Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices : [];
-    const currentVhcLinks = Array.isArray(note.linkedVhcIds) ? note.linkedVhcIds : [];
-    const currentPartLinks = Array.isArray(note.linkedPartIds) ? note.linkedPartIds : [];
+    const currentRequestLinks = normalizeLinkIds(note.linkedRequestIndices);
+    const currentVhcLinks = normalizeLinkIds(note.linkedVhcIds);
+    const currentPartLinks = normalizeLinkIds(note.linkedPartIds);
     let nextRequestLinks = currentRequestLinks;
     let nextVhcLinks = currentVhcLinks;
     let nextPartLinks = currentPartLinks;
+    const linkedRequestIndex = toIntegerOrNull(link?.linkedRequestIndex);
+    const linkedVhcId = toIntegerOrNull(link?.linkedVhcId);
+    const linkedPartId = toIntegerOrNull(link?.linkedPartId);
 
     if (link?.clear) {
       nextRequestLinks = [];
       nextVhcLinks = [];
       nextPartLinks = [];
-    } else if (Number.isInteger(link?.linkedRequestIndex)) {
-      if (currentRequestLinks.includes(link.linkedRequestIndex)) {
-        nextRequestLinks = currentRequestLinks.filter((value) => value !== link.linkedRequestIndex);
+    } else if (linkedRequestIndex !== null) {
+      if (currentRequestLinks.includes(linkedRequestIndex)) {
+        nextRequestLinks = currentRequestLinks.filter((value) => value !== linkedRequestIndex);
       } else {
-        nextRequestLinks = [...currentRequestLinks, link.linkedRequestIndex].sort((a, b) => a - b);
+        nextRequestLinks = [...currentRequestLinks, linkedRequestIndex].sort((a, b) => a - b);
       }
-    } else if (Number.isInteger(link?.linkedVhcId)) {
-      if (currentVhcLinks.includes(link.linkedVhcId)) {
-        nextVhcLinks = currentVhcLinks.filter((value) => value !== link.linkedVhcId);
+    } else if (linkedVhcId !== null) {
+      if (currentVhcLinks.includes(linkedVhcId)) {
+        nextVhcLinks = currentVhcLinks.filter((value) => value !== linkedVhcId);
       } else {
-        nextVhcLinks = [...currentVhcLinks, link.linkedVhcId];
+        nextVhcLinks = [...currentVhcLinks, linkedVhcId];
       }
-    } else if (Number.isInteger(link?.linkedPartId)) {
-      if (currentPartLinks.includes(link.linkedPartId)) {
-        nextPartLinks = currentPartLinks.filter((value) => value !== link.linkedPartId);
+    } else if (linkedPartId !== null) {
+      if (currentPartLinks.includes(linkedPartId)) {
+        nextPartLinks = currentPartLinks.filter((value) => value !== linkedPartId);
       } else {
-        nextPartLinks = [...currentPartLinks, link.linkedPartId];
+        nextPartLinks = [...currentPartLinks, linkedPartId];
       }
     }
     try {
@@ -526,12 +599,11 @@ export default function NotesTabNew({
     }
   };
 
-  const isLinkedToRequest = (note, index) =>
-    Array.isArray(note?.linkedRequestIndices) && note.linkedRequestIndices.includes(index + 1);
+  const isLinkedToRequest = (note, requestIndex) => normalizeLinkIds(note?.linkedRequestIndices).includes(requestIndex);
   const isLinkedToAuthorised = (note, item) =>
-    Array.isArray(note?.linkedVhcIds) && note.linkedVhcIds.includes(item?.vhc_id ?? item?.id ?? null);
+    normalizeLinkIds(note?.linkedVhcIds).includes(toIntegerOrNull(item?.vhc_id ?? item?.id));
   const isLinkedToPart = (note, partId) =>
-    Array.isArray(note?.linkedPartIds) && note.linkedPartIds.includes(partId);
+    normalizeLinkIds(note?.linkedPartIds).includes(toIntegerOrNull(partId));
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "Unknown";
@@ -551,23 +623,28 @@ export default function NotesTabNew({
 
   // Derive a presentational title + category for a note from its linkage.
   const deriveNoteMeta = (note) => {
-    const reqIdx = Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices : [];
-    const vhcIds = Array.isArray(note.linkedVhcIds) ? note.linkedVhcIds : [];
-    const partIds = Array.isArray(note.linkedPartIds) ? note.linkedPartIds : [];
+    const reqIdx = normalizeLinkIds(note.linkedRequestIndices);
+    const vhcIds = normalizeLinkIds(note.linkedVhcIds);
+    const partIds = normalizeLinkIds(note.linkedPartIds);
     if (reqIdx.length) {
       const n = reqIdx[0];
-      const req = requestOptions[n - 1];
-      const reqText = req?.text || req || "";
-      return { title: `Request ${n}`, category: "Customer Request", requestText: reqText };
+      const req = requestOptionsByIndex.get(n) || requestOptions.find((request) => request.requestIndex === n);
+      const reqText = req?.text || "";
+      return {
+        title: `Request ${n}`,
+        category: "Customer Request",
+        request: req || null,
+        requestText: reqText,
+      };
     }
     if (vhcIds.length) {
-      const item = authorisedItems.find((i) => (i.vhc_id ?? i.id) === vhcIds[0]);
-      return { title: item?.issue_title || item?.section || "VHC item", category: "VHC Item", requestText: "" };
+      const item = authorisedItems.find((i) => toIntegerOrNull(i.vhc_id ?? i.id) === vhcIds[0]);
+      return { title: item?.issue_title || item?.section || "VHC item", category: "VHC Item", request: null, requestText: "" };
     }
     if (partIds.length) {
-      return { title: "Linked part", category: "Part", requestText: "" };
+      return { title: "Linked part", category: "Part", request: null, requestText: "" };
     }
-    return { title: "General note", category: "General", requestText: "" };
+    return { title: "General note", category: "General", request: null, requestText: "" };
   };
 
   /* ---- derived collections (filter + search + pin ordering) ---- */
@@ -590,9 +667,9 @@ export default function NotesTabNew({
     return notes
       .filter((note) => matchesFilter(note) && matchesSearch(note))
       .sort((a, b) => (pinnedIds.has(b.noteId) ? 1 : 0) - (pinnedIds.has(a.noteId) ? 1 : 0));
-    // deriveNoteMeta depends on requestOptions/authorisedItems via closure
+    // deriveNoteMeta depends on requestOptions/requestOptionsByIndex/authorisedItems via closure
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, activeFilter, searchQuery, pinnedIds, requestOptions, authorisedItems]);
+  }, [notes, activeFilter, searchQuery, pinnedIds, requestOptions, requestOptionsByIndex, authorisedItems]);
 
   // Keep the detail-panel selection valid as the filtered list changes.
   useEffect(() => {
@@ -1124,6 +1201,85 @@ export default function NotesTabNew({
                     </div>
                   </LayerTheme>
 
+                  {/* Linked request data */}
+                  {meta.category === "Customer Request" && (
+                    <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                        <span style={fieldLabelStyle}>Linked request</span>
+                        <span className="app-badge app-badge--control">{meta.title}</span>
+                      </div>
+                      {meta.request ? (
+                        <>
+                          <div
+                            style={{
+                              fontSize: "0.9rem",
+                              fontWeight: 700,
+                              color: "var(--text-1)",
+                              lineHeight: 1.5,
+                              whiteSpace: "pre-wrap",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {meta.request.text || "No request description saved."}
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gap: "var(--space-3)",
+                              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                            }}
+                          >
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Status</span>
+                              <span className="app-badge app-badge--control">{formatRequestStatusLabel(meta.request.status)}</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Type</span>
+                              <span style={{ fontSize: "0.85rem", color: "var(--text-1)", overflowWrap: "anywhere" }}>
+                                {meta.request.jobType || "Unknown"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Labour time</span>
+                              <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                                {meta.request.hours !== null && meta.request.hours !== undefined && meta.request.hours !== ""
+                                  ? `${meta.request.hours}h`
+                                  : "Unknown"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Request created</span>
+                              <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                                {meta.request.createdAt ? formatDateTime(meta.request.createdAt) : "Unknown"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Request updated</span>
+                              <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+                                {meta.request.updatedAt ? formatDateTime(meta.request.updatedAt) : "Unknown"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                              <span style={fieldLabelStyle}>Linked by</span>
+                              <span style={{ fontSize: "0.85rem", color: "var(--text-1)", overflowWrap: "anywhere" }}>
+                                {selectedNote.lastUpdatedBy || selectedNote.createdBy || "Unknown"}
+                              </span>
+                            </div>
+                          </div>
+                          {meta.request.noteText ? (
+                            <div style={{ fontSize: "0.82rem", color: "rgba(var(--text-1-rgb), 0.75)", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                              {meta.request.noteText}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p style={{ color: "rgba(var(--text-1-rgb), 0.6)", fontSize: "0.85rem", margin: 0 }}>
+                          This note is saved against {meta.title}, but that request is not in the current job request list.
+                        </p>
+                      )}
+                    </LayerTheme>
+                  )}
+
                   {/* Activity timeline */}
                   <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                     <span style={fieldLabelStyle}>Activity timeline</span>
@@ -1531,14 +1687,14 @@ export default function NotesTabNew({
                     <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No requests available.</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      {requestOptions.map((req, index) => {
+                      {requestOptions.map((req) => {
                         const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
-                        const isSelected = isLinkedToRequest(activeNote, index);
+                        const isSelected = isLinkedToRequest(activeNote, req.requestIndex);
                         return (
                           <button
-                            key={`request-link-${index}`}
+                            key={`request-link-${req.requestId || req.requestIndex}`}
                             type="button"
-                            onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: index + 1 })}
+                            onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: req.requestIndex })}
                             style={{
                               padding: "10px 12px",
                               borderRadius: "var(--radius-sm)",
@@ -1556,7 +1712,7 @@ export default function NotesTabNew({
                             }}
                           >
                             <span>
-                              Request {index + 1}: {req?.text || req}
+                              Request {req.requestIndex}: {req.text || "No request description saved."}
                             </span>
                             {isSelected && <span style={{ fontSize: "11px", fontWeight: 700 }}>Selected</span>}
                           </button>

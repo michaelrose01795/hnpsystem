@@ -10,6 +10,7 @@ export default function RequestPresetAutosuggestInput({
   onPresetSelect = () => {},
   placeholder = "Enter job request",
   disabled = false,
+  inputClassName = "",
   inputStyle = {},
   containerStyle = {},
   suggestionStyle = {},
@@ -182,6 +183,7 @@ export default function RequestPresetAutosuggestInput({
         }}
         placeholder={placeholder}
         disabled={disabled}
+        className={inputClassName}
         style={inputStyle}
       />
 

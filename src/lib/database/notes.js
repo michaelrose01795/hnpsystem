@@ -3,6 +3,21 @@
 // file location: src/lib/database/notes.js
 import { supabase } from "@/lib/database/supabaseClient";
 
+const toIntegerOrNull = (value) => {
+  const numericValue = Number(value);
+  return Number.isInteger(numericValue) ? numericValue : null;
+};
+
+const normalizeIntegerArray = (value, fallbackValue = null) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => toIntegerOrNull(item))
+      .filter((item) => item !== null);
+  }
+  const fallbackInteger = toIntegerOrNull(fallbackValue);
+  return fallbackInteger !== null ? [fallbackInteger] : [];
+};
+
 /* ============================================
    CREATE JOB NOTE
    ✅ Enhanced with user tracking
@@ -27,23 +42,17 @@ export const createJobNote = async (noteData) => {
         last_updated_by: noteData.user_id || null,
         note_text: noteData.note_text.trim(),
         hidden_from_customer: noteData.hidden_from_customer !== undefined ? noteData.hidden_from_customer : true, // Default: hidden
-        linked_request_index: Number.isInteger(noteData.linked_request_index)
-          ? noteData.linked_request_index
-          : null,
-        linked_vhc_id: Number.isInteger(noteData.linked_vhc_id)
-          ? noteData.linked_vhc_id
-          : null,
+        linked_request_index: toIntegerOrNull(noteData.linked_request_index),
+        linked_vhc_id: toIntegerOrNull(noteData.linked_vhc_id),
         linked_request_indices: Array.isArray(noteData.linked_request_indices)
-          ? noteData.linked_request_indices.filter((value) => Number.isInteger(value))
+          ? normalizeIntegerArray(noteData.linked_request_indices)
           : null,
         linked_vhc_ids: Array.isArray(noteData.linked_vhc_ids)
-          ? noteData.linked_vhc_ids.filter((value) => Number.isInteger(value))
+          ? normalizeIntegerArray(noteData.linked_vhc_ids)
           : null,
-        linked_part_id: Number.isInteger(noteData.linked_part_id)
-          ? noteData.linked_part_id
-          : null,
+        linked_part_id: toIntegerOrNull(noteData.linked_part_id),
         linked_part_ids: Array.isArray(noteData.linked_part_ids)
-          ? noteData.linked_part_ids.filter((value) => Number.isInteger(value))
+          ? normalizeIntegerArray(noteData.linked_part_ids)
           : null,
         created_at: new Date().toISOString()
       }])
@@ -148,24 +157,12 @@ export const getNotesByJob = async (jobId) => {
         userId: note.user_id,
         noteText: note.note_text,
         hiddenFromCustomer: note.hidden_from_customer !== null ? note.hidden_from_customer : true,
-        linkedRequestIndex: note.linked_request_index ?? null,
-        linkedVhcId: note.linked_vhc_id ?? null,
-        linkedPartId: note.linked_part_id ?? null,
-        linkedRequestIndices: Array.isArray(note.linked_request_indices)
-          ? note.linked_request_indices
-          : note.linked_request_index !== null && note.linked_request_index !== undefined
-          ? [note.linked_request_index]
-          : [],
-        linkedVhcIds: Array.isArray(note.linked_vhc_ids)
-          ? note.linked_vhc_ids
-          : note.linked_vhc_id !== null && note.linked_vhc_id !== undefined
-          ? [note.linked_vhc_id]
-          : [],
-        linkedPartIds: Array.isArray(note.linked_part_ids)
-          ? note.linked_part_ids
-          : note.linked_part_id !== null && note.linked_part_id !== undefined
-          ? [note.linked_part_id]
-          : [],
+        linkedRequestIndex: toIntegerOrNull(note.linked_request_index),
+        linkedVhcId: toIntegerOrNull(note.linked_vhc_id),
+        linkedPartId: toIntegerOrNull(note.linked_part_id),
+        linkedRequestIndices: normalizeIntegerArray(note.linked_request_indices, note.linked_request_index),
+        linkedVhcIds: normalizeIntegerArray(note.linked_vhc_ids, note.linked_vhc_id),
+        linkedPartIds: normalizeIntegerArray(note.linked_part_ids, note.linked_part_id),
         createdAt: note.created_at,
         updatedAt: note.updated_at,
         createdBy: creatorName || "Unknown",
@@ -239,12 +236,12 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
       : {
           ...(updates.noteText !== undefined && { note_text: updates.noteText.trim() }),
           ...(updates.hiddenFromCustomer !== undefined && { hidden_from_customer: updates.hiddenFromCustomer }),
-          ...(updates.linkedRequestIndex !== undefined && { linked_request_index: updates.linkedRequestIndex }),
-          ...(updates.linkedVhcId !== undefined && { linked_vhc_id: updates.linkedVhcId }),
-          ...(updates.linkedRequestIndices !== undefined && { linked_request_indices: updates.linkedRequestIndices }),
-          ...(updates.linkedVhcIds !== undefined && { linked_vhc_ids: updates.linkedVhcIds }),
-          ...(updates.linkedPartId !== undefined && { linked_part_id: updates.linkedPartId }),
-          ...(updates.linkedPartIds !== undefined && { linked_part_ids: updates.linkedPartIds })
+          ...(updates.linkedRequestIndex !== undefined && { linked_request_index: toIntegerOrNull(updates.linkedRequestIndex) }),
+          ...(updates.linkedVhcId !== undefined && { linked_vhc_id: toIntegerOrNull(updates.linkedVhcId) }),
+          ...(updates.linkedRequestIndices !== undefined && { linked_request_indices: normalizeIntegerArray(updates.linkedRequestIndices) }),
+          ...(updates.linkedVhcIds !== undefined && { linked_vhc_ids: normalizeIntegerArray(updates.linkedVhcIds) }),
+          ...(updates.linkedPartId !== undefined && { linked_part_id: toIntegerOrNull(updates.linkedPartId) }),
+          ...(updates.linkedPartIds !== undefined && { linked_part_ids: normalizeIntegerArray(updates.linkedPartIds) })
         };
 
     // ✅ Validate

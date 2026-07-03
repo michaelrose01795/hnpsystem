@@ -64,7 +64,7 @@ const parseScanPayload = (value) => {
   if (typeof value === "object") return value;
   try {
     return JSON.parse(value);
-  } catch (error) {
+  } catch {
     console.warn("Unable to parse scan payload, storing raw string.");
     return { raw: String(value) };
   }
@@ -97,41 +97,55 @@ const findExistingSupplierInvoice = async ({ supplierAccountId, invoiceNumber })
   return data || null;
 };
 
-const fetchNextGoodsInNumber = async () => {
+const isDuplicateKeyError = (error) =>
+  error?.code === "23505" || error?.message?.includes("duplicate key value");
+
+const parseGoodsInSequence = (goodsInNumber) => {
+  if (typeof goodsInNumber !== "string") return null;
+  if (!goodsInNumber.startsWith(GOODS_IN_NUMBER_PREFIX)) return null;
+
+  const numericPortion = Number.parseInt(
+    goodsInNumber.slice(GOODS_IN_NUMBER_PREFIX.length),
+    10
+  );
+
+  return Number.isFinite(numericPortion) ? numericPortion : null;
+};
+
+const formatGoodsInNumber = (sequence) =>
+  `${GOODS_IN_NUMBER_PREFIX}${String(sequence).padStart(GOODS_IN_PAD_LENGTH, "0")}`;
+
+const fetchNextGoodsInNumber = async (minimumSequence = 1) => {
   const { data, error } = await supabase
     .from("parts_goods_in")
     .select("goods_in_number")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .like("goods_in_number", `${GOODS_IN_NUMBER_PREFIX}%`)
+    .order("goods_in_number", { ascending: false })
+    .limit(25);
 
   if (error) {
     console.error("Failed to load latest goods in number:", error);
-    return `${GOODS_IN_NUMBER_PREFIX}${String(1).padStart(GOODS_IN_PAD_LENGTH, "0")}`;
+    return formatGoodsInNumber(
+      Math.max(minimumSequence, Number(String(Date.now()).slice(-GOODS_IN_PAD_LENGTH)))
+    );
   }
 
-  if (!data?.goods_in_number) {
-    return `${GOODS_IN_NUMBER_PREFIX}${String(1).padStart(GOODS_IN_PAD_LENGTH, "0")}`;
-  }
+  const highestSequence = (data || []).reduce((highest, record) => {
+    const sequence = parseGoodsInSequence(record?.goods_in_number);
+    return sequence && sequence > highest ? sequence : highest;
+  }, 0);
 
-  const numericPortion = Number.parseInt(data.goods_in_number.replace(/\D/g, ""), 10);
-  if (Number.isNaN(numericPortion)) {
-    return `${GOODS_IN_NUMBER_PREFIX}${String(Date.now()).slice(-GOODS_IN_PAD_LENGTH)}`;
-  }
-
-  return `${GOODS_IN_NUMBER_PREFIX}${String(numericPortion + 1).padStart(
-    GOODS_IN_PAD_LENGTH,
-    "0"
-  )}`;
+  return formatGoodsInNumber(Math.max(highestSequence + 1, minimumSequence));
 };
 
 const createGoodsInRecord = async (payload) => {
   let attempt = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 5;
   let lastError = null;
+  let minimumSequence = 1;
 
   while (attempt < maxAttempts) {
-    const goodsInNumber = await fetchNextGoodsInNumber();
+    const goodsInNumber = await fetchNextGoodsInNumber(minimumSequence);
     const insertPayload = {
       ...payload,
       goods_in_number: goodsInNumber,
@@ -150,7 +164,11 @@ const createGoodsInRecord = async (payload) => {
     }
 
     lastError = error;
-    if (error.code === "23505" || error.message?.includes("duplicate key value")) {
+    if (isDuplicateKeyError(error)) {
+      const failedSequence = parseGoodsInSequence(goodsInNumber);
+      if (failedSequence) {
+        minimumSequence = failedSequence + 1;
+      }
       attempt += 1;
       continue;
     }
@@ -160,7 +178,7 @@ const createGoodsInRecord = async (payload) => {
   throw lastError || new Error("Unable to create goods-in record");
 };
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   if (req.method === "GET") {
     const {
       goodsInId,
