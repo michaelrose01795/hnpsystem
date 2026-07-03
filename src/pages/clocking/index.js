@@ -8,13 +8,10 @@ import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
+import { ContentWidth, PageShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import dynamic from "next/dynamic";
 import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui"; // Extracted presentation layer.
-const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
 const MOT_ROLES = ["MOT Tester", "Tester"];
@@ -1307,9 +1304,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 }
 
 export default function ClockingPage() {
-  const [pageTab, setPageTab] = useState("overview");
-
-  return <ClockingPageUi view="section1" ClockingOverviewTab={ClockingOverviewTab} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} EfficiencyTab={EfficiencyTab} FilterToolbarRow={FilterToolbarRow} PageShell={PageShell} pageTab={pageTab} SectionShell={SectionShell} setPageTab={setPageTab} TabGroup={TabGroup} />;
+  return <ClockingPageUi view="section1" ClockingOverviewTab={ClockingOverviewTab} ContentWidth={ContentWidth} PageShell={PageShell} />;
 
 
 

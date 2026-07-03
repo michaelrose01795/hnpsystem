@@ -95,7 +95,7 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
             border: "1px solid var(--input-ring)",
           }}
         />
-        <button type="button" className="app-btn app-btn--ghost" onClick={save} disabled={busy || !name.trim()} style={{ fontSize: "0.78rem", padding: "6px 12px" }}>
+        <button type="button" className="app-btn app-btn--primary" onClick={save} disabled={busy || !name.trim()} style={{ fontSize: "0.78rem", padding: "6px 12px" }}>
           Save current filter
         </button>
       </div>

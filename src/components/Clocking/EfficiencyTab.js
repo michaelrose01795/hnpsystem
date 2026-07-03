@@ -27,6 +27,7 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/database/supabaseClient";
+import { getDisplayName } from "@/lib/users/displayName";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -92,6 +93,12 @@ const roundHours = (value) => {
 };
 
 const formatHours = (value) => roundHours(value).toFixed(2);
+// Tab labels: "First L" — first name plus the first letter of the last name.
+const formatShortName = (tech) => {
+  const first = (tech?.first_name || "").trim();
+  const lastInitial = (tech?.last_name || "").trim().charAt(0).toUpperCase();
+  return lastInitial ? `${first} ${lastInitial}` : first;
+};
 const formatFilterHeadingDate = (date) =>
   date instanceof Date && !Number.isNaN(date.getTime())
     ? date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
@@ -1073,7 +1080,7 @@ export default function EfficiencyTab({
                 { value: "overall", label: "Overall" },
                 ...visibleTechs.map((tech) => ({
                   value: String(tech.user_id),
-                  label: tech.first_name,
+                  label: formatShortName(tech),
                 })),
               ]}
             />
@@ -1385,7 +1392,7 @@ export default function EfficiencyTab({
                         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                       >
-                        <td style={{ ...tdStyle, fontWeight: 600 }}>{tech.first_name}</td>
+                        <td style={{ ...tdStyle, fontWeight: 600 }}>{getDisplayName(tech)}</td>
                         <td style={tdStyle}>{(weight * 100).toFixed(0)}%</td>
                         <td style={tdStyle}>{totals.actualHours}h</td>
                         <td style={tdStyle}>{totals.targetHours}h</td>

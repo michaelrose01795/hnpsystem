@@ -46,7 +46,7 @@ export default function ExecutiveDrilldownTab({ filter }) {
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-drilldown-card", kpi.id)} data-dev-text-preview={`${kpi.label} drill-down card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
-              <button type="button" className="app-btn app-btn--ghost" onClick={() => setExplore(kpi)} style={{ alignSelf: "flex-start", fontSize: "0.74rem", padding: "4px 10px" }}>
+              <button type="button" className="app-btn app-btn--primary" onClick={() => setExplore(kpi)} style={{ alignSelf: "flex-start", fontSize: "0.74rem", padding: "4px 10px" }}>
                 Explore records
               </button>
             </LayerSurface>

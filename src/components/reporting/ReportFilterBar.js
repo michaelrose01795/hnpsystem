@@ -70,11 +70,13 @@ const pickerStyle = {
 };
 
 // Search bar is the flexible control: it grows to fill the remaining space and
-// auto-shrinks (down to its min) so the whole toolbar stays on one line.
+// auto-shrinks (down to its min) so the whole toolbar stays on one line. Its
+// max width is capped so it stays even with the pickers and never crowds out an
+// added tab (e.g. Efficiency) — keeping the whole row on a single line.
 const searchStyle = {
   flex: "1 1 160px",
   minWidth: 140,
-  maxWidth: 720,
+  maxWidth: 320,
 };
 
 export default function ReportFilterBar({

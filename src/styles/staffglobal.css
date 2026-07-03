@@ -4769,6 +4769,18 @@ html.staff-scope .compact-calendar {
   width: fit-content;
 }
 
+/* The efficiency filter-bar controls sit alongside the period TabGroup and the
+   Primary button family, which all use the full --control-radius corner. The
+   shared `compact-picker` modifier otherwise drops them to --radius-sm, so their
+   corners read noticeably less round than the neighbouring tabs/buttons. Pin the
+   filter calendar + tech dropdown back to --control-radius so the whole filter
+   bar shares one corner shape. Placed after the compact-picker rule (equal
+   specificity) so it wins the cascade by source order. */
+html.staff-scope .calendar-api.efficiency-filter-calendar .calendar-api__control,
+html.staff-scope .dropdown-api.efficiency-tech-filter-dropdown .dropdown-api__control {
+  border-radius: var(--control-radius);
+}
+
 html.staff-scope .dropdown-api.efficiency-request-dropdown .dropdown-api__menu {
   max-height: 144px;
   overflow-y: auto;

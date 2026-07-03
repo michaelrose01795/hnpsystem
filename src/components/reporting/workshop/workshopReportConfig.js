@@ -91,4 +91,5 @@ export const WORKSHOP_TABS = [
   { value: "technician", label: "Technician Performance" },
   { value: "vhc", label: "VHC Performance" },
   { value: "utilities", label: "Reporting Utilities" },
+  { value: "efficiency", label: "Efficiency" },
 ];

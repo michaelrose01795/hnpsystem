@@ -15,6 +15,7 @@
 
 import React, { useState } from "react";
 import Head from "next/head";
+import dynamic from "next/dynamic";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { useReportFilter } from "@/hooks/reporting/useReporting";
@@ -27,6 +28,10 @@ import WorkshopTechnicianTab from "@/components/reporting/workshop/WorkshopTechn
 import WorkshopVhcTab from "@/components/reporting/workshop/WorkshopVhcTab";
 import WorkshopUtilitiesTab from "@/components/reporting/workshop/WorkshopUtilitiesTab";
 import { WORKSHOP_DEPARTMENT, WORKSHOP_TABS } from "@/components/reporting/workshop/workshopReportConfig";
+
+// Technician efficiency view — self-contained feature moved here from /clocking.
+// Loaded client-side only (matches its usage pattern on the clocking page).
+const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
 // Roles that may LAND on the page — derived from the canonical role→department
 // map (departments.js) so it stays in sync with the dimension and is never a
@@ -74,6 +79,7 @@ function WorkshopReportContent() {
       {tab === "technician" && <WorkshopTechnicianTab filter={filter} onDrilldown={openDrilldown} />}
       {tab === "vhc" && <WorkshopVhcTab filter={filter} />}
       {tab === "utilities" && <WorkshopUtilitiesTab filter={filter} onApplySavedView={applySavedFilter} />}
+      {tab === "efficiency" && <EfficiencyTab editable={false} />}
     </>
   );
 }

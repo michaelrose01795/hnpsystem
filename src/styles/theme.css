@@ -66,7 +66,10 @@
   /* Outline tokens (formerly *-border) for the four legitimate ring use-cases. */
   --input-ring: 1px solid var(--secondary-hover);
   --checkbox-ring: 2px solid var(--accent-strong);
-  --ghostbutton-ring: 1px solid var(--primary);
+  /* Softened from a full-strength primary hairline (which read as a harsh,
+     slightly aliased "glitchy" red outline) to a muted accent ring that matches
+     the rest of the ring/token family. */
+  --ghostbutton-ring: 1px solid rgba(var(--accentMainRgb), 0.35);
   --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
   /* Canonical row + in-row action button heights. Demonstrated by the
      "Table States" section in /dev/user-diagnostic. Editing these tokens
@@ -481,7 +484,8 @@
   --table-border: var(--separating-line); /* legacy alias — prefer --separating-line */
   --input-ring: 1px solid var(--secondary-hover);
   --checkbox-ring: 2px solid var(--accent-strong);
-  --ghostbutton-ring: 1px solid var(--primary);
+  /* Dark theme: same softened ring, a touch stronger for contrast on dark. */
+  --ghostbutton-ring: 1px solid rgba(var(--accentMainRgb), 0.45);
   --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
   --text-1: var(--surfaceText);
   --text-1-rgb: 248, 247, 255;

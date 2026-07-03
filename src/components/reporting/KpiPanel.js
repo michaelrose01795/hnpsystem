@@ -93,7 +93,7 @@ export default function KpiPanel({ kpi, filter, withTrend = true, withDrilldown 
         {withDrilldown && kpi.hasDrilldown && !loading && !notImplemented && (
           <button
             type="button"
-            className="app-btn app-btn--ghost"
+            className="app-btn app-btn--secondary"
             onClick={() => setOpen((o) => !o)}
             style={{ fontSize: "0.74rem", padding: "4px 10px" }}
           >
