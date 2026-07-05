@@ -19,15 +19,29 @@ import { describe, it, expect } from "vitest";
 import {
   toSidebarSections,
   getAccessibleNavPaths,
+  getActiveWorkspaceDepartment,
   getContextNav,
+  getDepartmentWorkspaceNav,
   getActiveDepartment,
   getDepartmentsForRoles,
+  getDashboardShortcutsForRoles,
+  getWorkspaceRail,
   getBreadcrumbTrail,
+  getQuickActions,
   getSearchItems,
+  getPageTabs,
+  getWorkspaceHeader,
+  getWorkspaceShortcutItems,
+  isContextNavItemActive,
+  isPageTabActive,
   resolveHome,
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
+import { getAccessibleNavPaths as getPageAccessNavPaths } from "@/lib/auth/pageAccess";
 import { sidebarSections } from "@/config/navigation";
+import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import { roleCategories } from "@/config/users";
+import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
@@ -276,6 +290,41 @@ function legacyAccessiblePaths(golden, roles) {
   return accessible;
 }
 
+function legacyFullLandablePaths(golden, roles) {
+  const roleSet = new Set((roles || []).map((r) => String(r).toLowerCase().trim()));
+  const accessible = legacyAccessiblePaths(golden, roles);
+  const matches = (allowedRoles = []) => {
+    if (!allowedRoles || allowedRoles.length === 0) return true;
+    return allowedRoles.some((role) => roleSet.has(String(role).toLowerCase()));
+  };
+
+  const legacyPartsTopbarRoles = new Set(["parts", "parts manager"]);
+  const legacyAccountsRoles = new Set(
+    (roleCategories.Sales || [])
+      .filter((role) => role.toLowerCase().includes("accounts"))
+      .map((role) => role.toLowerCase())
+  );
+  const legacyTopbarLinks = [
+    { href: "/new-job", roles: SERVICE_ACTION_ROLES },
+    { href: "/job-cards/appointments", roles: SERVICE_ACTION_ROLES },
+    { href: "/delivery-planner", roles: legacyPartsTopbarRoles },
+    { href: "/new-order", roles: legacyPartsTopbarRoles },
+    { href: "/goods-in", roles: legacyPartsTopbarRoles },
+  ];
+  const legacyAccountsLinks = [
+    { href: "/accounts", roles: legacyAccountsRoles },
+    { href: "/company-accounts", roles: legacyAccountsRoles },
+    { href: "/accounts/invoices", roles: legacyAccountsRoles },
+    { href: "/accounts/reports", roles: legacyAccountsRoles },
+  ];
+
+  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks]) {
+    if (matches(Array.from(link.roles))) accessible.add(link.href);
+  }
+
+  return accessible;
+}
+
 const REPRESENTATIVE_ROLES = [
   [],
   ["service"],
@@ -297,6 +346,31 @@ const REPRESENTATIVE_ROLES = [
   ["service", "parts"], // multi-role user
   ["SERVICE MANAGER"], // upper-case (client/ProtectedRoute convention)
 ];
+
+const ALL_CONFIGURED_ROLES = Array.from(
+  new Set([
+    ...Object.values(roleCategories).flat(),
+    ...SERVICE_ACTION_ROLES,
+    "dev",
+  ].map((role) => String(role).toLowerCase().trim()).filter(Boolean))
+).sort();
+
+const ALL_EXISTING_ROLE_COMBINATIONS = Array.from(
+  new Map(
+    [
+      [],
+      ...ALL_CONFIGURED_ROLES.map((role) => [role]),
+      ...Object.values(roleCategories).map((roles) =>
+        roles.map((role) => String(role).toLowerCase().trim()).filter(Boolean)
+      ),
+      ...REPRESENTATIVE_ROLES,
+      ["service", "parts"],
+      ["accounts", "accounts manager"],
+      ["admin manager", "owner", "general manager"],
+      ["SERVICE MANAGER"],
+    ].map((roles) => [roles.join("|"), roles])
+  ).values()
+);
 
 describe("workspace manifest — byte-identical sidebar reproduction", () => {
   it("toSidebarSections() deep-equals the original inline sidebarSections", () => {
@@ -320,11 +394,12 @@ describe("workspace manifest — byte-identical sidebar reproduction", () => {
 
 describe("workspace manifest — permission parity (nav == access)", () => {
   const golden = buildGoldenSidebarSections();
-  for (const roles of REPRESENTATIVE_ROLES) {
-    it(`accessible-path set is identical for roles: [${roles.join(", ") || "none"}]`, () => {
-      const legacy = legacyAccessiblePaths(golden, roles);
+  for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+    it(`landable-path set is identical for roles: [${roles.join(", ") || "none"}]`, () => {
+      const legacy = legacyFullLandablePaths(golden, roles);
       const manifest = getAccessibleNavPaths(roles);
       expect([...manifest].sort()).toEqual([...legacy].sort());
+      expect([...getPageAccessNavPaths(roles)].sort()).toEqual([...legacy].sort());
     });
   }
 
@@ -410,10 +485,161 @@ describe("workspace manifest — department-first selectors", () => {
     expect(hrefs).toContain("/deliveries");
     expect(hrefs).not.toContain("/valet"); // belongs to valeting, not visible
   });
+
+  it("getSearchItems includes workspace-only accounts links only for accounts roles", () => {
+    const accountsItems = getSearchItems(["accounts manager"]);
+    const accountsHrefs = accountsItems.map((item) => item.href);
+    expect(accountsHrefs).toContain("/company-accounts");
+    expect(accountsHrefs).toContain("/accounts/invoices");
+    expect(accountsHrefs).toContain("/accounts/reports");
+
+    const serviceItems = getSearchItems(["service"]);
+    const serviceHrefs = serviceItems.map((item) => item.href);
+    expect(serviceHrefs).not.toContain("/company-accounts");
+    expect(serviceHrefs).not.toContain("/accounts/invoices");
+    expect(serviceHrefs).not.toContain("/accounts/reports");
+  });
+
+  it("dashboard shortcut facade is derived from the workspace manifest", () => {
+    const allDashboardShortcuts = getDashboardShortcutsForRoles([
+      "service",
+      "service manager",
+      "workshop manager",
+      "techs",
+      "technician",
+      "mobile technician",
+      "parts",
+      "parts manager",
+      "mot tester",
+      "valet service",
+      "painters",
+      "accounts",
+      "accounts manager",
+      "admin",
+      "admin manager",
+      "general manager",
+      "owner",
+    ]);
+    expect(departmentDashboardShortcuts).toEqual(allDashboardShortcuts);
+    expect(getDashboardShortcutsForRoles(["parts"]).map((item) => item.href)).toContain("/dashboard/parts");
+    expect(getDashboardShortcutsForRoles(["parts"]).map((item) => item.href)).not.toContain("/dashboard/service");
+  });
+
+  it("getQuickActions filters topbar actions by role and active workspace", () => {
+    expect(getQuickActions(["service"], "service").map((item) => item.href)).toEqual([
+      "/new-job",
+      "/job-cards/appointments",
+    ]);
+    expect(getQuickActions(["parts manager"], "parts").map((item) => item.href)).toEqual([
+      "/delivery-planner",
+      "/new-order",
+      "/goods-in",
+    ]);
+    expect(getQuickActions(["service"], "parts")).toEqual([]);
+  });
+
+  it("getWorkspaceRail exposes department-first labels for visible workspaces", () => {
+    const serviceRail = getWorkspaceRail(["service"]).map((d) => d.label);
+    expect(serviceRail).toContain("Reception");
+    expect(serviceRail).not.toContain("Parts");
+
+    const adminRail = getWorkspaceRail(["admin manager"]).map((d) => d.label);
+    expect(adminRail).toContain("Admin");
+  });
+
+  it("getDepartmentWorkspaceNav includes workspace-only accounts links without changing classic sidebar", () => {
+    const accountsNav = getDepartmentWorkspaceNav("accounts", ["accounts manager"]);
+    const hrefs = accountsNav.items.map((item) => item.href);
+    expect(hrefs).toContain("/accounts");
+    expect(hrefs).toContain("/company-accounts");
+    expect(hrefs).toContain("/accounts/invoices");
+    expect(hrefs).toContain("/accounts/reports");
+    expect(toSidebarSections().some((section) =>
+      (section.items || []).some((item) => item.href === "/company-accounts")
+    )).toBe(false);
+  });
+
+  it("getDepartmentWorkspaceNav groups context sections while preserving flat items", () => {
+    const workshopNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
+    expect(workshopNav.groups.map((group) => group.label)).toContain("Workspace");
+    expect(workshopNav.groups.flatMap((group) => group.items).map((item) => item.href)).toEqual(
+      workshopNav.items.map((item) => item.href)
+    );
+    expect(workshopNav.groups.some((group) => group.collapsible)).toBe(true);
+  });
+
+  it("getActiveWorkspaceDepartment resolves shared routes through role-visible workspaces", () => {
+    expect(getActiveWorkspaceDepartment("/jobs", ["service"])).toBe("service");
+    expect(getActiveWorkspaceDepartment("/jobs", ["parts manager"])).toBe("parts");
+    expect(getActiveWorkspaceDepartment("/jobs", ["admin manager"])).toBe("management");
+  });
+
+  it("context nav active state matches exact, child routes, and pending hrefs", () => {
+    const item = { href: "/clocking", label: "Clocking" };
+    expect(isContextNavItemActive(item, "/clocking")).toBe(true);
+    expect(isContextNavItemActive(item, "/clocking/a-tech")).toBe(true);
+    expect(isContextNavItemActive(item, "/jobs")).toBe(false);
+    expect(isContextNavItemActive(item, "/jobs", "/clocking")).toBe(true);
+    expect(isContextNavItemActive(item, "/clocking", "/jobs")).toBe(false);
+  });
+
+  it("getPageTabs returns HR module tabs and preserves User Admin exact active matching", () => {
+    const tabs = getPageTabs("/hr/employees", [], { groupKey: "hr-modules" });
+    expect(tabs.ariaLabel).toBe("HR modules");
+    expect(tabs.items.map((tab) => tab.href)).toContain("/admin/users");
+    expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/hr/employees"), "/hr/employees/123")).toBe(true);
+    expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/admin/users"), "/admin/users/create")).toBe(false);
+  });
+
+  it("getPageTabs returns workshop navigation and quick-action tab groups", () => {
+    const tabs = getPageTabs("/clocking", [], { groupKey: "workshop-navigation" });
+    const quickActions = getPageTabs("/new-job", [], { groupKey: "workshop-quick-actions" });
+    expect(tabs.items.map((tab) => tab.href)).toEqual([
+      "/workshop",
+      "/nextjobs",
+      "/jobs",
+      "/consumables-tracker",
+      "/clocking",
+    ]);
+    expect(quickActions.items.map((tab) => tab.href)).toEqual([
+      "/new-job",
+      "/job-cards/appointments",
+      "/appointments",
+    ]);
+    expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/clocking"), "/clocking/a-tech")).toBe(true);
+  });
+
+  it("getPageTabs role-filters Parts manager tab without changing base parts tabs", () => {
+    const partsTabs = getPageTabs("/goods-in", ["parts"], { groupKey: "parts-workspace" });
+    const managerTabs = getPageTabs("/goods-in", ["parts manager"], { groupKey: "parts-workspace" });
+    expect(partsTabs.items.map((tab) => tab.href)).toEqual([
+      "/goods-in",
+      "/deliveries",
+      "/delivery-planner",
+    ]);
+    expect(managerTabs.items.map((tab) => tab.href)).toEqual([
+      "/goods-in",
+      "/deliveries",
+      "/delivery-planner",
+      "/parts-manager",
+    ]);
+    expect(isPageTabActive(managerTabs.items.find((tab) => tab.href === "/parts-manager"), "/parts-manager")).toBe(true);
+  });
+
+  it("getWorkspaceHeader and shortcut selectors are manifest-derived", () => {
+    const header = getWorkspaceHeader("/deliveries", ["parts"]);
+    expect(header.label).toBe("Parts");
+    expect(header.breadcrumbs.map((crumb) => crumb.label)).toEqual(["Parts", "Deliveries"]);
+    expect(header.quickActions.map((action) => action.href)).toContain("/new-order");
+
+    const shortcuts = getWorkspaceShortcutItems(["parts"]);
+    expect(shortcuts.map((item) => item.href)).toContain("/deliveries");
+    expect(shortcuts.map((item) => item.href)).toContain("/new-order");
+  });
 });
 
 describe("workspace manifest — feature flag", () => {
-  it("workspace_nav_enabled is OFF by default (Phase 0 is invisible)", () => {
-    expect(isWorkspaceNavEnabled()).toBe(false);
+  it("workspace_nav_enabled is ON by default and remains env-roll-backable", () => {
+    expect(isWorkspaceNavEnabled()).toBe(true);
   });
 });

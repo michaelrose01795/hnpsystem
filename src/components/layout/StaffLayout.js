@@ -22,11 +22,18 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
 import StaffTopbar from "@/components/layout/StaffTopbar";
+import WorkspaceHeader from "@/components/layout/WorkspaceHeader";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
+import {
+  getActiveWorkspaceDepartment,
+  getQuickActions,
+  getSearchItems,
+  isWorkspaceNavEnabled,
+} from "@/config/workspace/manifest";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
@@ -126,6 +133,7 @@ export default function Layout({
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [navToggleHover, setNavToggleHover] = useState(false);
+  const workspaceNavEnabled = !presentationShell && isWorkspaceNavEnabled();
   const closeSidebar = () => setIsSidebarOpen(false);
   // Fixed-card scroll model (desktop staff pages): the page card is a constant-
   // size rounded frosted frame; its content scrolls inside an inner scroller
@@ -272,6 +280,12 @@ export default function Layout({
       : rawUserRoles;
   const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
   const activeModeLabel = selectedMode || availableModes[0] || null;
+  const activeWorkspaceDepartment = workspaceNavEnabled
+    ? getActiveWorkspaceDepartment(router.asPath || router.pathname, userRoles)
+    : null;
+  const workspaceQuickActions = workspaceNavEnabled
+    ? getQuickActions(userRoles, activeWorkspaceDepartment)
+    : null;
 
   const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
   const techsList = usersByRole?.["Techs"] || [];
@@ -738,7 +752,8 @@ export default function Layout({
   const serviceSidebarSections = [
     ...accountsSidebarSections,
   ];
-  const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
+  const sidebarExtraSections = workspaceNavEnabled ? [] : serviceSidebarSections;
+  const combinedSidebarSections = [...sidebarSections, ...sidebarExtraSections];
   const navigationItems = [];
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
@@ -751,6 +766,7 @@ export default function Layout({
     href,
     { keywords = [], description, section = "General", roles: requiredRoles = [] } = {}
   ) => {
+    if (workspaceNavEnabled) return;
     if (!roleMatches(requiredRoles)) return;
     if (!label || !href) return;
     const key = `${label}|${href}`;
@@ -778,6 +794,21 @@ export default function Layout({
       section,
     });
   };
+
+  if (workspaceNavEnabled) {
+    getSearchItems(userRoles).forEach((item) => {
+      const sanitized = item.label.replace(/[^a-zA-Z0-9\s]/g, " ").toLowerCase();
+      navigationItems.push({
+        label: item.label,
+        href: item.href,
+        keywords: sanitized
+          .split(" ")
+          .map((part) => part.trim())
+          .filter(Boolean),
+        section: item.department || "Workspace",
+      });
+    });
+  }
 
   combinedSidebarSections.forEach((section) => {
     (section.items || []).forEach((item) => {
@@ -1065,7 +1096,7 @@ export default function Layout({
           <Sidebar
             onToggle={!isTablet ? undefined : closeSidebar}
             isCollapsed={!isSidebarOpen}
-            extraSections={serviceSidebarSections}
+            extraSections={sidebarExtraSections}
             visibleRoles={userRoles}
             modeLabel={activeModeLabel}
             allowedRoutes={presentationAllowedRoutes}
@@ -1196,7 +1227,7 @@ export default function Layout({
                     onToggle={closeSidebar}
                     onNavigate={isVerticalPhone ? closeSidebar : undefined}
                     isCondensed
-                    extraSections={serviceSidebarSections}
+                    extraSections={sidebarExtraSections}
                     visibleRoles={userRoles}
                     modeLabel={activeModeLabel}
                     allowedRoutes={presentationAllowedRoutes}
@@ -1233,6 +1264,7 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
+            quickActions={workspaceQuickActions}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
@@ -1336,6 +1368,12 @@ export default function Layout({
                 }
               >
                 <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
+                  {workspaceNavEnabled && !hideSidebar && (
+                    <WorkspaceHeader
+                      pathname={router.asPath || router.pathname}
+                      roles={userRoles}
+                    />
+                  )}
                   {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>

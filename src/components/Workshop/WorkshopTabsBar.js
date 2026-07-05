@@ -1,36 +1,30 @@
 // file location: src/components/Workshop/WorkshopTabsBar.js
 import { useRouter } from "next/router";
+import LayerSurface from "@/components/ui/LayerSurface";
 import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
+import { getPageTabs, isPageTabActive } from "@/config/workspace/manifest";
 
-export const workshopTabs = [
-  { href: "/workshop", label: "Dashboard" },
-  { href: "/nextjobs", label: "Next Jobs" },
-  { href: "/jobs", label: "Job Cards" },
-  { href: "/consumables-tracker", label: "Consumables" },
-  { href: "/clocking", label: "Clocking" },
-];
+export const workshopTabs = getPageTabs("/workshop", [], {
+  groupKey: "workshop-navigation",
+}).items;
 
-export const workshopQuickActions = [
-  { href: "/new-job", label: "Create Job Card" },
-  { href: "/job-cards/appointments", label: "Appointments" },
-  { href: "/appointments", label: "Check In" },
-];
+export const workshopQuickActions = getPageTabs("/workshop", [], {
+  groupKey: "workshop-quick-actions",
+}).items;
 
 export default function WorkshopTabsBar() {
   const router = useRouter();
+  const currentPath = router.asPath?.split("?")[0] || router.pathname || "";
+  const tabs = getPageTabs(currentPath, [], { groupKey: "workshop-navigation" });
+  const quickActions = getPageTabs(currentPath, [], { groupKey: "workshop-quick-actions" });
 
-  const isActive = (href) =>
-    router.pathname === href ||
-    router.pathname.startsWith(`${href}/`);
+  if (tabs.items.length === 0 && quickActions.items.length === 0) return null;
 
   return (
-    <div
+    <LayerSurface
+      padding="var(--space-5)"
+      gap="0"
       style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: "var(--space-5)",
-        border: "none",
-        boxShadow: "none",
         marginBottom: "var(--space-lg)",
       }}
     >
@@ -51,9 +45,9 @@ export default function WorkshopTabsBar() {
           }}
         >
           <TabLinkGroup
-            items={workshopTabs}
-            ariaLabel="Workshop navigation"
-            isActive={(tab) => isActive(tab.href)}
+            items={tabs.items}
+            ariaLabel={tabs.ariaLabel}
+            isActive={(tab) => isPageTabActive(tab, currentPath)}
           />
         </div>
 
@@ -66,12 +60,12 @@ export default function WorkshopTabsBar() {
           }}
         >
           <TabLinkGroup
-            items={workshopQuickActions}
-            ariaLabel="Workshop quick actions"
-            isActive={(tab) => isActive(tab.href)}
+            items={quickActions.items}
+            ariaLabel={quickActions.ariaLabel}
+            isActive={(tab) => isPageTabActive(tab, currentPath)}
           />
         </div>
       </div>
-    </div>
+    </LayerSurface>
   );
 }

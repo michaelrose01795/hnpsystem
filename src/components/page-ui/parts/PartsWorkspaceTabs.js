@@ -1,36 +1,23 @@
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
-
-const BASE_PARTS_TABS = [
-  { label: "Goods In", href: "/goods-in", match: (path) => path.startsWith("/goods-in") },
-  { label: "Deliveries", href: "/deliveries", match: (path) => path.startsWith("/deliveries") },
-  {
-    label: "Delivery/Collection Planner",
-    href: "/delivery-planner",
-    match: (path) => path.startsWith("/delivery-planner"),
-  },
-];
-
-const MANAGER_TAB = {
-  label: "Manager",
-  href: "/parts-manager",
-  match: (path) => path.startsWith("/parts-manager"),
-};
+import { getPageTabs, isPageTabActive } from "@/config/workspace/manifest";
 
 export default function PartsWorkspaceTabs() {
   const router = useRouter();
   const { user } = useUser() || {};
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const items = roles.includes("parts manager") ? [...BASE_PARTS_TABS, MANAGER_TAB] : BASE_PARTS_TABS;
   const currentPath = router.asPath?.split("?")[0] || router.pathname || "";
+  const tabs = getPageTabs(currentPath, roles, { groupKey: "parts-workspace" });
+
+  if (tabs.items.length === 0) return null;
 
   return (
     <TabLinkGroup
-      ariaLabel="Parts workspace pages"
+      ariaLabel={tabs.ariaLabel}
       className="tab-api--wrap"
-      items={items}
-      isActive={(item) => item.match?.(currentPath)}
+      items={tabs.items}
+      isActive={(tab) => isPageTabActive(tab, currentPath)}
     />
   );
 }

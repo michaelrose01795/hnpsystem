@@ -9,11 +9,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
+import {
+  getActiveWorkspaceDepartment,
+  getDepartmentWorkspaceNav,
+  getWorkspaceRail,
+  isWorkspaceNavEnabled,
+} from "@/config/workspace/manifest";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
+import ContextSidebar from "@/components/layout/ContextSidebar";
+import { recordWorkspaceRecentHref } from "@/hooks/useWorkspaceShortcuts";
 import { getSidebarNavIcon } from "@/components/layout/sidebarNavIcons";
 import BrandLogo from "@/components/BrandLogo";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -31,6 +39,7 @@ const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
+const WORKSPACE_DEPARTMENTS_VIEW = "__departments__";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -213,6 +222,7 @@ export default function Sidebar({
   }, []);
   const inPresentationRoute = pathname.startsWith("/presentation");
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
+  const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
   const ghostControlStyle = {
     background: "var(--theme)",
     backgroundImage: "none",
@@ -244,6 +254,9 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
+  const [selectedWorkspaceKey, setSelectedWorkspaceKey] = useState(null);
+  const [sidebarPreview, setSidebarPreview] = useState(null);
+  const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const getNavHref = useCallback((href) => {
     if (!inPresentationMode) return href;
@@ -320,11 +333,67 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
+  const workspaceRail = useMemo(
+    () => (workspaceNavEnabled ? getWorkspaceRail(userRoles) : []),
+    [userRoles, workspaceNavEnabled]
+  );
+  const workspaceDepartmentKeys = useMemo(
+    () =>
+      new Set(
+        workspaceRail
+          .filter((department) => department.category === "departments")
+          .map((department) => department.key)
+      ),
+    [workspaceRail]
+  );
+  const routeWorkspaceKey = useMemo(
+    () => (workspaceNavEnabled ? getActiveWorkspaceDepartment(pathname, userRoles) : null),
+    [pathname, userRoles, workspaceNavEnabled]
+  );
+  const activeWorkspaceKey =
+    selectedWorkspaceKey === WORKSPACE_DEPARTMENTS_VIEW
+      ? null
+      : selectedWorkspaceKey && workspaceDepartmentKeys.has(selectedWorkspaceKey)
+      ? selectedWorkspaceKey
+      : routeWorkspaceKey;
+  const activeWorkspace = useMemo(
+    () => activeWorkspaceKey ? getDepartmentWorkspaceNav(activeWorkspaceKey, userRoles) : null,
+    [activeWorkspaceKey, userRoles]
+  );
+  const workspaceGeneralNav = useMemo(
+    () => workspaceNavEnabled ? getDepartmentWorkspaceNav("general", userRoles) : null,
+    [userRoles, workspaceNavEnabled]
+  );
+
+  useEffect(() => {
+    if (!selectedWorkspaceKey) return;
+    if (selectedWorkspaceKey === WORKSPACE_DEPARTMENTS_VIEW) return;
+    if (!workspaceDepartmentKeys.has(selectedWorkspaceKey)) {
+      setSelectedWorkspaceKey(null);
+    }
+  }, [selectedWorkspaceKey, workspaceDepartmentKeys]);
+
+  useEffect(() => {
+    if (previousWorkspacePathRef.current !== pathname) {
+      previousWorkspacePathRef.current = pathname;
+      setSelectedWorkspaceKey(null);
+    }
+  }, [pathname]);
+
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
       onNavigate();
     }
   }, [onNavigate]);
+  const showSidebarPreview = useCallback((event, item) => {
+    if (!workspaceNavEnabled) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setSidebarPreview({
+      label: item.label,
+      href: item.href || item.home || null,
+      top: rect.top + rect.height / 2,
+    });
+  }, [workspaceNavEnabled]);
 
   const handleLogout = () => {
     // In presentation mode the "logout" action returns to the role picker
@@ -689,7 +758,92 @@ export default function Sidebar({
           </>
         )}
 
-        {!inPresentationMode && dashboardShortcuts.length > 0 && (
+        {workspaceNavEnabled && (
+          <>
+            {workspaceGeneralNav?.items?.length > 0 && (
+              <>
+                {isCollapsed ? (
+                  renderSectionDivider("divider-workspace-general", { marginBottom: "10px" })
+                ) : (
+                  <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+                    General
+                  </div>
+                )}
+                {workspaceGeneralNav.items.map((item) => {
+                  const isActive = isItemActive(item.href);
+                  return (
+                    <Link
+                      className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
+                      key={item.href}
+                      href={getNavHref(item.href)}
+                      onClick={() => {
+                        recordWorkspaceRecentHref(item.href);
+                        handleNavigationPress();
+                      }}
+                      onMouseEnter={(event) => showSidebarPreview(event, item)}
+                      onFocus={(event) => showSidebarPreview(event, item)}
+                      onMouseLeave={() => setSidebarPreview(null)}
+                      onBlur={() => setSidebarPreview(null)}
+                      {...navLinkProps(item.label)}
+                    >
+                      {renderNavContent(item.label, item.href, isActive)}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
+
+            {activeWorkspace?.items?.length > 0 ? (
+              <ContextSidebar
+                workspace={activeWorkspace}
+                pathname={pathname}
+                pendingHref={pendingHref}
+                isCollapsed={isCollapsed}
+                getNavHref={getNavHref}
+                onNavigate={(href) => {
+                  recordWorkspaceRecentHref(href);
+                  handleNavigationPress();
+                }}
+                onBack={() => setSelectedWorkspaceKey(WORKSPACE_DEPARTMENTS_VIEW)}
+                navLinkProps={navLinkProps}
+                renderNavContent={renderNavContent}
+                renderSectionDivider={renderSectionDivider}
+              />
+            ) : (
+              <>
+                {isCollapsed ? (
+                  renderSectionDivider("divider-workspaces", { marginTop: "16px", marginBottom: "10px" })
+                ) : (
+                  <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
+                    Departments
+                  </div>
+                )}
+                {workspaceRail
+                  .filter((department) => department.category === "departments")
+                  .map((department) => {
+                    const isActive = routeWorkspaceKey === department.key;
+                    return (
+                      <button
+                        className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
+                        key={department.key}
+                        type="button"
+                        onClick={() => setSelectedWorkspaceKey(department.key)}
+                        onMouseEnter={(event) => showSidebarPreview(event, department)}
+                        onFocus={(event) => showSidebarPreview(event, department)}
+                        onMouseLeave={() => setSidebarPreview(null)}
+                        onBlur={() => setSidebarPreview(null)}
+                        {...navLinkProps(department.label)}
+                      >
+                        {renderNavContent(department.label, null, isActive)}
+                      </button>
+                    );
+                  })}
+              </>
+            )}
+          </>
+        )}
+
+        {!workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
           <>
             {isCollapsed ? (
               renderSectionDivider("divider-dashboard", { marginBottom: "10px" })
@@ -740,7 +894,7 @@ export default function Sidebar({
         )}
 
         {/* General Section */}
-        {!inPresentationMode && generalSections.length > 0 && (
+        {!workspaceNavEnabled && !inPresentationMode && generalSections.length > 0 && (
           <>
             {isCollapsed ? (
               renderSectionDivider("divider-general", { marginBottom: "10px" })
@@ -771,14 +925,14 @@ export default function Sidebar({
 
         {/* While auth/roles resolve, show shimmer scaffolding (no real links)
             so the department area looks alive rather than empty on hard load. */}
-        {!inPresentationMode && isAuthLoading && departmentSections.length === 0 && (
+        {!workspaceNavEnabled && !inPresentationMode && isAuthLoading && departmentSections.length === 0 && (
           <div style={{ marginTop: "16px" }}>
             <SidebarNavSkeleton />
           </div>
         )}
 
         {/* Department Sections - NO COLLAPSE, just headers */}
-        {!inPresentationMode && departmentSections.map((section) => (
+        {!workspaceNavEnabled && !inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
             {isCollapsed ? (
               renderSectionDivider(`divider-${section.label}`, { marginTop: "16px", marginBottom: "10px" })
@@ -960,6 +1114,46 @@ export default function Sidebar({
               return null;
             })}
           </>
+        )}
+
+        {workspaceNavEnabled && sidebarPreview && (
+          <div
+            role="tooltip"
+            style={{
+              position: "fixed",
+              left: isCollapsed ? 64 : 272,
+              top: sidebarPreview.top,
+              zIndex: 3700,
+              minWidth: 180,
+              maxWidth: 260,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-md)",
+              background: "var(--primary-hover)",
+              color: "var(--onAccentText)",
+              boxShadow: "var(--shadow-lg)",
+              pointerEvents: "none",
+              transform: "translateY(-50%)",
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: "0.85rem", lineHeight: 1.2 }}>
+              {sidebarPreview.label}
+            </div>
+            {sidebarPreview.href && (
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: "0.75rem",
+                  lineHeight: 1.25,
+                  opacity: 0.82,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {sidebarPreview.href}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Bottom scroll spacer: gives the last nav control (e.g. Vision) a 10px

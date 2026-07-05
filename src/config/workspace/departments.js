@@ -1,14 +1,11 @@
 // file location: src/config/workspace/departments.js
 //
-// THE WORKSPACE NAVIGATION MANIFEST — Phase 0 (foundation).
+// THE WORKSPACE NAVIGATION MANIFEST.
 //
-// This is the single, department-first source of truth for every navigation
-// surface in the staff app. Today it feeds exactly one consumer — the classic
-// role-organised sidebar, reproduced BYTE-FOR-BYTE by manifest.js →
-// toSidebarSections() so nothing changes for users. Future phases add the
-// Department Rail, Context Sidebar, Quick Preview, Workspace Header, Workspace
-// Search, Breadcrumbs, Favourites and Recently Used as further *consumers* of
-// this same manifest — no second navigation system, no further refactor.
+// This is the single, department-first source of truth for staff navigation.
+// The classic role-organised sidebar is still reproduced byte-for-byte through
+// toSidebarSections() for rollback, while the workspace-enabled sidebar,
+// search, dashboards and topbar quick actions consume the newer selectors.
 //
 // -------------------------------------------------------------------------
 // EDGE-SAFE. This module is reachable from src/proxy.js (edge middleware) via
@@ -32,6 +29,7 @@
 
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
+import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 
 // ---------------------------------------------------------------------------
 // Reporting role derivations (moved here from src/config/navigation.js so the
@@ -66,6 +64,8 @@ const EXECUTIVE_REPORT_ROLES = Array.from(new Set(EXECUTIVE_ROLES));
 const ACCOUNTS_REPORT_ROLES = Array.from(
   new Set([...rolesForDepts(new Set(["accounts", "management"])), ...EXECUTIVE_ROLES])
 );
+const ACCOUNT_WORKSPACE_ROLES = ["accounts", "accounts manager"];
+const PARTS_WORKSPACE_ROLES = ["parts", "parts manager"];
 
 // ---------------------------------------------------------------------------
 // 1. DEPARTMENT METADATA (the department-first backbone).
@@ -95,7 +95,7 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
   },
   {
     key: "management",
-    label: "Management",
+    label: "Admin",
     category: "departments",
     icon: "management",
     home: "/dashboard/managers",
@@ -108,7 +108,7 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
   },
   {
     key: "service",
-    label: "Service",
+    label: "Reception",
     category: "departments",
     icon: "service",
     home: "/dashboard/service",
@@ -206,6 +206,230 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
     roles: [], // profile/logout are available to every authenticated user
     sensitive: null,
     flag: null,
+  },
+]);
+
+export const WORKSPACE_DASHBOARD_SHORTCUTS = Object.freeze([
+  {
+    label: "Workshop Dashboard",
+    href: "/dashboard/workshop",
+    roles: ["workshop manager", "techs", "technician"],
+    description: "Technician assignments, consumables, and throughput",
+    department: "workshop",
+  },
+  {
+    label: "Tech Dashboard",
+    href: "/tech/dashboard",
+    roles: ["techs"],
+    description: "Technician personal dashboard with job assignments and clocking",
+    department: "workshop",
+  },
+  {
+    label: "Mobile Tech Dashboard",
+    href: "/mobile/dashboard",
+    roles: ["mobile technician"],
+    description: "Today's on-site jobs, appointment windows, and parts status for mobile visits",
+    department: "workshop",
+  },
+  {
+    label: "Service Dashboard",
+    href: "/dashboard/service",
+    roles: ["service", "service manager"],
+    description: "Advisor capacity, arrivals, and daily targets",
+    department: "service",
+  },
+  {
+    label: "Managers Dashboard",
+    href: "/dashboard/managers",
+    roles: [
+      "service manager",
+      "workshop manager",
+      "parts manager",
+      "admin manager",
+      "accounts manager",
+      "general manager",
+      "owner",
+    ],
+    description: "Executive view for service, workshop, and support leaders",
+    department: "management",
+  },
+  {
+    label: "Parts Dashboard",
+    href: "/dashboard/parts",
+    roles: PARTS_WORKSPACE_ROLES,
+    description: "Parts queue, inbound deliveries, and critical items",
+    department: "parts",
+  },
+  {
+    label: "Parts Manager Dashboard",
+    href: "/parts-manager",
+    roles: ["parts manager"],
+    description: "View stock, spending, and income KPIs",
+    department: "parts",
+  },
+  {
+    label: "MOT Dashboard",
+    href: "/dashboard/mot",
+    roles: ["mot tester"],
+    description: "Upcoming MOT bookings, re-tests, and compliance notes",
+    department: "mot",
+  },
+  {
+    label: "Valeting Dashboard",
+    href: "/dashboard/valeting",
+    roles: ["valet service"],
+    description: "Wash bay priorities, handovers, and staff load",
+    department: "valeting",
+  },
+  {
+    label: "Painting Dashboard",
+    href: "/dashboard/painting",
+    roles: ["painters"],
+    description: "Bodyshop priorities, colour matching, and cycle times",
+    department: "paint",
+  },
+  {
+    label: "Accounts Dashboard",
+    href: "/dashboard/accounts",
+    roles: ACCOUNT_WORKSPACE_ROLES,
+    description: "Financial KPIs, invoices, and cash-flow signals",
+    department: "accounts",
+  },
+  {
+    label: "Admin Dashboard",
+    href: "/dashboard/admin",
+    roles: ["admin", "admin manager"],
+    description: "Admin alerts, approvals, and escalation flags",
+    department: "management",
+  },
+]);
+
+export const WORKSPACE_QUICK_ACTIONS = Object.freeze([
+  {
+    label: "Create Job Card",
+    href: "/new-job",
+    roles: SERVICE_ACTION_ROLES,
+    departments: ["service", "workshop"],
+  },
+  {
+    label: "Appointments",
+    href: "/job-cards/appointments",
+    roles: SERVICE_ACTION_ROLES,
+    departments: ["service", "workshop"],
+  },
+  {
+    label: "Delivery/Collection Planner",
+    href: "/delivery-planner",
+    roles: PARTS_WORKSPACE_ROLES,
+    departments: ["parts"],
+  },
+  {
+    label: "Create Order",
+    href: "/new-order",
+    roles: PARTS_WORKSPACE_ROLES,
+    departments: ["parts"],
+  },
+  {
+    label: "Goods In",
+    href: "/goods-in",
+    roles: PARTS_WORKSPACE_ROLES,
+    departments: ["parts"],
+  },
+]);
+
+export const WORKSPACE_PAGE_TABS = Object.freeze([
+  {
+    key: "hr-modules",
+    ariaLabel: "HR modules",
+    matchers: [
+      { href: "/hr", match: "exact" },
+      { href: "/hr/employees", match: "prefix" },
+      { href: "/hr/attendance", match: "prefix" },
+      { href: "/hr/payroll", match: "prefix" },
+      { href: "/hr/leave", match: "prefix" },
+      { href: "/hr/performance", match: "prefix" },
+      { href: "/hr/training", match: "prefix" },
+      { href: "/hr/disciplinary", match: "prefix" },
+      { href: "/hr/recruitment", match: "prefix" },
+      { href: "/hr/reports", match: "prefix" },
+      { href: "/hr/settings", match: "prefix" },
+      { href: "/admin/users", match: "prefix" },
+    ],
+    items: [
+      { href: "/hr/employees", label: "Employee Records", match: "prefix" },
+      { href: "/hr/attendance", label: "Attendance", match: "prefix" },
+      { href: "/hr/payroll", label: "Payroll", match: "prefix" },
+      { href: "/hr/leave", label: "Leave", match: "prefix" },
+      { href: "/hr/performance", label: "Performance", match: "prefix" },
+      { href: "/hr/training", label: "Training", match: "prefix" },
+      { href: "/hr/disciplinary", label: "Incidents", match: "prefix" },
+      { href: "/hr/recruitment", label: "Recruitment", match: "prefix" },
+      { href: "/hr/reports", label: "HR Reports", match: "prefix" },
+      { href: "/hr/settings", label: "HR Settings", match: "prefix" },
+      { href: "/admin/users", label: "User Admin", match: "exact" },
+    ],
+  },
+  {
+    key: "workshop-navigation",
+    ariaLabel: "Workshop navigation",
+    matchers: [
+      { href: "/workshop", match: "prefix" },
+      { href: "/nextjobs", match: "prefix" },
+      { href: "/jobs", match: "prefix" },
+      { href: "/consumables-tracker", match: "prefix" },
+      { href: "/clocking", match: "prefix" },
+    ],
+    items: [
+      { href: "/workshop", label: "Dashboard", match: "prefix" },
+      { href: "/nextjobs", label: "Next Jobs", match: "prefix" },
+      { href: "/jobs", label: "Job Cards", match: "prefix" },
+      { href: "/consumables-tracker", label: "Consumables", match: "prefix" },
+      { href: "/clocking", label: "Clocking", match: "prefix" },
+    ],
+  },
+  {
+    key: "workshop-quick-actions",
+    ariaLabel: "Workshop quick actions",
+    matchers: [
+      { href: "/workshop", match: "prefix" },
+      { href: "/nextjobs", match: "prefix" },
+      { href: "/jobs", match: "prefix" },
+      { href: "/consumables-tracker", match: "prefix" },
+      { href: "/clocking", match: "prefix" },
+      { href: "/new-job", match: "prefix" },
+      { href: "/job-cards/appointments", match: "prefix" },
+      { href: "/appointments", match: "prefix" },
+    ],
+    items: [
+      { href: "/new-job", label: "Create Job Card", match: "prefix" },
+      { href: "/job-cards/appointments", label: "Appointments", match: "prefix" },
+      { href: "/appointments", label: "Check In", match: "prefix" },
+    ],
+  },
+  {
+    key: "parts-workspace",
+    ariaLabel: "Parts workspace pages",
+    matchers: [
+      { href: "/goods-in", match: "prefix" },
+      { href: "/deliveries", match: "prefix" },
+      { href: "/delivery-planner", match: "prefix" },
+      { href: "/parts-manager", match: "prefix" },
+    ],
+    items: [
+      { href: "/goods-in", label: "Goods In", match: "prefix" },
+      { href: "/deliveries", label: "Deliveries", match: "prefix" },
+      {
+        href: "/delivery-planner",
+        label: "Delivery/Collection Planner",
+        match: "prefix",
+      },
+      {
+        href: "/parts-manager",
+        label: "Manager",
+        match: "prefix",
+        roles: ["parts manager"],
+      },
+    ],
   },
 ]);
 
@@ -503,6 +727,26 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     items: [
       { label: "Profile", href: "/profile", roles: [] },
       { label: "Logout", href: null, roles: [], action: "logout" },
+    ],
+  },
+]);
+
+// Workspace-only navigation additions. These deliberately stay outside
+// WORKSPACE_NAV_SECTIONS so the classic role-organised sidebar remains
+// byte-identical while the new department-first rail can still be fully
+// manifest-driven.
+export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
+  {
+    department: "accounts",
+    order: 132,
+    label: "Accounts Workspace",
+    category: "departments",
+    flag: null,
+    items: [
+      { label: "Accounts", href: "/accounts", roles: ACCOUNT_WORKSPACE_ROLES },
+      { label: "Company Accounts", href: "/company-accounts", roles: ACCOUNT_WORKSPACE_ROLES },
+      { label: "Invoices", href: "/accounts/invoices", roles: ACCOUNT_WORKSPACE_ROLES },
+      { label: "Reports", href: "/accounts/reports", roles: ACCOUNT_WORKSPACE_ROLES },
     ],
   },
 ]);

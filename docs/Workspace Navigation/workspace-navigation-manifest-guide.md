@@ -1,135 +1,177 @@
-# Workspace Navigation Manifest — Authoring Guide
+# Workspace Navigation Manifest - Authoring Guide
 
-**Status:** Live (Phase 0 shipped). This is the practical "how do I change navigation now?" companion to the [design specification](./workspace-navigation-design-spec.md). Read the spec for the *why*; read this for the *how*.
+**Status:** Complete. Workspace Navigation is now the primary staff UI, with `workspace_nav_enabled` retained as the rollback switch until sign-off. Turning the flag off restores the classic role-organised sidebar/topbar presentation while route permissions continue to come from the manifest-derived landable-path selector.
+
+This guide is the practical contract for changing navigation. The companion design specification explains the original rationale.
 
 ---
 
-## 1. What Phase 0 delivered
+## 1. Finished Architecture
 
-A single, **department-first** navigation manifest that is now the source of truth for the sidebar and the nav-derived permission layer, with **zero change to what any user sees**.
-
-| File | Role |
+| File | Responsibility |
 |---|---|
-| [`src/config/workspace/departments.js`](../../src/config/workspace/departments.js) | **The manifest.** Department metadata (`WORKSPACE_DEPARTMENTS`) + the nav sections that render (`WORKSPACE_NAV_SECTIONS`). Edit this to change navigation. |
-| [`src/config/workspace/manifest.js`](../../src/config/workspace/manifest.js) | **The selectors.** One pure function per consumer (`toSidebarSections`, `getAccessibleNavPaths`, `getContextNav`, `getDepartmentsForRoles`, `resolveHome`, `getActiveDepartment`, `getBreadcrumbTrail`, `getSearchItems`, …). Surfaces derive from these — they never keep their own list. |
-| [`src/config/workspace/flags.js`](../../src/config/workspace/flags.js) | **The feature flag.** `workspace_nav_enabled` (OFF by default) gates the *future* department-first surfaces (rail, context sidebar, breadcrumbs). Phase 0 output is identical regardless of the flag. |
-| [`src/config/workspace/manifest.test.js`](../../src/config/workspace/manifest.test.js) | **The safety net.** Locks byte-identical sidebar reproduction + per-role permission parity. |
+| [`src/config/workspace/departments.js`](../../src/config/workspace/departments.js) | All navigation data: departments, classic-compatible sections, workspace-only context sections, dashboard shortcuts, quick actions, and page tabs. |
+| [`src/config/workspace/manifest.js`](../../src/config/workspace/manifest.js) | Pure selectors for every navigation surface: classic fallback, landable route access, department rail, grouped context nav, breadcrumbs, workspace header data, search, shortcuts, quick actions, role home, and page tabs. |
+| [`src/config/workspace/flags.js`](../../src/config/workspace/flags.js) | `workspace_nav_enabled`, on by default. Set `NEXT_PUBLIC_WORKSPACE_WORKSPACE_NAV_ENABLED=false` to roll the presentation back. |
+| [`src/components/layout/StaffSidebar.js`](../../src/components/layout/StaffSidebar.js) | Primary department-first sidebar when the flag is on; classic role-organised sidebar when the flag is off. |
+| [`src/components/layout/ContextSidebar.js`](../../src/components/layout/ContextSidebar.js) | Reusable grouped workspace context renderer with active states, collapsible groups, Back to Departments, keyboard Escape handling, and preview fly-outs. |
+| [`src/components/layout/WorkspaceHeader.js`](../../src/components/layout/WorkspaceHeader.js) | Active department header, quick actions, favourites, and recently used workspace shortcuts. |
+| [`src/components/layout/WorkspaceBreadcrumbs.js`](../../src/components/layout/WorkspaceBreadcrumbs.js) | Breadcrumb trail rendered from `getBreadcrumbTrail()`. |
+| [`src/hooks/useWorkspaceShortcuts.js`](../../src/hooks/useWorkspaceShortcuts.js) | Reusable favourites/recently-used storage adapter, currently backed by localStorage and ready for future persistence. |
+| [`src/components/layout/StaffLayout.js`](../../src/components/layout/StaffLayout.js) | Mounts workspace header/breadcrumbs, workspace search data, and workspace quick actions only when the flag is on. |
+| [`src/components/layout/StaffTopbar.js`](../../src/components/layout/StaffTopbar.js) | Uses manifest quick actions when supplied; keeps legacy actions for flag-off fallback. |
+| [`src/components/HR/HrTabsBar.js`](../../src/components/HR/HrTabsBar.js), [`src/components/Workshop/WorkshopTabsBar.js`](../../src/components/Workshop/WorkshopTabsBar.js), [`src/components/page-ui/parts/PartsWorkspaceTabs.js`](../../src/components/page-ui/parts/PartsWorkspaceTabs.js) | Thin wrappers over manifest-owned `getPageTabs()` data. |
+| [`src/pages/login.js`](../../src/pages/login.js) | Uses `resolveHome()` for staff post-login landing when workspace navigation is enabled. |
+| [`src/lib/auth/pageAccess.js`](../../src/lib/auth/pageAccess.js) | Consumes `getAccessibleNavPaths()` directly, then applies always-allowed and dynamic-detail inheritance from `routeAccess.js`. |
+| [`src/config/routeAccess.js`](../../src/config/routeAccess.js) | Edge/public/protected route lists and dynamic-detail inheritance only. Temporary topbar/accounts nav mirrors have been retired. |
+| [`src/config/workspace/manifest.test.js`](../../src/config/workspace/manifest.test.js) | Locks classic output, landable-path parity, route access, grouped context nav, active states, page tabs, headers, shortcuts, and flag default. |
 
-**Back-compat façade:** [`src/config/navigation.js`](../../src/config/navigation.js) still exports `sidebarSections`, now derived via `toSidebarSections()`. Every existing consumer (`StaffSidebar`, `pageAccess.js`, `buildAppKnowledge.js`, `navigation.test.js`) keeps working unchanged.
-
-### The golden rule (nav == permissions)
-
-`src/lib/auth/pageAccess.js` decides "which pages may this user land on?" by walking `sidebarSections` (now manifest-derived). **A page must appear in the manifest — for the roles that should reach it — or `PageAccessGuard` redirects those users to `/newsfeed`.** Navigation config *is* the route-authorisation config. Never treat the manifest as "just menus".
+Back-compat facade: [`src/config/navigation.js`](../../src/config/navigation.js) still exports `sidebarSections = toSidebarSections()` for the classic fallback.
 
 ---
 
-## 2. Mental model
+## 2. Golden Rules
 
+1. **Every navigation surface is manifest-driven.** Do not create page, sidebar, tab, quick-action, search, breadcrumb, favourite, or recent lists outside `src/config/workspace/`.
+2. **Classic fallback must stay stable.** `toSidebarSections()` uses `WORKSPACE_NAV_SECTIONS` only and must remain byte-identical unless a task explicitly changes classic navigation.
+3. **Route access follows navigation.** `pageAccess.js` reads `getAccessibleNavPaths()` directly. Dynamic detail routes inherit from list pages in `routeAccess.js`.
+4. **Department ownership is explicit.** Use `getActiveWorkspaceDepartment()` for shared flat routes such as `/jobs`, `/goods-in`, `/deliveries`, and `/clocking`.
+5. **Manifest modules are edge-safe.** Keep them to plain data and pure functions. No React, browser APIs, Supabase, filesystem, or Node-only imports.
+6. **Rollback is presentation-only.** With `workspace_nav_enabled=false`, routes, permissions, mobile behaviour, and page content stay intact while the classic sidebar/topbar returns.
+7. **No design drift.** Keep `.app-btn`, `is-active`, collapsed rail, mobile drawer, existing tokens, borderless surfaces, and validation checks.
+
+---
+
+## 3. Selector Contract
+
+| Selector | Primary consumer | Behaviour |
+|---|---|---|
+| `toSidebarSections()` | `src/config/navigation.js` | Classic role-organised sidebar fallback. |
+| `getAccessibleNavPaths(roles)` | `pageAccess.js` | Landable paths from classic sections plus manifest-owned quick/context additions. |
+| `getWorkspaceRail(roles)` | `StaffSidebar` | Role-filtered department list. |
+| `getDepartmentWorkspaceNav(departmentKey, roles)` | `ContextSidebar` | Overview plus grouped, deduped context sections. Preserves flat `items`. |
+| `getActiveWorkspaceDepartment(pathname, roles)` | Sidebar/header/topbar | Resolves the active department through role-visible workspace items. |
+| `getBreadcrumbTrail(pathname, roles)` | `WorkspaceBreadcrumbs` | Department/page breadcrumbs from manifest data. |
+| `getWorkspaceHeader(pathname, roles)` | `WorkspaceHeader` | Active department label, breadcrumbs, quick actions, and item count. |
+| `getWorkspaceShortcutItems(roles)` | `useWorkspaceShortcuts()` consumers | Candidate pages/actions for favourites and recents. |
+| `getSearchItems(roles)` | Workspace-enabled `GlobalSearch` | Deduped, role-filtered page list including workspace-only context links. |
+| `getQuickActions(roles, activeDepartment)` | `StaffTopbar`, `WorkspaceHeader` | Role-filtered and department-filtered quick actions. |
+| `resolveHome(roles)` | Login landing | First accessible department home, falling back to `/newsfeed`. |
+| `getPageTabs(pathname, roles, options)` | HR/Workshop/Parts wrappers | Manifest-owned tab groups and role-filtered tab items. |
+| `isContextNavItemActive()` / `isPageTabActive()` | Sidebar/tabs | Shared exact, prefix, and pending navigation active-state rules. |
+
+---
+
+## 4. Runtime Behaviour
+
+When `workspace_nav_enabled` is on:
+
+- Users enter a department workspace with a department-first rail, grouped ContextSidebar, Workspace Header, breadcrumbs, quick actions, favourites, and recently used shortcuts.
+- The sidebar Back to Departments action returns to the department list without navigating away.
+- Context groups can collapse for larger workspaces and automatically reopen when their active route is inside the group.
+- Workspace navigation items expose hover/focus previews, including the collapsed rail.
+- `resolveHome()` sends staff to their highest-priority workspace home after login.
+- Mobile still uses the existing drawer shell and the same manifest selectors.
+
+When `workspace_nav_enabled` is off:
+
+- `StaffSidebar` renders the classic role-organised sidebar.
+- `StaffLayout` and `StaffTopbar` use legacy fallback presentation paths.
+- Dashboard shortcuts continue through the compatibility facade in `departmentDashboards.js`.
+- Search uses the old imperative construction path.
+- `pageAccess.js` still uses the manifest landable-path selector, so permissions do not drift during rollback.
+
+---
+
+## 5. Recipes
+
+### Add a classic-visible page
+
+Add it to `WORKSPACE_NAV_SECTIONS` with the existing legacy item shape:
+
+```js
+{ label: "Returns", href: "/deliveries/returns", roles: ["parts", "parts manager"] }
 ```
-WORKSPACE_DEPARTMENTS  ─┐
-   (department metadata) │
-                         ├──►  manifest.js selectors  ──►  every nav surface
-WORKSPACE_NAV_SECTIONS  ─┘        (pure projections)         + the permission layer
-   (the pages that render,
-    tagged by department + order)
+
+Then update the golden reference in `manifest.test.js`. If the page has detail routes, add inheritance in `DYNAMIC_DETAIL_EXTENDS`.
+
+### Add a workspace-only context item
+
+Add it to `WORKSPACE_CONTEXT_NAV_SECTIONS`. This makes it available to workspace context/search/permissions without changing the classic sidebar:
+
+```js
+{
+  department: "accounts",
+  order: 132,
+  label: "Accounts Workspace",
+  category: "departments",
+  flag: null,
+  items: [
+    { label: "Accounts", href: "/accounts", roles: ["accounts", "accounts manager"] },
+  ],
+}
 ```
 
-- The **department** is the top-level unit (keyed on the canonical taxonomy in [`src/lib/reporting/config/departments.js`](../../src/lib/reporting/config/departments.js) — `ROLE_DEPARTMENT_MAP`). We do **not** invent a new taxonomy.
-- **Roles are an attribute**, used only for per-item visibility. Empty/absent `roles` on an item ⇒ visible to every authenticated user.
-- Each nav section is tagged with its `department` and a global `order`. `order` reproduces today's exact sidebar sequence; the `department` powers the forward-looking selectors.
+Test inclusion in `getDepartmentWorkspaceNav()` / `getSearchItems()` and exclusion from `toSidebarSections()`.
+
+### Add a quick action
+
+Add it to `WORKSPACE_QUICK_ACTIONS`:
+
+```js
+{
+  label: "Create Order",
+  href: "/new-order",
+  roles: ["parts", "parts manager"],
+  departments: ["parts"],
+}
+```
+
+`getQuickActions()` feeds both topbar and workspace header. Do not mirror it in `routeAccess.js`.
+
+### Add or change page tabs
+
+Edit `WORKSPACE_PAGE_TABS` only. Feature wrappers should stay thin and call `getPageTabs()` plus `isPageTabActive()`.
+
+### Extend favourites or recents persistence
+
+Keep consumers on `useWorkspaceShortcuts()`. Replace or augment its storage adapter rather than threading persistence logic into `StaffSidebar`, `WorkspaceHeader`, or pages.
 
 ---
 
-## 3. Recipes
+## 6. Validation Contract
 
-### 3.1 Add a page to an existing department
-
-1. Open [`departments.js`](../../src/config/workspace/departments.js) → `WORKSPACE_NAV_SECTIONS`.
-2. Find the section for the owning department (e.g. the `parts` sections).
-3. Add an item — **only the legacy keys** `{ label, href, roles }`:
-   ```js
-   { label: "Returns", href: "/deliveries/returns", roles: ["parts", "parts manager"] },
-   ```
-4. If the page is a dynamic-detail route with no direct nav link (e.g. `/deliveries/[id]`), grant it via `DYNAMIC_DETAIL_EXTENDS` in [`routeAccess.js`](../../src/config/routeAccess.js) instead — exactly as today.
-5. Run `npx vitest run src/config/`. The byte-identical test will fail (expected — you changed the sidebar); update the golden reference in `manifest.test.js` to match, then confirm the permission-parity tests pass.
-
-That single edit makes the page appear in the sidebar, become landable (permissions), and — once later phases ship — appear in the Department Rail, Context Sidebar, breadcrumbs and Workspace Search.
-
-> **⚠️ Item shape is frozen.** Do **not** add forward-looking keys (`icon`, `keywords`, `description`) to items in `WORKSPACE_NAV_SECTIONS` — that breaks the byte-identical `toSidebarSections()` lock. Put per-department metadata on `WORKSPACE_DEPARTMENTS` instead.
-
-### 3.2 Add a whole new department
-
-1. Add a metadata entry to `WORKSPACE_DEPARTMENTS`:
-   ```js
-   {
-     key: "hr",                 // MUST match a ROLE_DEPARTMENT_MAP department code
-     label: "HR",
-     category: "departments",   // general | departments | account
-     icon: "hr",                // resolved later via getSidebarNavIcon
-     home: "/hr",               // role→home landing route
-     order: 45,                 // rail + sidebar ordering (leave gaps)
-     roles: undefined,          // undefined ⇒ derived from ROLE_DEPARTMENT_MAP
-     sensitive: "pii",          // "financial" | "pii" | null (reuse permissionScope)
-     flag: null,                // optional feature-flag gate, e.g. "reporting_nav_enabled"
-   },
-   ```
-2. Add one or more sections to `WORKSPACE_NAV_SECTIONS` tagged with `department: "hr"` and a fitting `order`.
-3. Update the golden reference + run the tests (§3.1 step 5).
-
-Departments without a nav presence today (`hr`, `admin`, `paint`) are intentionally **not** in the manifest yet — add them here when their pages join.
-
-### 3.3 Gate an area behind a feature flag
-
-Set `flag: "<flag_key>"` on the section (and, if the whole department is gated, on the department). Section flags currently resolve through the reporting flag namespace (`reporting_nav_enabled` is the only one in use). When the flag is off the section is dropped entirely — matching how the Reports section behaves today.
-
-### 3.4 Change who can see an item
-
-Edit the item's `roles` array (lowercase role strings). Derive role sets from `ROLE_DEPARTMENT_MAP` where possible (see the reporting-report role derivations at the top of `departments.js`) rather than hand-listing — that keeps nav and departments from drifting. The manifest normalises to lowercase internally, so both the lowercase role constants and the UPPER-CASE client/`ProtectedRoute` convention match.
-
----
-
-## 4. The validation contract (run before every nav change)
+Run before handoff:
 
 ```bash
-npx vitest run src/config/          # manifest + navigation tests (35 tests)
-npm run check:borders               # no forbidden borders (design system)
-npm run check:encoding              # file-encoding guard
-npx eslint src/config/workspace/    # lint
+npm run test:unit -- src/config/navigation.test.js src/config/workspace/manifest.test.js
+npm run check:borders
+npm run check:encoding
+npm run check:layers
+npx eslint src/config/workspace/departments.js src/config/workspace/manifest.js src/config/workspace/manifest.test.js src/config/departmentDashboards.js src/config/routeAccess.js src/lib/auth/pageAccess.js src/hooks/useWorkspaceShortcuts.js src/components/layout/ContextSidebar.js src/components/layout/WorkspaceBreadcrumbs.js src/components/layout/WorkspaceHeader.js src/components/layout/StaffSidebar.js src/components/layout/StaffLayout.js src/components/layout/StaffTopbar.js src/components/HR/HrTabsBar.js src/components/Workshop/WorkshopTabsBar.js src/components/page-ui/parts/PartsWorkspaceTabs.js src/pages/login.js
 ```
 
-`manifest.test.js` guarantees:
-
-1. **Byte-identical sidebar** — `toSidebarSections()` deep-equals an independent copy of the pre-refactor `sidebarSections` (built from the original algorithm, not from the code under test).
-2. **Permission parity** — the accessible-path set is identical, per role, computed the legacy way vs. via `getAccessibleNavPaths()`, across 19 representative role combinations (incl. roleless, multi-role, and UPPER-CASE).
-3. **Dev gating** — `/dev` remains landable **only** for the `dev` role.
-4. **Department-first selectors** behave (active-department resolution, context-nav dedup, role→home, breadcrumbs, search).
-
-If you intentionally change the sidebar, tests **1–2 will fail** — that is the safety net doing its job. Update the golden reference in `manifest.test.js` to the new intended output and re-run.
+Full `npm run lint` may still surface unrelated repo-wide lint debt. Report unrelated failures separately.
 
 ---
 
-## 5. What comes next (and why nothing else needs a refactor)
+## 7. Six-Phase Rollout
 
-The selectors in `manifest.js` are already implemented, so future phases are additive *consumers*, not rewrites:
-
-| Phase | Surface | Selector it consumes |
-|---|---|---|
-| 1 | Point `pageAccess.js` straight at the manifest | `getAccessibleNavPaths` |
-| 2 | Fold in stray sources (dashboards, topbar actions, search) | `getSearchItems`, `getQuickActions` |
-| 3 | Department Rail (grouped single-rail), behind `workspace_nav_enabled` | `getDepartmentsForRoles`, `getContextNav` |
-| 4 | Context Sidebar (replaces HrTabsBar / WorkshopTabsBar / PartsWorkspaceTabs) | `getContextNav`, `getActiveDepartment` |
-| 5 | Role→home resolver on `/` | `resolveHome` |
-| 6 | Breadcrumbs | `getBreadcrumbTrail` |
-| 7 | Quick Preview fly-outs | (new components; manifest supplies the nav data) |
-
-**Rollback** at any user-visible phase = flip `workspace_nav_enabled` off; the manifest still feeds the classic role-organised sidebar via `toSidebarSections()`.
+1. **Phase 1 - Manifest foundation:** complete. Classic sidebar is manifest-derived and byte-identical.
+2. **Phase 2 - Flagged department-first rail/context:** complete. Workspace rail/context/search path exists behind `workspace_nav_enabled`.
+3. **Phase 3 - Selector consolidation:** complete. Dashboard shortcuts and topbar quick actions are manifest-backed.
+4. **Phase 4 - Permission and route access consolidation:** complete. `pageAccess.js` reads the manifest selector directly, and landable-path parity is tested across configured role combinations.
+5. **Phase 5 - ContextSidebar and tabs:** complete. Context rendering is reusable, and HR / Workshop / Parts tabs use manifest-owned `getPageTabs()` data.
+6. **Phase 6 - Breadcrumbs, role-home and polish:** complete. Workspace Navigation is the primary UI with breadcrumbs, `resolveHome()`, Workspace Header, grouped context nav, previews, favourites/recents, keyboard polish, and rollback support.
 
 ---
 
-## 6. Hard rules (from CLAUDE.md + the design spec)
+## 8. Absolute Don'ts
 
-- **Never** define a navigation list anywhere except `src/config/workspace/`.
-- **Never** infer a department from the URL path — flat routes don't encode it. Use `getActiveDepartment()` (backed by the explicit route→department index).
-- **Keep the manifest edge-safe** — plain data + pure functions only (it is reachable from `src/proxy.js`). No React, Node-only APIs, or Supabase imports.
-- **Never** do a big-bang cutover — migrate department-by-department behind the flag.
-- **Always** run the validation contract (§4) before committing a nav change.
+- Do not create navigation lists outside `src/config/workspace/`.
+- Do not infer departments from URL prefixes.
+- Do not add workspace-only links to `WORKSPACE_NAV_SECTIONS`.
+- Do not hand-maintain topbar/accounts nav mirrors in `routeAccess.js`.
+- Do not add tab arrays inside feature components.
+- Do not change routes or permissions as part of UI polish.
+- Do not introduce borders, hardcoded colours, or new design tokens.

@@ -1,40 +1,28 @@
 // file location: src/components/HR/HrTabsBar.js
-import { useRouter } from "next/router";import LayerSurface from "@/components/ui/LayerSurface";
+import { useRouter } from "next/router";
+import LayerSurface from "@/components/ui/LayerSurface";
 import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
-
-const hrTabs = [
-{ href: "/hr/employees", label: "Employee Records" },
-{ href: "/hr/attendance", label: "Attendance" },
-{ href: "/hr/payroll", label: "Payroll" },
-{ href: "/hr/leave", label: "Leave" },
-{ href: "/hr/performance", label: "Performance" },
-{ href: "/hr/training", label: "Training" },
-{ href: "/hr/disciplinary", label: "Incidents" },
-{ href: "/hr/recruitment", label: "Recruitment" },
-{ href: "/hr/reports", label: "HR Reports" },
-{ href: "/hr/settings", label: "HR Settings" },
-{ href: "/admin/users", label: "User Admin" }];
-
+import { getPageTabs, isPageTabActive } from "@/config/workspace/manifest";
 
 export default function HrTabsBar() {
   const router = useRouter();
+  const currentPath = router.asPath?.split("?")[0] || router.pathname || "";
+  const tabs = getPageTabs(currentPath, [], { groupKey: "hr-modules" });
+
+  if (tabs.items.length === 0) return null;
 
   return (
-    <LayerSurface as="div"
-
-    style={{
-      padding: "var(--space-4)",
-      marginBottom: "var(--space-6)"
-    }}>
-
+    <LayerSurface
+      as="div"
+      padding="var(--space-4)"
+      gap="0"
+      style={{ marginBottom: "var(--space-6)" }}
+    >
       <TabLinkGroup
-        items={hrTabs}
-        ariaLabel="HR modules"
-        isActive={(tab) =>
-        router.pathname === tab.href ||
-        tab.href !== "/admin/users" && router.pathname.startsWith(tab.href)
-        } />
-
-    </LayerSurface>);
-
+        items={tabs.items}
+        ariaLabel={tabs.ariaLabel}
+        isActive={(tab) => isPageTabActive(tab, currentPath)}
+      />
+    </LayerSurface>
+  );
 }

@@ -2,7 +2,7 @@
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useState, useEffect, useRef } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
@@ -12,6 +12,7 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
+import { isWorkspaceNavEnabled, resolveHome } from "@/config/workspace/manifest";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
@@ -67,7 +68,8 @@ const getDefaultPostLoginRoute = (activeUser) => {
   concat(activeUser?.role ? [activeUser.role] : []).
   map((role) => String(role).toLowerCase());
   const isCustomer = roles.some((role) => role.includes("customer"));
-  return isCustomer ? DEFAULT_CUSTOMER_POST_LOGIN_ROUTE : DEFAULT_STAFF_POST_LOGIN_ROUTE;
+  if (isCustomer) return DEFAULT_CUSTOMER_POST_LOGIN_ROUTE;
+  return isWorkspaceNavEnabled() ? resolveHome(roles) : DEFAULT_STAFF_POST_LOGIN_ROUTE;
 };
 
 const getPostLoginRoute = (router, activeUser) => {
@@ -420,14 +422,16 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
-        trace("login", "dbLogin: signIn ok -> show shell loading", target);
+        const refreshedSession = await getSession();
+        const resolvedTarget = getPostLoginRoute(router, refreshedSession?.user || null);
+        trace("login", "dbLogin: signIn ok -> show shell loading", resolvedTarget);
         showAppShellLoading();
         setIsRedirecting(true);
         // Lock the destination user's saved theme in before navigating so the
         // colour settles once, on the loading screen.
         await commitUserTheme();
-        trace("login", "dbLogin: router.replace", target);
-        await router.replace(target);
+        trace("login", "dbLogin: router.replace", resolvedTarget);
+        await router.replace(resolvedTarget);
       }
     } catch (err) {
       console.error("Login error:", err);

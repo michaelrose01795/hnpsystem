@@ -47,6 +47,7 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
+  quickActions = null,
   overlay = false,
   // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
   // search is in use (focused or its results list showing).
@@ -60,6 +61,8 @@ export default function StaffTopbar({
   barStyle = undefined,
 }) {
   const router = useRouter();
+  const usesManifestQuickActions = Array.isArray(quickActions);
+  const hasManifestQuickActions = usesManifestQuickActions && quickActions.length > 0;
 
   // Fixed-card scroll model: the bar overlays the top of the page card (aligned
   // to the card's gutters) and stays put while the card's content scrolls behind
@@ -190,7 +193,7 @@ export default function StaffTopbar({
           </div>
         )}
 
-        {(isTech || canUseServiceActions || hasPartsAccess) && (
+        {(isTech || hasManifestQuickActions || (!usesManifestQuickActions && (canUseServiceActions || hasPartsAccess))) && (
           <div
             className="app-topbar-action-scroll"
             style={{
@@ -267,7 +270,38 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {canUseServiceActions && (
+            {hasManifestQuickActions && (
+              <div
+                className="app-topbar-action-group"
+                style={{
+                  display: "flex",
+                  flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+                  gap: isMobile ? "8px" : "12px",
+                  justifyContent: isVerticalPhone ? "flex-start" : "center",
+                  alignItems: "center",
+                  width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
+                  minWidth: 0,
+                }}
+              >
+                {quickActions.map((action) => {
+                  const active =
+                    router.pathname === action.href ||
+                    router.pathname.startsWith(`${action.href}/`);
+                  return (
+                    <Link
+                      key={action.href}
+                      href={action.href}
+                      prefetch={false}
+                      className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
+                    >
+                      {action.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {!usesManifestQuickActions && canUseServiceActions && (
               <div
                 className="app-topbar-action-group"
                 style={{
@@ -298,7 +332,7 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {hasPartsAccess && (
+            {!usesManifestQuickActions && hasPartsAccess && (
               <div
                 className="app-topbar-action-group"
                 style={{

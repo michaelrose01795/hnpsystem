@@ -4,9 +4,8 @@
 //
 // Before this file, the same route lists were duplicated across:
 //   - src/proxy.js                  (public / protected prefixes + HR/admin rules)
-//   - src/lib/auth/pageAccess.js    (always-allowed paths, topbar links, accounts
-//                                     links, dynamic-detail inheritance)
-//   - src/components/Layout.js       (topbar action links, accounts sidebar section)
+//   - src/lib/auth/pageAccess.js    (always-allowed paths and dynamic-detail
+//                                     inheritance)
 //
 // They are consolidated here so the three consumers below import one definition:
 //   - src/proxy.js                       → edge route protection
@@ -17,8 +16,6 @@
 // IMPORTANT: this module must stay edge-runtime safe (it is imported by
 // src/proxy.js / middleware). Keep it to plain data + pure helpers — no Node
 // APIs, no React, no Supabase.
-
-import { SERVICE_ACTION_ROLE_SET } from "@/lib/auth/serviceActionRoles";
 
 // ---------------------------------------------------------------------------
 // 1. Edge / proxy route protection (consumed by src/proxy.js)
@@ -120,35 +117,6 @@ export const isPublicPath = (pathname) =>
 
 export const isProtectedPath = (pathname) =>
   PROTECTED_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
-
-// ---------------------------------------------------------------------------
-// 2. Nav-derived page access (consumed by src/lib/auth/pageAccess.js)
-//    Rule: "users can only land on pages that appear in their sidebar/topbar."
-// ---------------------------------------------------------------------------
-
-const PARTS_NAV_ROLE_SET = new Set(["parts", "parts manager"]);
-const ACCOUNTS_NAV_ROLE_SET = new Set(["accounts", "accounts manager"]);
-
-// Mirror of the topbar action links rendered in the staff layout
-// (src/components/layout/StaffTopbar.js → SERVICE_ACTION_LINKS / PARTS_ACTION_LINKS).
-// Keep in sync if those topbar lists change.
-export const TOPBAR_LINKS = [
-  { href: "/new-job", roles: SERVICE_ACTION_ROLE_SET },
-  { href: "/job-cards/appointments", roles: SERVICE_ACTION_ROLE_SET },
-  { href: "/delivery-planner", roles: PARTS_NAV_ROLE_SET },
-  { href: "/new-order", roles: PARTS_NAV_ROLE_SET },
-  { href: "/goods-in", roles: PARTS_NAV_ROLE_SET },
-];
-
-// Mirror of the dynamic "Accounts" sidebar section built at render time inside
-// the staff layout (accountsSidebarSections). It is not in config/navigation.js,
-// so the sidebar walk in pageAccess.js cannot see it — mirror it here.
-export const ACCOUNTS_NAV_LINKS = [
-  { href: "/accounts", roles: ACCOUNTS_NAV_ROLE_SET },
-  { href: "/company-accounts", roles: ACCOUNTS_NAV_ROLE_SET },
-  { href: "/accounts/invoices", roles: ACCOUNTS_NAV_ROLE_SET },
-  { href: "/accounts/reports", roles: ACCOUNTS_NAV_ROLE_SET },
-];
 
 // Paths any authenticated user can reach regardless of role (auth flow, own
 // profile, dashboards, customer portal/website, presentation, public shares).
