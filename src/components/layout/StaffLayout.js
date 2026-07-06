@@ -34,6 +34,8 @@ import {
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
 import { useRoster } from "@/context/RosterContext";
+import { getPrimaryRole, getPrimaryRoleLabel } from "@/lib/auth/rolePrecedence";
+import { useDepartmentStatus } from "@/hooks/useDepartmentStatus";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -278,7 +280,6 @@ export default function Layout({
       ? rawUserRoles.filter((role) => modeRoleSet.has(role))
       : rawUserRoles;
   const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
-  const activeModeLabel = selectedMode || availableModes[0] || null;
   const activeWorkspaceDepartment = workspaceNavEnabled
     ? getActiveWorkspaceDepartment(router.asPath || router.pathname, userRoles)
     : null;
@@ -291,16 +292,10 @@ export default function Layout({
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   // In presentation mode the real user's identity must NOT bleed through —
-  // the topbar greeting, name-derived flags and welcome-quote keying should
-  // all be driven by the picked demo role, never the actual logged-in user.
+  // name-derived flags and welcome-quote keying should all be driven by the
+  // picked demo role, never the actual logged-in user.
   const realUsername = typeof user?.username === "string" ? user.username.trim() : "";
   const normalizedUsername = presentationShell ? "" : realUsername;
-  const fallbackName = presentationShell
-    ? activePresentationRole?.demoName || "Demo User"
-    : realUsername || "Guest";
-  const firstName = presentationShell
-    ? fallbackName
-    : normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
   const userIdForQuote = presentationShell
     ? null
     :
@@ -318,6 +313,18 @@ export default function Layout({
   );
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
+
+  // Identity line for the top bar (computed centrally here so the bar stays
+  // presentational). Phase 1.3: primary role is chosen by precedence, not array
+  // order. Phase 1.2: department status is a reusable, live-data-driven line
+  // with static fallbacks (see useDepartmentStatus + the status registry).
+  const primaryRole = getPrimaryRole(userRoles);
+  const primaryRoleLabel = getPrimaryRoleLabel(userRoles) || "Staff";
+  const departmentStatus = useDepartmentStatus({
+    userRoles,
+    primaryRole,
+    isPresentation: presentationShell,
+  });
 
   const fetchCurrentJobStatus = useCallback(async (id) => {
     if (presentationShell) return;
@@ -550,11 +557,6 @@ export default function Layout({
     if (urlJobId) {
       setIsAutoJobCleared(true);
     }
-  };
-
-  const handleModeSelect = (mode) => {
-    if (!mode || mode === selectedMode) return;
-    setSelectedMode(mode);
   };
 
   // Handle Tea Break - unclock from all active jobs
@@ -1097,7 +1099,6 @@ export default function Layout({
             isCollapsed={!isSidebarOpen}
             extraSections={sidebarExtraSections}
             visibleRoles={userRoles}
-            modeLabel={activeModeLabel}
             allowedRoutes={presentationAllowedRoutes}
             presentationRoleKey={activePresentationRole?.key || null}
             inPresentationMode={presentationShell}
@@ -1228,7 +1229,6 @@ export default function Layout({
                     isCondensed
                     extraSections={sidebarExtraSections}
                     visibleRoles={userRoles}
-                    modeLabel={activeModeLabel}
                     allowedRoutes={presentationAllowedRoutes}
                     presentationRoleKey={activePresentationRole?.key || null}
                     inPresentationMode={presentationShell}
@@ -1247,12 +1247,9 @@ export default function Layout({
             isTablet={isTablet}
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
-            firstName={firstName}
-            availableModes={availableModes}
-            selectedMode={selectedMode}
-            activeModeLabel={activeModeLabel}
-            onModeSelect={handleModeSelect}
             colors={colors}
+            primaryRoleLabel={primaryRoleLabel}
+            departmentStatus={departmentStatus.text}
             isTech={isTech}
             canUseServiceActions={canUseServiceActions}
             hasPartsAccess={hasPartsAccess}

@@ -26,17 +26,27 @@ const PARTS_ACTION_LINKS = [
   { label: "Goods In", href: "/goods-in" },
 ];
 
+// Single-line truncation for the identity text so a long role label / status /
+// name never wraps and grows the fixed-height bar. Applied to the role line and
+// the status line; normal-length copy is unaffected (ellipsis only triggers when
+// it would otherwise overflow).
+const IDENTITY_TRUNCATE = {
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
 export default function StaffTopbar({
   isMobile,
   isTablet,
   isVerticalPhone,
   lockChromeInteraction = {},
-  firstName,
-  availableModes = [],
-  selectedMode,
-  activeModeLabel,
-  onModeSelect,
   colors,
+  // Identity (computed centrally in StaffLayout): the user's primary role label
+  // and the reusable live department status line. The bar just renders them.
+  primaryRoleLabel = "Staff",
+  departmentStatus = "",
   isTech,
   canUseServiceActions,
   hasPartsAccess,
@@ -122,37 +132,48 @@ export default function StaffTopbar({
           width: "100%",
         }}
       >
-        {/* Hide Welcome back and mode section on tablet/mobile */}
+        {/* Left identity block: current role + contextual department status.
+            Hidden on tablet/mobile (identity is surfaced via the sidebar Profile
+            button there), same as the greeting it replaces. `minWidth: 0` lets
+            long text truncate instead of pushing the centred action strip. */}
         {!isTablet && (
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "12px",
-              minWidth: "auto",
-              flex: "0 0 auto",
+              minWidth: 0,
+              flex: "0 1 auto",
             }}
           >
             <div
+              aria-label={
+                departmentStatus
+                  ? `Signed in as ${primaryRoleLabel}. ${departmentStatus}.`
+                  : `Signed in as ${primaryRoleLabel}.`
+              }
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 gap: "4px",
+                minWidth: 0,
               }}
             >
               <h1
+                title={primaryRoleLabel}
                 style={{
                   fontSize: "1.15rem",
                   fontWeight: 700,
                   margin: 0,
                   color: colors.accent,
                   lineHeight: 1.1,
+                  ...IDENTITY_TRUNCATE,
                 }}
               >
-                Welcome {firstName}
+                {primaryRoleLabel}
               </h1>
-              {availableModes.length > 0 && (
+              {departmentStatus && (
                 <div
                   style={{
                     display: "flex",
@@ -160,33 +181,21 @@ export default function StaffTopbar({
                     gap: "4px",
                     fontSize: "0.65rem",
                     fontWeight: 600,
+                    minWidth: 0,
+                    maxWidth: "100%",
                   }}
                 >
-                  <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    Mode:
+                  <span
+                    title={departmentStatus}
+                    style={{
+                      color: colors.mutedText,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      ...IDENTITY_TRUNCATE,
+                    }}
+                  >
+                    {departmentStatus}
                   </span>
-                  {availableModes.length > 1 ? (
-                    <DropdownField
-                      className="app-topbar-dropdown app-topbar-dropdown--mode"
-                      value={selectedMode || activeModeLabel || ""}
-                      onChange={(event) => onModeSelect(event.target.value)}
-                    >
-                      {availableModes.map((mode) => (
-                        <option key={mode} value={mode}>
-                          {mode}
-                        </option>
-                      ))}
-                    </DropdownField>
-                  ) : (
-                    <span
-                      style={{
-                        color: colors.accent,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {activeModeLabel}
-                    </span>
-                  )}
                 </div>
               )}
             </div>

@@ -177,14 +177,12 @@ export default function Sidebar({
   isCollapsed = false,
   extraSections = [],
   visibleRoles = null,
-  modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
   allowedRoutes = null,
   presentationRoleKey = null,
   inPresentationMode = false,
   pendingHref = null,
   isAuthLoading = false,
 }) {
-  void _modeLabel;
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
   // Optimistic active state: in the Pages Router router.asPath does not update
@@ -202,6 +200,9 @@ export default function Sidebar({
     [pathname, pendingHref]
   );
   const { user, dbUserId } = useUser();
+  // Full name for the Profile nav button (replaces the generic "Profile" label).
+  // user.username resolves to the signed-in user's display name (see UserContext).
+  const fullName = (user?.username || "").trim();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
   const canShowDevItems = !inPresentationMode && canShowDevSidebarItems(user);
@@ -476,10 +477,21 @@ export default function Sidebar({
     }
   }, [isClockedIn, dbUserId]);
 
-  const renderLinkLabel = (label, href) => {
+  // `truncate` ellipsises the label on a single line — used by the Profile
+  // button, which now renders the user's (potentially long) full name inside the
+  // fixed-width rail. `title` keeps the full text accessible on hover.
+  const renderLinkLabel = (label, href, { truncate = false } = {}) => {
     const isMessagesItem = href === "/messages";
+    const labelStyle = truncate
+      ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }
+      : undefined;
+    const labelSpan = (
+      <span style={labelStyle} title={truncate ? label : undefined}>
+        {label}
+      </span>
+    );
     if (!href) {
-      return <span>{label}</span>;
+      return labelSpan;
     }
     return (
       <div
@@ -489,9 +501,10 @@ export default function Sidebar({
           justifyContent: "space-between",
           gap: "8px",
           flex: 1,
+          minWidth: 0,
         }}
       >
-        <span>{label}</span>
+        {labelSpan}
         {isMessagesItem && unreadCount > 0 && (
           <span
             className="app-badge app-badge--danger-strong app-badge--round-count"
@@ -509,8 +522,8 @@ export default function Sidebar({
   // Idle icons match the normal sidebar button text colour (.app-btn--secondary
   // uses var(--text-accent)).
   const ICON_COLOR = "var(--text-accent)";
-  const renderNavContent = (label, href, isActive = false) => {
-    if (!isCollapsed) return renderLinkLabel(label, href);
+  const renderNavContent = (label, href, isActive = false, opts = {}) => {
+    if (!isCollapsed) return renderLinkLabel(label, href, opts);
     return (
       <span
         aria-hidden="true"
@@ -1067,6 +1080,14 @@ export default function Sidebar({
               if (item.href) {
                 if (inPresentationMode) return null;
                 const isActive = isItemActive(item.href);
+                // Profile button shows the user's full name in place of the
+                // generic "Profile" label. When the rail is collapsed the icon
+                // stays keyed on the original label ("Profile") so
+                // getSidebarNavIcon still resolves; the full name surfaces as the
+                // hover/aria label instead.
+                const isProfileItem = item.href === "/profile";
+                const displayLabel = isProfileItem && fullName ? fullName : item.label;
+                const contentLabel = isCollapsed ? item.label : displayLabel;
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
@@ -1078,9 +1099,11 @@ export default function Sidebar({
                     style={{
                       marginBottom: "10px",
                     }}
-                    {...navLinkProps(item.label)}
+                    {...navLinkProps(displayLabel)}
                   >
-                    {renderNavContent(item.label, item.href, isActive)}
+                    {renderNavContent(contentLabel, item.href, isActive, {
+                      truncate: isProfileItem,
+                    })}
                   </Link>
                 );
               }
