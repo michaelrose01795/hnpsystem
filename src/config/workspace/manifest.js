@@ -19,6 +19,7 @@ import {
   WORKSPACE_QUICK_ACTIONS,
 } from "./departments";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
+import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { isWorkspaceNavEnabled } from "./flags";
 
 export { isWorkspaceNavEnabled };
@@ -46,12 +47,78 @@ function normalizeRoleSet(roles) {
   );
 }
 
-// Visibility check — mirrors StaffSidebar.hasAccess() / pageAccess.hasMatchingRole:
-// empty/absent roles ⇒ visible to every authenticated user; otherwise a
-// case-insensitive membership test against the user's role set.
-function itemVisibleTo(item, roleSet) {
-  if (!item.roles || item.roles.length === 0) return true;
-  return item.roles.some((required) => roleSet.has(String(required).toLowerCase()));
+// ---------------------------------------------------------------------------
+// WORKSPACE GROUP PERMISSION MODEL
+//
+// A page's GROUP is its section's `department`. Assigning a workspace group to a
+// role automatically grants that role every GROUP-WIDE page in the group (a page
+// with no `roles` of its own). A page MAY still carry its own `roles` as an
+// individual restriction/grant, which is honoured independently of the group —
+// so cross-group grants (e.g. Sales seeing the Admin group's Website Manager)
+// keep working.
+//
+// GROUP_ROLE_INDEX maps a group key → the roles assigned to it:
+//   • null            ⇒ assigned to EVERY authenticated user (General, Account —
+//                        their department declares `roles: []`).
+//   • Set<role>       ⇒ the explicit/derived roles that hold the group.
+// A department with `roles: undefined` derives its assigned roles from the
+// canonical ROLE_DEPARTMENT_MAP (so nav and reporting can never drift); a
+// department key not present in that map (e.g. `reports`) derives an empty set,
+// which is fine because those groups gate every page with explicit `roles`.
+// ---------------------------------------------------------------------------
+const GROUP_ROLE_INDEX = (() => {
+  const index = new Map();
+  for (const dept of WORKSPACE_DEPARTMENTS) {
+    if (Array.isArray(dept.roles)) {
+      // `[]` is the "assigned to all authenticated" sentinel; a non-empty array
+      // is the explicit assignment (e.g. Developer → ["dev"]).
+      index.set(dept.key, dept.roles.length === 0 ? null : normalizeRoleSet(dept.roles));
+    } else {
+      const derived = Object.entries(ROLE_DEPARTMENT_MAP)
+        .filter(([, code]) => code === dept.key)
+        .map(([role]) => role);
+      index.set(dept.key, normalizeRoleSet(derived));
+    }
+  }
+  return index;
+})();
+
+// Does the workspace group grant this role set? Group-wide pages inherit this.
+function groupGrantsRole(departmentKey, roleSet) {
+  if (!departmentKey || !GROUP_ROLE_INDEX.has(departmentKey)) return false;
+  const groupRoles = GROUP_ROLE_INDEX.get(departmentKey);
+  if (groupRoles === null) return true; // assigned to every authenticated user
+  for (const role of roleSet) {
+    if (groupRoles.has(role)) return true;
+  }
+  return false;
+}
+
+// getWorkspaceGroupRoles(departmentKey) — the roles ASSIGNED to a workspace
+// group. Returns "*" when the group is open to every authenticated user, or a
+// sorted role array otherwise. A role assigned a group can see every group-wide
+// page in it (pages that carry no individual `roles` restriction).
+export function getWorkspaceGroupRoles(departmentKey) {
+  if (!GROUP_ROLE_INDEX.has(departmentKey)) return [];
+  const groupRoles = GROUP_ROLE_INDEX.get(departmentKey);
+  if (groupRoles === null) return "*";
+  return Array.from(groupRoles).sort();
+}
+
+// Visibility check for a nav item.
+//   • A page WITH `roles` is gated by those roles only (individual
+//     restriction/grant) — independent of group assignment. This preserves every
+//     existing per-page permission, including cross-group grants.
+//   • A page WITHOUT `roles` is GROUP-WIDE: it inherits the group's assigned
+//     roles (see GROUP_ROLE_INDEX). When no group context is supplied (page
+//     tabs, quick actions), an un-roled item stays visible to all — matching the
+//     legacy "empty roles ⇒ everyone" rule for those non-group surfaces.
+function itemVisibleTo(item, roleSet, departmentKey = null) {
+  if (item.roles && item.roles.length > 0) {
+    return item.roles.some((required) => roleSet.has(String(required).toLowerCase()));
+  }
+  if (!departmentKey) return true;
+  return groupGrantsRole(departmentKey, roleSet);
 }
 
 // Is a section's feature flag satisfied? Section flags currently live in the
@@ -122,7 +189,7 @@ export function getAccessibleNavPaths(roles) {
   for (const section of enabledSectionsInOrder()) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (itemVisibleTo(item, roleSet)) accessible.add(item.href);
+      if (itemVisibleTo(item, roleSet, section.department)) accessible.add(item.href);
     }
   }
   for (const action of WORKSPACE_QUICK_ACTIONS) {
@@ -134,7 +201,7 @@ export function getAccessibleNavPaths(roles) {
     if (!sectionFlagEnabled(section)) continue;
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (itemVisibleTo(item, roleSet)) accessible.add(item.href);
+      if (itemVisibleTo(item, roleSet, section.department)) accessible.add(item.href);
     }
   }
   return accessible;
@@ -152,45 +219,6 @@ function workspaceSectionsForDepartment(departmentKey) {
   return enabledWorkspaceSectionsInOrder().filter((s) => s.department === departmentKey);
 }
 
-function buildContextGroups(department, roles) {
-  const roleSet = normalizeRoleSet(roles);
-  const seen = new Set();
-  const groups = [];
-
-  if (department?.home && department.category === "departments") {
-    seen.add(department.home);
-    groups.push({
-      key: `${department.key}-overview`,
-      label: "Workspace",
-      collapsible: false,
-      defaultOpen: true,
-      items: [{ label: "Overview", href: department.home }],
-    });
-  }
-
-  for (const section of workspaceSectionsForDepartment(department?.key)) {
-    const items = [];
-    for (const item of section.items || []) {
-      if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
-      if (seen.has(item.href)) continue;
-      seen.add(item.href);
-      items.push({ label: item.label, href: item.href });
-    }
-    if (items.length > 0) {
-      groups.push({
-        key: section.key || `${section.department}-${section.label}`,
-        label: section.label,
-        collapsible: items.length > 4 || groups.length > 1,
-        defaultOpen: true,
-        items,
-      });
-    }
-  }
-
-  return groups;
-}
-
 // getDepartmentsForRoles(roles) — the ordered list of departments the user can
 // see (≥1 accessible item), for the Tier-1 Department Rail. Returns the
 // department metadata objects from WORKSPACE_DEPARTMENTS. Callers split by
@@ -200,7 +228,7 @@ export function getDepartmentsForRoles(roles) {
   return WORKSPACE_DEPARTMENTS.filter((dept) => {
     if (dept.flag && !getReportingFlag(dept.flag)) return false;
     return workspaceSectionsForDepartment(dept.key).some((section) =>
-      (section.items || []).some((item) => itemVisibleTo(item, roleSet))
+      (section.items || []).some((item) => itemVisibleTo(item, roleSet, section.department))
     );
   })
     .slice()
@@ -218,7 +246,7 @@ export function getContextNav(departmentKey, roles) {
   for (const section of workspaceSectionsForDepartment(departmentKey)) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
       if (!seen.has(item.href)) {
         seen.set(item.href, { label: item.label, href: item.href });
       }
@@ -234,20 +262,41 @@ export function getContextNav(departmentKey, roles) {
 // ordered sections so it is deterministic; the lowest-order section that lists a
 // path owns it. Department is NOT inferable from the URL (flat routes), so this
 // explicit index is the source of truth for getActiveDepartment/breadcrumbs.
+// getDepartmentWorkspaceNav(departmentKey, roles) — the Workspace GROUP view: a
+// single flat, deduplicated page list for one group (Phase 8 — Group Sidebar).
+// No sub-group headings and no collapsible sections; a department group opens on
+// its Overview (the department home) so it behaves like its own dedicated
+// sidebar. Page visibility follows the group permission model (itemVisibleTo):
+// group-wide pages are granted by the group assignment, individually-roled pages
+// keep their own restriction.
 export function getDepartmentWorkspaceNav(departmentKey, roles) {
   const department = WORKSPACE_DEPARTMENTS.find((dept) => dept.key === departmentKey) || null;
-  const context = getContextNav(departmentKey, roles);
-  const groups = buildContextGroups(department, roles);
-  const items = groups.flatMap((group) => group.items || []);
+  const roleSet = normalizeRoleSet(roles);
+  const seen = new Set();
+  const items = [];
+
+  if (department?.home && department.category === "departments") {
+    seen.add(department.home);
+    items.push({ label: "Overview", href: department.home });
+  }
+
+  for (const section of workspaceSectionsForDepartment(departmentKey)) {
+    for (const item of section.items || []) {
+      if (!item.href) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+      items.push({ label: item.label, href: item.href });
+    }
+  }
 
   return {
     department: departmentKey,
-    label: department?.label || context.department,
+    label: department?.label || departmentKey,
     home: department?.home || null,
     icon: department?.icon || null,
     category: department?.category || null,
     itemCount: items.length,
-    groups,
     items,
   };
 }
@@ -260,6 +309,20 @@ export function getWorkspaceRail(roles) {
     icon: department.icon,
     home: department.home || null,
   }));
+}
+
+// getWorkspaceGroups(roles) — the Tier-1 GROUP LIST for the Group Sidebar Flow
+// (Phase 7). These are the clickable top-level groups a user first sees: the
+// General group plus every department they can access, in manifest order.
+// Selecting one replaces the whole sidebar with that group's context nav.
+//
+// The Account bucket (Profile / Logout) is intentionally excluded — it is NOT a
+// navigable group; the sidebar renders it as its persistent bottom controls
+// (clock in/out, logout, profile) regardless of which group is open.
+export function getWorkspaceGroups(roles) {
+  return getWorkspaceRail(roles).filter(
+    (group) => group.category === "general" || group.category === "departments"
+  );
 }
 
 export function getDashboardShortcutsForRoles(roles) {
@@ -412,7 +475,7 @@ export function getSearchItems(roles) {
   for (const section of enabledWorkspaceSectionsInOrder()) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
       if (!seen.has(item.href)) {
         seen.set(item.href, {
           label: item.label,

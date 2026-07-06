@@ -26,6 +26,8 @@ import {
   getDepartmentsForRoles,
   getDashboardShortcutsForRoles,
   getWorkspaceRail,
+  getWorkspaceGroups,
+  getWorkspaceGroupRoles,
   getBreadcrumbTrail,
   getQuickActions,
   getSearchItems,
@@ -547,6 +549,45 @@ describe("workspace manifest — department-first selectors", () => {
     expect(adminRail).toContain("Admin");
   });
 
+  it("getWorkspaceGroups (Group Sidebar Flow) lists General + departments, excludes Account", () => {
+    // The Tier-1 group picker the user first sees: General is a selectable group,
+    // every accessible department follows in manifest order, and the Account
+    // bucket (profile/logout) is NOT a group — it stays as the sidebar's bottom
+    // controls. Roleless users still see the General group.
+    const rolelessGroups = getWorkspaceGroups([]);
+    expect(rolelessGroups.map((g) => g.key)).toContain("general");
+    expect(rolelessGroups.map((g) => g.category)).not.toContain("account");
+
+    const serviceGroups = getWorkspaceGroups(["service"]);
+    const serviceKeys = serviceGroups.map((g) => g.key);
+    // General first, then the department(s) the role can reach; no Account group.
+    expect(serviceKeys[0]).toBe("general");
+    expect(serviceKeys).toContain("service");
+    expect(serviceKeys).not.toContain("parts");
+    expect(serviceKeys).not.toContain("account");
+    // Every group carries a selectable key + label (drives the group buttons).
+    for (const group of serviceGroups) {
+      expect(typeof group.key).toBe("string");
+      expect(typeof group.label).toBe("string");
+    }
+
+    // dev-only Developer group appears only for the dev role.
+    expect(getWorkspaceGroups(["dev"]).map((g) => g.key)).toContain("developer");
+    expect(getWorkspaceGroups(["service"]).map((g) => g.key)).not.toContain("developer");
+  });
+
+  it("each workspace group resolves to a non-empty context nav (full sidebar replacement)", () => {
+    // Selecting a group replaces the whole sidebar with getDepartmentWorkspaceNav
+    // for that group — so every listed group must have at least one landable item,
+    // otherwise the group view would render empty.
+    for (const roles of [["service"], ["parts manager"], ["workshop manager"], ["admin manager"], []]) {
+      for (const group of getWorkspaceGroups(roles)) {
+        const nav = getDepartmentWorkspaceNav(group.key, roles);
+        expect(nav.items.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("getDepartmentWorkspaceNav includes workspace-only accounts links without changing classic sidebar", () => {
     const accountsNav = getDepartmentWorkspaceNav("accounts", ["accounts manager"]);
     const hrefs = accountsNav.items.map((item) => item.href);
@@ -559,13 +600,16 @@ describe("workspace manifest — department-first selectors", () => {
     )).toBe(false);
   });
 
-  it("getDepartmentWorkspaceNav groups context sections while preserving flat items", () => {
+  it("getDepartmentWorkspaceNav returns a flat, deduped page list (no sub-groups)", () => {
     const workshopNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
-    expect(workshopNav.groups.map((group) => group.label)).toContain("Workspace");
-    expect(workshopNav.groups.flatMap((group) => group.items).map((item) => item.href)).toEqual(
-      workshopNav.items.map((item) => item.href)
-    );
-    expect(workshopNav.groups.some((group) => group.collapsible)).toBe(true);
+    // Group Sidebar: no grouped/collapsible sub-sections any more — just a flat
+    // item list. A department group opens on its Overview (the department home).
+    expect(workshopNav.groups).toBeUndefined();
+    expect(workshopNav.items[0]).toEqual({ label: "Overview", href: "/dashboard/workshop" });
+    const hrefs = workshopNav.items.map((item) => item.href);
+    expect(new Set(hrefs).size).toBe(hrefs.length); // deduplicated
+    expect(hrefs).toContain("/clocking");
+    expect(hrefs).toContain("/jobs");
   });
 
   it("getActiveWorkspaceDepartment resolves shared routes through role-visible workspaces", () => {
@@ -635,6 +679,42 @@ describe("workspace manifest — department-first selectors", () => {
     const shortcuts = getWorkspaceShortcutItems(["parts"]);
     expect(shortcuts.map((item) => item.href)).toContain("/deliveries");
     expect(shortcuts.map((item) => item.href)).toContain("/new-order");
+  });
+});
+
+describe("workspace group permission model", () => {
+  it("getWorkspaceGroupRoles exposes group assignments ('*' for all-access groups)", () => {
+    // General and Account are open to every authenticated user.
+    expect(getWorkspaceGroupRoles("general")).toBe("*");
+    expect(getWorkspaceGroupRoles("account")).toBe("*");
+    // Developer is explicitly assigned to the synthetic dev role only.
+    expect(getWorkspaceGroupRoles("developer")).toEqual(["dev"]);
+    // A real department derives its assigned roles from ROLE_DEPARTMENT_MAP.
+    const workshopRoles = getWorkspaceGroupRoles("workshop");
+    expect(Array.isArray(workshopRoles)).toBe(true);
+    expect(workshopRoles).toContain("workshop manager");
+    expect(workshopRoles).toContain("techs");
+    expect(workshopRoles).not.toContain("parts");
+  });
+
+  it("group assignment grants group-wide pages; explicit page roles still restrict", () => {
+    // General is assigned to every authenticated user, so its group-wide pages
+    // (no per-page roles) are visible even to a roleless user...
+    const generalRoleless = getContextNav("general", []).items.map((i) => i.href);
+    expect(generalRoleless).toContain("/newsfeed");
+    expect(generalRoleless).toContain("/messages");
+    expect(generalRoleless).toContain("/archive");
+    // ...but a page carrying its own roles (Tracker) stays restricted.
+    expect(generalRoleless).not.toContain("/tracking");
+    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking");
+  });
+
+  it("individual page grants work across groups (Sales sees the Admin group's Website Manager)", () => {
+    // Sales is NOT assigned the Admin (management) group...
+    expect(getWorkspaceGroupRoles("management")).not.toContain("sales");
+    // ...but the Website Manager page grants Sales explicitly, so it is visible.
+    const salesAdmin = getContextNav("management", ["sales"]).items.map((i) => i.href);
+    expect(salesAdmin).toContain("/website-manager");
   });
 });
 
