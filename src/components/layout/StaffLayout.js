@@ -22,6 +22,7 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
 import StaffTopbar from "@/components/layout/StaffTopbar";
+import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
@@ -34,8 +35,14 @@ import {
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
 import { useRoster } from "@/context/RosterContext";
-import { getPrimaryRole, getPrimaryRoleLabel } from "@/lib/auth/rolePrecedence";
-import { useDepartmentStatus } from "@/hooks/useDepartmentStatus";
+import { getPrimaryRoleLabel } from "@/lib/auth/rolePrecedence";
+import { resolveDepartmentForRoles } from "@/lib/reporting/config/departments";
+import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
+import { buildStatusViews } from "@/config/topbar/statusViews";
+import { resolveQuickActions } from "@/config/topbar/quickActions";
+import { useContinueContext } from "@/hooks/useContinueContext";
+import { usePinnedShortcuts } from "@/hooks/usePinnedShortcuts";
+import { useRoleNotifications } from "@/hooks/useRoleNotifications";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -314,17 +321,61 @@ export default function Layout({
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
 
-  // Identity line for the top bar (computed centrally here so the bar stays
-  // presentational). Phase 1.3: primary role is chosen by precedence, not array
-  // order. Phase 1.2: department status is a reusable, live-data-driven line
-  // with static fallbacks (see useDepartmentStatus + the status registry).
-  const primaryRole = getPrimaryRole(userRoles);
+  // Role-aware workspace for the top bar (computed centrally here so the bar
+  // stays presentational). All the reusable pieces live in src/config/topbar,
+  // src/hooks and src/lib/topbar; adding a department extends those, not the bar.
   const primaryRoleLabel = getPrimaryRoleLabel(userRoles) || "Staff";
-  const departmentStatus = useDepartmentStatus({
-    userRoles,
-    primaryRole,
+  const departmentCode = resolveDepartmentForRoles(userRoles);
+
+  // Phase 2.1/2.2: live operational metrics (endpoint + roster), assembled into
+  // the rotating status views (summary → KPIs → insights, Phase 2.6).
+  const operationalSnapshot = useOperationalSnapshot({
+    department: departmentCode,
+    isPresentation: presentationShell,
+    // The rotating status line is desktop-only, so don't poll on tablet/mobile.
+    enabled: !isTablet,
+  });
+  const statusViews = useMemo(
+    () =>
+      buildStatusViews(departmentCode, operationalSnapshot.metrics, {
+        isPresentation: presentationShell,
+      }),
+    [departmentCode, operationalSnapshot.metrics, presentationShell]
+  );
+  // Phase 2.7: adaptive role-aware notifications derived from the same metrics.
+  const roleNotifications = useRoleNotifications({
+    department: departmentCode,
+    metrics: operationalSnapshot.metrics,
     isPresentation: presentationShell,
   });
+  // Phase 2.4: configurable role-specific quick actions (manifest wins, else the
+  // capability defaults). Preserves the previous behaviour, de-hardcoded.
+  const topbarQuickActions = resolveQuickActions({
+    manifestQuickActions: workspaceQuickActions,
+    canUseServiceActions,
+    hasPartsAccess,
+  });
+  // Phase 2.3: Continue Where You Left Off.
+  const continueContext = useContinueContext(router.asPath, {
+    enabled: !presentationShell,
+  });
+  // Phase 2.5: pinned shortcuts + the current page as a pin candidate.
+  const {
+    pins: topbarPins,
+    isPinned: isTopbarPinned,
+    togglePin: toggleTopbarPin,
+  } = usePinnedShortcuts({ enabled: !presentationShell });
+  const currentPinItem = useMemo(() => {
+    const base = (router.asPath || "").split("?")[0].split("#")[0];
+    if (!base || base === "/") return null;
+    const segs = base.split("/").filter(Boolean);
+    const last = segs[segs.length - 1] || "home";
+    const label = last
+      .replace(/\[|\]/g, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return { href: base, label };
+  }, [router.asPath]);
 
   const fetchCurrentJobStatus = useCallback(async (id) => {
     if (presentationShell) return;
@@ -1249,10 +1300,9 @@ export default function Layout({
             lockChromeInteraction={lockChromeInteraction}
             colors={colors}
             primaryRoleLabel={primaryRoleLabel}
-            departmentStatus={departmentStatus.text}
+            statusViews={statusViews}
+            notifications={roleNotifications}
             isTech={isTech}
-            canUseServiceActions={canUseServiceActions}
-            hasPartsAccess={hasPartsAccess}
             status={status}
             presentationShell={presentationShell}
             currentJob={currentJob}
@@ -1260,7 +1310,13 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            quickActions={workspaceQuickActions}
+            quickActions={topbarQuickActions}
+            resumeItem={continueContext.mostRecent}
+            pins={topbarPins}
+            isPinned={isTopbarPinned}
+            onTogglePin={toggleTopbarPin}
+            currentPageItem={currentPinItem}
+            canPin={!presentationShell}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
@@ -1584,6 +1640,20 @@ export default function Layout({
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
       <TopbarAlerts />
+      {/* Phase 3 productivity system — command palette + (progressively) recent,
+          favourites, suggestions, shortcuts and widgets. Globally mounted and
+          overlay/keyboard-driven so the top bar's height/design is untouched.
+          Disabled in the demo shell and on the login shell. */}
+      <WorkspaceCommandCenter
+        enabled={!presentationShell && !hideSidebar && Boolean(user)}
+        currentAsPath={router.asPath}
+        currentPage={currentPinItem}
+        navigationItems={navigationItems}
+        quickActions={topbarQuickActions}
+        userRoles={userRoles}
+        department={departmentCode}
+        metrics={operationalSnapshot.metrics}
+      />
       <div className="orientation-lock" role="status" aria-live="polite">
         <div className="orientation-lock__card redirect-card">
           <div className="login-brand redirect-brand" aria-hidden="true">

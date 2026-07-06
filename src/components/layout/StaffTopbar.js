@@ -13,18 +13,20 @@ import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { useRotatingViews } from "@/hooks/useRotatingViews";
 
-// Topbar-only quick-action links (previously module constants in Layout.js).
-const SERVICE_ACTION_LINKS = [
-  { label: "Create Job Card", href: "/new-job" },
-  { label: "Appointments", href: "/job-cards/appointments" },
-];
-
-const PARTS_ACTION_LINKS = [
-  { label: "Delivery/Collection Planner", href: "/delivery-planner" },
-  { label: "Create Order", href: "/new-order" },
-  { label: "Goods In", href: "/goods-in" },
-];
+// Visually-hidden style for the screen-reader-only notification live region.
+const SR_ONLY = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
 
 // Single-line truncation for the identity text so a long role label / status /
 // name never wraps and grows the fixed-height bar. Applied to the role line and
@@ -46,10 +48,11 @@ export default function StaffTopbar({
   // Identity (computed centrally in StaffLayout): the user's primary role label
   // and the reusable live department status line. The bar just renders them.
   primaryRoleLabel = "Staff",
-  departmentStatus = "",
+  // Rotating status line (Phase 2.1/2.2/2.6): summary → KPIs → insights.
+  statusViews = [],
+  // Role-aware notifications (Phase 2.7): { items, high, count, top }.
+  notifications = null,
   isTech,
-  canUseServiceActions,
-  hasPartsAccess,
   status,
   presentationShell = false,
   currentJob,
@@ -57,7 +60,16 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
-  quickActions = null,
+  // Configurable role-specific quick actions (Phase 2.4), resolved in StaffLayout.
+  quickActions = [],
+  // Continue-Where-You-Left-Off (Phase 2.3): the resume target or null.
+  resumeItem = null,
+  // Pinned shortcuts (Phase 2.5).
+  pins = [],
+  onTogglePin,
+  isPinned,
+  currentPageItem = null,
+  canPin = false,
   overlay = false,
   // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
   // search is in use (focused or its results list showing).
@@ -71,8 +83,40 @@ export default function StaffTopbar({
   barStyle = undefined,
 }) {
   const router = useRouter();
-  const usesManifestQuickActions = Array.isArray(quickActions);
-  const hasManifestQuickActions = usesManifestQuickActions && quickActions.length > 0;
+  const resolvedQuickActions = Array.isArray(quickActions) ? quickActions : [];
+  const resolvedPins = Array.isArray(pins) ? pins : [];
+
+  // Rotating status line — pauses on hover/focus; content-only, no size change.
+  const rotating = useRotatingViews(statusViews);
+  const statusLine = rotating.current || "";
+  const summaryLine = statusViews[0] || ""; // stable line for the aria-label
+  const notificationMessage = notifications?.top?.message || null;
+  const notificationCount = notifications?.count || 0;
+
+  const isActionHref = (href) =>
+    router.pathname === href || router.pathname.startsWith(`${href}/`);
+
+  const showPinToggle = canPin && Boolean(currentPageItem) && typeof onTogglePin === "function";
+  const currentPinned =
+    showPinToggle && typeof isPinned === "function" ? isPinned(currentPageItem.href) : false;
+
+  const hasStrip =
+    isTech ||
+    resolvedQuickActions.length > 0 ||
+    resolvedPins.length > 0 ||
+    Boolean(resumeItem) ||
+    showPinToggle;
+
+  // Shared style for every action group in the centre strip (Phase 2.8 cleanup).
+  const actionGroupStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: isVerticalPhone ? "flex-start" : "center",
+    gap: isMobile ? "8px" : "12px",
+    flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+    width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
+    minWidth: 0,
+  };
 
   // Fixed-card scroll model: the bar overlays the top of the page card (aligned
   // to the card's gutters) and stays put while the card's content scrolls behind
@@ -148,11 +192,12 @@ export default function StaffTopbar({
           >
             <div
               aria-label={
-                departmentStatus
-                  ? `Signed in as ${primaryRoleLabel}. ${departmentStatus}.`
+                summaryLine
+                  ? `Signed in as ${primaryRoleLabel}. ${summaryLine}.`
                   : `Signed in as ${primaryRoleLabel}.`
               }
               style={{
+                position: "relative",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
@@ -173,8 +218,12 @@ export default function StaffTopbar({
               >
                 {primaryRoleLabel}
               </h1>
-              {departmentStatus && (
+              {statusLine && (
                 <div
+                  onMouseEnter={rotating.pause}
+                  onMouseLeave={rotating.resume}
+                  onFocus={rotating.pause}
+                  onBlur={rotating.resume}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -186,7 +235,7 @@ export default function StaffTopbar({
                   }}
                 >
                   <span
-                    title={departmentStatus}
+                    title={statusLine}
                     style={{
                       color: colors.mutedText,
                       textTransform: "uppercase",
@@ -194,15 +243,22 @@ export default function StaffTopbar({
                       ...IDENTITY_TRUNCATE,
                     }}
                   >
-                    {departmentStatus}
+                    {statusLine}
                   </span>
                 </div>
+              )}
+              {/* Role-aware notifications (Phase 2.7): announced to assistive
+                  tech without any visual change to the bar. */}
+              {notificationMessage && (
+                <span role="status" aria-live="polite" style={SR_ONLY}>
+                  {`${notificationCount} notification${notificationCount === 1 ? "" : "s"}: ${notificationMessage}`}
+                </span>
               )}
             </div>
           </div>
         )}
 
-        {(isTech || hasManifestQuickActions || (!usesManifestQuickActions && (canUseServiceActions || hasPartsAccess))) && (
+        {hasStrip && (
           <div
             className="app-topbar-action-scroll"
             style={{
@@ -224,19 +280,9 @@ export default function StaffTopbar({
               overflowY: isVerticalPhone ? "hidden" : "visible",
             }}
           >
+            {/* Technician workflow controls — preserved exactly (Phase 2.4). */}
             {isTech && (
-              <div
-                className="app-topbar-action-group"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: isVerticalPhone ? "flex-start" : "center",
-                  gap: isMobile ? "8px" : "12px",
-                  flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                  width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                  minWidth: 0,
-                }}
-              >
+              <div className="app-topbar-action-group" style={actionGroupStyle}>
                 <DropdownField
                   className="app-topbar-dropdown app-topbar-dropdown--status"
                   value={presentationShell ? "Waiting for Job" : status}
@@ -258,11 +304,7 @@ export default function StaffTopbar({
                     {`Open Job ${currentJob.jobNumber}`}
                   </Link>
                 ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="app-btn app-btn--secondary"
-                  >
+                  <button type="button" disabled className="app-btn app-btn--secondary">
                     No Current Job
                   </button>
                 )}
@@ -279,97 +321,62 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {hasManifestQuickActions && (
-              <div
-                className="app-topbar-action-group"
-                style={{
-                  display: "flex",
-                  flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                  gap: isMobile ? "8px" : "12px",
-                  justifyContent: isVerticalPhone ? "flex-start" : "center",
-                  alignItems: "center",
-                  width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                  minWidth: 0,
-                }}
-              >
-                {quickActions.map((action) => {
-                  const active =
-                    router.pathname === action.href ||
-                    router.pathname.startsWith(`${action.href}/`);
-                  return (
-                    <Link
-                      key={action.href}
-                      href={action.href}
-                      prefetch={false}
-                      className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
-                    >
-                      {action.label}
-                    </Link>
-                  );
-                })}
+            {/* Continue Where You Left Off (Phase 2.3). */}
+            {resumeItem && (
+              <div className="app-topbar-action-group" style={actionGroupStyle}>
+                <Link
+                  href={resumeItem.href}
+                  prefetch={false}
+                  className="app-btn app-btn--secondary"
+                  title={`Resume ${resumeItem.type}: ${resumeItem.label}`}
+                >
+                  {`Resume: ${resumeItem.label}`}
+                </Link>
               </div>
             )}
 
-            {!usesManifestQuickActions && canUseServiceActions && (
-              <div
-                className="app-topbar-action-group"
-                style={{
-                  display: "flex",
-                  flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                  gap: isMobile ? "8px" : "12px",
-                  justifyContent: isVerticalPhone ? "flex-start" : "center",
-                  alignItems: "center",
-                  width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                  minWidth: 0,
-                }}
-              >
-                {SERVICE_ACTION_LINKS.map((action) => {
-                  const active =
-                    router.pathname === action.href ||
-                    router.pathname.startsWith(`${action.href}/`);
-                  return (
-                    <Link
-                      key={action.href}
-                      href={action.href}
-                      prefetch={false}
-                      className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
-                    >
-                      {action.label}
-                    </Link>
-                  );
-                })}
+            {/* Configurable role-specific quick actions (Phase 2.4). */}
+            {resolvedQuickActions.length > 0 && (
+              <div className="app-topbar-action-group" style={actionGroupStyle}>
+                {resolvedQuickActions.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    prefetch={false}
+                    className={`app-btn app-btn--secondary${isActionHref(action.href) ? " is-active" : ""}`}
+                  >
+                    {action.label}
+                  </Link>
+                ))}
               </div>
             )}
 
-            {!usesManifestQuickActions && hasPartsAccess && (
-              <div
-                className="app-topbar-action-group"
-                style={{
-                  display: "flex",
-                  flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                  gap: isMobile ? "8px" : "12px",
-                  justifyContent: isVerticalPhone ? "flex-start" : "center",
-                  alignItems: "center",
-                  textAlign: "center",
-                  width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                  minWidth: 0,
-                }}
-              >
-                {PARTS_ACTION_LINKS.map((action) => {
-                  const active =
-                    router.pathname === action.href ||
-                    router.pathname.startsWith(`${action.href}/`);
-                  return (
-                    <Link
-                      key={action.href}
-                      href={action.href}
-                      prefetch={false}
-                      className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
-                    >
-                      {action.label}
-                    </Link>
-                  );
-                })}
+            {/* Pinned shortcuts + pin-this-page toggle (Phase 2.5). */}
+            {(resolvedPins.length > 0 || showPinToggle) && (
+              <div className="app-topbar-action-group" style={actionGroupStyle}>
+                {resolvedPins.map((pin) => (
+                  <Link
+                    key={pin.href}
+                    href={pin.href}
+                    prefetch={false}
+                    className={`app-btn app-btn--secondary${isActionHref(pin.href) ? " is-active" : ""}`}
+                    title={pin.label}
+                  >
+                    {pin.label}
+                  </Link>
+                ))}
+                {showPinToggle && (
+                  <button
+                    type="button"
+                    onClick={() => onTogglePin(currentPageItem)}
+                    className="app-btn app-btn--ghost"
+                    aria-pressed={currentPinned}
+                    aria-label={currentPinned ? "Unpin this page" : "Pin this page"}
+                    title={currentPinned ? "Unpin this page" : "Pin this page"}
+                  >
+                    {currentPinned ? "★" : "☆"}
+                  </button>
+                )}
               </div>
             )}
           </div>
