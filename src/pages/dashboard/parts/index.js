@@ -3,7 +3,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getPartsDashboardData } from "@/lib/database/dashboard/parts";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import PartsDashboardUi from "@/components/page-ui/dashboard/parts/dashboard-parts-ui"; // Extracted presentation layer.
@@ -19,29 +21,20 @@ const MetricCard = ({ label, value, helper }) => (
 );
 
 
-const TrendBlock = ({ data }) => {
-  const max = Math.max(1, ...(data || []).map((item) => item.count));
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {(data || []).map((point) =>
-      <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.8rem", color: "var(--info)" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
-            <div
-            style={{
-              width: `${Math.round(point.count / max * 100)}%`,
-              height: "100%",
-              background: "var(--accent-purple)",
-              borderRadius: 4
-            }} />
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "parts" };
+const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "parts" };
 
-          </div>
-          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
-        </div>
-      )}
-    </div>);
-
-};
+const TrendBlock = ({ data }) => (
+  <ReportLinkedTrend
+    kpiId="prt.requests"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey="dashboard-parts-requests-trend-chart"
+    parentKey="dashboard-parts-requests-trend"
+    unit="count"
+    format="0,0"
+  />
+);
 
 const humanizeStatusLabel = (value) => {
   if (!value) return "Unknown";
@@ -76,8 +69,13 @@ export default function PartsDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportToday = useKpiValues(hasAccess ? ["prt.requests", "prt.ordered"] : [], REPORT_TODAY_FILTER);
 
-  const requestSummary = data?.requestSummary ?? {};
+  const requestSummary = {
+    ...(data?.requestSummary ?? {}),
+    totalRequests: reportToday.byId["prt.requests"]?.value ?? data?.requestSummary?.totalRequests,
+    partsOnOrder: reportToday.byId["prt.ordered"]?.value ?? data?.requestSummary?.partsOnOrder,
+  };
   const stockAlerts = data?.stockAlerts || [];
   const requestsByStatus = data?.requestsByStatus || [];
   const recentRequests = data?.recentRequests || [];

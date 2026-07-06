@@ -109,7 +109,7 @@ export default function AccountsDashboardUi(props) {
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </ThemeSection>
 
-        <ThemeSection sectionKey="dashboard-accounts-auto-content-card-3" title="Completion trend" subtitle="Jobs completed in the last 7 days">
+        <ThemeSection sectionKey="dashboard-accounts-auto-content-card-3" title="Payments received trend" subtitle="Report KPI: payments received, last 7 days">
           <TrendBlock data={data.trends} />
         </ThemeSection>
       </DevLayoutSection>

@@ -48,14 +48,28 @@ function normalizeRoleSet(roles) {
 }
 
 // ---------------------------------------------------------------------------
-// WORKSPACE GROUP PERMISSION MODEL
+// WORKSPACE GROUP PERMISSION MODEL — the DEFAULT permission boundary (Phase 8).
 //
-// A page's GROUP is its section's `department`. Assigning a workspace group to a
-// role automatically grants that role every GROUP-WIDE page in the group (a page
-// with no `roles` of its own). A page MAY still carry its own `roles` as an
-// individual restriction/grant, which is honoured independently of the group —
+// The Workspace Group (a page's section `department`) is the primary permission
+// boundary. Assigning a workspace group to a role automatically grants that role
+// every GROUP-WIDE page in the group — a page with NO `roles` of its own. This is
+// the default: new group pages should be added WITHOUT a `roles` key so they
+// inherit the group. A page MAY still carry its own `roles` as an INTENTIONAL
+// EXCEPTION (an individual restriction — e.g. management/financial/developer
+// pages — or a cross-group grant), which is honoured independently of the group,
 // so cross-group grants (e.g. Sales seeing the Admin group's Website Manager)
 // keep working.
+//
+// NOTE ON THE CLASSIC FALLBACK: pages in WORKSPACE_NAV_SECTIONS retain explicit
+// per-role `roles` because those items double as the byte-identical classic
+// sidebar (toSidebarSections → StaffSidebar when workspace_nav_enabled is off);
+// their roles are load-bearing for rollback, not redundant. De-duplication via
+// inheritance therefore applies to workspace-only sections
+// (WORKSPACE_CONTEXT_NAV_SECTIONS) and every FUTURE group page.
+//
+// The authoritative per-group inventory (roles, pages, inherit vs override + the
+// reason for each override) lives in
+// docs/Workspace Navigation/workspace-group-permissions.md.
 //
 // GROUP_ROLE_INDEX maps a group key → the roles assigned to it:
 //   • null            ⇒ assigned to EVERY authenticated user (General, Account —
@@ -262,24 +276,32 @@ export function getContextNav(departmentKey, roles) {
 // ordered sections so it is deterministic; the lowest-order section that lists a
 // path owns it. Department is NOT inferable from the URL (flat routes), so this
 // explicit index is the source of truth for getActiveDepartment/breadcrumbs.
-// getDepartmentWorkspaceNav(departmentKey, roles) — the Workspace GROUP view: a
-// single flat, deduplicated page list for one group (Phase 8 — Group Sidebar).
-// No sub-group headings and no collapsible sections; a department group opens on
-// its Overview (the department home) so it behaves like its own dedicated
-// sidebar. Page visibility follows the group permission model (itemVisibleTo):
-// group-wide pages are granted by the group assignment, individually-roled pages
-// keep their own restriction.
+// getDepartmentWorkspaceNav(departmentKey, roles) — the Workspace GROUP view for
+// one group. Returns a `dashboards` sub-section (the group's role-visible
+// dashboards, keyed off WORKSPACE_DASHBOARD_SHORTCUTS by department) rendered as
+// a titled "Dashboards" block at the top of the group, followed by `items` — the
+// flat, deduplicated page list. The old single "Overview" entry is gone; the
+// department home is reached through its Dashboards block instead. Page
+// visibility follows the group permission model (itemVisibleTo): group-wide
+// pages are granted by the group assignment, individually-roled pages and
+// dashboards keep their own restriction.
 export function getDepartmentWorkspaceNav(departmentKey, roles) {
   const department = WORKSPACE_DEPARTMENTS.find((dept) => dept.key === departmentKey) || null;
   const roleSet = normalizeRoleSet(roles);
-  const seen = new Set();
-  const items = [];
 
-  if (department?.home && department.category === "departments") {
-    seen.add(department.home);
-    items.push({ label: "Overview", href: department.home });
+  // Dashboards sub-section — the role-visible dashboards this group owns.
+  const dashboards = [];
+  const dashboardSeen = new Set();
+  for (const shortcut of WORKSPACE_DASHBOARD_SHORTCUTS) {
+    if (shortcut.department !== departmentKey) continue;
+    if (!shortcut.href || dashboardSeen.has(shortcut.href)) continue;
+    if (!itemVisibleTo(shortcut, roleSet)) continue;
+    dashboardSeen.add(shortcut.href);
+    dashboards.push({ label: shortcut.label, href: shortcut.href });
   }
 
+  const seen = new Set();
+  const items = [];
   for (const section of workspaceSectionsForDepartment(departmentKey)) {
     for (const item of section.items || []) {
       if (!item.href) continue;
@@ -296,6 +318,7 @@ export function getDepartmentWorkspaceNav(departmentKey, roles) {
     home: department?.home || null,
     icon: department?.icon || null,
     category: department?.category || null,
+    dashboards,
     itemCount: items.length,
     items,
   };
@@ -374,19 +397,28 @@ export function getActiveWorkspaceDepartment(pathname, roles) {
   if (!path) return null;
   const departments = getDepartmentsForRoles(roles).filter((dept) => dept.category === "departments");
 
-  for (const department of departments) {
+  // The routes a group owns = its home + its dashboards + its pages. The home is
+  // included explicitly so landing on /dashboard/<dept> always resolves to its
+  // group even when the dashboard shortcut itself is gated to narrower roles.
+  const deptNavPaths = departments.map((department) => {
     const nav = getDepartmentWorkspaceNav(department.key, roles);
-    if (nav.items.some((item) => pathOf(item.href) === path)) return department.key;
+    const paths = [];
+    if (nav.home) paths.push(pathOf(nav.home));
+    for (const dashboard of nav.dashboards) if (dashboard.href) paths.push(pathOf(dashboard.href));
+    for (const item of nav.items) if (item.href) paths.push(pathOf(item.href));
+    return { key: department.key, paths };
+  });
+
+  for (const { key, paths } of deptNavPaths) {
+    if (paths.includes(path)) return key;
   }
 
   let best = null;
   let bestLen = -1;
-  for (const department of departments) {
-    const nav = getDepartmentWorkspaceNav(department.key, roles);
-    for (const item of nav.items) {
-      const route = pathOf(item.href);
+  for (const { key, paths } of deptNavPaths) {
+    for (const route of paths) {
       if ((path === route || path.startsWith(`${route}/`)) && route.length > bestLen) {
-        best = department.key;
+        best = key;
         bestLen = route.length;
       }
     }
@@ -422,16 +454,17 @@ export function getBreadcrumbTrail(pathname, roles) {
   if (!departmentKey) return [];
   const dept = WORKSPACE_DEPARTMENTS.find((d) => d.key === departmentKey);
   const workspace = getDepartmentWorkspaceNav(departmentKey, roles);
+  const navItems = [...(workspace.dashboards || []), ...workspace.items];
   const trail = [];
   if (dept) trail.push({ label: dept.label, href: dept.home || null });
-  const exactMatch = workspace.items.find((item) => pathOf(item.href) === path);
+  const exactMatch = navItems.find((item) => pathOf(item.href) === path);
   if (exactMatch && exactMatch.href !== dept?.home) {
     trail.push({ label: exactMatch.label, href: exactMatch.href });
     return trail;
   }
   let best = null;
   let bestLen = -1;
-  for (const item of workspace.items) {
+  for (const item of navItems) {
     const route = pathOf(item.href);
     if ((path === route || path.startsWith(`${route}/`)) && route.length > bestLen) {
       best = item;

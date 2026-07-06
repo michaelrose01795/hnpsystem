@@ -44,7 +44,7 @@ export default function MotDashboardUi(props) {
             <CardList title="Recent MOTs" items={data.recentTests} />
           </MotSection>
 
-          <MotSection title="Trend" subtitle="Tests checked in over the last 7 days">
+          <MotSection title="MOT volume trend" subtitle="Report KPI: MOT volume, last 7 days">
             <TrendBlock data={data.trends} />
           </MotSection>
         </div>

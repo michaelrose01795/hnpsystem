@@ -22,7 +22,6 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
 import StaffTopbar from "@/components/layout/StaffTopbar";
-import WorkspaceHeader from "@/components/layout/WorkspaceHeader";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
@@ -1368,12 +1367,6 @@ export default function Layout({
                 }
               >
                 <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
-                  {workspaceNavEnabled && !hideSidebar && (
-                    <WorkspaceHeader
-                      pathname={router.asPath || router.pathname}
-                      roles={userRoles}
-                    />
-                  )}
                   {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>

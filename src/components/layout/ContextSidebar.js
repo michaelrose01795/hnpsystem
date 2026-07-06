@@ -1,13 +1,14 @@
 // file location: src/components/layout/ContextSidebar.js
-// Workspace GROUP view (Phase 8 — Group Sidebar). When a group is selected this
-// component IS the whole sidebar body: a "Back to Groups" control at the top,
-// the group name, then a simple flat list of the group's pages with active
-// states. Each group behaves like its own dedicated sidebar.
+// Workspace GROUP view (Group Sidebar). When a group is selected this component
+// IS the whole sidebar body: a "Back to Groups" control at the top, the group
+// name, an optional "Dashboards" section (the group's role-visible dashboards),
+// then the flat list of the group's pages with active states. Each group behaves
+// like its own dedicated sidebar.
 //
-// Deliberately simple — no hover previews / fly-outs, no sub-group headings, no
-// collapsible sections, and no mixed General navigation. Styling, animations,
-// active states, the collapsed rail and the mobile drawer all come from the
-// shared nav primitives passed in by StaffSidebar.
+// The only sub-heading is "Dashboards"; the pages below it stay a flat list — no
+// hover previews / fly-outs, no collapsible sections, no mixed General nav.
+// Styling, animations, active states, the collapsed rail and the mobile drawer
+// all come from the shared nav primitives passed in by StaffSidebar.
 import Link from "next/link";
 import { isContextNavItemActive } from "@/config/workspace/manifest";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -25,6 +26,7 @@ export default function ContextSidebar({
   renderSectionDivider,
 }) {
   const items = workspace?.items || [];
+  const dashboards = workspace?.dashboards || [];
 
   const handleKeyDown = (event) => {
     if (event.key === "Escape" && typeof onBack === "function") {
@@ -33,7 +35,23 @@ export default function ContextSidebar({
     }
   };
 
-  if (!items.length) return null;
+  if (!items.length && !dashboards.length) return null;
+
+  const renderNavLink = (item, keyPrefix) => {
+    const active = isContextNavItemActive(item, pathname, pendingHref);
+    return (
+      <Link
+        className={`app-btn app-btn--secondary app-btn--nav${active ? " is-active" : ""}`}
+        key={`${keyPrefix}-${item.href}`}
+        href={getNavHref(item.href)}
+        onClick={() => onNavigate?.(item.href)}
+        aria-current={active ? "page" : undefined}
+        {...navLinkProps(item.label)}
+      >
+        {renderNavContent(item.label, item.href, active)}
+      </Link>
+    );
+  };
 
   return (
     <DevLayoutSection
@@ -78,21 +96,20 @@ export default function ContextSidebar({
         </>
       )}
 
-      {items.map((item) => {
-        const active = isContextNavItemActive(item, pathname, pendingHref);
-        return (
-          <Link
-            className={`app-btn app-btn--secondary app-btn--nav${active ? " is-active" : ""}`}
-            key={item.href}
-            href={getNavHref(item.href)}
-            onClick={() => onNavigate?.(item.href)}
-            aria-current={active ? "page" : undefined}
-            {...navLinkProps(item.label)}
-          >
-            {renderNavContent(item.label, item.href, active)}
-          </Link>
-        );
-      })}
+      {dashboards.length > 0 && (
+        <>
+          {isCollapsed ? (
+            renderSectionDivider("divider-workspace-dashboards", { marginBottom: "10px" })
+          ) : (
+            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+              Dashboards
+            </div>
+          )}
+          {dashboards.map((item) => renderNavLink(item, "dashboard"))}
+        </>
+      )}
+
+      {items.map((item) => renderNavLink(item, "page"))}
     </DevLayoutSection>
   );
 }

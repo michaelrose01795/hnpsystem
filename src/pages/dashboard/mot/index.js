@@ -2,7 +2,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getMotDashboardData } from "@/lib/database/dashboard/mot";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md section 3.0)
 import MotDashboardUi from "@/components/page-ui/dashboard/mot/dashboard-mot-ui"; // Extracted presentation layer.
 
@@ -16,29 +18,20 @@ const MetricCard = ({ label, value, helper }) => (
   </LayerSurface>
 );
 
-const TrendBlock = ({ data }) => {
-  const max = Math.max(1, ...(data || []).map((point) => point.count));
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {(data || []).map((point) => (
-        <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-1)", opacity: 0.75 }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
-            <div
-              style={{
-                width: `${Math.round((point.count / max) * 100)}%`,
-                height: "100%",
-                background: "var(--success)",
-                borderRadius: 4,
-              }}
-            />
-          </div>
-          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
-        </div>
-      ))}
-    </div>
-  );
-};
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "mot" };
+const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "mot" };
+
+const TrendBlock = ({ data }) => (
+  <ReportLinkedTrend
+    kpiId="mot.volume"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey="dashboard-mot-volume-trend-chart"
+    parentKey="dashboard-mot-auto-content-card-2"
+    unit="count"
+    format="0,0"
+  />
+);
 
 // CardList - list block inside a themed MOT section, renders as LayerSurface.
 const CardList = ({ title, items }) => (
@@ -76,6 +69,7 @@ export default function MotDashboard() {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportToday = useKpiValues(["mot.volume"], REPORT_TODAY_FILTER);
 
   useEffect(() => {
     const loadData = async () => {
@@ -95,11 +89,16 @@ export default function MotDashboard() {
     loadData();
   }, []);
 
+  const reportLinkedData = {
+    ...data,
+    testsToday: reportToday.byId["mot.volume"]?.value ?? data.testsToday,
+  };
+
   return (
     <MotDashboardUi
       view="section1"
       CardList={CardList}
-      data={data}
+      data={reportLinkedData}
       error={error}
       LayerTheme={LayerTheme}
       loading={loading}

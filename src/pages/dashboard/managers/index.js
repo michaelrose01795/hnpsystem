@@ -4,7 +4,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getManagersDashboardData } from "@/lib/database/dashboard/managers";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
   ContentWidth,
@@ -86,41 +88,20 @@ const ProgressBar = ({ completed, target }) => {
 
 // TrendBlock — chart card. Rendered inside a Section (LayerSurface),
 // so it is a LayerTheme. Internal chart bars are widget elements, not surfaces.
-const TrendBlock = ({ sectionKey, parentKey, data }) => {
-  const max = Math.max(1, ...(data || []).map((point) => point.count));
-  return (
-    <LayerTheme
-      sectionKey={sectionKey}
-      parentKey={parentKey}
-      backgroundToken="surface"
-      radius="var(--radius-sm)"
-      padding="16px"
-      gap="10px"
-      style={{ background: "var(--surface)" }}
-    >
-      {(data || []).length === 0 ? (
-        <p style={{ margin: 0, color: "var(--text-1)" }}>No completion data for the past 7 days.</p>
-      ) : (
-        (data || []).map((point) => (
-          <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ width: 36, fontSize: "0.85rem", color: "var(--text-1)" }}>{point.label}</span>
-            <div style={{ flex: 1, height: 8, background: "var(--theme)", borderRadius: 4, overflow: "hidden" }}>
-              <div
-                style={{
-                  width: `${Math.round((point.count / max) * 100)}%`,
-                  height: "100%",
-                  background: "var(--accentText)",
-                  borderRadius: 4,
-                }}
-              />
-            </div>
-            <strong style={{ width: 30, fontSize: "0.85rem", color: "var(--accentText)", textAlign: "right" }}>{point.count}</strong>
-          </div>
-        ))
-      )}
-    </LayerTheme>
-  );
-};
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "workshop" };
+
+const TrendBlock = ({ sectionKey, parentKey, data }) => (
+  <ReportLinkedTrend
+    kpiId="wsh.jobs_completed"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    unit="count"
+    format="0,0"
+    height={132}
+  />
+);
 
 // Strips the leading info icon (ℹ️ / ℹ / ⓘ / i) plus surrounding whitespace from a notice message.
 const formatEscalationMessage = (message = "") =>
@@ -187,6 +168,7 @@ export default function ManagersDashboard() {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportWeek = useKpiValues(hasAccess ? ["wsh.jobs_completed"] : [], REPORT_TREND_FILTER);
 
   useEffect(() => {
     if (!hasAccess) return;
@@ -211,10 +193,23 @@ export default function ManagersDashboard() {
     return <ManagersDashboardUi view="section1" />;
   }
 
+  const reportJobsCompleted = reportWeek.byId["wsh.jobs_completed"]?.value;
+  const reportLinkedData = {
+    ...data,
+    counts: {
+      ...data.counts,
+      jobsCompleted: reportJobsCompleted ?? data.counts.jobsCompleted,
+    },
+    progress: {
+      ...data.progress,
+      completed: reportJobsCompleted ?? data.progress.completed,
+    },
+  };
+
   return (
     <ManagersDashboardUi
       view="section2"
-      data={data}
+      data={reportLinkedData}
       error={error}
       loading={loading}
       ContentWidth={ContentWidth}

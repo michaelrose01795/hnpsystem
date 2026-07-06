@@ -17,6 +17,7 @@ import {
   getActiveWorkspaceDepartment,
   getDepartmentWorkspaceNav,
   getWorkspaceGroups,
+  isContextNavItemActive,
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
@@ -375,11 +376,31 @@ export default function Sidebar({
   }, [selectedGroupKey, workspaceGroupKeys]);
 
   useEffect(() => {
-    if (previousWorkspacePathRef.current !== pathname) {
-      previousWorkspacePathRef.current = pathname;
-      setSelectedGroupKey(null);
+    if (previousWorkspacePathRef.current === pathname) return;
+    previousWorkspacePathRef.current = pathname;
+    // Keep the currently-open group when navigating between its OWN pages, so
+    // moving from (e.g.) News Feed to Tracker inside the General group doesn't
+    // kick the user back out to the Groups list. Only fall back to the route-
+    // driven group (by clearing the explicit selection) when the destination
+    // leaves the open group.
+    if (
+      selectedGroupKey &&
+      selectedGroupKey !== WORKSPACE_GROUPS_VIEW &&
+      workspaceGroupKeys.has(selectedGroupKey)
+    ) {
+      const nav = getDepartmentWorkspaceNav(selectedGroupKey, userRoles);
+      const navItems = [
+        ...(nav.home ? [{ href: nav.home }] : []),
+        ...(nav.dashboards || []),
+        ...(nav.items || []),
+      ];
+      const stillInGroup = navItems.some((item) =>
+        isContextNavItemActive(item, pathname)
+      );
+      if (stillInGroup) return;
     }
-  }, [pathname]);
+    setSelectedGroupKey(null);
+  }, [pathname, selectedGroupKey, workspaceGroupKeys, userRoles]);
 
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
@@ -751,7 +772,7 @@ export default function Sidebar({
         )}
 
         {workspaceNavEnabled && (
-          activeWorkspace?.items?.length > 0 ? (
+          (activeWorkspace?.items?.length > 0 || activeWorkspace?.dashboards?.length > 0) ? (
             // GROUP view — the whole sidebar becomes the selected group's nav.
             <ContextSidebar
               workspace={activeWorkspace}

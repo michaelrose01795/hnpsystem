@@ -38,6 +38,7 @@ import {
   isPageTabActive,
   resolveHome,
   isWorkspaceNavEnabled,
+  WORKSPACE_CONTEXT_NAV_SECTIONS,
 } from "@/config/workspace/manifest";
 import { getAccessibleNavPaths as getPageAccessNavPaths } from "@/lib/auth/pageAccess";
 import { sidebarSections } from "@/config/navigation";
@@ -583,7 +584,7 @@ describe("workspace manifest — department-first selectors", () => {
     for (const roles of [["service"], ["parts manager"], ["workshop manager"], ["admin manager"], []]) {
       for (const group of getWorkspaceGroups(roles)) {
         const nav = getDepartmentWorkspaceNav(group.key, roles);
-        expect(nav.items.length).toBeGreaterThan(0);
+        expect(nav.items.length + nav.dashboards.length).toBeGreaterThan(0);
       }
     }
   });
@@ -600,16 +601,36 @@ describe("workspace manifest — department-first selectors", () => {
     )).toBe(false);
   });
 
-  it("getDepartmentWorkspaceNav returns a flat, deduped page list (no sub-groups)", () => {
+  it("getDepartmentWorkspaceNav returns a Dashboards section + flat deduped pages (no Overview)", () => {
     const workshopNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
-    // Group Sidebar: no grouped/collapsible sub-sections any more — just a flat
-    // item list. A department group opens on its Overview (the department home).
+    // Group Sidebar: no grouped/collapsible sub-sections; the only sub-heading is
+    // the Dashboards block, which replaces the old single "Overview" entry.
     expect(workshopNav.groups).toBeUndefined();
-    expect(workshopNav.items[0]).toEqual({ label: "Overview", href: "/dashboard/workshop" });
+    expect(workshopNav.items.some((item) => item.label === "Overview")).toBe(false);
+    // The department dashboard(s) live in `dashboards`, not `items`.
+    expect(workshopNav.dashboards.map((d) => d.href)).toContain("/dashboard/workshop");
     const hrefs = workshopNav.items.map((item) => item.href);
     expect(new Set(hrefs).size).toBe(hrefs.length); // deduplicated
+    expect(hrefs).not.toContain("/dashboard/workshop"); // dashboard is not a page item
     expect(hrefs).toContain("/clocking");
     expect(hrefs).toContain("/jobs");
+  });
+
+  it("dashboards are role-filtered per group (Tech Dashboard only for techs)", () => {
+    const techNav = getDepartmentWorkspaceNav("workshop", ["techs"]);
+    expect(techNav.dashboards.map((d) => d.href)).toContain("/tech/dashboard");
+    const managerNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
+    expect(managerNav.dashboards.map((d) => d.href)).not.toContain("/tech/dashboard");
+    // A group with no dashboards (e.g. Developer) simply has an empty list.
+    expect(getDepartmentWorkspaceNav("developer", ["dev"]).dashboards).toEqual([]);
+  });
+
+  it("landing on a department dashboard still resolves to its group", () => {
+    // The home is resolvable even though the Workshop Dashboard shortcut is gated
+    // to narrower roles — so /dashboard/workshop opens the Workshop group.
+    expect(getActiveWorkspaceDepartment("/dashboard/workshop", ["workshop manager"])).toBe("workshop");
+    expect(getActiveWorkspaceDepartment("/dashboard/parts", ["parts manager"])).toBe("parts");
+    expect(getActiveWorkspaceDepartment("/dashboard/managers", ["admin manager"])).toBe("management");
   });
 
   it("getActiveWorkspaceDepartment resolves shared routes through role-visible workspaces", () => {
@@ -715,6 +736,81 @@ describe("workspace group permission model", () => {
     // ...but the Website Manager page grants Sales explicitly, so it is visible.
     const salesAdmin = getContextNav("management", ["sales"]).items.map((i) => i.href);
     expect(salesAdmin).toContain("/website-manager");
+  });
+});
+
+describe("workspace group inheritance (Phase 8 — default permission model)", () => {
+  it("accounts workspace pages carry NO per-page roles (they inherit the group)", () => {
+    // De-duplication: the Accounts Workspace context pages must rely on group
+    // inheritance, not a duplicated per-page role array. If a future edit
+    // reintroduces `roles` on a group-wide page, this fails and forces a review.
+    const accountsSection = WORKSPACE_CONTEXT_NAV_SECTIONS.find(
+      (section) => section.department === "accounts"
+    );
+    expect(accountsSection).toBeTruthy();
+    for (const item of accountsSection.items) {
+      expect(item.roles).toBeUndefined();
+    }
+  });
+
+  it("un-roled group pages resolve to EXACTLY the group's assigned roles", () => {
+    // The Accounts group is assigned {accounts, accounts manager} (derived from
+    // ROLE_DEPARTMENT_MAP). Inheritance must reproduce precisely that reach —
+    // no wider, no narrower — for every un-roled accounts page.
+    const groupRoles = getWorkspaceGroupRoles("accounts");
+    expect(groupRoles).toEqual(["accounts", "accounts manager"]);
+
+    const workspaceOnlyHrefs = ["/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"];
+    for (const role of groupRoles) {
+      const hrefs = getDepartmentWorkspaceNav("accounts", [role]).items.map((i) => i.href);
+      for (const href of workspaceOnlyHrefs) expect(hrefs).toContain(href);
+    }
+    // Roles outside the group inherit nothing (the pages are group-wide only).
+    for (const role of ["service", "workshop manager", "parts manager", "admin manager", "owner"]) {
+      const hrefs = getDepartmentWorkspaceNav("accounts", [role]).items.map((i) => i.href);
+      for (const href of workspaceOnlyHrefs) expect(hrefs).not.toContain(href);
+    }
+    // ...and a roleless user sees none of them.
+    const rolelessHrefs = getDepartmentWorkspaceNav("accounts", []).items.map((i) => i.href);
+    for (const href of workspaceOnlyHrefs) expect(rolelessHrefs).not.toContain(href);
+  });
+
+  it("landable access to inherited accounts pages equals the pre-de-duplication explicit set", () => {
+    // Parity proof for the de-duplicated pages specifically: the accessible set
+    // computed via inheritance must match the legacy explicit ["accounts",
+    // "accounts manager"] gate, for every configured role.
+    const inheritedHrefs = ["/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"];
+    const legacyRoleSet = new Set(["accounts", "accounts manager"]);
+    for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+      const accessible = getAccessibleNavPaths(roles);
+      const roleSet = new Set(roles.map((r) => String(r).toLowerCase().trim()));
+      const legacyGranted = [...legacyRoleSet].some((r) => roleSet.has(r));
+      for (const href of inheritedHrefs) {
+        expect(accessible.has(href)).toBe(legacyGranted);
+      }
+    }
+  });
+
+  it("intentional overrides keep their own gate regardless of group assignment", () => {
+    // Financial cross-grant: Payslips is granted to admin/admin manager/owner as
+    // well as the accounts group — inheritance must NOT narrow it to the group.
+    const payslipRoles = ["accounts", "accounts manager", "admin", "admin manager", "owner"];
+    for (const role of payslipRoles) {
+      expect(getAccessibleNavPaths([role]).has("/accounts/payslips")).toBe(true);
+    }
+    // Cross-group grant: Sales reaches the Admin group's Website Manager even
+    // though Sales is not assigned the Admin (management) group.
+    expect(getWorkspaceGroupRoles("management")).not.toContain("sales");
+    expect(getAccessibleNavPaths(["sales"]).has("/website-manager")).toBe(true);
+    // Developer boundary: /dev stays dev-only (explicit override on a dev page).
+    expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
+    for (const staff of ["service", "workshop manager", "admin manager", "owner", "accounts manager"]) {
+      expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
+    }
+    // Reports group derives no roles (not in ROLE_DEPARTMENT_MAP), so its pages
+    // are gated purely by their explicit report-role arrays — inheritance grants
+    // nothing there.
+    expect(getWorkspaceGroupRoles("reports")).toEqual([]);
   });
 });
 

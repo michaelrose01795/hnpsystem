@@ -106,8 +106,8 @@ export default function WorkshopDashboardUi(props) {
                 <ProgressBar completed={dashboardData.progress.completed} target={dashboardData.progress.scheduled} />
               </Section>
 
-              <Section sectionKey="workshop-dashboard-checkin-trends" parentKey="workshop-dashboard-analytics-row" title="Check-in trends" subtitle="Last 7 days" style={{ height: "100%", minHeight: "250px" }}>
-                <TrendBlock sectionKey="workshop-dashboard-checkin-trends-chart" parentKey="workshop-dashboard-checkin-trends" title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
+              <Section sectionKey="workshop-dashboard-checkin-trends" parentKey="workshop-dashboard-analytics-row" title="Completion trend" subtitle="Report KPI: jobs completed, last 7 days" style={{ height: "100%", minHeight: "250px" }}>
+                <TrendBlock sectionKey="workshop-dashboard-checkin-trends-chart" parentKey="workshop-dashboard-checkin-trends" data={dashboardData.trends.checkInsLast7} />
               </Section>
             </DevLayoutSection>
 

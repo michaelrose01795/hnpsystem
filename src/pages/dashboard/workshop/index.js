@@ -3,7 +3,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
   ContentWidth,
@@ -58,51 +60,21 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
 
 // TrendBlock — chart card. Rendered inside a Section (LayerSurface),
 // so it is a LayerTheme. Internal chart bars are widget elements, not surfaces.
-const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
-  const maxValue = Math.max(1, ...(data || []).map((item) => item.count));
-  const total = (data || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
-  return (
-    <LayerTheme
-      sectionKey={sectionKey}
-      parentKey={parentKey}
-      backgroundToken="surface"
-      radius="var(--radius-sm)"
-      padding="16px"
-      gap="10px"
-      style={{ background: "var(--surface)", flex: 1 }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-        <p style={{ margin: 0, textTransform: "uppercase", color: "var(--accentText)", fontSize: "0.75rem" }}>{title}</p>
-        <strong style={{ color: "var(--accentText)", fontSize: "0.9rem", whiteSpace: "nowrap" }}>{total} total</strong>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {(data || []).map((point) => (
-          <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ width: 35, fontSize: "0.8rem", color: "var(--text-1)" }}>{point.label}</span>
-            <div
-              style={{
-                flex: 1,
-                height: 8,
-                background: "var(--theme)",
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${Math.round((point.count / maxValue) * 100)}%`,
-                  background: "var(--accentText)",
-                }}
-              />
-            </div>
-            <strong style={{ width: 30, fontSize: "0.85rem", color: "var(--accentText)" }}>{point.count}</strong>
-          </div>
-        ))}
-      </div>
-    </LayerTheme>
-  );
-};
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "workshop" };
+const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "workshop" };
+
+const TrendBlock = ({ sectionKey, parentKey, data }) => (
+  <ReportLinkedTrend
+    kpiId="wsh.jobs_completed"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    unit="count"
+    format="0,0"
+    height={132}
+  />
+);
 
 const ProgressBar = ({ completed, target }) => {
   const safeTarget = Math.max(target, completed, 1);
@@ -170,6 +142,7 @@ export default function WorkshopDashboard() {
   const [dashboardData, setDashboardData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportToday = useKpiValues(["wsh.jobs_completed"], REPORT_TODAY_FILTER);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -194,12 +167,28 @@ export default function WorkshopDashboard() {
     [dashboardData]
   );
 
+  const reportLinkedData = useMemo(() => {
+    const completed = reportToday.byId["wsh.jobs_completed"]?.value;
+    if (completed == null) return dashboardData;
+    return {
+      ...dashboardData,
+      dailySummary: {
+        ...dashboardData.dailySummary,
+        completedToday: completed,
+      },
+      progress: {
+        ...dashboardData.progress,
+        completed,
+      },
+    };
+  }, [dashboardData, reportToday.byId]);
+
   return (
     <WorkshopDashboardUi
       view="section1"
       availableTechnicians={availableTechnicians}
       ContentWidth={ContentWidth}
-      dashboardData={dashboardData}
+      dashboardData={reportLinkedData}
       DevLayoutSection={DevLayoutSection}
       LayerTheme={LayerTheme}
       error={error}
