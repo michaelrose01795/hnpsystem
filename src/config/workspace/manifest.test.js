@@ -39,6 +39,9 @@ import {
   resolveHome,
   isWorkspaceNavEnabled,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
+  WORKSPACE_DEPARTMENTS,
+  WORKSPACE_NAV_SECTIONS,
+  DEVELOPER_GROUP_LOCK,
 } from "@/config/workspace/manifest";
 import { getAccessibleNavPaths as getPageAccessNavPaths } from "@/lib/auth/pageAccess";
 import { sidebarSections } from "@/config/navigation";
@@ -176,7 +179,7 @@ function buildGoldenSidebarSections() {
         { label: "Job Cards", href: "/jobs", roles: ["workshop manager"] },
         { label: "Clocking", href: "/clocking", roles: ["workshop manager"] },
         { label: "Consumables Tracker", href: "/consumables-tracker", roles: ["workshop manager"] },
-        { label: "Goods In", href: "/goods-in", roles: ["workshop manager"] },
+        // Goods In intentionally removed from the Workshop group (moved to Parts).
       ],
     },
     {
@@ -431,6 +434,51 @@ describe("workspace manifest — dev platform gating stays strict", () => {
       expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
     }
     expect(getAccessibleNavPaths([]).has("/dev")).toBe(false);
+  });
+});
+
+// 🔒 DEVELOPER SIDEBAR LOCK — this suite is the enforcement half of the lock.
+// It fails CI if the Developer group / its sidebar button is ever removed or
+// re-gated. If you changed the developer entry and landed here: revert it.
+describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
+  it("the lock constant declares the permanent invariant", () => {
+    expect(DEVELOPER_GROUP_LOCK.key).toBe("developer");
+    expect(DEVELOPER_GROUP_LOCK.category).toBe("departments");
+    expect(DEVELOPER_GROUP_LOCK.home).toBe("/dev");
+    expect(DEVELOPER_GROUP_LOCK.roles).toEqual(["dev"]);
+    expect(DEVELOPER_GROUP_LOCK.navItem).toEqual({ label: "Developer Platform", href: "/dev", roles: ["dev"] });
+  });
+
+  it("the developer department in the manifest matches the lock (key, category, home, roles)", () => {
+    const dept = WORKSPACE_DEPARTMENTS.find((d) => d.key === "developer");
+    expect(dept).toBeTruthy();
+    expect(dept.category).toBe(DEVELOPER_GROUP_LOCK.category);
+    expect(dept.home).toBe(DEVELOPER_GROUP_LOCK.home);
+    expect(dept.roles).toEqual(DEVELOPER_GROUP_LOCK.roles);
+  });
+
+  it("the Developer nav section still carries the locked /dev button gated to dev", () => {
+    const section = WORKSPACE_NAV_SECTIONS.find((s) => s.department === "developer");
+    expect(section).toBeTruthy();
+    const item = (section.items || []).find((i) => i.href === "/dev");
+    expect(item).toEqual({ label: "Developer Platform", href: "/dev", roles: ["dev"] });
+  });
+
+  it("the dev role ALWAYS sees the Developer group + button, and it stays landable", () => {
+    expect(getWorkspaceGroups(["dev"]).map((g) => g.key)).toContain("developer");
+    const nav = getDepartmentWorkspaceNav("developer", ["dev"]);
+    expect(nav.items.map((i) => i.href)).toContain("/dev");
+    expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
+    // Upper-case role convention (ProtectedRoute / client) must resolve too.
+    expect(getWorkspaceGroups(["DEV"]).map((g) => g.key)).toContain("developer");
+  });
+
+  it("the lock never leaks the Developer group/button to non-dev roles", () => {
+    for (const staff of ["service", "workshop manager", "admin manager", "owner", "parts", "techs", "accounts manager"]) {
+      expect(getWorkspaceGroups([staff]).map((g) => g.key)).not.toContain("developer");
+      expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
+    }
+    expect(getWorkspaceGroups([]).map((g) => g.key)).not.toContain("developer");
   });
 });
 

@@ -1299,7 +1299,6 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            quickActions={topbarQuickActions}
             resumeItem={continueContext.mostRecent}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}

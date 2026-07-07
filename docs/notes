@@ -1,4 +1,5 @@
 ---Workspace Navigation---
+CHECK
 Remove "Workshop
 /
 Clocking
@@ -10,9 +11,16 @@ Create Job Card
 Appointments" section form all the pages even within al the other pages etc. 
 
 
--------MOT_--------------
+-------TOPBAR--------------
+TODO 
+have it so the users two most used pages are accessible wihtin the topbar buttons, add these two buttons at the top of the topb ar section etc change it so "waiting 57 in progress 87 techs free 0 overdue 0 jobs waiting to start 57" section are all next to each other and the two most used pages button are to the right of that section but left of the search bar etc. 
 
+TODO
+Make sure the hover text section which is wihtin the topbar is shown above the topbar, atm when hovering over a section its being blocked by the topbar view etc. 
 --------------------------
+TODO (find the dev page which was created shown the sidebar access page etc)
+have it so within the user list inside the admin section, the admin like it is within the "(have a look at the dev sidebar access group page etc)" so wihtin each emplyee the user can select whats availble within the sidebar to that user, items like profile, news feed, messages, tracker etc are all set as default (all the things which each new user auto has wihtin the general section) but can also be removed access from the user as well. so the admin has full control on what the user has access to wihtin the sidebar, if the user has access to it within the sidebar then they have full access to the item. the sidebar rule should be if there then access accepeted its like role based access but sidebar based access really.
+
 CHECK
 Do a deep dive and make sure the data within the dashbaord pages links to the data within the report pages for example. inside the dashboard pages use a couple of the staffglobal.css line graph setting etc 
 

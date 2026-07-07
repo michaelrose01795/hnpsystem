@@ -5,8 +5,11 @@
 // then the flat list of the group's pages with active states. Each group behaves
 // like its own dedicated sidebar.
 //
-// The only sub-heading is "Dashboards"; the pages below it stay a flat list — no
-// hover previews / fly-outs, no collapsible sections, no mixed General nav.
+// Two sub-headings, in order: "Dashboards" (the group's role-visible dashboards)
+// and the GROUP NAME (e.g. "Workshop") which sits directly above that group's
+// page list. The old standalone group title at the very top is gone — the group
+// name now doubles as the page-list heading. The pages below it stay a flat list
+// — no hover previews / fly-outs, no collapsible sections, no mixed General nav.
 // Styling, animations, active states, the collapsed rail and the mobile drawer
 // all come from the shared nav primitives passed in by StaffSidebar.
 import Link from "next/link";
@@ -77,25 +80,21 @@ export default function ContextSidebar({
           </button>
         </>
       ) : (
-        <>
-          <button
-            className="app-btn app-btn--secondary app-btn--nav"
-            type="button"
-            onClick={onBack}
-            style={{
-              width: "100%",
-              marginBottom: "10px",
-              justifyContent: "flex-start",
-            }}
-          >
-            {"‹ Back to Groups"}
-          </button>
-          <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-            {workspace.label}
-          </div>
-        </>
+        <button
+          className="app-btn app-btn--secondary app-btn--nav"
+          type="button"
+          onClick={onBack}
+          style={{
+            width: "100%",
+            marginBottom: "10px",
+            justifyContent: "flex-start",
+          }}
+        >
+          {"‹ Back to Groups"}
+        </button>
       )}
 
+      {/* Dashboards sub-heading + the group's role-visible dashboards. */}
       {dashboards.length > 0 && (
         <>
           {isCollapsed ? (
@@ -109,7 +108,27 @@ export default function ContextSidebar({
         </>
       )}
 
-      {items.map((item) => renderNavLink(item, "page"))}
+      {/* Group-name sub-heading (e.g. "Workshop") directly above its page list.
+          A top margin only when it follows the Dashboards block, so the two
+          sub-headings read as separate sections rather than crowding together. */}
+      {items.length > 0 && (
+        <>
+          {isCollapsed ? (
+            renderSectionDivider("divider-workspace-group", {
+              marginTop: dashboards.length > 0 ? "16px" : undefined,
+              marginBottom: "10px",
+            })
+          ) : (
+            <div
+              className="app-sidebar__section-title"
+              style={{ marginTop: dashboards.length > 0 ? "16px" : undefined, marginBottom: "10px" }}
+            >
+              {workspace.label}
+            </div>
+          )}
+          {items.map((item) => renderNavLink(item, "page"))}
+        </>
+      )}
     </DevLayoutSection>
   );
 }

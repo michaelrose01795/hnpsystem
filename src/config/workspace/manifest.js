@@ -11,6 +11,7 @@
 // EDGE-SAFE: plain data + pure functions only (see ./departments.js header).
 
 import {
+  DEVELOPER_GROUP_LOCK,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -24,6 +25,7 @@ import { isWorkspaceNavEnabled } from "./flags";
 
 export { isWorkspaceNavEnabled };
 export {
+  DEVELOPER_GROUP_LOCK,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -218,6 +220,10 @@ export function getAccessibleNavPaths(roles) {
       if (itemVisibleTo(item, roleSet, section.department)) accessible.add(item.href);
     }
   }
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. The dev role must ALWAYS be able to
+  // land on the Developer Platform route, so the guaranteed button is never a
+  // dead link. Strictly dev-only (never widens /dev to any other role).
+  if (roleSet.has("dev")) accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
   return accessible;
 }
 
@@ -312,9 +318,22 @@ export function getDepartmentWorkspaceNav(departmentKey, roles) {
     }
   }
 
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. Inside the Developer group the dev
+  // role must ALWAYS get the Developer Platform button; re-inject it from
+  // DEVELOPER_GROUP_LOCK if a manifest edit ever removed the developer nav item.
+  if (departmentKey === DEVELOPER_GROUP_LOCK.key && roleSet.has("dev")) {
+    const { navItem } = DEVELOPER_GROUP_LOCK;
+    if (!seen.has(navItem.href)) {
+      seen.add(navItem.href);
+      items.push({ label: navItem.label, href: navItem.href });
+    }
+  }
+
   return {
     department: departmentKey,
-    label: department?.label || departmentKey,
+    label:
+      department?.label ||
+      (departmentKey === DEVELOPER_GROUP_LOCK.key ? DEVELOPER_GROUP_LOCK.label : departmentKey),
     home: department?.home || null,
     icon: department?.icon || null,
     category: department?.category || null,
@@ -343,9 +362,24 @@ export function getWorkspaceRail(roles) {
 // navigable group; the sidebar renders it as its persistent bottom controls
 // (clock in/out, logout, profile) regardless of which group is open.
 export function getWorkspaceGroups(roles) {
-  return getWorkspaceRail(roles).filter(
+  const groups = getWorkspaceRail(roles).filter(
     (group) => group.category === "general" || group.category === "departments"
   );
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. The dev role must ALWAYS get the
+  // Developer group button. If a manifest edit ever drops the developer
+  // department, re-inject it from DEVELOPER_GROUP_LOCK so the dev sidebar can
+  // never lose its entry. Strictly dev-only, preserving the /dev gating.
+  const roleSet = normalizeRoleSet(roles);
+  if (roleSet.has("dev") && !groups.some((group) => group.key === DEVELOPER_GROUP_LOCK.key)) {
+    groups.push({
+      key: DEVELOPER_GROUP_LOCK.key,
+      label: DEVELOPER_GROUP_LOCK.label,
+      category: DEVELOPER_GROUP_LOCK.category,
+      icon: DEVELOPER_GROUP_LOCK.icon,
+      home: DEVELOPER_GROUP_LOCK.home,
+    });
+  }
+  return groups;
 }
 
 export function getDashboardShortcutsForRoles(roles) {

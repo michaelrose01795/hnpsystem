@@ -15,7 +15,6 @@
 // only the content and its ordering/width balance moved.
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import GlobalSearch from "@/components/GlobalSearch";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
@@ -31,6 +30,65 @@ const TEXT_TRUNCATE = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
+
+// Splits a live prompt like "225 VHCs awaiting approval" or "3 jobs overdue —
+// needs chasing" into a leading count + trailing label so the Smart Insight can
+// use the same stacked count widget as the KPIs. No leading number → whole string
+// is the label with no count.
+function splitCountLabel(text) {
+  const s = (text || "").trim();
+  const match = s.match(/^(\d[\d,]*)\s+(.+)$/);
+  if (match) return { count: match[1], label: match[2] };
+  return { count: null, label: s };
+}
+
+// Compact stacked "status count" widget: label on top, count underneath. Two
+// short lines fit comfortably inside the bar's fixed height (no height change),
+// and stacking keeps each item narrow so several sit side by side without the
+// text being clipped. Shared by the Live KPI and Smart Insight sections.
+function StatWidget({ label, count, colors, truncate = false }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "1px",
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <span
+        title={label}
+        style={{
+          fontSize: "0.6rem",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          color: colors.mutedText,
+          lineHeight: 1.15,
+          textAlign: "center",
+          ...(truncate ? TEXT_TRUNCATE : { whiteSpace: "nowrap" }),
+        }}
+      >
+        {label}
+      </span>
+      {count != null && count !== "" && (
+        <span
+          style={{
+            fontSize: "1.05rem",
+            fontWeight: 700,
+            lineHeight: 1,
+            color: colors.accent,
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function StaffTopbar({
   isMobile,
@@ -51,8 +109,6 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
-  // Configurable role-specific quick actions (Phase 2.4), resolved in StaffLayout.
-  quickActions = [],
   // Continue-Where-You-Left-Off (Phase 2.3): the resume target or null.
   resumeItem = null,
   overlay = false,
@@ -67,23 +123,15 @@ export default function StaffTopbar({
   wrapperStyle = undefined,
   barStyle = undefined,
 }) {
-  const router = useRouter();
-  const resolvedQuickActions = Array.isArray(quickActions) ? quickActions : [];
   const resolvedKpis = Array.isArray(kpis) ? kpis : [];
 
   // Smart Insight rotates through the applicable prompts — pauses on hover/focus,
-  // content-only, no size change (same behaviour the old status line had).
+  // content-only, no size change. The current prompt is split into count + label
+  // so it renders in the same stacked stat widget as the KPIs.
   const rotating = useRotatingViews(insightViews);
-  const insightLine = rotating.current || "";
+  const insight = splitCountLabel(rotating.current || "");
 
-  const isActionHref = (href) =>
-    router.pathname === href || router.pathname.startsWith(`${href}/`);
-
-  // Role-specific Quick Actions section renders when there are technician controls
-  // and/or configurable quick actions to show.
-  const hasQuickActions = isTech || resolvedQuickActions.length > 0;
-
-  // Shared style for every action group in the Quick Actions section.
+  // Shared style for the technician workflow control group.
   const actionGroupStyle = {
     display: "flex",
     alignItems: "center",
@@ -154,8 +202,9 @@ export default function StaffTopbar({
           overflow: "visible",
         }}
       >
-        {/* 1 — Live KPI Widgets (Phase 2.2). Desktop-only, like the identity line
-            it replaces. Expands into the freed space and truncates gracefully. */}
+        {/* 1 — Live KPI Widgets (Phase 2.2), from real operational metrics.
+            Desktop-only, like the identity line it replaces. Each KPI is a stacked
+            count widget (label over count) so the full text always fits. */}
         {!isTablet && resolvedKpis.length > 0 && (
           <div
             aria-label="Live operational KPIs"
@@ -170,42 +219,17 @@ export default function StaffTopbar({
             }}
           >
             {resolvedKpis.map((kpi) => (
-              <div
-                key={kpi.key}
-                style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}
-              >
-                <span
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    color: colors.accent,
-                  }}
-                >
-                  {kpi.value}
-                </span>
-                <span
-                  title={kpi.label}
-                  style={{
-                    fontSize: "0.6rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: colors.mutedText,
-                    ...TEXT_TRUNCATE,
-                  }}
-                >
-                  {kpi.label}
-                </span>
-              </div>
+              <StatWidget key={kpi.key} label={kpi.label} count={kpi.value} colors={colors} />
             ))}
           </div>
         )}
 
-        {/* 2 — Role-specific Quick Actions (Phase 2.4), including ALL technician
-            workflow controls (preserved verbatim). Centre-weighted; on tablet it
+        {/* 2 — Technician workflow controls (Phase 2.4), preserved verbatim for
+            the tech role. The old role-specific quick-action links (Create Job
+            Card, Appointments, parts actions, …) were removed from the bar — they
+            remain reachable via the command palette. Centre-weighted; on tablet it
             spans the full row and scrolls horizontally on a vertical phone. */}
-        {hasQuickActions && (
+        {isTech && (
           <div
             className="app-topbar-action-scroll"
             style={{
@@ -229,95 +253,66 @@ export default function StaffTopbar({
               overflowY: isVerticalPhone ? "hidden" : "visible",
             }}
           >
-            {/* Technician workflow controls — preserved exactly (Phase 2.4). */}
-            {isTech && (
-              <div className="app-topbar-action-group" style={actionGroupStyle}>
-                <DropdownField
-                  className="app-topbar-dropdown app-topbar-dropdown--status"
-                  value={presentationShell ? "Waiting for Job" : status}
-                  onChange={(e) => {
-                    if (presentationShell) return; // demo deck — don't mutate real session
-                    onStatusChange(e.target.value);
-                  }}
+            <div className="app-topbar-action-group" style={actionGroupStyle}>
+              <DropdownField
+                className="app-topbar-dropdown app-topbar-dropdown--status"
+                value={presentationShell ? "Waiting for Job" : status}
+                onChange={(e) => {
+                  if (presentationShell) return; // demo deck — don't mutate real session
+                  onStatusChange(e.target.value);
+                }}
+              >
+                <option>Waiting for Job</option>
+                <option>In Progress</option>
+                <option>Tea Break</option>
+              </DropdownField>
+              {!presentationShell && currentJob?.jobNumber ? (
+                <Link
+                  href={`/tech/${currentJob.jobNumber}`}
+                  prefetch={false}
+                  className="app-btn app-btn--primary"
                 >
-                  <option>Waiting for Job</option>
-                  <option>In Progress</option>
-                  <option>Tea Break</option>
-                </DropdownField>
-                {!presentationShell && currentJob?.jobNumber ? (
-                  <Link
-                    href={`/tech/${currentJob.jobNumber}`}
-                    prefetch={false}
-                    className="app-btn app-btn--primary"
-                  >
-                    {`Open Job ${currentJob.jobNumber}`}
-                  </Link>
-                ) : (
-                  <button type="button" disabled className="app-btn app-btn--secondary">
-                    No Current Job
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (presentationShell) return;
-                    onStartJob();
-                  }}
-                  className="app-btn app-btn--secondary"
-                >
-                  Start Job
+                  {`Open Job ${currentJob.jobNumber}`}
+                </Link>
+              ) : (
+                <button type="button" disabled className="app-btn app-btn--secondary">
+                  No Current Job
                 </button>
-              </div>
-            )}
-
-            {/* Configurable role-specific quick actions (Phase 2.4). */}
-            {resolvedQuickActions.length > 0 && (
-              <div className="app-topbar-action-group" style={actionGroupStyle}>
-                {resolvedQuickActions.map((action) => (
-                  <Link
-                    key={action.href}
-                    href={action.href}
-                    prefetch={false}
-                    className={`app-btn app-btn--secondary${isActionHref(action.href) ? " is-active" : ""}`}
-                  >
-                    {action.label}
-                  </Link>
-                ))}
-              </div>
-            )}
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (presentationShell) return;
+                  onStartJob();
+                }}
+                className="app-btn app-btn--secondary"
+              >
+                Start Job
+              </button>
+            </div>
           </div>
         )}
 
-        {/* 3 — Smart Insight (Phase 2.6). Desktop-only; rotates through the
-            applicable prompts and expands into the freed space. */}
-        {!isTablet && insightLine && (
+        {/* 3 — Smart Insight (Phase 2.6), from real operational metrics. Desktop-
+            only; rotates through the applicable prompts and renders in the same
+            stacked count widget as the KPIs (label over count). */}
+        {!isTablet && insight.label && (
           <div
             onMouseEnter={rotating.pause}
             onMouseLeave={rotating.resume}
             onFocus={rotating.pause}
             onBlur={rotating.resume}
-            aria-label={`Smart insight: ${insightLine}`}
+            aria-label={`Smart insight: ${rotating.current}`}
             style={{
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
               flex: "1 1 0",
               minWidth: 0,
               overflow: "hidden",
             }}
           >
-            <span
-              title={insightLine}
-              style={{
-                fontSize: "0.65rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: colors.mutedText,
-                ...TEXT_TRUNCATE,
-              }}
-            >
-              {insightLine}
-            </span>
+            <StatWidget label={insight.label} count={insight.count} colors={colors} truncate />
           </div>
         )}
 
