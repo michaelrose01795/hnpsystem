@@ -5,6 +5,14 @@
 // Presentational: all data + handlers arrive as props from StaffLayout, which
 // remains the single owner of layout state (viewport, mode, status, clocking).
 // The parent renders this only when the chrome is visible (`!hideSidebar`).
+//
+// 2026-07 layout refinement: the bar was simplified. The Role & Department
+// identity block, the Pinned Shortcuts strip and the standalone (screen-reader)
+// Notifications region were removed. The remaining capability is laid out, left
+// to right, as: Live KPI Widgets → Role-specific Quick Actions (incl. all
+// technician controls) → Smart Insight → Continue Where You Left Off → Global
+// Search & Help. Height, styling, spacing, tokens and the shell are unchanged;
+// only the content and its ordering/width balance moved.
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -15,24 +23,9 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useRotatingViews } from "@/hooks/useRotatingViews";
 
-// Visually-hidden style for the screen-reader-only notification live region.
-const SR_ONLY = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  padding: 0,
-  margin: -1,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
-};
-
-// Single-line truncation for the identity text so a long role label / status /
-// name never wraps and grows the fixed-height bar. Applied to the role line and
-// the status line; normal-length copy is unaffected (ellipsis only triggers when
-// it would otherwise overflow).
-const IDENTITY_TRUNCATE = {
+// Single-line truncation so a long KPI label or insight never wraps and grows the
+// fixed-height bar. Ellipsis only triggers when the text would otherwise overflow.
+const TEXT_TRUNCATE = {
   maxWidth: "100%",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -45,13 +38,11 @@ export default function StaffTopbar({
   isVerticalPhone,
   lockChromeInteraction = {},
   colors,
-  // Identity (computed centrally in StaffLayout): the user's primary role label
-  // and the reusable live department status line. The bar just renders them.
-  primaryRoleLabel = "Staff",
-  // Rotating status line (Phase 2.1/2.2/2.6): summary → KPIs → insights.
-  statusViews = [],
-  // Role-aware notifications (Phase 2.7): { items, high, count, top }.
-  notifications = null,
+  // Live KPI widgets (Phase 2.2): resolved descriptors { key, label, value }.
+  // Rendered as compact stat widgets in the leftmost section.
+  kpis = [],
+  // Smart Insight prompts (Phase 2.6): ordered strings rotated in their section.
+  insightViews = [],
   isTech,
   status,
   presentationShell = false,
@@ -64,12 +55,6 @@ export default function StaffTopbar({
   quickActions = [],
   // Continue-Where-You-Left-Off (Phase 2.3): the resume target or null.
   resumeItem = null,
-  // Pinned shortcuts (Phase 2.5).
-  pins = [],
-  onTogglePin,
-  isPinned,
-  currentPageItem = null,
-  canPin = false,
   overlay = false,
   // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
   // search is in use (focused or its results list showing).
@@ -84,30 +69,21 @@ export default function StaffTopbar({
 }) {
   const router = useRouter();
   const resolvedQuickActions = Array.isArray(quickActions) ? quickActions : [];
-  const resolvedPins = Array.isArray(pins) ? pins : [];
+  const resolvedKpis = Array.isArray(kpis) ? kpis : [];
 
-  // Rotating status line — pauses on hover/focus; content-only, no size change.
-  const rotating = useRotatingViews(statusViews);
-  const statusLine = rotating.current || "";
-  const summaryLine = statusViews[0] || ""; // stable line for the aria-label
-  const notificationMessage = notifications?.top?.message || null;
-  const notificationCount = notifications?.count || 0;
+  // Smart Insight rotates through the applicable prompts — pauses on hover/focus,
+  // content-only, no size change (same behaviour the old status line had).
+  const rotating = useRotatingViews(insightViews);
+  const insightLine = rotating.current || "";
 
   const isActionHref = (href) =>
     router.pathname === href || router.pathname.startsWith(`${href}/`);
 
-  const showPinToggle = canPin && Boolean(currentPageItem) && typeof onTogglePin === "function";
-  const currentPinned =
-    showPinToggle && typeof isPinned === "function" ? isPinned(currentPageItem.href) : false;
+  // Role-specific Quick Actions section renders when there are technician controls
+  // and/or configurable quick actions to show.
+  const hasQuickActions = isTech || resolvedQuickActions.length > 0;
 
-  const hasStrip =
-    isTech ||
-    resolvedQuickActions.length > 0 ||
-    resolvedPins.length > 0 ||
-    Boolean(resumeItem) ||
-    showPinToggle;
-
-  // Shared style for every action group in the centre strip (Phase 2.8 cleanup).
+  // Shared style for every action group in the Quick Actions section.
   const actionGroupStyle = {
     display: "flex",
     alignItems: "center",
@@ -168,97 +144,68 @@ export default function StaffTopbar({
     >
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: !isTablet ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "1fr",
+          display: "flex",
           alignItems: "center",
-          gap: isMobile ? "10px" : "14px",
-          overflow: "visible",
+          // Gaps grow with the viewport so the sections breathe on wide screens
+          // and tighten (without crowding) as the bar narrows.
+          gap: isMobile ? "10px" : isTablet ? "12px" : "clamp(14px, 1.6vw, 32px)",
           width: "100%",
+          flexWrap: isTablet ? "wrap" : "nowrap",
+          overflow: "visible",
         }}
       >
-        {/* Left identity block: current role + contextual department status.
-            Hidden on tablet/mobile (identity is surfaced via the sidebar Profile
-            button there), same as the greeting it replaces. `minWidth: 0` lets
-            long text truncate instead of pushing the centred action strip. */}
-        {!isTablet && (
+        {/* 1 — Live KPI Widgets (Phase 2.2). Desktop-only, like the identity line
+            it replaces. Expands into the freed space and truncates gracefully. */}
+        {!isTablet && resolvedKpis.length > 0 && (
           <div
+            aria-label="Live operational KPIs"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
+              gap: "clamp(12px, 1.4vw, 22px)",
+              flex: "1 1 0",
               minWidth: 0,
-              flex: "0 1 auto",
+              overflow: "hidden",
+              flexWrap: "nowrap",
             }}
           >
-            <div
-              aria-label={
-                summaryLine
-                  ? `Signed in as ${primaryRoleLabel}. ${summaryLine}.`
-                  : `Signed in as ${primaryRoleLabel}.`
-              }
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "4px",
-                minWidth: 0,
-              }}
-            >
-              <h1
-                title={primaryRoleLabel}
-                style={{
-                  fontSize: "1.15rem",
-                  fontWeight: 700,
-                  margin: 0,
-                  color: colors.accent,
-                  lineHeight: 1.1,
-                  ...IDENTITY_TRUNCATE,
-                }}
+            {resolvedKpis.map((kpi) => (
+              <div
+                key={kpi.key}
+                style={{ display: "flex", alignItems: "baseline", gap: "5px", minWidth: 0 }}
               >
-                {primaryRoleLabel}
-              </h1>
-              {statusLine && (
-                <div
-                  onMouseEnter={rotating.pause}
-                  onMouseLeave={rotating.resume}
-                  onFocus={rotating.pause}
-                  onBlur={rotating.resume}
+                <span
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                    minWidth: 0,
-                    maxWidth: "100%",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    color: colors.accent,
                   }}
                 >
-                  <span
-                    title={statusLine}
-                    style={{
-                      color: colors.mutedText,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      ...IDENTITY_TRUNCATE,
-                    }}
-                  >
-                    {statusLine}
-                  </span>
-                </div>
-              )}
-              {/* Role-aware notifications (Phase 2.7): announced to assistive
-                  tech without any visual change to the bar. */}
-              {notificationMessage && (
-                <span role="status" aria-live="polite" style={SR_ONLY}>
-                  {`${notificationCount} notification${notificationCount === 1 ? "" : "s"}: ${notificationMessage}`}
+                  {kpi.value}
                 </span>
-              )}
-            </div>
+                <span
+                  title={kpi.label}
+                  style={{
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: colors.mutedText,
+                    ...TEXT_TRUNCATE,
+                  }}
+                >
+                  {kpi.label}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
-        {hasStrip && (
+        {/* 2 — Role-specific Quick Actions (Phase 2.4), including ALL technician
+            workflow controls (preserved verbatim). Centre-weighted; on tablet it
+            spans the full row and scrolls horizontally on a vertical phone. */}
+        {hasQuickActions && (
           <div
             className="app-topbar-action-scroll"
             style={{
@@ -266,16 +213,18 @@ export default function StaffTopbar({
               alignItems: "center",
               justifyContent: isVerticalPhone ? "flex-start" : "center",
               gap: isMobile ? "8px" : "12px",
-              whiteSpace: isVerticalPhone ? "nowrap" : isTablet ? "normal" : "nowrap",
               flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+              // Sized to its content on desktop but allowed to shrink so the
+              // flexible KPI/insight sections keep filling the bar; full-row on
+              // tablet.
+              flex: isTablet ? "1 1 100%" : "0 1 auto",
               width: isTablet ? "100%" : undefined,
               minWidth: 0,
               maxWidth: "100%",
               zIndex: 2,
-              justifySelf: "center",
               // Desktop/tablet controls need visible overflow so their
-              // dropdowns/menus are not shaved off by the action strip.
-              // Vertical phone keeps its horizontal scroll behaviour.
+              // dropdowns/menus are not shaved off. Vertical phone keeps its
+              // horizontal scroll behaviour.
               overflowX: isVerticalPhone ? "auto" : "visible",
               overflowY: isVerticalPhone ? "hidden" : "visible",
             }}
@@ -321,20 +270,6 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {/* Continue Where You Left Off (Phase 2.3). */}
-            {resumeItem && (
-              <div className="app-topbar-action-group" style={actionGroupStyle}>
-                <Link
-                  href={resumeItem.href}
-                  prefetch={false}
-                  className="app-btn app-btn--secondary"
-                  title={`Resume ${resumeItem.type}: ${resumeItem.label}`}
-                >
-                  {`Resume: ${resumeItem.label}`}
-                </Link>
-              </div>
-            )}
-
             {/* Configurable role-specific quick actions (Phase 2.4). */}
             {resolvedQuickActions.length > 0 && (
               <div className="app-topbar-action-group" style={actionGroupStyle}>
@@ -350,57 +285,89 @@ export default function StaffTopbar({
                 ))}
               </div>
             )}
-
-            {/* Pinned shortcuts + pin-this-page toggle (Phase 2.5). */}
-            {(resolvedPins.length > 0 || showPinToggle) && (
-              <div className="app-topbar-action-group" style={actionGroupStyle}>
-                {resolvedPins.map((pin) => (
-                  <Link
-                    key={pin.href}
-                    href={pin.href}
-                    prefetch={false}
-                    className={`app-btn app-btn--secondary${isActionHref(pin.href) ? " is-active" : ""}`}
-                    title={pin.label}
-                  >
-                    {pin.label}
-                  </Link>
-                ))}
-                {showPinToggle && (
-                  <button
-                    type="button"
-                    onClick={() => onTogglePin(currentPageItem)}
-                    className="app-btn app-btn--ghost"
-                    aria-pressed={currentPinned}
-                    aria-label={currentPinned ? "Unpin this page" : "Pin this page"}
-                    title={currentPinned ? "Unpin this page" : "Pin this page"}
-                  >
-                    {currentPinned ? "★" : "☆"}
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         )}
 
-        {/* Hide search section on tablet/mobile - shown below tab buttons instead */}
+        {/* 3 — Smart Insight (Phase 2.6). Desktop-only; rotates through the
+            applicable prompts and expands into the freed space. */}
+        {!isTablet && insightLine && (
+          <div
+            onMouseEnter={rotating.pause}
+            onMouseLeave={rotating.resume}
+            onFocus={rotating.pause}
+            onBlur={rotating.resume}
+            aria-label={`Smart insight: ${insightLine}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flex: "1 1 0",
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
+            <span
+              title={insightLine}
+              style={{
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: colors.mutedText,
+                ...TEXT_TRUNCATE,
+              }}
+            >
+              {insightLine}
+            </span>
+          </div>
+        )}
+
+        {/* 4 — Continue Where You Left Off (Phase 2.3). Its own section now, after
+            Smart Insight; on tablet it wraps to the next row under the actions. */}
+        {resumeItem && (
+          <div
+            className="app-topbar-action-group"
+            style={{
+              ...actionGroupStyle,
+              flex: isTablet ? "1 1 100%" : "0 1 auto",
+              minWidth: 0,
+            }}
+          >
+            <Link
+              href={resumeItem.href}
+              prefetch={false}
+              className="app-btn app-btn--secondary"
+              title={`Resume ${resumeItem.type}: ${resumeItem.label}`}
+            >
+              {`Resume: ${resumeItem.label}`}
+            </Link>
+          </div>
+        )}
+
+        {/* 5 — Global Search & Help. Hidden on tablet/mobile (search is shown
+            below the tab buttons there). Pinned to the far right of the bar. */}
         {!isTablet && (
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "24px",
+              // Internal gap scales with the viewport, like the outer row.
+              gap: "clamp(12px, 1.2vw, 24px)",
               minWidth: 0,
               justifyContent: "flex-end",
-              marginLeft: "auto",
-              justifySelf: "end",
+              // Sits hard-right and can shrink; the KPI/insight sections growing
+              // to fill the freed space push it to the edge (no margin hack).
+              flex: "0 1 auto",
             }}
           >
             <div
               style={{
-                flex: "0 1 auto",
-                minWidth: "22ch",
-                width: "clamp(18rem, 20vw, 24rem)",
-                maxWidth: "24rem",
+                // Search field flexes with the bar: a comfortable basis that
+                // grows on wide screens and shrinks (never below usable) as the
+                // bar narrows.
+                flex: "1 1 auto",
+                minWidth: 0,
+                width: "clamp(15rem, 20vw, 26rem)",
+                maxWidth: "26rem",
                 position: "relative",
               }}
             >

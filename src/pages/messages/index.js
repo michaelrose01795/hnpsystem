@@ -1115,6 +1115,7 @@ function MessagesPage() {
   const unreadMarkerTimersRef = useRef(new Map());
   const activeUnreadMarkerKeyRef = useRef(null);
   const deepLinkProcessedRef = useRef(false); // Track whether job card deep-link has been handled
+  const collabDeepLinkRef = useRef(false); // Track whether a topbar collaboration deep-link (?to=/group) is handled
   const {
     listThreads,
     listThreadMessages,
@@ -1994,6 +1995,60 @@ function MessagesPage() {
     // Clean query params from URL without navigation
     router.replace("/messages", undefined, { shallow: true });
   }, [isMobileView, router.isReady, router.query, threads, loadingThreads, openThread]);
+
+  // Collaboration deep-link from the top-bar Team workspace (Phase 4.4):
+  //   /messages?to=<userId>                           → open/start a 1:1 DM
+  //   /messages?compose=group&members=<id,id>&title=  → create/open a group chat
+  // Reuses the existing startDirectThread / createThread primitives — no new
+  // messaging backend. Runs once; needs only the signed-in user (not threads).
+  useEffect(() => {
+    if (collabDeepLinkRef.current) return;
+    if (!router.isReady || !dbUserId) return;
+    const { to, compose, members, title } = router.query;
+    if (!to && compose !== "group") return;
+    collabDeepLinkRef.current = true;
+
+    (async () => {
+      try {
+        if (to) {
+          await startDirectThread(String(to));
+        } else if (compose === "group" && members) {
+          const memberIds = String(members)
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+          if (memberIds.length) {
+            const payload = await createThreadApi({
+              type: "group",
+              createdBy: dbUserId,
+              title: title ? String(title) : "",
+              memberIds,
+            });
+            const thread = payload?.data || payload?.thread;
+            if (thread) {
+              mergeThread(thread);
+              await fetchThreads();
+              await openThread(thread.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("❌ Collaboration deep-link failed:", error);
+      } finally {
+        router.replace("/messages", undefined, { shallow: true });
+      }
+    })();
+  }, [
+    router.isReady,
+    router.query,
+    dbUserId,
+    startDirectThread,
+    createThreadApi,
+    mergeThread,
+    fetchThreads,
+    openThread,
+    router,
+  ]);
 
   useEffect(() => {
     if (!dbUserId) return;

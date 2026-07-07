@@ -35,14 +35,11 @@ import {
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
 import { useRoster } from "@/context/RosterContext";
-import { getPrimaryRoleLabel } from "@/lib/auth/rolePrecedence";
 import { resolveDepartmentForRoles } from "@/lib/reporting/config/departments";
 import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
-import { buildStatusViews } from "@/config/topbar/statusViews";
+import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
 import { useContinueContext } from "@/hooks/useContinueContext";
-import { usePinnedShortcuts } from "@/hooks/usePinnedShortcuts";
-import { useRoleNotifications } from "@/hooks/useRoleNotifications";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -324,30 +321,25 @@ export default function Layout({
   // Role-aware workspace for the top bar (computed centrally here so the bar
   // stays presentational). All the reusable pieces live in src/config/topbar,
   // src/hooks and src/lib/topbar; adding a department extends those, not the bar.
-  const primaryRoleLabel = getPrimaryRoleLabel(userRoles) || "Staff";
   const departmentCode = resolveDepartmentForRoles(userRoles);
 
-  // Phase 2.1/2.2: live operational metrics (endpoint + roster), assembled into
-  // the rotating status views (summary → KPIs → insights, Phase 2.6).
+  // Phase 2.1/2.2: live operational metrics (endpoint + roster). The 2026-07
+  // layout refinement surfaces these as their own Live KPI + Smart Insight
+  // sections (see buildTopbarSections) instead of one rotating status line.
   const operationalSnapshot = useOperationalSnapshot({
     department: departmentCode,
     isPresentation: presentationShell,
-    // The rotating status line is desktop-only, so don't poll on tablet/mobile.
+    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile.
     enabled: !isTablet,
   });
-  const statusViews = useMemo(
+  // Live KPI widgets (2.2) + Smart Insight prompts (2.6) as separate sections.
+  const topbarSections = useMemo(
     () =>
-      buildStatusViews(departmentCode, operationalSnapshot.metrics, {
+      buildTopbarSections(departmentCode, operationalSnapshot.metrics, {
         isPresentation: presentationShell,
       }),
     [departmentCode, operationalSnapshot.metrics, presentationShell]
   );
-  // Phase 2.7: adaptive role-aware notifications derived from the same metrics.
-  const roleNotifications = useRoleNotifications({
-    department: departmentCode,
-    metrics: operationalSnapshot.metrics,
-    isPresentation: presentationShell,
-  });
   // Phase 2.4: configurable role-specific quick actions (manifest wins, else the
   // capability defaults). Preserves the previous behaviour, de-hardcoded.
   const topbarQuickActions = resolveQuickActions({
@@ -359,12 +351,10 @@ export default function Layout({
   const continueContext = useContinueContext(router.asPath, {
     enabled: !presentationShell,
   });
-  // Phase 2.5: pinned shortcuts + the current page as a pin candidate.
-  const {
-    pins: topbarPins,
-    isPinned: isTopbarPinned,
-    togglePin: toggleTopbarPin,
-  } = usePinnedShortcuts({ enabled: !presentationShell });
+  // The current page as a candidate for the command palette's favourite/recent
+  // surfaces (WorkspaceCommandCenter). The bar's own Pinned Shortcuts section was
+  // removed in the 2026-07 layout refinement, but the command centre still uses
+  // this to offer "favourite this page".
   const currentPinItem = useMemo(() => {
     const base = (router.asPath || "").split("?")[0].split("#")[0];
     if (!base || base === "/") return null;
@@ -1299,9 +1289,8 @@ export default function Layout({
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
             colors={colors}
-            primaryRoleLabel={primaryRoleLabel}
-            statusViews={statusViews}
-            notifications={roleNotifications}
+            kpis={topbarSections.kpis}
+            insightViews={topbarSections.insights}
             isTech={isTech}
             status={status}
             presentationShell={presentationShell}
@@ -1312,11 +1301,6 @@ export default function Layout({
             userRoles={userRoles}
             quickActions={topbarQuickActions}
             resumeItem={continueContext.mostRecent}
-            pins={topbarPins}
-            isPinned={isTopbarPinned}
-            onTogglePin={toggleTopbarPin}
-            currentPageItem={currentPinItem}
-            canPin={!presentationShell}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}

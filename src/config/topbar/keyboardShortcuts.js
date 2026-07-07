@@ -37,6 +37,22 @@ export const SHORTCUTS = [
     allowInInput: true,
   },
   {
+    id: "team-workspace",
+    label: "Open team workspace",
+    category: "Global",
+    mod: true,
+    key: "u",
+    allowInInput: true,
+  },
+  {
+    id: "operational-assistant",
+    label: "Open operational assistant",
+    category: "Global",
+    mod: true,
+    key: "i",
+    allowInInput: true,
+  },
+  {
     id: "favourite-page",
     label: "Favourite the current page",
     category: "Page",

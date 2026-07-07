@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import { resolveKpis, formatKpiLine } from "@/config/topbar/departmentKpis";
 import { resolveInsights } from "@/config/topbar/departmentInsights";
 import { resolveNotifications } from "@/config/topbar/departmentNotifications";
-import { buildStatusViews } from "@/config/topbar/statusViews";
+import { buildStatusViews, buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions, SERVICE_QUICK_ACTIONS } from "@/config/topbar/quickActions";
 import { resolveResumable, isSamePath } from "@/lib/topbar/continueContext";
 
@@ -76,6 +76,36 @@ describe("buildStatusViews", () => {
 
   it("always returns at least one view", () => {
     expect(buildStatusViews("accounts", {}).length).toBeGreaterThan(0);
+  });
+});
+
+describe("buildTopbarSections", () => {
+  it("returns KPI descriptors and insight strings as separate sections", () => {
+    const { kpis, insights } = buildTopbarSections("workshop", WORKSHOP);
+    expect(kpis.map((k) => k.key)).toEqual([
+      "jobsWaiting",
+      "jobsInProgress",
+      "techniciansAvailable",
+      "overdueJobs",
+    ]);
+    expect(kpis[0]).toMatchObject({ label: "waiting", value: 4 });
+    expect(insights[0]).toBe("3 jobs overdue — needs chasing");
+  });
+
+  it("caps each section to its limit", () => {
+    const { kpis, insights } = buildTopbarSections("workshop", WORKSHOP, {
+      maxKpis: 2,
+      maxInsights: 1,
+    });
+    expect(kpis).toHaveLength(2);
+    expect(insights).toHaveLength(1);
+  });
+
+  it("surfaces nothing live in presentation mode", () => {
+    expect(buildTopbarSections("workshop", WORKSHOP, { isPresentation: true })).toEqual({
+      kpis: [],
+      insights: [],
+    });
   });
 });
 
