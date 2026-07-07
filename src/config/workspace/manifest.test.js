@@ -19,6 +19,9 @@ import { describe, it, expect } from "vitest";
 import {
   toSidebarSections,
   getAccessibleNavPaths,
+  getAllSidebarItems,
+  getKnownSidebarHrefs,
+  resolveAccessiblePaths,
   getActiveWorkspaceDepartment,
   getContextNav,
   getDepartmentWorkspaceNav,
@@ -424,6 +427,56 @@ describe("workspace manifest — permission parity (nav == access)", () => {
         }
       }
     }
+  });
+});
+
+describe("workspace manifest — per-user sidebar access override", () => {
+  it("resolveAccessiblePaths with no snapshot === getAccessibleNavPaths (byte-for-byte)", () => {
+    for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+      const base = getAccessibleNavPaths(roles);
+      for (const empty of [null, undefined, {}, { items: null }]) {
+        const resolved = resolveAccessiblePaths(roles, empty);
+        expect([...resolved].sort()).toEqual([...base].sort());
+      }
+    }
+  });
+
+  it("an explicit snapshot is authoritative within the sidebar item universe", () => {
+    const universe = getKnownSidebarHrefs();
+    const snapshot = { items: ["/messages"] };
+    const resolved = resolveAccessiblePaths(["service"], snapshot);
+    // Kept: the one snapshot item that is a known sidebar href.
+    expect(resolved.has("/messages")).toBe(true);
+    // Dropped: a role-default sidebar item omitted from the snapshot.
+    const roleDefaults = getAccessibleNavPaths(["service"]);
+    const droppedInUniverse = [...roleDefaults].find(
+      (href) => universe.has(href) && href !== "/messages"
+    );
+    if (droppedInUniverse) expect(resolved.has(droppedInUniverse)).toBe(false);
+    // Untouched: role-default paths OUTSIDE the sidebar universe stay accessible.
+    for (const href of roleDefaults) {
+      if (!universe.has(href)) expect(resolved.has(href)).toBe(true);
+    }
+  });
+
+  it("unknown hrefs in a snapshot are ignored", () => {
+    const resolved = resolveAccessiblePaths(["service"], {
+      items: ["/messages", "/not-a-real-page"],
+    });
+    expect(resolved.has("/messages")).toBe(true);
+    expect(resolved.has("/not-a-real-page")).toBe(false);
+  });
+
+  it("getAllSidebarItems covers the toggleable universe and excludes the dev group", () => {
+    const groups = getAllSidebarItems();
+    const listed = new Set(groups.flatMap((g) => g.items.map((i) => i.href)));
+    expect([...listed].sort()).toEqual([...getKnownSidebarHrefs()].sort());
+    expect(groups.some((g) => g.department === DEVELOPER_GROUP_LOCK.key)).toBe(false);
+  });
+
+  it("the dev developer-platform route stays landable for dev even under a snapshot", () => {
+    const resolved = resolveAccessiblePaths(["dev"], { items: [] });
+    expect(resolved.has(DEVELOPER_GROUP_LOCK.navItem.href)).toBe(true);
   });
 });
 

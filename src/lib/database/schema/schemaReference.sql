@@ -38,6 +38,7 @@ CREATE TABLE public.users (
   password_algo text NOT NULL DEFAULT 'plaintext'::text,
   password_updated_at timestamp with time zone,
   extension text,
+  sidebar_access jsonb,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );

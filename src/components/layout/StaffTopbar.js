@@ -10,9 +10,14 @@
 // identity block, the Pinned Shortcuts strip and the standalone (screen-reader)
 // Notifications region were removed. The remaining capability is laid out, left
 // to right, as: Live KPI Widgets → Role-specific Quick Actions (incl. all
-// technician controls) → Smart Insight → Continue Where You Left Off → Global
-// Search & Help. Height, styling, spacing, tokens and the shell are unchanged;
-// only the content and its ordering/width balance moved.
+// technician controls) → Smart Insight → Continue Where You Left Off → Most-Used
+// Pages → Global Search & Help. Height, styling, spacing, tokens and the shell
+// are unchanged; only the content and its ordering/width balance moved.
+//
+// Most-Used Pages: the Live KPI + Smart Insight "stats" no longer flex-grow apart
+// — they sit together at the left. Two quick-access buttons for the user's two
+// most-used pages (learned by the behaviour model) are pushed to the right, just
+// before the Global Search field.
 import React from "react";
 import Link from "next/link";
 import GlobalSearch from "@/components/GlobalSearch";
@@ -21,6 +26,7 @@ import SupportControl from "@/components/support/SupportControl";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useRotatingViews } from "@/hooks/useRotatingViews";
+import { formatKpiTooltip } from "@/config/topbar/departmentKpis";
 
 // Single-line truncation so a long KPI label or insight never wraps and grows the
 // fixed-height bar. Ellipsis only triggers when the text would otherwise overflow.
@@ -46,9 +52,15 @@ function splitCountLabel(text) {
 // short lines fit comfortably inside the bar's fixed height (no height change),
 // and stacking keeps each item narrow so several sit side by side without the
 // text being clipped. Shared by the Live KPI and Smart Insight sections.
-function StatWidget({ label, count, colors, truncate = false }) {
+//
+// `tooltip` (optional): a richer multi-line hover string (e.g. the free techs'
+// names) shown by GlobalTooltip. It's set on the widget root so hovering anywhere
+// on the widget shows it; the label's own title= is suppressed when present so it
+// doesn't shadow the richer tooltip (closest() would otherwise match the label).
+function StatWidget({ label, count, colors, truncate = false, tooltip = null }) {
   return (
     <div
+      title={tooltip || undefined}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -57,10 +69,11 @@ function StatWidget({ label, count, colors, truncate = false }) {
         gap: "1px",
         minWidth: 0,
         maxWidth: "100%",
+        cursor: tooltip ? "help" : undefined,
       }}
     >
       <span
-        title={label}
+        title={tooltip ? undefined : label}
         style={{
           fontSize: "0.6rem",
           fontWeight: 600,
@@ -101,6 +114,9 @@ export default function StaffTopbar({
   kpis = [],
   // Smart Insight prompts (Phase 2.6): ordered strings rotated in their section.
   insightViews = [],
+  // Most-used pages: up to two { href, label } resolved from the behaviour model.
+  // Rendered as quick-access buttons on the right of the bar (desktop only).
+  topPages = [],
   isTech,
   status,
   presentationShell = false,
@@ -136,7 +152,8 @@ export default function StaffTopbar({
     display: "flex",
     alignItems: "center",
     justifyContent: isVerticalPhone ? "flex-start" : "center",
-    gap: isMobile ? "8px" : "12px",
+    // Uniform 10px spacing between everything in the bar (symmetry).
+    gap: "10px",
     flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
     width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
     minWidth: 0,
@@ -180,7 +197,8 @@ export default function StaffTopbar({
         padding: isMobile ? "10px 12px" : "0 16px",
         display: "flex",
         flexDirection: "column",
-        gap: isMobile ? "8px" : "12px",
+        // Uniform 10px spacing between everything in the bar (symmetry).
+        gap: "10px",
         minHeight: isMobile ? "auto" : "75px",
         justifyContent: "center",
         overflow: "visible",
@@ -194,9 +212,8 @@ export default function StaffTopbar({
         style={{
           display: "flex",
           alignItems: "center",
-          // Gaps grow with the viewport so the sections breathe on wide screens
-          // and tighten (without crowding) as the bar narrows.
-          gap: isMobile ? "10px" : isTablet ? "12px" : "clamp(14px, 1.6vw, 32px)",
+          // Uniform 10px spacing between every section in the bar (symmetry).
+          gap: "10px",
           width: "100%",
           flexWrap: isTablet ? "wrap" : "nowrap",
           overflow: "visible",
@@ -211,15 +228,19 @@ export default function StaffTopbar({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "clamp(12px, 1.4vw, 22px)",
-              flex: "1 1 0",
+              // Uniform 10px spacing between each KPI widget (symmetry).
+              gap: "10px",
+              // Content-sized (was flex: 1 1 0) so the KPIs and the Smart Insight
+              // sit together as one "stats" block at the left instead of the two
+              // stretching to opposite ends of the bar.
+              flex: "0 1 auto",
               minWidth: 0,
               overflow: "hidden",
               flexWrap: "nowrap",
             }}
           >
             {resolvedKpis.map((kpi) => (
-              <StatWidget key={kpi.key} label={kpi.label} count={kpi.value} colors={colors} />
+              <StatWidget key={kpi.key} label={kpi.label} count={kpi.value} colors={colors} tooltip={formatKpiTooltip(kpi)} />
             ))}
           </div>
         )}
@@ -236,7 +257,8 @@ export default function StaffTopbar({
               display: "flex",
               alignItems: "center",
               justifyContent: isVerticalPhone ? "flex-start" : "center",
-              gap: isMobile ? "8px" : "12px",
+              // Uniform 10px spacing between everything in the bar (symmetry).
+              gap: "10px",
               flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
               // Sized to its content on desktop but allowed to shrink so the
               // flexible KPI/insight sections keep filling the bar; full-row on
@@ -306,13 +328,21 @@ export default function StaffTopbar({
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              flex: "1 1 0",
+              // Left-aligned + content-sized (was centred, flex: 1 1 0) so it sits
+              // directly beside the KPIs as part of the same left "stats" block.
+              justifyContent: "flex-start",
+              flex: "0 1 auto",
               minWidth: 0,
               overflow: "hidden",
             }}
           >
-            <StatWidget label={insight.label} count={insight.count} colors={colors} truncate />
+            <StatWidget
+              label={insight.label}
+              count={insight.count}
+              colors={colors}
+              truncate
+              tooltip={rotating.current || null}
+            />
           </div>
         )}
 
@@ -338,22 +368,62 @@ export default function StaffTopbar({
           </div>
         )}
 
-        {/* 5 — Global Search & Help. Hidden on tablet/mobile (search is shown
-            below the tab buttons there). Pinned to the far right of the bar. */}
+        {/* 5 — Most-Used Pages + Global Search & Help. Hidden on tablet/mobile
+            (search is shown below the tab buttons there). The whole cluster is
+            pushed hard-right via marginLeft:auto — the "stats" sections no longer
+            grow, so this replaces the previous grow-to-fill behaviour and keeps
+            the bar right-aligned even before any pages are learned. */}
         {!isTablet && (
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              // Internal gap scales with the viewport, like the outer row.
-              gap: "clamp(12px, 1.2vw, 24px)",
+              // Uniform 10px spacing between everything in the bar (symmetry).
+              gap: "10px",
               minWidth: 0,
               justifyContent: "flex-end",
-              // Sits hard-right and can shrink; the KPI/insight sections growing
-              // to fill the freed space push it to the edge (no margin hack).
+              // Pins the cluster to the right edge. The KPI/insight/resume sections
+              // are content-sized (no longer flex-grow), so an explicit auto margin
+              // — not a growing neighbour — is what holds this to the far right.
+              marginLeft: "auto",
               flex: "0 1 auto",
             }}
           >
+            {/* Most-used pages (behaviour model): up to two quick-access buttons,
+                sitting to the right of the stats block and to the left of the
+                search field. Only renders once the model has learned pages. */}
+            {topPages.length > 0 && (
+              <div
+                aria-label="Most used pages"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  // Uniform 10px spacing between the two page buttons (symmetry).
+                  gap: "10px",
+                  flexShrink: 0,
+                  minWidth: 0,
+                }}
+              >
+                {topPages.map((page) => (
+                  <Link
+                    key={page.href}
+                    href={page.href}
+                    prefetch={false}
+                    className="app-btn app-btn--secondary"
+                    title={`Frequently used: ${page.label}`}
+                    style={{
+                      maxWidth: "12rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {page.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
             <div
               style={{
                 // Search field flexes with the bar: a comfortable basis that

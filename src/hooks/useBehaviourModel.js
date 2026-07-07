@@ -39,7 +39,12 @@ function labelForPath(base, navByHref) {
   return titleCase(segs[segs.length - 1] || base);
 }
 
-export function useBehaviourModel({ currentAsPath = "", navigationItems = [], enabled = true } = {}) {
+// `record` (default true): when false the hook is READ-ONLY — it rehydrates and
+// stays in sync with the shared store and still exposes `topActions`, but does not
+// itself count the current visit. This lets a second consumer (e.g. the topbar's
+// "most used pages" buttons) read the model that WorkspaceCommandCenter already
+// records, without double-counting each navigation into the shared per-user store.
+export function useBehaviourModel({ currentAsPath = "", navigationItems = [], enabled = true, record = true } = {}) {
   const { user, dbUserId } = useUser() || {};
   const userId = dbUserId || user?.id || user?.username || null;
   const key = buildKey(FEATURE, userId);
@@ -66,9 +71,10 @@ export function useBehaviourModel({ currentAsPath = "", navigationItems = [], en
     return subscribe(key, (value) => setModel(normaliseModel(value)));
   }, [key, enabled]);
 
-  // Record the current page once per navigation (skip root + repeats).
+  // Record the current page once per navigation (skip root + repeats). Skipped
+  // entirely for read-only consumers (record: false).
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !record) return;
     const base = (currentAsPath || "").split("?")[0].split("#")[0];
     if (!base || base === "/") return;
     if (base === lastPathRef.current) return;
@@ -83,7 +89,7 @@ export function useBehaviourModel({ currentAsPath = "", navigationItems = [], en
       writeJSON(key, next);
       return next;
     });
-  }, [currentAsPath, enabled, key, navByHref]);
+  }, [currentAsPath, enabled, record, key, navByHref]);
 
   const reset = useCallback(() => {
     removeKey(key);

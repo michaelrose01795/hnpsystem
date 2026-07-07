@@ -5,7 +5,7 @@
 // quick actions (2.4) and the continue-context classifier (2.3).
 
 import { describe, it, expect } from "vitest";
-import { resolveKpis, formatKpiLine } from "@/config/topbar/departmentKpis";
+import { resolveKpis, formatKpiLine, formatKpiTooltip } from "@/config/topbar/departmentKpis";
 import { resolveInsights } from "@/config/topbar/departmentInsights";
 import { resolveNotifications } from "@/config/topbar/departmentNotifications";
 import { buildStatusViews, buildTopbarSections } from "@/config/topbar/statusViews";
@@ -33,6 +33,40 @@ describe("departmentKpis", () => {
 
   it("returns nothing for an unknown department", () => {
     expect(resolveKpis("nope", WORKSHOP)).toEqual([]);
+  });
+
+  it("attaches the server detail sample to the matching KPI", () => {
+    const kpis = resolveKpis("workshop", {
+      ...WORKSHOP,
+      details: { techniciansAvailable: ["Alex Smith", "Priya Patel"] },
+    });
+    const techs = kpis.find((k) => k.key === "techniciansAvailable");
+    expect(techs.detail).toEqual(["Alex Smith", "Priya Patel"]);
+    expect(kpis.find((k) => k.key === "jobsWaiting").detail).toBeNull();
+  });
+});
+
+describe("formatKpiTooltip", () => {
+  it("returns just the header when there is no detail sample", () => {
+    expect(formatKpiTooltip({ label: "techs free", hint: "not clocked on", value: 2 })).toBe(
+      "techs free — not clocked on"
+    );
+  });
+
+  it("lists the detail under the header", () => {
+    expect(
+      formatKpiTooltip({ label: "techs free", hint: "not clocked on", value: 2, detail: ["Alex", "Priya"] })
+    ).toBe("techs free — not clocked on\nAlex\nPriya");
+  });
+
+  it("adds a +N more line when the value exceeds the sample", () => {
+    expect(
+      formatKpiTooltip({ label: "waiting", hint: "not started", value: 5, detail: ["101 · AB12 CDE", "102"] })
+    ).toBe("waiting — not started\n101 · AB12 CDE\n102\n+3 more");
+  });
+
+  it("returns null for no kpi", () => {
+    expect(formatKpiTooltip(null)).toBeNull();
   });
 });
 

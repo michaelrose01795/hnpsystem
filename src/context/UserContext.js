@@ -1,5 +1,5 @@
 // ✅ Imports converted to use absolute alias "@/"
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
@@ -71,6 +71,7 @@ export function UserProvider({ children }) {
   const [logoutBarrierUntil, setLogoutBarrierUntil] = useState(0);
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
+  const [sidebarAccess, setSidebarAccess] = useState(null);
   const [currentJob, setCurrentJob] = useState(null);
   const hasLogoutBarrier = logoutBarrierUntil > Date.now();
   const authSyncBlocked = isLoggingOut || hasLogoutBarrier;
@@ -317,6 +318,39 @@ export function UserProvider({ children }) {
     };
   }, [user]);
 
+  // Per-user sidebar-access snapshot (admin-set override). Fetched fresh once the
+  // Supabase user id is known, so an admin's edit applies on the user's next page
+  // load — no re-login required. A null result means "no override" → role-derived
+  // navigation (the default). Presentation / Playwright / synthetic dev-platform
+  // sessions have no DB row, so they keep the role-derived default.
+  const refreshSidebarAccess = useCallback(async () => {
+    if (!dbUserId || isPresentationMode() || PLAYWRIGHT_AUTH_ENABLED) {
+      setSidebarAccess(null);
+      return;
+    }
+    try {
+      const res = await withTimeout(
+        fetch(`/api/profile/sidebar-access?userId=${encodeURIComponent(dbUserId)}`, {
+          credentials: "include",
+        }),
+        "Sidebar access fetch"
+      );
+      if (!res.ok) {
+        setSidebarAccess(null);
+        return;
+      }
+      const json = await res.json();
+      setSidebarAccess(json?.sidebarAccess ?? null);
+    } catch (err) {
+      console.error("Failed to load sidebar access", err?.message || err);
+      setSidebarAccess(null); // fail open to role-derived nav — never lock a user out
+    }
+  }, [dbUserId]);
+
+  useEffect(() => {
+    refreshSidebarAccess();
+  }, [refreshSidebarAccess]);
+
   // Helper to refresh the technician's active job from job_clocking table
   const refreshCurrentJob = useCallback(async () => {
     if (!dbUserId) {
@@ -424,18 +458,29 @@ export function UserProvider({ children }) {
     }
   };
 
+  // Expose the signed-in user with their sidebar-access snapshot attached so the
+  // sidebar (StaffSidebar) and the client route guard (_app PageAccessGuard) can
+  // read user.sidebarAccess without a separate subscription. Memoised so identity
+  // only changes when the user or the snapshot changes.
+  const effectiveUser = useMemo(
+    () => (user ? { ...user, sidebarAccess } : user),
+    [user, sidebarAccess]
+  );
+
   const contextValue = {
-    user,
+    user: effectiveUser,
     loading,
     devLogin,
     logout,
     status,
     setStatus,
     dbUserId,
+    sidebarAccess,
+    refreshSidebarAccess,
     currentJob,
     setCurrentJob,
     refreshCurrentJob,
-    authUserId: user?.authUuid || (typeof user?.id === "string" ? user.id : null),
+    authUserId: effectiveUser?.authUuid || (typeof effectiveUser?.id === "string" ? effectiveUser.id : null),
     logoutInProgress: authSyncBlocked,
   };
 

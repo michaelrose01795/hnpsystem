@@ -6,7 +6,7 @@ import { getDisplayName } from "@/lib/users/displayName";
 
 const db = getDatabaseClient();
 const USERS_TABLE = "users";
-const USER_COLUMNS = [
+const USER_COLUMN_LIST = [
   "user_id",
   "first_name",
   "last_name",
@@ -39,7 +39,37 @@ const USER_COLUMNS = [
   "home_address",
   "signature_storage_path",
   "signature_file_url",
-].join(", ");
+  "sidebar_access",
+];
+
+const USER_COLUMNS = USER_COLUMN_LIST.join(", ");
+const USER_COLUMNS_WITHOUT_SIDEBAR_ACCESS = USER_COLUMN_LIST.filter(
+  (column) => column !== "sidebar_access"
+).join(", ");
+
+const isMissingSidebarAccessColumnError = (error) =>
+  Boolean(error?.message && /users\.sidebar_access|sidebar_access/i.test(error.message) && /does not exist/i.test(error.message));
+
+const withOptionalSidebarAccessColumn = async (buildQuery) => {
+  const firstResult = await buildQuery(USER_COLUMNS);
+  if (!isMissingSidebarAccessColumnError(firstResult.error)) {
+    return firstResult;
+  }
+
+  const fallbackResult = await buildQuery(USER_COLUMNS_WITHOUT_SIDEBAR_ACCESS);
+  if (Array.isArray(fallbackResult.data)) {
+    fallbackResult.data = fallbackResult.data.map((row) => ({
+      ...row,
+      sidebar_access: null,
+    }));
+  } else if (fallbackResult.data) {
+    fallbackResult.data = {
+      ...fallbackResult.data,
+      sidebar_access: null,
+    };
+  }
+  return fallbackResult;
+};
 
 const mapUserRow = (row = {}) => ({
   id: row.user_id,
@@ -82,6 +112,7 @@ const mapUserRow = (row = {}) => ({
   homeAddress: row.home_address,
   signatureStoragePath: row.signature_storage_path,
   signatureFileUrl: row.signature_file_url,
+  sidebarAccess: row.sidebar_access ?? null,
 });
 
 const USER_WRITE_ALLOWED_SOURCES = new Set(["hr-manager-employees", "password-reset"]);
@@ -122,12 +153,14 @@ const fetchUsersByRoles = async (roles) => {
     .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
     .join(",");
   const roleFilter = `role.in.(${escapedList})`;
-  const { data, error } = await db
-    .from(USERS_TABLE)
-    .select(USER_COLUMNS)
-    .eq("is_active", true)
-    .or(roleFilter)
-    .order("first_name", { ascending: true });
+  const { data, error } = await withOptionalSidebarAccessColumn((columns) =>
+    db
+      .from(USERS_TABLE)
+      .select(columns)
+      .eq("is_active", true)
+      .or(roleFilter)
+      .order("first_name", { ascending: true })
+  );
   if (error) {
     throw new Error(`Failed to fetch users by role: ${error.message}`);
   }
@@ -139,14 +172,16 @@ export const getTechnicianUsers = () => fetchUsersByRoles(DEFAULT_TECH_ROLES);
 export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES);
 
 export const getAllUsers = async ({ includeInactive = false } = {}) => {
-  let query = db
-    .from(USERS_TABLE)
-    .select(USER_COLUMNS)
-    .order("user_id", { ascending: true });
-  if (!includeInactive) {
-    query = query.eq("is_active", true);
-  }
-  const { data, error } = await query;
+  const { data, error } = await withOptionalSidebarAccessColumn((columns) => {
+    let query = db
+      .from(USERS_TABLE)
+      .select(columns)
+      .order("user_id", { ascending: true });
+    if (!includeInactive) {
+      query = query.eq("is_active", true);
+    }
+    return query;
+  });
   if (error) {
     throw new Error(`Failed to fetch users: ${error.message}`);
   }
@@ -154,14 +189,16 @@ export const getAllUsers = async ({ includeInactive = false } = {}) => {
 };
 
 export const getUsersGroupedByRole = async () => {
-  const { data, error } = await db
-    .from(USERS_TABLE)
-    .select(USER_COLUMNS)
-    .eq("is_active", true)
-    .order("role", { ascending: true })
-    .order("first_name", { ascending: true })
-    .order("last_name", { ascending: true })
-    .order("user_id", { ascending: true });
+  const { data, error } = await withOptionalSidebarAccessColumn((columns) =>
+    db
+      .from(USERS_TABLE)
+      .select(columns)
+      .eq("is_active", true)
+      .order("role", { ascending: true })
+      .order("first_name", { ascending: true })
+      .order("last_name", { ascending: true })
+      .order("user_id", { ascending: true })
+  );
   if (error) {
     throw new Error(`Failed to fetch users grouped by role: ${error.message}`);
   }
@@ -180,14 +217,16 @@ export const getUserById = async (userId, { includeInactive = false } = {}) => {
   if (typeof userId !== "number") {
     throw new Error("getUserById requires a numeric userId.");
   }
-  let query = db
-    .from(USERS_TABLE)
-    .select(USER_COLUMNS)
-    .eq("user_id", userId);
-  if (!includeInactive) {
-    query = query.eq("is_active", true);
-  }
-  const { data, error } = await query.maybeSingle();
+  const { data, error } = await withOptionalSidebarAccessColumn((columns) => {
+    let query = db
+      .from(USERS_TABLE)
+      .select(columns)
+      .eq("user_id", userId);
+    if (!includeInactive) {
+      query = query.eq("is_active", true);
+    }
+    return query.maybeSingle();
+  });
   if (error) {
     throw new Error(`Failed to fetch user ${userId}: ${error.message}`);
   }

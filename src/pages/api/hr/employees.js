@@ -6,6 +6,7 @@ import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildEmployeeMeta, normalizeLineManagerIds, parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
+import { getKnownSidebarHrefs } from "@/config/workspace/manifest";
 
 const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
 
@@ -73,6 +74,32 @@ const calculateBasicSalary = ({ contractedHours, hourlyRate }) => {
   return Number((hours * rate).toFixed(2));
 };
 
+// Normalise the per-user sidebar-access override coming from the editor.
+// Read from req.body directly (NOT the sanitized payload, which strips null).
+// Returns:
+//   undefined  → field absent; leave the column untouched
+//   null       → clear the override (user follows role-derived navigation)
+//   { items }  → explicit snapshot, filtered to known sidebar hrefs only
+const normalizeSidebarAccess = (raw) => {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  let value = raw;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === "null") return null;
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return undefined; // unparseable → don't touch the column
+    }
+  }
+  if (value === null) return null;
+  if (!value || !Array.isArray(value.items)) return undefined;
+  const known = getKnownSidebarHrefs();
+  const items = [...new Set(value.items.filter((href) => known.has(href)))];
+  return { items };
+};
+
 const toIsoDate = (value) => {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
@@ -115,6 +142,9 @@ async function handleCreateOrUpdate(req, res) {
   const firstName = payload.firstName;
   const lastName = payload.lastName;
   const role = typeof payload.role === "string" && payload.role.trim() ? payload.role.trim() : null;
+  // Read the raw body value — sanitizePayload() drops null, but null is the
+  // legitimate "clear the override" signal for sidebar access.
+  const sidebarAccess = normalizeSidebarAccess(req.body?.sidebarAccess);
   const derivedAnnualSalary = calculateBasicSalary({
     contractedHours: payload.contractedHours,
     hourlyRate: payload.hourlyRate,
@@ -129,7 +159,7 @@ async function handleCreateOrUpdate(req, res) {
     const { data: priorRow } = await supabaseService
       .from("users")
       .select(
-        "user_id, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, home_address"
+        "user_id, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, home_address, sidebar_access"
       )
       .eq("user_id", payload.userId)
       .maybeSingle();
@@ -145,6 +175,7 @@ async function handleCreateOrUpdate(req, res) {
       phone: payload.phone || null,
       role,
       jobTitle: payload.jobTitle,
+      sidebarAccess,
       payload,
       isEditOperation,
     });
@@ -198,7 +229,7 @@ async function handleCreateOrUpdate(req, res) {
   }
 }
 
-async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload, isEditOperation = false }) {
+async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, sidebarAccess, payload, isEditOperation = false }) {
   const hasLegacyNameTriggerError = (error) =>
     /record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(error?.message || "");
   const applySingleFieldFallback = async (userId, updatePayload) => {
@@ -233,7 +264,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
 
   let existingUser = null;
   const existingUserSelect =
-    "user_id, name, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, home_address";
+    "user_id, name, email, first_name, last_name, role, phone, extension, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, home_address, sidebar_access";
 
   if (payload?.userId) {
     const { data, error } = await supabaseService
@@ -313,6 +344,12 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
   if (role && (existingUser?.role || null) !== role) {
     userPayload.role = role;
   }
+  // Per-user sidebar-access override. undefined ⇒ leave column untouched;
+  // null ⇒ clear (follow role defaults); object ⇒ explicit snapshot. The
+  // changed-fields diff below skips it when unchanged.
+  if (sidebarAccess !== undefined) {
+    userPayload.sidebar_access = sidebarAccess;
+  }
 
   if (existingUser) {
     const changedUserPayload = {};
@@ -334,7 +371,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       .from("users")
       .update(changedUserPayload)
       .eq("user_id", existingUser.user_id)
-      .select("user_id, first_name, last_name, email, role, job_title")
+      .select("user_id, first_name, last_name, email, role, job_title, sidebar_access")
       .maybeSingle();
     if (error) {
       if (hasLegacyNameTriggerError(error)) {
@@ -360,7 +397,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
   const { data, error } = await supabaseService
     .from("users")
     .insert(insertPayload)
-    .select("user_id, first_name, last_name, email, role, job_title")
+    .select("user_id, first_name, last_name, email, role, job_title, sidebar_access")
     .single();
 
   if (error) throw error;

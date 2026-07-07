@@ -16,9 +16,11 @@ import { sidebarSections } from "@/config/navigation";
 import {
   getActiveWorkspaceDepartment,
   getDepartmentWorkspaceNav,
+  getKnownSidebarHrefs,
   getWorkspaceGroups,
   isContextNavItemActive,
   isWorkspaceNavEnabled,
+  resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import ContextSidebar from "@/components/layout/ContextSidebar";
@@ -256,6 +258,27 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
+  // Per-user sidebar-access override (admin-set snapshot). Skipped in
+  // presentation mode (the rail belongs to the demo role, not the real user).
+  // When no snapshot exists, snapshotAllowed is null and every filter below is
+  // a no-op, so role-based behaviour is byte-for-byte unchanged. The snapshot
+  // only governs the classic sidebar item universe (getKnownSidebarHrefs) —
+  // dashboards/quick actions outside it are always allowed.
+  const editorUniverse = useMemo(() => getKnownSidebarHrefs(), []);
+  const snapshotAllowed = useMemo(() => {
+    if (inPresentationMode) return null;
+    const snap = user?.sidebarAccess;
+    if (!snap || !Array.isArray(snap.items)) return null;
+    return resolveAccessiblePaths(userRoles, snap);
+  }, [inPresentationMode, user?.sidebarAccess, userRoles]);
+  const isHrefAllowed = useCallback(
+    (href) => {
+      if (!snapshotAllowed || !href) return true;
+      if (!editorUniverse.has(href)) return true; // outside the snapshot's scope
+      return snapshotAllowed.has(href);
+    },
+    [snapshotAllowed, editorUniverse]
+  );
   const [selectedGroupKey, setSelectedGroupKey] = useState(null);
   const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
@@ -325,6 +348,7 @@ export default function Sidebar({
         items: (section.items || []).filter(
           (item) =>
             hasAccess(item) &&
+            isHrefAllowed(item.href) &&
             (inPresentationMode || !item.href || !hiddenHrRoutes.has(item.href)) &&
             (inPresentationMode || !(hasRestrictedJobSectionRole && item.href === "/archive"))
         ),
@@ -340,10 +364,20 @@ export default function Sidebar({
   //   2. GROUP view — clicking a group replaces the whole sidebar with that
   //      group's context nav (activeWorkspace) plus a "Back to Groups" control.
   // There is no always-visible General section; General is itself a group.
-  const workspaceGroups = useMemo(
-    () => (workspaceNavEnabled ? getWorkspaceGroups(userRoles) : []),
-    [userRoles, workspaceNavEnabled]
-  );
+  const workspaceGroups = useMemo(() => {
+    if (!workspaceNavEnabled) return [];
+    const groups = getWorkspaceGroups(userRoles);
+    if (!snapshotAllowed) return groups;
+    // Drop a group whose every nav item was removed by the snapshot (its
+    // dashboards, which are outside the snapshot's scope, keep it visible).
+    return groups.filter((group) => {
+      const nav = getDepartmentWorkspaceNav(group.key, userRoles);
+      return (
+        (nav.items || []).some((item) => isHrefAllowed(item.href)) ||
+        (nav.dashboards || []).length > 0
+      );
+    });
+  }, [userRoles, workspaceNavEnabled, snapshotAllowed, isHrefAllowed]);
   const workspaceGroupKeys = useMemo(
     () => new Set(workspaceGroups.map((group) => group.key)),
     [workspaceGroups]
@@ -363,10 +397,13 @@ export default function Sidebar({
       : selectedGroupKey && workspaceGroupKeys.has(selectedGroupKey)
       ? selectedGroupKey
       : routeWorkspaceKey;
-  const activeWorkspace = useMemo(
-    () => (activeGroupKey ? getDepartmentWorkspaceNav(activeGroupKey, userRoles) : null),
-    [activeGroupKey, userRoles]
-  );
+  const activeWorkspace = useMemo(() => {
+    if (!activeGroupKey) return null;
+    const nav = getDepartmentWorkspaceNav(activeGroupKey, userRoles);
+    if (!snapshotAllowed) return nav;
+    const items = (nav.items || []).filter((item) => isHrefAllowed(item.href));
+    return { ...nav, items, itemCount: items.length };
+  }, [activeGroupKey, userRoles, snapshotAllowed, isHrefAllowed]);
 
   useEffect(() => {
     if (!selectedGroupKey) return;

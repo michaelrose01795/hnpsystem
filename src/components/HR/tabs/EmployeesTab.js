@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
+import SidebarAccessEditor from "@/components/HR/SidebarAccessEditor";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -435,6 +436,7 @@ export default function EmployeesTab() {
       keycloakId: employee.keycloakId || "",
       emergencyContact: employee.emergencyContact || "",
       address: employee.address || "",
+      sidebarAccess: employee.sidebarAccess ?? null,
     });
   };
 
@@ -978,6 +980,11 @@ function EmployeeForm({
             availableRoles={availableRoles}
             availableJobTitles={availableJobTitles}
             lineManagerOptions={lineManagerOptions}
+          />
+          <SidebarAccessEditor
+            role={values.role}
+            value={values.sidebarAccess ?? null}
+            onChange={(next) => onFieldChange("sidebarAccess", next)}
           />
           {footerContent}
         </div>

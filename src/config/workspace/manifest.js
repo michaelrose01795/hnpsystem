@@ -228,6 +228,110 @@ export function getAccessibleNavPaths(roles) {
 }
 
 // ---------------------------------------------------------------------------
+// PER-USER SIDEBAR ACCESS (override layer)
+//
+// By default access is 100% role-derived (getAccessibleNavPaths above). An
+// admin can override this per user with an explicit SNAPSHOT — the exact set of
+// sidebar item hrefs that user is allowed. The snapshot governs only the
+// classic-sidebar item universe (getKnownSidebarHrefs); paths outside it
+// (topbar quick actions, accounts-context extras, dynamic detail pages) keep
+// their role-derived / always-allowed behaviour and are never over-blocked.
+//
+// Shape: { items: string[] }. A null/absent snapshot ⇒ role-derived fallback,
+// so every existing user is unaffected until an admin edits them.
+// ---------------------------------------------------------------------------
+
+// The account-category items that must ALWAYS stay available (Profile). Logout
+// carries an `action` and no href, so it never appears here. These are invariant
+// — a snapshot can never remove them.
+const ACCOUNT_ESSENTIAL_HREFS = (() => {
+  const set = new Set();
+  for (const section of WORKSPACE_NAV_SECTIONS) {
+    if (section.category !== "account") continue;
+    for (const item of section.items || []) {
+      if (item.href) set.add(item.href);
+    }
+  }
+  return set;
+})();
+
+// The full set of hrefs the per-user editor can toggle — every classic sidebar
+// item (WORKSPACE_NAV_SECTIONS) EXCEPT the synthetic Developer group. This is the
+// exact universe getAllSidebarItems() exposes, so the snapshot and the editor
+// never drift. The developer route is out of scope here — it is guaranteed for
+// the dev role by DEVELOPER_GROUP_LOCK and gated by its own ProtectedRoute.
+export function getKnownSidebarHrefs() {
+  const set = new Set();
+  for (const section of enabledSectionsInOrder()) {
+    if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
+    for (const item of section.items || []) {
+      if (item.href) set.add(item.href);
+    }
+  }
+  return set;
+}
+
+// getAllSidebarItems() — grouped, de-duplicated list of every toggleable sidebar
+// item, for the HR per-employee editor. Grouped by department (section), first
+// occurrence of an href wins its group/label. The synthetic Developer group is
+// excluded (its `dev` role is never assignable to a real employee).
+export function getAllSidebarItems() {
+  const seen = new Set();
+  const groups = [];
+  const byDepartment = new Map();
+  for (const section of enabledSectionsInOrder()) {
+    if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
+    for (const item of section.items || []) {
+      if (!item.href || seen.has(item.href)) continue;
+      seen.add(item.href);
+      let group = byDepartment.get(section.department);
+      if (!group) {
+        group = {
+          department: section.department,
+          label: section.label,
+          category: section.category,
+          items: [],
+        };
+        byDepartment.set(section.department, group);
+        groups.push(group);
+      }
+      group.items.push({ label: item.label, href: item.href });
+    }
+  }
+  return groups;
+}
+
+// resolveAccessiblePaths(roles, sidebarAccess) — the authoritative landable-path
+// set once the per-user override is applied. This is what pageAccess.js and the
+// sidebar consume. When no snapshot exists it is byte-for-byte
+// getAccessibleNavPaths(roles).
+export function resolveAccessiblePaths(roles, sidebarAccess) {
+  const roleBased = getAccessibleNavPaths(roles);
+  if (!sidebarAccess || !Array.isArray(sidebarAccess.items)) {
+    return roleBased;
+  }
+  const editorUniverse = getKnownSidebarHrefs();
+  const snapshot = new Set(sidebarAccess.items);
+  const accessible = new Set();
+  // Paths OUTSIDE the editor universe keep their role-derived access (quick
+  // actions, accounts-context extras, etc.) — the snapshot never touches them.
+  for (const href of roleBased) {
+    if (!editorUniverse.has(href)) accessible.add(href);
+  }
+  // WITHIN the editor universe the snapshot is authoritative.
+  for (const href of snapshot) {
+    if (editorUniverse.has(href)) accessible.add(href);
+  }
+  // 🔒 Invariants a snapshot can never strip: account essentials (Profile) and
+  // the developer platform route for the dev role.
+  for (const href of ACCOUNT_ESSENTIAL_HREFS) accessible.add(href);
+  if (normalizeRoleSet(roles).has("dev")) {
+    accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
+  }
+  return accessible;
+}
+
+// ---------------------------------------------------------------------------
 // DEPARTMENT-FIRST SELECTORS
 //
 // These selectors feed the flagged workspace rail/context path when

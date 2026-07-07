@@ -875,6 +875,7 @@ export async function getEmployeeDirectory() {
         payroll_reference,
         national_insurance_number,
         home_address,
+        sidebar_access,
         created_at
       `
     )
@@ -939,6 +940,7 @@ export async function getEmployeeDirectory() {
           name: lineManagerNameMap.get(managerId) || `User ${managerId}`,
         })),
       documents: normalizeDocuments(user.documents),
+      sidebarAccess: user.sidebar_access ?? null,
     };
   });
 }

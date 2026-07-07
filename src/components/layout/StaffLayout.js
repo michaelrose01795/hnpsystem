@@ -40,6 +40,7 @@ import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
 import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
 import { useContinueContext } from "@/hooks/useContinueContext";
+import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -351,6 +352,20 @@ export default function Layout({
   const continueContext = useContinueContext(router.asPath, {
     enabled: !presentationShell,
   });
+  // Two most-used pages for the topbar quick-access buttons. READ-ONLY: the visit
+  // counting is already done by WorkspaceCommandCenter's behaviour model (mounted
+  // below), so this instance only reads the shared per-user model — record: false
+  // prevents it double-counting each navigation. Stored entries already carry their
+  // labels, so it needs no navigationItems.
+  const behaviourReadOnly = useBehaviourModel({
+    currentAsPath: router.asPath,
+    enabled: !presentationShell && !hideSidebar && Boolean(user),
+    record: false,
+  });
+  const topPages = useMemo(
+    () => (behaviourReadOnly.topActions || []).slice(0, 2),
+    [behaviourReadOnly.topActions]
+  );
   // The current page as a candidate for the command palette's favourite/recent
   // surfaces (WorkspaceCommandCenter). The bar's own Pinned Shortcuts section was
   // removed in the 2026-07 layout refinement, but the command centre still uses
@@ -1291,6 +1306,7 @@ export default function Layout({
             colors={colors}
             kpis={topbarSections.kpis}
             insightViews={topbarSections.insights}
+            topPages={topPages}
             isTech={isTech}
             status={status}
             presentationShell={presentationShell}
