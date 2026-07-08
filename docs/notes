@@ -1,71 +1,11 @@
 ---Workspace Navigation---
 CHECK
-Remove "Workshop
-/
-Clocking
-Workshop
-6 workspace areas
-
-Save
-Create Job Card
-Appointments" section form all the pages even within al the other pages etc. 
-
-
--------TOPBAR--------------
-
---------------------------
-CHECK
-have it so within the user list inside the admin section, the admin like it is within the "/dev/sidebar-access" so wihtin each emplyee the user can select whats availble within the sidebar to that user, items like profile, news feed, messages, tracker etc are all set as default (all the things which each new user auto has wihtin the general section) but can also be removed access from the user as well. so the admin has full control on what the user has access to wihtin the sidebar, if the user has access to it within the sidebar then they have full access to the item. the sidebar rule should be if there then access accepeted its like role based access but sidebar based access really.
-
-TODO
-have it so within the 
-
-
-CHECK
-Do a deep dive and make sure the data within the dashbaord pages links to the data within the report pages for example. inside the dashboard pages use a couple of the staffglobal.css line graph setting etc 
-
-CHECK
-health check section check 
-
-Goods in part when add clicked to show its addding it etc
-
-
-TODO
-have it so "Vhc Media Shell | 1.2.1.1.1.6.1.1.3.1 | key vhc-media-shell | file src/components/VHC/VhcDetailsPanel.js:9983 | route /job-cards/00076 | where Job card detail > VHC tab > VHC panel | parent vhc-tab-content 1.2.1.1.1.6.1.1.3 | 4 children" seciton shows all of the reported amber and red items, atm its only shown two rows, however it should be showing all of the rows/issues reported. haev it so the "Unlinked media" row is at the top of the section when its got items in but at the very bottom when it doesnt, make sure its not above the customer video section. have it os the "Customer Video Main walkaround taken at the end of the health check" seciton shows like the "Unlinked media" row for example remove the "Main walkaround taken at the end of the health check" text and have it so the ui style of the row is the same etc. 
-
-
-00076
-CHeck global setting
-
-CHECK
-have it so the "Job Cards 00076 Auto Data Table 1 Rows | 1.2.1.1.1.4.1.7.2 | key job-cards-00076-auto-data-table-1-rows | file src/components/profile/ProfileWorkTab.js:2046 (dynamic pattern) | route /job-cards/00076 | where Job card detail > Customer Requests tab > customer requests tab | parent job-cards-00076-auto-data-table-1 1.2.1.1.1.4.1.7" table section does go wider than the card bit etc, haev it so if text is longer and reuqireds to go onto a new line that the row height doesnt change but adds a scroll after 2 lines, make sure two lines of text is visble and are full before scroll is them added
-
-CHECK
-0" status sections within the "Jobcard Tab Customer Requests | 1.2.2.1.1.7.1 | key jobcard-tab-customer-requests | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:710 | route /job-cards/00076 | where Job card detail > Customer Requests tab > customer requests tab | parent jobcard-tab-content-shell 1.2.2.1.1.7 | 14 children" section change size depending on the width of the screen, try to haev it so all sections are the same width and height, and have it so all of the sections takes up the whole wdith up to the left of the "Edit Requests" button, if the width is wide enough have it so they all show the counter number on the same line as the heading of the section, and have it so the counter number users "--theme" colour text and the title of the section statys as the current text colour, haev it so the width canges width depending on the size of the screen, if the screen size is to small to fit the title and counter onto one row then move the counter below the title text etc. 
-
-CHECK
-For the Authoirsed requests witjin the "Jobcard Tab Customer Requests Auto Content Card 17 | 1.2.2.1.1.7.1.10 | key jobcard-tab-customer-requests-auto-content-card-17 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:188 (dynamic pattern) | route /job-cards/00076 | where Job card detail > Customer Requests tab > customer requests tab | parent jobcard-tab-customer-requests 1.2.2.1.1.7.1" section have it so the 44px high "Authorised" status is shown isntead of the little pile status, this little pile status should never be used etc have it so within the table "Job Cards 00076 Auto Data Table 1 Rows | 1.2.1.1.1.7.1.7.2 | key job-cards-00076-auto-data-table-1-rows | file src/components/profile/ProfileWorkTab.js:2046 (dynamic pattern) | route /job-cards/00076 | where Job card detail > Customer Requests tab > customer requests tab | parent job-cards-00076-auto-data-table-1 1.2.1.1.1.7.1.7" it doesnt show the additional work status, only authroised work goes within this section etc not declined or reported etc. 
-
-CHECK
-Update the "Invoice Preview" popup so it is actually the final invoice, changes cant be made to that section only viewed, and is the actual invoice preivew not the proforma invoic, have it show the actual invoice number or if not created yet have it show a hiden number etc. 
-
+Check the access for each user set someone random access, create a user and see if they just have the default roles, see if default roles can be removed and someone just has one random page etc. 
+-----
 ----------------- VHC -----------------
-Videos
 
 go through all taps to adjust slight ui desing and make sure everythign works correctly 
-
------------------------------------------------------------------------
-
-
------------------REPORTING SYSTEM-------------------------------------
-
-Continue with this 
-
-sql from phase 3 to be done
-
-
------------------------------------------------------------------------
-
+-------
 
 ------------------ DO NEXT -------------------
 

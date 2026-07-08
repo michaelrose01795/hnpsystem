@@ -280,7 +280,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {mainVideos.length > 0 && (
-            <RequestRow label="Customer Video" section="Main walkaround" status="" photos={[]} videos={mainVideos} hideMediaCounts />
+            <RequestRow label="Customer Video" section="" status="" photos={[]} videos={mainVideos} />
           )}
           {groups.map((group) => (
             <RequestRow
