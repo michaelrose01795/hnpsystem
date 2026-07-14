@@ -30,6 +30,7 @@
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 // ---------------------------------------------------------------------------
 // Reporting role derivations (moved here from src/config/navigation.js so the
@@ -779,6 +780,34 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
 // tests). Add per-page `roles` here ONLY for a genuine restriction or a
 // cross-group grant — see docs/Workspace Navigation/workspace-group-permissions.md.
 export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
+  {
+    department: "management",
+    order: 25,
+    label: "People & HR Workspace",
+    category: "departments",
+    flag: null,
+    items: [
+      { label: "HR Overview", href: "/hr", roles: HR_CORE_ROLES },
+      {
+        label: "Employee Records",
+        href: "/hr/employees",
+        roles: Array.from(new Set([...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES])),
+      },
+      { label: "Attendance", href: "/hr/attendance", roles: HR_CORE_ROLES },
+      {
+        label: "Leave",
+        href: "/hr/leave",
+        roles: Array.from(new Set([...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES])),
+      },
+      { label: "Payroll", href: "/hr/payroll", roles: HR_CORE_ROLES },
+      { label: "Performance", href: "/hr/performance", roles: HR_CORE_ROLES },
+      { label: "Training", href: "/hr/training", roles: HR_CORE_ROLES },
+      { label: "Incidents", href: "/hr/disciplinary", roles: HR_CORE_ROLES },
+      { label: "Recruitment", href: "/hr/recruitment", roles: HR_CORE_ROLES },
+      { label: "HR Reports", href: "/hr/reports", roles: HR_CORE_ROLES },
+      { label: "HR Settings", href: "/hr/settings", roles: HR_CORE_ROLES },
+    ],
+  },
   {
     department: "accounts",
     order: 132,

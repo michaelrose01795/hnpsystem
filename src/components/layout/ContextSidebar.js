@@ -27,6 +27,7 @@ export default function ContextSidebar({
   getNavHref = (href) => href,
   onNavigate,
   onBack,
+  showBack = true,
   navLinkProps,
   renderNavContent,
   renderSectionDivider,
@@ -35,7 +36,7 @@ export default function ContextSidebar({
   const dashboards = workspace?.dashboards || [];
 
   const handleKeyDown = (event) => {
-    if (event.key === "Escape" && typeof onBack === "function") {
+    if (showBack && event.key === "Escape" && typeof onBack === "function") {
       event.preventDefault();
       onBack();
     }
@@ -70,7 +71,7 @@ export default function ContextSidebar({
         display: "contents",
       }}
     >
-      {isCollapsed ? (
+      {showBack && isCollapsed ? (
         <>
           {renderSectionDivider("divider-workspace-context", { marginBottom: "10px" })}
           <button
@@ -82,7 +83,7 @@ export default function ContextSidebar({
             {renderNavContent("Groups", null, false)}
           </button>
         </>
-      ) : (
+      ) : showBack ? (
         <button
           className="app-btn app-btn--secondary app-btn--nav"
           type="button"
@@ -95,7 +96,7 @@ export default function ContextSidebar({
         >
           {"‹ Back to Groups"}
         </button>
-      )}
+      ) : null}
 
       {/* Dashboards sub-heading + the group's role-visible dashboards. */}
       {dashboards.length > 0 && (

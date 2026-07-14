@@ -474,22 +474,11 @@ describe("workspace manifest — per-user sidebar access override", () => {
     }
   });
 
-  it("an explicit snapshot is authoritative within the sidebar item universe", () => {
-    const universe = getKnownSidebarHrefs();
+  it("an explicit snapshot is presentation-only and does not change landable access", () => {
     const snapshot = { items: ["/messages"], groups: ["general"] };
     const resolved = resolveAccessiblePaths(["service"], snapshot);
-    // Kept: the one snapshot item that is a known sidebar href.
-    expect(resolved.has("/messages")).toBe(true);
-    // Dropped: a role-default sidebar item omitted from the snapshot.
     const roleDefaults = getAccessibleNavPaths(["service"]);
-    const droppedInUniverse = [...roleDefaults].find(
-      (href) => universe.has(href) && href !== "/messages"
-    );
-    if (droppedInUniverse) expect(resolved.has(droppedInUniverse)).toBe(false);
-    // Untouched: role-default paths OUTSIDE the sidebar universe stay accessible.
-    for (const href of roleDefaults) {
-      if (!universe.has(href)) expect(resolved.has(href)).toBe(true);
-    }
+    expect([...resolved].sort()).toEqual([...roleDefaults].sort());
   });
 
   it("unknown hrefs in a snapshot are ignored", () => {
@@ -615,9 +604,9 @@ describe("workspace manifest — department-first selectors", () => {
     expect(resolveHome([])).toBe("/newsfeed");
   });
 
-  it("getBreadcrumbTrail builds a Department › Page trail", () => {
+  it("getBreadcrumbTrail builds a Module › Page trail", () => {
     const trail = getBreadcrumbTrail("/deliveries", ["parts"]);
-    expect(trail.map((t) => t.label)).toEqual(["Parts", "Deliveries"]);
+    expect(trail.map((t) => t.label)).toEqual(["Fulfilment", "Deliveries"]);
   });
 
   it("getSearchItems returns a deduplicated, role-filtered page list", () => {
@@ -833,7 +822,7 @@ describe("workspace manifest — department-first selectors", () => {
   it("getWorkspaceHeader and shortcut selectors are manifest-derived", () => {
     const header = getWorkspaceHeader("/deliveries", ["parts"]);
     expect(header.label).toBe("Parts");
-    expect(header.breadcrumbs.map((crumb) => crumb.label)).toEqual(["Parts", "Deliveries"]);
+    expect(header.breadcrumbs.map((crumb) => crumb.label)).toEqual(["Fulfilment", "Deliveries"]);
     expect(header.quickActions.map((action) => action.href)).toContain("/new-order");
 
     const shortcuts = getWorkspaceShortcutItems(["parts"]);

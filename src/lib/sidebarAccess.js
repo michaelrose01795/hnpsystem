@@ -1,23 +1,64 @@
 // file location: src/lib/sidebarAccess.js
-// Pure helpers for the versioned, database-backed per-user sidebar snapshot.
+// Pure helpers for the versioned, database-backed per-user sidebar layout.
 
 import {
+  WORKSPACE_MODULES,
   getAccessibleNavPaths,
   getAllSidebarItems,
   getDepartmentWorkspaceNav,
-  getLegacySidebarHrefs,
   getKnownSidebarHrefs,
-  getWorkspaceGroups,
+  getLegacySidebarHrefs,
+  getRoleDefaultWorkspaceModules,
+  getRoleWorkspaceModules,
   getWorkspaceGroupRoles,
-  WORKSPACE_MODULES,
+  getWorkspaceGroups,
+  getWorkspacePageCatalog,
+  normalizeWorkspaceRole,
 } from "@/config/workspace/manifest";
 
-export const SIDEBAR_ACCESS_VERSION = 3;
+export const SIDEBAR_ACCESS_VERSION = 4;
 
 const managedGroups = () =>
   getAllSidebarItems().filter(
     (group) => group.category === "general" || group.category === "departments"
   );
+
+const slugifyKey = (value, fallback = "module") => {
+  const slug = String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || fallback;
+};
+
+function normaliseModules(rawModules) {
+  if (!Array.isArray(rawModules)) return null;
+  const catalogHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
+  const seenKeys = new Map();
+  return rawModules.reduce((modules, rawModule, index) => {
+    const baseKey = slugifyKey(rawModule?.key || rawModule?.label, `module-${index + 1}`);
+    const count = seenKeys.get(baseKey) || 0;
+    seenKeys.set(baseKey, count + 1);
+    const key = count > 0 ? `${baseKey}-${count + 1}` : baseKey;
+    const label = String(rawModule?.label || key.replace(/-/g, " ")).trim();
+    const rawItems = Array.isArray(rawModule?.items)
+      ? rawModule.items
+      : Array.isArray(rawModule?.hrefs)
+      ? rawModule.hrefs
+      : [];
+    const items = [
+      ...new Set(rawItems.map((href) => String(href || "").trim()).filter((href) => catalogHrefs.has(href))),
+    ];
+    if (!label || items.length === 0) return modules;
+    modules.push({ key, label, items });
+    return modules;
+  }, []);
+}
+
+function flattenModuleItems(modules) {
+  return [...new Set((modules || []).flatMap((module) => module.items || []))];
+}
 
 export function getSidebarAccessGroup(groupKey) {
   return managedGroups().find((group) => group.department === groupKey) || null;
@@ -27,9 +68,12 @@ export function getRoleDefaultSidebarAccess(role) {
   const roles = role ? [role] : [];
   const known = getKnownSidebarHrefs();
   const groups = getWorkspaceGroups(roles);
-  const items = new Set(
-    [...getAccessibleNavPaths(roles)].filter((href) => known.has(href))
-  );
+  const defaultModules = getRoleDefaultWorkspaceModules(role);
+  const items = new Set(flattenModuleItems(defaultModules).filter((href) => known.has(href)));
+  const roleAccessible = getAccessibleNavPaths(roles);
+  for (const href of roleAccessible) {
+    if (known.has(href)) items.add(href);
+  }
   for (const group of groups) {
     const nav = getDepartmentWorkspaceNav(group.key, roles);
     [...(nav.dashboards || []), ...(nav.items || [])].forEach((item) => {
@@ -37,11 +81,22 @@ export function getRoleDefaultSidebarAccess(role) {
     });
   }
   return {
+    version: SIDEBAR_ACCESS_VERSION,
+    sourceRole: normalizeWorkspaceRole(role),
     items: [...items],
     groups: groups.map((group) => group.key),
     itemOrder: {},
     moduleOrder: {},
+    modules: defaultModules.map((module) => ({
+      key: module.key,
+      label: module.label,
+      items: module.items.map((item) => item.href),
+    })),
   };
+}
+
+export function createSidebarAccessFromRole(role) {
+  return getRoleDefaultSidebarAccess(role);
 }
 
 export function normalizeSidebarAccess(raw) {
@@ -59,24 +114,27 @@ export function normalizeSidebarAccess(raw) {
     }
   }
 
-  if (!value || !Array.isArray(value.items)) return undefined;
+  if (!value || typeof value !== "object") return undefined;
+
+  const modules = normaliseModules(value.modules);
   const knownHrefs = getKnownSidebarHrefs();
+  const suppliedItems = Array.isArray(value.items) ? value.items : flattenModuleItems(modules);
+  if (!Array.isArray(suppliedItems)) return undefined;
+
+  const items = [...new Set(suppliedItems.filter((href) => knownHrefs.has(href)))];
   const knownGroupKeys = new Set(managedGroups().map((group) => group.department));
-  const items = [...new Set(value.items.filter((href) => knownHrefs.has(href)))];
-
-  if (!Array.isArray(value.groups)) {
-    return { items };
-  }
-
-  const groups = [...new Set(value.groups.filter((key) => knownGroupKeys.has(key)))];
+  const groups = Array.isArray(value.groups)
+    ? [...new Set(value.groups.filter((key) => knownGroupKeys.has(key)))]
+    : undefined;
   const itemOrder = {};
   const moduleOrder = {};
   for (const group of managedGroups()) {
     const stored = value.itemOrder?.[group.department];
-    if (!Array.isArray(stored)) continue;
-    const groupHrefs = new Set(group.items.map((item) => item.href));
-    const order = [...new Set(stored.filter((href) => groupHrefs.has(href)))];
-    if (order.length > 0) itemOrder[group.department] = order;
+    if (Array.isArray(stored)) {
+      const groupHrefs = new Set(group.items.map((item) => item.href));
+      const order = [...new Set(stored.filter((href) => groupHrefs.has(href)))];
+      if (order.length > 0) itemOrder[group.department] = order;
+    }
     const validModuleKeys = new Set((WORKSPACE_MODULES[group.department] || []).map((module) => module.key));
     const storedModules = value.moduleOrder?.[group.department];
     if (Array.isArray(storedModules)) {
@@ -85,12 +143,20 @@ export function normalizeSidebarAccess(raw) {
     }
   }
 
-  return { version: SIDEBAR_ACCESS_VERSION, items, groups, itemOrder, moduleOrder };
+  return {
+    version: SIDEBAR_ACCESS_VERSION,
+    sourceRole: normalizeWorkspaceRole(value.sourceRole),
+    items,
+    ...(groups ? { groups } : {}),
+    itemOrder,
+    moduleOrder,
+    ...(modules && modules.length > 0 ? { modules } : {}),
+  };
 }
 
 export function materializeSidebarAccess(role, currentValue) {
   const normalized = normalizeSidebarAccess(currentValue);
-  if (normalized && Array.isArray(normalized.groups)) return normalized;
+  if (normalized?.modules?.length > 0) return normalized;
 
   const defaults = getRoleDefaultSidebarAccess(role);
   const legacyUniverse = getLegacySidebarHrefs();
@@ -100,13 +166,45 @@ export function materializeSidebarAccess(role, currentValue) {
       if (!legacyUniverse.has(href)) migratedItems.add(href);
     });
   }
-  return {
-    version: SIDEBAR_ACCESS_VERSION,
+  const projected = getRoleWorkspaceModules([role].filter(Boolean), {
+    ...normalized,
     items: [...migratedItems],
-    groups: defaults.groups,
-    itemOrder: {},
-    moduleOrder: {},
-  };
+  });
+  return normalizeSidebarAccess({
+    ...defaults,
+    ...normalized,
+    version: SIDEBAR_ACCESS_VERSION,
+    sourceRole: normalizeWorkspaceRole(normalized?.sourceRole || role),
+    items: [...migratedItems],
+    groups: normalized?.groups || defaults.groups,
+    itemOrder: normalized?.itemOrder || {},
+    moduleOrder: normalized?.moduleOrder || {},
+    modules: projected.map((module) => ({
+      key: module.key,
+      label: module.label,
+      items: module.items.map((item) => item.href),
+    })),
+  });
+}
+
+export function applySidebarModuleLayout({
+  role,
+  currentValue,
+  modules,
+  sourceRole,
+}) {
+  const snapshot = materializeSidebarAccess(role, currentValue);
+  const nextModules = normaliseModules(modules);
+  if (!nextModules || nextModules.length === 0) {
+    throw new Error("At least one sidebar module with pages is required.");
+  }
+  return normalizeSidebarAccess({
+    ...snapshot,
+    version: SIDEBAR_ACCESS_VERSION,
+    sourceRole: normalizeWorkspaceRole(sourceRole || snapshot.sourceRole || role),
+    items: flattenModuleItems(nextModules),
+    modules: nextModules,
+  });
 }
 
 export function applySidebarGroupChange({
@@ -121,7 +219,7 @@ export function applySidebarGroupChange({
 
   const snapshot = materializeSidebarAccess(role, currentValue);
   const items = new Set(snapshot.items);
-  const groups = new Set(snapshot.groups);
+  const groups = new Set(snapshot.groups || []);
   const groupHrefs = group.items.map((item) => item.href);
 
   if (enabled) {
@@ -143,10 +241,11 @@ export function applySidebarGroupChange({
   }
 
   return normalizeSidebarAccess({
-    version: SIDEBAR_ACCESS_VERSION,
+    ...snapshot,
     items: [...items],
     groups: [...groups],
     itemOrder: nextOrder,
+    modules: undefined,
   });
 }
 
@@ -177,6 +276,11 @@ export function applySidebarGroupUserSelection({
     ...snapshot,
     items: snapshot.items.filter((href) => !groupHrefs.has(href) || allowed.has(href)),
   });
+}
+
+export function isSidebarAccessOverride(value) {
+  const normalized = normalizeSidebarAccess(value);
+  return Boolean(normalized?.modules?.length || normalized?.groups?.length || normalized?.items?.length);
 }
 
 export function isSidebarGroupEnabled(role, value, groupKey) {

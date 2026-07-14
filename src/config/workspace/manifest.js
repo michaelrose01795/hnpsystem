@@ -22,9 +22,22 @@ import {
 } from "./departments";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
+import { DYNAMIC_DETAIL_EXTENDS } from "@/config/routeAccess";
 import { isWorkspaceNavEnabled } from "./flags";
+import {
+  ROLE_WORKSPACE_DEFAULTS,
+  WORKSPACE_ROLE_DEFAULT_NAMES,
+  getConfiguredRoleDefault,
+  normalizeWorkspaceRole,
+} from "./roleDefaults";
 
 export { isWorkspaceNavEnabled };
+export {
+  ROLE_WORKSPACE_DEFAULTS,
+  WORKSPACE_ROLE_DEFAULT_NAMES,
+  getConfiguredRoleDefault,
+  normalizeWorkspaceRole,
+};
 export {
   DEVELOPER_GROUP_LOCK,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
@@ -246,17 +259,6 @@ export function getAccessibleNavPaths(roles) {
 // The account-category items that must ALWAYS stay available (Profile). Logout
 // carries an `action` and no href, so it never appears here. These are invariant
 // — a snapshot can never remove them.
-const ACCOUNT_ESSENTIAL_HREFS = (() => {
-  const set = new Set();
-  for (const section of WORKSPACE_NAV_SECTIONS) {
-    if (section.category !== "account") continue;
-    for (const item of section.items || []) {
-      if (item.href) set.add(item.href);
-    }
-  }
-  return set;
-})();
-
 // Original { items } snapshots only governed the classic sidebar. Keep this
 // universe separate so legacy rows do not unexpectedly lose dashboards or
 // workspace-only pages when they are read by the version-2 implementation.
@@ -321,36 +323,182 @@ export function getAllSidebarItems() {
   return groups;
 }
 
+// Flat catalogue used by role defaults and the developer layout editor. It is
+// still assembled from the canonical manifest, so a role layout can only point
+// at an existing staff Page or dashboard shortcut. Orphan dashboards such as
+// Paint are included even when their department is not a selectable legacy
+// Group.
+export function getWorkspacePageCatalog() {
+  const seen = new Set();
+  const items = [];
+  for (const dashboard of WORKSPACE_DASHBOARD_SHORTCUTS) {
+    if (!dashboard.href || seen.has(dashboard.href)) continue;
+    seen.add(dashboard.href);
+    items.push({
+      label: dashboard.label,
+      href: dashboard.href,
+      kind: "dashboard",
+      department: dashboard.department || null,
+      roles: dashboard.roles || [],
+    });
+  }
+  for (const section of enabledWorkspaceSectionsInOrder()) {
+    for (const item of section.items || []) {
+      if (!item.href || seen.has(item.href)) continue;
+      seen.add(item.href);
+      items.push({
+        label: item.label,
+        href: item.href,
+        kind: "page",
+        department: section.department || null,
+        roles: item.roles || [],
+      });
+    }
+  }
+  return items;
+}
+
+function roleDefaultModules(roles) {
+  const roleList = Array.from(normalizeRoleSet(roles));
+  const moduleMap = new Map();
+  for (const role of roleList.length > 0 ? roleList : [""]) {
+    for (const configuredModule of getConfiguredRoleDefault(role)) {
+      const existing = moduleMap.get(configuredModule.key);
+      if (!existing) {
+        moduleMap.set(configuredModule.key, {
+          key: configuredModule.key,
+          label: configuredModule.label,
+          hrefs: [...configuredModule.hrefs],
+        });
+        continue;
+      }
+      for (const href of configuredModule.hrefs) {
+        if (!existing.hrefs.includes(href)) existing.hrefs.push(href);
+      }
+    }
+  }
+  return Array.from(moduleMap.values());
+}
+
+function resolveStoredRoleModules(sidebarAccess) {
+  if (!Array.isArray(sidebarAccess?.modules)) return null;
+  return sidebarAccess.modules.map((storedModule) => ({
+    key: String(storedModule?.key || "").trim(),
+    label: String(storedModule?.label || "").trim(),
+    hrefs: Array.isArray(storedModule?.items)
+      ? storedModule.items
+      : Array.isArray(storedModule?.hrefs)
+      ? storedModule.hrefs
+      : [],
+  }));
+}
+
+// Role-first Workspace Navigation. Defaults are explicitly authored per staff
+// role; a stored module layout replaces only presentation. Existing v1-v3
+// group/item snapshots remain valid and are projected over the role default,
+// with previously granted extra Pages retained in an Additional Tools module.
+export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
+  const catalog = getWorkspacePageCatalog();
+  const byHref = new Map(catalog.map((item) => [item.href, item]));
+  const roleSet = normalizeRoleSet(roles);
+  const roleAccessible = getAccessibleNavPaths(roles);
+  const storedModules = resolveStoredRoleModules(sidebarAccess);
+  const sourceModules = storedModules || roleDefaultModules(roles);
+  const legacySnapshot = !storedModules && Array.isArray(sidebarAccess?.items)
+    ? new Set(sidebarAccess.items)
+    : null;
+  const used = new Set();
+  const modules = [];
+
+  for (const sourceModule of sourceModules) {
+    if (!sourceModule.key || !sourceModule.label) continue;
+    const items = [];
+    for (const href of sourceModule.hrefs || []) {
+      const item = byHref.get(href);
+      if (!item || used.has(href)) continue;
+      if (legacySnapshot && !legacySnapshot.has(href)) continue;
+      if (!storedModules) {
+        const isDashboard = item.kind === "dashboard";
+        const visible = isDashboard
+          ? itemVisibleTo(item, roleSet)
+          : roleAccessible.has(href);
+        if (!visible) continue;
+      }
+      used.add(href);
+      items.push({
+        label: item.label,
+        href: item.href,
+        kind: item.kind,
+        department: item.department,
+      });
+    }
+    if (items.length > 0) {
+      modules.push({ key: sourceModule.key, label: sourceModule.label, items });
+    }
+  }
+
+  if (legacySnapshot) {
+    const extraItems = catalog
+      .filter((item) => legacySnapshot.has(item.href) && !used.has(item.href))
+      .map((item) => ({
+        label: item.label,
+        href: item.href,
+        kind: item.kind,
+        department: item.department,
+      }));
+    if (extraItems.length > 0) {
+      modules.push({ key: "additional-tools", label: "Additional Tools", items: extraItems });
+    }
+  }
+
+  return modules;
+}
+
+export function getRoleDefaultWorkspaceModules(role) {
+  return getRoleWorkspaceModules(role ? [role] : []);
+}
+
+function matchesDynamicRoute(pattern, pathname) {
+  const patternParts = pathOf(pattern).split("/").filter(Boolean);
+  const pathParts = pathOf(pathname).split("/").filter(Boolean);
+  if (patternParts.length !== pathParts.length) return false;
+  return patternParts.every((part, index) =>
+    /^\[[^\]]+\]$/.test(part) || part === pathParts[index]
+  );
+}
+
+export function getActiveRoleWorkspaceModule(pathname, roles, sidebarAccess = null, pendingHref = null) {
+  const target = pathOf(pendingHref) || pathOf(pathname);
+  if (!target) return null;
+  const modules = getRoleWorkspaceModules(roles, sidebarAccess);
+  for (const navigationModule of modules) {
+    if (navigationModule.items.some((item) => isContextNavItemActive(item, target))) {
+      return navigationModule.key;
+    }
+  }
+  for (const [pattern, parentHrefs] of Object.entries(DYNAMIC_DETAIL_EXTENDS)) {
+    if (!matchesDynamicRoute(pattern, target)) continue;
+    const owner = modules.find((navigationModule) =>
+      navigationModule.items.some((item) => parentHrefs.includes(pathOf(item.href)))
+    );
+    if (owner) return owner.key;
+  }
+  return null;
+}
+
 // resolveAccessiblePaths(roles, sidebarAccess) — the authoritative landable-path
 // set once the per-user override is applied. This is what pageAccess.js and the
 // sidebar consume. When no snapshot exists it is byte-for-byte
 // getAccessibleNavPaths(roles).
 export function resolveAccessiblePaths(roles, sidebarAccess) {
   const roleBased = getAccessibleNavPaths(roles);
-  if (!sidebarAccess || !Array.isArray(sidebarAccess.items)) {
-    return roleBased;
-  }
-  const editorUniverse = Array.isArray(sidebarAccess.groups)
-    ? getKnownSidebarHrefs()
-    : getLegacySidebarHrefs();
-  const snapshot = new Set(sidebarAccess.items);
-  const accessible = new Set();
+  void sidebarAccess;
+  return roleBased;
   // Paths OUTSIDE the editor universe keep their role-derived access (quick
   // actions, accounts-context extras, etc.) — the snapshot never touches them.
-  for (const href of roleBased) {
-    if (!editorUniverse.has(href)) accessible.add(href);
-  }
   // WITHIN the editor universe the snapshot is authoritative.
-  for (const href of snapshot) {
-    if (editorUniverse.has(href)) accessible.add(href);
-  }
   // 🔒 Invariants a snapshot can never strip: account essentials (Profile) and
   // the developer platform route for the dev role.
-  for (const href of ACCOUNT_ESSENTIAL_HREFS) accessible.add(href);
-  if (normalizeRoleSet(roles).has("dev")) {
-    accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
-  }
-  return accessible;
 }
 
 function applyStoredItemOrder(items, departmentKey, sidebarAccess) {
@@ -654,6 +802,15 @@ export function isContextNavItemActive(item, pathname, pendingHref = null) {
 }
 
 export function resolveHome(roles) {
+  const preferredDepartmentCodes = Array.from(normalizeRoleSet(roles))
+    .map((role) => ROLE_DEPARTMENT_MAP[role])
+    .filter(Boolean);
+  for (const code of preferredDepartmentCodes) {
+    const department = WORKSPACE_DEPARTMENTS.find(
+      (dept) => dept.key === code && dept.category === "departments" && dept.home
+    );
+    if (department) return department.home;
+  }
   const departments = getDepartmentsForRoles(roles).filter(
     (dept) => dept.category === "departments" && dept.home
   );
@@ -663,8 +820,29 @@ export function resolveHome(roles) {
 // getBreadcrumbTrail(pathname, roles) — Department › Page trail for the current
 // route. The entity segment (job number, customer name, …) is not in the
 // manifest and is appended by the page in a later phase.
-export function getBreadcrumbTrail(pathname, roles) {
+export function getBreadcrumbTrail(pathname, roles, sidebarAccess = null) {
   const path = pathOf(pathname);
+  const roleModules = getRoleWorkspaceModules(roles, sidebarAccess);
+  const activeModuleKey = getActiveRoleWorkspaceModule(path, roles, sidebarAccess);
+  const activeModule = roleModules.find((candidate) => candidate.key === activeModuleKey);
+  if (activeModule) {
+    const exact = activeModule.items.find((item) => pathOf(item.href) === path);
+    let owner = exact || null;
+    if (!owner) {
+      for (const [pattern, parents] of Object.entries(DYNAMIC_DETAIL_EXTENDS)) {
+        if (!matchesDynamicRoute(pattern, path)) continue;
+        owner = activeModule.items.find((item) => parents.includes(pathOf(item.href))) || null;
+        if (owner) break;
+      }
+    }
+    if (!owner) {
+      owner = activeModule.items.find((item) => isContextNavItemActive(item, path)) || null;
+    }
+    return [
+      { label: activeModule.label, href: null },
+      ...(owner ? [{ label: owner.label, href: owner.href }] : []),
+    ];
+  }
   const departmentKey =
     getActiveWorkspaceDepartment(path, roles) ||
     getActiveDepartment(path);
@@ -704,9 +882,9 @@ export function getWorkspaceHeader(pathname, roles) {
   };
 }
 
-export function getWorkspaceShortcutItems(roles) {
+export function getWorkspaceShortcutItems(roles, sidebarAccess = null) {
   const seen = new Map();
-  for (const item of [...getSearchItems(roles), ...getQuickActions(roles)]) {
+  for (const item of [...getSearchItems(roles, sidebarAccess), ...getQuickActions(roles)]) {
     if (!item?.href || seen.has(item.href)) continue;
     seen.set(item.href, {
       label: item.label,
@@ -719,23 +897,15 @@ export function getWorkspaceShortcutItems(roles) {
 
 // getSearchItems(roles) — flat, deduplicated list of navigable pages for the
 // Workspace Search / GlobalSearch, replacing the imperative addNavItem() calls.
-export function getSearchItems(roles) {
-  const roleSet = normalizeRoleSet(roles);
-  const seen = new Map();
-  for (const section of enabledWorkspaceSectionsInOrder()) {
-    for (const item of section.items || []) {
-      if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet, section.department)) continue;
-      if (!seen.has(item.href)) {
-        seen.set(item.href, {
-          label: item.label,
-          href: item.href,
-          department: section.department,
-        });
-      }
-    }
-  }
-  return Array.from(seen.values());
+export function getSearchItems(roles, sidebarAccess = null) {
+  return getRoleWorkspaceModules(roles, sidebarAccess).flatMap((navigationModule) =>
+    navigationModule.items.map((item) => ({
+      label: item.label,
+      href: item.href,
+      department: navigationModule.label,
+      module: navigationModule.key,
+    }))
+  );
 }
 
 // getPageTabs(pathname, roles, options) - Tier-3 in-page tab links. The tab

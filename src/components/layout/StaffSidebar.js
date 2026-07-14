@@ -14,13 +14,9 @@ import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import {
-  getActiveWorkspaceDepartment,
-  getDepartmentWorkspaceNav,
-  getWorkspaceModules,
-  getActiveWorkspaceModule,
   getKnownSidebarHrefs,
-  getWorkspaceGroups,
-  isContextNavItemActive,
+  getRoleWorkspaceModules,
+  getActiveRoleWorkspaceModule,
   isWorkspaceNavEnabled,
   resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
@@ -44,7 +40,6 @@ const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
-const WORKSPACE_GROUPS_VIEW = "__groups__";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -281,9 +276,7 @@ export default function Sidebar({
     },
     [snapshotAllowed, editorUniverse]
   );
-  const [selectedGroupKey, setSelectedGroupKey] = useState(null);
   const [selectedModuleKey, setSelectedModuleKey] = useState(null);
-  const [groupsViewSelectedKey, setGroupsViewSelectedKey] = useState(null);
   const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const getNavHref = useCallback((href) => {
@@ -362,101 +355,39 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
-  // Group Sidebar Flow (Phase 7). The workspace sidebar has two states:
-  //   1. GROUPS view — the flat list of top-level groups (General + departments)
-  //      the user can access (workspaceGroups).
-  //   2. GROUP view — clicking a group replaces the whole sidebar with that
-  //      group's context nav (activeWorkspace) plus a "Back to Groups" control.
-  // There is no always-visible General section; General is itself a group.
-  const workspaceGroups = useMemo(() => {
-    if (!workspaceNavEnabled) return [];
-    const groups = getWorkspaceGroups(userRoles, user?.sidebarAccess);
-    if (!snapshotAllowed) return groups;
-    // Drop a group whose every nav item was removed by the snapshot (its
-    // dashboards, which are outside the snapshot's scope, keep it visible).
-    return groups.filter((group) => {
-      const nav = getDepartmentWorkspaceNav(group.key, userRoles, user?.sidebarAccess);
-      return (
-        (nav.items || []).some((item) => isHrefAllowed(item.href)) ||
-        (nav.dashboards || []).length > 0
-      );
-    });
-  }, [userRoles, user?.sidebarAccess, workspaceNavEnabled, snapshotAllowed, isHrefAllowed]);
-  const workspaceGroupKeys = useMemo(
-    () => new Set(workspaceGroups.map((group) => group.key)),
-    [workspaceGroups]
+  const roleWorkspaceModules = useMemo(
+    () => (workspaceNavEnabled ? getRoleWorkspaceModules(userRoles, user?.sidebarAccess) : []),
+    [userRoles, user?.sidebarAccess, workspaceNavEnabled]
   );
-  const routeWorkspaceKey = useMemo(
-    () => (workspaceNavEnabled ? getActiveWorkspaceDepartment(pathname, userRoles, user?.sidebarAccess) : null),
-    [pathname, userRoles, user?.sidebarAccess, workspaceNavEnabled]
+  const roleWorkspace = useMemo(
+    () => ({
+      department: "role-default",
+      label: "Workspace",
+      dashboards: [],
+      items: roleWorkspaceModules.flatMap((module) => module.items),
+    }),
+    [roleWorkspaceModules]
   );
-  // Which group is open. An explicit selection wins; the GROUPS_VIEW sentinel
-  // forces the flat list even on a route that would otherwise resolve a group;
-  // otherwise the current route drives the group (so feature pages open in their
-  // group with the active link highlighted, while hub/dashboard pages — not in
-  // the nav manifest — fall back to the clean groups list).
-  const activeGroupKey =
-    selectedGroupKey === WORKSPACE_GROUPS_VIEW
-      ? null
-      : selectedGroupKey && workspaceGroupKeys.has(selectedGroupKey)
-      ? selectedGroupKey
-      : routeWorkspaceKey;
-  const activeWorkspace = useMemo(() => {
-    if (!activeGroupKey) return null;
-    const nav = getDepartmentWorkspaceNav(activeGroupKey, userRoles, user?.sidebarAccess);
-    if (!snapshotAllowed) return nav;
-    const items = (nav.items || []).filter((item) => isHrefAllowed(item.href));
-    return { ...nav, items, itemCount: items.length };
-  }, [activeGroupKey, userRoles, user?.sidebarAccess, snapshotAllowed, isHrefAllowed]);
-  const activeModuleKey = useMemo(() => {
-    if (!activeGroupKey) return null;
-    return getActiveWorkspaceModule(activeGroupKey, pathname, userRoles, user?.sidebarAccess, pendingHref) || selectedModuleKey;
-  }, [activeGroupKey, pathname, pendingHref, userRoles, user?.sidebarAccess, selectedModuleKey]);
-  const activeModules = useMemo(() => activeGroupKey
-    ? getWorkspaceModules(activeGroupKey, userRoles, user?.sidebarAccess)
-    : [], [activeGroupKey, userRoles, user?.sidebarAccess]);
+  const routeRoleModuleKey = useMemo(
+    () => (workspaceNavEnabled
+      ? getActiveRoleWorkspaceModule(pathname, userRoles, user?.sidebarAccess, pendingHref)
+      : null),
+    [pathname, pendingHref, userRoles, user?.sidebarAccess, workspaceNavEnabled]
+  );
+  const activeRoleModuleKey = routeRoleModuleKey || selectedModuleKey;
 
   useEffect(() => {
-    if (!selectedGroupKey) return;
-    if (selectedGroupKey === WORKSPACE_GROUPS_VIEW) return;
-    if (!workspaceGroupKeys.has(selectedGroupKey)) {
-      setSelectedGroupKey(null);
+    if (!selectedModuleKey) return;
+    if (!roleWorkspaceModules.some((module) => module.key === selectedModuleKey)) {
+      setSelectedModuleKey(null);
     }
-  }, [selectedGroupKey, workspaceGroupKeys]);
-
-  useEffect(() => {
-    if (!groupsViewSelectedKey) return;
-    if (!workspaceGroupKeys.has(groupsViewSelectedKey)) {
-      setGroupsViewSelectedKey(null);
-    }
-  }, [groupsViewSelectedKey, workspaceGroupKeys]);
+  }, [roleWorkspaceModules, selectedModuleKey]);
 
   useEffect(() => {
     if (previousWorkspacePathRef.current === pathname) return;
     previousWorkspacePathRef.current = pathname;
-    // Keep the currently-open group when navigating between its OWN pages, so
-    // moving from (e.g.) News Feed to Tracker inside the General group doesn't
-    // kick the user back out to the Groups list. Only fall back to the route-
-    // driven group (by clearing the explicit selection) when the destination
-    // leaves the open group.
-    if (
-      selectedGroupKey &&
-      selectedGroupKey !== WORKSPACE_GROUPS_VIEW &&
-      workspaceGroupKeys.has(selectedGroupKey)
-    ) {
-      const nav = getDepartmentWorkspaceNav(selectedGroupKey, userRoles, user?.sidebarAccess);
-      const navItems = [
-        ...(nav.home ? [{ href: nav.home }] : []),
-        ...(nav.dashboards || []),
-        ...(nav.items || []),
-      ];
-      const stillInGroup = navItems.some((item) =>
-        isContextNavItemActive(item, pathname)
-      );
-      if (stillInGroup) return;
-    }
-    setSelectedGroupKey(null);
-  }, [pathname, selectedGroupKey, workspaceGroupKeys, userRoles, user?.sidebarAccess]);
+    if (routeRoleModuleKey) setSelectedModuleKey(null);
+  }, [pathname, routeRoleModuleKey]);
 
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
@@ -839,14 +770,21 @@ export default function Sidebar({
           </>
         )}
 
-        {workspaceNavEnabled && (
-          (activeWorkspace?.items?.length > 0 || activeWorkspace?.dashboards?.length > 0) ? (
-            // GROUP view — the whole sidebar becomes the selected group's nav.
+        {workspaceNavEnabled && roleWorkspaceModules.length > 0 && (
+          <>
+            {!isCollapsed && (
+              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+                Workspace
+              </div>
+            )}
             <ContextSidebar
-              workspace={activeWorkspace}
-              modules={activeModules}
-              activeModuleKey={activeModuleKey}
-              onModuleToggle={(key) => setSelectedModuleKey((current) => current === key ? null : key)}
+              workspace={roleWorkspace}
+              modules={roleWorkspaceModules}
+              activeModuleKey={activeRoleModuleKey}
+              onModuleToggle={(key) => {
+                if (routeRoleModuleKey === key) return;
+                setSelectedModuleKey((current) => current === key ? null : key);
+              }}
               pathname={pathname}
               pendingHref={pendingHref}
               isCollapsed={isCollapsed}
@@ -855,48 +793,14 @@ export default function Sidebar({
                 recordWorkspaceRecentHref(href);
                 handleNavigationPress();
               }}
-              onBack={() => {
-                setSelectedModuleKey(null);
-                setGroupsViewSelectedKey(activeGroupKey || routeWorkspaceKey || null);
-                setSelectedGroupKey(WORKSPACE_GROUPS_VIEW);
-              }}
+              showBack={false}
               navLinkProps={navLinkProps}
               renderNavContent={renderNavContent}
               renderSectionDivider={renderSectionDivider}
             />
-          ) : (
-            // GROUPS view — the clean list of top-level groups (General first).
-            <>
-              {isCollapsed ? (
-                renderSectionDivider("divider-workspace-groups", { marginBottom: "10px" })
-              ) : (
-                <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-                  Workspace
-                </div>
-              )}
-              {workspaceGroups.map((group) => {
-                const selectedKey = groupsViewSelectedKey || routeWorkspaceKey;
-                const isActive = selectedKey === group.key;
-                return (
-                  <button
-                    className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
-                    key={group.key}
-                    type="button"
-                    onClick={() => {
-                      setGroupsViewSelectedKey(group.key);
-                      setSelectedModuleKey(null);
-                      setSelectedGroupKey(group.key);
-                    }}
-                    aria-pressed={isActive}
-                    {...navLinkProps(group.label)}
-                  >
-                    {renderNavContent(group.label, null, isActive)}
-                  </button>
-                );
-              })}
-            </>
-          )
+          </>
         )}
+
 
         {!workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
           <>

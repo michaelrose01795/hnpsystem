@@ -853,7 +853,7 @@ export default function Layout({
   };
 
   if (workspaceNavEnabled) {
-    getSearchItems(userRoles).forEach((item) => {
+    getSearchItems(userRoles, user?.sidebarAccess).forEach((item) => {
       const sanitized = item.label.replace(/[^a-zA-Z0-9\s]/g, " ").toLowerCase();
       navigationItems.push({
         label: item.label,
