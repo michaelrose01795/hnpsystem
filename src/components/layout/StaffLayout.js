@@ -22,7 +22,7 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
 import StaffTopbar from "@/components/layout/StaffTopbar";
-import WorkspaceHeader from "@/components/layout/WorkspaceHeader";
+import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
@@ -35,6 +35,12 @@ import {
   isWorkspaceNavEnabled,
 } from "@/config/workspace/manifest";
 import { useRoster } from "@/context/RosterContext";
+import { resolveDepartmentForRoles } from "@/lib/reporting/config/departments";
+import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
+import { buildTopbarSections } from "@/config/topbar/statusViews";
+import { resolveQuickActions } from "@/config/topbar/quickActions";
+import { useContinueContext } from "@/hooks/useContinueContext";
+import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -279,7 +285,6 @@ export default function Layout({
       ? rawUserRoles.filter((role) => modeRoleSet.has(role))
       : rawUserRoles;
   const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
-  const activeModeLabel = selectedMode || availableModes[0] || null;
   const activeWorkspaceDepartment = workspaceNavEnabled
     ? getActiveWorkspaceDepartment(router.asPath || router.pathname, userRoles)
     : null;
@@ -292,16 +297,10 @@ export default function Layout({
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   // In presentation mode the real user's identity must NOT bleed through —
-  // the topbar greeting, name-derived flags and welcome-quote keying should
-  // all be driven by the picked demo role, never the actual logged-in user.
+  // name-derived flags and welcome-quote keying should all be driven by the
+  // picked demo role, never the actual logged-in user.
   const realUsername = typeof user?.username === "string" ? user.username.trim() : "";
   const normalizedUsername = presentationShell ? "" : realUsername;
-  const fallbackName = presentationShell
-    ? activePresentationRole?.demoName || "Demo User"
-    : realUsername || "Guest";
-  const firstName = presentationShell
-    ? fallbackName
-    : normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
   const userIdForQuote = presentationShell
     ? null
     :
@@ -319,6 +318,69 @@ export default function Layout({
   );
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
+
+  // Role-aware workspace for the top bar (computed centrally here so the bar
+  // stays presentational). All the reusable pieces live in src/config/topbar,
+  // src/hooks and src/lib/topbar; adding a department extends those, not the bar.
+  const departmentCode = resolveDepartmentForRoles(userRoles);
+
+  // Phase 2.1/2.2: live operational metrics (endpoint + roster). The 2026-07
+  // layout refinement surfaces these as their own Live KPI + Smart Insight
+  // sections (see buildTopbarSections) instead of one rotating status line.
+  const operationalSnapshot = useOperationalSnapshot({
+    department: departmentCode,
+    isPresentation: presentationShell,
+    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile.
+    enabled: !isTablet,
+  });
+  // Live KPI widgets (2.2) + Smart Insight prompts (2.6) as separate sections.
+  const topbarSections = useMemo(
+    () =>
+      buildTopbarSections(departmentCode, operationalSnapshot.metrics, {
+        isPresentation: presentationShell,
+      }),
+    [departmentCode, operationalSnapshot.metrics, presentationShell]
+  );
+  // Phase 2.4: configurable role-specific quick actions (manifest wins, else the
+  // capability defaults). Preserves the previous behaviour, de-hardcoded.
+  const topbarQuickActions = resolveQuickActions({
+    manifestQuickActions: workspaceQuickActions,
+    canUseServiceActions,
+    hasPartsAccess,
+  });
+  // Phase 2.3: Continue Where You Left Off.
+  const continueContext = useContinueContext(router.asPath, {
+    enabled: !presentationShell,
+  });
+  // Two most-used pages for the topbar quick-access buttons. READ-ONLY: the visit
+  // counting is already done by WorkspaceCommandCenter's behaviour model (mounted
+  // below), so this instance only reads the shared per-user model — record: false
+  // prevents it double-counting each navigation. Stored entries already carry their
+  // labels, so it needs no navigationItems.
+  const behaviourReadOnly = useBehaviourModel({
+    currentAsPath: router.asPath,
+    enabled: !presentationShell && !hideSidebar && Boolean(user),
+    record: false,
+  });
+  const topPages = useMemo(
+    () => (behaviourReadOnly.topActions || []).slice(0, 2),
+    [behaviourReadOnly.topActions]
+  );
+  // The current page as a candidate for the command palette's favourite/recent
+  // surfaces (WorkspaceCommandCenter). The bar's own Pinned Shortcuts section was
+  // removed in the 2026-07 layout refinement, but the command centre still uses
+  // this to offer "favourite this page".
+  const currentPinItem = useMemo(() => {
+    const base = (router.asPath || "").split("?")[0].split("#")[0];
+    if (!base || base === "/") return null;
+    const segs = base.split("/").filter(Boolean);
+    const last = segs[segs.length - 1] || "home";
+    const label = last
+      .replace(/\[|\]/g, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return { href: base, label };
+  }, [router.asPath]);
 
   const fetchCurrentJobStatus = useCallback(async (id) => {
     if (presentationShell) return;
@@ -551,11 +613,6 @@ export default function Layout({
     if (urlJobId) {
       setIsAutoJobCleared(true);
     }
-  };
-
-  const handleModeSelect = (mode) => {
-    if (!mode || mode === selectedMode) return;
-    setSelectedMode(mode);
   };
 
   // Handle Tea Break - unclock from all active jobs
@@ -1098,7 +1155,6 @@ export default function Layout({
             isCollapsed={!isSidebarOpen}
             extraSections={sidebarExtraSections}
             visibleRoles={userRoles}
-            modeLabel={activeModeLabel}
             allowedRoutes={presentationAllowedRoutes}
             presentationRoleKey={activePresentationRole?.key || null}
             inPresentationMode={presentationShell}
@@ -1229,7 +1285,6 @@ export default function Layout({
                     isCondensed
                     extraSections={sidebarExtraSections}
                     visibleRoles={userRoles}
-                    modeLabel={activeModeLabel}
                     allowedRoutes={presentationAllowedRoutes}
                     presentationRoleKey={activePresentationRole?.key || null}
                     inPresentationMode={presentationShell}
@@ -1248,15 +1303,11 @@ export default function Layout({
             isTablet={isTablet}
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
-            firstName={firstName}
-            availableModes={availableModes}
-            selectedMode={selectedMode}
-            activeModeLabel={activeModeLabel}
-            onModeSelect={handleModeSelect}
             colors={colors}
+            kpis={topbarSections.kpis}
+            insightViews={topbarSections.insights}
+            topPages={topPages}
             isTech={isTech}
-            canUseServiceActions={canUseServiceActions}
-            hasPartsAccess={hasPartsAccess}
             status={status}
             presentationShell={presentationShell}
             currentJob={currentJob}
@@ -1264,7 +1315,7 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            quickActions={workspaceQuickActions}
+            resumeItem={continueContext.mostRecent}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
@@ -1368,12 +1419,6 @@ export default function Layout({
                 }
               >
                 <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
-                  {workspaceNavEnabled && !hideSidebar && (
-                    <WorkspaceHeader
-                      pathname={router.asPath || router.pathname}
-                      roles={userRoles}
-                    />
-                  )}
                   {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>
@@ -1594,6 +1639,20 @@ export default function Layout({
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
       <TopbarAlerts />
+      {/* Phase 3 productivity system — command palette + (progressively) recent,
+          favourites, suggestions, shortcuts and widgets. Globally mounted and
+          overlay/keyboard-driven so the top bar's height/design is untouched.
+          Disabled in the demo shell and on the login shell. */}
+      <WorkspaceCommandCenter
+        enabled={!presentationShell && !hideSidebar && Boolean(user)}
+        currentAsPath={router.asPath}
+        currentPage={currentPinItem}
+        navigationItems={navigationItems}
+        quickActions={topbarQuickActions}
+        userRoles={userRoles}
+        department={departmentCode}
+        metrics={operationalSnapshot.metrics}
+      />
       <div className="orientation-lock" role="status" aria-live="polite">
         <div className="orientation-lock__card redirect-card">
           <div className="login-brand redirect-brand" aria-hidden="true">

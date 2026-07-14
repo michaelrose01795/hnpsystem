@@ -136,7 +136,7 @@ export default function ManagersDashboardUi(props) {
                 sectionKey="managers-dashboard-completion-trend"
                 parentKey="managers-dashboard-analytics-row"
                 title="Completion trend"
-                subtitle="Last 7 days"
+                subtitle="Report KPI: workshop jobs completed, last 7 days"
                 style={{ height: "100%" }}
               >
                 <TrendBlock

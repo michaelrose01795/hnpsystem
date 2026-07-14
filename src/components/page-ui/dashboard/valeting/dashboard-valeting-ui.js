@@ -92,11 +92,11 @@ export default function ValetingDashboardUi(props) {
             margin: 0,
             fontSize: "1.2rem",
             color: "var(--text-accent)"
-          }}>Queue trend</h2>
+          }}>Valet volume trend</h2>
               <p style={{
             margin: "6px 0 0",
             color: "var(--text-1)"
-          }}>Wash starts last 7 days</p>
+          }}>Report KPI: cars washed, last 7 days</p>
             </div>
             {loading ?
         <p style={{

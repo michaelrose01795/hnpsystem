@@ -82,8 +82,8 @@ export default function PaintingDashboardUi(props) {
           <ThemedSection
             LayerTheme={LayerTheme}
             sectionKey="dashboard-painting-auto-content-card-3"
-            title="Queue trend"
-            subtitle="Recent workshop starts"
+            title="Paint completion trend"
+            subtitle="Report KPI: completed paint jobs, last 7 days"
           >
             <TrendBlock data={data.trends} parentKey="dashboard-painting-auto-content-card-3" />
           </ThemedSection>

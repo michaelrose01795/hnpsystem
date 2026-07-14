@@ -6197,6 +6197,23 @@ export default function VhcDetailsPanel({
     const severityRank = (status) => (status === "red" ? 0 : status === "amber" ? 1 : 2);
     const normaliseMatch = (value = "") =>
       String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const buildReportedRow = (concern) => {
+      const concernId = String(concern?.concernId || "").trim();
+      if (!concernId) return null;
+      const status = normaliseColour(concern?.status);
+      if (status !== "red" && status !== "amber") return null;
+      return {
+        concernId,
+        aliases: [concernId],
+        label: concern?.label || "Recorded item",
+        description: concern?.description || "",
+        section: concern?.categoryLabel || concern?.section || "",
+        category: concern?.category || "",
+        categoryLabel: concern?.categoryLabel || concern?.section || "",
+        status,
+        sortRank: severityRank(status),
+      };
+    };
     const legacyMatches = (item, status) => {
       const labels = [
         item?.concernText,
@@ -6223,6 +6240,13 @@ export default function VhcDetailsPanel({
         return labelMatches && sectionMatches;
       });
     };
+    const byId = new Map();
+    builderReportedConcerns.forEach((concern) => {
+      const row = buildReportedRow(concern);
+      if (row && !byId.has(row.concernId)) {
+        byId.set(row.concernId, row);
+      }
+    });
     const sourceRows = [
       ...(quoteSeverityLists.red || []),
       ...(quoteSeverityLists.amber || []),
@@ -6230,7 +6254,6 @@ export default function VhcDetailsPanel({
       ...(quoteSeverityLists.completed || []),
       ...(quoteSeverityLists.declined || []),
     ];
-    const byId = new Map();
     sourceRows.forEach((item) => {
       const status = normaliseColour(
         item?.severity ||
@@ -6249,11 +6272,27 @@ export default function VhcDetailsPanel({
         item?.rowId,
         item?.vhcCheck?.vhc_id,
       ].filter((value) => value !== null && value !== undefined && String(value).trim() !== "").map(String));
-      legacyMatches(item, status).forEach((match) => {
+      const matchedBuilderRows = legacyMatches(item, status);
+      matchedBuilderRows.forEach((match) => {
         if (match?.concernId !== null && match?.concernId !== undefined) {
           aliases.add(String(match.concernId));
         }
       });
+      if (matchedBuilderRows.length > 0) {
+        matchedBuilderRows.forEach((match) => {
+          const key = String(match.concernId);
+          const existing = byId.get(key) || buildReportedRow(match);
+          if (!existing) return;
+          byId.set(key, {
+            ...existing,
+            aliases: Array.from(new Set([...(existing.aliases || []), ...aliases])),
+            description: existing.description || item?.concernText || item?.notes || "",
+            category: existing.category || item?.categoryId || item?.category?.id || "",
+            categoryLabel: existing.categoryLabel || item?.categoryLabel || item?.sectionName || "",
+          });
+        });
+        return;
+      }
       byId.set(concernId, {
         concernId,
         aliases: Array.from(aliases),
@@ -8926,7 +8965,6 @@ export default function VhcDetailsPanel({
       const { key, label, section, status, photos, videos, concern, kind } = row;
       const badge = severityBadge(status);
       const showControls = !readOnly && Boolean(concern);
-      const showMediaCounts = kind !== "main-video";
       const uploading = rowMediaUploadConcernId === String(concern?.concernId);
       const pickerOpen = moveMediaPickerConcernId === key;
       // Candidates already linked to THIS concern are excluded — you can only
@@ -8981,16 +9019,14 @@ export default function VhcDetailsPanel({
               </span>
             ) : null}
 
-            {showMediaCounts ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-                  {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
-                </span>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
-                  {videos.length} {videos.length === 1 ? "Video" : "Videos"}
-                </span>
-              </div>
-            ) : null}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                {photos.length} {photos.length === 1 ? "Photo" : "Photos"}
+              </span>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", opacity: 0.7 }}>
+                {videos.length} {videos.length === 1 ? "Video" : "Videos"}
+              </span>
+            </div>
 
             {/* Add media (upload onto this concern) + Move media (relink existing
                 media in from another row). Reported red/amber rows only. */}

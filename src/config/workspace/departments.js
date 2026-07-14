@@ -79,6 +79,30 @@ const PARTS_WORKSPACE_ROLES = ["parts", "parts manager"];
 // are intentionally omitted here and added when their pages join the manifest —
 // see the authoring guide.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// 🔒 DEVELOPER SIDEBAR LOCK — DO NOT CHANGE.
+//
+// The Developer group and its "Developer Platform" sidebar button are a
+// PERMANENT INVARIANT: the `dev` role must ALWAYS see them, and they must never
+// be re-gated to another role. This frozen constant is the single source of the
+// invariant. It is enforced two ways so it can never silently break:
+//   1. Runtime self-heal — getWorkspaceGroups() / getDepartmentWorkspaceNav()
+//      re-inject the group + button from this lock if a manifest edit ever drops
+//      or alters them (see src/config/workspace/manifest.js).
+//   2. Test lock — a dedicated invariant suite in manifest.test.js fails CI if
+//      the developer department, its roles, or its nav item ever change.
+// If you believe this needs to change, it does not. Leave it alone.
+// ---------------------------------------------------------------------------
+export const DEVELOPER_GROUP_LOCK = Object.freeze({
+  key: "developer",
+  label: "Developer",
+  category: "departments",
+  icon: "developer",
+  home: "/dev",
+  roles: Object.freeze(["dev"]),
+  navItem: Object.freeze({ label: "Developer Platform", href: "/dev", roles: Object.freeze(["dev"]) }),
+});
+
 export const WORKSPACE_DEPARTMENTS = Object.freeze([
   {
     key: "general",
@@ -185,6 +209,8 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
     flag: "reporting_nav_enabled",
   },
   {
+    // 🔒 LOCKED — see DEVELOPER_GROUP_LOCK above. Must stay key "developer",
+    // category "departments", home "/dev", roles ["dev"]. Do not change/remove.
     key: "developer",
     label: "Developer",
     category: "departments",
@@ -576,7 +602,10 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
         href: "/consumables-tracker",
         roles: ["workshop manager"],
       },
-      { label: "Goods In", href: "/goods-in", roles: ["workshop manager"] },
+      // Goods In moved OUT of the Workshop group and into the Parts group
+      // (it already lists under Parts / Parts Manager). A Workshop Manager now
+      // only reaches Goods In if they are granted the Parts group — access is
+      // group-based, per the Sidebar Access model.
     ],
   },
   {
@@ -687,6 +716,8 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     // roleCategories and is excluded from DEV_FULL_ACCESS_ROLES, so no staff
     // session carries it. Routes to the platform home; /dev is already in the
     // route allow-list for dev sessions.
+    // 🔒 LOCKED — see DEVELOPER_GROUP_LOCK above. The Developer Platform button
+    // is guaranteed for the dev role and can never be removed or re-gated.
     department: "developer",
     order: 150,
     label: "Developer",
@@ -735,6 +766,18 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
 // WORKSPACE_NAV_SECTIONS so the classic role-organised sidebar remains
 // byte-identical while the new department-first rail can still be fully
 // manifest-driven.
+//
+// GROUP INHERITANCE (Phase 8 — default permission model).
+// These are GROUP-WIDE pages: they carry NO per-page `roles`, so they inherit
+// the Accounts group's assigned roles automatically (getWorkspaceGroupRoles
+// ("accounts") ⇒ {accounts, accounts manager}, derived from ROLE_DEPARTMENT_MAP).
+// This is the canonical shape for any page the whole group should see — add the
+// page to its group's section WITHOUT a `roles` key. Because these context items
+// never appear in the classic sidebar (they are outside WORKSPACE_NAV_SECTIONS),
+// dropping their duplicated role arrays does not touch the byte-identical classic
+// fallback and preserves the exact accounts-role access (locked by the parity
+// tests). Add per-page `roles` here ONLY for a genuine restriction or a
+// cross-group grant — see docs/Workspace Navigation/workspace-group-permissions.md.
 export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   {
     department: "accounts",
@@ -743,10 +786,10 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      { label: "Accounts", href: "/accounts", roles: ACCOUNT_WORKSPACE_ROLES },
-      { label: "Company Accounts", href: "/company-accounts", roles: ACCOUNT_WORKSPACE_ROLES },
-      { label: "Invoices", href: "/accounts/invoices", roles: ACCOUNT_WORKSPACE_ROLES },
-      { label: "Reports", href: "/accounts/reports", roles: ACCOUNT_WORKSPACE_ROLES },
+      { label: "Accounts", href: "/accounts" },
+      { label: "Company Accounts", href: "/company-accounts" },
+      { label: "Invoices", href: "/accounts/invoices" },
+      { label: "Reports", href: "/accounts/reports" },
     ],
   },
 ]);

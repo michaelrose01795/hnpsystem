@@ -111,6 +111,13 @@ export const DEV_PLATFORM_NAV = [
     href: "/dev/preferences",
     description: "Developer and notification preferences.",
   },
+  {
+    key: "sidebar-access",
+    label: "Sidebar Access",
+    href: "/dev/sidebar-access",
+    description:
+      "Full sidebar group reference, each user's available groups, and a multi-select live preview of any group's sidebar.",
+  },
 ];
 
 export function getDevPlatformNavItem(key) {
@@ -132,6 +139,7 @@ export const DEV_PLATFORM_GROUPS = [
   { key: "releases", label: "Releases", children: ["releases", "readiness", "productivity"] },
   { key: "support", label: "Support", children: ["support", "saved-views", "activity"] },
   { key: "settings", label: "Settings", children: ["plugins", "notifications", "preferences"] },
+  { key: "access", label: "Access", children: ["sidebar-access"] },
 ];
 
 // Resolve the nav items (in order) for a category group.

@@ -16,8 +16,11 @@ import { sidebarSections } from "@/config/navigation";
 import {
   getActiveWorkspaceDepartment,
   getDepartmentWorkspaceNav,
-  getWorkspaceRail,
+  getKnownSidebarHrefs,
+  getWorkspaceGroups,
+  isContextNavItemActive,
   isWorkspaceNavEnabled,
+  resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import ContextSidebar from "@/components/layout/ContextSidebar";
@@ -39,7 +42,7 @@ const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
-const WORKSPACE_DEPARTMENTS_VIEW = "__departments__";
+const WORKSPACE_GROUPS_VIEW = "__groups__";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -176,14 +179,12 @@ export default function Sidebar({
   isCollapsed = false,
   extraSections = [],
   visibleRoles = null,
-  modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
   allowedRoutes = null,
   presentationRoleKey = null,
   inPresentationMode = false,
   pendingHref = null,
   isAuthLoading = false,
 }) {
-  void _modeLabel;
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
   // Optimistic active state: in the Pages Router router.asPath does not update
@@ -201,6 +202,9 @@ export default function Sidebar({
     [pathname, pendingHref]
   );
   const { user, dbUserId } = useUser();
+  // Full name for the Profile nav button (replaces the generic "Profile" label).
+  // user.username resolves to the signed-in user's display name (see UserContext).
+  const fullName = (user?.username || "").trim();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
   const canShowDevItems = !inPresentationMode && canShowDevSidebarItems(user);
@@ -254,8 +258,28 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
-  const [selectedWorkspaceKey, setSelectedWorkspaceKey] = useState(null);
-  const [sidebarPreview, setSidebarPreview] = useState(null);
+  // Per-user sidebar-access override (admin-set snapshot). Skipped in
+  // presentation mode (the rail belongs to the demo role, not the real user).
+  // When no snapshot exists, snapshotAllowed is null and every filter below is
+  // a no-op, so role-based behaviour is byte-for-byte unchanged. The snapshot
+  // only governs the classic sidebar item universe (getKnownSidebarHrefs) —
+  // dashboards/quick actions outside it are always allowed.
+  const editorUniverse = useMemo(() => getKnownSidebarHrefs(), []);
+  const snapshotAllowed = useMemo(() => {
+    if (inPresentationMode) return null;
+    const snap = user?.sidebarAccess;
+    if (!snap || !Array.isArray(snap.items)) return null;
+    return resolveAccessiblePaths(userRoles, snap);
+  }, [inPresentationMode, user?.sidebarAccess, userRoles]);
+  const isHrefAllowed = useCallback(
+    (href) => {
+      if (!snapshotAllowed || !href) return true;
+      if (!editorUniverse.has(href)) return true; // outside the snapshot's scope
+      return snapshotAllowed.has(href);
+    },
+    [snapshotAllowed, editorUniverse]
+  );
+  const [selectedGroupKey, setSelectedGroupKey] = useState(null);
   const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const getNavHref = useCallback((href) => {
@@ -324,6 +348,7 @@ export default function Sidebar({
         items: (section.items || []).filter(
           (item) =>
             hasAccess(item) &&
+            isHrefAllowed(item.href) &&
             (inPresentationMode || !item.href || !hiddenHrRoutes.has(item.href)) &&
             (inPresentationMode || !(hasRestrictedJobSectionRole && item.href === "/archive"))
         ),
@@ -333,67 +358,93 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
-  const workspaceRail = useMemo(
-    () => (workspaceNavEnabled ? getWorkspaceRail(userRoles) : []),
-    [userRoles, workspaceNavEnabled]
-  );
-  const workspaceDepartmentKeys = useMemo(
-    () =>
-      new Set(
-        workspaceRail
-          .filter((department) => department.category === "departments")
-          .map((department) => department.key)
-      ),
-    [workspaceRail]
+  // Group Sidebar Flow (Phase 7). The workspace sidebar has two states:
+  //   1. GROUPS view — the flat list of top-level groups (General + departments)
+  //      the user can access (workspaceGroups).
+  //   2. GROUP view — clicking a group replaces the whole sidebar with that
+  //      group's context nav (activeWorkspace) plus a "Back to Groups" control.
+  // There is no always-visible General section; General is itself a group.
+  const workspaceGroups = useMemo(() => {
+    if (!workspaceNavEnabled) return [];
+    const groups = getWorkspaceGroups(userRoles);
+    if (!snapshotAllowed) return groups;
+    // Drop a group whose every nav item was removed by the snapshot (its
+    // dashboards, which are outside the snapshot's scope, keep it visible).
+    return groups.filter((group) => {
+      const nav = getDepartmentWorkspaceNav(group.key, userRoles);
+      return (
+        (nav.items || []).some((item) => isHrefAllowed(item.href)) ||
+        (nav.dashboards || []).length > 0
+      );
+    });
+  }, [userRoles, workspaceNavEnabled, snapshotAllowed, isHrefAllowed]);
+  const workspaceGroupKeys = useMemo(
+    () => new Set(workspaceGroups.map((group) => group.key)),
+    [workspaceGroups]
   );
   const routeWorkspaceKey = useMemo(
     () => (workspaceNavEnabled ? getActiveWorkspaceDepartment(pathname, userRoles) : null),
     [pathname, userRoles, workspaceNavEnabled]
   );
-  const activeWorkspaceKey =
-    selectedWorkspaceKey === WORKSPACE_DEPARTMENTS_VIEW
+  // Which group is open. An explicit selection wins; the GROUPS_VIEW sentinel
+  // forces the flat list even on a route that would otherwise resolve a group;
+  // otherwise the current route drives the group (so feature pages open in their
+  // group with the active link highlighted, while hub/dashboard pages — not in
+  // the nav manifest — fall back to the clean groups list).
+  const activeGroupKey =
+    selectedGroupKey === WORKSPACE_GROUPS_VIEW
       ? null
-      : selectedWorkspaceKey && workspaceDepartmentKeys.has(selectedWorkspaceKey)
-      ? selectedWorkspaceKey
+      : selectedGroupKey && workspaceGroupKeys.has(selectedGroupKey)
+      ? selectedGroupKey
       : routeWorkspaceKey;
-  const activeWorkspace = useMemo(
-    () => activeWorkspaceKey ? getDepartmentWorkspaceNav(activeWorkspaceKey, userRoles) : null,
-    [activeWorkspaceKey, userRoles]
-  );
-  const workspaceGeneralNav = useMemo(
-    () => workspaceNavEnabled ? getDepartmentWorkspaceNav("general", userRoles) : null,
-    [userRoles, workspaceNavEnabled]
-  );
+  const activeWorkspace = useMemo(() => {
+    if (!activeGroupKey) return null;
+    const nav = getDepartmentWorkspaceNav(activeGroupKey, userRoles);
+    if (!snapshotAllowed) return nav;
+    const items = (nav.items || []).filter((item) => isHrefAllowed(item.href));
+    return { ...nav, items, itemCount: items.length };
+  }, [activeGroupKey, userRoles, snapshotAllowed, isHrefAllowed]);
 
   useEffect(() => {
-    if (!selectedWorkspaceKey) return;
-    if (selectedWorkspaceKey === WORKSPACE_DEPARTMENTS_VIEW) return;
-    if (!workspaceDepartmentKeys.has(selectedWorkspaceKey)) {
-      setSelectedWorkspaceKey(null);
+    if (!selectedGroupKey) return;
+    if (selectedGroupKey === WORKSPACE_GROUPS_VIEW) return;
+    if (!workspaceGroupKeys.has(selectedGroupKey)) {
+      setSelectedGroupKey(null);
     }
-  }, [selectedWorkspaceKey, workspaceDepartmentKeys]);
+  }, [selectedGroupKey, workspaceGroupKeys]);
 
   useEffect(() => {
-    if (previousWorkspacePathRef.current !== pathname) {
-      previousWorkspacePathRef.current = pathname;
-      setSelectedWorkspaceKey(null);
+    if (previousWorkspacePathRef.current === pathname) return;
+    previousWorkspacePathRef.current = pathname;
+    // Keep the currently-open group when navigating between its OWN pages, so
+    // moving from (e.g.) News Feed to Tracker inside the General group doesn't
+    // kick the user back out to the Groups list. Only fall back to the route-
+    // driven group (by clearing the explicit selection) when the destination
+    // leaves the open group.
+    if (
+      selectedGroupKey &&
+      selectedGroupKey !== WORKSPACE_GROUPS_VIEW &&
+      workspaceGroupKeys.has(selectedGroupKey)
+    ) {
+      const nav = getDepartmentWorkspaceNav(selectedGroupKey, userRoles);
+      const navItems = [
+        ...(nav.home ? [{ href: nav.home }] : []),
+        ...(nav.dashboards || []),
+        ...(nav.items || []),
+      ];
+      const stillInGroup = navItems.some((item) =>
+        isContextNavItemActive(item, pathname)
+      );
+      if (stillInGroup) return;
     }
-  }, [pathname]);
+    setSelectedGroupKey(null);
+  }, [pathname, selectedGroupKey, workspaceGroupKeys, userRoles]);
 
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
       onNavigate();
     }
   }, [onNavigate]);
-  const showSidebarPreview = useCallback((event, item) => {
-    if (!workspaceNavEnabled) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    setSidebarPreview({
-      label: item.label,
-      href: item.href || item.home || null,
-      top: rect.top + rect.height / 2,
-    });
-  }, [workspaceNavEnabled]);
 
   const handleLogout = () => {
     // In presentation mode the "logout" action returns to the role picker
@@ -463,10 +514,21 @@ export default function Sidebar({
     }
   }, [isClockedIn, dbUserId]);
 
-  const renderLinkLabel = (label, href) => {
+  // `truncate` ellipsises the label on a single line — used by the Profile
+  // button, which now renders the user's (potentially long) full name inside the
+  // fixed-width rail. `title` keeps the full text accessible on hover.
+  const renderLinkLabel = (label, href, { truncate = false } = {}) => {
     const isMessagesItem = href === "/messages";
+    const labelStyle = truncate
+      ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }
+      : undefined;
+    const labelSpan = (
+      <span style={labelStyle} title={truncate ? label : undefined}>
+        {label}
+      </span>
+    );
     if (!href) {
-      return <span>{label}</span>;
+      return labelSpan;
     }
     return (
       <div
@@ -476,9 +538,10 @@ export default function Sidebar({
           justifyContent: "space-between",
           gap: "8px",
           flex: 1,
+          minWidth: 0,
         }}
       >
-        <span>{label}</span>
+        {labelSpan}
         {isMessagesItem && unreadCount > 0 && (
           <span
             className="app-badge app-badge--danger-strong app-badge--round-count"
@@ -496,8 +559,8 @@ export default function Sidebar({
   // Idle icons match the normal sidebar button text colour (.app-btn--secondary
   // uses var(--text-accent)).
   const ICON_COLOR = "var(--text-accent)";
-  const renderNavContent = (label, href, isActive = false) => {
-    if (!isCollapsed) return renderLinkLabel(label, href);
+  const renderNavContent = (label, href, isActive = false, opts = {}) => {
+    if (!isCollapsed) return renderLinkLabel(label, href, opts);
     return (
       <span
         aria-hidden="true"
@@ -759,88 +822,49 @@ export default function Sidebar({
         )}
 
         {workspaceNavEnabled && (
-          <>
-            {workspaceGeneralNav?.items?.length > 0 && (
-              <>
-                {isCollapsed ? (
-                  renderSectionDivider("divider-workspace-general", { marginBottom: "10px" })
-                ) : (
-                  <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-                    General
-                  </div>
-                )}
-                {workspaceGeneralNav.items.map((item) => {
-                  const isActive = isItemActive(item.href);
-                  return (
-                    <Link
-                      className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
-                      key={item.href}
-                      href={getNavHref(item.href)}
-                      onClick={() => {
-                        recordWorkspaceRecentHref(item.href);
-                        handleNavigationPress();
-                      }}
-                      onMouseEnter={(event) => showSidebarPreview(event, item)}
-                      onFocus={(event) => showSidebarPreview(event, item)}
-                      onMouseLeave={() => setSidebarPreview(null)}
-                      onBlur={() => setSidebarPreview(null)}
-                      {...navLinkProps(item.label)}
-                    >
-                      {renderNavContent(item.label, item.href, isActive)}
-                    </Link>
-                  );
-                })}
-              </>
-            )}
-
-            {activeWorkspace?.items?.length > 0 ? (
-              <ContextSidebar
-                workspace={activeWorkspace}
-                pathname={pathname}
-                pendingHref={pendingHref}
-                isCollapsed={isCollapsed}
-                getNavHref={getNavHref}
-                onNavigate={(href) => {
-                  recordWorkspaceRecentHref(href);
-                  handleNavigationPress();
-                }}
-                onBack={() => setSelectedWorkspaceKey(WORKSPACE_DEPARTMENTS_VIEW)}
-                navLinkProps={navLinkProps}
-                renderNavContent={renderNavContent}
-                renderSectionDivider={renderSectionDivider}
-              />
-            ) : (
-              <>
-                {isCollapsed ? (
-                  renderSectionDivider("divider-workspaces", { marginTop: "16px", marginBottom: "10px" })
-                ) : (
-                  <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
-                    Departments
-                  </div>
-                )}
-                {workspaceRail
-                  .filter((department) => department.category === "departments")
-                  .map((department) => {
-                    const isActive = routeWorkspaceKey === department.key;
-                    return (
-                      <button
-                        className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
-                        key={department.key}
-                        type="button"
-                        onClick={() => setSelectedWorkspaceKey(department.key)}
-                        onMouseEnter={(event) => showSidebarPreview(event, department)}
-                        onFocus={(event) => showSidebarPreview(event, department)}
-                        onMouseLeave={() => setSidebarPreview(null)}
-                        onBlur={() => setSidebarPreview(null)}
-                        {...navLinkProps(department.label)}
-                      >
-                        {renderNavContent(department.label, null, isActive)}
-                      </button>
-                    );
-                  })}
-              </>
-            )}
-          </>
+          (activeWorkspace?.items?.length > 0 || activeWorkspace?.dashboards?.length > 0) ? (
+            // GROUP view — the whole sidebar becomes the selected group's nav.
+            <ContextSidebar
+              workspace={activeWorkspace}
+              pathname={pathname}
+              pendingHref={pendingHref}
+              isCollapsed={isCollapsed}
+              getNavHref={getNavHref}
+              onNavigate={(href) => {
+                recordWorkspaceRecentHref(href);
+                handleNavigationPress();
+              }}
+              onBack={() => setSelectedGroupKey(WORKSPACE_GROUPS_VIEW)}
+              navLinkProps={navLinkProps}
+              renderNavContent={renderNavContent}
+              renderSectionDivider={renderSectionDivider}
+            />
+          ) : (
+            // GROUPS view — the clean list of top-level groups (General first).
+            <>
+              {isCollapsed ? (
+                renderSectionDivider("divider-workspace-groups", { marginBottom: "10px" })
+              ) : (
+                <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+                  Workspace
+                </div>
+              )}
+              {workspaceGroups.map((group) => {
+                const isActive = routeWorkspaceKey === group.key;
+                return (
+                  <button
+                    className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
+                    key={group.key}
+                    type="button"
+                    onClick={() => setSelectedGroupKey(group.key)}
+                    {...navLinkProps(group.label)}
+                  >
+                    {renderNavContent(group.label, null, isActive)}
+                  </button>
+                );
+              })}
+            </>
+          )
         )}
 
         {!workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
@@ -1093,6 +1117,14 @@ export default function Sidebar({
               if (item.href) {
                 if (inPresentationMode) return null;
                 const isActive = isItemActive(item.href);
+                // Profile button shows the user's full name in place of the
+                // generic "Profile" label. When the rail is collapsed the icon
+                // stays keyed on the original label ("Profile") so
+                // getSidebarNavIcon still resolves; the full name surfaces as the
+                // hover/aria label instead.
+                const isProfileItem = item.href === "/profile";
+                const displayLabel = isProfileItem && fullName ? fullName : item.label;
+                const contentLabel = isCollapsed ? item.label : displayLabel;
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
@@ -1104,9 +1136,11 @@ export default function Sidebar({
                     style={{
                       marginBottom: "10px",
                     }}
-                    {...navLinkProps(item.label)}
+                    {...navLinkProps(displayLabel)}
                   >
-                    {renderNavContent(item.label, item.href, isActive)}
+                    {renderNavContent(contentLabel, item.href, isActive, {
+                      truncate: isProfileItem,
+                    })}
                   </Link>
                 );
               }
@@ -1114,46 +1148,6 @@ export default function Sidebar({
               return null;
             })}
           </>
-        )}
-
-        {workspaceNavEnabled && sidebarPreview && (
-          <div
-            role="tooltip"
-            style={{
-              position: "fixed",
-              left: isCollapsed ? 64 : 272,
-              top: sidebarPreview.top,
-              zIndex: 3700,
-              minWidth: 180,
-              maxWidth: 260,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-md)",
-              background: "var(--primary-hover)",
-              color: "var(--onAccentText)",
-              boxShadow: "var(--shadow-lg)",
-              pointerEvents: "none",
-              transform: "translateY(-50%)",
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: "0.85rem", lineHeight: 1.2 }}>
-              {sidebarPreview.label}
-            </div>
-            {sidebarPreview.href && (
-              <div
-                style={{
-                  marginTop: 4,
-                  fontSize: "0.75rem",
-                  lineHeight: 1.25,
-                  opacity: 0.82,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {sidebarPreview.href}
-              </div>
-            )}
-          </div>
         )}
 
         {/* Bottom scroll spacer: gives the last nav control (e.g. Vision) a 10px

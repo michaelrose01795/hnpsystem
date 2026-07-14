@@ -13,7 +13,10 @@
 //
 // Pages reached purely by direct URL with no nav presence will be blocked.
 
-import { getAccessibleNavPaths as getManifestAccessibleNavPaths } from "@/config/workspace/manifest";
+import {
+  getAccessibleNavPaths as getManifestAccessibleNavPaths,
+  resolveAccessiblePaths as resolveManifestAccessiblePaths,
+} from "@/config/workspace/manifest";
 // Route access lists now live in one place — src/config/routeAccess.js — and are
 // shared with src/proxy.js so the edge guard and the client guard agree.
 import {
@@ -29,14 +32,19 @@ const isAlwaysAllowed = (pathname) => {
 
 // Return the pathnames the user is allowed to land on directly. The selector is
 // manifest-derived so sidebar, workspace nav, quick actions, search, and route
-// permissions cannot drift.
-export const getAccessibleNavPaths = (roles) => getManifestAccessibleNavPaths(roles);
+// permissions cannot drift. An optional per-user `sidebarAccess` snapshot
+// overrides the role-derived set (see manifest.resolveAccessiblePaths); a
+// null/absent snapshot yields the unchanged role-based behaviour.
+export const getAccessibleNavPaths = (roles, sidebarAccess = null) =>
+  sidebarAccess
+    ? resolveManifestAccessiblePaths(roles, sidebarAccess)
+    : getManifestAccessibleNavPaths(roles);
 
-export const canAccessPath = (pathname, roles) => {
+export const canAccessPath = (pathname, roles, sidebarAccess = null) => {
   if (!pathname) return true;
   if (isAlwaysAllowed(pathname)) return true;
 
-  const accessible = getAccessibleNavPaths(roles);
+  const accessible = getAccessibleNavPaths(roles, sidebarAccess);
   if (accessible.has(pathname)) return true;
 
   const extendsFrom = DYNAMIC_DETAIL_EXTENDS[pathname];

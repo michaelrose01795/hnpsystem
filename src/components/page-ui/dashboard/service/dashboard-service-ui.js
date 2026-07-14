@@ -125,8 +125,8 @@ export default function ServiceDashboardUi(props) {
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-appointment-trends"
               parentKey="app-layout-page-card"
-              title="Appointment trends"
-              subtitle="Last 7 days"
+              title="Booking volume trend"
+              subtitle="Report KPI: booking volume, last 7 days"
             >
               <TrendBlock data={data.appointmentTrends} />
             </ThemeCard>

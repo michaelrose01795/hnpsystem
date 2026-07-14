@@ -1102,7 +1102,12 @@ html.staff-scope .app-global-tooltip {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: var(--z-toast); /* tooltips sit above modals/popovers — always topmost */
+  /* Always topmost — must clear the layout chrome, whose fixed/overlay pieces use
+     hardcoded z-indexes ABOVE the --z-toast (2000) token scale: topbar overlay
+     3300, status drawer 3350/3400, sidebar drawer 3500, nav toggle 3600/3601.
+     At --z-toast the tooltip rendered BEHIND the topbar when hovering a topbar
+     section. 4000 sits above all chrome (and below the 9900 route-progress bar). */
+  z-index: 4000;
   max-width: min(300px, 80vw);
   width: max-content;
   /* 44px floor (= --control-height); grows taller as longer text wraps. */

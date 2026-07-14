@@ -2,7 +2,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getServiceDashboardData } from "@/lib/database/dashboard/service";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import ServiceDashboardUi from "@/components/page-ui/dashboard/service/dashboard-service-ui";
 
@@ -55,29 +57,20 @@ const PieChart = ({ breakdown }) => {
 };
 
 // TrendBlock — chart card inside a ThemeCard (LayerTheme), renders as LayerSurface.
-const TrendBlock = ({ data }) => {
-  const max = Math.max(1, ...(data || []).map((point) => point.count));
-  return (
-    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
-      {(data || []).map((point) => (
-        <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-2)" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--theme)", borderRadius: 4 }}>
-            <div
-              style={{
-                width: `${Math.round((point.count / max) * 100)}%`,
-                height: "100%",
-                background: "var(--success)",
-                borderRadius: 4,
-              }}
-            />
-          </div>
-          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
-        </div>
-      ))}
-    </LayerSurface>
-  );
-};
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "service" };
+const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "service" };
+
+const TrendBlock = ({ data }) => (
+  <ReportLinkedTrend
+    kpiId="svc.booking_volume"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey="dashboard-service-booking-volume-chart"
+    parentKey="dashboard-service-appointment-trends"
+    unit="count"
+    format="0,0"
+  />
+);
 
 const ProgressBar = ({ completed, target }) => {
   const percentage = Math.min(100, Math.round((completed / target) * 100));
@@ -140,6 +133,7 @@ export default function ServiceDashboard() {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportToday = useKpiValues(["svc.booking_volume"], REPORT_TODAY_FILTER);
 
   useEffect(() => {
     const loadData = async () => {
@@ -159,10 +153,15 @@ export default function ServiceDashboard() {
     loadData();
   }, []);
 
+  const reportLinkedData = {
+    ...data,
+    appointmentsToday: reportToday.byId["svc.booking_volume"]?.value ?? data.appointmentsToday,
+  };
+
   return (
     <ServiceDashboardUi
       view="section1"
-      data={data}
+      data={reportLinkedData}
       error={error}
       loading={loading}
       LayerTheme={LayerTheme}

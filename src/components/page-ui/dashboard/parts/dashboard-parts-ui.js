@@ -8,7 +8,6 @@ export default function PartsDashboardUi(props) {
     LayerTheme,
     ListBlock,
     MetricCard,
-    Section,
     TrendBlock,
     data,
     error,
@@ -74,7 +73,7 @@ export default function PartsDashboardUi(props) {
         </ThemedSection>
 
         <div style={splitRowStyle}>
-          <ThemedSection title="Requests trend" subtitle="Last 7 days">
+          <ThemedSection title="Requests trend" subtitle="Report KPI: parts requests, last 7 days">
             {loading ? <InlineLoading label="Loading request trends" /> : trendData.length === 0 ? <p style={{ color: "var(--text-2)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
           </ThemedSection>
 

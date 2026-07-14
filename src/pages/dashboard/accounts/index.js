@@ -4,7 +4,9 @@
 
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import { getAccountsDashboardData } from "@/lib/database/dashboard/accounts";
+import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface } from "@/components/ui"; // canonical surface layer primitive (nested inside dashboard theme sections)
 import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboard-accounts-ui"; // Extracted presentation layer.
 
@@ -18,29 +20,20 @@ const MetricCard = ({ label, value, helper }) => (
   </LayerSurface>
 );
 
-const TrendBlock = ({ data }) => {
-  const max = Math.max(1, ...(data || []).map((item) => item.count));
-  return (
-    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
-      {(data || []).map((point) =>
-      <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
-            <div
-            style={{
-              width: `${Math.round(point.count / max * 100)}%`,
-              height: "100%",
-              background: "var(--accent-purple)",
-              borderRadius: 4
-            }} />
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "accounts" };
 
-          </div>
-          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
-        </div>
-      )}
-    </LayerSurface>);
-
-};
+const TrendBlock = ({ data }) => (
+  <ReportLinkedTrend
+    kpiId="acc.payments_received"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey="dashboard-accounts-payments-trend-chart"
+    parentKey="dashboard-accounts-auto-content-card-3"
+    unit="currency"
+    format="£0,0.00"
+    height={132}
+  />
+);
 
 // JobList — list block inside a dashboard LayerTheme section, so it renders as LayerSurface.
 const JobList = ({ jobs }) => (
@@ -197,6 +190,7 @@ export default function AccountsDashboard() {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const reportValues = useKpiValues(["acc.payments_received", "acc.account_balances", "acc.credit_exposure"], REPORT_TREND_FILTER);
 
   useEffect(() => {
     const loadData = async () => {
@@ -216,10 +210,17 @@ export default function AccountsDashboard() {
     loadData();
   }, []);
 
+  const reportLinkedData = {
+    ...data,
+    weeklyRevenue: reportValues.byId["acc.payments_received"]?.value ?? data.weeklyRevenue,
+    outstandingDebt: reportValues.byId["acc.account_balances"]?.value ?? data.outstandingDebt,
+    accountsAtRisk: reportValues.byId["acc.credit_exposure"]?.value ?? data.accountsAtRisk,
+  };
+
   return (
     <AccountsDashboardUi
       view="section1"
-      data={data}
+      data={reportLinkedData}
       error={error}
       loading={loading}
       JobList={JobList}

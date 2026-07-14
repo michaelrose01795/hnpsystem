@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import PaintingDashboardUi from "@/components/page-ui/dashboard/painting/dashboard-painting-ui";
 import { LayerSurface, LayerTheme } from "@/components/ui";
@@ -25,51 +26,19 @@ const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
   </LayerSurface>
 );
 
-const TrendBlock = ({ data, parentKey }) => {
-  const max = Math.max(1, ...(data || []).map((point) => point.count));
+const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: "paint" };
 
-  return (
-    <DevLayoutSection
-      sectionKey="dashboard-painting-trend-list"
-      parentKey={parentKey}
-      sectionType="section-shell"
-      backgroundToken="transparent"
-      data-dev-text-preview="Painting workshop starts trend list"
-      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-    >
-      {(data || []).map((point, index) => (
-        <LayerSurface
-          key={point.label}
-          sectionKey={`dashboard-painting-trend-${index + 1}`}
-          parentKey="dashboard-painting-trend-list"
-          sectionType="stat-card"
-          backgroundToken="surface"
-          data-dev-text-preview={`${point.label} ${point.count}`}
-          radius="var(--radius-sm)"
-          padding="8px 12px"
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-1)" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--theme)", borderRadius: 4 }}>
-            <div
-              style={{
-                width: `${Math.round((point.count / max) * 100)}%`,
-                height: "100%",
-                background: "var(--danger)",
-                borderRadius: 4,
-              }}
-            />
-          </div>
-          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
-        </LayerSurface>
-      ))}
-    </DevLayoutSection>
-  );
-};
+const TrendBlock = ({ data, parentKey }) => (
+  <ReportLinkedTrend
+    kpiId="pnt.jobs_completed"
+    filter={REPORT_TREND_FILTER}
+    fallbackData={data}
+    sectionKey="dashboard-painting-jobs-completed-chart"
+    parentKey={parentKey}
+    unit="count"
+    format="0,0"
+  />
+);
 
 // Queue rows live inside the themed paint queue section, so they render on --surface.
 const QueueList = ({ queue, parentKey }) => (

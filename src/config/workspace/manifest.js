@@ -11,6 +11,7 @@
 // EDGE-SAFE: plain data + pure functions only (see ./departments.js header).
 
 import {
+  DEVELOPER_GROUP_LOCK,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -19,10 +20,12 @@ import {
   WORKSPACE_QUICK_ACTIONS,
 } from "./departments";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
+import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { isWorkspaceNavEnabled } from "./flags";
 
 export { isWorkspaceNavEnabled };
 export {
+  DEVELOPER_GROUP_LOCK,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -46,12 +49,92 @@ function normalizeRoleSet(roles) {
   );
 }
 
-// Visibility check — mirrors StaffSidebar.hasAccess() / pageAccess.hasMatchingRole:
-// empty/absent roles ⇒ visible to every authenticated user; otherwise a
-// case-insensitive membership test against the user's role set.
-function itemVisibleTo(item, roleSet) {
-  if (!item.roles || item.roles.length === 0) return true;
-  return item.roles.some((required) => roleSet.has(String(required).toLowerCase()));
+// ---------------------------------------------------------------------------
+// WORKSPACE GROUP PERMISSION MODEL — the DEFAULT permission boundary (Phase 8).
+//
+// The Workspace Group (a page's section `department`) is the primary permission
+// boundary. Assigning a workspace group to a role automatically grants that role
+// every GROUP-WIDE page in the group — a page with NO `roles` of its own. This is
+// the default: new group pages should be added WITHOUT a `roles` key so they
+// inherit the group. A page MAY still carry its own `roles` as an INTENTIONAL
+// EXCEPTION (an individual restriction — e.g. management/financial/developer
+// pages — or a cross-group grant), which is honoured independently of the group,
+// so cross-group grants (e.g. Sales seeing the Admin group's Website Manager)
+// keep working.
+//
+// NOTE ON THE CLASSIC FALLBACK: pages in WORKSPACE_NAV_SECTIONS retain explicit
+// per-role `roles` because those items double as the byte-identical classic
+// sidebar (toSidebarSections → StaffSidebar when workspace_nav_enabled is off);
+// their roles are load-bearing for rollback, not redundant. De-duplication via
+// inheritance therefore applies to workspace-only sections
+// (WORKSPACE_CONTEXT_NAV_SECTIONS) and every FUTURE group page.
+//
+// The authoritative per-group inventory (roles, pages, inherit vs override + the
+// reason for each override) lives in
+// docs/Workspace Navigation/workspace-group-permissions.md.
+//
+// GROUP_ROLE_INDEX maps a group key → the roles assigned to it:
+//   • null            ⇒ assigned to EVERY authenticated user (General, Account —
+//                        their department declares `roles: []`).
+//   • Set<role>       ⇒ the explicit/derived roles that hold the group.
+// A department with `roles: undefined` derives its assigned roles from the
+// canonical ROLE_DEPARTMENT_MAP (so nav and reporting can never drift); a
+// department key not present in that map (e.g. `reports`) derives an empty set,
+// which is fine because those groups gate every page with explicit `roles`.
+// ---------------------------------------------------------------------------
+const GROUP_ROLE_INDEX = (() => {
+  const index = new Map();
+  for (const dept of WORKSPACE_DEPARTMENTS) {
+    if (Array.isArray(dept.roles)) {
+      // `[]` is the "assigned to all authenticated" sentinel; a non-empty array
+      // is the explicit assignment (e.g. Developer → ["dev"]).
+      index.set(dept.key, dept.roles.length === 0 ? null : normalizeRoleSet(dept.roles));
+    } else {
+      const derived = Object.entries(ROLE_DEPARTMENT_MAP)
+        .filter(([, code]) => code === dept.key)
+        .map(([role]) => role);
+      index.set(dept.key, normalizeRoleSet(derived));
+    }
+  }
+  return index;
+})();
+
+// Does the workspace group grant this role set? Group-wide pages inherit this.
+function groupGrantsRole(departmentKey, roleSet) {
+  if (!departmentKey || !GROUP_ROLE_INDEX.has(departmentKey)) return false;
+  const groupRoles = GROUP_ROLE_INDEX.get(departmentKey);
+  if (groupRoles === null) return true; // assigned to every authenticated user
+  for (const role of roleSet) {
+    if (groupRoles.has(role)) return true;
+  }
+  return false;
+}
+
+// getWorkspaceGroupRoles(departmentKey) — the roles ASSIGNED to a workspace
+// group. Returns "*" when the group is open to every authenticated user, or a
+// sorted role array otherwise. A role assigned a group can see every group-wide
+// page in it (pages that carry no individual `roles` restriction).
+export function getWorkspaceGroupRoles(departmentKey) {
+  if (!GROUP_ROLE_INDEX.has(departmentKey)) return [];
+  const groupRoles = GROUP_ROLE_INDEX.get(departmentKey);
+  if (groupRoles === null) return "*";
+  return Array.from(groupRoles).sort();
+}
+
+// Visibility check for a nav item.
+//   • A page WITH `roles` is gated by those roles only (individual
+//     restriction/grant) — independent of group assignment. This preserves every
+//     existing per-page permission, including cross-group grants.
+//   • A page WITHOUT `roles` is GROUP-WIDE: it inherits the group's assigned
+//     roles (see GROUP_ROLE_INDEX). When no group context is supplied (page
+//     tabs, quick actions), an un-roled item stays visible to all — matching the
+//     legacy "empty roles ⇒ everyone" rule for those non-group surfaces.
+function itemVisibleTo(item, roleSet, departmentKey = null) {
+  if (item.roles && item.roles.length > 0) {
+    return item.roles.some((required) => roleSet.has(String(required).toLowerCase()));
+  }
+  if (!departmentKey) return true;
+  return groupGrantsRole(departmentKey, roleSet);
 }
 
 // Is a section's feature flag satisfied? Section flags currently live in the
@@ -122,7 +205,7 @@ export function getAccessibleNavPaths(roles) {
   for (const section of enabledSectionsInOrder()) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (itemVisibleTo(item, roleSet)) accessible.add(item.href);
+      if (itemVisibleTo(item, roleSet, section.department)) accessible.add(item.href);
     }
   }
   for (const action of WORKSPACE_QUICK_ACTIONS) {
@@ -134,8 +217,116 @@ export function getAccessibleNavPaths(roles) {
     if (!sectionFlagEnabled(section)) continue;
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (itemVisibleTo(item, roleSet)) accessible.add(item.href);
+      if (itemVisibleTo(item, roleSet, section.department)) accessible.add(item.href);
     }
+  }
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. The dev role must ALWAYS be able to
+  // land on the Developer Platform route, so the guaranteed button is never a
+  // dead link. Strictly dev-only (never widens /dev to any other role).
+  if (roleSet.has("dev")) accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
+  return accessible;
+}
+
+// ---------------------------------------------------------------------------
+// PER-USER SIDEBAR ACCESS (override layer)
+//
+// By default access is 100% role-derived (getAccessibleNavPaths above). An
+// admin can override this per user with an explicit SNAPSHOT — the exact set of
+// sidebar item hrefs that user is allowed. The snapshot governs only the
+// classic-sidebar item universe (getKnownSidebarHrefs); paths outside it
+// (topbar quick actions, accounts-context extras, dynamic detail pages) keep
+// their role-derived / always-allowed behaviour and are never over-blocked.
+//
+// Shape: { items: string[] }. A null/absent snapshot ⇒ role-derived fallback,
+// so every existing user is unaffected until an admin edits them.
+// ---------------------------------------------------------------------------
+
+// The account-category items that must ALWAYS stay available (Profile). Logout
+// carries an `action` and no href, so it never appears here. These are invariant
+// — a snapshot can never remove them.
+const ACCOUNT_ESSENTIAL_HREFS = (() => {
+  const set = new Set();
+  for (const section of WORKSPACE_NAV_SECTIONS) {
+    if (section.category !== "account") continue;
+    for (const item of section.items || []) {
+      if (item.href) set.add(item.href);
+    }
+  }
+  return set;
+})();
+
+// The full set of hrefs the per-user editor can toggle — every classic sidebar
+// item (WORKSPACE_NAV_SECTIONS) EXCEPT the synthetic Developer group. This is the
+// exact universe getAllSidebarItems() exposes, so the snapshot and the editor
+// never drift. The developer route is out of scope here — it is guaranteed for
+// the dev role by DEVELOPER_GROUP_LOCK and gated by its own ProtectedRoute.
+export function getKnownSidebarHrefs() {
+  const set = new Set();
+  for (const section of enabledSectionsInOrder()) {
+    if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
+    for (const item of section.items || []) {
+      if (item.href) set.add(item.href);
+    }
+  }
+  return set;
+}
+
+// getAllSidebarItems() — grouped, de-duplicated list of every toggleable sidebar
+// item, for the HR per-employee editor. Grouped by department (section), first
+// occurrence of an href wins its group/label. The synthetic Developer group is
+// excluded (its `dev` role is never assignable to a real employee).
+export function getAllSidebarItems() {
+  const seen = new Set();
+  const groups = [];
+  const byDepartment = new Map();
+  for (const section of enabledSectionsInOrder()) {
+    if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
+    for (const item of section.items || []) {
+      if (!item.href || seen.has(item.href)) continue;
+      seen.add(item.href);
+      let group = byDepartment.get(section.department);
+      if (!group) {
+        group = {
+          department: section.department,
+          label: section.label,
+          category: section.category,
+          items: [],
+        };
+        byDepartment.set(section.department, group);
+        groups.push(group);
+      }
+      group.items.push({ label: item.label, href: item.href });
+    }
+  }
+  return groups;
+}
+
+// resolveAccessiblePaths(roles, sidebarAccess) — the authoritative landable-path
+// set once the per-user override is applied. This is what pageAccess.js and the
+// sidebar consume. When no snapshot exists it is byte-for-byte
+// getAccessibleNavPaths(roles).
+export function resolveAccessiblePaths(roles, sidebarAccess) {
+  const roleBased = getAccessibleNavPaths(roles);
+  if (!sidebarAccess || !Array.isArray(sidebarAccess.items)) {
+    return roleBased;
+  }
+  const editorUniverse = getKnownSidebarHrefs();
+  const snapshot = new Set(sidebarAccess.items);
+  const accessible = new Set();
+  // Paths OUTSIDE the editor universe keep their role-derived access (quick
+  // actions, accounts-context extras, etc.) — the snapshot never touches them.
+  for (const href of roleBased) {
+    if (!editorUniverse.has(href)) accessible.add(href);
+  }
+  // WITHIN the editor universe the snapshot is authoritative.
+  for (const href of snapshot) {
+    if (editorUniverse.has(href)) accessible.add(href);
+  }
+  // 🔒 Invariants a snapshot can never strip: account essentials (Profile) and
+  // the developer platform route for the dev role.
+  for (const href of ACCOUNT_ESSENTIAL_HREFS) accessible.add(href);
+  if (normalizeRoleSet(roles).has("dev")) {
+    accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
   }
   return accessible;
 }
@@ -152,45 +343,6 @@ function workspaceSectionsForDepartment(departmentKey) {
   return enabledWorkspaceSectionsInOrder().filter((s) => s.department === departmentKey);
 }
 
-function buildContextGroups(department, roles) {
-  const roleSet = normalizeRoleSet(roles);
-  const seen = new Set();
-  const groups = [];
-
-  if (department?.home && department.category === "departments") {
-    seen.add(department.home);
-    groups.push({
-      key: `${department.key}-overview`,
-      label: "Workspace",
-      collapsible: false,
-      defaultOpen: true,
-      items: [{ label: "Overview", href: department.home }],
-    });
-  }
-
-  for (const section of workspaceSectionsForDepartment(department?.key)) {
-    const items = [];
-    for (const item of section.items || []) {
-      if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
-      if (seen.has(item.href)) continue;
-      seen.add(item.href);
-      items.push({ label: item.label, href: item.href });
-    }
-    if (items.length > 0) {
-      groups.push({
-        key: section.key || `${section.department}-${section.label}`,
-        label: section.label,
-        collapsible: items.length > 4 || groups.length > 1,
-        defaultOpen: true,
-        items,
-      });
-    }
-  }
-
-  return groups;
-}
-
 // getDepartmentsForRoles(roles) — the ordered list of departments the user can
 // see (≥1 accessible item), for the Tier-1 Department Rail. Returns the
 // department metadata objects from WORKSPACE_DEPARTMENTS. Callers split by
@@ -200,7 +352,7 @@ export function getDepartmentsForRoles(roles) {
   return WORKSPACE_DEPARTMENTS.filter((dept) => {
     if (dept.flag && !getReportingFlag(dept.flag)) return false;
     return workspaceSectionsForDepartment(dept.key).some((section) =>
-      (section.items || []).some((item) => itemVisibleTo(item, roleSet))
+      (section.items || []).some((item) => itemVisibleTo(item, roleSet, section.department))
     );
   })
     .slice()
@@ -218,7 +370,7 @@ export function getContextNav(departmentKey, roles) {
   for (const section of workspaceSectionsForDepartment(departmentKey)) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
       if (!seen.has(item.href)) {
         seen.set(item.href, { label: item.label, href: item.href });
       }
@@ -234,20 +386,63 @@ export function getContextNav(departmentKey, roles) {
 // ordered sections so it is deterministic; the lowest-order section that lists a
 // path owns it. Department is NOT inferable from the URL (flat routes), so this
 // explicit index is the source of truth for getActiveDepartment/breadcrumbs.
+// getDepartmentWorkspaceNav(departmentKey, roles) — the Workspace GROUP view for
+// one group. Returns a `dashboards` sub-section (the group's role-visible
+// dashboards, keyed off WORKSPACE_DASHBOARD_SHORTCUTS by department) rendered as
+// a titled "Dashboards" block at the top of the group, followed by `items` — the
+// flat, deduplicated page list. The old single "Overview" entry is gone; the
+// department home is reached through its Dashboards block instead. Page
+// visibility follows the group permission model (itemVisibleTo): group-wide
+// pages are granted by the group assignment, individually-roled pages and
+// dashboards keep their own restriction.
 export function getDepartmentWorkspaceNav(departmentKey, roles) {
   const department = WORKSPACE_DEPARTMENTS.find((dept) => dept.key === departmentKey) || null;
-  const context = getContextNav(departmentKey, roles);
-  const groups = buildContextGroups(department, roles);
-  const items = groups.flatMap((group) => group.items || []);
+  const roleSet = normalizeRoleSet(roles);
+
+  // Dashboards sub-section — the role-visible dashboards this group owns.
+  const dashboards = [];
+  const dashboardSeen = new Set();
+  for (const shortcut of WORKSPACE_DASHBOARD_SHORTCUTS) {
+    if (shortcut.department !== departmentKey) continue;
+    if (!shortcut.href || dashboardSeen.has(shortcut.href)) continue;
+    if (!itemVisibleTo(shortcut, roleSet)) continue;
+    dashboardSeen.add(shortcut.href);
+    dashboards.push({ label: shortcut.label, href: shortcut.href });
+  }
+
+  const seen = new Set();
+  const items = [];
+  for (const section of workspaceSectionsForDepartment(departmentKey)) {
+    for (const item of section.items || []) {
+      if (!item.href) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+      items.push({ label: item.label, href: item.href });
+    }
+  }
+
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. Inside the Developer group the dev
+  // role must ALWAYS get the Developer Platform button; re-inject it from
+  // DEVELOPER_GROUP_LOCK if a manifest edit ever removed the developer nav item.
+  if (departmentKey === DEVELOPER_GROUP_LOCK.key && roleSet.has("dev")) {
+    const { navItem } = DEVELOPER_GROUP_LOCK;
+    if (!seen.has(navItem.href)) {
+      seen.add(navItem.href);
+      items.push({ label: navItem.label, href: navItem.href });
+    }
+  }
 
   return {
     department: departmentKey,
-    label: department?.label || context.department,
+    label:
+      department?.label ||
+      (departmentKey === DEVELOPER_GROUP_LOCK.key ? DEVELOPER_GROUP_LOCK.label : departmentKey),
     home: department?.home || null,
     icon: department?.icon || null,
     category: department?.category || null,
+    dashboards,
     itemCount: items.length,
-    groups,
     items,
   };
 }
@@ -260,6 +455,35 @@ export function getWorkspaceRail(roles) {
     icon: department.icon,
     home: department.home || null,
   }));
+}
+
+// getWorkspaceGroups(roles) — the Tier-1 GROUP LIST for the Group Sidebar Flow
+// (Phase 7). These are the clickable top-level groups a user first sees: the
+// General group plus every department they can access, in manifest order.
+// Selecting one replaces the whole sidebar with that group's context nav.
+//
+// The Account bucket (Profile / Logout) is intentionally excluded — it is NOT a
+// navigable group; the sidebar renders it as its persistent bottom controls
+// (clock in/out, logout, profile) regardless of which group is open.
+export function getWorkspaceGroups(roles) {
+  const groups = getWorkspaceRail(roles).filter(
+    (group) => group.category === "general" || group.category === "departments"
+  );
+  // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. The dev role must ALWAYS get the
+  // Developer group button. If a manifest edit ever drops the developer
+  // department, re-inject it from DEVELOPER_GROUP_LOCK so the dev sidebar can
+  // never lose its entry. Strictly dev-only, preserving the /dev gating.
+  const roleSet = normalizeRoleSet(roles);
+  if (roleSet.has("dev") && !groups.some((group) => group.key === DEVELOPER_GROUP_LOCK.key)) {
+    groups.push({
+      key: DEVELOPER_GROUP_LOCK.key,
+      label: DEVELOPER_GROUP_LOCK.label,
+      category: DEVELOPER_GROUP_LOCK.category,
+      icon: DEVELOPER_GROUP_LOCK.icon,
+      home: DEVELOPER_GROUP_LOCK.home,
+    });
+  }
+  return groups;
 }
 
 export function getDashboardShortcutsForRoles(roles) {
@@ -311,19 +535,28 @@ export function getActiveWorkspaceDepartment(pathname, roles) {
   if (!path) return null;
   const departments = getDepartmentsForRoles(roles).filter((dept) => dept.category === "departments");
 
-  for (const department of departments) {
+  // The routes a group owns = its home + its dashboards + its pages. The home is
+  // included explicitly so landing on /dashboard/<dept> always resolves to its
+  // group even when the dashboard shortcut itself is gated to narrower roles.
+  const deptNavPaths = departments.map((department) => {
     const nav = getDepartmentWorkspaceNav(department.key, roles);
-    if (nav.items.some((item) => pathOf(item.href) === path)) return department.key;
+    const paths = [];
+    if (nav.home) paths.push(pathOf(nav.home));
+    for (const dashboard of nav.dashboards) if (dashboard.href) paths.push(pathOf(dashboard.href));
+    for (const item of nav.items) if (item.href) paths.push(pathOf(item.href));
+    return { key: department.key, paths };
+  });
+
+  for (const { key, paths } of deptNavPaths) {
+    if (paths.includes(path)) return key;
   }
 
   let best = null;
   let bestLen = -1;
-  for (const department of departments) {
-    const nav = getDepartmentWorkspaceNav(department.key, roles);
-    for (const item of nav.items) {
-      const route = pathOf(item.href);
+  for (const { key, paths } of deptNavPaths) {
+    for (const route of paths) {
       if ((path === route || path.startsWith(`${route}/`)) && route.length > bestLen) {
-        best = department.key;
+        best = key;
         bestLen = route.length;
       }
     }
@@ -359,16 +592,17 @@ export function getBreadcrumbTrail(pathname, roles) {
   if (!departmentKey) return [];
   const dept = WORKSPACE_DEPARTMENTS.find((d) => d.key === departmentKey);
   const workspace = getDepartmentWorkspaceNav(departmentKey, roles);
+  const navItems = [...(workspace.dashboards || []), ...workspace.items];
   const trail = [];
   if (dept) trail.push({ label: dept.label, href: dept.home || null });
-  const exactMatch = workspace.items.find((item) => pathOf(item.href) === path);
+  const exactMatch = navItems.find((item) => pathOf(item.href) === path);
   if (exactMatch && exactMatch.href !== dept?.home) {
     trail.push({ label: exactMatch.label, href: exactMatch.href });
     return trail;
   }
   let best = null;
   let bestLen = -1;
-  for (const item of workspace.items) {
+  for (const item of navItems) {
     const route = pathOf(item.href);
     if ((path === route || path.startsWith(`${route}/`)) && route.length > bestLen) {
       best = item;
@@ -412,7 +646,7 @@ export function getSearchItems(roles) {
   for (const section of enabledWorkspaceSectionsInOrder()) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet)) continue;
+      if (!itemVisibleTo(item, roleSet, section.department)) continue;
       if (!seen.has(item.href)) {
         seen.set(item.href, {
           label: item.label,

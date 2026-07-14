@@ -533,7 +533,7 @@ function PageAccessGuard({ pathname }) {
     if (!user) return; // unauthenticated → existing auth guards handle redirect
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
-    if (canAccessPath(pathname, user?.roles)) return;
+    if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) return;
     if (router.pathname === "/newsfeed") return;
     router.replace("/newsfeed");
   }, [pathname, user, loading, router]);

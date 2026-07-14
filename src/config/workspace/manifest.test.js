@@ -19,6 +19,9 @@ import { describe, it, expect } from "vitest";
 import {
   toSidebarSections,
   getAccessibleNavPaths,
+  getAllSidebarItems,
+  getKnownSidebarHrefs,
+  resolveAccessiblePaths,
   getActiveWorkspaceDepartment,
   getContextNav,
   getDepartmentWorkspaceNav,
@@ -26,6 +29,8 @@ import {
   getDepartmentsForRoles,
   getDashboardShortcutsForRoles,
   getWorkspaceRail,
+  getWorkspaceGroups,
+  getWorkspaceGroupRoles,
   getBreadcrumbTrail,
   getQuickActions,
   getSearchItems,
@@ -36,6 +41,10 @@ import {
   isPageTabActive,
   resolveHome,
   isWorkspaceNavEnabled,
+  WORKSPACE_CONTEXT_NAV_SECTIONS,
+  WORKSPACE_DEPARTMENTS,
+  WORKSPACE_NAV_SECTIONS,
+  DEVELOPER_GROUP_LOCK,
 } from "@/config/workspace/manifest";
 import { getAccessibleNavPaths as getPageAccessNavPaths } from "@/lib/auth/pageAccess";
 import { sidebarSections } from "@/config/navigation";
@@ -173,7 +182,7 @@ function buildGoldenSidebarSections() {
         { label: "Job Cards", href: "/jobs", roles: ["workshop manager"] },
         { label: "Clocking", href: "/clocking", roles: ["workshop manager"] },
         { label: "Consumables Tracker", href: "/consumables-tracker", roles: ["workshop manager"] },
-        { label: "Goods In", href: "/goods-in", roles: ["workshop manager"] },
+        // Goods In intentionally removed from the Workshop group (moved to Parts).
       ],
     },
     {
@@ -421,6 +430,56 @@ describe("workspace manifest — permission parity (nav == access)", () => {
   });
 });
 
+describe("workspace manifest — per-user sidebar access override", () => {
+  it("resolveAccessiblePaths with no snapshot === getAccessibleNavPaths (byte-for-byte)", () => {
+    for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+      const base = getAccessibleNavPaths(roles);
+      for (const empty of [null, undefined, {}, { items: null }]) {
+        const resolved = resolveAccessiblePaths(roles, empty);
+        expect([...resolved].sort()).toEqual([...base].sort());
+      }
+    }
+  });
+
+  it("an explicit snapshot is authoritative within the sidebar item universe", () => {
+    const universe = getKnownSidebarHrefs();
+    const snapshot = { items: ["/messages"] };
+    const resolved = resolveAccessiblePaths(["service"], snapshot);
+    // Kept: the one snapshot item that is a known sidebar href.
+    expect(resolved.has("/messages")).toBe(true);
+    // Dropped: a role-default sidebar item omitted from the snapshot.
+    const roleDefaults = getAccessibleNavPaths(["service"]);
+    const droppedInUniverse = [...roleDefaults].find(
+      (href) => universe.has(href) && href !== "/messages"
+    );
+    if (droppedInUniverse) expect(resolved.has(droppedInUniverse)).toBe(false);
+    // Untouched: role-default paths OUTSIDE the sidebar universe stay accessible.
+    for (const href of roleDefaults) {
+      if (!universe.has(href)) expect(resolved.has(href)).toBe(true);
+    }
+  });
+
+  it("unknown hrefs in a snapshot are ignored", () => {
+    const resolved = resolveAccessiblePaths(["service"], {
+      items: ["/messages", "/not-a-real-page"],
+    });
+    expect(resolved.has("/messages")).toBe(true);
+    expect(resolved.has("/not-a-real-page")).toBe(false);
+  });
+
+  it("getAllSidebarItems covers the toggleable universe and excludes the dev group", () => {
+    const groups = getAllSidebarItems();
+    const listed = new Set(groups.flatMap((g) => g.items.map((i) => i.href)));
+    expect([...listed].sort()).toEqual([...getKnownSidebarHrefs()].sort());
+    expect(groups.some((g) => g.department === DEVELOPER_GROUP_LOCK.key)).toBe(false);
+  });
+
+  it("the dev developer-platform route stays landable for dev even under a snapshot", () => {
+    const resolved = resolveAccessiblePaths(["dev"], { items: [] });
+    expect(resolved.has(DEVELOPER_GROUP_LOCK.navItem.href)).toBe(true);
+  });
+});
+
 describe("workspace manifest — dev platform gating stays strict", () => {
   it("/dev is landable ONLY for the dev role", () => {
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
@@ -428,6 +487,51 @@ describe("workspace manifest — dev platform gating stays strict", () => {
       expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
     }
     expect(getAccessibleNavPaths([]).has("/dev")).toBe(false);
+  });
+});
+
+// 🔒 DEVELOPER SIDEBAR LOCK — this suite is the enforcement half of the lock.
+// It fails CI if the Developer group / its sidebar button is ever removed or
+// re-gated. If you changed the developer entry and landed here: revert it.
+describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
+  it("the lock constant declares the permanent invariant", () => {
+    expect(DEVELOPER_GROUP_LOCK.key).toBe("developer");
+    expect(DEVELOPER_GROUP_LOCK.category).toBe("departments");
+    expect(DEVELOPER_GROUP_LOCK.home).toBe("/dev");
+    expect(DEVELOPER_GROUP_LOCK.roles).toEqual(["dev"]);
+    expect(DEVELOPER_GROUP_LOCK.navItem).toEqual({ label: "Developer Platform", href: "/dev", roles: ["dev"] });
+  });
+
+  it("the developer department in the manifest matches the lock (key, category, home, roles)", () => {
+    const dept = WORKSPACE_DEPARTMENTS.find((d) => d.key === "developer");
+    expect(dept).toBeTruthy();
+    expect(dept.category).toBe(DEVELOPER_GROUP_LOCK.category);
+    expect(dept.home).toBe(DEVELOPER_GROUP_LOCK.home);
+    expect(dept.roles).toEqual(DEVELOPER_GROUP_LOCK.roles);
+  });
+
+  it("the Developer nav section still carries the locked /dev button gated to dev", () => {
+    const section = WORKSPACE_NAV_SECTIONS.find((s) => s.department === "developer");
+    expect(section).toBeTruthy();
+    const item = (section.items || []).find((i) => i.href === "/dev");
+    expect(item).toEqual({ label: "Developer Platform", href: "/dev", roles: ["dev"] });
+  });
+
+  it("the dev role ALWAYS sees the Developer group + button, and it stays landable", () => {
+    expect(getWorkspaceGroups(["dev"]).map((g) => g.key)).toContain("developer");
+    const nav = getDepartmentWorkspaceNav("developer", ["dev"]);
+    expect(nav.items.map((i) => i.href)).toContain("/dev");
+    expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
+    // Upper-case role convention (ProtectedRoute / client) must resolve too.
+    expect(getWorkspaceGroups(["DEV"]).map((g) => g.key)).toContain("developer");
+  });
+
+  it("the lock never leaks the Developer group/button to non-dev roles", () => {
+    for (const staff of ["service", "workshop manager", "admin manager", "owner", "parts", "techs", "accounts manager"]) {
+      expect(getWorkspaceGroups([staff]).map((g) => g.key)).not.toContain("developer");
+      expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
+    }
+    expect(getWorkspaceGroups([]).map((g) => g.key)).not.toContain("developer");
   });
 });
 
@@ -547,6 +651,45 @@ describe("workspace manifest — department-first selectors", () => {
     expect(adminRail).toContain("Admin");
   });
 
+  it("getWorkspaceGroups (Group Sidebar Flow) lists General + departments, excludes Account", () => {
+    // The Tier-1 group picker the user first sees: General is a selectable group,
+    // every accessible department follows in manifest order, and the Account
+    // bucket (profile/logout) is NOT a group — it stays as the sidebar's bottom
+    // controls. Roleless users still see the General group.
+    const rolelessGroups = getWorkspaceGroups([]);
+    expect(rolelessGroups.map((g) => g.key)).toContain("general");
+    expect(rolelessGroups.map((g) => g.category)).not.toContain("account");
+
+    const serviceGroups = getWorkspaceGroups(["service"]);
+    const serviceKeys = serviceGroups.map((g) => g.key);
+    // General first, then the department(s) the role can reach; no Account group.
+    expect(serviceKeys[0]).toBe("general");
+    expect(serviceKeys).toContain("service");
+    expect(serviceKeys).not.toContain("parts");
+    expect(serviceKeys).not.toContain("account");
+    // Every group carries a selectable key + label (drives the group buttons).
+    for (const group of serviceGroups) {
+      expect(typeof group.key).toBe("string");
+      expect(typeof group.label).toBe("string");
+    }
+
+    // dev-only Developer group appears only for the dev role.
+    expect(getWorkspaceGroups(["dev"]).map((g) => g.key)).toContain("developer");
+    expect(getWorkspaceGroups(["service"]).map((g) => g.key)).not.toContain("developer");
+  });
+
+  it("each workspace group resolves to a non-empty context nav (full sidebar replacement)", () => {
+    // Selecting a group replaces the whole sidebar with getDepartmentWorkspaceNav
+    // for that group — so every listed group must have at least one landable item,
+    // otherwise the group view would render empty.
+    for (const roles of [["service"], ["parts manager"], ["workshop manager"], ["admin manager"], []]) {
+      for (const group of getWorkspaceGroups(roles)) {
+        const nav = getDepartmentWorkspaceNav(group.key, roles);
+        expect(nav.items.length + nav.dashboards.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("getDepartmentWorkspaceNav includes workspace-only accounts links without changing classic sidebar", () => {
     const accountsNav = getDepartmentWorkspaceNav("accounts", ["accounts manager"]);
     const hrefs = accountsNav.items.map((item) => item.href);
@@ -559,13 +702,36 @@ describe("workspace manifest — department-first selectors", () => {
     )).toBe(false);
   });
 
-  it("getDepartmentWorkspaceNav groups context sections while preserving flat items", () => {
+  it("getDepartmentWorkspaceNav returns a Dashboards section + flat deduped pages (no Overview)", () => {
     const workshopNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
-    expect(workshopNav.groups.map((group) => group.label)).toContain("Workspace");
-    expect(workshopNav.groups.flatMap((group) => group.items).map((item) => item.href)).toEqual(
-      workshopNav.items.map((item) => item.href)
-    );
-    expect(workshopNav.groups.some((group) => group.collapsible)).toBe(true);
+    // Group Sidebar: no grouped/collapsible sub-sections; the only sub-heading is
+    // the Dashboards block, which replaces the old single "Overview" entry.
+    expect(workshopNav.groups).toBeUndefined();
+    expect(workshopNav.items.some((item) => item.label === "Overview")).toBe(false);
+    // The department dashboard(s) live in `dashboards`, not `items`.
+    expect(workshopNav.dashboards.map((d) => d.href)).toContain("/dashboard/workshop");
+    const hrefs = workshopNav.items.map((item) => item.href);
+    expect(new Set(hrefs).size).toBe(hrefs.length); // deduplicated
+    expect(hrefs).not.toContain("/dashboard/workshop"); // dashboard is not a page item
+    expect(hrefs).toContain("/clocking");
+    expect(hrefs).toContain("/jobs");
+  });
+
+  it("dashboards are role-filtered per group (Tech Dashboard only for techs)", () => {
+    const techNav = getDepartmentWorkspaceNav("workshop", ["techs"]);
+    expect(techNav.dashboards.map((d) => d.href)).toContain("/tech/dashboard");
+    const managerNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
+    expect(managerNav.dashboards.map((d) => d.href)).not.toContain("/tech/dashboard");
+    // A group with no dashboards (e.g. Developer) simply has an empty list.
+    expect(getDepartmentWorkspaceNav("developer", ["dev"]).dashboards).toEqual([]);
+  });
+
+  it("landing on a department dashboard still resolves to its group", () => {
+    // The home is resolvable even though the Workshop Dashboard shortcut is gated
+    // to narrower roles — so /dashboard/workshop opens the Workshop group.
+    expect(getActiveWorkspaceDepartment("/dashboard/workshop", ["workshop manager"])).toBe("workshop");
+    expect(getActiveWorkspaceDepartment("/dashboard/parts", ["parts manager"])).toBe("parts");
+    expect(getActiveWorkspaceDepartment("/dashboard/managers", ["admin manager"])).toBe("management");
   });
 
   it("getActiveWorkspaceDepartment resolves shared routes through role-visible workspaces", () => {
@@ -635,6 +801,117 @@ describe("workspace manifest — department-first selectors", () => {
     const shortcuts = getWorkspaceShortcutItems(["parts"]);
     expect(shortcuts.map((item) => item.href)).toContain("/deliveries");
     expect(shortcuts.map((item) => item.href)).toContain("/new-order");
+  });
+});
+
+describe("workspace group permission model", () => {
+  it("getWorkspaceGroupRoles exposes group assignments ('*' for all-access groups)", () => {
+    // General and Account are open to every authenticated user.
+    expect(getWorkspaceGroupRoles("general")).toBe("*");
+    expect(getWorkspaceGroupRoles("account")).toBe("*");
+    // Developer is explicitly assigned to the synthetic dev role only.
+    expect(getWorkspaceGroupRoles("developer")).toEqual(["dev"]);
+    // A real department derives its assigned roles from ROLE_DEPARTMENT_MAP.
+    const workshopRoles = getWorkspaceGroupRoles("workshop");
+    expect(Array.isArray(workshopRoles)).toBe(true);
+    expect(workshopRoles).toContain("workshop manager");
+    expect(workshopRoles).toContain("techs");
+    expect(workshopRoles).not.toContain("parts");
+  });
+
+  it("group assignment grants group-wide pages; explicit page roles still restrict", () => {
+    // General is assigned to every authenticated user, so its group-wide pages
+    // (no per-page roles) are visible even to a roleless user...
+    const generalRoleless = getContextNav("general", []).items.map((i) => i.href);
+    expect(generalRoleless).toContain("/newsfeed");
+    expect(generalRoleless).toContain("/messages");
+    expect(generalRoleless).toContain("/archive");
+    // ...but a page carrying its own roles (Tracker) stays restricted.
+    expect(generalRoleless).not.toContain("/tracking");
+    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking");
+  });
+
+  it("individual page grants work across groups (Sales sees the Admin group's Website Manager)", () => {
+    // Sales is NOT assigned the Admin (management) group...
+    expect(getWorkspaceGroupRoles("management")).not.toContain("sales");
+    // ...but the Website Manager page grants Sales explicitly, so it is visible.
+    const salesAdmin = getContextNav("management", ["sales"]).items.map((i) => i.href);
+    expect(salesAdmin).toContain("/website-manager");
+  });
+});
+
+describe("workspace group inheritance (Phase 8 — default permission model)", () => {
+  it("accounts workspace pages carry NO per-page roles (they inherit the group)", () => {
+    // De-duplication: the Accounts Workspace context pages must rely on group
+    // inheritance, not a duplicated per-page role array. If a future edit
+    // reintroduces `roles` on a group-wide page, this fails and forces a review.
+    const accountsSection = WORKSPACE_CONTEXT_NAV_SECTIONS.find(
+      (section) => section.department === "accounts"
+    );
+    expect(accountsSection).toBeTruthy();
+    for (const item of accountsSection.items) {
+      expect(item.roles).toBeUndefined();
+    }
+  });
+
+  it("un-roled group pages resolve to EXACTLY the group's assigned roles", () => {
+    // The Accounts group is assigned {accounts, accounts manager} (derived from
+    // ROLE_DEPARTMENT_MAP). Inheritance must reproduce precisely that reach —
+    // no wider, no narrower — for every un-roled accounts page.
+    const groupRoles = getWorkspaceGroupRoles("accounts");
+    expect(groupRoles).toEqual(["accounts", "accounts manager"]);
+
+    const workspaceOnlyHrefs = ["/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"];
+    for (const role of groupRoles) {
+      const hrefs = getDepartmentWorkspaceNav("accounts", [role]).items.map((i) => i.href);
+      for (const href of workspaceOnlyHrefs) expect(hrefs).toContain(href);
+    }
+    // Roles outside the group inherit nothing (the pages are group-wide only).
+    for (const role of ["service", "workshop manager", "parts manager", "admin manager", "owner"]) {
+      const hrefs = getDepartmentWorkspaceNav("accounts", [role]).items.map((i) => i.href);
+      for (const href of workspaceOnlyHrefs) expect(hrefs).not.toContain(href);
+    }
+    // ...and a roleless user sees none of them.
+    const rolelessHrefs = getDepartmentWorkspaceNav("accounts", []).items.map((i) => i.href);
+    for (const href of workspaceOnlyHrefs) expect(rolelessHrefs).not.toContain(href);
+  });
+
+  it("landable access to inherited accounts pages equals the pre-de-duplication explicit set", () => {
+    // Parity proof for the de-duplicated pages specifically: the accessible set
+    // computed via inheritance must match the legacy explicit ["accounts",
+    // "accounts manager"] gate, for every configured role.
+    const inheritedHrefs = ["/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"];
+    const legacyRoleSet = new Set(["accounts", "accounts manager"]);
+    for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+      const accessible = getAccessibleNavPaths(roles);
+      const roleSet = new Set(roles.map((r) => String(r).toLowerCase().trim()));
+      const legacyGranted = [...legacyRoleSet].some((r) => roleSet.has(r));
+      for (const href of inheritedHrefs) {
+        expect(accessible.has(href)).toBe(legacyGranted);
+      }
+    }
+  });
+
+  it("intentional overrides keep their own gate regardless of group assignment", () => {
+    // Financial cross-grant: Payslips is granted to admin/admin manager/owner as
+    // well as the accounts group — inheritance must NOT narrow it to the group.
+    const payslipRoles = ["accounts", "accounts manager", "admin", "admin manager", "owner"];
+    for (const role of payslipRoles) {
+      expect(getAccessibleNavPaths([role]).has("/accounts/payslips")).toBe(true);
+    }
+    // Cross-group grant: Sales reaches the Admin group's Website Manager even
+    // though Sales is not assigned the Admin (management) group.
+    expect(getWorkspaceGroupRoles("management")).not.toContain("sales");
+    expect(getAccessibleNavPaths(["sales"]).has("/website-manager")).toBe(true);
+    // Developer boundary: /dev stays dev-only (explicit override on a dev page).
+    expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
+    for (const staff of ["service", "workshop manager", "admin manager", "owner", "accounts manager"]) {
+      expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
+    }
+    // Reports group derives no roles (not in ROLE_DEPARTMENT_MAP), so its pages
+    // are gated purely by their explicit report-role arrays — inheritance grants
+    // nothing there.
+    expect(getWorkspaceGroupRoles("reports")).toEqual([]);
   });
 });
 
