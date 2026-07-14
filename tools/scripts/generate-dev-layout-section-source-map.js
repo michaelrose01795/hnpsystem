@@ -50,6 +50,14 @@ const collectMatches = (filePath) => {
       regex: /sectionKey\s*=\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`|\{`([^`]+)`\}|\{"([^"]+)"\}|\{'([^']+)'\})/g,
     },
     {
+      prop: "headerSectionKey",
+      regex: /headerSectionKey\s*=\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`|\{`([^`]+)`\}|\{"([^"]+)"\}|\{'([^']+)'\})/g,
+    },
+    {
+      prop: "contentSectionKey",
+      regex: /contentSectionKey\s*=\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`|\{`([^`]+)`\}|\{"([^"]+)"\}|\{'([^']+)'\})/g,
+    },
+    {
       prop: "data-dev-section-key",
       regex: /data-dev-section-key\s*=\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`|\{`([^`]+)`\}|\{"([^"]+)"\}|\{'([^']+)'\})/g,
     },

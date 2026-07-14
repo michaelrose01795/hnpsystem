@@ -75,7 +75,7 @@ export default function VhcCustomerDescriptionModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 10000,
+        zIndex: "var(--z-modal)",
         padding: 20,
       }}
     >

@@ -18,6 +18,9 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function ContextSidebar({
   workspace,
+  modules = [],
+  activeModuleKey = null,
+  onModuleToggle,
   pathname,
   pendingHref = null,
   isCollapsed = false,
@@ -108,27 +111,24 @@ export default function ContextSidebar({
         </>
       )}
 
-      {/* Group-name sub-heading (e.g. "Workshop") directly above its page list.
-          A top margin only when it follows the Dashboards block, so the two
-          sub-headings read as separate sections rather than crowding together. */}
-      {items.length > 0 && (
-        <>
-          {isCollapsed ? (
-            renderSectionDivider("divider-workspace-group", {
-              marginTop: dashboards.length > 0 ? "16px" : undefined,
-              marginBottom: "10px",
-            })
-          ) : (
-            <div
-              className="app-sidebar__section-title"
-              style={{ marginTop: dashboards.length > 0 ? "16px" : undefined, marginBottom: "10px" }}
-            >
-              {workspace.label}
-            </div>
-          )}
-          {items.map((item) => renderNavLink(item, "page"))}
-        </>
-      )}
+      {/* Phase 9 accordion: exactly one module is expanded. */}
+      {items.length > 0 && modules.map((module) => {
+        const expanded = activeModuleKey === module.key;
+        return (
+          <div key={module.key} style={{ marginTop: dashboards.length > 0 ? "10px" : undefined }}>
+            <button className={`app-btn app-btn--secondary app-btn--nav${expanded ? " is-active" : ""}`} type="button"
+              onClick={() => onModuleToggle?.(module.key)} aria-expanded={expanded}
+              {...navLinkProps(module.label)}>
+              {renderNavContent(isCollapsed ? module.label : `${expanded ? "⌄" : "›"} ${module.label}`, null, expanded)}
+            </button>
+            {expanded && module.items.map((item) => (
+              <div key={item.href} style={{ marginLeft: isCollapsed ? 0 : "16px" }}>
+                {renderNavLink(item, `module-${module.key}`)}
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </DevLayoutSection>
   );
 }

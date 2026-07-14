@@ -20,7 +20,7 @@ export const popupStyleApi = {
     overflow: "hidden",
     overscrollBehavior: "contain",
     padding: "var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px))",
-    zIndex: 9999,
+    zIndex: "var(--z-modal)",
   },
   card: {
     backgroundColor: "var(--surface)",

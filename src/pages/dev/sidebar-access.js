@@ -24,4 +24,7 @@ export default function DevSidebarAccessPage() {
   );
 }
 
-DevSidebarAccessPage.getLayout = withDevPlatformLayout({ activeKey: "sidebar-access" });
+DevSidebarAccessPage.getLayout = withDevPlatformLayout({
+  activeKey: "sidebar-access",
+  hideTabs: true,
+});

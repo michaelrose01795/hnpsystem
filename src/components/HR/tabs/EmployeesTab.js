@@ -1076,7 +1076,7 @@ function SearchableListDropdown({
             border: "none",
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
-            zIndex: 1000,
+            zIndex: "var(--z-dropdown)",
           }}
         >
           {filteredItems.length > 0 ? (
@@ -1258,7 +1258,7 @@ function SearchableMultiSelect({
             background: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
-            zIndex: 1000,
+            zIndex: "var(--z-dropdown)",
           }}
         >
           <div style={{ maxHeight: "210px", overflowY: "auto" }}>

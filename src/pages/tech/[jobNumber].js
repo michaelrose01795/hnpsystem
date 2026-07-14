@@ -4909,7 +4909,7 @@ function DocumentsTab({
         <div
           onClick={() => setPreviewDoc(null)}
           style={{
-            position: "fixed", inset: 0, zIndex: 1400,
+            position: "fixed", inset: 0, zIndex: "var(--z-modal)",
             backgroundColor: "var(--overlay)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "24px"

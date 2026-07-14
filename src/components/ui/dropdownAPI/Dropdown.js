@@ -320,7 +320,7 @@ export default function Dropdown({
         top,
         left,
         width,
-        zIndex: 99999,
+        zIndex: "var(--z-dropdown)",
       });
     };
 

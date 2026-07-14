@@ -123,7 +123,7 @@ export default function LoginPageUi(props) {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1400,
+    zIndex: "var(--z-modal)",
     padding: "16px"
   }}>
           <div style={{

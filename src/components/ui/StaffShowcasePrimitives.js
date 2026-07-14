@@ -51,6 +51,7 @@ export function StaffModal({
   description,
   children,
   footer,
+  headerActions,
   onClose,
   ariaLabel,
   size = "md",
@@ -71,10 +72,15 @@ export function StaffModal({
               {title && <h2 className="app-modal__title">{title}</h2>}
               {description && <p className="app-modal__description">{description}</p>}
             </div>
-            {onClose && (
-              <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-                Close
-              </Button>
+            {(onClose || headerActions) && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+                {onClose && (
+                  <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+                    Close
+                  </Button>
+                )}
+                {headerActions}
+              </div>
             )}
           </header>
           <div className="app-modal__body">{children}</div>

@@ -315,7 +315,7 @@ export default function DocumentsUploadPopup({
   return (
     <ModalPortal>
       <div
-        style={{ ...popupOverlayStyles, zIndex: 1300 }}
+        style={popupOverlayStyles}
         onClick={handleClose}
       >
         <div

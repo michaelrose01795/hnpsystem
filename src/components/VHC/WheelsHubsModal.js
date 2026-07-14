@@ -54,7 +54,7 @@ export default function WheelsHubsModal({
     <div
       style={{
         ...popupOverlayStyles,
-        zIndex: 1300,
+        zIndex: "var(--z-modal)",
         padding: "24px",
       }}
       onClick={onClose}

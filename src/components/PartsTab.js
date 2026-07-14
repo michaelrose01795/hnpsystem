@@ -2561,7 +2561,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 10000,
+              zIndex: "var(--z-modal)",
             }}
             onClick={() => setPartPopup({ open: false, part: null })}
           >

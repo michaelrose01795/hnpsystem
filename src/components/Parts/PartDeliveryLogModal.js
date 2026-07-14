@@ -154,7 +154,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          zIndex: 9999,
+          zIndex: "var(--z-modal)",
           padding: "20px",
         }}
         onClick={onClose}

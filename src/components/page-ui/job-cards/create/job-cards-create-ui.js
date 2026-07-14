@@ -1239,7 +1239,7 @@ export default function CreateJobCardPageUi(props) {
         {/* Question Prompts popup — rendered once per page, opens for the
             request row whose index is stored in questionPromptsIndex. */}
         <QuestionPromptsPopup open={questionPromptsIndex !== null} onClose={() => setQuestionPromptsIndex(null)} requestText={questionPromptsIndex !== null ? String(requests?.[questionPromptsIndex]?.text || "") : ""} requestIndex={questionPromptsIndex} />
-        {moreRequestIndex !== null && moreRequest && <div style={{ ...popupOverlayStyles, zIndex: 1250 }} onClick={event => {
+        {moreRequestIndex !== null && moreRequest && <div style={popupOverlayStyles} onClick={event => {
       if (event.target === event.currentTarget) setMoreRequestIndex(null);
     }}>
             <div style={{

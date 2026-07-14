@@ -16,6 +16,7 @@ import {
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
   WORKSPACE_NAV_SECTIONS,
+  WORKSPACE_MODULES,
   WORKSPACE_PAGE_TABS,
   WORKSPACE_QUICK_ACTIONS,
 } from "./departments";
@@ -30,6 +31,7 @@ export {
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
   WORKSPACE_NAV_SECTIONS,
+  WORKSPACE_MODULES,
   WORKSPACE_PAGE_TABS,
   WORKSPACE_QUICK_ACTIONS,
 };
@@ -255,12 +257,10 @@ const ACCOUNT_ESSENTIAL_HREFS = (() => {
   return set;
 })();
 
-// The full set of hrefs the per-user editor can toggle — every classic sidebar
-// item (WORKSPACE_NAV_SECTIONS) EXCEPT the synthetic Developer group. This is the
-// exact universe getAllSidebarItems() exposes, so the snapshot and the editor
-// never drift. The developer route is out of scope here — it is guaranteed for
-// the dev role by DEVELOPER_GROUP_LOCK and gated by its own ProtectedRoute.
-export function getKnownSidebarHrefs() {
+// Original { items } snapshots only governed the classic sidebar. Keep this
+// universe separate so legacy rows do not unexpectedly lose dashboards or
+// workspace-only pages when they are read by the version-2 implementation.
+export function getLegacySidebarHrefs() {
   const set = new Set();
   for (const section of enabledSectionsInOrder()) {
     if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
@@ -271,31 +271,51 @@ export function getKnownSidebarHrefs() {
   return set;
 }
 
+// The full set of hrefs the per-user editor can toggle — every classic sidebar
+// item (WORKSPACE_NAV_SECTIONS) EXCEPT the synthetic Developer group. This is the
+// exact universe getAllSidebarItems() exposes, so the snapshot and the editor
+// never drift. The developer route is out of scope here — it is guaranteed for
+// the dev role by DEVELOPER_GROUP_LOCK and gated by its own ProtectedRoute.
+export function getKnownSidebarHrefs() {
+  return new Set(
+    getAllSidebarItems().flatMap((group) =>
+      group.items.map((item) => item.href).filter(Boolean)
+    )
+  );
+}
+
 // getAllSidebarItems() — grouped, de-duplicated list of every toggleable sidebar
 // item, for the HR per-employee editor. Grouped by department (section), first
 // occurrence of an href wins its group/label. The synthetic Developer group is
 // excluded (its `dev` role is never assignable to a real employee).
 export function getAllSidebarItems() {
-  const seen = new Set();
   const groups = [];
-  const byDepartment = new Map();
-  for (const section of enabledSectionsInOrder()) {
-    if (section.department === DEVELOPER_GROUP_LOCK.key) continue;
-    for (const item of section.items || []) {
-      if (!item.href || seen.has(item.href)) continue;
-      seen.add(item.href);
-      let group = byDepartment.get(section.department);
-      if (!group) {
-        group = {
-          department: section.department,
-          label: section.label,
-          category: section.category,
-          items: [],
-        };
-        byDepartment.set(section.department, group);
-        groups.push(group);
+  for (const department of WORKSPACE_DEPARTMENTS.slice().sort((a, b) => a.order - b.order)) {
+    if (department.key === DEVELOPER_GROUP_LOCK.key) continue;
+    const seen = new Set();
+    const items = [];
+
+    for (const dashboard of WORKSPACE_DASHBOARD_SHORTCUTS) {
+      if (dashboard.department !== department.key || !dashboard.href || seen.has(dashboard.href)) continue;
+      seen.add(dashboard.href);
+      items.push({ label: dashboard.label, href: dashboard.href, kind: "dashboard" });
+    }
+
+    for (const section of workspaceSectionsForDepartment(department.key)) {
+      for (const item of section.items || []) {
+        if (!item.href || seen.has(item.href)) continue;
+        seen.add(item.href);
+        items.push({ label: item.label, href: item.href, kind: "page" });
       }
-      group.items.push({ label: item.label, href: item.href });
+    }
+
+    if (items.length > 0) {
+      groups.push({
+        department: department.key,
+        label: department.label,
+        category: department.category,
+        items,
+      });
     }
   }
   return groups;
@@ -310,7 +330,9 @@ export function resolveAccessiblePaths(roles, sidebarAccess) {
   if (!sidebarAccess || !Array.isArray(sidebarAccess.items)) {
     return roleBased;
   }
-  const editorUniverse = getKnownSidebarHrefs();
+  const editorUniverse = Array.isArray(sidebarAccess.groups)
+    ? getKnownSidebarHrefs()
+    : getLegacySidebarHrefs();
   const snapshot = new Set(sidebarAccess.items);
   const accessible = new Set();
   // Paths OUTSIDE the editor universe keep their role-derived access (quick
@@ -329,6 +351,20 @@ export function resolveAccessiblePaths(roles, sidebarAccess) {
     accessible.add(DEVELOPER_GROUP_LOCK.navItem.href);
   }
   return accessible;
+}
+
+function applyStoredItemOrder(items, departmentKey, sidebarAccess) {
+  const stored = sidebarAccess?.itemOrder?.[departmentKey];
+  if (!Array.isArray(stored) || stored.length === 0) return items;
+  const positions = new Map(stored.map((href, index) => [href, index]));
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aPosition = positions.has(a.item.href) ? positions.get(a.item.href) : Number.MAX_SAFE_INTEGER;
+      const bPosition = positions.has(b.item.href) ? positions.get(b.item.href) : Number.MAX_SAFE_INTEGER;
+      return aPosition - bPosition || a.index - b.index;
+    })
+    .map(({ item }) => item);
 }
 
 // ---------------------------------------------------------------------------
@@ -395,9 +431,13 @@ export function getContextNav(departmentKey, roles) {
 // visibility follows the group permission model (itemVisibleTo): group-wide
 // pages are granted by the group assignment, individually-roled pages and
 // dashboards keep their own restriction.
-export function getDepartmentWorkspaceNav(departmentKey, roles) {
+export function getDepartmentWorkspaceNav(departmentKey, roles, sidebarAccess = null) {
   const department = WORKSPACE_DEPARTMENTS.find((dept) => dept.key === departmentKey) || null;
   const roleSet = normalizeRoleSet(roles);
+  const hasManagedSnapshot = Boolean(
+    sidebarAccess && Array.isArray(sidebarAccess.items) && Array.isArray(sidebarAccess.groups)
+  );
+  const snapshotItems = hasManagedSnapshot ? new Set(sidebarAccess.items) : null;
 
   // Dashboards sub-section — the role-visible dashboards this group owns.
   const dashboards = [];
@@ -405,7 +445,7 @@ export function getDepartmentWorkspaceNav(departmentKey, roles) {
   for (const shortcut of WORKSPACE_DASHBOARD_SHORTCUTS) {
     if (shortcut.department !== departmentKey) continue;
     if (!shortcut.href || dashboardSeen.has(shortcut.href)) continue;
-    if (!itemVisibleTo(shortcut, roleSet)) continue;
+    if (hasManagedSnapshot ? !snapshotItems.has(shortcut.href) : !itemVisibleTo(shortcut, roleSet)) continue;
     dashboardSeen.add(shortcut.href);
     dashboards.push({ label: shortcut.label, href: shortcut.href });
   }
@@ -415,7 +455,7 @@ export function getDepartmentWorkspaceNav(departmentKey, roles) {
   for (const section of workspaceSectionsForDepartment(departmentKey)) {
     for (const item of section.items || []) {
       if (!item.href) continue;
-      if (!itemVisibleTo(item, roleSet, section.department)) continue;
+      if (hasManagedSnapshot ? !snapshotItems.has(item.href) : !itemVisibleTo(item, roleSet, section.department)) continue;
       if (seen.has(item.href)) continue;
       seen.add(item.href);
       items.push({ label: item.label, href: item.href });
@@ -441,10 +481,34 @@ export function getDepartmentWorkspaceNav(departmentKey, roles) {
     home: department?.home || null,
     icon: department?.icon || null,
     category: department?.category || null,
-    dashboards,
+    dashboards: applyStoredItemOrder(dashboards, departmentKey, sidebarAccess),
     itemCount: items.length,
-    items,
+    items: applyStoredItemOrder(items, departmentKey, sidebarAccess),
   };
+}
+
+// Phase 9: Modules are an organisational projection of a group's already
+// authorised Pages. They never add permissions and unmatched legacy pages stay
+// visible in a final "Pages" module during migration.
+export function getWorkspaceModules(departmentKey, roles, sidebarAccess = null) {
+  const nav = getDepartmentWorkspaceNav(departmentKey, roles, sidebarAccess);
+  const remaining = new Map((nav.items || []).map((item) => [item.href, item]));
+  const modules = (WORKSPACE_MODULES[departmentKey] || []).map((navigationModule) => {
+    const items = (navigationModule.hrefs || []).map((href) => remaining.get(href)).filter(Boolean);
+    items.forEach((item) => remaining.delete(item.href));
+    return { key: navigationModule.key, label: navigationModule.label, items };
+  }).filter((navigationModule) => navigationModule.items.length > 0);
+  if (remaining.size > 0) modules.push({ key: "pages", label: "Pages", items: Array.from(remaining.values()) });
+  return modules;
+}
+
+export function getActiveWorkspaceModule(departmentKey, pathname, roles, sidebarAccess = null, pendingHref = null) {
+  const target = pathOf(pendingHref) || pathOf(pathname);
+  if (!target) return null;
+  for (const navigationModule of getWorkspaceModules(departmentKey, roles, sidebarAccess)) {
+    if (navigationModule.items.some((item) => isContextNavItemActive(item, target))) return navigationModule.key;
+  }
+  return null;
 }
 
 export function getWorkspaceRail(roles) {
@@ -465,15 +529,25 @@ export function getWorkspaceRail(roles) {
 // The Account bucket (Profile / Logout) is intentionally excluded — it is NOT a
 // navigable group; the sidebar renders it as its persistent bottom controls
 // (clock in/out, logout, profile) regardless of which group is open.
-export function getWorkspaceGroups(roles) {
-  const groups = getWorkspaceRail(roles).filter(
+export function getWorkspaceGroups(roles, sidebarAccess = null) {
+  const hasManagedSnapshot = Boolean(sidebarAccess && Array.isArray(sidebarAccess.groups));
+  const selectedGroups = hasManagedSnapshot ? new Set(sidebarAccess.groups) : null;
+  const roleSet = normalizeRoleSet(roles);
+  const groups = (hasManagedSnapshot ? WORKSPACE_DEPARTMENTS : getWorkspaceRail(roles)).filter(
     (group) => group.category === "general" || group.category === "departments"
-  );
+  ).filter((group) => group.key !== DEVELOPER_GROUP_LOCK.key || roleSet.has("dev"))
+    .filter((group) => !selectedGroups || selectedGroups.has(group.key))
+    .map((group) => ({
+      key: group.key,
+      label: group.label,
+      category: group.category,
+      icon: group.icon,
+      home: group.home || null,
+    }));
   // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. The dev role must ALWAYS get the
   // Developer group button. If a manifest edit ever drops the developer
   // department, re-inject it from DEVELOPER_GROUP_LOCK so the dev sidebar can
   // never lose its entry. Strictly dev-only, preserving the /dev gating.
-  const roleSet = normalizeRoleSet(roles);
   if (roleSet.has("dev") && !groups.some((group) => group.key === DEVELOPER_GROUP_LOCK.key)) {
     groups.push({
       key: DEVELOPER_GROUP_LOCK.key,
@@ -530,16 +604,21 @@ export function getActiveDepartment(pathname) {
 // resolveHome(roles) — the landing route for a user: the home of their
 // highest-priority accessible department (by order), falling back to /newsfeed.
 // Skips the pseudo-departments (general/account) which have no real home.
-export function getActiveWorkspaceDepartment(pathname, roles) {
+export function getActiveWorkspaceDepartment(pathname, roles, sidebarAccess = null) {
   const path = pathOf(pathname);
   if (!path) return null;
-  const departments = getDepartmentsForRoles(roles).filter((dept) => dept.category === "departments");
+  const allowedGroupKeys = new Set(
+    getWorkspaceGroups(roles, sidebarAccess).map((group) => group.key)
+  );
+  const departments = WORKSPACE_DEPARTMENTS.filter(
+    (dept) => dept.category === "departments" && allowedGroupKeys.has(dept.key)
+  );
 
   // The routes a group owns = its home + its dashboards + its pages. The home is
   // included explicitly so landing on /dashboard/<dept> always resolves to its
   // group even when the dashboard shortcut itself is gated to narrower roles.
   const deptNavPaths = departments.map((department) => {
-    const nav = getDepartmentWorkspaceNav(department.key, roles);
+    const nav = getDepartmentWorkspaceNav(department.key, roles, sidebarAccess);
     const paths = [];
     if (nav.home) paths.push(pathOf(nav.home));
     for (const dashboard of nav.dashboards) if (dashboard.href) paths.push(pathOf(dashboard.href));

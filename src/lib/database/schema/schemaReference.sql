@@ -40,6 +40,7 @@ CREATE TABLE public.users (
   extension text,
   sidebar_access jsonb,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
+  CONSTRAINT users_sidebar_access_is_object CHECK ((sidebar_access IS NULL) OR (jsonb_typeof(sidebar_access) = 'object'::text)),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.vehicles (

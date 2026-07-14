@@ -37,6 +37,8 @@ import {
   getPageTabs,
   getWorkspaceHeader,
   getWorkspaceShortcutItems,
+  getWorkspaceModules,
+  getActiveWorkspaceModule,
   isContextNavItemActive,
   isPageTabActive,
   resolveHome,
@@ -401,6 +403,37 @@ describe("workspace manifest — byte-identical sidebar reproduction", () => {
   });
 });
 
+describe("workspace manifest — Phase 9 modules", () => {
+  it("keeps every role's visible group Pages represented by exactly one visible module", () => {
+    for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
+      for (const group of getWorkspaceGroups(roles)) {
+        const nav = getDepartmentWorkspaceNav(group.key, roles);
+        const moduleHrefs = getWorkspaceModules(group.key, roles)
+          .flatMap((navigationModule) => navigationModule.items.map((item) => item.href));
+        expect(new Set(moduleHrefs)).toEqual(new Set(nav.items.map((item) => item.href)));
+        expect(new Set(moduleHrefs).size).toBe(moduleHrefs.length);
+      }
+    }
+  });
+
+  it("projects authorised group pages into visible modules without changing access", () => {
+    const modules = getWorkspaceModules("parts", ["parts"]);
+    expect(modules.map((module) => module.key)).toEqual(["stock", "fulfilment"]);
+    expect(modules.flatMap((module) => module.items.map((item) => item.href))).toContain("/deliveries");
+    expect(getAccessibleNavPaths(["parts"]).has("/deliveries")).toBe(true);
+  });
+
+  it("resolves the active module from current and pending routes", () => {
+    expect(getActiveWorkspaceModule("parts", "/deliveries/123", ["parts"])).toBe("fulfilment");
+    expect(getActiveWorkspaceModule("parts", "/stock-catalogue", ["parts"], null, "/deliveries")).toBe("fulfilment");
+  });
+
+  it("keeps unmatched legacy pages visible in a migration-safe Pages module", () => {
+    const modules = getWorkspaceModules("developer", ["dev"]);
+    expect(modules.flatMap((module) => module.items.map((item) => item.href))).toContain("/dev");
+  });
+});
+
 describe("workspace manifest — permission parity (nav == access)", () => {
   const golden = buildGoldenSidebarSections();
   for (const roles of ALL_EXISTING_ROLE_COMBINATIONS) {
@@ -443,7 +476,7 @@ describe("workspace manifest — per-user sidebar access override", () => {
 
   it("an explicit snapshot is authoritative within the sidebar item universe", () => {
     const universe = getKnownSidebarHrefs();
-    const snapshot = { items: ["/messages"] };
+    const snapshot = { items: ["/messages"], groups: ["general"] };
     const resolved = resolveAccessiblePaths(["service"], snapshot);
     // Kept: the one snapshot item that is a known sidebar href.
     expect(resolved.has("/messages")).toBe(true);
@@ -465,6 +498,11 @@ describe("workspace manifest — per-user sidebar access override", () => {
     });
     expect(resolved.has("/messages")).toBe(true);
     expect(resolved.has("/not-a-real-page")).toBe(false);
+  });
+
+  it("legacy item-only snapshots keep newer workspace routes role-derived", () => {
+    const nav = getDepartmentWorkspaceNav("service", ["service"], { items: ["/messages"] });
+    expect(nav.dashboards.map((item) => item.href)).toContain("/dashboard/service");
   });
 
   it("getAllSidebarItems covers the toggleable universe and excludes the dev group", () => {

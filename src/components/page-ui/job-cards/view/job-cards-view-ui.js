@@ -246,7 +246,7 @@ export default function ViewJobCardsUi(props) {
           {popupJob && <>
               <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" style={{
             ...popupOverlayStyles,
-            zIndex: 1200
+            zIndex: "var(--z-modal)"
           }} onClick={() => setPopupJob(null)}>
               <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" onClick={e => e.stopPropagation()} style={{
               ...popupCardStyles,

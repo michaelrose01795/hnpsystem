@@ -847,10 +847,7 @@ const formatEmergencyContact = (value) => {
 
 // Get complete employee directory with profile details
 export async function getEmployeeDirectory() {
-  const usersResult = await supabase
-    .from("users")
-    .select(
-      `
+  const employeeColumns = `
         user_id,
         first_name,
         last_name,
@@ -877,10 +874,28 @@ export async function getEmployeeDirectory() {
         home_address,
         sidebar_access,
         created_at
-      `
-    )
+      `;
+  let usersResult = await supabase
+    .from("users")
+    .select(employeeColumns)
     .eq("is_active", true)
     .order("created_at", { ascending: true });
+
+  if (
+    usersResult.error?.message &&
+    /users\.sidebar_access|sidebar_access/i.test(usersResult.error.message) &&
+    /does not exist/i.test(usersResult.error.message)
+  ) {
+    usersResult = await supabase
+      .from("users")
+      .select(employeeColumns.replace(/\s*,?\s*sidebar_access\s*,?/, ","))
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+    usersResult.data = (usersResult.data || []).map((user) => ({
+      ...user,
+      sidebar_access: null,
+    }));
+  }
 
   const { data, error } = usersResult;
 
@@ -889,11 +904,14 @@ export async function getEmployeeDirectory() {
     throw error;
   }
 
+  const staffData = (data || []).filter(
+    (user) => !String(user.role || "").toLowerCase().includes("customer")
+  );
   const lineManagerNameMap = new Map(
-    (data || []).map((user) => [user.user_id, getDisplayName(user)])
+    staffData.map((user) => [user.user_id, getDisplayName(user)])
   );
 
-  return (data || []).map((user) => {
+  return staffData.map((user) => {
     const userId = user.user_id;
     const status = user.employment_status || "Active";
     const name = getDisplayName(user);

@@ -1660,7 +1660,7 @@ export default function NotesTabNew({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 220,
+              zIndex: "var(--z-modal)",
               padding: "20px",
             }}
           >

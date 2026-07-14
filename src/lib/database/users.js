@@ -233,6 +233,22 @@ export const getUserById = async (userId, { includeInactive = false } = {}) => {
   return data ? mapUserRow(data) : null;
 };
 
+export const getUserSidebarAccessById = async (userId) => {
+  if (typeof userId !== "number") {
+    throw new Error("getUserSidebarAccessById requires a numeric userId.");
+  }
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .select("sidebar_access")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (isMissingSidebarAccessColumnError(error)) return null;
+  if (error) {
+    throw new Error(`Failed to fetch sidebar access for user ${userId}: ${error.message}`);
+  }
+  return data?.sidebar_access ?? null;
+};
+
 export const createUser = async (payload, { source } = {}) => {
   assertUserWriteAllowed(source);
   ensureUserPayload(payload);

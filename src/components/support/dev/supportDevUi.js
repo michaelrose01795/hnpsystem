@@ -9,6 +9,7 @@
 // These are deliberately generic so future support surfaces can reuse them.
 
 import React, { useCallback, useState } from "react";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { useAlerts } from "@/context/AlertContext";
@@ -59,27 +60,62 @@ export function BadgeRow({ badges = [], style }) {
 // Section panel — a titled theme-layer surface. Use as the section container;
 // nest <SubSurface> for an inner surface (keeps LayerTheme→LayerSurface alt.).
 // ---------------------------------------------------------------------------
-export function Panel({ title, subtitle, actions, children, sectionKey, style, contentStyle }) {
+export function Panel({
+  title,
+  subtitle,
+  actions,
+  children,
+  sectionKey,
+  parentKey,
+  headerSectionKey,
+  contentSectionKey,
+  style,
+  contentStyle,
+}) {
   void subtitle;
   return (
-    <LayerTheme sectionKey={sectionKey} style={{ gap: "var(--space-md)", ...style }}>
+    <LayerTheme sectionKey={sectionKey} parentKey={parentKey} style={{ gap: "var(--space-md)", ...style }}>
       {(title || actions) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+        <DevLayoutSection
+          sectionKey={headerSectionKey}
+          parentKey={sectionKey}
+          sectionType="section-shell"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}
+        >
           <div>
             {title && (
               <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>{title}</div>
             )}
           </div>
           {actions ? <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>{actions}</div> : null}
-        </div>
+        </DevLayoutSection>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)", ...contentStyle }}>{children}</div>
+      <DevLayoutSection
+        sectionKey={contentSectionKey}
+        parentKey={sectionKey}
+        sectionType="section-shell"
+        style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)", ...contentStyle }}
+      >
+        {children}
+      </DevLayoutSection>
     </LayerTheme>
   );
 }
 
-export function SubSurface({ children, style }) {
-  return <LayerSurface style={{ gap: "var(--space-sm)", ...style }}>{children}</LayerSurface>;
+export function SubSurface({ children, sectionKey, parentKey, sectionType, style, as, onClick, ...props }) {
+  return (
+    <LayerSurface
+      as={as}
+      onClick={onClick}
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType={sectionType}
+      style={{ gap: "var(--space-sm)", ...style }}
+      {...props}
+    >
+      {children}
+    </LayerSurface>
+  );
 }
 
 // ---------------------------------------------------------------------------

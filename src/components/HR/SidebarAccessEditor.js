@@ -13,17 +13,29 @@
 // The item universe is the manifest's classic sidebar items (getAllSidebarItems).
 // Account items (Profile) are always-on invariants and render locked.
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
 import LayerSurface from "@/components/ui/LayerSurface";
+import SidebarGroupAccessModal from "@/components/sidebar-access/SidebarGroupAccessModal";
 import {
   getAccessibleNavPaths,
   getAllSidebarItems,
   getKnownSidebarHrefs,
+  getWorkspaceGroupRoles,
+  resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
+import {
+  applySidebarGroupChange,
+  applySidebarGroupUserSelection,
+  isSidebarGroupEnabled,
+  materializeSidebarAccess,
+} from "@/lib/sidebarAccess";
 
 export default function SidebarAccessEditor({ role, value, onChange }) {
   const groups = useMemo(() => getAllSidebarItems(), []);
+  const [managedGroupKey, setManagedGroupKey] = useState(null);
+  const [draftUserAccess, setDraftUserAccess] = useState({});
+  const [draftOrder, setDraftOrder] = useState([]);
 
   // The hrefs this role would get by default (intersected with the toggleable
   // universe) — the seed shown when there is no explicit override.
@@ -36,8 +48,10 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
   const hasOverride = Boolean(value && Array.isArray(value.items));
   // The currently-effective set of enabled hrefs.
   const checked = useMemo(
-    () => (hasOverride ? new Set(value.items) : roleDefaults),
-    [hasOverride, value, roleDefaults]
+    () => (hasOverride
+      ? new Set([...resolveAccessiblePaths(role ? [role] : [], value)].filter((href) => getKnownSidebarHrefs().has(href)))
+      : roleDefaults),
+    [hasOverride, role, value, roleDefaults]
   );
 
   const totalToggleable = useMemo(
@@ -62,19 +76,51 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
   );
 
   const toggle = (href) => {
-    const next = new Set(checked);
+    const snapshot = materializeSidebarAccess(role, value);
+    const next = new Set(snapshot.items);
     if (next.has(href)) next.delete(href);
     else next.add(href);
-    onChange({ items: [...next] });
+    onChange({ ...snapshot, items: [...next] });
   };
 
   const setGroup = (group, enabled) => {
-    const next = new Set(checked);
-    group.items.forEach((item) => {
-      if (enabled) next.add(item.href);
-      else next.delete(item.href);
-    });
-    onChange({ items: [...next] });
+    onChange(applySidebarGroupChange({
+      role,
+      currentValue: value,
+      groupKey: group.department,
+      enabled,
+      itemOrder: group.items.map((item) => item.href),
+    }));
+  };
+
+  const managedGroup = groups.find((group) => group.department === managedGroupKey) || null;
+  const openGroupManager = (group) => {
+    const snapshot = materializeSidebarAccess(role, value);
+    setManagedGroupKey(group.department);
+    const groupHrefs = new Set(group.items.map((item) => item.href));
+    setDraftUserAccess(
+      isSidebarGroupEnabled(role, value, group.department)
+        ? { employee: value
+          ? snapshot.items.filter((href) => groupHrefs.has(href))
+          : group.items.map((item) => item.href) }
+        : {}
+    );
+    setDraftOrder(
+      snapshot.itemOrder?.[group.department] || group.items.map((item) => item.href)
+    );
+  };
+
+  const saveManagedGroup = () => {
+    if (!managedGroup) return;
+    onChange(applySidebarGroupUserSelection({
+      role,
+      currentValue: value,
+      groupKey: managedGroup.department,
+      enabled: Boolean(draftUserAccess.employee),
+      selectedItemHrefs: draftUserAccess.employee || [],
+      itemOrder: draftOrder,
+    }));
+    setManagedGroupKey(null);
   };
 
   const resetToRoleDefaults = () => onChange(null);
@@ -132,6 +178,13 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
               <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{group.label}</span>
               {!isAccount && (
                 <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => openGroupManager(group)}
+                    style={linkButtonStyle}
+                  >
+                    Manage
+                  </button>
                   <button
                     type="button"
                     onClick={() => setGroup(group, true)}
@@ -196,6 +249,27 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
           </LayerSurface>
         );
       })}
+
+      <SidebarGroupAccessModal
+        open={Boolean(managedGroup)}
+        group={managedGroup}
+        users={[{
+          id: "employee",
+          name: "This employee",
+          role,
+          accessSource: hasOverride ? "Custom access" : "Role default",
+        }]}
+        userItemAccess={draftUserAccess}
+        onUserItemAccessChange={setDraftUserAccess}
+        itemOrder={draftOrder}
+        onItemOrderChange={setDraftOrder}
+        onClose={() => setManagedGroupKey(null)}
+        onSave={saveManagedGroup}
+        rolesLabel={(() => {
+          const roles = managedGroup ? getWorkspaceGroupRoles(managedGroup.department) : [];
+          return roles === "*" ? "All authenticated users" : roles.join(", ") || "Page-role gated only";
+        })()}
+      />
     </LayerTheme>
   );
 }

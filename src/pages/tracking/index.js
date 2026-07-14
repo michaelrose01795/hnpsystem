@@ -779,7 +779,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       aria-modal="true"
       style={{
         ...popupOverlayStyles,
-        zIndex: 200
+        zIndex: "var(--z-modal)"
       }}>
 
       <div

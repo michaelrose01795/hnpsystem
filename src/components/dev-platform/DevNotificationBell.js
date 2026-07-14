@@ -90,7 +90,7 @@ export default function DevNotificationBell() {
             position: "absolute",
             top: "calc(100% + 6px)",
             right: 0,
-            zIndex: 900,
+            zIndex: "var(--z-dropdown)",
             width: "min(360px, 92vw)",
             maxHeight: "70vh",
             gap: "var(--space-sm)",

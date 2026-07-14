@@ -551,7 +551,7 @@ export default function ClockingHistorySection({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 1300,
+            zIndex: "var(--z-modal)",
             padding: "16px",
           }}
         >

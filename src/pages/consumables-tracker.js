@@ -82,7 +82,7 @@ const orderHistoryRowBorder = "none";
 
 const orderModalOverlayStyle = {
   ...popupOverlayStyles,
-  zIndex: 1200,
+  zIndex: "var(--z-modal)",
   padding: "16px"
 };
 
@@ -262,7 +262,7 @@ function toneToStyles(tone) {
 
 const duplicateOverlayStyle = {
   ...popupOverlayStyles,
-  zIndex: 1300,
+  zIndex: "var(--z-modal)",
   padding: "16px"
 };
 

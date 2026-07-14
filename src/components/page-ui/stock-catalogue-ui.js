@@ -540,7 +540,7 @@ export default function StockCataloguePageUi(props) {
               borderRadius: "var(--radius-xs)",
               maxHeight: "300px",
               overflowY: "auto",
-              zIndex: 1000,
+              zIndex: "var(--z-dropdown)",
               boxShadow: "var(--shadow-md)"
             }}>
                     <div onClick={() => {

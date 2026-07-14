@@ -854,7 +854,7 @@ function UsagePopup({ itemKey, title, onClose }) {
     <div
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 2500,
+        position: "fixed", inset: 0, zIndex: "var(--z-modal)",
         background: "rgba(0,0,0,0.55)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "24px"
@@ -3279,7 +3279,7 @@ function GlobalUiShowcase() {
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700, textTransform: "uppercase" }}>popupStyleApi.backdrop</div>
             <div style={{ height: "44px", background: "var(--overlay)", borderRadius: "var(--radius-xs)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-2)", fontSize: "11px" }}>
-              fixed inset 0 · z-index 9999 · padding --space-6
+              fixed inset 0 · z-index --z-modal · padding --space-6
             </div>
           </div>
           <div>
@@ -3291,7 +3291,7 @@ function GlobalUiShowcase() {
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700, textTransform: "uppercase" }}>appTheme.popupOverlayStyles</div>
             <div style={{ height: "32px", background: "var(--overlay)", borderRadius: "var(--radius-xs)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-2)", fontSize: "11px" }}>
-              clamp(10px, 2.5vw, 20px) padding · z-index 9999
+              clamp(10px, 2.5vw, 20px) padding · z-index --z-modal
             </div>
           </div>
           <div>
@@ -3469,7 +3469,7 @@ function GlobalUiShowcase() {
             </div>
           )}
           <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic" }}>
-            Proposal: top-right stack · 320px max-width · 4s auto-dismiss · z-index var(--z-toast) = 2000.
+            Proposal: top-right stack · 320px max-width · 4s auto-dismiss · z-index var(--z-toast).
           </div>
         </div>
       </ShowcaseSection>

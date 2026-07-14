@@ -794,4 +794,20 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   },
 ]);
 
+// Phase 9: presentation-only grouping for the Workspace Group Sidebar. Pages
+// continue to be declared once in the nav/context sections above; hrefs here
+// assign their primary Module and never grant access by themselves.
+export const WORKSPACE_MODULES = Object.freeze({
+  general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking", "/archive"] }],
+  management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager", "/admin/users"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }, { key: "operations", label: "Operations", hrefs: ["/nextjobs", "/jobs"] }],
+  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }, { key: "shared-operations", label: "Shared Operations", hrefs: ["/goods-in"] }],
+  workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
+  mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
+  parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/new-order"] }],
+  valeting: [{ key: "work-queue", label: "Work Queue", hrefs: ["/valet"] }],
+  accounts: [{ key: "accounts", label: "Accounts", hrefs: ["/accounts", "/company-accounts"] }, { key: "billing", label: "Billing", hrefs: ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"] }],
+  reports: [{ key: "operational", label: "Operational Reports", hrefs: ["/reports/workshop", "/reports/service", "/reports/parts", "/reports/mot", "/reports/paint", "/reports/valeting"] }, { key: "business", label: "Business Reports", hrefs: ["/reports/accounts", "/reports/admin", "/reports/overview"] }],
+  developer: [{ key: "home", label: "Home", hrefs: ["/dev"] }],
+});
+
 export default WORKSPACE_NAV_SECTIONS;

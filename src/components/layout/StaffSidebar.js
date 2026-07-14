@@ -16,6 +16,8 @@ import { sidebarSections } from "@/config/navigation";
 import {
   getActiveWorkspaceDepartment,
   getDepartmentWorkspaceNav,
+  getWorkspaceModules,
+  getActiveWorkspaceModule,
   getKnownSidebarHrefs,
   getWorkspaceGroups,
   isContextNavItemActive,
@@ -228,13 +230,13 @@ export default function Sidebar({
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
   const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
   const ghostControlStyle = {
-    background: "var(--theme)",
+    backgroundColor: "var(--theme)",
     backgroundImage: "none",
     color: "var(--accentText)",
     border: "none",
   };
   const successGhostControlStyle = {
-    background: "var(--theme-hover)",
+    backgroundColor: "var(--theme-hover)",
     backgroundImage: "none",
     color: "var(--success-text)",
     border: "none",
@@ -280,6 +282,8 @@ export default function Sidebar({
     [snapshotAllowed, editorUniverse]
   );
   const [selectedGroupKey, setSelectedGroupKey] = useState(null);
+  const [selectedModuleKey, setSelectedModuleKey] = useState(null);
+  const [groupsViewSelectedKey, setGroupsViewSelectedKey] = useState(null);
   const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const getNavHref = useCallback((href) => {
@@ -366,25 +370,25 @@ export default function Sidebar({
   // There is no always-visible General section; General is itself a group.
   const workspaceGroups = useMemo(() => {
     if (!workspaceNavEnabled) return [];
-    const groups = getWorkspaceGroups(userRoles);
+    const groups = getWorkspaceGroups(userRoles, user?.sidebarAccess);
     if (!snapshotAllowed) return groups;
     // Drop a group whose every nav item was removed by the snapshot (its
     // dashboards, which are outside the snapshot's scope, keep it visible).
     return groups.filter((group) => {
-      const nav = getDepartmentWorkspaceNav(group.key, userRoles);
+      const nav = getDepartmentWorkspaceNav(group.key, userRoles, user?.sidebarAccess);
       return (
         (nav.items || []).some((item) => isHrefAllowed(item.href)) ||
         (nav.dashboards || []).length > 0
       );
     });
-  }, [userRoles, workspaceNavEnabled, snapshotAllowed, isHrefAllowed]);
+  }, [userRoles, user?.sidebarAccess, workspaceNavEnabled, snapshotAllowed, isHrefAllowed]);
   const workspaceGroupKeys = useMemo(
     () => new Set(workspaceGroups.map((group) => group.key)),
     [workspaceGroups]
   );
   const routeWorkspaceKey = useMemo(
-    () => (workspaceNavEnabled ? getActiveWorkspaceDepartment(pathname, userRoles) : null),
-    [pathname, userRoles, workspaceNavEnabled]
+    () => (workspaceNavEnabled ? getActiveWorkspaceDepartment(pathname, userRoles, user?.sidebarAccess) : null),
+    [pathname, userRoles, user?.sidebarAccess, workspaceNavEnabled]
   );
   // Which group is open. An explicit selection wins; the GROUPS_VIEW sentinel
   // forces the flat list even on a route that would otherwise resolve a group;
@@ -399,11 +403,18 @@ export default function Sidebar({
       : routeWorkspaceKey;
   const activeWorkspace = useMemo(() => {
     if (!activeGroupKey) return null;
-    const nav = getDepartmentWorkspaceNav(activeGroupKey, userRoles);
+    const nav = getDepartmentWorkspaceNav(activeGroupKey, userRoles, user?.sidebarAccess);
     if (!snapshotAllowed) return nav;
     const items = (nav.items || []).filter((item) => isHrefAllowed(item.href));
     return { ...nav, items, itemCount: items.length };
-  }, [activeGroupKey, userRoles, snapshotAllowed, isHrefAllowed]);
+  }, [activeGroupKey, userRoles, user?.sidebarAccess, snapshotAllowed, isHrefAllowed]);
+  const activeModuleKey = useMemo(() => {
+    if (!activeGroupKey) return null;
+    return getActiveWorkspaceModule(activeGroupKey, pathname, userRoles, user?.sidebarAccess, pendingHref) || selectedModuleKey;
+  }, [activeGroupKey, pathname, pendingHref, userRoles, user?.sidebarAccess, selectedModuleKey]);
+  const activeModules = useMemo(() => activeGroupKey
+    ? getWorkspaceModules(activeGroupKey, userRoles, user?.sidebarAccess)
+    : [], [activeGroupKey, userRoles, user?.sidebarAccess]);
 
   useEffect(() => {
     if (!selectedGroupKey) return;
@@ -412,6 +423,13 @@ export default function Sidebar({
       setSelectedGroupKey(null);
     }
   }, [selectedGroupKey, workspaceGroupKeys]);
+
+  useEffect(() => {
+    if (!groupsViewSelectedKey) return;
+    if (!workspaceGroupKeys.has(groupsViewSelectedKey)) {
+      setGroupsViewSelectedKey(null);
+    }
+  }, [groupsViewSelectedKey, workspaceGroupKeys]);
 
   useEffect(() => {
     if (previousWorkspacePathRef.current === pathname) return;
@@ -426,7 +444,7 @@ export default function Sidebar({
       selectedGroupKey !== WORKSPACE_GROUPS_VIEW &&
       workspaceGroupKeys.has(selectedGroupKey)
     ) {
-      const nav = getDepartmentWorkspaceNav(selectedGroupKey, userRoles);
+      const nav = getDepartmentWorkspaceNav(selectedGroupKey, userRoles, user?.sidebarAccess);
       const navItems = [
         ...(nav.home ? [{ href: nav.home }] : []),
         ...(nav.dashboards || []),
@@ -438,7 +456,7 @@ export default function Sidebar({
       if (stillInGroup) return;
     }
     setSelectedGroupKey(null);
-  }, [pathname, selectedGroupKey, workspaceGroupKeys, userRoles]);
+  }, [pathname, selectedGroupKey, workspaceGroupKeys, userRoles, user?.sidebarAccess]);
 
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
@@ -826,6 +844,9 @@ export default function Sidebar({
             // GROUP view — the whole sidebar becomes the selected group's nav.
             <ContextSidebar
               workspace={activeWorkspace}
+              modules={activeModules}
+              activeModuleKey={activeModuleKey}
+              onModuleToggle={(key) => setSelectedModuleKey((current) => current === key ? null : key)}
               pathname={pathname}
               pendingHref={pendingHref}
               isCollapsed={isCollapsed}
@@ -834,7 +855,11 @@ export default function Sidebar({
                 recordWorkspaceRecentHref(href);
                 handleNavigationPress();
               }}
-              onBack={() => setSelectedGroupKey(WORKSPACE_GROUPS_VIEW)}
+              onBack={() => {
+                setSelectedModuleKey(null);
+                setGroupsViewSelectedKey(activeGroupKey || routeWorkspaceKey || null);
+                setSelectedGroupKey(WORKSPACE_GROUPS_VIEW);
+              }}
               navLinkProps={navLinkProps}
               renderNavContent={renderNavContent}
               renderSectionDivider={renderSectionDivider}
@@ -850,13 +875,19 @@ export default function Sidebar({
                 </div>
               )}
               {workspaceGroups.map((group) => {
-                const isActive = routeWorkspaceKey === group.key;
+                const selectedKey = groupsViewSelectedKey || routeWorkspaceKey;
+                const isActive = selectedKey === group.key;
                 return (
                   <button
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                     key={group.key}
                     type="button"
-                    onClick={() => setSelectedGroupKey(group.key)}
+                    onClick={() => {
+                      setGroupsViewSelectedKey(group.key);
+                      setSelectedModuleKey(null);
+                      setSelectedGroupKey(group.key);
+                    }}
+                    aria-pressed={isActive}
                     {...navLinkProps(group.label)}
                   >
                     {renderNavContent(group.label, null, isActive)}

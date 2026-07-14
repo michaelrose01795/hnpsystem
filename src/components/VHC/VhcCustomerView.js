@@ -522,7 +522,7 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 1000,
+        zIndex: "var(--z-modal)",
         background: "color-mix(in srgb, var(--surface) 78%, transparent)",
         display: "flex",
         alignItems: "center",

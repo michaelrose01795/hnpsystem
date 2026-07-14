@@ -6,21 +6,8 @@
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
-
-async function getSidebarAccess(userId) {
-  const { data, error } = await supabase
-    .from("users")
-    .select("sidebar_access")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) {
-    console.error("❌ getSidebarAccess error", error);
-    throw error;
-  }
-  return data?.sidebar_access ?? null;
-}
+import { getUserSidebarAccessById } from "@/lib/database/users";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -53,7 +40,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, sidebarAccess: null });
     }
 
-    const sidebarAccess = await getSidebarAccess(userId);
+    const sidebarAccess = await getUserSidebarAccessById(userId);
     return res.status(200).json({ success: true, sidebarAccess });
   } catch (error) {
     console.error("❌ /api/profile/sidebar-access error", error);

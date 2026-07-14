@@ -644,7 +644,9 @@ const isSidebarSection = (section) => {
   const backgroundToken = String(section?.backgroundToken || "");
 
   return (
-    key.includes("sidebar") ||
+    key.startsWith("app-sidebar-") ||
+    key === "app-layout-sidebar-rail" ||
+    key === "workspace-context-sidebar" ||
     classData.includes("app-sidebar") ||
     backgroundToken.includes("sidebar")
   );

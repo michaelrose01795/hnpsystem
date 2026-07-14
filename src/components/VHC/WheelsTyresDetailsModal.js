@@ -304,7 +304,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) 
         overflowY: "auto",
         backgroundColor: "var(--surface)",
         borderRadius: "var(--radius-sm)",
-        zIndex: 99999,
+        zIndex: "var(--z-dropdown)",
         boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
       }}
     >
@@ -1300,7 +1300,7 @@ export default function WheelsTyresDetailsModal({
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 9000,
+            zIndex: "var(--z-modal)",
             padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
           }}
         >

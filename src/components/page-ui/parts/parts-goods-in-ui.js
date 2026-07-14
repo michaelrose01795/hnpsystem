@@ -417,7 +417,7 @@ export default function GoodsInPageUi(props) {
               maxHeight: "200px",
               overflowY: "auto",
               borderRadius: "var(--radius-sm)",
-              zIndex: 1000
+              zIndex: "var(--z-dropdown)"
             }} onMouseDown={event => event.preventDefault()}>
                     {filteredBinLocations.length === 0 ? <div style={{
                 padding: "10px 12px",

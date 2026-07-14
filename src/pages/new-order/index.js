@@ -62,7 +62,7 @@ const partLookupOverlayStyle = {
   alignItems: "center",
   justifyContent: "center",
   padding: "16px",
-  zIndex: 90
+  zIndex: "var(--z-modal)"
 };
 
 const partLookupContentStyle = {

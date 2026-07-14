@@ -19,10 +19,10 @@ import DevPlatformTabs from "@/components/dev-platform/DevPlatformTabs";
 
 // Inner shell: the top tab group + the active page content. No page frame of its
 // own — the staff <Layout> already provides the sidebar, topbar and page card.
-export default function DevPlatformLayout({ children, activeKey }) {
+export default function DevPlatformLayout({ children, activeKey, hideTabs = false }) {
   return (
     <div className="app-dev-platform" style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
-      <DevPlatformTabs activeKey={activeKey} />
+      {hideTabs ? null : <DevPlatformTabs activeKey={activeKey} />}
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)" }}>
         {children}
       </div>
@@ -34,11 +34,11 @@ export default function DevPlatformLayout({ children, activeKey }) {
 // default staff getLayout), so React keeps the sidebar/topbar mounted across all
 // navigations; only `activeKey` + children change inside.
 export function withDevPlatformLayout(options = {}) {
-  const { activeKey } = options;
+  const { activeKey, hideTabs = false } = options;
   return function getLayout(page) {
     return (
       <Layout>
-        <DevPlatformLayout activeKey={activeKey}>{page}</DevPlatformLayout>
+        <DevPlatformLayout activeKey={activeKey} hideTabs={hideTabs}>{page}</DevPlatformLayout>
       </Layout>
     );
   };

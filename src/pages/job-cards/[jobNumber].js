@@ -12128,7 +12128,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       {/* Techs / Staff Off popup — portal-rendered so it centers on the viewport, not the tab */}
       {showTechsPopup && typeof document !== "undefined" && createPortal(
         <div
-          style={{ ...popupOverlayStyles, zIndex: 1300 }}
+          style={popupOverlayStyles}
           onClick={() => setShowTechsPopup(false)}>
 
           <div
@@ -12653,7 +12653,7 @@ function DocumentsTab({
         <div
           onClick={() => setPreviewDoc(null)}
           style={{
-            position: "fixed", inset: 0, zIndex: 1400,
+            position: "fixed", inset: 0, zIndex: "var(--z-modal)",
             backgroundColor: "var(--overlay)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "24px"

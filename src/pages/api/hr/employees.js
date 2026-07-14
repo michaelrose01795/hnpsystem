@@ -6,7 +6,7 @@ import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildEmployeeMeta, normalizeLineManagerIds, parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
-import { getKnownSidebarHrefs } from "@/config/workspace/manifest";
+import { normalizeSidebarAccess } from "@/lib/sidebarAccess";
 
 const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
 
@@ -80,26 +80,6 @@ const calculateBasicSalary = ({ contractedHours, hourlyRate }) => {
 //   undefined  → field absent; leave the column untouched
 //   null       → clear the override (user follows role-derived navigation)
 //   { items }  → explicit snapshot, filtered to known sidebar hrefs only
-const normalizeSidebarAccess = (raw) => {
-  if (raw === undefined) return undefined;
-  if (raw === null) return null;
-  let value = raw;
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (!trimmed || trimmed === "null") return null;
-    try {
-      value = JSON.parse(trimmed);
-    } catch {
-      return undefined; // unparseable → don't touch the column
-    }
-  }
-  if (value === null) return null;
-  if (!value || !Array.isArray(value.items)) return undefined;
-  const known = getKnownSidebarHrefs();
-  const items = [...new Set(value.items.filter((href) => known.has(href)))];
-  return { items };
-};
-
 const toIsoDate = (value) => {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;

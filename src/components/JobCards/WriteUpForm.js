@@ -2944,7 +2944,7 @@ function WriteUpForm({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 1200,
+              zIndex: "var(--z-modal)",
             }}
             onClick={closeDocumentsPopup}
           >

@@ -558,7 +558,7 @@ export default function ServiceIndicatorDetailsModal({
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 9000,
+            zIndex: "var(--z-modal)",
             padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
           }}
         >

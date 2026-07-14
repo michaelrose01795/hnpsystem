@@ -109,7 +109,7 @@ export function CommandPaletteProvider({ children }) {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1000,
+            zIndex: "var(--z-modal)",
             background: "color-mix(in srgb, #000 55%, transparent)",
             display: "flex",
             alignItems: "flex-start",

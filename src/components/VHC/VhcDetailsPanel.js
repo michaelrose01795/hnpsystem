@@ -10723,7 +10723,7 @@ export default function VhcDetailsPanel({
         height="720px"
         overlayStyle={{
           background: "rgba(0, 0, 0, 0.6)",
-          zIndex: 9999,
+          zIndex: "var(--z-modal)",
           padding: "20px",
         }}
         onClose={closeAddPartsModal}

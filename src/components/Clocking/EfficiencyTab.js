@@ -1929,7 +1929,7 @@ export default function EfficiencyTab({
               alignItems: "center",
               justifyContent: "center",
               padding: "20px",
-              zIndex: 9999,
+              zIndex: "var(--z-modal)",
             }}
             onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
             role="dialog"

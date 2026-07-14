@@ -209,7 +209,20 @@ Full `npm run lint` may still surface unrelated repo-wide lint debt. Report unre
 
 ---
 
-## 8. Absolute Don'ts
+## 8. Phase 9 — Group → Modules → Pages (shipped)
+
+The Group view now shows manifest-derived collapsed Modules. A user opens one Module to reveal its indented Pages while all sibling Modules remain collapsed; the current or pending route automatically opens its owning Module. This is a presentation reorganisation only; a Module is never an independent permission boundary. The complete source of truth is [`workspace-navigation-modules.md`](./workspace-navigation-modules.md).
+
+Implementation sequence:
+
+1. Freeze the module inventory and resolve its flagged empty-group, HR, Accounts and cross-grant decisions before editing selectors.
+2. Add edge-safe module metadata below each manifest Group, leaving `WORKSPACE_NAV_SECTIONS` untouched for the classic fallback.
+3. Add pure selectors for visible Modules, flattened visible Pages, active Module and primary Group/Module route ownership. Search, favourites, recents, breadcrumbs, route access and sidebar snapshots must consume those selectors.
+4. Update `ContextSidebar` behind the existing workspace flag or a nested Phase 9 flag. Dashboards remain separate; route activation opens the owning Module; retain the existing mobile drawer, collapsed rail and `pendingHref` active-state behaviour.
+5. Prove parity for `pageAccess`, `resolveAccessiblePaths`, direct details, role home and the flag-off classic fallback. Detail, redirect and tab-only routes must remain non-sidebar routes.
+6. Add role-by-route, module, shared-route, snapshot, mobile, collapsed-rail and breadcrumb tests, then run the validation contract in §6.
+
+## 9. Absolute Don'ts
 
 - Do not create navigation lists outside `src/config/workspace/`.
 - Do not infer departments from URL prefixes.

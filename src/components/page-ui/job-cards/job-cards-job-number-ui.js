@@ -981,7 +981,7 @@ export default function JobCardDetailPageUi(props) {
       {/* ✅ Link Job Popup */}
       {isLinkPopupOpen && <div style={{
       ...popupOverlayStyles,
-      zIndex: 1200
+      zIndex: "var(--z-modal)"
     }} onClick={() => {
       setIsLinkPopupOpen(false);
       setLinkJobInput("");

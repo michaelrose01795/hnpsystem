@@ -18,7 +18,17 @@ const baseSelectColumns = [
   "role",
   "phone",
   "created_at",
+  "sidebar_access",
 ];
+const baseSelectColumnsWithoutSidebarAccess = baseSelectColumns.filter(
+  (column) => column !== "sidebar_access"
+);
+const isMissingSidebarAccessColumnError = (error) =>
+  Boolean(
+    error?.message &&
+    /users\.sidebar_access|sidebar_access/i.test(error.message) &&
+    /does not exist/i.test(error.message)
+  );
 
 const mapRow = (row) => ({
   id: row.user_id,
@@ -28,16 +38,60 @@ const mapRow = (row) => ({
   role: row.role,
   phone: row.phone,
   createdAt: row.created_at,
+  sidebarAccess: row.sidebar_access ?? null,
 });
+const isStaffUser = (user) =>
+  Boolean(user?.role && !String(user.role).toLowerCase().includes("customer"));
+
+export async function updateAdminUserSidebarAccess(userId, sidebarAccess) {
+  const numericUserId = Number(userId);
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
+    throw new Error("A valid user id is required to update sidebar access.");
+  }
+  const { data, error } = await adminClient
+    .from(USERS_TABLE)
+    .update({ sidebar_access: sidebarAccess })
+    .eq("user_id", numericUserId)
+    .select(baseSelectColumns.join(","))
+    .maybeSingle();
+  if (error) {
+    if (isMissingSidebarAccessColumnError(error)) {
+      throw new Error(
+        "The users.sidebar_access database migration has not been applied. Run the pending Supabase migration before saving access changes."
+      );
+    }
+    throw error;
+  }
+  return data ? mapRow(data) : null;
+}
+
+export async function isSidebarAccessPersistenceReady() {
+  const { error } = await adminClient
+    .from(USERS_TABLE)
+    .select("sidebar_access")
+    .limit(1);
+  if (isMissingSidebarAccessColumnError(error)) return false;
+  if (error) throw error;
+  return true;
+}
 
 export async function listAdminUsers() {
-  const { data, error } = await adminClient
+  let { data, error } = await adminClient
     .from(USERS_TABLE)
     .select(baseSelectColumns.join(","))
     .order("created_at", { ascending: false });
 
+  if (isMissingSidebarAccessColumnError(error)) {
+    const fallback = await adminClient
+      .from(USERS_TABLE)
+      .select(baseSelectColumnsWithoutSidebarAccess.join(","))
+      .order("created_at", { ascending: false });
+    data = (fallback.data || []).map((row) => ({ ...row, sidebar_access: null }));
+    error = fallback.error;
+  }
+
   if (error) throw error;
-  return (data || []).map(mapRow);
+  return (data || []).map(mapRow).filter(isStaffUser);
 }
 
 export async function createAdminUser(payload) {

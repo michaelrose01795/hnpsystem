@@ -5569,7 +5569,9 @@ html.staff-scope .popup-backdrop {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  /* Canonical popup layer. !important prevents legacy inline z-index values
+     from placing a dialog behind the topbar or fixed layout chrome. */
+  z-index: var(--z-modal) !important;
   overflow: hidden;
   overscroll-behavior: contain;
   padding: var(--popup-viewport-gap);

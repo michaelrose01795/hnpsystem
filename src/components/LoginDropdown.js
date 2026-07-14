@@ -8,14 +8,33 @@ const ROLE_ALIASES = {
 const DEFAULT_DEV_LOGIN_CATEGORY = "retail";
 const DEFAULT_DEV_LOGIN_DEPARTMENT = "workshop";
 const DEFAULT_DEV_LOGIN_USER = "michael";
+const OTHER_CATEGORY_VALUE = "__other__";
 const PRESENTATION_CATEGORY_VALUE = "__presentation__";
 const ROLE_TREE_DEMO_VALUE = "__role-tree-demo__";
 const ROLE_TREE_DEMO_HREF = "/vision/role-tree-demo";
-// Phase 8 — synthetic "Developer" area. Selecting it short-circuits the normal
-// department/user tree and mints the strict `dev` role via NextAuth (see
-// login.js → handleDevPlatformSelect). It is NOT a roleCategories entry, so it
-// can never appear in the HR role-assignment surfaces.
+// Phase 8 — synthetic "Developer" department under the synthetic "Other" area.
+// Selecting it short-circuits the normal user tree and mints the strict `dev`
+// role via NextAuth (see login.js → handleDevPlatformSelect). It is NOT a
+// roleCategories entry, so it can never appear in HR role-assignment surfaces.
 const DEV_PLATFORM_CATEGORY_VALUE = "__dev-platform__";
+
+const OTHER_DEPARTMENT_OPTIONS = [
+  {
+    key: PRESENTATION_CATEGORY_VALUE,
+    value: PRESENTATION_CATEGORY_VALUE,
+    label: "Presentation",
+  },
+  {
+    key: ROLE_TREE_DEMO_VALUE,
+    value: ROLE_TREE_DEMO_VALUE,
+    label: "Role Tree Demo",
+  },
+  {
+    key: DEV_PLATFORM_CATEGORY_VALUE,
+    value: DEV_PLATFORM_CATEGORY_VALUE,
+    label: "Developer",
+  },
+];
 
 const normalizeValue = (value) =>
   String(value || "")
@@ -276,19 +295,9 @@ export default function LoginDropdown({
         label: category,
       })),
       {
-        key: PRESENTATION_CATEGORY_VALUE,
-        value: PRESENTATION_CATEGORY_VALUE,
-        label: "Presentation",
-      },
-      {
-        key: ROLE_TREE_DEMO_VALUE,
-        value: ROLE_TREE_DEMO_VALUE,
-        label: "Role Tree Demo",
-      },
-      {
-        key: DEV_PLATFORM_CATEGORY_VALUE,
-        value: DEV_PLATFORM_CATEGORY_VALUE,
-        label: "Developer",
+        key: OTHER_CATEGORY_VALUE,
+        value: OTHER_CATEGORY_VALUE,
+        label: "Other",
       },
     ],
     [roleCategories]
@@ -296,6 +305,7 @@ export default function LoginDropdown({
 
   const departmentOptions = useMemo(() => {
     if (!selectedCategory) return [];
+    if (selectedCategory === OTHER_CATEGORY_VALUE) return OTHER_DEPARTMENT_OPTIONS;
     return departmentGroups.map((department) => ({
       key: department.key,
       value: department.label,
@@ -345,20 +355,6 @@ export default function LoginDropdown({
         onChange={(raw) => {
           const nextCategory =
             (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
-          if (nextCategory === PRESENTATION_CATEGORY_VALUE) {
-            onPresentationSelect?.();
-            return;
-          }
-          if (nextCategory === ROLE_TREE_DEMO_VALUE) {
-            if (typeof window !== "undefined") {
-              window.location.href = ROLE_TREE_DEMO_HREF;
-            }
-            return;
-          }
-          if (nextCategory === DEV_PLATFORM_CATEGORY_VALUE) {
-            onDevPlatformSelect?.();
-            return;
-          }
           setSelectedCategory(nextCategory);
           setSelectedDepartment("");
           setSelectedUser(null);
@@ -377,6 +373,22 @@ export default function LoginDropdown({
           onChange={(raw) => {
             const nextDepartment =
               (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+            if (selectedCategory === OTHER_CATEGORY_VALUE) {
+              if (nextDepartment === PRESENTATION_CATEGORY_VALUE) {
+                onPresentationSelect?.();
+                return;
+              }
+              if (nextDepartment === ROLE_TREE_DEMO_VALUE) {
+                if (typeof window !== "undefined") {
+                  window.location.href = ROLE_TREE_DEMO_HREF;
+                }
+                return;
+              }
+              if (nextDepartment === DEV_PLATFORM_CATEGORY_VALUE) {
+                onDevPlatformSelect?.();
+                return;
+              }
+            }
             const nextGroup = departmentGroups.find(
               (group) => group.key === normalizeValue(nextDepartment)
             );
@@ -401,26 +413,28 @@ export default function LoginDropdown({
         />
       )}
 
-      <Dropdown
-        label="Select User"
-        placeholder="Choose a user"
-        options={userDropdownOptions}
-        value={selectedUserId}
-        disabled={!selectedDepartment}
-        onChange={(raw, option) => {
-          const candidateId = String(option?.value ?? option?.key ?? "");
-          const nextUser =
-            userOptions.find(
-              (user) =>
-                String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
-                candidateId
-            ) ||
-            (raw && typeof raw === "object" ? raw : null);
-          setSelectedUser(nextUser);
-        }}
-        className="login-dropdown__control"
-        usePortal={false}
-      />
+      {selectedCategory !== OTHER_CATEGORY_VALUE && (
+        <Dropdown
+          label="Select User"
+          placeholder="Choose a user"
+          options={userDropdownOptions}
+          value={selectedUserId}
+          disabled={!selectedDepartment}
+          onChange={(raw, option) => {
+            const candidateId = String(option?.value ?? option?.key ?? "");
+            const nextUser =
+              userOptions.find(
+                (user) =>
+                  String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
+                  candidateId
+              ) ||
+              (raw && typeof raw === "object" ? raw : null);
+            setSelectedUser(nextUser);
+          }}
+          className="login-dropdown__control"
+          usePortal={false}
+        />
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@
 // admin/owner roles, which a dev session does not carry. Read-only (GET).
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
-import { listAdminUsers } from "@/lib/database/adminUsers";
+import { isSidebarAccessPersistenceReady, listAdminUsers } from "@/lib/database/adminUsers";
 
 async function handler(req, res) {
   if (req.method !== "GET") {
@@ -17,7 +17,8 @@ async function handler(req, res) {
 
   try {
     const users = await listAdminUsers();
-    res.status(200).json({ success: true, data: users });
+    const persistenceReady = await isSidebarAccessPersistenceReady();
+    res.status(200).json({ success: true, data: users, persistenceReady });
   } catch (error) {
     console.error("/api/dev/users error", error);
     res.status(500).json({ success: false, message: error.message || "Unexpected error" });

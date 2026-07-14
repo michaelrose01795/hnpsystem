@@ -908,7 +908,7 @@ export default function MessagesPageUi(props) {
               backgroundColor: "var(--surface)",
               borderRadius: radii.lg,
               boxShadow: shadows.lg,
-              zIndex: 1000
+              zIndex: "var(--z-dropdown)"
             }}>
                       {commandSuggestions.map((cmd, index) => <div key={index} role="button" tabIndex={0} onClick={() => handleSelectCommand(cmd)} onKeyDown={event => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -1036,7 +1036,7 @@ export default function MessagesPageUi(props) {
       alignItems: "center",
       justifyContent: "center",
       padding: "20px",
-      zIndex: 1200
+      zIndex: "var(--z-modal)"
     }}>
             <div style={{
         width: "min(520px, 100%)",
@@ -1104,7 +1104,7 @@ export default function MessagesPageUi(props) {
       alignItems: "center",
       justifyContent: "center",
       padding: "20px",
-      zIndex: 1100
+      zIndex: "var(--z-modal)"
     }}>
             <div style={{
         width: "min(560px, 100%)",
@@ -1434,7 +1434,7 @@ export default function MessagesPageUi(props) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 9999
+      zIndex: "var(--z-modal)"
     }}>
             <div onClick={e => e.stopPropagation()} style={{
         ...cardStyle,
@@ -1594,7 +1594,7 @@ export default function MessagesPageUi(props) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 9999
+      zIndex: "var(--z-modal)"
     }}>
             <div onClick={e => e.stopPropagation()} style={{
         ...cardStyle,

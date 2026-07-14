@@ -132,7 +132,7 @@ export default function DeliverySchedulerModal({
     <div
       role="dialog"
       aria-modal="true"
-      style={{ ...popupOverlayStyles, zIndex: 200 }}
+      style={popupOverlayStyles}
     >
       <div style={cardStyle}>
         <div
