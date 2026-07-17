@@ -4,6 +4,7 @@ import {
   applySidebarGroupChange,
   applySidebarGroupUserSelection,
   applySidebarModuleLayout,
+  applySidebarPagePlacements,
   createSidebarAccessFromRole,
   getRoleDefaultSidebarAccess,
   isSidebarGroupEnabled,
@@ -13,6 +14,7 @@ import {
 import {
   getDepartmentWorkspaceNav,
   getRoleWorkspaceModules,
+  getSidebarModuleCatalog,
   getWorkspaceGroups,
   resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
@@ -24,13 +26,14 @@ describe("sidebar access snapshots", () => {
     expect(isSidebarGroupEnabled("Service", null, "management")).toBe(false);
   });
 
-  it("builds complete v4 role defaults with modules", () => {
+  it("builds complete role defaults with modules and placement metadata", () => {
     const defaults = getRoleDefaultSidebarAccess("service");
     expect(defaults.version).toBe(SIDEBAR_ACCESS_VERSION);
     expect(defaults.groups).toContain("general");
     expect(defaults.groups).toContain("service");
     expect(defaults.items).toContain("/jobs");
     expect(defaults.modules.map((module) => module.key)).toContain("customer-jobs");
+    expect(defaults.pagePlacements).toEqual({});
   });
 
   it("copies a role default into a user override", () => {
@@ -89,12 +92,18 @@ describe("sidebar access snapshots", () => {
       itemOrder: { general: ["/messages", "/unknown"] },
       modules: [
         { key: "custom", label: "Custom", items: ["/messages", "/unknown"] },
+        { key: "duplicate", label: "Duplicate", items: ["/messages", "/jobs"] },
       ],
+      pagePlacements: { "/messages": "Communication", "/unknown": "custom" },
     });
     expect(snapshot.items).toEqual(["/messages"]);
     expect(snapshot.groups).toEqual(["general"]);
     expect(snapshot.itemOrder.general).toEqual(["/messages"]);
-    expect(snapshot.modules).toEqual([{ key: "custom", label: "Custom", items: ["/messages"] }]);
+    expect(snapshot.modules).toEqual([
+      { key: "custom", label: "Custom", items: ["/messages"] },
+      { key: "duplicate", label: "Duplicate", items: ["/jobs"] },
+    ]);
+    expect(snapshot.pagePlacements).toEqual({ "/messages": "communication" });
   });
 
   it("upgrades legacy snapshots with derived module metadata", () => {
@@ -123,5 +132,51 @@ describe("sidebar access snapshots", () => {
     expect(snapshot.modules).toEqual([{ key: "custom", label: "Custom", items: ["/messages", "/jobs"] }]);
     expect(getRoleWorkspaceModules(["service"], snapshot).map((module) => module.key)).toEqual(["custom"]);
     expect(resolveAccessiblePaths(["service"], snapshot).has("/messages")).toBe(true);
+  });
+
+  it("adds the standard Parts bundle to a Workshop Manager and keeps page guards independent", () => {
+    const role = "workshop manager";
+    const defaults = getRoleDefaultSidebarAccess(role).modules;
+    const used = new Set(defaults.flatMap((module) => module.items));
+    const parts = getSidebarModuleCatalog().find((module) => module.key === "department-parts");
+    const snapshot = applySidebarModuleLayout({
+      role,
+      currentValue: null,
+      sourceRole: role,
+      modules: [
+        ...defaults,
+        {
+          key: parts.key,
+          label: parts.label,
+          items: parts.items.map((item) => item.href).filter((href) => !used.has(href)),
+        },
+      ],
+    });
+    const assignedParts = getRoleWorkspaceModules([role], snapshot).find(
+      (module) => module.key === "department-parts"
+    );
+    expect(assignedParts.label).toBe("Parts");
+    expect(assignedParts.items.map((item) => item.href)).toContain("/dashboard/parts");
+    expect(resolveAccessiblePaths([role], snapshot).has("/dashboard/parts")).toBe(false);
+  });
+
+  it("saves page placements without discarding existing override metadata", () => {
+    const current = applySidebarModuleLayout({
+      role: "service",
+      currentValue: null,
+      sourceRole: "service",
+      modules: [
+        { key: "customer-jobs", label: "Customer & Job Intake", items: ["/appointments"] },
+        { key: "service-control", label: "Service Control", items: ["/messages"] },
+      ],
+    });
+    const updated = applySidebarPagePlacements({
+      role: "service",
+      currentValue: current,
+      pagePlacements: { "/appointments": "service-control" },
+    });
+    expect(updated.modules).toEqual(current.modules);
+    expect(updated.pagePlacements).toEqual({ "/appointments": "service-control" });
+    expect(updated.sourceRole).toBe(current.sourceRole);
   });
 });

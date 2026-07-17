@@ -39,6 +39,9 @@ import {
   getWorkspaceShortcutItems,
   getWorkspaceModules,
   getActiveWorkspaceModule,
+  getRoleWorkspaceModules,
+  getManualGrantPlacementDetails,
+  getSidebarModuleCatalog,
   isContextNavItemActive,
   isPageTabActive,
   resolveHome,
@@ -431,6 +434,66 @@ describe("workspace manifest — Phase 9 modules", () => {
   it("keeps unmatched legacy pages visible in a migration-safe Pages module", () => {
     const modules = getWorkspaceModules("developer", ["dev"]);
     expect(modules.flatMap((module) => module.items.map((item) => item.href))).toContain("/dev");
+  });
+});
+
+describe("workspace manifest - module bundle placement", () => {
+  it("exposes Parts as a standard assignable module bundle", () => {
+    const parts = getSidebarModuleCatalog().find((module) => module.key === "department-parts");
+    expect(parts.label).toBe("Parts");
+    expect(parts.items.map((item) => item.href)).toEqual(expect.arrayContaining([
+      "/dashboard/parts",
+      "/stock-catalogue",
+      "/goods-in",
+      "/jobs",
+      "/deliveries",
+    ]));
+  });
+
+  it("places a legacy manual grant into its department module", () => {
+    const modules = getRoleWorkspaceModules(["service"], {
+      items: ["/newsfeed", "/messages", "/appointments"],
+    });
+    const service = modules.find((navigationModule) => navigationModule.key === "department-service");
+    expect(service.label).toBe("Reception");
+    expect(service.items.map((item) => item.href)).toContain("/appointments");
+  });
+
+  it("uses the owning department heading for cross-department grants", () => {
+    const modules = getRoleWorkspaceModules(["service"], {
+      items: ["/newsfeed", "/messages", "/website-manager"],
+    });
+    const admin = modules.find((navigationModule) => navigationModule.key === "department-management");
+    expect(admin.label).toBe("Admin");
+    expect(admin.items.map((item) => item.href)).toEqual(["/website-manager"]);
+  });
+
+  it("honours a saved compatible placement and removes cross-module duplicates", () => {
+    const modules = getRoleWorkspaceModules(["service"], {
+      items: ["/appointments"],
+      pagePlacements: { "/appointments": "service-control" },
+      modules: [
+        { key: "customer-jobs", label: "Customer & Job Intake", items: ["/appointments"] },
+        { key: "service-control", label: "Service Control", items: ["/appointments"] },
+      ],
+    });
+    expect(modules.find((navigationModule) => navigationModule.key === "service-control").items)
+      .toEqual([expect.objectContaining({ href: "/appointments" })]);
+    expect(modules.flatMap((navigationModule) => navigationModule.items).filter((item) => item.href === "/appointments"))
+      .toHaveLength(1);
+  });
+
+  it("reports the same predicted placement shown by the runtime selector", () => {
+    const snapshot = { items: ["/appointments", "/website-manager"] };
+    const details = getManualGrantPlacementDetails(["service"], snapshot);
+    expect(details.find((item) => item.href === "/appointments")).toMatchObject({
+      currentModuleKey: "department-service",
+      fallback: false,
+    });
+    expect(details.find((item) => item.href === "/website-manager")).toMatchObject({
+      currentModuleKey: "department-management",
+      fallback: false,
+    });
   });
 });
 

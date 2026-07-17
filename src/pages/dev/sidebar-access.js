@@ -17,7 +17,7 @@ export default function DevSidebarAccessPage() {
   return (
     <ProtectedRoute allowedRoles={ALLOWED}>
       <Head>
-        <title>Sidebar Access — Developer Platform</title>
+        <title>Sidebar Access - Developer Platform</title>
       </Head>
       <DevSidebarAccess />
     </ProtectedRoute>

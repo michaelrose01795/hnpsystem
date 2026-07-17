@@ -10,6 +10,7 @@ import {
 import {
   applySidebarGroupUserSelection,
   applySidebarModuleLayout,
+  applySidebarPagePlacements,
   createSidebarAccessFromRole,
   getSidebarAccessGroup,
   isSidebarGroupEnabled,
@@ -41,6 +42,12 @@ async function updateSingleUser(req, res, users) {
       currentValue: user.sidebarAccess,
       sourceRole: req.body?.sourceRole || user.sidebarAccess?.sourceRole || user.role,
       modules: req.body?.modules,
+    });
+  } else if (action === "save-page-placements") {
+    sidebarAccess = applySidebarPagePlacements({
+      role: user.role,
+      currentValue: user.sidebarAccess,
+      pagePlacements: req.body?.pagePlacements,
     });
   } else {
     return res.status(400).json({ success: false, message: "Unknown sidebar action" });

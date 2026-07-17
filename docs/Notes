@@ -1,3 +1,5 @@
+CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
+
 ---Workspace Navigation---
 
 Have it so all "MOT access" popups for example are the same size withint he "/dev/sidebar-access" page. always show "Home
@@ -15,6 +17,8 @@ Access" within this page as well.
 go through all taps to adjust slight ui desing and make sure everythign works correctly 
 -------
 
+TODO
+Have it so the search bar and calendar picker within "" section follows staffglobal,css design "Appointments Booking Toolbar | 1.2.2.1.1.1 | key appointments-booking-toolbar | file src/components/page-ui/appointments/appointments-ui.js:1291 | route /appointments | where Search, date, job number, time, book appointment | parent appointments-planner 1.2.2.1.1"
 ------------------ DO NEXT -------------------
 
 TODO

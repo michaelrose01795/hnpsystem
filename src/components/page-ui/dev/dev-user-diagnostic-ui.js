@@ -465,7 +465,18 @@ export default function UserDiagnosticDevPageUi(props) {
         }}>
             {promptCopied ? "Copied!" : `Copy Fix Prompt (${results.filter(r => !r.pass).length} failed)`}
           </button>}
-        <ProfileThemeControls style={{ marginLeft: "auto" }} />
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          flexWrap: "wrap",
+          marginLeft: "auto"
+        }}>
+          <ProfileThemeControls />
+          <Button type="button" variant="primary" size="sm" onClick={() => router.push("/dev")}>
+            DEV PAGE
+          </Button>
+        </div>
       </div>
       </DevLayoutSection>
 

@@ -16,7 +16,7 @@ import {
   normalizeWorkspaceRole,
 } from "@/config/workspace/manifest";
 
-export const SIDEBAR_ACCESS_VERSION = 4;
+export const SIDEBAR_ACCESS_VERSION = 5;
 
 const managedGroups = () =>
   getAllSidebarItems().filter(
@@ -36,6 +36,7 @@ function normaliseModules(rawModules) {
   if (!Array.isArray(rawModules)) return null;
   const catalogHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
   const seenKeys = new Map();
+  const seenHrefs = new Set();
   return rawModules.reduce((modules, rawModule, index) => {
     const baseKey = slugifyKey(rawModule?.key || rawModule?.label, `module-${index + 1}`);
     const count = seenKeys.get(baseKey) || 0;
@@ -47,9 +48,13 @@ function normaliseModules(rawModules) {
       : Array.isArray(rawModule?.hrefs)
       ? rawModule.hrefs
       : [];
-    const items = [
-      ...new Set(rawItems.map((href) => String(href || "").trim()).filter((href) => catalogHrefs.has(href))),
-    ];
+    const items = [];
+    for (const rawHref of rawItems) {
+      const href = String(rawHref || "").trim();
+      if (!catalogHrefs.has(href) || seenHrefs.has(href)) continue;
+      seenHrefs.add(href);
+      items.push(href);
+    }
     if (!label || items.length === 0) return modules;
     modules.push({ key, label, items });
     return modules;
@@ -87,6 +92,7 @@ export function getRoleDefaultSidebarAccess(role) {
     groups: groups.map((group) => group.key),
     itemOrder: {},
     moduleOrder: {},
+    pagePlacements: {},
     modules: defaultModules.map((module) => ({
       key: module.key,
       label: module.label,
@@ -128,6 +134,7 @@ export function normalizeSidebarAccess(raw) {
     : undefined;
   const itemOrder = {};
   const moduleOrder = {};
+  const pagePlacements = {};
   for (const group of managedGroups()) {
     const stored = value.itemOrder?.[group.department];
     if (Array.isArray(stored)) {
@@ -142,6 +149,16 @@ export function normalizeSidebarAccess(raw) {
       if (order.length > 0) moduleOrder[group.department] = order;
     }
   }
+  const catalogHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
+  if (value.pagePlacements && typeof value.pagePlacements === "object") {
+    for (const [href, moduleKey] of Object.entries(value.pagePlacements)) {
+      const normalizedHref = String(href || "").trim();
+      const normalizedModuleKey = slugifyKey(moduleKey, "");
+      if (catalogHrefs.has(normalizedHref) && normalizedModuleKey) {
+        pagePlacements[normalizedHref] = normalizedModuleKey;
+      }
+    }
+  }
 
   return {
     version: SIDEBAR_ACCESS_VERSION,
@@ -150,6 +167,7 @@ export function normalizeSidebarAccess(raw) {
     ...(groups ? { groups } : {}),
     itemOrder,
     moduleOrder,
+    pagePlacements,
     ...(modules && modules.length > 0 ? { modules } : {}),
   };
 }
@@ -179,6 +197,7 @@ export function materializeSidebarAccess(role, currentValue) {
     groups: normalized?.groups || defaults.groups,
     itemOrder: normalized?.itemOrder || {},
     moduleOrder: normalized?.moduleOrder || {},
+    pagePlacements: normalized?.pagePlacements || {},
     modules: projected.map((module) => ({
       key: module.key,
       label: module.label,
@@ -204,6 +223,22 @@ export function applySidebarModuleLayout({
     sourceRole: normalizeWorkspaceRole(sourceRole || snapshot.sourceRole || role),
     items: flattenModuleItems(nextModules),
     modules: nextModules,
+  });
+}
+
+export function applySidebarPagePlacements({
+  role,
+  currentValue,
+  pagePlacements,
+}) {
+  const snapshot = normalizeSidebarAccess(currentValue) || getRoleDefaultSidebarAccess(role);
+  return normalizeSidebarAccess({
+    ...snapshot,
+    version: SIDEBAR_ACCESS_VERSION,
+    pagePlacements: {
+      ...(snapshot.pagePlacements || {}),
+      ...(pagePlacements && typeof pagePlacements === "object" ? pagePlacements : {}),
+    },
   });
 }
 

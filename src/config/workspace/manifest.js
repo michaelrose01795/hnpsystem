@@ -50,6 +50,20 @@ export {
 };
 
 // ---------------------------------------------------------------------------
+// ASSIGNABLE MODULE BUNDLES
+//
+// Role defaults remain the baseline sidebar. Per-user overrides can also add a
+// complete department bundle, such as Parts, and then remove individual pages.
+// These bundles only organise sidebar visibility; route and API guards remain
+// authoritative. Legacy item-only snapshots are projected into their owning
+// department bundle so every page has a useful module heading.
+// ---------------------------------------------------------------------------
+const moduleBundleKey = (departmentKey) => `department-${departmentKey || "pages"}`;
+
+const moduleBundleLabel = (departmentKey) =>
+  WORKSPACE_DEPARTMENTS.find((department) => department.key === departmentKey)?.label || "Pages";
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -358,6 +372,47 @@ export function getWorkspacePageCatalog() {
   return items;
 }
 
+export function getSidebarModuleCatalog() {
+  const pages = getWorkspacePageCatalog();
+  const byHref = new Map(pages.map((item) => [item.href, item]));
+  const departmentOrder = new Map(
+    WORKSPACE_DEPARTMENTS.map((department, index) => [department.key, index])
+  );
+  const grouped = new Map();
+
+  for (const item of pages) {
+    if (item.department === DEVELOPER_GROUP_LOCK.key) continue;
+    const department = item.department || null;
+    if (!grouped.has(department)) grouped.set(department, []);
+    grouped.get(department).push(item);
+  }
+
+  for (const [department, modules] of Object.entries(WORKSPACE_MODULES)) {
+    if (department === DEVELOPER_GROUP_LOCK.key) continue;
+    if (!grouped.has(department)) grouped.set(department, []);
+    const existingHrefs = new Set(grouped.get(department).map((item) => item.href));
+    for (const href of modules.flatMap((navigationModule) => navigationModule.hrefs || [])) {
+      const item = byHref.get(href);
+      if (!item || existingHrefs.has(href)) continue;
+      grouped.get(department).push(item);
+      existingHrefs.add(href);
+    }
+  }
+
+  return [...grouped.entries()]
+    .map(([department, items]) => ({
+      key: moduleBundleKey(department),
+      label: moduleBundleLabel(department),
+      department,
+      items,
+    }))
+    .sort((a, b) =>
+      (departmentOrder.get(a.department) ?? Number.MAX_SAFE_INTEGER) -
+      (departmentOrder.get(b.department) ?? Number.MAX_SAFE_INTEGER) ||
+      a.label.localeCompare(b.label)
+    );
+}
+
 function roleDefaultModules(roles) {
   const roleList = Array.from(normalizeRoleSet(roles));
   const moduleMap = new Map();
@@ -393,30 +448,67 @@ function resolveStoredRoleModules(sidebarAccess) {
   }));
 }
 
+function resolveStoredPagePlacements(sidebarAccess) {
+  if (!sidebarAccess?.pagePlacements || typeof sidebarAccess.pagePlacements !== "object") {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(sidebarAccess.pagePlacements)
+      .map(([href, moduleKey]) => [String(href || "").trim(), String(moduleKey || "").trim()])
+      .filter(([href, moduleKey]) => href && moduleKey)
+  );
+}
+
+const toRoleModuleItem = (item) => ({
+  label: item.label,
+  href: item.href,
+  kind: item.kind,
+  department: item.department,
+});
+
 // Role-first Workspace Navigation. Defaults are explicitly authored per staff
 // role; a stored module layout replaces only presentation. Existing v1-v3
 // group/item snapshots remain valid and are projected over the role default,
-// with previously granted extra Pages retained in an Additional Tools module.
+// with previously granted extra pages retained in their department module.
 export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
   const catalog = getWorkspacePageCatalog();
   const byHref = new Map(catalog.map((item) => [item.href, item]));
   const roleSet = normalizeRoleSet(roles);
   const roleAccessible = getAccessibleNavPaths(roles);
   const storedModules = resolveStoredRoleModules(sidebarAccess);
-  const sourceModules = storedModules || roleDefaultModules(roles);
-  const legacySnapshot = !storedModules && Array.isArray(sidebarAccess?.items)
+  const defaultModules = roleDefaultModules(roles);
+  const defaultHrefs = new Set(defaultModules.flatMap((module) => module.hrefs));
+  const sourceModules = storedModules || defaultModules;
+  const managedSnapshot = Array.isArray(sidebarAccess?.items)
     ? new Set(sidebarAccess.items)
     : null;
+  const manualGrantHrefs = new Set(
+    managedSnapshot ? [...managedSnapshot].filter((href) => !defaultHrefs.has(href)) : []
+  );
+  const pagePlacements = resolveStoredPagePlacements(sidebarAccess);
+  const explicitlyRepositioned = new Set(
+    [...manualGrantHrefs].filter((href) => Object.hasOwn(pagePlacements, href))
+  );
+  const sourceModuleByKey = new Map(
+    sourceModules
+      .filter((navigationModule) => navigationModule.key && navigationModule.label)
+      .map((navigationModule) => [navigationModule.key, navigationModule])
+  );
   const used = new Set();
-  const modules = [];
+  const modules = [...sourceModuleByKey.values()].map((sourceModule) => ({
+    key: sourceModule.key,
+    label: sourceModule.label,
+    items: [],
+  }));
+  const moduleByKey = new Map(modules.map((navigationModule) => [navigationModule.key, navigationModule]));
 
   for (const sourceModule of sourceModules) {
     if (!sourceModule.key || !sourceModule.label) continue;
-    const items = [];
     for (const href of sourceModule.hrefs || []) {
       const item = byHref.get(href);
       if (!item || used.has(href)) continue;
-      if (legacySnapshot && !legacySnapshot.has(href)) continue;
+      if (explicitlyRepositioned.has(href)) continue;
+      if (managedSnapshot && !managedSnapshot.has(href)) continue;
       if (!storedModules) {
         const isDashboard = item.kind === "dashboard";
         const visible = isDashboard
@@ -425,33 +517,69 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
         if (!visible) continue;
       }
       used.add(href);
-      items.push({
-        label: item.label,
-        href: item.href,
-        kind: item.kind,
-        department: item.department,
-      });
-    }
-    if (items.length > 0) {
-      modules.push({ key: sourceModule.key, label: sourceModule.label, items });
+      moduleByKey.get(sourceModule.key)?.items.push(toRoleModuleItem(item));
     }
   }
 
-  if (legacySnapshot) {
-    const extraItems = catalog
-      .filter((item) => legacySnapshot.has(item.href) && !used.has(item.href))
-      .map((item) => ({
-        label: item.label,
-        href: item.href,
-        kind: item.kind,
-        department: item.department,
-      }));
-    if (extraItems.length > 0) {
-      modules.push({ key: "additional-tools", label: "Additional Tools", items: extraItems });
+  if (managedSnapshot) {
+    for (const item of catalog) {
+      if (!manualGrantHrefs.has(item.href) || used.has(item.href)) continue;
+      const savedKey = pagePlacements[item.href];
+      const departmentKey = moduleBundleKey(item.department);
+      const targetKey = moduleByKey.has(savedKey) ? savedKey : departmentKey;
+      if (!moduleByKey.has(targetKey)) {
+        const departmentModule = {
+          key: targetKey,
+          label: moduleBundleLabel(item.department),
+          items: [],
+        };
+        modules.push(departmentModule);
+        moduleByKey.set(targetKey, departmentModule);
+      }
+      const targetModule = moduleByKey.get(targetKey);
+      targetModule.items.push(toRoleModuleItem(item));
+      used.add(item.href);
     }
   }
 
-  return modules;
+  return modules.filter((navigationModule) => navigationModule.items.length > 0);
+}
+
+// Developer-editor projection for manually granted pages. It deliberately uses
+// the same selector as the runtime sidebar, so the preview and saved result
+// cannot disagree. Default pages are excluded: they already belong to the
+// user's role layout and must never be duplicated as manual grants.
+export function getManualGrantPlacementDetails(roles, sidebarAccess = null) {
+  if (!Array.isArray(sidebarAccess?.items)) return [];
+  const catalog = getWorkspacePageCatalog();
+  const defaultModules = roleDefaultModules(roles);
+  const defaultHrefs = new Set(defaultModules.flatMap((navigationModule) => navigationModule.hrefs));
+  const effectiveModules = getRoleWorkspaceModules(roles, sidebarAccess);
+  const currentModuleByHref = new Map(
+    effectiveModules.flatMap((navigationModule) =>
+      navigationModule.items.map((item) => [item.href, navigationModule])
+    )
+  );
+  const approved = new Set(sidebarAccess.items);
+
+  return catalog
+    .filter((item) => approved.has(item.href) && !defaultHrefs.has(item.href))
+    .map((item) => {
+      const currentModule = currentModuleByHref.get(item.href) || {
+        key: moduleBundleKey(item.department),
+        label: moduleBundleLabel(item.department),
+      };
+      return {
+        ...toRoleModuleItem(item),
+        currentModuleKey: currentModule.key,
+        currentModuleLabel: currentModule.label,
+        compatibleModules: effectiveModules.map((navigationModule) => ({
+          key: navigationModule.key,
+          label: navigationModule.label,
+        })),
+        fallback: false,
+      };
+    });
 }
 
 export function getRoleDefaultWorkspaceModules(role) {

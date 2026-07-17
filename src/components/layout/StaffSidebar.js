@@ -276,7 +276,11 @@ export default function Sidebar({
     },
     [snapshotAllowed, editorUniverse]
   );
-  const [selectedModuleKey, setSelectedModuleKey] = useState(null);
+  // `undefined` means "follow the module for the current route"; `null` means
+  // the user explicitly closed every module. Keeping those states distinct is
+  // important: otherwise the route-derived module continually overrides a
+  // click, which makes the accordion appear unable to open or close.
+  const [selectedModuleKey, setSelectedModuleKey] = useState(undefined);
   const previousWorkspacePathRef = useRef(pathname);
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const getNavHref = useCallback((href) => {
@@ -374,20 +378,23 @@ export default function Sidebar({
       : null),
     [pathname, pendingHref, userRoles, user?.sidebarAccess, workspaceNavEnabled]
   );
-  const activeRoleModuleKey = routeRoleModuleKey || selectedModuleKey;
+  const activeRoleModuleKey =
+    selectedModuleKey === undefined ? routeRoleModuleKey : selectedModuleKey;
 
   useEffect(() => {
-    if (!selectedModuleKey) return;
+    if (selectedModuleKey == null) return;
     if (!roleWorkspaceModules.some((module) => module.key === selectedModuleKey)) {
-      setSelectedModuleKey(null);
+      setSelectedModuleKey(undefined);
     }
   }, [roleWorkspaceModules, selectedModuleKey]);
 
   useEffect(() => {
     if (previousWorkspacePathRef.current === pathname) return;
     previousWorkspacePathRef.current = pathname;
-    if (routeRoleModuleKey) setSelectedModuleKey(null);
-  }, [pathname, routeRoleModuleKey]);
+    // A genuine route change starts a fresh sidebar context. The active route's
+    // module opens automatically, while later clicks remain fully user-driven.
+    setSelectedModuleKey(undefined);
+  }, [pathname]);
 
   const handleNavigationPress = useCallback(() => {
     if (typeof onNavigate === "function") {
@@ -782,8 +789,11 @@ export default function Sidebar({
               modules={roleWorkspaceModules}
               activeModuleKey={activeRoleModuleKey}
               onModuleToggle={(key) => {
-                if (routeRoleModuleKey === key) return;
-                setSelectedModuleKey((current) => current === key ? null : key);
+                setSelectedModuleKey((current) => {
+                  const currentActiveKey =
+                    current === undefined ? routeRoleModuleKey : current;
+                  return currentActiveKey === key ? null : key;
+                });
               }}
               pathname={pathname}
               pendingHref={pendingHref}

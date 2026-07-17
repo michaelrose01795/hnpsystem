@@ -1,9 +1,7 @@
 // file location: src/lib/auth/roles.test.js
 //
-// Phase 8 — guards the strict isolation of the synthetic `dev` role: it grants
-// Developer Platform access, but must NEVER be assignable through normal staff
-// role management (roleCategories) and must NEVER leak in via presentation
-// mode's broad access list (DEV_FULL_ACCESS_ROLES).
+// Guards Developer Platform access for the synthetic `dev` login and every
+// configured application role, while keeping `dev` out of normal role assignment.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -16,15 +14,19 @@ import {
 import { roleCategories } from "@/config/users";
 
 describe("dev platform role", () => {
-  it("defines the strict dev role + roles list", () => {
+  it("defines the synthetic dev role and includes every configured application role", () => {
     expect(DEV_PLATFORM_ROLE).toBe("dev");
-    expect(DEV_PLATFORM_ROLES).toEqual(["dev"]);
+    expect(DEV_PLATFORM_ROLES).toContain("dev");
+    for (const role of DEV_FULL_ACCESS_ROLES) {
+      expect(DEV_PLATFORM_ROLES).toContain(role);
+    }
   });
 
-  it("hasDevPlatformAccess is true only for the dev role (case-insensitive)", () => {
+  it("hasDevPlatformAccess accepts the dev role and configured user roles case-insensitively", () => {
     expect(hasDevPlatformAccess(["dev"])).toBe(true);
     expect(hasDevPlatformAccess(["DEV"])).toBe(true);
-    expect(hasDevPlatformAccess(["Owner", "Admin"])).toBe(false);
+    expect(hasDevPlatformAccess(["Owner", "Admin"])).toBe(true);
+    expect(hasDevPlatformAccess(["Customer"])).toBe(true);
     expect(hasDevPlatformAccess([])).toBe(false);
   });
 
@@ -39,9 +41,8 @@ describe("dev platform role", () => {
     expect(hasAnyRole(["dev"], DEV_FULL_ACCESS_ROLES)).toBe(false);
   });
 
-  it("a broad admin role does NOT satisfy the strict dev gate", () => {
-    // The whole point of the Phase 8 re-gate: managers/admins lose dev access.
-    expect(hasDevPlatformAccess(["admin manager"])).toBe(false);
-    expect(hasDevPlatformAccess(["owner"])).toBe(false);
+  it("broad staff roles satisfy the shared Developer Platform gate", () => {
+    expect(hasDevPlatformAccess(["admin manager"])).toBe(true);
+    expect(hasDevPlatformAccess(["owner"])).toBe(true);
   });
 });

@@ -40,13 +40,15 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
 
 // Developer Platform role (Phase 8). This role exists ONLY inside the Dev Login
 // (minted in code by the synthetic "Developer" area → NextAuth credentials,
-// gated by isDevAuthAllowed()). It is deliberately NOT part of roleCategories
-// (so it can never be picked in the HR role-assignment surfaces) and NOT part of
-// DEV_FULL_ACCESS_ROLES (so it never leaks in via presentation mode). Every
-// developer-only Developer Platform surface (the Support Centre + its APIs)
-// gates strictly on this role.
+// gated by isDevAuthAllowed()). It remains separate from roleCategories so it
+// can never be picked in the HR role-assignment surfaces.
 export const DEV_PLATFORM_ROLE = "dev";
-export const DEV_PLATFORM_ROLES = [DEV_PLATFORM_ROLE];
+// The platform is also available to every configured application user. Keeping
+// the access list here means both the /dev pages and their APIs use the same
+// rule, while the synthetic dev login continues to work independently.
+export const DEV_PLATFORM_ROLES = Array.from(
+  new Set([DEV_PLATFORM_ROLE, ...DEV_FULL_ACCESS_ROLES])
+);
 
 export function normalizeRoles(roles = []) {
   return roles.map((role) => role?.toString().toLowerCase().trim()).filter(Boolean);
@@ -77,7 +79,7 @@ export function isMobileTechnician(userRoles) {
   return hasAnyRole(userRoles, MOBILE_TECH_ROLES);
 }
 
-// Developer Platform access gate (Phase 8). Strict: only the `dev` role passes.
+// Developer Platform access gate: the synthetic dev role or any configured app role passes.
 export function hasDevPlatformAccess(userRoles) {
   return hasAnyRole(userRoles, DEV_PLATFORM_ROLES);
 }

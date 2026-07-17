@@ -112,7 +112,7 @@ export default function ContextSidebar({
         </>
       )}
 
-      {/* Phase 9 accordion: exactly one module is expanded. */}
+      {/* Workspace accordion: at most one module is expanded. */}
       {items.length > 0 && modules.map((module) => {
         const expanded = activeModuleKey === module.key;
         return (
@@ -120,7 +120,7 @@ export default function ContextSidebar({
             <button className={`app-btn app-btn--secondary app-btn--nav${expanded ? " is-active" : ""}`} type="button"
               onClick={() => onModuleToggle?.(module.key)} aria-expanded={expanded}
               {...navLinkProps(module.label)}>
-              {renderNavContent(isCollapsed ? module.label : `${expanded ? "⌄" : "›"} ${module.label}`, null, expanded)}
+              {renderNavContent(module.label, null, expanded)}
             </button>
             {expanded && module.items.map((item) => (
               <div key={item.href} style={{ marginLeft: isCollapsed ? 0 : "16px" }}>

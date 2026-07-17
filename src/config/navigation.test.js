@@ -1,9 +1,8 @@
 // file location: src/config/navigation.test.js
 //
-// Phase 11 — the "Developer Platform" sidebar entry must be visible ONLY to the
-// synthetic `dev` role and route to /dev. Because the sidebar drives both
-// visibility and PageAccessGuard, a leak here would expose the dev platform to
-// staff — so lock it with a test that mirrors StaffSidebar's hasAccess() rule.
+// The "Developer Platform" sidebar entry remains visible only to the synthetic
+// `dev` role and routes to /dev. Configured users instead enter through the
+// explicit DEV PAGE button on /dev/user-diagnostic.
 
 import { describe, it, expect } from "vitest";
 import { sidebarSections } from "@/config/navigation";
@@ -48,11 +47,11 @@ describe("navigation — Developer Platform sidebar entry", () => {
   });
 });
 
-describe("dev role gating stays strict", () => {
-  it("hasDevPlatformAccess only accepts the dev role", () => {
+describe("Developer Platform route access", () => {
+  it("accepts the dev role and configured application roles", () => {
     expect(hasDevPlatformAccess(["dev"])).toBe(true);
     for (const staffRole of ["service", "workshop manager", "admin manager", "owner", "admin"]) {
-      expect(hasDevPlatformAccess([staffRole])).toBe(false);
+      expect(hasDevPlatformAccess([staffRole])).toBe(true);
     }
     expect(hasDevPlatformAccess([])).toBe(false);
   });
