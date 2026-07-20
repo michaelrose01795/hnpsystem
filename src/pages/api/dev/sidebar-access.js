@@ -12,6 +12,7 @@ import {
   applySidebarModuleLayout,
   applySidebarPagePlacements,
   createSidebarAccessFromRole,
+  createSidebarLayoutCopy,
   getSidebarAccessGroup,
   isSidebarGroupEnabled,
   materializeSidebarAccess,
@@ -80,17 +81,15 @@ async function copyLayoutToUsers(req, res, users) {
     return res.status(400).json({ success: false, message: "Select at least one valid staff member" });
   }
 
-  const modules = req.body?.modules;
-  const sourceRole = req.body?.sourceRole || sourceUser.sidebarAccess?.sourceRole || sourceUser.role;
-  const updates = targets.map((target) => {
-    const sidebarAccess = applySidebarModuleLayout({
-      role: target.role,
-      currentValue: target.sidebarAccess,
-      sourceRole,
-      modules,
-    });
-    return updateAdminUserSidebarAccess(target.id, sidebarAccess);
+  const sidebarAccess = createSidebarLayoutCopy({
+    role: sourceUser.role,
+    currentValue: sourceUser.sidebarAccess,
+    sourceRole: req.body?.sourceRole || sourceUser.sidebarAccess?.sourceRole || sourceUser.role,
+    modules: req.body?.modules,
   });
+  const updates = targets.map((target) =>
+    updateAdminUserSidebarAccess(target.id, sidebarAccess)
+  );
 
   await Promise.all(updates);
   const refreshedUsers = await listAdminUsers();

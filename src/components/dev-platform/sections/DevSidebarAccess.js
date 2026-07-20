@@ -182,15 +182,23 @@ export default function DevSidebarAccess() {
       .map((item) => item.href)
       .filter((href) => !usedHrefs.has(href));
     if (availableItems.length === 0) return;
-    setDraftModules((current) => [
-      ...current,
-      { key: bundle.key, label: bundle.label, items: availableItems },
-    ]);
+    setDraftModules((current) => {
+      const assignedIndex = current.findIndex((module) => module.key === bundle.key);
+      if (assignedIndex < 0) {
+        return [
+          ...current,
+          { key: bundle.key, label: bundle.label, items: availableItems },
+        ];
+      }
+      return current.map((module, moduleIndex) =>
+        moduleIndex === assignedIndex
+          ? { ...module, items: [...module.items, ...availableItems] }
+          : module
+      );
+    });
   };
 
-  const selectBundle = (bundle, assigned) => {
-    if (!assigned) addBundle(bundle);
-  };
+  const selectBundle = (bundle) => addBundle(bundle);
 
   const addPage = (moduleIndex) => {
     const href = pageSelections[moduleIndex];
@@ -455,16 +463,26 @@ export default function DevSidebarAccess() {
                       <button
                         key={bundle.key}
                         type="button"
-                        onClick={() => selectBundle(bundle, assigned)}
+                        onClick={() => selectBundle(bundle)}
                         disabled={!assigned && availableCount === 0}
                         aria-pressed={assigned}
-                        aria-label={assigned ? `${bundle.label} module selected` : `Select ${bundle.label} module`}
+                        aria-label={
+                          assigned && availableCount > 0
+                            ? `Add ${availableCount} missing pages to ${bundle.label} module`
+                            : assigned
+                            ? `${bundle.label} module selected`
+                            : `Select ${bundle.label} module`
+                        }
                         className={`app-btn app-btn--secondary${assigned ? " is-active" : ""}`}
                         style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left", padding: "8px 12px" }}
                       >
                         <span>{bundle.label}</span>
                         <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
-                          {assigned ? "Selected" : `${availableCount} pages`}
+                          {assigned
+                            ? availableCount > 0
+                              ? `Add ${availableCount} missing`
+                              : "Selected"
+                            : `${availableCount} pages`}
                         </span>
                       </button>
                     );

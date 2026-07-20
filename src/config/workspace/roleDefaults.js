@@ -77,7 +77,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   ),
   "workshop manager": layout(
     navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/workshop"]),
-    navModule("workshop-control", "Workshop Control", ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"]),
+    navModule("workshop-control", "Workshop Control", ["/nextjobs", "/jobs", "/appointments", "/new-job", "/clocking", "/consumables-tracker"]),
     navModule("operational-visibility", "Operational Visibility", ["/tracking", "/archive"]),
     navModule("operational-reports", "Operational Reports", [
       "/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/valeting",

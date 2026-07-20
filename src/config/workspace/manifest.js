@@ -63,6 +63,11 @@ const moduleBundleKey = (departmentKey) => `department-${departmentKey || "pages
 const moduleBundleLabel = (departmentKey) =>
   WORKSPACE_DEPARTMENTS.find((department) => department.key === departmentKey)?.label || "Pages";
 
+const WORKSPACE_PAGE_LABELS = Object.freeze({
+  "/appointments": "Appointments",
+  "/new-job": "Create Job Card",
+});
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -361,7 +366,7 @@ export function getWorkspacePageCatalog() {
       if (!item.href || seen.has(item.href)) continue;
       seen.add(item.href);
       items.push({
-        label: item.label,
+        label: WORKSPACE_PAGE_LABELS[item.href] || item.label,
         href: item.href,
         kind: "page",
         department: section.department || null,
@@ -513,7 +518,10 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
         const isDashboard = item.kind === "dashboard";
         const visible = isDashboard
           ? itemVisibleTo(item, roleSet)
-          : roleAccessible.has(href);
+          : roleAccessible.has(href) ||
+            (DYNAMIC_DETAIL_EXTENDS[href] || []).some((parentHref) =>
+              roleAccessible.has(parentHref)
+            );
         if (!visible) continue;
       }
       used.add(href);

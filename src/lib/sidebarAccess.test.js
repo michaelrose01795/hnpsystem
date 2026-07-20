@@ -6,6 +6,7 @@ import {
   applySidebarModuleLayout,
   applySidebarPagePlacements,
   createSidebarAccessFromRole,
+  createSidebarLayoutCopy,
   getRoleDefaultSidebarAccess,
   isSidebarGroupEnabled,
   materializeSidebarAccess,
@@ -181,5 +182,29 @@ describe("sidebar access snapshots", () => {
     expect(updated.modules).toEqual(current.modules);
     expect(updated.pagePlacements).toEqual({ "/appointments": "service-control" });
     expect(updated.sourceRole).toBe(current.sourceRole);
+  });
+
+  it("creates one exact source snapshot when copying a layout to other users", () => {
+    const source = applySidebarPagePlacements({
+      role: "service",
+      currentValue: null,
+      pagePlacements: { "/appointments": "service-control" },
+    });
+    const copied = createSidebarLayoutCopy({
+      role: "service",
+      currentValue: source,
+      sourceRole: "service",
+      modules: [
+        { key: "customer-jobs", label: "Customer & Job Intake", items: ["/messages"] },
+        { key: "service-control", label: "Service Control", items: ["/appointments"] },
+      ],
+    });
+
+    expect(copied.modules).toEqual([
+      { key: "customer-jobs", label: "Customer & Job Intake", items: ["/messages"] },
+      { key: "service-control", label: "Service Control", items: ["/appointments"] },
+    ]);
+    expect(copied.items).toEqual(["/messages", "/appointments"]);
+    expect(copied.pagePlacements).toEqual({ "/appointments": "service-control" });
   });
 });

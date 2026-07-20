@@ -438,8 +438,21 @@ describe("workspace manifest — Phase 9 modules", () => {
 });
 
 describe("workspace manifest - module bundle placement", () => {
+  it("includes former topbar create and appointments pages in Workshop Control", () => {
+    const workshopControl = getRoleWorkspaceModules(["workshop manager"])
+      .find((module) => module.key === "workshop-control");
+
+    expect(workshopControl?.items.map((item) => item.href)).toEqual(
+      expect.arrayContaining(["/appointments", "/new-job"])
+    );
+    expect(workshopControl?.items).toContainEqual(
+      expect.objectContaining({ label: "Appointments", href: "/appointments" })
+    );
+  });
+
   it("exposes only the fixed sidebar-access module library", () => {
-    expect(getSidebarModuleCatalog().map((module) => module.label)).toEqual([
+    const moduleCatalog = getSidebarModuleCatalog();
+    expect(moduleCatalog.map((module) => module.label)).toEqual([
       "General",
       "Admin",
       "Reception",
@@ -452,6 +465,12 @@ describe("workspace manifest - module bundle placement", () => {
       "Account",
       "Pages",
     ]);
+    expect(
+      moduleCatalog.find((module) => module.label === "Reception")?.items
+    ).toContainEqual(expect.objectContaining({ label: "Appointments", href: "/appointments" }));
+    expect(
+      moduleCatalog.find((module) => module.label === "Reception")?.items
+    ).toContainEqual(expect.objectContaining({ label: "Create Job Card", href: "/new-job" }));
   });
 
   it("exposes Parts as a standard assignable module bundle", () => {

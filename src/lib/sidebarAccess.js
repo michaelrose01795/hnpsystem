@@ -226,6 +226,24 @@ export function applySidebarModuleLayout({
   });
 }
 
+// Materialise the complete source snapshot once before a layout is copied to
+// other users. Recipients must receive this value unchanged; rebuilding it from
+// each recipient's current override would retain recipient-specific placement
+// metadata and produce a different layout from the selected source user.
+export function createSidebarLayoutCopy({
+  role,
+  currentValue,
+  modules,
+  sourceRole,
+}) {
+  return applySidebarModuleLayout({
+    role,
+    currentValue,
+    modules,
+    sourceRole,
+  });
+}
+
 export function applySidebarPagePlacements({
   role,
   currentValue,
