@@ -1,10 +1,5 @@
 CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
 
-CHECK
-Have it so within the "/dev/sidebar-access" page section it has a copy layout, when pressed it opens a popup which then dispays multi selectable dropdown section from the staffglobal.css style so the user can click on who the layout is going to copy to, once selected the user will then spress save or close button (use the button which the popuo default comes with etc) have it so the save button is top right with the close button in a primary button style. 
-
-CHECK
-Move the "Assigned modules" section into a popup as well, haev the button to open this popup within the "Add a standard module" section and remove all the description like "Select a module to add it, or select an added module to jump straight to its editor. Pages already used by another module stay where they are." as well
 
 
 

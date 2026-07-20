@@ -13,6 +13,7 @@ import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { warmNewsUpdatesCache } from "@/lib/database/newsUpdates";
 import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -26,6 +27,10 @@ const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
 const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
+const warmStaffLandingPage = () =>
+  warmNewsUpdatesCache().catch((error) => {
+    console.error("Failed to warm news feed cache:", error);
+  });
 const STAFF_DEV_LOGIN_HIDDEN_CATEGORIES = new Set(["customers"]);
 const hasActiveLogoutBarrier = () => {
   if (typeof window === "undefined") return false;
@@ -197,6 +202,12 @@ export default function LoginPage() {
   useEffect(() => {
     clearAppShellLoading();
   }, []);
+
+  useEffect(() => {
+    // Warm the default staff landing-page bundle while credentials are entered,
+    // so successful login does not wait for the news-feed JavaScript chunk.
+    void router.prefetch(DEFAULT_STAFF_POST_LOGIN_ROUTE);
+  }, [router]);
 
   useEffect(() => {
     setTemporaryOverride({ mode: "system", accent: "red" });
@@ -372,6 +383,7 @@ export default function LoginPage() {
       // Resolve + lock the destination user's saved theme while the loading
       // screen is showing, so the next page boots straight into it instead of
       // changing colour again once /newsfeed has mounted.
+      void warmStaffLandingPage();
       await commitUserTheme(numericId);
       // Client-side navigation keeps the app shell + providers mounted — no
       // full document reload. signIn() above already issued the JWT cookie and
@@ -395,6 +407,7 @@ export default function LoginPage() {
     setIsRedirecting(true);
     // Lock the destination user's saved theme in before navigating so the
     // colour settles once, on the loading screen.
+    void warmStaffLandingPage();
     await commitUserTheme(userId);
     trace("login", "devLogin (fallback): router.replace", target);
     await router.replace(target);
@@ -429,6 +442,9 @@ export default function LoginPage() {
         setIsRedirecting(true);
         // Lock the destination user's saved theme in before navigating so the
         // colour settles once, on the loading screen.
+        if (resolvedTarget === DEFAULT_STAFF_POST_LOGIN_ROUTE) {
+          void warmStaffLandingPage();
+        }
         await commitUserTheme();
         trace("login", "dbLogin: router.replace", resolvedTarget);
         await router.replace(resolvedTarget);
@@ -541,6 +557,9 @@ export default function LoginPage() {
     trace("login", "auto-redirect: commit theme, then router.replace", target);
     // Lock the destination theme in before navigating so the colour settles
     // once, on the loading screen, instead of after the next page mounts.
+    if (!isCustomer) {
+      void warmStaffLandingPage();
+    }
     commitUserTheme(activeUser.id).finally(() => {
       trace("login", "auto-redirect: router.replace now", target);
       router.replace(target);

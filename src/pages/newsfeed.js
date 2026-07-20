@@ -3,7 +3,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
-import { supabase } from "@/lib/database/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
@@ -11,6 +10,13 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import NewsFeedUi from "@/components/page-ui/newsfeed-ui"; // Extracted presentation layer.
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import {
+  cacheNewsUpdates,
+  createNewsUpdate,
+  getNewsUpdates,
+  readCachedNewsUpdates,
+  subscribeToNewsUpdates,
+} from "@/lib/database/newsUpdates";
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const FALLBACK_UPDATES = [
@@ -169,7 +175,9 @@ const matchesSection = (update, section) => {
 export default function NewsFeed() {
   const { user, dbUserId } = useUser();
   const [updates, setUpdates] = useState(FALLBACK_UPDATES);
-  const [loading, setLoading] = useState(true);
+  // The feed always has useful content on first paint. Cached live updates are
+  // restored immediately after mount and refreshed silently in the background.
+  const loading = false;
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formState, setFormState] = useState({
@@ -186,6 +194,10 @@ export default function NewsFeed() {
 
   useEffect(() => {
     setShowPresentationNotesDemo(isPresentationMode());
+    const cachedUpdates = readCachedNewsUpdates();
+    if (cachedUpdates) {
+      setUpdates(cachedUpdates);
+    }
   }, []);
 
   const userRoles = useMemo(() => user?.roles || [], [user?.roles]);
@@ -194,48 +206,30 @@ export default function NewsFeed() {
 
   const fetchUpdates = useCallback(async () => {
     trace("newsfeed", "fetchUpdates: start");
-    setLoading(true);
     try {
-      const { data, error } = await supabase.
-      from("news_updates").
-      select("id, title, content, departments, author, created_at").
-      order("created_at", { ascending: false }).
-      limit(200);
-      if (!error && Array.isArray(data)) {
-        setUpdates(
-          data.map((row) => ({
-            id: row.id ?? row.title,
-            title: row.title,
-            content: row.content,
-            author: row.author,
-            created_at: row.created_at,
-            departments: normalizeDepartments(row.departments)
-          }))
-        );
-      }
+      const rows = await getNewsUpdates();
+      const nextUpdates = rows.map((row) => ({
+        id: row.id ?? row.title,
+        title: row.title,
+        content: row.content,
+        author: row.author,
+        created_at: row.created_at,
+        departments: normalizeDepartments(row.departments)
+      }));
+      setUpdates(nextUpdates);
+      cacheNewsUpdates(nextUpdates);
     } catch (err) {
       console.error("Failed to load news updates:", err);
     } finally {
       trace("newsfeed", "fetchUpdates: done");
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchUpdates();
-    const channel = supabase.
-    channel("news-feed-updates").
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "news_updates" },
-      () => {
-        fetchUpdates();
-      }
-    ).
-    subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    void fetchUpdates();
+    return subscribeToNewsUpdates(() => {
+      void fetchUpdates();
+    });
   }, [fetchUpdates]);
 
   const accessibleUpdates = useMemo(() => {
@@ -268,10 +262,7 @@ export default function NewsFeed() {
         author: user?.username || "System",
         created_by: dbUserId
       };
-      const { error } = await supabase.from("news_updates").insert([payload]);
-      if (error) {
-        throw error;
-      }
+      await createNewsUpdate(payload);
       resetModal();
       setModalOpen(false);
       await fetchUpdates();

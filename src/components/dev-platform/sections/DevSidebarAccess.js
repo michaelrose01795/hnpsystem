@@ -45,13 +45,6 @@ const moveItem = (items, index, direction) => {
   return next;
 };
 
-const slugify = (label) =>
-  String(label || "module")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "module";
-
 const serialiseModules = (modules) =>
   JSON.stringify(
     modules.map((module) => ({
@@ -73,9 +66,7 @@ export default function DevSidebarAccess() {
   const [copyRole, setCopyRole] = useState(WORKSPACE_ROLE_DEFAULT_NAMES[0]);
   const [draftModules, setDraftModules] = useState([]);
   const [initialModules, setInitialModules] = useState([]);
-  const [newModuleLabel, setNewModuleLabel] = useState("");
   const [pageSelections, setPageSelections] = useState({});
-  const [moduleToFocus, setModuleToFocus] = useState("");
   const [assignedModulesOpen, setAssignedModulesOpen] = useState(false);
   const [copyLayoutOpen, setCopyLayoutOpen] = useState(false);
   const [copyTargetIds, setCopyTargetIds] = useState([]);
@@ -137,20 +128,6 @@ export default function DevSidebarAccess() {
     }
   }, [selectedUser]);
 
-  useEffect(() => {
-    if (!moduleToFocus) return undefined;
-    const moduleEditor = document.getElementById(`sidebar-module-${moduleToFocus}`);
-    if (!moduleEditor) return undefined;
-
-    const animationFrame = window.requestAnimationFrame(() => {
-      moduleEditor.scrollIntoView({ behavior: "smooth", block: "start" });
-      moduleEditor.querySelector("input")?.focus({ preventScroll: true });
-      setModuleToFocus("");
-    });
-
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, [draftModules, moduleToFocus]);
-
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return users;
@@ -211,32 +188,8 @@ export default function DevSidebarAccess() {
     ]);
   };
 
-  const openBundle = (bundle, assigned) => {
+  const selectBundle = (bundle, assigned) => {
     if (!assigned) addBundle(bundle);
-    setAssignedModulesOpen(true);
-    setModuleToFocus(bundle.key);
-  };
-
-  const openAssignedModule = (moduleKey) => {
-    setAssignedModulesOpen(true);
-    setModuleToFocus(moduleKey);
-  };
-
-  const addCustomModule = () => {
-    const label = newModuleLabel.trim();
-    if (!label) return;
-    const existingKeys = new Set(draftModules.map((module) => module.key));
-    const baseKey = slugify(label);
-    let key = baseKey;
-    let counter = 2;
-    while (existingKeys.has(key)) {
-      key = `${baseKey}-${counter}`;
-      counter += 1;
-    }
-    setDraftModules((current) => [...current, { key, label, items: [] }]);
-    setNewModuleLabel("");
-    setAssignedModulesOpen(true);
-    setModuleToFocus(key);
   };
 
   const addPage = (moduleIndex) => {
@@ -489,33 +442,11 @@ export default function DevSidebarAccess() {
                 style={{ gap: "12px" }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Add a standard module</div>
+                  <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Select standard modules</div>
                   <DevButton onClick={() => setAssignedModulesOpen(true)} disabled={saving}>
                     Assigned modules ({draftModules.length})
                   </DevButton>
                 </div>
-                {draftModules.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
-                      {draftModules.length} selected
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {draftModules.map((module) => (
-                        <button
-                          key={`selected-${module.key}`}
-                          type="button"
-                          className="app-btn app-btn--secondary is-active"
-                          aria-pressed="true"
-                          aria-controls={`sidebar-module-${module.key}`}
-                          onClick={() => openAssignedModule(module.key)}
-                          style={{ minHeight: 44 }}
-                        >
-                          {module.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "8px" }}>
                   {moduleCatalog.map((bundle) => {
                     const availableCount = bundle.items.filter((item) => !usedHrefs.has(item.href)).length;
@@ -524,11 +455,10 @@ export default function DevSidebarAccess() {
                       <button
                         key={bundle.key}
                         type="button"
-                        onClick={() => openBundle(bundle, assigned)}
+                        onClick={() => selectBundle(bundle, assigned)}
                         disabled={!assigned && availableCount === 0}
                         aria-pressed={assigned}
-                        aria-controls={assigned ? `sidebar-module-${bundle.key}` : undefined}
-                        aria-label={assigned ? `Edit ${bundle.label} module` : `Add ${bundle.label} module`}
+                        aria-label={assigned ? `${bundle.label} module selected` : `Select ${bundle.label} module`}
                         className={`app-btn app-btn--secondary${assigned ? " is-active" : ""}`}
                         style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left", padding: "8px 12px" }}
                       >
@@ -539,19 +469,6 @@ export default function DevSidebarAccess() {
                       </button>
                     );
                   })}
-                </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                  <input
-                    className="app-input"
-                    value={newModuleLabel}
-                    onChange={(event) => setNewModuleLabel(event.target.value)}
-                    placeholder="Custom module name"
-                    aria-label="Custom module name"
-                    style={{ flex: "1 1 220px" }}
-                  />
-                  <DevButton onClick={addCustomModule} disabled={!newModuleLabel.trim()}>
-                    Add custom module
-                  </DevButton>
                 </div>
               </SubSurface>
 

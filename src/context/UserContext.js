@@ -72,8 +72,10 @@ export function UserProvider({ children }) {
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
   const [sidebarAccess, setSidebarAccess] = useState(null);
-  // Prevent the role-default menu from flashing before the saved per-user
-  // sidebar configuration has finished resolving.
+  // Auth starts unresolved, but once the session supplies roles the sidebar
+  // renders that safe role-derived navigation immediately. The optional saved
+  // per-user layout is reconciled silently in the background instead of
+  // replacing the whole rail with a loading skeleton.
   const [sidebarAccessLoading, setSidebarAccessLoading] = useState(true);
   const sidebarAccessRequestRef = useRef(0);
   const [currentJob, setCurrentJob] = useState(null);
@@ -216,7 +218,7 @@ export function UserProvider({ children }) {
         const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
         sidebarAccessRequestRef.current += 1;
         setSidebarAccess(null);
-        setSidebarAccessLoading(true);
+        setSidebarAccessLoading(false);
         setUser(finalDevUser);
         setDevRoleCookie(finalDevUser.roles || []);
       } catch (err) {
@@ -255,7 +257,7 @@ export function UserProvider({ children }) {
       if (String(user?.id ?? "") !== String(sessionUser.id ?? "")) {
         sidebarAccessRequestRef.current += 1;
         setSidebarAccess(null);
-        setSidebarAccessLoading(true);
+        setSidebarAccessLoading(false);
       }
       setUser(sessionUser);
       setLoading(false);
@@ -345,7 +347,6 @@ export function UserProvider({ children }) {
       setSidebarAccessLoading(false);
       return;
     }
-    setSidebarAccessLoading(true);
     try {
       const res = await withTimeout(
         fetch(`/api/profile/sidebar-access?userId=${encodeURIComponent(dbUserId)}`, {
@@ -447,7 +448,7 @@ export function UserProvider({ children }) {
 
       sidebarAccessRequestRef.current += 1;
       setSidebarAccess(null);
-      setSidebarAccessLoading(true);
+      setSidebarAccessLoading(false);
       setUser(finalUser);
       if (CAN_USE_DEV_AUTH) {
         localStorage.setItem("devUser", JSON.stringify(finalUser));

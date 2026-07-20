@@ -438,6 +438,22 @@ describe("workspace manifest — Phase 9 modules", () => {
 });
 
 describe("workspace manifest - module bundle placement", () => {
+  it("exposes only the fixed sidebar-access module library", () => {
+    expect(getSidebarModuleCatalog().map((module) => module.label)).toEqual([
+      "General",
+      "Admin",
+      "Reception",
+      "Workshop",
+      "MOT",
+      "Parts",
+      "Valeting",
+      "Accounts",
+      "Reports",
+      "Account",
+      "Pages",
+    ]);
+  });
+
   it("exposes Parts as a standard assignable module bundle", () => {
     const parts = getSidebarModuleCatalog().find((module) => module.key === "department-parts");
     expect(parts.label).toBe("Parts");
@@ -612,8 +628,22 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
     const nav = getDepartmentWorkspaceNav("developer", ["dev"]);
     expect(nav.items.map((i) => i.href)).toContain("/dev");
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
+    expect(
+      getRoleWorkspaceModules(["dev"]).flatMap((module) =>
+        module.items.map((item) => item.href)
+      )
+    ).toContain("/dev");
     // Upper-case role convention (ProtectedRoute / client) must resolve too.
     expect(getWorkspaceGroups(["DEV"]).map((g) => g.key)).toContain("developer");
+  });
+
+  it("keeps /dev in the role-first sidebar even under an empty customised layout", () => {
+    const modules = getRoleWorkspaceModules(["DEV"], {
+      items: [],
+      groups: [],
+      modules: [],
+    });
+    expect(modules.flatMap((module) => module.items.map((item) => item.href))).toContain("/dev");
   });
 
   it("the lock never leaks the Developer group/button to non-dev roles", () => {

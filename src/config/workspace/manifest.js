@@ -542,6 +542,37 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     }
   }
 
+  // 🔒 DEVELOPER SIDEBAR LOCK — role-first navigation is the live StaffSidebar
+  // path. A stored layout may omit every module/item, but it must never remove
+  // the synthetic developer role's only route into its platform.
+  const hasDeveloperRole = DEVELOPER_GROUP_LOCK.roles.some((role) => roleSet.has(role));
+  const developerHref = DEVELOPER_GROUP_LOCK.navItem.href;
+  if (
+    hasDeveloperRole &&
+    !modules.some((navigationModule) =>
+      navigationModule.items.some((item) => item.href === developerHref)
+    )
+  ) {
+    const moduleKey = `${DEVELOPER_GROUP_LOCK.key}-platform`;
+    let developerModule = moduleByKey.get(moduleKey);
+    if (!developerModule) {
+      developerModule = {
+        key: moduleKey,
+        label: DEVELOPER_GROUP_LOCK.label,
+        items: [],
+      };
+      modules.push(developerModule);
+      moduleByKey.set(moduleKey, developerModule);
+    }
+    const catalogItem = byHref.get(developerHref) || {
+      ...DEVELOPER_GROUP_LOCK.navItem,
+      kind: "page",
+      department: DEVELOPER_GROUP_LOCK.key,
+    };
+    developerModule.items.push(toRoleModuleItem(catalogItem));
+    used.add(developerHref);
+  }
+
   const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
   const communicationHrefs = ["/newsfeed", "/messages"];
   const communicationHrefSet = new Set(communicationHrefs);
