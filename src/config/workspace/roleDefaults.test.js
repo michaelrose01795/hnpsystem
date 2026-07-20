@@ -61,6 +61,23 @@ describe("role workspace defaults", () => {
     }
   });
 
+  it("keeps Communication first for every role and saved layout", () => {
+    for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
+      expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("communication");
+    }
+
+    const savedLayout = {
+      items: ["/jobs"],
+      modules: [{ key: "customer-jobs", label: "Customer Jobs", items: ["/jobs"] }],
+    };
+    const modules = getRoleWorkspaceModules(["service"], savedLayout);
+    expect(modules[0]).toMatchObject({
+      key: "communication",
+      label: "Communication",
+    });
+    expect(modules[0].items.map((item) => item.href)).toEqual(["/newsfeed", "/messages"]);
+  });
+
   it("keeps manager controls separate from employee task modules", () => {
     expect(getRoleDefaultWorkspaceModules("Service").map((module) => module.key)).not.toContain("management-overview");
     expect(getRoleDefaultWorkspaceModules("Service Manager").map((module) => module.key)).toContain("management-overview");
@@ -81,8 +98,9 @@ describe("role workspace defaults", () => {
       ],
     };
     expect(getRoleWorkspaceModules(["service"], snapshot).flatMap((module) => module.items.map((item) => item.href))).toEqual([
-      "/deliveries",
+      "/newsfeed",
       "/messages",
+      "/deliveries",
     ]);
     expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(false);
   });

@@ -1,5 +1,5 @@
 // ✅ Imports converted to use absolute alias "@/"
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
@@ -72,6 +72,10 @@ export function UserProvider({ children }) {
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
   const [sidebarAccess, setSidebarAccess] = useState(null);
+  // Prevent the role-default menu from flashing before the saved per-user
+  // sidebar configuration has finished resolving.
+  const [sidebarAccessLoading, setSidebarAccessLoading] = useState(true);
+  const sidebarAccessRequestRef = useRef(0);
   const [currentJob, setCurrentJob] = useState(null);
   const hasLogoutBarrier = logoutBarrierUntil > Date.now();
   const authSyncBlocked = isLoggingOut || hasLogoutBarrier;
@@ -168,6 +172,9 @@ export function UserProvider({ children }) {
     // slide/step hash navigation inside the same deck doesn't churn renders.
     setUser((prev) => (prev && prev.id === demoUser.id ? prev : demoUser));
     setDbUserId(1);
+    sidebarAccessRequestRef.current += 1;
+    setSidebarAccess(null);
+    setSidebarAccessLoading(false);
     setLoading(false);
   }, [sessionStatus, router.asPath]);
 
@@ -207,6 +214,9 @@ export function UserProvider({ children }) {
       try {
         const parsed = JSON.parse(stored);
         const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
+        sidebarAccessRequestRef.current += 1;
+        setSidebarAccess(null);
+        setSidebarAccessLoading(true);
         setUser(finalDevUser);
         setDevRoleCookie(finalDevUser.roles || []);
       } catch (err) {
@@ -233,7 +243,7 @@ export function UserProvider({ children }) {
       const resolvedSessionId =
         session.user.id || session.user.sub || session.user.user_id || null;
       const sessionUser = {
-        id: resolvedSessionId || Date.now(),
+        id: resolvedSessionId || user?.id || Date.now(),
         username: session.user.name || "User",
         email: session.user.email || null,
         roles: (session.user.roles || [])
@@ -242,6 +252,11 @@ export function UserProvider({ children }) {
         authUuid: resolvedSessionId || null,
         isDevLogin: Boolean(session.user.isDevLogin),
       };
+      if (String(user?.id ?? "") !== String(sessionUser.id ?? "")) {
+        sidebarAccessRequestRef.current += 1;
+        setSidebarAccess(null);
+        setSidebarAccessLoading(true);
+      }
       setUser(sessionUser);
       setLoading(false);
       if (CAN_USE_DEV_AUTH) {
@@ -255,7 +270,7 @@ export function UserProvider({ children }) {
       setUser(null);
       setLoading(false);
     }
-  }, [session, sessionStatus, authSyncBlocked]);
+  }, [session, sessionStatus, authSyncBlocked, user?.id]);
 
   // Resolve Supabase users.user_id when a user is set
   useEffect(() => {
@@ -324,10 +339,13 @@ export function UserProvider({ children }) {
   // navigation (the default). Presentation / Playwright / synthetic dev-platform
   // sessions have no DB row, so they keep the role-derived default.
   const refreshSidebarAccess = useCallback(async () => {
+    const requestId = ++sidebarAccessRequestRef.current;
     if (!dbUserId || isPresentationMode() || PLAYWRIGHT_AUTH_ENABLED) {
       setSidebarAccess(null);
+      setSidebarAccessLoading(false);
       return;
     }
+    setSidebarAccessLoading(true);
     try {
       const res = await withTimeout(
         fetch(`/api/profile/sidebar-access?userId=${encodeURIComponent(dbUserId)}`, {
@@ -335,14 +353,19 @@ export function UserProvider({ children }) {
         }),
         "Sidebar access fetch"
       );
+      if (requestId !== sidebarAccessRequestRef.current) return;
       if (!res.ok) {
         setSidebarAccess(null);
+        setSidebarAccessLoading(false);
         return;
       }
       const json = await res.json();
       setSidebarAccess(json?.sidebarAccess ?? null);
+      setSidebarAccessLoading(false);
     } catch (err) {
+      if (requestId !== sidebarAccessRequestRef.current) return;
       console.error("Failed to load sidebar access", err?.message || err);
+      setSidebarAccessLoading(false);
       setSidebarAccess(null); // fail open to role-derived nav — never lock a user out
     }
   }, [dbUserId]);
@@ -422,6 +445,9 @@ export function UserProvider({ children }) {
         isDevLogin: true,
       };
 
+      sidebarAccessRequestRef.current += 1;
+      setSidebarAccess(null);
+      setSidebarAccessLoading(true);
       setUser(finalUser);
       if (CAN_USE_DEV_AUTH) {
         localStorage.setItem("devUser", JSON.stringify(finalUser));
@@ -440,7 +466,10 @@ export function UserProvider({ children }) {
     const barrierUntil = Date.now() + LOGOUT_BARRIER_MS;
     setLogoutBarrierUntil(barrierUntil);
     setLogoutBarrier(barrierUntil);
+    sidebarAccessRequestRef.current += 1;
     setUser(null);
+    setSidebarAccess(null);
+    setSidebarAccessLoading(false);
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
     setCurrentJob(null);
@@ -476,6 +505,7 @@ export function UserProvider({ children }) {
     setStatus,
     dbUserId,
     sidebarAccess,
+    sidebarAccessLoading,
     refreshSidebarAccess,
     currentJob,
     setCurrentJob,

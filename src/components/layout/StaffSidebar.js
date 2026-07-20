@@ -198,7 +198,7 @@ export default function Sidebar({
     },
     [pathname, pendingHref]
   );
-  const { user, dbUserId } = useUser();
+  const { user, dbUserId, sidebarAccessLoading } = useUser();
   // Full name for the Profile nav button (replaces the generic "Profile" label).
   // user.username resolves to the signed-in user's display name (see UserContext).
   const fullName = (user?.username || "").trim();
@@ -224,6 +224,8 @@ export default function Sidebar({
   const inPresentationRoute = pathname.startsWith("/presentation");
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
   const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
+  const isSidebarNavigationLoading =
+    !inPresentationMode && (isAuthLoading || (workspaceNavEnabled && sidebarAccessLoading));
   const ghostControlStyle = {
     backgroundColor: "var(--theme)",
     backgroundImage: "none",
@@ -777,7 +779,9 @@ export default function Sidebar({
           </>
         )}
 
-        {workspaceNavEnabled && roleWorkspaceModules.length > 0 && (
+        {isSidebarNavigationLoading && <SidebarNavSkeleton />}
+
+        {!isSidebarNavigationLoading && workspaceNavEnabled && roleWorkspaceModules.length > 0 && (
           <>
             {!isCollapsed && (
               <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
@@ -812,7 +816,7 @@ export default function Sidebar({
         )}
 
 
-        {!workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
+        {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
           <>
             {isCollapsed ? (
               renderSectionDivider("divider-dashboard", { marginBottom: "10px" })
@@ -863,7 +867,7 @@ export default function Sidebar({
         )}
 
         {/* General Section */}
-        {!workspaceNavEnabled && !inPresentationMode && generalSections.length > 0 && (
+        {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && generalSections.length > 0 && (
           <>
             {isCollapsed ? (
               renderSectionDivider("divider-general", { marginBottom: "10px" })
@@ -892,16 +896,8 @@ export default function Sidebar({
           </>
         )}
 
-        {/* While auth/roles resolve, show shimmer scaffolding (no real links)
-            so the department area looks alive rather than empty on hard load. */}
-        {!workspaceNavEnabled && !inPresentationMode && isAuthLoading && departmentSections.length === 0 && (
-          <div style={{ marginTop: "16px" }}>
-            <SidebarNavSkeleton />
-          </div>
-        )}
-
         {/* Department Sections - NO COLLAPSE, just headers */}
-        {!workspaceNavEnabled && !inPresentationMode && departmentSections.map((section) => (
+        {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
             {isCollapsed ? (
               renderSectionDivider(`divider-${section.label}`, { marginTop: "16px", marginBottom: "10px" })
@@ -931,7 +927,7 @@ export default function Sidebar({
         ))}
 
         {/* Account Section */}
-        {accountSections.length > 0 && (
+        {!isSidebarNavigationLoading && accountSections.length > 0 && (
           <>
             {isCollapsed ? (
               renderSectionDivider("divider-account", { marginTop: "16px", marginBottom: "10px" })

@@ -12,7 +12,6 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
-import { isWorkspaceNavEnabled, resolveHome } from "@/config/workspace/manifest";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
@@ -69,15 +68,16 @@ const getDefaultPostLoginRoute = (activeUser) => {
   map((role) => String(role).toLowerCase());
   const isCustomer = roles.some((role) => role.includes("customer"));
   if (isCustomer) return DEFAULT_CUSTOMER_POST_LOGIN_ROUTE;
-  return isWorkspaceNavEnabled() ? resolveHome(roles) : DEFAULT_STAFF_POST_LOGIN_ROUTE;
+  return DEFAULT_STAFF_POST_LOGIN_ROUTE;
 };
 
 const getPostLoginRoute = (router, activeUser) => {
   const redirectedFrom = router?.query?.redirectedFrom;
-  if (isSafeLocalRoute(redirectedFrom)) {
+  const defaultRoute = getDefaultPostLoginRoute(activeUser);
+  if (defaultRoute === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE && isSafeLocalRoute(redirectedFrom)) {
     return redirectedFrom;
   }
-  return getDefaultPostLoginRoute(activeUser);
+  return defaultRoute;
 };
 
 const showAppShellLoading = () => {

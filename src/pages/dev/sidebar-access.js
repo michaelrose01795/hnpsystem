@@ -26,5 +26,8 @@ export default function DevSidebarAccessPage() {
 
 DevSidebarAccessPage.getLayout = withDevPlatformLayout({
   activeKey: "sidebar-access",
-  hideTabs: true,
+  // Keep the shared Developer Platform tabs explicit on this route. This page
+  // previously opted out with hideTabs: true, which made Access inconsistent
+  // with every other area in the platform.
+  hideTabs: false,
 });

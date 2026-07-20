@@ -661,9 +661,9 @@ describe("workspace manifest — department-first selectors", () => {
     expect(serviceDepts[serviceDepts.length - 1]).toBe("account");
   });
 
-  it("resolveHome lands a role on its department home, roleless on /newsfeed", () => {
-    expect(resolveHome(["workshop manager"])).toBe("/dashboard/workshop");
-    expect(resolveHome(["parts"])).toBe("/dashboard/parts");
+  it("resolveHome lands every staff role on /newsfeed", () => {
+    expect(resolveHome(["workshop manager"])).toBe("/newsfeed");
+    expect(resolveHome(["parts"])).toBe("/newsfeed");
     expect(resolveHome([])).toBe("/newsfeed");
   });
 

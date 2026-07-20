@@ -5,7 +5,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { DropdownField } from "@/components/ui/dropdownAPI";
+import PopupModal from "@/components/popups/popupStyleApi";
+import { DropdownField, MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import {
   Panel,
   SubSurface,
@@ -67,12 +68,17 @@ export default function DevSidebarAccess() {
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [search, setSearch] = useState("");
+  const [userListOpen, setUserListOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [copyRole, setCopyRole] = useState(WORKSPACE_ROLE_DEFAULT_NAMES[0]);
   const [draftModules, setDraftModules] = useState([]);
   const [initialModules, setInitialModules] = useState([]);
   const [newModuleLabel, setNewModuleLabel] = useState("");
   const [pageSelections, setPageSelections] = useState({});
+  const [moduleToFocus, setModuleToFocus] = useState("");
+  const [assignedModulesOpen, setAssignedModulesOpen] = useState(false);
+  const [copyLayoutOpen, setCopyLayoutOpen] = useState(false);
+  const [copyTargetIds, setCopyTargetIds] = useState([]);
 
   const catalog = useMemo(() => getWorkspacePageCatalog(), []);
   const moduleCatalog = useMemo(() => getSidebarModuleCatalog(), []);
@@ -131,6 +137,20 @@ export default function DevSidebarAccess() {
     }
   }, [selectedUser]);
 
+  useEffect(() => {
+    if (!moduleToFocus) return undefined;
+    const moduleEditor = document.getElementById(`sidebar-module-${moduleToFocus}`);
+    if (!moduleEditor) return undefined;
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      moduleEditor.scrollIntoView({ behavior: "smooth", block: "start" });
+      moduleEditor.querySelector("input")?.focus({ preventScroll: true });
+      setModuleToFocus("");
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [draftModules, moduleToFocus]);
+
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return users;
@@ -163,8 +183,10 @@ export default function DevSidebarAccess() {
       const body = await res.json().catch(() => null);
       if (!body?.success) throw new Error(body?.message || `Save returned ${res.status}`);
       setUsers(Array.isArray(body.data) ? body.data : []);
+      return body;
     } catch (error) {
       setSaveError(error?.message || "Could not save sidebar access.");
+      return null;
     } finally {
       setSaving(false);
     }
@@ -189,6 +211,17 @@ export default function DevSidebarAccess() {
     ]);
   };
 
+  const openBundle = (bundle, assigned) => {
+    if (!assigned) addBundle(bundle);
+    setAssignedModulesOpen(true);
+    setModuleToFocus(bundle.key);
+  };
+
+  const openAssignedModule = (moduleKey) => {
+    setAssignedModulesOpen(true);
+    setModuleToFocus(moduleKey);
+  };
+
   const addCustomModule = () => {
     const label = newModuleLabel.trim();
     if (!label) return;
@@ -202,6 +235,8 @@ export default function DevSidebarAccess() {
     }
     setDraftModules((current) => [...current, { key, label, items: [] }]);
     setNewModuleLabel("");
+    setAssignedModulesOpen(true);
+    setModuleToFocus(key);
   };
 
   const addPage = (moduleIndex) => {
@@ -222,6 +257,38 @@ export default function DevSidebarAccess() {
       modules: draftModules.filter((module) => module.label.trim() && module.items.length > 0),
     });
   };
+
+  const closeCopyLayout = () => {
+    if (saving) return;
+    setCopyLayoutOpen(false);
+    setCopyTargetIds([]);
+  };
+
+  const copyLayout = async () => {
+    if (!selectedUser || copyTargetIds.length === 0 || !hasSavableModules) return;
+    const result = await callApi({
+      action: "copy-layout",
+      userId: selectedUser.id,
+      targetUserIds: copyTargetIds,
+      sourceRole: selectedUser.sidebarAccess?.sourceRole || selectedUser.role,
+      modules: draftModules.filter((module) => module.label.trim() && module.items.length > 0),
+    });
+    if (result) {
+      setCopyLayoutOpen(false);
+      setCopyTargetIds([]);
+    }
+  };
+
+  const copyTargetOptions = useMemo(
+    () => users
+      .filter((user) => user.id !== selectedUser?.id)
+      .map((user) => ({
+        value: user.id,
+        raw: user.id,
+        label: `${userDisplayName(user)}${user.role ? ` - ${user.role}` : ""}`,
+      })),
+    [selectedUser?.id, users]
+  );
 
   const selectedStatus = selectedUser?.sidebarAccess
     ? "Custom modules"
@@ -250,10 +317,10 @@ export default function DevSidebarAccess() {
           parentKey="dev-sidebar-user-editor-content"
           sectionType="section-shell"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
+            display: "flex",
+            flexDirection: "column",
             gap: "var(--page-stack-gap, 12px)",
-            alignItems: "start",
+            minWidth: 0,
           }}
         >
           <SubSurface
@@ -262,49 +329,65 @@ export default function DevSidebarAccess() {
             sectionType="content-card"
             style={{ gap: "10px", minWidth: 0 }}
           >
-            <div>
-              <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Choose a user</div>
-              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.75 }}>
-                Search by name, email, or role.
+            <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Choose a user</div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  const nextSearch = event.target.value;
+                  setSearch(nextSearch);
+                  if (nextSearch.trim()) setUserListOpen(true);
+                }}
+                placeholder="Search users"
+                aria-label="Search users"
+                className="app-input"
+                style={{ flex: "1 1 260px", minWidth: 0 }}
+              />
+              <button
+                type="button"
+                className="app-btn app-btn--ghost"
+                onClick={() => setUserListOpen((current) => !current)}
+                aria-expanded={userListOpen}
+                aria-controls="dev-sidebar-user-list"
+                style={{ minHeight: 44 }}
+              >
+                {userListOpen ? "Hide list" : "Show list"}
+              </button>
+            </div>
+            {userListOpen ? (
+              <div
+                id="dev-sidebar-user-list"
+                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "6px", maxHeight: "360px", overflowY: "auto", minWidth: 0 }}
+              >
+                {filteredUsers.length === 0 ? (
+                  <EmptyState title="No matching users" message="Try a different name, email, or role." />
+                ) : filteredUsers.map((user) => {
+                  const active = user.id === selectedUserId;
+                  return (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserId(user.id);
+                        setUserListOpen(false);
+                      }}
+                      className={`app-btn app-btn--secondary app-btn--nav${active ? " is-active" : ""}`}
+                      style={{ width: "100%", justifyContent: "flex-start", textAlign: "left", height: "auto", minHeight: 44, padding: "6px 12px" }}
+                    >
+                      <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
+                        <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+                          {userDisplayName(user)}
+                        </span>
+                        <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
+                          {user.role || "No role"}{user.sidebarAccess ? " - customised" : ""}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search users"
-              aria-label="Search users"
-              className="app-input"
-              style={{ width: "100%" }}
-            />
-            <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
-              {filteredUsers.length} of {users.length} users
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "680px", overflowY: "auto", minWidth: 0 }}>
-              {filteredUsers.length === 0 ? (
-                <EmptyState title="No matching users" message="Try a different name, email, or role." />
-              ) : filteredUsers.map((user) => {
-                const active = user.id === selectedUserId;
-                return (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => setSelectedUserId(user.id)}
-                    className={`app-btn app-btn--secondary app-btn--nav${active ? " is-active" : ""}`}
-                    style={{ width: "100%", justifyContent: "flex-start", textAlign: "left", height: "auto", minHeight: 44, padding: "6px 12px" }}
-                  >
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
-                        {userDisplayName(user)}
-                      </span>
-                      <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
-                        {user.role || "No role"}{user.sidebarAccess ? " - customised" : ""}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            ) : null}
           </SubSurface>
 
           {!selectedUser ? (
@@ -317,7 +400,7 @@ export default function DevSidebarAccess() {
               sectionKey="dev-sidebar-selected-user"
               parentKey="dev-sidebar-user-editor-grid"
               sectionType="section-shell"
-              style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 12px)", minWidth: 0 }}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", gap: "var(--page-stack-gap, 12px)", alignItems: "start", minWidth: 0 }}
             >
               <SubSurface
                 sectionKey="dev-sidebar-selected-user-summary"
@@ -369,6 +452,16 @@ export default function DevSidebarAccess() {
                   <DevButton variant="solid" onClick={saveLayout} disabled={saving || !isDirty || !hasSavableModules}>
                     {saving ? "Saving" : "Save modules"}
                   </DevButton>
+                  <DevButton
+                    onClick={() => {
+                      setCopyTargetIds([]);
+                      setSaveError("");
+                      setCopyLayoutOpen(true);
+                    }}
+                    disabled={saving || !hasSavableModules}
+                  >
+                    Copy layout
+                  </DevButton>
                   <DevButton onClick={() => setDraftModules(initialModules)} disabled={saving || !isDirty}>
                     Discard changes
                   </DevButton>
@@ -395,12 +488,34 @@ export default function DevSidebarAccess() {
                 sectionType="content-card"
                 style={{ gap: "12px" }}
               >
-                <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Add a standard module</div>
-                  <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.75 }}>
-                    Standard pages are selected automatically. Pages already used by another module stay where they are.
-                  </div>
+                  <DevButton onClick={() => setAssignedModulesOpen(true)} disabled={saving}>
+                    Assigned modules ({draftModules.length})
+                  </DevButton>
                 </div>
+                {draftModules.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                      {draftModules.length} selected
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {draftModules.map((module) => (
+                        <button
+                          key={`selected-${module.key}`}
+                          type="button"
+                          className="app-btn app-btn--secondary is-active"
+                          aria-pressed="true"
+                          aria-controls={`sidebar-module-${module.key}`}
+                          onClick={() => openAssignedModule(module.key)}
+                          style={{ minHeight: 44 }}
+                        >
+                          {module.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "8px" }}>
                   {moduleCatalog.map((bundle) => {
                     const availableCount = bundle.items.filter((item) => !usedHrefs.has(item.href)).length;
@@ -409,14 +524,17 @@ export default function DevSidebarAccess() {
                       <button
                         key={bundle.key}
                         type="button"
-                        onClick={() => addBundle(bundle)}
-                        disabled={assigned || availableCount === 0}
+                        onClick={() => openBundle(bundle, assigned)}
+                        disabled={!assigned && availableCount === 0}
+                        aria-pressed={assigned}
+                        aria-controls={assigned ? `sidebar-module-${bundle.key}` : undefined}
+                        aria-label={assigned ? `Edit ${bundle.label} module` : `Add ${bundle.label} module`}
                         className={`app-btn app-btn--secondary${assigned ? " is-active" : ""}`}
                         style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left", padding: "8px 12px" }}
                       >
                         <span>{bundle.label}</span>
                         <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
-                          {assigned ? "Added" : `${availableCount} pages`}
+                          {assigned ? "Selected" : `${availableCount} pages`}
                         </span>
                       </button>
                     );
@@ -437,103 +555,181 @@ export default function DevSidebarAccess() {
                 </div>
               </SubSurface>
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Assigned modules</div>
-                <Pill label={`${draftModules.length} modules`} tone="text-1" />
-              </div>
-
-              {draftModules.length === 0 ? (
-                <EmptyState
-                  title="No modules assigned"
-                  message="Add a standard module above or load a role default."
-                />
-              ) : draftModules.map((module, moduleIndex) => {
-                const bundle = moduleCatalog.find((item) => item.key === module.key);
-                const visibleItems = bundle?.items || roleModuleOptions.get(module.key) ||
-                  module.items.map((href) => catalogByHref.get(href)).filter(Boolean);
-                const selectedCount = module.items.length;
-                return (
-                  <SubSurface
-                    as="section"
-                    key={module.key}
-                    sectionKey={`dev-sidebar-module-${module.key}`}
-                    parentKey="dev-sidebar-selected-user"
-                    sectionType="content-card"
-                    style={{ gap: "12px" }}
-                  >
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                      <input
-                        className="app-input"
-                        value={module.label}
-                        onChange={(event) => updateModule(moduleIndex, { label: event.target.value })}
-                        aria-label={`Module ${moduleIndex + 1} label`}
-                        style={{ flex: "1 1 220px", fontWeight: 700 }}
-                      />
-                      <Pill label={`${selectedCount} pages`} tone="text-1" />
-                      {bundle ? <Pill label="Standard module" tone="success-base" /> : null}
-                      <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, -1))} disabled={moduleIndex === 0}>Up</DevButton>
-                      <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, 1))} disabled={moduleIndex === draftModules.length - 1}>Down</DevButton>
-                      <DevButton small tone="danger-base" onClick={() => setDraftModules((current) => current.filter((_, index) => index !== moduleIndex))}>Remove</DevButton>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "6px" }}>
-                      {visibleItems.map((item) => {
-                        const checked = module.items.includes(item.href);
-                        const owner = draftModules.find((candidate, index) =>
-                          index !== moduleIndex && candidate.items.includes(item.href)
-                        );
-                        return (
-                          <label
-                            key={`${module.key}-${item.href}`}
-                            style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: 44, padding: "6px 8px", color: "var(--text-1)", cursor: owner ? "not-allowed" : "pointer", opacity: owner ? 0.6 : 1 }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={Boolean(owner)}
-                              onChange={(event) => updateModule(moduleIndex, {
-                                items: event.target.checked
-                                  ? [...module.items, item.href]
-                                  : module.items.filter((href) => href !== item.href),
-                              })}
-                            />
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 600 }}>{item.label}</span>
-                              <span style={{ display: "block", fontSize: "var(--text-body-xs)", opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {owner ? `Already in ${owner.label}` : item.href}
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-
-                    {!bundle ? (
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                        <DropdownField
-                          value={pageSelections[moduleIndex] || ""}
-                          onChange={(event) => setPageSelections((current) => ({ ...current, [moduleIndex]: event.target.value }))}
-                          aria-label={`Add page to ${module.label}`}
-                          placeholder="Choose another page"
-                          options={catalog.filter((item) => !usedHrefs.has(item.href)).map((item) => ({
-                            value: item.href,
-                            label: item.label,
-                            description: item.href,
-                          }))}
-                          style={{ flex: "1 1 260px" }}
-                        />
-                        <DevButton onClick={() => addPage(moduleIndex)} disabled={!pageSelections[moduleIndex]}>
-                          Add page
-                        </DevButton>
-                      </div>
-                    ) : null}
-                  </SubSurface>
-                );
-              })}
             </DevLayoutSection>
           )}
         </DevLayoutSection>
       )}
+
+      <PopupModal
+        isOpen={assignedModulesOpen}
+        onClose={() => setAssignedModulesOpen(false)}
+        closeOnBackdrop={!saving}
+        ariaLabel="Assigned sidebar modules"
+        cardStyle={{
+          width: "min(960px, 100%)",
+          padding: "var(--section-card-padding)",
+        }}
+      >
+        <Panel
+          sectionKey="dev-sidebar-assigned-modules-popup"
+          parentKey="shared-popup-card"
+          headerSectionKey="dev-sidebar-assigned-modules-popup-header"
+          contentSectionKey="dev-sidebar-assigned-modules-popup-content"
+          title="Assigned modules"
+          actions={(
+            <>
+              <Pill label={`${draftModules.length} modules`} tone="text-1" />
+              <DevButton variant="solid" onClick={() => setAssignedModulesOpen(false)} disabled={saving}>
+                Close
+              </DevButton>
+            </>
+          )}
+        >
+          {draftModules.length === 0 ? (
+            <EmptyState
+              title="No modules assigned"
+              message="Add a standard module or load a role default."
+            />
+          ) : draftModules.map((module, moduleIndex) => {
+            const bundle = moduleCatalog.find((item) => item.key === module.key);
+            const visibleItems = bundle?.items || roleModuleOptions.get(module.key) ||
+              module.items.map((href) => catalogByHref.get(href)).filter(Boolean);
+            const selectedCount = module.items.length;
+            return (
+              <SubSurface
+                as="section"
+                id={`sidebar-module-${module.key}`}
+                key={module.key}
+                sectionKey={`dev-sidebar-module-${module.key}`}
+                parentKey="dev-sidebar-assigned-modules-popup-content"
+                sectionType="content-card"
+                style={{ gap: "12px" }}
+              >
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    className="app-input"
+                    value={module.label}
+                    onChange={(event) => updateModule(moduleIndex, { label: event.target.value })}
+                    aria-label={`Module ${moduleIndex + 1} label`}
+                    style={{ flex: "1 1 220px", fontWeight: 700 }}
+                  />
+                  <Pill label={`${selectedCount} pages`} tone="text-1" />
+                  {bundle ? <Pill label="Standard module" tone="success-base" /> : null}
+                  <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, -1))} disabled={moduleIndex === 0}>Up</DevButton>
+                  <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, 1))} disabled={moduleIndex === draftModules.length - 1}>Down</DevButton>
+                  <DevButton small tone="danger-base" onClick={() => setDraftModules((current) => current.filter((_, index) => index !== moduleIndex))}>Remove</DevButton>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "6px" }}>
+                  {visibleItems.map((item) => {
+                    const checked = module.items.includes(item.href);
+                    const owner = draftModules.find((candidate, index) =>
+                      index !== moduleIndex && candidate.items.includes(item.href)
+                    );
+                    return (
+                      <label
+                        key={`${module.key}-${item.href}`}
+                        style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: 44, padding: "6px 8px", color: "var(--text-1)", cursor: owner ? "not-allowed" : "pointer", opacity: owner ? 0.6 : 1 }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={Boolean(owner)}
+                          onChange={(event) => updateModule(moduleIndex, {
+                            items: event.target.checked
+                              ? [...module.items, item.href]
+                              : module.items.filter((href) => href !== item.href),
+                          })}
+                        />
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", fontWeight: 600 }}>{item.label}</span>
+                          <span style={{ display: "block", fontSize: "var(--text-body-xs)", opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {owner ? `Already in ${owner.label}` : item.href}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {!bundle ? (
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                    <DropdownField
+                      value={pageSelections[moduleIndex] || ""}
+                      onChange={(event) => setPageSelections((current) => ({ ...current, [moduleIndex]: event.target.value }))}
+                      aria-label={`Add page to ${module.label}`}
+                      placeholder="Choose another page"
+                      options={catalog.filter((item) => !usedHrefs.has(item.href)).map((item) => ({
+                        value: item.href,
+                        label: item.label,
+                        description: item.href,
+                      }))}
+                      style={{ flex: "1 1 260px" }}
+                    />
+                    <DevButton onClick={() => addPage(moduleIndex)} disabled={!pageSelections[moduleIndex]}>
+                      Add page
+                    </DevButton>
+                  </div>
+                ) : null}
+              </SubSurface>
+            );
+          })}
+        </Panel>
+      </PopupModal>
+
+      <PopupModal
+        isOpen={copyLayoutOpen}
+        onClose={closeCopyLayout}
+        closeOnBackdrop={!saving}
+        ariaLabel="Copy sidebar layout"
+        cardStyle={{
+          width: "min(560px, 100%)",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
+          overflow: "visible",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--layout-card-gap)", flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0, flex: "1 1 240px" }}>
+            <h2 style={{ margin: 0, color: "var(--accentText)" }}>Copy sidebar layout</h2>
+            <p style={{ margin: "6px 0 0", color: "var(--text-1)", opacity: 0.75, fontSize: "var(--text-body-sm)" }}>
+              Copy {userDisplayName(selectedUser)}&apos;s current layout to one or more staff members.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <DevButton
+              onClick={copyLayout}
+              disabled={saving || copyTargetIds.length === 0 || !hasSavableModules}
+            >
+              {saving ? "Saving" : "Save"}
+            </DevButton>
+            <DevButton variant="solid" onClick={closeCopyLayout} disabled={saving}>
+              Close
+            </DevButton>
+          </div>
+        </div>
+
+        <MultiSelectDropdown
+          label="Copy layout to"
+          placeholder="Select staff members"
+          searchPlaceholder="Search staff members"
+          options={copyTargetOptions}
+          value={copyTargetIds}
+          onChange={setCopyTargetIds}
+          disabled={saving}
+          emptyState="No other staff members are available"
+          helperText={copyTargetIds.length > 0 ? `${copyTargetIds.length} staff selected` : "Select one or more staff members."}
+          maxHeight="min(320px, 45vh)"
+        />
+
+        {saveError ? (
+          <div role="alert" style={{ color: "var(--danger-base)", fontSize: "var(--text-body-sm)" }}>
+            {saveError}
+          </div>
+        ) : null}
+      </PopupModal>
     </Panel>
   );
 }

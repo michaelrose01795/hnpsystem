@@ -62,6 +62,45 @@ async function updateSingleUser(req, res, users) {
   });
 }
 
+async function copyLayoutToUsers(req, res, users) {
+  const sourceUser = findUser(users, req.body?.userId);
+  if (!sourceUser) {
+    return res.status(400).json({ success: false, message: "Unknown source user" });
+  }
+
+  const targetIds = [...new Set(
+    (Array.isArray(req.body?.targetUserIds) ? req.body.targetUserIds : [])
+      .map(Number)
+      .filter((userId) => Number.isInteger(userId) && userId > 0 && userId !== sourceUser.id)
+  )];
+  const targets = targetIds
+    .map((userId) => findUser(users, userId))
+    .filter(Boolean);
+  if (targets.length === 0 || targets.length !== targetIds.length) {
+    return res.status(400).json({ success: false, message: "Select at least one valid staff member" });
+  }
+
+  const modules = req.body?.modules;
+  const sourceRole = req.body?.sourceRole || sourceUser.sidebarAccess?.sourceRole || sourceUser.role;
+  const updates = targets.map((target) => {
+    const sidebarAccess = applySidebarModuleLayout({
+      role: target.role,
+      currentValue: target.sidebarAccess,
+      sourceRole,
+      modules,
+    });
+    return updateAdminUserSidebarAccess(target.id, sidebarAccess);
+  });
+
+  await Promise.all(updates);
+  const refreshedUsers = await listAdminUsers();
+  return res.status(200).json({
+    success: true,
+    updatedCount: targets.length,
+    data: refreshedUsers,
+  });
+}
+
 async function updateGroupAssignments(req, res, users) {
   const groupKey = String(req.body?.groupKey || "").trim();
   const group = getSidebarAccessGroup(groupKey);
@@ -123,6 +162,9 @@ async function handler(req, res) {
   try {
     const users = await listAdminUsers();
     const action = String(req.body?.action || "").trim();
+    if (action === "copy-layout") {
+      return copyLayoutToUsers(req, res, users);
+    }
     if (action) {
       return updateSingleUser(req, res, users);
     }

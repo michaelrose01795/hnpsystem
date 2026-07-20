@@ -542,7 +542,37 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     }
   }
 
-  return modules.filter((navigationModule) => navigationModule.items.length > 0);
+  const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
+  const communicationHrefs = ["/newsfeed", "/messages"];
+  const communicationHrefSet = new Set(communicationHrefs);
+  const communicationItems = communicationHrefs
+    .filter((href) => roleAccessible.has(href) && byHref.has(href))
+    .map((href) => toRoleModuleItem(byHref.get(href)));
+
+  if (communicationItems.length === 0) return visibleModules;
+
+  const storedCommunicationModule = visibleModules.find(
+    (navigationModule) => navigationModule.key === "communication"
+  );
+  const communicationExtras = (storedCommunicationModule?.items || []).filter(
+    (item) => !communicationHrefSet.has(item.href)
+  );
+  const remainingModules = visibleModules
+    .filter((navigationModule) => navigationModule !== storedCommunicationModule)
+    .map((navigationModule) => ({
+      ...navigationModule,
+      items: navigationModule.items.filter((item) => !communicationHrefSet.has(item.href)),
+    }))
+    .filter((navigationModule) => navigationModule.items.length > 0);
+
+  return [
+    {
+      key: "communication",
+      label: "Communication",
+      items: [...communicationItems, ...communicationExtras],
+    },
+    ...remainingModules,
+  ];
 }
 
 // Developer-editor projection for manually granted pages. It deliberately uses
@@ -930,19 +960,8 @@ export function isContextNavItemActive(item, pathname, pendingHref = null) {
 }
 
 export function resolveHome(roles) {
-  const preferredDepartmentCodes = Array.from(normalizeRoleSet(roles))
-    .map((role) => ROLE_DEPARTMENT_MAP[role])
-    .filter(Boolean);
-  for (const code of preferredDepartmentCodes) {
-    const department = WORKSPACE_DEPARTMENTS.find(
-      (dept) => dept.key === code && dept.category === "departments" && dept.home
-    );
-    if (department) return department.home;
-  }
-  const departments = getDepartmentsForRoles(roles).filter(
-    (dept) => dept.category === "departments" && dept.home
-  );
-  return departments.length > 0 ? departments[0].home : "/newsfeed";
+  void roles;
+  return "/newsfeed";
 }
 
 // getBreadcrumbTrail(pathname, roles) — Department › Page trail for the current
