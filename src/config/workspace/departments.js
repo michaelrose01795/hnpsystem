@@ -823,6 +823,70 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   },
 ]);
 
+// Standard bundles offered by Developer Platform -> Sidebar Access. This is a
+// presentation catalogue only: moving a route here does not alter its owning
+// workspace department, role permissions, or API/page guards. Hrefs resolve
+// against getWorkspacePageCatalog(), so this list cannot create new routes.
+export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
+  { key: "department-general", label: "General", department: "general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
+  {
+    key: "department-management",
+    label: "Admin",
+    department: "management",
+    hrefs: [
+      "/dashboard/managers", "/dashboard/admin", "/admin/users", "/admin/compliance",
+      "/hr/manager", "/website-manager", "/website-manager?tab=preview",
+      "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
+      "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
+      "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
+      "/hr/settings",
+    ],
+  },
+  {
+    key: "department-service",
+    label: "Reception",
+    department: "service",
+    hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"],
+  },
+  {
+    key: "department-workshop",
+    label: "Workshop",
+    department: "workshop",
+    hrefs: [
+      "/dashboard/workshop", "/tech/dashboard", "/mobile/dashboard", "/clocking",
+      "/consumables-tracker", "/consumables-request", "/tech/efficiency", "/nextjobs",
+      "/jobs", "/appointments", "/new-job", "/archive",
+    ],
+  },
+  { key: "department-mot", label: "MOT", department: "mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+  {
+    key: "department-parts",
+    label: "Parts",
+    department: "parts",
+    hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in", "/jobs"],
+  },
+  { key: "department-valeting", label: "Valeting", department: "valeting", hrefs: ["/dashboard/valeting", "/valet"] },
+  {
+    key: "department-accounts",
+    label: "Accounts",
+    department: "accounts",
+    hrefs: ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"],
+  },
+  {
+    key: "department-reports",
+    label: "Reports",
+    department: "reports",
+    hrefs: [
+      "/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot",
+      "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin",
+      "/reports/overview",
+    ],
+  },
+  { key: "department-account", label: "Profile", department: "account", hrefs: ["/profile"] },
+  { key: "department-paint", label: "Paint", department: "paint", hrefs: ["/dashboard/painting"] },
+  { key: "department-tech", label: "Tech", department: "tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
+]);
+
 // Phase 9: presentation-only grouping for the Workspace Group Sidebar. Pages
 // continue to be declared once in the nav/context sections above; hrefs here
 // assign their primary Module and never grant access by themselves.

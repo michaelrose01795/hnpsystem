@@ -12,6 +12,7 @@
 
 import {
   DEVELOPER_GROUP_LOCK,
+  SIDEBAR_MODULE_LIBRARY,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -40,6 +41,7 @@ export {
 };
 export {
   DEVELOPER_GROUP_LOCK,
+  SIDEBAR_MODULE_LIBRARY,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
   WORKSPACE_DASHBOARD_SHORTCUTS,
   WORKSPACE_DEPARTMENTS,
@@ -380,42 +382,12 @@ export function getWorkspacePageCatalog() {
 export function getSidebarModuleCatalog() {
   const pages = getWorkspacePageCatalog();
   const byHref = new Map(pages.map((item) => [item.href, item]));
-  const departmentOrder = new Map(
-    WORKSPACE_DEPARTMENTS.map((department, index) => [department.key, index])
-  );
-  const grouped = new Map();
-
-  for (const item of pages) {
-    if (item.department === DEVELOPER_GROUP_LOCK.key) continue;
-    const department = item.department || null;
-    if (!grouped.has(department)) grouped.set(department, []);
-    grouped.get(department).push(item);
-  }
-
-  for (const [department, modules] of Object.entries(WORKSPACE_MODULES)) {
-    if (department === DEVELOPER_GROUP_LOCK.key) continue;
-    if (!grouped.has(department)) grouped.set(department, []);
-    const existingHrefs = new Set(grouped.get(department).map((item) => item.href));
-    for (const href of modules.flatMap((navigationModule) => navigationModule.hrefs || [])) {
-      const item = byHref.get(href);
-      if (!item || existingHrefs.has(href)) continue;
-      grouped.get(department).push(item);
-      existingHrefs.add(href);
-    }
-  }
-
-  return [...grouped.entries()]
-    .map(([department, items]) => ({
-      key: moduleBundleKey(department),
-      label: moduleBundleLabel(department),
-      department,
-      items,
-    }))
-    .sort((a, b) =>
-      (departmentOrder.get(a.department) ?? Number.MAX_SAFE_INTEGER) -
-      (departmentOrder.get(b.department) ?? Number.MAX_SAFE_INTEGER) ||
-      a.label.localeCompare(b.label)
-    );
+  return SIDEBAR_MODULE_LIBRARY.map((module) => ({
+    key: module.key,
+    label: module.label,
+    department: module.department,
+    items: module.hrefs.map((href) => byHref.get(href)).filter(Boolean),
+  }));
 }
 
 function roleDefaultModules(roles) {

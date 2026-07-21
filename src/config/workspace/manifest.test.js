@@ -462,8 +462,43 @@ describe("workspace manifest - module bundle placement", () => {
       "Valeting",
       "Accounts",
       "Reports",
-      "Account",
-      "Pages",
+      "Profile",
+      "Paint",
+      "Tech",
+    ]);
+    expect(
+      moduleCatalog.map((module) => ({
+        key: module.key,
+        hrefs: module.items.map((item) => item.href),
+      }))
+    ).toEqual([
+      { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
+      { key: "department-management", hrefs: [
+        "/dashboard/managers", "/dashboard/admin", "/admin/users", "/admin/compliance",
+        "/hr/manager", "/website-manager", "/website-manager?tab=preview",
+        "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
+        "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
+        "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
+        "/hr/settings",
+      ] },
+      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"] },
+      { key: "department-workshop", hrefs: [
+        "/dashboard/workshop", "/tech/dashboard", "/mobile/dashboard", "/clocking",
+        "/consumables-tracker", "/consumables-request", "/tech/efficiency", "/nextjobs",
+        "/jobs", "/appointments", "/new-job", "/archive",
+      ] },
+      { key: "department-mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in", "/jobs"] },
+      { key: "department-valeting", hrefs: ["/dashboard/valeting", "/valet"] },
+      { key: "department-accounts", hrefs: ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"] },
+      { key: "department-reports", hrefs: [
+        "/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot",
+        "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin",
+        "/reports/overview",
+      ] },
+      { key: "department-account", hrefs: ["/profile"] },
+      { key: "department-paint", hrefs: ["/dashboard/painting"] },
+      { key: "department-tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
     ]);
     expect(
       moduleCatalog.find((module) => module.label === "Reception")?.items
