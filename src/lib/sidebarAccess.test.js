@@ -183,7 +183,6 @@ describe("sidebar access snapshots", () => {
     expect(snapshot.sourceRole).toBe("service");
     expect(snapshot.modules).toEqual([{ key: "custom", label: "Custom", items: ["/messages", "/jobs"] }]);
     expect(getRoleWorkspaceModules(["service"], snapshot).map((module) => module.key)).toEqual([
-      "communication",
       "custom",
     ]);
     expect(resolveAccessiblePaths(["service"], snapshot).has("/messages")).toBe(true);

@@ -554,6 +554,12 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
   }
 
   const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
+
+  // A saved per-user module layout is authoritative. Communication is promoted
+  // only for role defaults; custom layouts may remove it or place its pages in
+  // another module (for example, the standard General bundle).
+  if (storedModules) return visibleModules;
+
   const communicationHrefs = ["/newsfeed", "/messages"];
   const communicationHrefSet = new Set(communicationHrefs);
   const communicationItems = communicationHrefs

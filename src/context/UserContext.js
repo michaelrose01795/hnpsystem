@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
+import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
@@ -16,6 +17,7 @@ const LOGOUT_BARRIER_MS = 8000;
 const DEV_AUTH_BYPASS_ENABLED = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
 const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
 const NETWORK_TIMEOUT_MS = 15000;
+const SIDEBAR_ACCESS_REFRESH_MS = 15000;
 const CAN_USE_DEV_AUTH =
   process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED || PLAYWRIGHT_AUTH_ENABLED;
 const isBrowser = () => typeof document !== "undefined";
@@ -72,10 +74,9 @@ export function UserProvider({ children }) {
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
   const [sidebarAccess, setSidebarAccess] = useState(null);
-  // Auth starts unresolved, but once the session supplies roles the sidebar
-  // renders that safe role-derived navigation immediately. The optional saved
-  // per-user layout is reconciled silently in the background instead of
-  // replacing the whole rail with a loading skeleton.
+  // Keep navigation behind its skeleton until the saved per-user layout has
+  // resolved. Rendering role defaults first causes incorrect modules to flash
+  // before an administrator's persisted layout replaces them.
   const [sidebarAccessLoading, setSidebarAccessLoading] = useState(true);
   const sidebarAccessRequestRef = useRef(0);
   const [currentJob, setCurrentJob] = useState(null);
@@ -218,7 +219,7 @@ export function UserProvider({ children }) {
         const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
         sidebarAccessRequestRef.current += 1;
         setSidebarAccess(null);
-        setSidebarAccessLoading(false);
+        setSidebarAccessLoading(true);
         setUser(finalDevUser);
         setDevRoleCookie(finalDevUser.roles || []);
       } catch (err) {
@@ -257,7 +258,7 @@ export function UserProvider({ children }) {
       if (String(user?.id ?? "") !== String(sessionUser.id ?? "")) {
         sidebarAccessRequestRef.current += 1;
         setSidebarAccess(null);
-        setSidebarAccessLoading(false);
+        setSidebarAccessLoading(true);
       }
       setUser(sessionUser);
       setLoading(false);
@@ -281,6 +282,7 @@ export function UserProvider({ children }) {
     const resolveDbUser = async () => {
       if (!user) {
         setDbUserId(null);
+        setSidebarAccessLoading(false);
         setCurrentJob(null);
         return;
       }
@@ -319,12 +321,15 @@ export function UserProvider({ children }) {
           "Workshop user id resolution"
         );
         if (!cancelled) {
-          setDbUserId(ensuredId || null);
+          const resolvedId = ensuredId || null;
+          setDbUserId(resolvedId);
+          if (!resolvedId) setSidebarAccessLoading(false);
         }
       } catch (err) {
         console.error("Failed to resolve workshop user id", err?.message || err);
         if (!cancelled) {
           setDbUserId(null);
+          setSidebarAccessLoading(false);
         }
       }
     };
@@ -374,6 +379,40 @@ export function UserProvider({ children }) {
   useEffect(() => {
     refreshSidebarAccess();
   }, [refreshSidebarAccess]);
+
+  useEffect(() => {
+    if (!dbUserId || isPresentationMode() || PLAYWRIGHT_AUTH_ENABLED) return undefined;
+
+    const refreshIfCurrentUserChanged = (event) => {
+      const changedUserIds = Array.isArray(event?.detail?.userIds)
+        ? event.detail.userIds.map(Number)
+        : [];
+      if (changedUserIds.includes(Number(dbUserId))) {
+        void refreshSidebarAccess();
+      }
+    };
+    const refreshWhenActive = () => {
+      if (document.visibilityState === "visible") void refreshSidebarAccess();
+    };
+
+    // Refresh through the authenticated endpoint instead of subscribing the
+    // sensitive users table to a public realtime feed. Local edits apply at
+    // once; other devices refresh while active and immediately on focus/online.
+    const refreshTimer = window.setInterval(refreshWhenActive, SIDEBAR_ACCESS_REFRESH_MS);
+
+    window.addEventListener(SIDEBAR_ACCESS_UPDATED_EVENT, refreshIfCurrentUserChanged);
+    window.addEventListener("focus", refreshWhenActive);
+    window.addEventListener("online", refreshWhenActive);
+    document.addEventListener("visibilitychange", refreshWhenActive);
+
+    return () => {
+      window.removeEventListener(SIDEBAR_ACCESS_UPDATED_EVENT, refreshIfCurrentUserChanged);
+      window.removeEventListener("focus", refreshWhenActive);
+      window.removeEventListener("online", refreshWhenActive);
+      document.removeEventListener("visibilitychange", refreshWhenActive);
+      window.clearInterval(refreshTimer);
+    };
+  }, [dbUserId, refreshSidebarAccess]);
 
   // Helper to refresh the technician's active job from job_clocking table
   const refreshCurrentJob = useCallback(async () => {
@@ -448,7 +487,7 @@ export function UserProvider({ children }) {
 
       sidebarAccessRequestRef.current += 1;
       setSidebarAccess(null);
-      setSidebarAccessLoading(false);
+      setSidebarAccessLoading(true);
       setUser(finalUser);
       if (CAN_USE_DEV_AUTH) {
         localStorage.setItem("devUser", JSON.stringify(finalUser));

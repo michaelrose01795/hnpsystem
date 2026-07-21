@@ -22,7 +22,7 @@ import {
   getSidebarModuleCatalog,
   getWorkspacePageCatalog,
 } from "@/config/workspace/manifest";
-import { syncAssignedStandardModules } from "@/lib/sidebarAccess";
+import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
 
 const userDisplayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
@@ -38,7 +38,9 @@ const moduleToDraft = (module) => ({
 const modulesFromUser = (user) =>
   getRoleWorkspaceModules(user?.role ? [user.role] : [], user?.sidebarAccess).map(moduleToDraft);
 
-const draftFromUser = (user) => syncAssignedStandardModules(modulesFromUser(user));
+// A stored user layout is authoritative. Re-expanding standard modules from the
+// current catalogue here would silently restore pages the administrator unticked.
+const draftFromUser = (user) => modulesFromUser(user);
 
 const moveItem = (items, index, direction) => {
   const nextIndex = index + direction;
@@ -164,6 +166,14 @@ export default function DevSidebarAccess() {
       const body = await res.json().catch(() => null);
       if (!body?.success) throw new Error(body?.message || `Save returned ${res.status}`);
       setUsers(Array.isArray(body.data) ? body.data : []);
+      if (typeof window !== "undefined") {
+        const userIds = payload.action === "copy-layout"
+          ? payload.targetUserIds
+          : [payload.userId];
+        window.dispatchEvent(new CustomEvent(SIDEBAR_ACCESS_UPDATED_EVENT, {
+          detail: { userIds: (Array.isArray(userIds) ? userIds : []).map(Number) },
+        }));
+      }
       return body;
     } catch (error) {
       setSaveError(error?.message || "Could not save sidebar access.");

@@ -18,6 +18,7 @@ import {
 } from "@/config/workspace/manifest";
 
 export const SIDEBAR_ACCESS_VERSION = 5;
+export const SIDEBAR_ACCESS_UPDATED_EVENT = "hnp:sidebar-access-updated";
 
 const managedGroups = () =>
   getAllSidebarItems().filter(

@@ -61,7 +61,7 @@ describe("role workspace defaults", () => {
     }
   });
 
-  it("keeps Communication first for every role and saved layout", () => {
+  it("keeps Communication first for role defaults but respects saved layouts", () => {
     for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
       expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("communication");
     }
@@ -71,10 +71,23 @@ describe("role workspace defaults", () => {
       modules: [{ key: "customer-jobs", label: "Customer Jobs", items: ["/jobs"] }],
     };
     const modules = getRoleWorkspaceModules(["service"], savedLayout);
-    expect(modules[0]).toMatchObject({
-      key: "communication",
-      label: "Communication",
-    });
+    expect(modules.map((module) => module.key)).toEqual(["customer-jobs"]);
+  });
+
+  it("allows Communication pages to live in a saved General module", () => {
+    const savedLayout = {
+      items: ["/newsfeed", "/messages", "/jobs"],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed", "/messages"] },
+        { key: "customer-jobs", label: "Customer Jobs", items: ["/jobs"] },
+      ],
+    };
+
+    const modules = getRoleWorkspaceModules(["service"], savedLayout);
+    expect(modules.map((module) => module.key)).toEqual([
+      "department-general",
+      "customer-jobs",
+    ]);
     expect(modules[0].items.map((item) => item.href)).toEqual(["/newsfeed", "/messages"]);
   });
 
@@ -98,9 +111,8 @@ describe("role workspace defaults", () => {
       ],
     };
     expect(getRoleWorkspaceModules(["service"], snapshot).flatMap((module) => module.items.map((item) => item.href))).toEqual([
-      "/newsfeed",
-      "/messages",
       "/deliveries",
+      "/messages",
     ]);
     expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(false);
   });
