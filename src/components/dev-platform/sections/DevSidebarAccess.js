@@ -22,6 +22,7 @@ import {
   getSidebarModuleCatalog,
   getWorkspacePageCatalog,
 } from "@/config/workspace/manifest";
+import { syncAssignedStandardModules } from "@/lib/sidebarAccess";
 
 const userDisplayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
@@ -34,8 +35,10 @@ const moduleToDraft = (module) => ({
   items: module.items.map((item) => item.href),
 });
 
-const draftFromUser = (user) =>
+const modulesFromUser = (user) =>
   getRoleWorkspaceModules(user?.role ? [user.role] : [], user?.sidebarAccess).map(moduleToDraft);
+
+const draftFromUser = (user) => syncAssignedStandardModules(modulesFromUser(user));
 
 const moveItem = (items, index, direction) => {
   const nextIndex = index + direction;
@@ -118,9 +121,10 @@ export default function DevSidebarAccess() {
   );
 
   useEffect(() => {
+    const sourceModules = selectedUser ? modulesFromUser(selectedUser) : [];
     const nextModules = selectedUser ? draftFromUser(selectedUser) : [];
     setDraftModules(nextModules);
-    setInitialModules(nextModules);
+    setInitialModules(sourceModules);
     setPageSelections({});
     setSaveError("");
     if (selectedUser?.role && WORKSPACE_ROLE_DEFAULT_NAMES.includes(selectedUser.role)) {
@@ -209,14 +213,19 @@ export default function DevSidebarAccess() {
     setPageSelections((current) => ({ ...current, [moduleIndex]: "" }));
   };
 
-  const saveLayout = () => {
-    if (!selectedUser || !hasSavableModules) return;
-    callApi({
+  const saveLayout = async () => {
+    if (!selectedUser || !hasSavableModules) return null;
+    const modules = draftModules.filter(
+      (module) => module.label.trim() && module.items.length > 0
+    );
+    const result = await callApi({
       action: "save-layout",
       userId: selectedUser.id,
       sourceRole: selectedUser.sidebarAccess?.sourceRole || selectedUser.role,
-      modules: draftModules.filter((module) => module.label.trim() && module.items.length > 0),
+      modules,
     });
+    if (result) setInitialModules(modules);
+    return result;
   };
 
   const closeCopyLayout = () => {
@@ -514,7 +523,19 @@ export default function DevSidebarAccess() {
           actions={(
             <>
               <Pill label={`${draftModules.length} modules`} tone="text-1" />
-              <DevButton variant="solid" onClick={() => setAssignedModulesOpen(false)} disabled={saving}>
+              <Pill
+                label={isDirty ? "Unsaved changes" : "Saved"}
+                tone={isDirty ? "warning-base" : "success-base"}
+                strong
+              />
+              <DevButton
+                variant="solid"
+                onClick={saveLayout}
+                disabled={saving || !isDirty || !hasSavableModules}
+              >
+                {saving ? "Saving" : "Save"}
+              </DevButton>
+              <DevButton onClick={() => setAssignedModulesOpen(false)} disabled={saving}>
                 Close
               </DevButton>
             </>

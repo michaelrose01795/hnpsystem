@@ -839,7 +839,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
       "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
       "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
       "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
-      "/hr/settings",
+      "/hr/settings", "/archive",
     ],
   },
   {
@@ -853,9 +853,8 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     label: "Workshop",
     department: "workshop",
     hrefs: [
-      "/dashboard/workshop", "/tech/dashboard", "/mobile/dashboard", "/clocking",
-      "/consumables-tracker", "/consumables-request", "/tech/efficiency", "/nextjobs",
-      "/jobs", "/appointments", "/new-job", "/archive",
+      "/dashboard/workshop", "/clocking", "/consumables-tracker",
+      "/tech/efficiency", "/nextjobs",
     ],
   },
   { key: "department-mot", label: "MOT", department: "mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },

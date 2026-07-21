@@ -10,6 +10,7 @@ import {
   getLegacySidebarHrefs,
   getRoleDefaultWorkspaceModules,
   getRoleWorkspaceModules,
+  getSidebarModuleCatalog,
   getWorkspaceGroupRoles,
   getWorkspaceGroups,
   getWorkspacePageCatalog,
@@ -63,6 +64,45 @@ function normaliseModules(rawModules) {
 
 function flattenModuleItems(modules) {
   return [...new Set((modules || []).flatMap((module) => module.items || []))];
+}
+
+// Refresh assigned standard bundles from the current Developer Platform module
+// library. Custom modules remain untouched. Earlier assigned modules retain a
+// duplicated route when two standard bundles offer it, matching the editor's
+// existing first-owner/no-duplicates rule.
+export function syncAssignedStandardModules(modules) {
+  if (!Array.isArray(modules)) return [];
+
+  const standardByKey = new Map(
+    getSidebarModuleCatalog().map((module) => [module.key, module])
+  );
+  const knownHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
+  const usedHrefs = new Set();
+
+  return modules.reduce((synced, module) => {
+    const key = String(module?.key || "").trim();
+    if (!key) return synced;
+
+    const standard = standardByKey.get(key);
+    const sourceItems = standard
+      ? standard.items.map((item) => item.href)
+      : Array.isArray(module?.items)
+      ? module.items.map((item) => typeof item === "string" ? item : item?.href)
+      : [];
+    const items = sourceItems.filter((href) => {
+      if (!knownHrefs.has(href) || usedHrefs.has(href)) return false;
+      usedHrefs.add(href);
+      return true;
+    });
+    if (items.length === 0) return synced;
+
+    synced.push({
+      key,
+      label: standard?.label || String(module?.label || key).trim(),
+      items,
+    });
+    return synced;
+  }, []);
 }
 
 export function getSidebarAccessGroup(groupKey) {

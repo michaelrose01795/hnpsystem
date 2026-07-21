@@ -32,8 +32,8 @@ Current standard module and page inventory shown by **Select standard modules** 
 7. Valeting
 8. Accounts
 9. Reports
-10. Account
-11. Pages (Paint)
+10. Profile
+11. Paint
 12. Tech
 
 ---
@@ -76,6 +76,7 @@ Current page count: **21**
 - Recruitment - `/hr/recruitment`
 - HR Reports - `/hr/reports`
 - HR Settings - `/hr/settings`
+- Archive Job - `/archive`
 
 ---
 
@@ -96,32 +97,27 @@ Current page count: **4**
 
 Module key: `department-workshop`  
 Department: `workshop`  
-Current page count: **12**
+Current page count: **5**
 
 - Workshop Dashboard - `/dashboard/workshop`
-- Tech Dashboard - `/tech/dashboard`
-- Mobile Tech Dashboard - `/mobile/dashboard`
 - Clocking - `/clocking`
 - Consumables Tracker - `/consumables-tracker`
-- Request Consumables - `/consumables-request`
 - Efficiency - `/tech/efficiency`
 - Next Jobs - `/nextjobs`
-- Job Cards - `/jobs`
-- Appointments - `/appointments`
-- Create Job Card - `/new-job`
-- Archive Job - `/archive`
 
 ---
 
-## TECH
+## Technicians
 
 Module key: `department-tech`  
-Department: `Tech`  
-Current page count: **3**
+Department: `Technicians`  
+Current page count: **5**
 
 - Tech Dashboard - `/tech/dashboard`
+- Mobile Tech Dashboard - `/mobile/dashboard`
 - My Jobs - `/tech`
 - Efficiency - `/tech/efficiency`
+- Request Consumables - `/consumables-request`
 
 ---
 
@@ -129,11 +125,12 @@ Current page count: **3**
 
 Module key: `department-mot`  
 Department: `mot`  
-Current page count: **3**
+Current page count: **4**
 
 - MOT Dashboard - `/dashboard/mot`
 - My Jobs - `/tech`
 - Efficiency - `/tech/efficiency`
+- Request Consumables - `/consumables-request`
 
 ---
 
@@ -141,14 +138,13 @@ Current page count: **3**
 
 Module key: `department-parts`  
 Department: `parts`  
-Current page count: **6**
+Current page count: **5**
 
 - Parts Dashboard - `/dashboard/parts`
 - Parts Manager Dashboard - `/parts-manager`
 - Stock Catalogue - `/stock-catalogue`
 - Deliveries - `/deliveries`
 - Goods In - `/goods-in`
-- Job Cards - `/jobs`
 
 ---
 
@@ -156,10 +152,11 @@ Current page count: **6**
 
 Module key: `department-valeting`  
 Department: `valeting`  
-Current page count: **2**
+Current page count: **3**
 
 - Valeting Dashboard - `/dashboard/valeting`
 - Valet Jobs - `/valet`
+- Request Consumables - `/consumables-request`
 
 ---
 
@@ -196,30 +193,10 @@ Current page count: **9**
 
 ---
 
-## Account (CHANGE NAME TO PROFILE NOT ACCOUNT)
+## Profile
 
 Module key: `department-account`  
 Department: `account`  
 Current page count: **1**
 
 - Profile - `/profile`
-
-> Logout is an action rather than a page route, so it is not included in the standard module catalogue.
-
----
-
-## Pages (Paint) (CHANGE NAME TO PAINT NOT PAGES)
-
-Module key: `department-paint`  
-Department: `paint`  
-Current page count: **1**
-
-- Painting Dashboard - `/dashboard/painting`
-
-> The UI currently labels this module `Pages` because the `paint` dashboard exists but there is no matching `paint` entry in `WORKSPACE_DEPARTMENTS`. "Paint" is included in this heading only to make the module's purpose clear.
-
----
-
-## Notes about the counts shown in the UI
-
-The number beside an unassigned standard module is the number of its pages not already used by the selected user's other modules. For an assigned module, the UI shows `Selected` or `Add N missing`. Those values can therefore be lower than the complete catalogue counts documented above.

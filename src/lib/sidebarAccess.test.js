@@ -5,6 +5,7 @@ import {
   applySidebarGroupUserSelection,
   applySidebarModuleLayout,
   applySidebarPagePlacements,
+  syncAssignedStandardModules,
   createSidebarAccessFromRole,
   createSidebarLayoutCopy,
   getRoleDefaultSidebarAccess,
@@ -21,6 +22,56 @@ import {
 } from "@/config/workspace/manifest";
 
 describe("sidebar access snapshots", () => {
+  it("refreshes assigned standard modules without changing custom modules", () => {
+    const synced = syncAssignedStandardModules([
+      {
+        key: "department-general",
+        label: "General",
+        items: ["/newsfeed", "/messages", "/tracking", "/archive"],
+      },
+      {
+        key: "department-workshop",
+        label: "Workshop",
+        items: ["/dashboard/workshop", "/tech"],
+      },
+      { key: "department-account", label: "Account", items: ["/profile"] },
+      { key: "department-paint", label: "Pages", items: ["/dashboard/painting"] },
+      { key: "custom-finance", label: "My Finance", items: ["/accounts"] },
+    ]);
+
+    expect(synced.find((module) => module.key === "department-general")?.items)
+      .toEqual(["/newsfeed", "/messages", "/tracking"]);
+    expect(syncAssignedStandardModules([
+      { key: "department-management", label: "Admin", items: ["/dashboard/admin"] },
+    ])[0].items).toContain("/archive");
+    expect(synced.find((module) => module.key === "department-workshop")?.items)
+      .toEqual([
+        "/dashboard/workshop",
+        "/clocking",
+        "/consumables-tracker",
+        "/tech/efficiency",
+        "/nextjobs",
+      ]);
+    expect(synced.find((module) => module.key === "department-workshop")?.items)
+      .not.toContain("/tech");
+    expect(synced.find((module) => module.key === "department-account")?.label)
+      .toBe("Profile");
+    expect(synced.find((module) => module.key === "department-paint")?.label)
+      .toBe("Paint");
+    expect(synced.find((module) => module.key === "custom-finance"))
+      .toEqual({ key: "custom-finance", label: "My Finance", items: ["/accounts"] });
+  });
+
+  it("keeps duplicated standard pages in the first assigned module only", () => {
+    const synced = syncAssignedStandardModules([
+      { key: "department-service", label: "Reception", items: ["/jobs"] },
+      { key: "department-workshop", label: "Workshop", items: ["/jobs"] },
+    ]);
+
+    expect(synced[0].items).toContain("/jobs");
+    expect(synced[1].items).not.toContain("/jobs");
+  });
+
   it("resolves staff role defaults into assigned users", () => {
     expect(isSidebarGroupEnabled("Admin Manager", null, "management")).toBe(true);
     expect(isSidebarGroupEnabled("Buying Director", null, "management")).toBe(true);
