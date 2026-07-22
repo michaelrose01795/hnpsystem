@@ -9,6 +9,28 @@ export const HR_MANAGER_DASHBOARD_ROLES = ["owner", "admin manager"];
 export const MOBILE_TECH_ROLES = ["mobile technician"];
 export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
 export const WORKSHOP_CONTROLLER_ROLES = ["workshop manager", "workshop controller"];
+export const TECHNICIAN_ROLES = [
+  "Techs",
+  "Technician",
+  "Technician Lead",
+  "Lead Technician",
+  "MOT Tester",
+  "Tester",
+];
+export const WORKSHOP_CAPACITY_MANAGER_ROLES = [
+  "service manager",
+  "workshop manager",
+  "general manager",
+  "admin manager",
+  "owner",
+  "admin",
+];
+export const WORKSHOP_CAPACITY_VIEW_ROLES = Array.from(new Set([
+  ...WORKSHOP_CAPACITY_MANAGER_ROLES,
+  ...TECHNICIAN_ROLES,
+  "service",
+  "mobile technician",
+]));
 export const DEV_FULL_ACCESS_ROLES = Array.from(
   new Set(
     [

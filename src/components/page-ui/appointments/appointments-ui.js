@@ -23,6 +23,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical surface la
 import PopupModal from "@/components/popups/popupStyleApi"; // shared staffglobal popup (full-cover backdrop hides the topbar)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // data-area skeletons while jobs load
 import { CalendarField } from "@/components/ui/calendarAPI"; // in-app calendar picker (.calendar-api) — replaces the native date popup
+import Button from "@/components/ui/Button"; // canonical staffglobal button family
 
 // ===========================================================================
 // Workshop Scheduler board (inlined — was src/components/Appointments/SchedulerBoard.js)
@@ -206,7 +207,6 @@ function SchedulerBoard({
   jobs = [],
   selectedDay,
   onSelectDay,
-  onOpenJob,
   onOpenDayJobs,
   getFinishTime,
   getBookingHours,
@@ -318,10 +318,12 @@ function SchedulerBoard({
   }, [isDayMode, selectedKey, visibleDates]);
 
   const handleBookingClick = useCallback(
-    (jobNumber) => {
-      if (typeof onOpenJob === "function") onOpenJob(jobNumber);
+    (date, jobNumber) => {
+      if (typeof onOpenDayJobs === "function") {
+        onOpenDayJobs(new Date(date.getTime()), jobNumber);
+      }
     },
-    [onOpenJob]
+    [onOpenDayJobs]
   );
 
   // Timeline grid template (the 37 time columns; the date column is a separate
@@ -486,13 +488,17 @@ function SchedulerBoard({
                   role="button"
                   tabIndex={0}
                   aria-label="View jobs for this day"
-                  onClick={() =>
-                    typeof onOpenDayJobs === "function" && onOpenDayJobs(new Date(date.getTime()))
-                  }
+                  onClick={() => {
+                    if (typeof onOpenDayJobs === "function") {
+                      onOpenDayJobs(new Date(date.getTime()));
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      typeof onOpenDayJobs === "function" && onOpenDayJobs(new Date(date.getTime()));
+                      if (typeof onOpenDayJobs === "function") {
+                        onOpenDayJobs(new Date(date.getTime()));
+                      }
                     }
                   }}
                   style={{
@@ -544,13 +550,13 @@ function SchedulerBoard({
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleBookingClick(card.jobNumber);
+                          handleBookingClick(date, card.jobNumber);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleBookingClick(card.jobNumber);
+                            handleBookingClick(date, card.jobNumber);
                           }
                         }}
                         title={tooltip}
@@ -1216,7 +1222,6 @@ function SchedulerBoard({
 export default function AppointmentsUi(props) {
   const {
     DropdownField,
-    Popup,
     SearchBar,
     checkingInJobId,
     currentNote,
@@ -1267,6 +1272,22 @@ export default function AppointmentsUi(props) {
     timeSlots
   } = props; // receive page logic props.
 
+  const dayJobsTableRef = useRef(null);
+
+  // A scheduler booking opens the day-jobs popup with its matching row briefly
+  // highlighted. Once the modal is mounted, center that row in the scroll area
+  // so the clicked booking stays visible even on a busy day.
+  useEffect(() => {
+    if (!showDayJobsPopup || !highlightJob || !dayJobsTableRef.current) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const targetJobNumber = String(highlightJob);
+      const targetRow = Array.from(dayJobsTableRef.current?.querySelectorAll("tr[data-job-number]") || [])
+        .find((row) => row.dataset.jobNumber === targetJobNumber);
+      targetRow?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [highlightJob, showDayJobsPopup, sortedJobs]);
+
   switch (props.view) {// choose the page section requested by logic.
     case "section1":
       return (
@@ -1306,52 +1327,22 @@ export default function AppointmentsUi(props) {
             <div style={{
                 minWidth: 0
               }}>
-              <SearchBar value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onClear={() => setSearchQuery("")} placeholder="Search by Job #, Name, Reg, or Vehicle..." disabled={isLoading} style={{
-                  width: "100%",
-                  minHeight: "var(--control-height-sm)",
-                  padding: "var(--control-padding-sm)",
-                  borderRadius: "var(--control-radius-sm)"
-                }} />
+              <SearchBar value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onClear={() => setSearchQuery("")} placeholder="Search by Job #, Name, Reg, or Vehicle..." disabled={isLoading} />
             </div>
-            <CalendarField value={isoDateKey(selectedDay)} onChange={(e) => handleSelectScheduleDate(e.target.value)} disabled={isLoading} size="sm" placeholder="Select date" aria-label="Appointment date" style={{ width: "100%", minWidth: 0 }} />
-            <DropdownField value={scheduleViewMode} onChange={(e) => setScheduleViewMode(e.target.value)} disabled={isLoading} placeholder="View" style={{
-              width: "100%"
-            }} size="sm" aria-label="Scheduler view filter" title="Show the chosen day or its whole month">
+            <CalendarField value={isoDateKey(selectedDay)} onChange={(e) => handleSelectScheduleDate(e.target.value)} disabled={isLoading} placeholder="Select date" aria-label="Appointment date" />
+            <DropdownField value={scheduleViewMode} onChange={(e) => setScheduleViewMode(e.target.value)} disabled={isLoading} placeholder="View" aria-label="Scheduler view filter" title="Show the chosen day or its whole month">
               <option value="month">Month view</option>
               <option value="day">Day view</option>
             </DropdownField>
-            <input type="text" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} style={{
-              width: "100%",
-              minHeight: "var(--control-height)",
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)"
-            }} />
-            <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time" style={{
-              width: "100%"
-            }} size="sm">
+            <input type="text" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} />
+            <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time">
               {timeSlots.map((slot) => <option key={slot} value={slot}>
                   {slot}
                 </option>)}
             </DropdownField>
-            <button onClick={() => handleAddAppointment(isoDateKey(selectedDay))} disabled={isLoading} style={{
-              width: "100%",
-              minHeight: "var(--control-height)",
-              backgroundColor: isLoading ? "var(--surface)" : "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              whiteSpace: "nowrap",
-              transition: "background-color 0.2s"
-            }} onMouseEnter={(e) => {
-              if (isLoading) return;
-              const isDarkTheme = document?.documentElement?.getAttribute("data-theme") === "dark";
-              e.currentTarget.style.backgroundColor = isDarkTheme ? "var(--primary-selected)" : "var(--danger)";
-            }} onMouseLeave={(e) => !isLoading && (e.currentTarget.style.backgroundColor = "var(--primary)")}>
+            <Button onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
               {isLoading ? "Booking..." : "Book Appointment"}
-            </button>
+            </Button>
           </LayerSurface>
 
           {/* Workshop Scheduler — inlined CSS-Grid planning board (replaces the
@@ -1360,7 +1351,6 @@ export default function AppointmentsUi(props) {
             jobs={schedulerJobs}
             selectedDay={selectedDay}
             onSelectDay={setSelectedDay}
-            onOpenJob={handleJobRowClick}
             onOpenDayJobs={handleOpenDayJobs}
             getFinishTime={schedulerGetFinish}
             getBookingHours={schedulerGetBookingHours}
@@ -1427,14 +1417,13 @@ export default function AppointmentsUi(props) {
                   {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
                 </span>
                 {/* Close — top-right of the popup */}
-                <button
+                <Button
                   type="button"
-                  className="app-btn app-btn--secondary"
+                  variant="secondary"
                   onClick={() => setShowDayJobsPopup(false)}
-                  style={{ minHeight: 0 }}
                 >
                   Close
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1447,7 +1436,7 @@ export default function AppointmentsUi(props) {
                 borderRadius: "var(--radius-md)",
                 background: "var(--theme)"
               }}>
-              <table data-dev-section-key="appointments-day-jobs-table" data-dev-section-parent="appointments-day-jobs" data-dev-section-type="data-table" style={{
+              <table ref={dayJobsTableRef} className="app-data-table app-data-table--rounded" data-dev-section-key="appointments-day-jobs-table" data-dev-section-parent="appointments-day-jobs" data-dev-section-type="data-table" style={{
                   width: "100%",
                   borderCollapse: "separate",
                   borderSpacing: 0,
@@ -1504,17 +1493,18 @@ export default function AppointmentsUi(props) {
                     </tr>) : sortedJobs.length > 0 ? sortedJobs.map((job, idx) => {
                       const isCheckedIn = isJobActuallyCheckedIn(job);
                       const isCurrentlyCheckingIn = checkingInJobId === job.id;
+                      const isHighlighted = String(highlightJob) === String(job.jobNumber || job.id);
                       const cellBorder = "var(--separating-line)";
-                      const rowBackground = highlightJob === job.jobNumber ? "var(--success-surface)" : idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
-                      return <tr key={idx} style={{
+                      const rowBackground = isHighlighted ? "var(--success-surface)" : idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
+                      return <tr key={idx} data-job-number={String(job.jobNumber || job.id)} style={{
                         backgroundColor: rowBackground,
                         transition: "background-color 0.2s ease"
                       }} onMouseEnter={(e) => {
-                        if (highlightJob !== job.jobNumber) {
+                        if (!isHighlighted) {
                           e.currentTarget.style.backgroundColor = "var(--theme-hover)";
                         }
                       }} onMouseLeave={(e) => {
-                        if (highlightJob !== job.jobNumber) {
+                        if (!isHighlighted) {
                           e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
                         }
                       }}>
@@ -1532,20 +1522,7 @@ export default function AppointmentsUi(props) {
                           color: "var(--primary)",
                           fontWeight: "700"
                         }}>
-                            <button type="button" onClick={() => handleJobRowClick(job.jobNumber || job.id)} onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)} style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "6px 12px",
-                            minHeight: 0,
-                            borderRadius: "var(--radius-xs)",
-                            background: "var(--theme)",
-                            border: "none",
-                            color: "var(--primary)",
-                            fontWeight: "700",
-                            fontSize: "inherit",
-                            cursor: "pointer"
-                          }}>
+                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobRowClick(job.jobNumber || job.id)} onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)} style={{ gap: "6px" }}>
                               <span>{job.jobNumber || job.id || "-"}</span>
                               {(() => {
                               const badge = getJobGroupBadge(job);
@@ -1638,44 +1615,16 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           textAlign: "center"
                         }}>
-                            {isCheckedIn ? <span style={{
-                            padding: isCompactMobile ? "8px 12px" : "8px 16px",
+                            {isCheckedIn ? <span className="app-badge app-badge--success" style={{
                             minWidth: isCompactMobile ? "90px" : "110px",
-                            textAlign: "center",
-                            borderRadius: "var(--radius-xs)",
-                            border: "none",
-                            fontSize: "13px",
-                            fontWeight: "700",
-                            lineHeight: "1",
-                            display: "inline-block",
-                            backgroundColor: "var(--success-surface)",
-                            color: "var(--success-dark)"
+                            justifyContent: "center"
                           }}>
                                 {isCompactMobile ? "Checked In" : "✓ Checked In"}
                               </span> : <button onClick={(event) => {
                             event.stopPropagation();
                             handleCheckIn(job);
-                          }} disabled={isCurrentlyCheckingIn} style={{
-                            padding: isCompactMobile ? "8px 12px" : "8px 16px",
+                          }} disabled={isCurrentlyCheckingIn} className="app-table-action-btn app-table-action-btn--primary" style={{
                             minWidth: isCompactMobile ? "90px" : "110px",
-                            minHeight: "unset",
-                            backgroundColor: isCurrentlyCheckingIn ? "var(--surface)" : "var(--primary)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
-                            fontSize: "13px",
-                            fontWeight: "700",
-                            lineHeight: "1",
-                            transition: "background-color 0.2s"
-                          }} onMouseEnter={(e) => {
-                            if (!isCurrentlyCheckingIn) {
-                              e.currentTarget.style.backgroundColor = "var(--primary-selected)";
-                            }
-                          }} onMouseLeave={(e) => {
-                            if (!isCurrentlyCheckingIn) {
-                              e.currentTarget.style.backgroundColor = "var(--primary)";
-                            }
                           }}>
                                 {isCurrentlyCheckingIn ? "Checking In..." : "Check In"}
                               </button>}
@@ -1699,7 +1648,12 @@ export default function AppointmentsUi(props) {
           </PopupModal>
 
           {/* Add Note Popup */}
-          <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
+          <PopupModal
+            isOpen={showNotePopup}
+            onClose={() => setShowNotePopup(false)}
+            ariaLabel="Add appointment note"
+            cardStyle={{ width: "min(100%, 440px)", padding: "var(--section-card-padding)" }}
+          >
             <h3 style={{
                 marginTop: 0,
                 marginBottom: "16px",
@@ -1708,58 +1662,31 @@ export default function AppointmentsUi(props) {
               }}>
               Add Note for {formatDateNoYear(selectedDay)}
             </h3>
-            <textarea style={{
-                width: "100%",
-                height: "120px",
-                padding: "12px",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                fontSize: "14px",
-                fontFamily: "inherit",
-                resize: "vertical",
-                outline: "none"
-              }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." />
+            <textarea style={{ height: "120px", resize: "vertical" }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." />
             <div style={{
                 display: "flex",
                 justifyContent: "space-between",
                 marginTop: "16px",
                 gap: "10px"
               }}>
-              <button onClick={saveNote} style={{
-                  flex: 1,
-                  padding: "10px 20px",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "14px",
-                  transition: "background-color 0.2s"
-                }} onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"} onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}>
+              <Button onClick={saveNote} style={{ flex: 1 }}>
                 Save Note
-              </button>
-              <button onClick={() => setShowNotePopup(false)} style={{
-                  flex: 1,
-                  padding: "10px 20px",
-                  backgroundColor: "var(--grey-accent)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "14px",
-                  transition: "background-color 0.2s"
-                }} onMouseEnter={(e) => e.target.style.backgroundColor = "var(--grey-accent-dark)"} onMouseLeave={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}>
+              </Button>
+              <Button variant="secondary" onClick={() => setShowNotePopup(false)} style={{ flex: 1 }}>
                 Cancel
-              </button>
+              </Button>
             </div>
-          </Popup>
+          </PopupModal>
 
           {/* Staff Off Popup */}
-          <Popup isOpen={showStaffOffPopup} onClose={() => setShowStaffOffPopup(false)}>
+          <PopupModal
+            isOpen={showStaffOffPopup}
+            onClose={() => setShowStaffOffPopup(false)}
+            ariaLabel="Staff absences"
+            cardStyle={{ width: "min(100%, 320px)", padding: "var(--section-card-padding)" }}
+          >
             <div style={{
-                width: "260px"
+                width: "100%"
               }}>
             {/* Header */}
             <div style={{
@@ -1902,8 +1829,11 @@ export default function AppointmentsUi(props) {
                   }}>—</div>
                 No approved absences for this day
               </div>}
+              <Button variant="secondary" onClick={() => setShowStaffOffPopup(false)} style={{ width: "100%", marginTop: "var(--layout-card-gap)" }}>
+                Close
+              </Button>
             </div>
-          </Popup>
+          </PopupModal>
         </div>
       ); // render extracted page section.
     default:

@@ -38,9 +38,8 @@ CREATE TABLE public.users (
   password_algo text NOT NULL DEFAULT 'plaintext'::text,
   password_updated_at timestamp with time zone,
   extension text,
-  sidebar_access jsonb,
+  sidebar_access jsonb CHECK (sidebar_access IS NULL OR jsonb_typeof(sidebar_access) = 'object'::text),
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
-  CONSTRAINT users_sidebar_access_is_object CHECK ((sidebar_access IS NULL) OR (jsonb_typeof(sidebar_access) = 'object'::text)),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.vehicles (
@@ -1538,6 +1537,21 @@ CREATE TABLE public.tech_efficiency_targets (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT tech_efficiency_targets_pkey PRIMARY KEY (id),
   CONSTRAINT tech_efficiency_targets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.technician_capacity_overrides (
+  override_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  capacity_date date NOT NULL,
+  available_hours numeric NOT NULL CHECK (available_hours >= 0::numeric AND available_hours <= 24::numeric),
+  created_by integer,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT technician_capacity_overrides_pkey PRIMARY KEY (override_id),
+  CONSTRAINT technician_capacity_overrides_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT technician_capacity_overrides_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT technician_capacity_overrides_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id),
+  CONSTRAINT technician_capacity_overrides_user_date_key UNIQUE (user_id, capacity_date)
 );
 CREATE TABLE public.labour_time_presets (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

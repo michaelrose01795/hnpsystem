@@ -1012,6 +1012,25 @@ html.staff-scope div.news-card {
   }
 }
 
+/* Compact staff popup/section header convention.
+   New operational popups and sections use one clear title plus actions only.
+   Do not add eyebrow/kicker labels or descriptive header paragraphs. Put any
+   essential instructions beside the relevant control or in an explicit status
+   message so dense staff workflows keep a stable, compact header height. */
+html.staff-scope .app-popup-compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-popup-compact-header > :is(h1, h2, h3) {
+  margin: 0;
+  min-width: 0;
+}
+
 /* Links */
 html.staff-scope a {
   color: var(--accent-strong);

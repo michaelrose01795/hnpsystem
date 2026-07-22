@@ -2,9 +2,8 @@
 // ✅ Imports converted to use absolute alias "@/"
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
-import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { useRouter } from "next/router"; // For reading query params
@@ -417,6 +416,7 @@ export default function Appointments() {
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
   const [highlightJob, setHighlightJob] = useState("");
+  const highlightTimerRef = useRef(null);
   const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -431,6 +431,7 @@ export default function Appointments() {
   const [staffOffPopupDate, setStaffOffPopupDate] = useState(null);
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
   const [techUsers, setTechUsers] = useState([]);
+  const [capacityScheduleByDate, setCapacityScheduleByDate] = useState({});
   const [isCompactMobile, setIsCompactMobile] = useState(false);
 
   const techUserNameMap = useMemo(() => {
@@ -611,6 +612,23 @@ export default function Appointments() {
     }
   }, [dates]);
 
+  const fetchCapacitySchedule = useCallback(async () => {
+    if (!dates || dates.length === 0) return;
+    const startDate = toLocalDateKey(dates[0]);
+    const endDate = toLocalDateKey(dates[dates.length - 1]);
+    try {
+      const response = await fetch(`/api/technician-capacity?start=${startDate}&end=${endDate}`);
+      const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload.message || "Unable to load technician capacity.");
+      setCapacityScheduleByDate(
+        Object.fromEntries((payload.data || []).map((day) => [day.date, day]))
+      );
+    } catch (error) {
+      console.error("Error fetching technician capacity:", error);
+      setCapacityScheduleByDate({});
+    }
+  }, [dates]);
+
   useEffect(() => {
     setDates(generateDates(60));
   }, []);
@@ -623,6 +641,10 @@ export default function Appointments() {
   useEffect(() => {
     fetchTechUsers();
   }, [fetchTechUsers]);
+
+  useEffect(() => {
+    fetchCapacitySchedule();
+  }, [fetchCapacitySchedule]);
 
   useEffect(() => {
     const jobIdsWithAppointments = jobs.
@@ -764,15 +786,34 @@ export default function Appointments() {
     }
   }, []);
 
+  const showJobHighlight = useCallback((jobNumberValue) => {
+    if (!jobNumberValue) return;
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    setHighlightJob(String(jobNumberValue));
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightJob("");
+      highlightTimerRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => () => {
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+  }, []);
+
   // Clicking a scheduler day's time column selects that day and opens the
-  // day-jobs list popup (replaces the old always-visible day-jobs table).
-  const handleOpenDayJobs = useCallback((date) => {
+  // day-jobs list popup. Booking-card clicks also reveal and briefly highlight
+  // the matching row so the user's selection remains visually anchored.
+  const handleOpenDayJobs = useCallback((date, jobNumberValue) => {
     if (date) {
       const next = date instanceof Date ? new Date(date.getTime()) : new Date(date);
       if (!Number.isNaN(next.getTime())) setSelectedDay(next);
     }
+    if (jobNumberValue) {
+      setSearchQuery("");
+      showJobHighlight(jobNumberValue);
+    }
     setShowDayJobsPopup(true);
-  }, []);
+  }, [showJobHighlight]);
 
   // ---------------- Add / Update Appointment ----------------
   const handleAddAppointment = async (customDate) => {
@@ -873,9 +914,8 @@ export default function Appointments() {
       );
 
       // ✅ Visual feedback
-      setHighlightJob(job.jobNumber || job.id.toString());
+      showJobHighlight(job.jobNumber || job.id.toString());
       setSelectedDay(new Date(appointmentDate));
-      setTimeout(() => setHighlightJob(""), 3000);
 
       // ✅ Success notification
       alert(
@@ -1107,13 +1147,14 @@ export default function Appointments() {
       (sum, tech) => sum + (parseHoursValue(tech.availableHours) ?? 0),
       0
     );
+    const persistedDay = capacityScheduleByDate[toLocalDateKey(date)];
 
     return {
       dateKey,
       techs: finalTechs,
-      availableTechs,
-      totalTechs: Math.max(finalTechs.length, expectedTechCount),
-      totalAvailableHours
+      availableTechs: persistedDay?.availableTechnicians ?? availableTechs,
+      totalTechs: persistedDay?.technicians?.length ?? Math.max(finalTechs.length, expectedTechCount),
+      totalAvailableHours: persistedDay?.totalHours ?? totalAvailableHours
     };
   };
 
@@ -1373,7 +1414,7 @@ export default function Appointments() {
   };
 
   // ---------------- Render ----------------
-  return <AppointmentsUi view="section1" CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleSelectScheduleDate={handleSelectScheduleDate} handleOpenDayJobs={handleOpenDayJobs} showDayJobsPopup={showDayJobsPopup} setShowDayJobsPopup={setShowDayJobsPopup} scheduleViewMode={scheduleViewMode} setScheduleViewMode={setScheduleViewMode} handleShowStaffOff={handleShowStaffOff} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} jobNumber={jobNumber} jobsLoading={jobsLoading} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} schedulerGetBookingHours={getSchedulerBookingHours} schedulerGetFinish={getEstimatedFinishTime} schedulerJobs={jobs} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} time={time} timeSlots={timeSlots} />;
+  return <AppointmentsUi view="section1" CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleSelectScheduleDate={handleSelectScheduleDate} handleOpenDayJobs={handleOpenDayJobs} showDayJobsPopup={showDayJobsPopup} setShowDayJobsPopup={setShowDayJobsPopup} scheduleViewMode={scheduleViewMode} setScheduleViewMode={setScheduleViewMode} handleShowStaffOff={handleShowStaffOff} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} jobNumber={jobNumber} jobsLoading={jobsLoading} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} schedulerGetBookingHours={getSchedulerBookingHours} schedulerGetFinish={getEstimatedFinishTime} schedulerJobs={jobs} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} time={time} timeSlots={timeSlots} />;
 
 
 

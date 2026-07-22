@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/database/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
@@ -12,6 +13,10 @@ import { ContentWidth, PageShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui"; // Extracted presentation layer.
+import Button from "@/components/ui/Button";
+import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
+import { useUser } from "@/context/UserContext";
+import { hasAnyRole, WORKSHOP_CAPACITY_MANAGER_ROLES } from "@/lib/auth/roles";
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
 const MOT_ROLES = ["MOT Tester", "Tester"];
@@ -161,6 +166,8 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
 };
 
 function ClockingOverviewTab({ onSummaryChange }) {
+  const { data: session } = useSession();
+  const { user } = useUser();
   const [teamStatus, setTeamStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -170,6 +177,17 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const [modalError, setModalError] = useState("");
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [capacitySettingsOpen, setCapacitySettingsOpen] = useState(false);
+  const sessionRoles = Array.isArray(session?.user?.roles)
+    ? session.user.roles
+    : session?.user?.role
+      ? [session.user.role]
+      : [];
+  const contextRoles = Array.isArray(user?.roles) ? user.roles : user?.role ? [user.role] : [];
+  const canManageCapacity = hasAnyRole(
+    [...sessionRoles, ...contextRoles],
+    WORKSHOP_CAPACITY_MANAGER_ROLES
+  );
 
   const fetchClocking = useCallback(async () => {
     setLoading(true);
@@ -581,12 +599,19 @@ function ClockingOverviewTab({ onSummaryChange }) {
               Last updated {formattedLastUpdated}
             </p>
           </div>
-          <DropdownField
-            ariaLabel="Filter technician status"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            options={TECHNICIAN_STATUS_FILTER_OPTIONS}
-            style={{ width: "min(220px, 100%)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
+            <DropdownField
+              ariaLabel="Filter technician status"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              options={TECHNICIAN_STATUS_FILTER_OPTIONS}
+              style={{ width: "min(220px, 52vw)" }} />
+            {canManageCapacity ? (
+              <Button type="button" variant="primary" onClick={() => setCapacitySettingsOpen(true)}>
+                Settings
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {loading && teamStatus.length === 0 ?
@@ -1262,6 +1287,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
           </div>
         </ModalPortal>
       }
+      <CapacitySettingsPopup
+        isOpen={capacitySettingsOpen}
+        onClose={() => setCapacitySettingsOpen(false)}
+      />
       <style jsx>{`
         #${jobNumberInputId}::placeholder {
           color: var(--grey-accent);
