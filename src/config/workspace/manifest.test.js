@@ -41,6 +41,7 @@ import {
   getActiveWorkspaceModule,
   getRoleWorkspaceModules,
   getManualGrantPlacementDetails,
+  getAssignableSidebarPageCatalog,
   getSidebarModuleCatalog,
   isContextNavItemActive,
   isPageTabActive,
@@ -51,7 +52,10 @@ import {
   WORKSPACE_NAV_SECTIONS,
   DEVELOPER_GROUP_LOCK,
 } from "@/config/workspace/manifest";
-import { getAccessibleNavPaths as getPageAccessNavPaths } from "@/lib/auth/pageAccess";
+import {
+  canAccessPath,
+  getAccessibleNavPaths as getPageAccessNavPaths,
+} from "@/lib/auth/pageAccess";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { roleCategories } from "@/config/users";
@@ -462,7 +466,6 @@ describe("workspace manifest - module bundle placement", () => {
       "Valeting",
       "Accounts",
       "Reports",
-      "Profile",
       "Paint",
       "Tech",
     ]);
@@ -495,7 +498,6 @@ describe("workspace manifest - module bundle placement", () => {
         "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin",
         "/reports/overview",
       ] },
-      { key: "department-account", hrefs: ["/profile"] },
       { key: "department-paint", hrefs: ["/dashboard/painting"] },
       { key: "department-tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
     ]);
@@ -505,6 +507,12 @@ describe("workspace manifest - module bundle placement", () => {
     expect(
       moduleCatalog.find((module) => module.label === "Reception")?.items
     ).toContainEqual(expect.objectContaining({ label: "Create Job Card", href: "/new-job" }));
+  });
+
+  it("keeps standalone Profile and the locked Developer route out of the assignable page catalog", () => {
+    const hrefs = getAssignableSidebarPageCatalog().map((item) => item.href);
+    expect(hrefs).not.toContain("/profile");
+    expect(hrefs).not.toContain(DEVELOPER_GROUP_LOCK.navItem.href);
   });
 
   it("exposes Parts as a standard assignable module bundle", () => {
@@ -517,6 +525,74 @@ describe("workspace manifest - module bundle placement", () => {
       "/jobs",
       "/deliveries",
     ]));
+  });
+
+  it("projects standard-module buttons in library order without changing the saved layout", () => {
+    const sidebarAccess = {
+      items: ["/tracking", "/messages", "/newsfeed", "/appointments"],
+      modules: [
+        {
+          key: "department-service",
+          label: "Reception",
+          items: ["/appointments"],
+        },
+        {
+          key: "department-general",
+          label: "General",
+          items: ["/tracking", "/messages", "/newsfeed"],
+        },
+      ],
+    };
+
+    const modules = getRoleWorkspaceModules(["service"], sidebarAccess);
+
+    expect(modules.map((module) => module.key)).toEqual([
+      "department-service",
+      "department-general",
+    ]);
+    expect(modules[1].items.map((item) => item.href)).toEqual([
+      "/newsfeed",
+      "/messages",
+      "/tracking",
+    ]);
+    expect(sidebarAccess.modules[1].items).toEqual([
+      "/tracking",
+      "/messages",
+      "/newsfeed",
+    ]);
+  });
+
+  it("keeps custom pages in place while ordering standard-module buttons", () => {
+    const modules = getRoleWorkspaceModules(["service"], {
+      items: ["/tracking", "/appointments", "/newsfeed", "/messages"],
+      modules: [
+        {
+          key: "department-general",
+          label: "General",
+          items: ["/tracking", "/appointments", "/newsfeed", "/messages"],
+        },
+      ],
+    });
+
+    expect(modules[0].items.map((item) => item.href)).toEqual([
+      "/newsfeed",
+      "/appointments",
+      "/messages",
+      "/tracking",
+    ]);
+  });
+
+  it("removes the retired Profile module and keeps the standalone account link out of modules", () => {
+    const modules = getRoleWorkspaceModules(["service"], {
+      items: ["/profile", "/newsfeed"],
+      modules: [
+        { key: "department-account", label: "Profile", items: ["/profile"] },
+        { key: "custom", label: "Custom", items: ["/profile", "/newsfeed"] },
+      ],
+    });
+
+    expect(modules.map((module) => module.key)).toEqual(["custom"]);
+    expect(modules[0].items.map((item) => item.href)).toEqual(["/newsfeed"]);
   });
 
   it("places a legacy manual grant into its department module", () => {
@@ -606,11 +682,67 @@ describe("workspace manifest — per-user sidebar access override", () => {
     }
   });
 
-  it("an explicit snapshot is presentation-only and does not change landable access", () => {
+  it("an explicit snapshot preserves role access and grants its visible pages", () => {
     const snapshot = { items: ["/messages"], groups: ["general"] };
     const resolved = resolveAccessiblePaths(["service"], snapshot);
     const roleDefaults = getAccessibleNavPaths(["service"]);
     expect([...resolved].sort()).toEqual([...roleDefaults].sort());
+
+    const partsSnapshot = {
+      items: ["/stock-catalogue"],
+      modules: [
+        { key: "department-parts", label: "Parts", items: ["/stock-catalogue"] },
+      ],
+    };
+    expect(resolveAccessiblePaths(["service"], partsSnapshot).has("/stock-catalogue")).toBe(true);
+    expect(canAccessPath("/stock-catalogue", ["service"], partsSnapshot)).toBe(true);
+  });
+
+  it("allows every page that can be rendered in a live role or saved sidebar", () => {
+    for (const roles of REPRESENTATIVE_ROLES) {
+      const modules = getRoleWorkspaceModules(roles);
+      for (const item of modules.flatMap((navigationModule) => navigationModule.items)) {
+        expect(canAccessPath(item.href, roles, null), `${roles.join(", ")} -> ${item.href}`).toBe(true);
+      }
+    }
+
+    const savedModules = getSidebarModuleCatalog()
+      .map((navigationModule) => ({
+        key: navigationModule.key,
+        label: navigationModule.label,
+        items: navigationModule.items.map((item) => item.href),
+      }))
+      .filter((navigationModule) => navigationModule.items.length > 0);
+    const savedNavigation = {
+      items: [...new Set(savedModules.flatMap((navigationModule) => navigationModule.items))],
+      modules: savedModules,
+    };
+    const renderedItems = getRoleWorkspaceModules(["service"], savedNavigation)
+      .flatMap((navigationModule) => navigationModule.items);
+
+    expect(renderedItems.length).toBeGreaterThan(0);
+    for (const item of renderedItems) {
+      expect(canAccessPath(item.href, ["service"], savedNavigation), item.href).toBe(true);
+    }
+
+    const assignableItems = getAssignableSidebarPageCatalog();
+    const manualNavigation = {
+      items: assignableItems.map((item) => item.href),
+      modules: [
+        {
+          key: "all-assignable-pages",
+          label: "All assignable pages",
+          items: assignableItems.map((item) => item.href),
+        },
+      ],
+    };
+    const manuallyRenderedItems = getRoleWorkspaceModules(["service"], manualNavigation)
+      .flatMap((navigationModule) => navigationModule.items);
+
+    expect(manuallyRenderedItems).toHaveLength(assignableItems.length);
+    for (const item of manuallyRenderedItems) {
+      expect(canAccessPath(item.href, ["service"], manualNavigation), item.href).toBe(true);
+    }
   });
 
   it("unknown hrefs in a snapshot are ignored", () => {

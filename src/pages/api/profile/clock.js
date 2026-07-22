@@ -7,6 +7,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { buildCiClockRows, buildCiClockStatus, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
+import { isSyntheticDevPlatformSession } from "@/lib/auth/devSession";
 
 async function resolveUserId(req, res) {
   const queryUserId = req.query.userId || req.body?.userId;
@@ -32,6 +33,11 @@ async function resolveUserId(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
+  if (isSyntheticDevPlatformSession(session)) {
+    const error = new Error("Employee clocking is unavailable for the Developer Platform account.");
+    error.statusCode = 403;
+    throw error;
+  }
   return resolveSessionUserId(session);
 }
 
@@ -341,9 +347,10 @@ export default async function handler(req, res) {
     res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
   } catch (error) {
-    console.error("Clock API error:", error);
+    const statusCode = error?.statusCode || (error.message === "Authentication required" ? 401 : 500);
+    if (statusCode >= 500) console.error("Clock API error:", error);
     return res
-      .status(error.message === "Authentication required" ? 401 : 500)
+      .status(statusCode)
       .json({ success: false, message: error.message });
   }
 }

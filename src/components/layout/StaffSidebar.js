@@ -432,12 +432,17 @@ export default function Sidebar({
   // Clock in/out state for sidebar button
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
+  const employeeUserId = Number(dbUserId);
+  const canUseEmployeeClock = Number.isInteger(employeeUserId) && employeeUserId > 0;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !canUseEmployeeClock) {
+      setIsClockedIn(false);
+      return;
+    }
     const fetchClockStatus = async () => {
       try {
-        const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+        const url = `/api/profile/clock?userId=${employeeUserId}`;
         const response = await fetch(url, { credentials: "include" });
         if (!response.ok) return;
         const payload = await response.json();
@@ -449,13 +454,14 @@ export default function Sidebar({
       }
     };
     fetchClockStatus();
-  }, [user, dbUserId]);
+  }, [user, canUseEmployeeClock, employeeUserId]);
 
   const handleClockToggle = useCallback(async () => {
+    if (!canUseEmployeeClock) return;
     setClockLoading(true);
     try {
       const action = isClockedIn ? "clock-out" : "clock-in";
-      const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+      const url = `/api/profile/clock?userId=${employeeUserId}`;
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -470,7 +476,7 @@ export default function Sidebar({
     } finally {
       setClockLoading(false);
     }
-  }, [isClockedIn, dbUserId]);
+  }, [isClockedIn, canUseEmployeeClock, employeeUserId]);
 
   // `truncate` ellipsises the label on a single line — used by the Profile
   // button, which now renders the user's (potentially long) full name inside the
@@ -944,23 +950,25 @@ export default function Sidebar({
                 return (
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                      <button
-                        className="app-btn"
-                        type="button"
-                        onClick={handleClockToggle}
-                        disabled={clockLoading}
-                        style={
-                          isClockedIn
-                            ? { flex: 1, opacity: clockLoading ? 0.6 : 1, ...dangerControlStyle }
-                            : {
-                                flex: 1,
-                                opacity: clockLoading ? 0.6 : 1,
-                                ...successControlStyle,
-                              }
-                        }
-                      >
-                        {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
-                      </button>
+                      {canUseEmployeeClock && (
+                        <button
+                          className="app-btn"
+                          type="button"
+                          onClick={handleClockToggle}
+                          disabled={clockLoading}
+                          style={
+                            isClockedIn
+                              ? { flex: 1, opacity: clockLoading ? 0.6 : 1, ...dangerControlStyle }
+                              : {
+                                  flex: 1,
+                                  opacity: clockLoading ? 0.6 : 1,
+                                  ...successControlStyle,
+                                }
+                          }
+                        >
+                          {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
+                        </button>
+                      )}
                       <button
                         className="app-btn app-tone-danger"
                         type="button"

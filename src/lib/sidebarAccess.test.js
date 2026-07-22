@@ -54,8 +54,8 @@ describe("sidebar access snapshots", () => {
       ]);
     expect(synced.find((module) => module.key === "department-workshop")?.items)
       .not.toContain("/tech");
-    expect(synced.find((module) => module.key === "department-account")?.label)
-      .toBe("Profile");
+    expect(synced.find((module) => module.key === "department-account"))
+      .toBeUndefined();
     expect(synced.find((module) => module.key === "department-paint")?.label)
       .toBe("Paint");
     expect(synced.find((module) => module.key === "custom-finance"))
@@ -70,6 +70,20 @@ describe("sidebar access snapshots", () => {
 
     expect(synced[0].items).toContain("/jobs");
     expect(synced[1].items).not.toContain("/jobs");
+  });
+
+  it("removes Profile from retired and custom saved modules", () => {
+    const snapshot = normalizeSidebarAccess({
+      items: ["/profile", "/newsfeed"],
+      modules: [
+        { key: "department-account", label: "Profile", items: ["/profile"] },
+        { key: "custom", label: "Custom", items: ["/profile", "/newsfeed"] },
+      ],
+    });
+
+    expect(snapshot.modules).toEqual([
+      { key: "custom", label: "Custom", items: ["/newsfeed"] },
+    ]);
   });
 
   it("resolves staff role defaults into assigned users", () => {
@@ -94,7 +108,7 @@ describe("sidebar access snapshots", () => {
     expect(copy.modules.flatMap((module) => module.items)).toContain("/parts-manager");
   });
 
-  it("legacy group grants still change navigation layout but not direct-route access", () => {
+  it("legacy group grants change navigation layout and direct-route access together", () => {
     const snapshot = applySidebarGroupChange({
       role: "service",
       currentValue: null,
@@ -104,7 +118,7 @@ describe("sidebar access snapshots", () => {
     });
 
     expect(getWorkspaceGroups(["service"], snapshot).map((group) => group.key)).toContain("parts");
-    expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(false);
+    expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(true);
     expect(
       getDepartmentWorkspaceNav("parts", ["service"], snapshot).items.map((item) => item.href)
     ).toEqual(["/deliveries", "/goods-in", "/jobs", "/stock-catalogue"]);
@@ -188,7 +202,7 @@ describe("sidebar access snapshots", () => {
     expect(resolveAccessiblePaths(["service"], snapshot).has("/messages")).toBe(true);
   });
 
-  it("adds the standard Parts bundle to a Workshop Manager and keeps page guards independent", () => {
+  it("adds the standard Parts bundle to a Workshop Manager and grants its pages", () => {
     const role = "workshop manager";
     const defaults = getRoleDefaultSidebarAccess(role).modules;
     const used = new Set(defaults.flatMap((module) => module.items));
@@ -211,7 +225,7 @@ describe("sidebar access snapshots", () => {
     );
     expect(assignedParts.label).toBe("Parts");
     expect(assignedParts.items.map((item) => item.href)).toContain("/dashboard/parts");
-    expect(resolveAccessiblePaths([role], snapshot).has("/dashboard/parts")).toBe(false);
+    expect(resolveAccessiblePaths([role], snapshot).has("/dashboard/parts")).toBe(true);
   });
 
   it("saves page placements without discarding existing override metadata", () => {

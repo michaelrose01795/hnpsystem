@@ -13,8 +13,44 @@ import { calculateLeaveRequestDayTotals, parseLeaveRequestNotes } from "@/lib/hr
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
 import { getStaffVehiclePayrollDeductionsForUser } from "@/lib/profile/staffVehiclePayrollDeductions";
 import { buildCiProfilePayload, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
+import { isSyntheticDevPlatformSession } from "@/lib/auth/devSession";
+import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
 
 const adminDb = getDatabaseClient();
+
+function buildSyntheticDevProfilePayload(session) {
+  return {
+    profile: {
+      id: "DEV-PLATFORM",
+      userId: null,
+      name: session?.user?.name || "Developer",
+      jobTitle: "Developer Platform",
+      department: "Development",
+      role: DEV_PLATFORM_ROLE,
+      employmentType: "Not applicable",
+      startDate: null,
+      hourlyRate: 0,
+      overtimeRate: 0,
+      contractedWeeklyHours: 0,
+      annualSalary: 0,
+      keycloakId: null,
+      email: session?.user?.email || "",
+      phone: "N/A",
+      emergencyContact: "Not provided",
+      address: "Not provided",
+      managerId: null,
+      themeMode: "system",
+      accentColor: "red",
+    },
+    attendanceLogs: [],
+    overtimeSummary: null,
+    overtimeSessions: [],
+    leaveBalance: { entitlement: 0, taken: 0, remaining: 0 },
+    leaveRequests: [],
+    staffVehicles: [],
+    staffVehiclePayrollDeductions: [],
+  };
+}
 
 // Auto-close any stale active records from previous days for this user
 async function autoCloseStaleRecords(userId) {
@@ -517,6 +553,14 @@ export default async function handler(req, res) {
 
       if (!session?.user) {
         return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      if (isSyntheticDevPlatformSession(session)) {
+        return res.status(200).json({
+          success: true,
+          data: buildSyntheticDevProfilePayload(session),
+          source: "synthetic-dev-platform",
+        });
       }
 
       userId = await resolveSessionUserId(session);

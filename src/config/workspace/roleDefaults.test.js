@@ -104,7 +104,7 @@ describe("role workspace defaults", () => {
     expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"], null, "/jobs")).toBe("customer-jobs");
   });
 
-  it("custom user modules affect navigation presentation without widening permissions", () => {
+  it("custom user modules grant access to every page they render", () => {
     const snapshot = {
       modules: [
         { key: "borrowed", label: "Borrowed", items: ["/deliveries", "/messages"] },
@@ -114,6 +114,6 @@ describe("role workspace defaults", () => {
       "/deliveries",
       "/messages",
     ]);
-    expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(false);
+    expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(true);
   });
 });

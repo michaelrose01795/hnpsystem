@@ -17,10 +17,10 @@ import {
 } from "@/components/support/dev/supportDevUi";
 import {
   WORKSPACE_ROLE_DEFAULT_NAMES,
+  getAssignableSidebarPageCatalog,
   getRoleDefaultWorkspaceModules,
   getRoleWorkspaceModules,
   getSidebarModuleCatalog,
-  getWorkspacePageCatalog,
 } from "@/config/workspace/manifest";
 import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
 
@@ -76,7 +76,7 @@ export default function DevSidebarAccess() {
   const [copyLayoutOpen, setCopyLayoutOpen] = useState(false);
   const [copyTargetIds, setCopyTargetIds] = useState([]);
 
-  const catalog = useMemo(() => getWorkspacePageCatalog(), []);
+  const catalog = useMemo(() => getAssignableSidebarPageCatalog(), []);
   const moduleCatalog = useMemo(() => getSidebarModuleCatalog(), []);
   const catalogByHref = useMemo(
     () => new Map(catalog.map((item) => [item.href, item])),
@@ -521,7 +521,11 @@ export default function DevSidebarAccess() {
         ariaLabel="Assigned sidebar modules"
         cardStyle={{
           width: "min(960px, 100%)",
+          height: "calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
           padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <Panel
@@ -530,6 +534,8 @@ export default function DevSidebarAccess() {
           headerSectionKey="dev-sidebar-assigned-modules-popup-header"
           contentSectionKey="dev-sidebar-assigned-modules-popup-content"
           title="Assigned modules"
+          style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden" }}
+          contentStyle={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}
           actions={(
             <>
               <Pill label={`${draftModules.length} modules`} tone="text-1" />

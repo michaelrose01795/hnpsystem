@@ -80,16 +80,19 @@ export function useBehaviourModel({ currentAsPath = "", navigationItems = [], en
     if (base === lastPathRef.current) return;
     lastPathRef.current = base;
 
-    setModel((current) => {
-      const next = recordVisit(
-        current,
-        { href: base, label: labelForPath(base, navByHref), ts: Date.now() },
-        { max: WORKSPACE_LIMITS.behaviourTracked, halfLifeMs: WORKSPACE_LIMITS.behaviourHalfLifeMs }
-      );
-      writeJSON(key, next);
-      return next;
-    });
-  }, [currentAsPath, enabled, record, key, navByHref]);
+    const next = recordVisit(
+      model,
+      { href: base, label: labelForPath(base, navByHref), ts: Date.now() },
+      { max: WORKSPACE_LIMITS.behaviourTracked, halfLifeMs: WORKSPACE_LIMITS.behaviourHalfLifeMs }
+    );
+
+    // Publishing to workspaceStorage synchronously notifies other mounted
+    // consumers. Keep that side effect outside the React state updater so a
+    // subscriber can never update Layout while React is evaluating this hook's
+    // state transition.
+    setModel(next);
+    writeJSON(key, next);
+  }, [currentAsPath, enabled, record, key, navByHref, model]);
 
   const reset = useCallback(() => {
     removeKey(key);

@@ -412,17 +412,60 @@ function roleDefaultModules(roles) {
   return Array.from(moduleMap.values());
 }
 
+const standardModuleItemOrder = new Map(
+  SIDEBAR_MODULE_LIBRARY.map((module) => [
+    module.key,
+    new Map(module.hrefs.map((href, index) => [href, index])),
+  ])
+);
+const retiredSidebarModuleKeys = new Set(["department-account"]);
+const standaloneSidebarHrefs = new Set(["/profile"]);
+
+export function getAssignableSidebarPageCatalog() {
+  return getWorkspacePageCatalog().filter(
+    (item) =>
+      !standaloneSidebarHrefs.has(item.href) &&
+      item.department !== DEVELOPER_GROUP_LOCK.key
+  );
+}
+
+// Saved layouts keep their module positions and page assignments, while pages
+// that still belong to a standard module follow the library's button order.
+// Non-standard pages retain their exact slots and custom modules are untouched.
+function applyStandardModuleItemOrder(moduleKey, hrefs) {
+  const order = standardModuleItemOrder.get(moduleKey);
+  if (!order || !Array.isArray(hrefs)) return hrefs;
+
+  const orderedStandardHrefs = hrefs
+    .filter((href) => order.has(href))
+    .sort((left, right) => order.get(left) - order.get(right));
+  let standardIndex = 0;
+
+  return hrefs.map((href) =>
+    order.has(href) ? orderedStandardHrefs[standardIndex++] : href
+  );
+}
+
 function resolveStoredRoleModules(sidebarAccess) {
   if (!Array.isArray(sidebarAccess?.modules)) return null;
-  return sidebarAccess.modules.map((storedModule) => ({
-    key: String(storedModule?.key || "").trim(),
-    label: String(storedModule?.label || "").trim(),
-    hrefs: Array.isArray(storedModule?.items)
-      ? storedModule.items
-      : Array.isArray(storedModule?.hrefs)
-      ? storedModule.hrefs
-      : [],
-  }));
+  return sidebarAccess.modules
+    .map((storedModule) => {
+      const key = String(storedModule?.key || "").trim();
+      if (retiredSidebarModuleKeys.has(key)) return null;
+      const hrefs = (Array.isArray(storedModule?.items)
+        ? storedModule.items
+        : Array.isArray(storedModule?.hrefs)
+        ? storedModule.hrefs
+        : []
+      ).filter((href) => !standaloneSidebarHrefs.has(href));
+      if (hrefs.length === 0) return null;
+      return {
+        key,
+        label: String(storedModule?.label || "").trim(),
+        hrefs: applyStandardModuleItemOrder(key, hrefs),
+      };
+    })
+    .filter(Boolean);
 }
 
 function resolveStoredPagePlacements(sidebarAccess) {
@@ -460,7 +503,11 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     ? new Set(sidebarAccess.items)
     : null;
   const manualGrantHrefs = new Set(
-    managedSnapshot ? [...managedSnapshot].filter((href) => !defaultHrefs.has(href)) : []
+    managedSnapshot
+      ? [...managedSnapshot].filter(
+          (href) => !defaultHrefs.has(href) && !standaloneSidebarHrefs.has(href)
+        )
+      : []
   );
   const pagePlacements = resolveStoredPagePlacements(sidebarAccess);
   const explicitlyRepositioned = new Set(
@@ -662,18 +709,22 @@ export function getActiveRoleWorkspaceModule(pathname, roles, sidebarAccess = nu
 }
 
 // resolveAccessiblePaths(roles, sidebarAccess) — the authoritative landable-path
-// set once the per-user override is applied. This is what pageAccess.js and the
-// sidebar consume. When no snapshot exists it is byte-for-byte
-// getAccessibleNavPaths(roles).
+// set once the per-user navigation is applied. Role access is never removed by
+// a saved layout, and every valid page rendered in that layout is also landable.
+// This keeps the sidebar and PageAccessGuard from disagreeing.
 export function resolveAccessiblePaths(roles, sidebarAccess) {
   const roleBased = getAccessibleNavPaths(roles);
-  void sidebarAccess;
-  return roleBased;
-  // Paths OUTSIDE the editor universe keep their role-derived access (quick
-  // actions, accounts-context extras, etc.) — the snapshot never touches them.
-  // WITHIN the editor universe the snapshot is authoritative.
-  // 🔒 Invariants a snapshot can never strip: account essentials (Profile) and
-  // the developer platform route for the dev role.
+  const hasSavedNavigation =
+    Array.isArray(sidebarAccess?.items) || Array.isArray(sidebarAccess?.modules);
+  if (!hasSavedNavigation) return roleBased;
+
+  const resolved = new Set(roleBased);
+  for (const navigationModule of getRoleWorkspaceModules(roles, sidebarAccess)) {
+    for (const item of navigationModule.items) {
+      if (item.href) resolved.add(item.href);
+    }
+  }
+  return resolved;
 }
 
 function applyStoredItemOrder(items, departmentKey, sidebarAccess) {

@@ -22,6 +22,7 @@ import {
   normalizeDbMode,
   normalizeMode,
 } from "@/styles/themeRuntime";
+import { isSyntheticDevPlatformUser } from "@/lib/auth/devSession";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const STORAGE_KEY = "hp-dms-theme";
@@ -326,6 +327,14 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         setLoading(false);
         return;
       }
+      if (isSyntheticDevPlatformUser(user)) {
+        // The Developer Platform identity deliberately has no users row. Its
+        // theme is device-local, so do not ask the employee profile endpoint to
+        // resolve a database identity that cannot exist.
+        applyLocalPreference();
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         let data = null;
@@ -422,6 +431,14 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   // Resolve a specific user's saved theme. Used at the login → app boundary so
   // the destination theme is known before the navigation completes.
   const resolveUserThemePreference = useCallback(async (userId) => {
+    if (isSyntheticDevPlatformUser({
+      id: userId,
+      roles: user?.roles,
+      isDevLogin: user?.isDevLogin,
+    })) {
+      return { mode: readStoredMode(), accent: readStoredAccent() };
+    }
+
     const numericUserId =
       Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null;
 
@@ -475,7 +492,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       console.warn("Theme commit profile load failed", err?.message || err);
       return null;
     }
-  }, []);
+  }, [user?.isDevLogin, user?.roles]);
 
   // Atomically: store the real preference, release any override, and let the
   // single paint pass repaint exactly once into the final theme.

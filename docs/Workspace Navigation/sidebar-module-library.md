@@ -32,9 +32,8 @@ Current standard module and page inventory shown by **Select standard modules** 
 7. Valeting
 8. Accounts
 9. Reports
-10. Profile
-11. Paint
-12. Tech
+10. Paint
+11. Tech
 
 ---
 
@@ -190,13 +189,3 @@ Current page count: **9**
 - Valeting Reports - `/reports/valeting`
 - Admin Reports - `/reports/admin`
 - Executive Reports - `/reports/overview`
-
----
-
-## Profile
-
-Module key: `department-account`  
-Department: `account`  
-Current page count: **1**
-
-- Profile - `/profile`

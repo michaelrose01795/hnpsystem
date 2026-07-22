@@ -881,7 +881,6 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
       "/reports/overview",
     ],
   },
-  { key: "department-account", label: "Profile", department: "account", hrefs: ["/profile"] },
   { key: "department-paint", label: "Paint", department: "paint", hrefs: ["/dashboard/painting"] },
   { key: "department-tech", label: "Tech", department: "tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
 ]);

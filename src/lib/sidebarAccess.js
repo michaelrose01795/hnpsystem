@@ -19,6 +19,8 @@ import {
 
 export const SIDEBAR_ACCESS_VERSION = 5;
 export const SIDEBAR_ACCESS_UPDATED_EVENT = "hnp:sidebar-access-updated";
+const RETIRED_SIDEBAR_MODULE_KEYS = new Set(["department-account"]);
+const STANDALONE_SIDEBAR_HREFS = new Set(["/profile"]);
 
 const managedGroups = () =>
   getAllSidebarItems().filter(
@@ -41,6 +43,7 @@ function normaliseModules(rawModules) {
   const seenHrefs = new Set();
   return rawModules.reduce((modules, rawModule, index) => {
     const baseKey = slugifyKey(rawModule?.key || rawModule?.label, `module-${index + 1}`);
+    if (RETIRED_SIDEBAR_MODULE_KEYS.has(baseKey)) return modules;
     const count = seenKeys.get(baseKey) || 0;
     seenKeys.set(baseKey, count + 1);
     const key = count > 0 ? `${baseKey}-${count + 1}` : baseKey;
@@ -53,7 +56,11 @@ function normaliseModules(rawModules) {
     const items = [];
     for (const rawHref of rawItems) {
       const href = String(rawHref || "").trim();
-      if (!catalogHrefs.has(href) || seenHrefs.has(href)) continue;
+      if (
+        !catalogHrefs.has(href) ||
+        STANDALONE_SIDEBAR_HREFS.has(href) ||
+        seenHrefs.has(href)
+      ) continue;
       seenHrefs.add(href);
       items.push(href);
     }
@@ -82,7 +89,7 @@ export function syncAssignedStandardModules(modules) {
 
   return modules.reduce((synced, module) => {
     const key = String(module?.key || "").trim();
-    if (!key) return synced;
+    if (!key || RETIRED_SIDEBAR_MODULE_KEYS.has(key)) return synced;
 
     const standard = standardByKey.get(key);
     const sourceItems = standard
@@ -91,7 +98,11 @@ export function syncAssignedStandardModules(modules) {
       ? module.items.map((item) => typeof item === "string" ? item : item?.href)
       : [];
     const items = sourceItems.filter((href) => {
-      if (!knownHrefs.has(href) || usedHrefs.has(href)) return false;
+      if (
+        !knownHrefs.has(href) ||
+        STANDALONE_SIDEBAR_HREFS.has(href) ||
+        usedHrefs.has(href)
+      ) return false;
       usedHrefs.add(href);
       return true;
     });
