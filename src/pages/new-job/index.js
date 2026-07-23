@@ -29,7 +29,6 @@ import QuestionPromptsPopup from "@/components/JobCards/QuestionPromptsPopup";
 import MobileMechanicEligibility from "@/components/JobCards/MobileMechanicEligibility";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
 import { DropdownField } from "@/components/ui/dropdownAPI";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
@@ -708,56 +707,12 @@ export default function CreateJobCardPage() {
     setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
   }; // append new empty request
 
-  const sectionCardStyle = {
-    background: "var(--theme)",
-    border: "none"
-  };
-
   const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
     id: tab.id,
     index,
     label: `Job${index + 1}`
   }));
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
-
-  const binaryToggleGroupStyle = {
-    width: "fit-content"
-  };
-
-  const getBinaryToggleButtonStyle = () => ({
-    minWidth: "64px"
-  });
-
-  // 2-column grid so buttons sit in rows of two with a true 50/50 split:
-  //   [Waiting | Loan Car]
-  //   [Collection | Neither]
-  //   [Retail | Warranty]
-  const jobInfoOptionGroupStyle = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "10px",
-    width: "100%"
-  };
-
-  const getJobInfoOptionStyle = (isSelected) => ({
-    width: "100%",
-    minHeight: "var(--control-height)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    cursor: "pointer",
-    padding: "var(--control-padding)",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    backgroundColor: isSelected ? "var(--primary)" : "var(--control-bg)",
-    color: isSelected ? "var(--onAccentText)" : "var(--accentText)",
-    transition: "var(--control-transition)",
-    fontWeight: 600,
-    fontSize: "var(--control-font-size)",
-    lineHeight: 1,
-    boxSizing: "border-box"
-  });
 
   const customerFieldDefinitions = [
   { label: "First Name", field: "firstName", type: "text", placeholder: "" },
@@ -1545,7 +1500,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} binaryToggleGroupStyle={binaryToggleGroupStyle} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={customerFieldDefinitions} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} getBinaryToggleButtonStyle={getBinaryToggleButtonStyle} getJobInfoOptionStyle={getJobInfoOptionStyle} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobInfoOptionGroupStyle={jobInfoOptionGroupStyle} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} sectionCardStyle={sectionCardStyle} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
+  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={customerFieldDefinitions} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
 
 
 

@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import ModalPortal from "./ModalPortal";
+import Image from "next/image";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
@@ -157,7 +160,7 @@ export default function DocumentsUploadPopup({
                 if (xhr.status >= 200 && xhr.status < 300) {
                   try {
                     resolve(JSON.parse(xhr.responseText));
-                  } catch (_) {
+                  } catch {
                     resolve({});
                   }
                 } else {
@@ -165,7 +168,7 @@ export default function DocumentsUploadPopup({
                   try {
                     const parsed = JSON.parse(xhr.responseText);
                     serverMessage = parsed?.message || parsed?.error || "";
-                  } catch (_) {
+                  } catch {
                     serverMessage = xhr.responseText?.slice(0, 300) || "";
                   }
                   reject(
@@ -313,50 +316,43 @@ export default function DocumentsUploadPopup({
   }
 
   return (
-    <ModalPortal>
-      <div
-        style={popupOverlayStyles}
-        onClick={handleClose}
-      >
-        <div
-          onClick={(event) => event.stopPropagation()}
-          style={{
-            ...popupCardStyles,
+    <PopupModal
+      isOpen
+      onClose={handleClose}
+      ariaLabel="Upload documents"
+      cardStyle={{
             width: hasRightPanel ? "920px" : "650px",
             maxWidth: "95%",
-            maxHeight: "90vh",
-            overflowY: "auto",
+      }}
+    >
+        <div
+          style={{
             padding: "32px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
             transition: "width 0.3s ease",
-            borderRadius: "var(--radius-xl)",
-            border: "none"
           }}
         >
         <div>
-          <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
+          <h3>
             Upload Documents
           </h3>
-          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-1)" }}>
+          <p>
             {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "20px", flexWrap: hasRightPanel ? "nowrap" : "wrap" }}>
           <div style={{ flex: hasRightPanel ? "0 0 45%" : "1", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <label
+            <LayerTheme
+              as="label"
               htmlFor="documents-input"
+              radius="var(--radius-md)"
+              padding="28px"
               style={{
-                borderRadius: "var(--radius-md)",
-                padding: "28px",
                 textAlign: "center",
                 cursor: "pointer",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-1)",
-                fontWeight: "600",
-                fontSize: "14px"
               }}
             >
               Click to select files (PNG, JPG, PDF)
@@ -368,16 +364,15 @@ export default function DocumentsUploadPopup({
                 style={{ display: "none" }}
                 onChange={handlePendingSelection}
               />
-            </label>
+            </LayerTheme>
 
             {pendingDocuments.length > 0 && (
-              <div
+              <LayerTheme
+                radius="var(--radius-sm)"
+                padding="12px"
                 style={{
                   maxHeight: "220px",
                   overflowY: "auto",
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "12px"
                 }}
               >
                 {pendingDocuments.map((file, idx) => (
@@ -402,124 +397,82 @@ export default function DocumentsUploadPopup({
                           }}
                           style={{ flex: 1 }}
                         />
-                        <button
+                        <Button
+                          type="button"
+                          size="xs"
                           onClick={() => commitRename(idx)}
-                          style={{
-                            padding: "5px 10px",
-                            border: "none",
-                            borderRadius: "var(--input-radius)",
-                            backgroundColor: "var(--primary)",
-                            color: "var(--text-2)",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}
                         >
                           Save
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="xs"
                           onClick={() => setRenamingIndex(null)}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            color: "var(--text-1)",
-                            fontSize: "13px",
-                            cursor: "pointer",
-                          }}
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       /* Normal row */
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-1)" }}>
+                          <strong>
                             {file.name}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{formatBytes(file.size)}</div>
+                          </strong>
+                          <small>{formatBytes(file.size)}</small>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <button
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="xs"
                             onClick={() => startRename(idx, file.name)}
-                            style={{
-                              border: "none",
-                              background: "transparent",
-                              color: "var(--primary)",
-                              fontSize: "13px",
-                              cursor: "pointer",
-                            }}
                           >
                             Rename
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="xs"
                             onClick={() => removePendingDocument(idx)}
-                            style={{
-                              border: "none",
-                              background: "transparent",
-                              color: "var(--danger)",
-                              fontSize: "13px",
-                              cursor: "pointer",
-                            }}
                           >
                             Remove
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     )}
                   </div>
                 ))}
-              </div>
+              </LayerTheme>
             )}
 
             <div style={{ display: "flex", gap: "12px" }}>
-              <button
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={handleClose}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontWeight: "600",
-                  cursor: "pointer"
-                }}
+                style={{ flex: 1 }}
               >
                 Close
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
                 onClick={handleUploadClick}
-                disabled={isUploading}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "var(--text-2)",
-                  fontWeight: "600",
-                  cursor: isUploading ? "not-allowed" : "pointer",
-                  opacity: isUploading ? 0.7 : 1
-                }}
+                busy={isUploading}
+                style={{ flex: 1 }}
               >
                 {isUploading ? "Uploading..." : "Upload"}
-              </button>
+              </Button>
             </div>
           </div>
 
           {hasRightPanel && (
-            <div
+            <LayerTheme
+              padding="16px"
+              radius="var(--radius-sm)"
               style={{
                 flex: "0 0 50%",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                backgroundColor: "var(--surface)",
-                padding: "16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
                 maxHeight: "70vh",
                 overflowY: "auto"
               }}
@@ -527,27 +480,19 @@ export default function DocumentsUploadPopup({
               {uploadProgress.length > 0 && (
                 <>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
+                    <h4>
                       Upload Progress
                     </h4>
                     {hasFailedUploads && (
-                      <button
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="xs"
                         onClick={retryFailedUploads}
-                        disabled={isUploading}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "var(--radius-xs)",
-                          border: "none",
-                          background: "var(--danger)",
-                          color: "white",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: isUploading ? "not-allowed" : "pointer",
-                          opacity: isUploading ? 0.6 : 1
-                        }}
+                        busy={isUploading}
                       >
                         Retry Failed
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -562,12 +507,12 @@ export default function DocumentsUploadPopup({
                         : "var(--info)";
 
                     return (
-                      <div
+                      <LayerSurface
                         key={`progress-${idx}`}
+                        padding="12px"
+                        radius="var(--input-radius)"
                         style={{
-                          padding: "12px",
-                          backgroundColor: "var(--theme)",
-                          borderRadius: "var(--input-radius)"
+                          gap: "8px"
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
@@ -649,7 +594,7 @@ export default function DocumentsUploadPopup({
                             )}
                           </div>
                         </div>
-                      </div>
+                      </LayerSurface>
                     );
                   })}
                 </>
@@ -660,7 +605,7 @@ export default function DocumentsUploadPopup({
                   {uploadProgress.length > 0 && (
                     <div style={{ margin: "4px 0" }} />
                   )}
-                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
+                  <h4>
                     Uploaded Documents ({existingDocuments.length})
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -670,22 +615,23 @@ export default function DocumentsUploadPopup({
                       const docType = doc.type || doc.file_type || doc.contentType || "";
                       const docUrl = doc.url || doc.file_url || "";
                       return (
-                        <div
+                        <LayerSurface
                           key={doc.id || doc.file_id || idx}
+                          padding="8px"
+                          radius="var(--input-radius)"
                           style={{
-                            display: "flex",
+                            flexDirection: "row",
                             alignItems: "center",
                             gap: "10px",
-                            padding: "8px",
-                            borderRadius: "var(--input-radius)",
-                            border: "none",
-                            backgroundColor: "var(--theme)"
                           }}
                         >
                           {thumbUrl ? (
-                            <img
+                            <Image
                               src={thumbUrl}
                               alt={docName}
+                              width={48}
+                              height={48}
+                              unoptimized
                               style={{
                                 width: "48px",
                                 height: "48px",
@@ -716,40 +662,33 @@ export default function DocumentsUploadPopup({
                             </div>
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {docName}
-                            </div>
-                            <div style={{ fontSize: "11px", color: "var(--text-1)" }}>
+                            </strong>
+                            <small>
                               {docType.split("/").pop() || "file"}
-                            </div>
+                            </small>
                           </div>
                           {docUrl && (
                             <a
                               href={docUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: "600",
-                                color: "var(--primary)",
-                                textDecoration: "none",
-                                flexShrink: 0
-                              }}
+                              className="app-btn app-btn--ghost app-btn--xs"
                             >
                               View
                             </a>
                           )}
-                        </div>
+                        </LayerSurface>
                       );
                     })}
                   </div>
                 </>
               )}
-            </div>
+            </LayerTheme>
           )}
         </div>
         </div>
-      </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }

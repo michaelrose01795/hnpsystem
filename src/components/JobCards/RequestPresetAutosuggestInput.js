@@ -10,7 +10,7 @@ export default function RequestPresetAutosuggestInput({
   onPresetSelect = () => {},
   placeholder = "Enter job request",
   disabled = false,
-  inputClassName = "",
+  inputClassName = "app-input",
   inputStyle = {},
   containerStyle = {},
   suggestionStyle = {},
@@ -191,22 +191,20 @@ export default function RequestPresetAutosuggestInput({
         ? createPortal(
         <div
           ref={menuRef}
+          className="dropdown-api__menu app-dropdown-menu"
           style={{
             position: "fixed",
             top: `${menuPosition.top + 6}px`,
             left: `${menuPosition.left}px`,
             width: `${menuPosition.width}px`,
-            backgroundColor: "var(--control-menu-bg)",
-            borderRadius: "var(--radius-md)",
             maxHeight: "280px",
-            overflow: "hidden",
             overflowY: "auto",
             zIndex: 4000,
             ...suggestionStyle,
           }}
         >
           {loading ? (
-            <div style={{ padding: "14px 16px", fontSize: "0.85rem", color: "var(--text-1)" }}>Searching presets…</div>
+            <div className="dropdown-api__helper">Searching presets…</div>
           ) : (
             suggestions.map((suggestion, index) => {
               const active = index === activeIndex || index === hoveredIndex;
@@ -218,42 +216,15 @@ export default function RequestPresetAutosuggestInput({
                   onClick={() => selectSuggestion(suggestion)}
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(-1)}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "none",
-                    borderBottom:
-                      index === suggestions.length - 1
-                        ? "none"
-                        : "1px solid var(--separating-line)",
-                    backgroundColor: active ? "rgba(var(--primary-rgb), 0.14)" : "transparent",
-                    color: active ? "var(--primary)" : "var(--text-1)",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+                  className={`dropdown-api__option${active ? " is-selected" : ""}`}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-                    <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                  <div className="dropdown-api__option-label">
+                    <span>
                       {renderHighlightedLabel(suggestion.label, query)}
                     </span>
                   </div>
                   {showHours ? (
-                    <span
-                      style={{
-                        fontSize: "0.7rem",
-                        padding: "4px 8px",
-                        borderRadius: "var(--radius-pill)",
-                        backgroundColor: active ? "var(--primary)" : "rgba(var(--primary-rgb), 0.12)",
-                        color: active ? "var(--text-2)" : "var(--primary-selected)",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <span className={`app-badge ${active ? "app-badge--accent-strong" : "app-badge--accent-soft"}`}>
                       {Number(suggestion.defaultHours || 0).toFixed(2)}h
                     </span>
                   ) : null}

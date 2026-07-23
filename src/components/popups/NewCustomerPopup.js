@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react"; // import React hooks
 import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
 import PopupModal from "@/components/popups/popupStyleApi";
 import { reportError, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
+import Button from "@/components/ui/Button";
+import StatusMessage from "@/components/ui/StatusMessage";
 
 export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
   // State for all form fields
@@ -152,14 +154,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
     }
   };
 
-  const fieldLabelStyle = {
-    display: "block",
-    marginBottom: "8px",
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "var(--text-1)",
-  };
-
   // ✅ UI layout for popup
   return (
     <PopupModal
@@ -176,21 +170,12 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
         <div style={{ padding: "32px" }}>
           {/* Personal Information Section */}
           <div style={{ marginBottom: "32px" }}>
-            <h4
-              style={{
-                margin: "0 0 16px 0",
-                fontSize: "14px",
-                fontWeight: "bold",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--primary)",
-              }}
-            >
+            <h4>
               Personal Information
             </h4>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div>
-                <label style={fieldLabelStyle}>
+                <label>
                   First Name
                 </label>
                 <input
@@ -202,7 +187,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                 />
               </div>
               <div>
-                <label style={fieldLabelStyle}>
+                <label>
                   Last Name
                 </label>
                 <input
@@ -218,22 +203,13 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
 
           {/* Address Section */}
           <div style={{ marginBottom: "32px" }}>
-            <h4
-              style={{
-                margin: "0 0 16px 0",
-                fontSize: "14px",
-                fontWeight: "bold",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--primary)",
-              }}
-            >
+            <h4>
               Address
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "16px" }}>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Number
                   </label>
                   <input
@@ -245,7 +221,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   />
                 </div>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Street
                   </label>
                   <input
@@ -259,7 +235,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Town/City
                   </label>
                   <input
@@ -271,7 +247,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   />
                 </div>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     County
                   </label>
                   <input
@@ -285,7 +261,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "end" }}>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Postcode
                   </label>
                   <div style={{ display: "flex", gap: "12px" }}>
@@ -297,29 +273,17 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                       placeholder="Enter postcode"
                       style={{ flex: 1, minWidth: 0 }}
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={handleAddressLookup}
-                      disabled={lookupState.loading}
-                      style={{
-                        padding: "12px 24px",
-                        borderRadius: "var(--input-radius)",
-                        backgroundColor: "var(--primary)",
-                        color: "white",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        cursor: lookupState.loading ? "not-allowed" : "pointer",
-                        opacity: lookupState.loading ? 0.6 : 1,
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap",
-                      }}
+                      busy={lookupState.loading}
                     >
                       {lookupState.loading ? "Searching…" : "Lookup"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Country
                   </label>
                   <input
@@ -333,47 +297,25 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               </div>
 
               {lookupState.error && (
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--danger-surface)",
-                    color: "var(--danger)",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                  }}
-                >
+                <StatusMessage tone="danger">
                   {lookupState.error}
-                </div>
+                </StatusMessage>
               )}
 
               {lookupState.suggestions.length > 0 && (
                 <div
+                  className="dropdown-api__menu app-dropdown-menu"
                   style={{
-                    borderRadius: "var(--input-radius)",
                     maxHeight: "200px",
                     overflowY: "auto",
-                    backgroundColor: "var(--surface)",
                   }}
                 >
-                  {lookupState.suggestions.map((suggestion, index) => (
+                  {lookupState.suggestions.map((suggestion) => (
                     <button
                       key={suggestion.id}
                       type="button"
                       onClick={() => applyAddressSuggestion(suggestion)}
-                      style={{
-                        width: "100%",
-                        padding: "14px 16px",
-                        border: "none",
-                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--separating-line)" : "none",
-                        textAlign: "left",
-                        backgroundColor: "var(--surface)",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        transition: "background-color 0.2s",
-                      }}
-                      onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--surface)")}
-                      onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--surface)")}
+                      className="dropdown-api__option"
                     >
                       {suggestion.label}
                     </button>
@@ -385,21 +327,12 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
 
           {/* Contact Information Section */}
           <div style={{ marginBottom: "24px" }}>
-            <h4
-              style={{
-                margin: "0 0 16px 0",
-                fontSize: "14px",
-                fontWeight: "bold",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--primary)",
-              }}
-            >
+            <h4>
               Contact Information
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={fieldLabelStyle}>
+                <label>
                   Email
                 </label>
                 <input
@@ -412,7 +345,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Mobile
                   </label>
                   <input
@@ -424,7 +357,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   />
                 </div>
                 <div>
-                  <label style={fieldLabelStyle}>
+                  <label>
                     Telephone
                   </label>
                   <input
@@ -449,60 +382,20 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             gap: "12px",
           }}
         >
-          <button
+          <Button
             onClick={onClose}
             type="button"
-            style={{
-              padding: "12px 24px",
-              borderRadius: "var(--input-radius)",
-              backgroundColor: "transparent",
-              fontSize: "15px",
-              fontWeight: "bold",
-              color: "var(--text-1)",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--surface)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
+            variant="secondary"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleAdd}
-            disabled={loading}
+            busy={loading}
             type="button"
-            style={{
-              padding: "12px 24px",
-              borderRadius: "var(--input-radius)",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              fontSize: "15px",
-              fontWeight: "bold",
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
-                e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-                e.currentTarget.style.zIndex = "0";
-              }
-            }}
           >
             {loading ? "Saving..." : "Add Customer"}
-          </button>
+          </Button>
         </div>
       </>
     </PopupModal>

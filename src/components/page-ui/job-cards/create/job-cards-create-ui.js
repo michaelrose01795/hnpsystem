@@ -2,6 +2,9 @@
 import { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import Button from "@/components/ui/Button";
+import StatusMessage from "@/components/ui/StatusMessage";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 export default function CreateJobCardPageUi(props) {
   const {
@@ -16,7 +19,6 @@ export default function CreateJobCardPageUi(props) {
     RequestPresetAutosuggestInput,
     activeTabIndex,
     addNewJobTab,
-    binaryToggleGroupStyle,
     captureTempUploadMetadata,
     cosmeticDamagePresent,
     cosmeticNotes,
@@ -27,8 +29,6 @@ export default function CreateJobCardPageUi(props) {
     dbUserId,
     detectJobTypesForRequests,
     error,
-    getBinaryToggleButtonStyle,
-    getJobInfoOptionStyle,
     handleAddRequest,
     handleCancelCustomerEdit,
     handleCustomerFieldChange,
@@ -50,21 +50,17 @@ export default function CreateJobCardPageUi(props) {
     jobCardSelectorOptions,
     jobCategories,
     jobDetections,
-    jobInfoOptionGroupStyle,
     jobSource,
     jobTabs,
     newCustomerPrefill,
     normalizeHoursToTwoDecimals,
     persistPresetDefaultHours,
     populatedRequests,
-    popupCardStyles,
-    popupOverlayStyles,
     primeJobData,
     questionPromptsIndex,
     removeJobTab,
     requests,
     router,
-    sectionCardStyle,
     setActiveTabIndex,
     setCosmeticDamagePresent,
     setCosmeticNotes,
@@ -116,18 +112,15 @@ export default function CreateJobCardPageUi(props) {
     width: "118px",
     flexShrink: 0
   };
+  const yesNoToggleStyle = {
+    flexWrap: "nowrap",
+    minWidth: "max-content"
+  };
   const moreFieldStyle = {
     display: "flex",
     flexDirection: "column",
     gap: "6px",
     minWidth: 0
-  };
-  const moreLabelStyle = {
-    fontSize: "12px",
-    // --text-1 = surface body-text tone; --text-2 is the on-accent tone and
-    // would render invisible against the popup's surface card.
-    color: "var(--text-1)",
-    fontWeight: 700
   };
   const moreGridStyle = {
     display: "grid",
@@ -143,9 +136,7 @@ export default function CreateJobCardPageUi(props) {
     display: "flex",
     flexDirection: "column",
     padding: 0,
-    overflow: "hidden",
-    transition: "background 0.3s ease",
-    background: "transparent"
+    overflow: "hidden"
   }}>
         {/* ✅ Header Section - Modern Design */}
         <DevLayoutSection sectionKey="job-cards-create-header" sectionType="toolbar" parentKey="job-cards-create-page-shell" style={{
@@ -186,23 +177,18 @@ export default function CreateJobCardPageUi(props) {
           }}>
                 {jobCardSelectorOptions.map(option => {
               const isActive = activeTabIndex === option.index;
-              return <button key={option.id} type="button" role="tab" onClick={() => setActiveTabIndex(option.index)} aria-selected={isActive} aria-pressed={isActive} data-tone="default" className={`tab-api__item${isActive ? " is-active" : ""}`}>
+              return <button key={option.id} type="button" role="tab" onClick={() => setActiveTabIndex(option.index)} aria-selected={isActive} data-tone="default" className={`tab-api__item${isActive ? " is-active" : ""}`}>
                       {option.label}
                     </button>;
             })}
-                {!isSubJobMode && <button type="button" onClick={addNewJobTab} data-tone="default" className="tab-api__item job-cards-create-add-linked-button" title="Add another linked job" style={{
-              fontWeight: 700,
-              fontSize: "1.1rem",
-              lineHeight: 1,
-              padding: "0 10px"
-            }}>
+                {!isSubJobMode && <button type="button" onClick={addNewJobTab} data-tone="default" className="tab-api__item job-cards-create-add-linked-button" title="Add another linked job">
                     +
                   </button>}
               </div>
 
-              {!isSubJobMode && hasLinkedJobCards && <button type="button" onClick={() => removeJobTab(activeTabIndex)} className="app-btn app-btn--ghost app-btn--sm app-btn--pill job-cards-create-remove-linked-button">
+              {!isSubJobMode && hasLinkedJobCards && <Button type="button" onClick={() => removeJobTab(activeTabIndex)} variant="ghost" size="sm" pill className="job-cards-create-remove-linked-button">
                   Remove selected
-                </button>}
+                </Button>}
             </div>
           </div>
           <div style={{
@@ -227,23 +213,16 @@ export default function CreateJobCardPageUi(props) {
             cursor: "default"
           }}>
                   No detected requests yet
-                </span> : <button type="button" onClick={() => setShowDetectedRequestsPopup(true)} className="app-btn app-btn--secondary app-btn--sm app-btn--pill" style={{
+                </span> : <Button type="button" onClick={() => setShowDetectedRequestsPopup(true)} variant="secondary" size="sm" pill style={{
             width: "100%",
             justifyContent: "center"
           }}>
-                  <span style={{
-              fontSize: "12px",
-              fontWeight: "700",
-              color: "var(--accent-strong)",
-              whiteSpace: "nowrap"
-            }}>
+                  <strong style={{ whiteSpace: "nowrap" }}>
                     Request 1
-                  </span>
+                  </strong>
                   <span style={{
               minWidth: 0,
               flex: "0 1 auto",
-              fontSize: "12px",
-              color: "var(--text-1)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis"
@@ -258,18 +237,12 @@ export default function CreateJobCardPageUi(props) {
                   .replace(/\b\w/g, c => c.toUpperCase());
               })()}
                   </span>
-                  {populatedRequests.length > 1 ? <span style={{
-              flexShrink: 0,
-              fontSize: "11px",
-              fontWeight: "700",
-              color: "var(--accent-strong)",
-              background: "var(--theme)",
-              borderRadius: "999px",
-              padding: "4px 8px"
+                  {populatedRequests.length > 1 ? <span className="app-badge app-badge--accent-soft" style={{
+              flexShrink: 0
             }}>
                       +{populatedRequests.length - 1} more
                     </span> : null}
-                </button>}
+                </Button>}
             </div>
           </div>
           <div style={{
@@ -279,35 +252,19 @@ export default function CreateJobCardPageUi(props) {
         flexWrap: "wrap"
       }}>
             {/* Job Source Badge */}
-            <span style={{
-          minHeight: "var(--control-height)",
-          padding: "var(--control-padding)",
-          borderRadius: "var(--control-radius)",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxSizing: "border-box",
-          backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
-          color: jobSource === "Warranty" ? "var(--warning-dark)" : "var(--success-dark)",
-          fontSize: "var(--control-font-size)",
-          fontWeight: 600,
-          letterSpacing: "0.3px"
-        }}>
+            <span className={`app-badge app-badge--control ${jobSource === "Warranty" ? "app-badge--warning" : "app-badge--success"}`}>
               {jobSource}
             </span>
-            <button type="button" data-presentation="create-submit" onClick={handleSaveJob} className="app-btn app-btn--primary">
+            <Button type="button" data-presentation="create-submit" onClick={handleSaveJob}>
               {jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
-            </button>
+            </Button>
           </div>
         </DevLayoutSection>
 
         {/* ✅ Sub-job Mode Banner */}
-        {isSubJobMode && primeJobData && <DevLayoutSection sectionKey="job-cards-create-subjob-banner" sectionType="status-banner" parentKey="job-cards-create-page-shell" style={{
-      padding: "12px 16px",
-      backgroundColor: "var(--primary-surface)",
-      borderRadius: "var(--radius-xs)",
+        {isSubJobMode && primeJobData && <LayerTheme sectionKey="job-cards-create-subjob-banner" sectionType="status-banner" parentKey="job-cards-create-page-shell" padding="12px 16px" radius="var(--radius-xs)" style={{
       marginBottom: "8px",
-      display: "flex",
+      flexDirection: "row",
       alignItems: "center",
       gap: "12px"
     }}>
@@ -317,32 +274,19 @@ export default function CreateJobCardPageUi(props) {
             <div style={{
         flex: 1
       }}>
-              <span style={{
-          fontWeight: 600,
-          color: "var(--primary)"
-        }}>
+              <strong>
                 Creating sub-job linked to Job {primeJobData.jobNumber}
-              </span>
+              </strong>
               <span style={{
-          marginLeft: "12px",
-          color: "var(--text-1)",
-          fontSize: "13px"
+          marginLeft: "12px"
         }}>
                 Customer and vehicle details are inherited from the prime job
               </span>
             </div>
-            <button onClick={() => router.push(`/job-cards/${primeJobData.jobNumber}`)} style={{
-        padding: "6px 12px",
-        fontSize: "12px",
-        backgroundColor: "var(--primary)",
-        color: "white",
-        border: "none",
-        borderRadius: "var(--radius-xs)",
-        cursor: "pointer"
-      }}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => router.push(`/job-cards/${primeJobData.jobNumber}`)}>
               View Prime Job
-            </button>
-          </DevLayoutSection>}
+            </Button>
+          </LayerTheme>}
 
         {/* ✅ Content Area */}
         <DevLayoutSection sectionKey="job-cards-create-content" sectionType="section-shell" parentKey="job-cards-create-page-shell" shell style={{
@@ -376,12 +320,7 @@ export default function CreateJobCardPageUi(props) {
                 <div style={{
               minWidth: 0
             }}>
-                  <h3 style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "var(--text-1)",
-                margin: 0
-              }}>
+                  <h3>
                     Job Information
                   </h3>
                 </div>
@@ -392,48 +331,24 @@ export default function CreateJobCardPageUi(props) {
             gap: "12px"
           }}>
                 <div>
-                  <label style={{
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "var(--text-1)",
-                display: "block",
-                marginBottom: "10px"
-              }}>
+                  <label>
                     Customer Status
                   </label>
-                  <div style={jobInfoOptionGroupStyle}>
-                    {["Waiting", "Loan Car", "Collection", "Neither"].map(status => <label key={status} style={getJobInfoOptionStyle(waitingStatus === status)}>
-                        <input type="radio" name="waiting" value={status} checked={waitingStatus === status} onChange={() => setWaitingStatus(status)} style={{
-                    display: "none"
-                  }} />
-                        <span style={{
-                    fontSize: "13px",
-                    textAlign: "center"
-                  }}>{status}</span>
-                      </label>)}
+                  <div className="tab-api tab-api--wrap">
+                    {["Waiting", "Loan Car", "Collection", "Neither"].map(status => <button key={status} type="button" aria-pressed={waitingStatus === status} data-tone="default" className={`tab-api__item${waitingStatus === status ? " is-active" : ""}`} onClick={() => setWaitingStatus(status)}>
+                        {status}
+                      </button>)}
                   </div>
                 </div>
 
                 <div>
-                  <label style={{
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "var(--text-1)",
-                display: "block",
-                marginBottom: "10px"
-              }}>
+                  <label>
                     Job Source
                   </label>
-                  <div style={jobInfoOptionGroupStyle}>
-                    {["Retail", "Warranty"].map(src => <label key={src} style={getJobInfoOptionStyle(jobSource === src)}>
-                        <input type="radio" name="source" value={src} checked={jobSource === src} onChange={() => setJobSource(src)} style={{
-                    display: "none"
-                  }} />
-                        <span style={{
-                    fontSize: "13px",
-                    textAlign: "center"
-                  }}>{src}</span>
-                      </label>)}
+                  <div className="tab-api tab-api--wrap">
+                    {["Retail", "Warranty"].map(src => <button key={src} type="button" aria-pressed={jobSource === src} data-tone="default" className={`tab-api__item${jobSource === src ? " is-active" : ""}`} onClick={() => setJobSource(src)}>
+                        {src}
+                      </button>)}
                   </div>
                 </div>
 
@@ -442,7 +357,7 @@ export default function CreateJobCardPageUi(props) {
                     Yes/No toggle gated by the eligibility verdict.
                     Customer postcode drives a drive-time lookup inside the
                     component; no extra API wiring is needed here. */}
-                <MobileMechanicEligibility customer={customerForm} vehicle={vehicle} jobDetections={jobDetections} jobCategories={jobCategories} isMobileMechanic={isMobileMechanic} onSelectionChange={setIsMobileMechanic} toggleGroupStyle={binaryToggleGroupStyle} getToggleButtonStyle={getBinaryToggleButtonStyle} />
+                <MobileMechanicEligibility customer={customerForm} vehicle={vehicle} jobDetections={jobDetections} jobCategories={jobCategories} isMobileMechanic={isMobileMechanic} onSelectionChange={setIsMobileMechanic} />
               </div>
             </LayerTheme>
 
@@ -455,63 +370,30 @@ export default function CreateJobCardPageUi(props) {
           boxSizing: "border-box",
           overflowY: "auto"
         }}>
-              <h3 style={{
-            fontSize: "16px",
-            fontWeight: "600",
-            color: "var(--text-1)",
-            marginTop: 0,
-            marginBottom: "16px"
-          }}>
+              <h3>
                 Vehicle Details
-                {isSubJobMode && <span style={{
-              marginLeft: "8px",
-              fontSize: "11px",
-              fontWeight: "500",
-              padding: "2px 8px",
-              borderRadius: "var(--radius-xs)",
-              backgroundColor: "var(--primary-surface)",
-              color: "var(--primary)"
-            }}>
+                {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
                     Inherited
                   </span>}
               </h3>
 
-              {vehicleNotification && <div style={{
-            padding: "12px 16px",
-            marginBottom: "16px",
-            borderRadius: "var(--radius-xs)",
-            backgroundColor: vehicleNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-            border: "none",
-            color: vehicleNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
-            fontSize: "13px",
-            fontWeight: "500",
+              {vehicleNotification && <StatusMessage tone={vehicleNotification.type === "success" ? "success" : "danger"} style={{
             display: "flex",
             alignItems: "center",
             gap: "8px"
           }}>
                   <span>{vehicleNotification.message}</span>
-                  <button onClick={() => setVehicleNotification(null)} style={{
-              marginLeft: "auto",
-              background: "none",
-              border: "none",
-              fontSize: "20px",
-              cursor: "pointer",
-              color: "inherit"
-            }}>
+                  <Button type="button" variant="ghost" size="xs" className="app-btn--icon" onClick={() => setVehicleNotification(null)} style={{
+              marginLeft: "auto"
+            }} aria-label="Dismiss vehicle notification">
                     ×
-                  </button>
-                </div>}
+                  </Button>
+                </StatusMessage>}
 
               <div style={{
             marginBottom: "16px"
           }}>
-                <label style={{
-              fontSize: "13px",
-              fontWeight: "500",
-              color: "var(--text-1)",
-              display: "block",
-              marginBottom: "6px"
-            }}>
+                <label htmlFor="vehicle-registration">
                   Registration Number
                 </label>
                 <div style={{
@@ -519,55 +401,19 @@ export default function CreateJobCardPageUi(props) {
               gap: "12px",
               alignItems: "center"
             }}>
-                  <input type="text" value={vehicle.reg} onChange={e => setVehicle({
+                  <input id="vehicle-registration" type="text" value={vehicle.reg} onChange={e => setVehicle({
                 ...vehicle,
                 reg: e.target.value
-              })} placeholder="e.g. AB12 CDE" style={{
-                flex: 1,
-                padding: "10px 12px",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                backgroundColor: "var(--surface)",
-                fontSize: "14px",
-                textTransform: "uppercase",
-                outline: "none",
-                transition: "border-color 0.2s"
-              }} onFocus={e => {
-                e.target.style.borderColor = "var(--primary)";
-              }} onBlur={e => {
-                e.target.style.borderColor = "var(--surface)";
-              }} />
-                  <button data-presentation="create-reg-lookup" onClick={handleFetchVehicleData} disabled={isLoadingVehicle} style={{
-                padding: "10px 20px",
-                backgroundColor: isLoadingVehicle ? "var(--surface)" : "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                fontWeight: "600",
-                fontSize: "13px",
-                cursor: isLoadingVehicle ? "not-allowed" : "pointer",
-                transition: "all 0.2s"
-              }} onMouseEnter={e => {
-                if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary-selected)";
-              }} onMouseLeave={e => {
-                if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary)";
-              }}>
+              })} placeholder="e.g. AB12 CDE" className="app-input" style={{ flex: 1 }} />
+                  <Button type="button" data-presentation="create-reg-lookup" onClick={handleFetchVehicleData} busy={isLoadingVehicle}>
                     {isLoadingVehicle ? "Loading..." : "Search"}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
-              {error && <div style={{
-            fontSize: "12px",
-            color: "var(--danger)",
-            marginBottom: "12px",
-            padding: "10px 12px",
-            backgroundColor: "var(--danger-surface)",
-            borderRadius: "var(--radius-xs)",
-            border: "none"
-          }}>
+              {error && <StatusMessage tone="danger">
                   {error}
-                </div>}
+                </StatusMessage>}
 
               <div style={{
             display: "flex",
@@ -582,55 +428,21 @@ export default function CreateJobCardPageUi(props) {
                 engine: "Engine Number"
               };
               return <div key={`${key}-${idx}`}>
-                      <label style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "var(--text-1)",
-                  display: "block",
-                  marginBottom: "4px"
-                }}>
+                      <label htmlFor={`vehicle-${key}`}>
                         {labelMap[key]}
                       </label>
-                      <div style={{
-                  padding: "10px 12px",
-                  backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "14px",
-                  color: vehicle[key] ? "var(--text-1)" : "var(--text-1)",
-                  fontWeight: vehicle[key] ? 400 : 500
-                }}>
-                        {vehicle[key] || "Not available"}
-                      </div>
+                      <input id={`vehicle-${key}`} className="app-input" value={vehicle[key] || "Not available"} readOnly />
                     </div>;
             })}
 
                 <div>
-                  <label style={{
-                fontSize: "13px",
-                fontWeight: "500",
-                color: "var(--text-1)",
-                display: "block",
-                marginBottom: "6px"
-              }}>
+                  <label htmlFor="vehicle-mileage">
                     Current Mileage
                   </label>
-                  <input type="number" value={vehicle.mileage} onChange={e => setVehicle({
+                  <input id="vehicle-mileage" type="number" value={vehicle.mileage} onChange={e => setVehicle({
                 ...vehicle,
                 mileage: e.target.value
-              })} placeholder="Enter mileage" style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                backgroundColor: "var(--surface)",
-                fontSize: "14px",
-                outline: "none",
-                transition: "border-color 0.2s"
-              }} onFocus={e => {
-                e.target.style.borderColor = "var(--primary)";
-              }} onBlur={e => {
-                e.target.style.borderColor = "var(--surface)";
-              }} />
+              })} placeholder="Enter mileage" className="app-input" />
                 </div>
               </div>
             </LayerTheme>
@@ -644,52 +456,25 @@ export default function CreateJobCardPageUi(props) {
           boxSizing: "border-box",
           overflowY: "auto"
         }}>
-              <h3 style={{
-            fontSize: "16px",
-            fontWeight: "600",
-            color: "var(--text-1)",
-            marginTop: 0,
-            marginBottom: "16px"
-          }}>
+              <h3>
                 Customer Details
-                {isSubJobMode && <span style={{
-              marginLeft: "8px",
-              fontSize: "11px",
-              fontWeight: "500",
-              padding: "2px 8px",
-              borderRadius: "var(--radius-xs)",
-              backgroundColor: "var(--primary-surface)",
-              color: "var(--primary)"
-            }}>
+                {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
                     Inherited
                   </span>}
               </h3>
 
-              {customerNotification && <div style={{
-            padding: "12px 16px",
-            marginBottom: "16px",
-            borderRadius: "var(--radius-xs)",
-            backgroundColor: customerNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-            border: "none",
-            color: customerNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
-            fontSize: "13px",
-            fontWeight: "500",
+              {customerNotification && <StatusMessage tone={customerNotification.type === "success" ? "success" : "danger"} style={{
             display: "flex",
             alignItems: "center",
             gap: "8px"
           }}>
                   <span>{customerNotification.message}</span>
-                  <button onClick={() => setCustomerNotification(null)} style={{
-              marginLeft: "auto",
-              background: "none",
-              border: "none",
-              fontSize: "20px",
-              cursor: "pointer",
-              color: "inherit"
-            }}>
+                  <Button type="button" variant="ghost" size="xs" className="app-btn--icon" onClick={() => setCustomerNotification(null)} style={{
+              marginLeft: "auto"
+            }} aria-label="Dismiss customer notification">
                     ×
-                  </button>
-                </div>}
+                  </Button>
+                </StatusMessage>}
 
               {customer ? <div style={{
             display: "flex",
@@ -704,78 +489,22 @@ export default function CreateJobCardPageUi(props) {
                       {customerFieldDefinitions.map(input => <div key={input.field} style={{
                 gridColumn: input.field === "email" || input.field === "address" || input.field === "contactPreference" ? "1 / -1" : "auto"
               }}>
-                          <label style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "var(--text-1)",
-                  display: "block",
-                  marginBottom: "6px"
-                }}>
+                          <label htmlFor={input.type === "multi-select" ? undefined : `customer-${input.field}`}>
                             {input.label}
                           </label>
-                          {input.type === "textarea" ? <textarea value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} onInput={e => {
-                  if (input.field !== "address") return;
-                  e.target.style.height = "auto";
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                }} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={input.field === "address" ? 1 : 3} style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "14px",
-                  outline: "none",
-                  transition: "border-color 0.2s",
-                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface)" : "transparent",
-                  resize: input.field === "address" ? "none" : "vertical",
-                  minHeight: input.field === "address" ? "40px" : "unset",
-                  overflow: "hidden",
-                  lineHeight: 1.45
-                }} onFocus={e => {
-                  e.target.style.borderColor = "var(--primary)";
-                }} onBlur={() => {
-                  e.target.style.borderColor = "var(--surface)";
-                }} /> : input.type === "multi-select" ? <div style={{
+                          {input.type === "textarea" ? <textarea id={`customer-${input.field}`} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={3} className="app-input app-input--textarea" /> : input.type === "multi-select" ? <div style={{
                   display: "flex",
                   gap: "8px",
                   flexWrap: "wrap",
-                  padding: "6px",
-                  borderRadius: "var(--control-radius)",
-                  backgroundColor: isCustomerEditing ? "var(--surface)" : "transparent",
-                  border: "none",
                   width: "100%"
                 }}>
                               {["phone", "email", "sms"].map(pref => {
                     const active = Array.isArray(customerForm.contactPreference) && customerForm.contactPreference.includes(pref);
-                    return <button key={pref} type="button" onClick={() => toggleContactPreference(pref)} style={{
-                      padding: "8px 14px",
-                      borderRadius: "var(--control-radius)",
-                      backgroundColor: active ? "var(--surface)" : "transparent",
-                      color: active ? "var(--text-1)" : "var(--text-1)",
-                      fontSize: "13px",
-                      fontWeight: active ? "600" : "500",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      textTransform: "none",
-                      letterSpacing: "0"
-                    }}>
-                                    {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
-                                  </button>;
+                    return <Button key={pref} type="button" variant="secondary" size="sm" className={active ? "is-active" : ""} aria-pressed={active} onClick={() => toggleContactPreference(pref)}>
+                                     {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
+                                   </Button>;
                   })}
-                            </div> : <input type={input.type} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "14px",
-                  outline: "none",
-                  transition: "border-color 0.2s",
-                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface)" : "transparent",
-                  color: input.type === "tel" ? "#000" : "inherit"
-                }} onFocus={e => {
-                  e.target.style.borderColor = "var(--primary)";
-                }} onBlur={() => {
-                  e.target.style.borderColor = "var(--surface)";
-                }} />}
+                            </div> : <input id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
                         </div>)}
                     </div> : <div style={{
               display: "grid",
@@ -784,30 +513,12 @@ export default function CreateJobCardPageUi(props) {
             }}>
                       {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} style={{
                 gridColumn: input.field === "firstName" || input.field === "lastName" || input.field === "mobile" || input.field === "telephone" ? "auto" : "1 / -1",
-                padding: input.field === "email" ? "12px 14px" : input.field === "mobile" || input.field === "telephone" ? "12px 14px" : "10px 12px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--surface)",
                 minWidth: 0
               }}>
-                            <div style={{
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  color: "var(--text-1)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  marginBottom: "4px"
-                }}>
+                            <label htmlFor={`customer-readonly-${input.field}`}>
                               {input.label}
-                            </div>
-                            <div style={{
-                  fontSize: input.field === "email" ? "14px" : "13px",
-                  fontWeight: "600",
-                  color: "var(--text-1)",
-                  lineHeight: 1.4,
-                  wordBreak: "break-word"
-                }}>
-                              {customerForm[input.field] || "Not provided"}
-                            </div>
+                            </label>
+                            <input id={`customer-readonly-${input.field}`} className="app-input" value={customerForm[input.field] || "Not provided"} readOnly />
                           </div>)}
                     </div>}
 
@@ -818,179 +529,66 @@ export default function CreateJobCardPageUi(props) {
               flexWrap: "wrap"
             }}>
                     {isCustomerEditing ? <>
-                        <button onClick={handleSaveCustomerEdits} disabled={isSavingCustomer} style={{
-                  flex: 1,
-                  padding: "12px",
-                  fontSize: "14px",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-2)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                  fontWeight: "600",
-                  transition: "all 0.2s",
-                  opacity: isSavingCustomer ? 0.7 : 1
-                }} onMouseEnter={e => {
-                  if (!isSavingCustomer) {
-                    e.target.style.backgroundColor = "var(--primary-selected)";
-                  }
-                }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--primary)";
+                        <Button type="button" onClick={handleSaveCustomerEdits} busy={isSavingCustomer} style={{
+                  flex: 1
                 }}>
                           {isSavingCustomer ? "Saving..." : "Save Changes"}
-                        </button>
-                        <button onClick={handleCancelCustomerEdit} disabled={isSavingCustomer} style={{
-                  flex: 1,
-                  padding: "12px",
-                  fontSize: "14px",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--text-1)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                  fontWeight: "600",
-                  transition: "all 0.2s",
-                  opacity: isSavingCustomer ? 0.7 : 1
-                }} onMouseEnter={e => {
-                  if (!isSavingCustomer) {
-                    e.target.style.backgroundColor = "var(--surface)";
-                  }
-                }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--surface)";
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={handleCancelCustomerEdit} disabled={isSavingCustomer} style={{
+                  flex: 1
                 }}>
                           Cancel
-                        </button>
+                        </Button>
                       </> : <>
-                        <button onClick={handleStartCustomerEdit} style={{
+                        <Button type="button" variant="secondary" onClick={handleStartCustomerEdit} style={{
                   width: "100%",
                   maxWidth: "320px",
-                  padding: "14px",
-                  fontSize: "14px",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-2)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  transition: "all 0.2s",
                   alignSelf: "center"
-                }} onMouseEnter={e => {
-                  e.target.style.backgroundColor = "var(--primary-selected)";
-                }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--primary)";
                 }}>
                           Edit Customer
-                        </button>
-                        <button onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
                   width: "100%",
                   maxWidth: "320px",
-                  padding: "12px 16px",
-                  fontSize: "14px",
-                  backgroundColor: "var(--theme)",
-                  color: "var(--accent-purple)",
-                  border: "1px solid var(--ghostbutton-ring)",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                  fontWeight: "600",
-                  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
-                  opacity: isSavingCustomer ? 0.7 : 1,
                   alignSelf: "center"
-                }} onMouseEnter={e => {
-                  if (!isSavingCustomer) {
-                    e.target.style.backgroundColor = "var(--accent-purple)";
-                    e.target.style.color = "var(--text-2)";
-                  }
-                }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--theme)";
-                  e.target.style.color = "var(--accent-purple)";
                 }}>
                           Clear Customer
-                        </button>
+                        </Button>
                       </>}
                   </div>
 
-                  {isCustomerEditing && <button onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
+                  {isCustomerEditing && <Button type="button" variant="ghost" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
               width: "100%",
               maxWidth: "320px",
-              padding: "12px",
-              fontSize: "14px",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: isSavingCustomer ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              transition: "all 0.2s",
-              opacity: isSavingCustomer ? 0.7 : 1,
               alignSelf: "center"
-            }} onMouseEnter={e => {
-              if (!isSavingCustomer) {
-                e.target.style.backgroundColor = "var(--surface)";
-              }
-            }} onMouseLeave={e => {
-              e.target.style.backgroundColor = "var(--surface)";
             }}>
                       Clear Customer
-                    </button>}
+                    </Button>}
                 </div> : <div style={{
             display: "flex",
             flexDirection: "column",
             gap: "12px",
             alignItems: "center"
           }}>
-                  <button onClick={() => setShowNewCustomer(true)} style={{
+                  <Button type="button" onClick={() => setShowNewCustomer(true)} style={{
               width: "100%",
-              maxWidth: "320px",
-              padding: "14px",
-              fontSize: "14px",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: "pointer",
-              fontWeight: "600",
-              transition: "all 0.2s"
-            }} onMouseEnter={e => {
-              e.target.style.backgroundColor = "var(--primary-selected)";
-            }} onMouseLeave={e => {
-              e.target.style.backgroundColor = "var(--primary)";
+              maxWidth: "320px"
             }}>
                     New Customer
-                  </button>
-                  <button data-presentation="create-customer-lookup" onClick={() => setShowExistingCustomer(true)} style={{
+                  </Button>
+                  <Button type="button" data-presentation="create-customer-lookup" variant="secondary" onClick={() => setShowExistingCustomer(true)} style={{
               width: "100%",
-              maxWidth: "320px",
-              padding: "12px 16px",
-              fontSize: "14px",
-              backgroundColor: "var(--theme)",
-              color: "var(--accent-purple)",
-              border: "1px solid var(--ghostbutton-ring)",
-              borderRadius: "var(--radius-xs)",
-              cursor: "pointer",
-              fontWeight: "600",
-              transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
-            }} onMouseEnter={e => {
-              e.target.style.backgroundColor = "var(--accent-purple)";
-              e.target.style.color = "var(--text-2)";
-            }} onMouseLeave={e => {
-              e.target.style.backgroundColor = "var(--theme)";
-              e.target.style.color = "var(--accent-purple)";
+              maxWidth: "320px"
             }}>
                     Search Existing Customer
-                  </button>
+                  </Button>
                 </div>}
             </LayerTheme>
           </DevLayoutSection>
 
           {/* ✅ Job Requests Section - Full Width */}
           <LayerTheme sectionKey="job-cards-create-job-requests" sectionType="section-shell" parentKey="job-cards-create-content" radius="var(--radius-md)">
-            <h3 style={{
-          fontSize: "16px",
-          fontWeight: "600",
-          color: "var(--text-1)",
-          marginTop: 0,
-          marginBottom: "16px"
-        }}>
+            <h3>
               Job Requests
             </h3>
             <div style={{
@@ -1002,14 +600,9 @@ export default function CreateJobCardPageUi(props) {
               {requests.map((req, i) => <LayerSurface key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" radius="var(--radius-sm)" padding="10px" style={{
             marginBottom: "10px"
           }}>
-                  <div style={{
-              fontSize: "13px",
-              fontWeight: "600",
-              color: "var(--text-1)",
-              marginBottom: "10px"
-            }}>
+                  <strong style={{ marginBottom: "10px" }}>
                     Request {i + 1}
-                  </div>
+                  </strong>
                   <div style={{
               display: "flex",
               gap: "10px",
@@ -1032,26 +625,16 @@ export default function CreateJobCardPageUi(props) {
               }} placeholder="Enter job request (MOT, Service, Diagnostic)" containerStyle={{
                 flex: "1 1 520px",
                 minWidth: "320px"
-              }} inputStyle={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                fontSize: "14px",
-                outline: "none",
-                transition: "border-color 0.2s",
-                backgroundColor: "var(--theme)"
               }} />
                     <div style={{
-                position: "relative",
                 display: "flex",
                 alignItems: "center",
+                gap: "6px",
                 width: "72px",
                 flexShrink: 0
               }}>
                       <input type="number" min="0.00" step="0.01" value={req.time || ""} onChange={e => handleTimeChange(i, e.target.value)} placeholder="" className="app-input" style={{
-                  width: "72px",
-                  paddingRight: "24px"
+                  width: "52px"
                 }} onBlur={() => {
                   const updated = [...requests];
                   updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
@@ -1060,14 +643,7 @@ export default function CreateJobCardPageUi(props) {
                 }} />
                       <span style={{
                   pointerEvents: "none",
-                  position: "absolute",
-                  right: "9px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "var(--text-1)",
-                  fontSize: "var(--control-font-size)",
-                  fontWeight: 700,
-                  lineHeight: 1
+                  flexShrink: 0
                 }}>
                         h
                       </span>
@@ -1078,18 +654,18 @@ export default function CreateJobCardPageUi(props) {
                         so advisors don't hit it by mistake — an empty
                         request falls back to generic questions which aren't
                         as useful on a live call. */}
-                    <button type="button" onClick={() => setQuestionPromptsIndex(i)} className="app-btn app-btn--secondary app-btn--sm" disabled={!String(req.text || "").trim()} title="Show suggested questions to ask the customer">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setQuestionPromptsIndex(i)} disabled={!String(req.text || "").trim()} title="Show suggested questions to ask the customer">
                       Question Prompts
-                    </button>
-                    <button type="button" onClick={() => setMoreRequestIndex(i)} className="app-btn app-btn--secondary app-btn--sm">
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setMoreRequestIndex(i)}>
                       More
-                    </button>
+                    </Button>
                   </div>
                 </LayerSurface>)}
             </div>
-            <button type="button" onClick={handleAddRequest} className="app-btn app-btn--primary">
+            <Button type="button" variant="secondary" onClick={handleAddRequest}>
               + Add Request
-            </button>
+            </Button>
           </LayerTheme>
 
           {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
@@ -1102,38 +678,16 @@ export default function CreateJobCardPageUi(props) {
             gap: "12px",
             marginBottom: "8px"
           }}>
-                <h4 style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-1)",
-              margin: 0
-            }}>
+                <h4>
                   Cosmetic Damage
                 </h4>
-                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}>
+                <div className="tab-api" style={yesNoToggleStyle}>
+                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
               </div>
-              {cosmeticDamagePresent && <textarea value={cosmeticNotes} onChange={e => setCosmeticNotes(e.target.value)} placeholder="Describe any scratches, dents, or cosmetic damage..." className="cosmetic-notes-active" style={{
-            width: "100%",
-            height: "80px",
-            padding: "10px 12px",
-            border: "none",
-            borderRadius: "var(--radius-xs)",
-            resize: "none",
-            fontFamily: "inherit",
-            fontSize: "13px",
-            outline: "none",
-            transition: "border-color 0.2s",
-            backgroundColor: "var(--surface)",
-            color: "var(--text-1)"
-          }} onFocus={e => {
-            e.target.style.borderColor = "var(--primary)";
-          }} onBlur={e => {
-            e.target.style.borderColor = "var(--surface)";
-          }} />}
+              {cosmeticDamagePresent && <textarea value={cosmeticNotes} onChange={e => setCosmeticNotes(e.target.value)} placeholder="Describe any scratches, dents, or cosmetic damage..." className="app-input app-input--textarea cosmetic-notes-active" />}
             </LayerTheme>
             <LayerTheme sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"
@@ -1144,16 +698,11 @@ export default function CreateJobCardPageUi(props) {
             justifyContent: "space-between",
             gap: "12px"
           }}>
-                <h4 style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-1)",
-              margin: 0
-            }}>
+                <h4>
                   Wash
                 </h4>
-                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(washRequired === choice)}>
+                <div className="tab-api" style={yesNoToggleStyle}>
+                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -1166,16 +715,11 @@ export default function CreateJobCardPageUi(props) {
             justifyContent: "space-between",
             gap: "12px"
           }}>
-                <h4 style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-1)",
-              margin: 0
-            }}>
+                <h4>
                   VHC Required?
                 </h4>
-                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(vhcRequired === choice)}>
+                <div className="tab-api" style={yesNoToggleStyle}>
+                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -1190,35 +734,12 @@ export default function CreateJobCardPageUi(props) {
             justifyContent: "space-between",
             gap: "12px"
           }}>
-                <h4 style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-1)",
-              margin: 0
-            }}>
+                <h4>
                   Documents
                 </h4>
-                <button type="button" onClick={() => setShowDocumentsPopup(true)} style={{
-              padding: "10px 18px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              fontWeight: "600",
-              fontSize: "14px",
-              cursor: "pointer",
-              transition: "background-color 0.2s, transform 0.2s"
-            }} onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--primary-selected)";
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-            }} onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "var(--primary)";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.zIndex = "0";
-            }}>
+                <Button type="button" variant="secondary" size="sm" onClick={() => setShowDocumentsPopup(true)}>
                   Manage Documents
-                </button>
+                </Button>
               </div>
             </LayerTheme>
           </DevLayoutSection>
@@ -1239,29 +760,26 @@ export default function CreateJobCardPageUi(props) {
         {/* Question Prompts popup — rendered once per page, opens for the
             request row whose index is stored in questionPromptsIndex. */}
         <QuestionPromptsPopup open={questionPromptsIndex !== null} onClose={() => setQuestionPromptsIndex(null)} requestText={questionPromptsIndex !== null ? String(requests?.[questionPromptsIndex]?.text || "") : ""} requestIndex={questionPromptsIndex} />
-        {moreRequestIndex !== null && moreRequest && <div style={popupOverlayStyles} onClick={event => {
-      if (event.target === event.currentTarget) setMoreRequestIndex(null);
-    }}>
-            <div style={{
-        ...popupCardStyles,
+        {moreRequestIndex !== null && moreRequest && <PopupModal
+          isOpen
+          onClose={() => setMoreRequestIndex(null)}
+          ariaLabel={`Request ${moreRequestIndex + 1} details`}
+          cardStyle={{
         width: "100%",
-        maxWidth: "760px",
-        maxHeight: "88vh",
-        overflowY: "auto",
-        border: "none"
-      }} onClick={event => event.stopPropagation()}>
+        maxWidth: "760px"
+      }}>
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-                  <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>Request {moreRequestIndex + 1} Details</h3>
-                  <button type="button" onClick={() => setMoreRequestIndex(null)} className="app-btn app-btn--secondary app-btn--sm">Close</button>
+                <div className="app-popup-compact-header">
+                  <h3>Request {moreRequestIndex + 1} Details</h3>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => setMoreRequestIndex(null)}>Close</Button>
                 </div>
                 <div style={moreFieldStyle}>
-                  <label style={moreLabelStyle}>Request Description</label>
+                  <label>Request Description</label>
                   <textarea value={moreRequest.text || ""} onChange={e => handleRequestChange(moreRequestIndex, e.target.value)} className="app-input app-input--textarea" />
                 </div>
                 <div style={moreGridStyle}>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Labour Time</label>
+                    <label>Labour Time</label>
                     <input type="number" min="0" step="0.01" value={moreRequest.time || ""} onChange={e => handleTimeChange(moreRequestIndex, e.target.value)} onBlur={() => {
                 const updated = [...requests];
                 updated[moreRequestIndex].time = normalizeHoursToTwoDecimals(updated[moreRequestIndex]?.time);
@@ -1270,85 +788,61 @@ export default function CreateJobCardPageUi(props) {
               }} className="app-input" />
                   </div>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Labour Price</label>
+                    <label>Labour Price</label>
                     <input type="number" min="0" step="0.01" value={moreRequest.labourPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "labourPrice", e.target.value)} className="app-input" />
                   </div>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Menu Price</label>
+                    <label>Menu Price</label>
                     <input type="number" min="0" step="0.01" value={moreRequest.menuPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "menuPrice", e.target.value)} className="app-input" />
                   </div>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Set Price</label>
+                    <label>Set Price</label>
                     <input type="number" min="0" step="0.01" value={moreRequest.setPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "setPrice", e.target.value)} className="app-input" />
                   </div>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Discount</label>
+                    <label>Discount</label>
                     <input type="number" min="0" step="0.01" value={moreRequest.discount || ""} onChange={e => updateRequestField(moreRequestIndex, "discount", e.target.value)} className="app-input" />
                   </div>
                   <div style={moreFieldStyle}>
-                    <label style={moreLabelStyle}>Account Type</label>
+                    <label>Account Type</label>
                     <DropdownField value={moreRequest.paymentType || "Customer"} onChange={e => updateRequestPaymentType(moreRequestIndex, e.target.value)} options={PAYMENT_TYPE_OPTIONS} className="job-request-payment-dropdown" />
                   </div>
                 </div>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px", color: "var(--text-1)", fontWeight: 700 }}>
-                  <input type="checkbox" checked={Boolean(moreRequest.specialRate)} onChange={e => updateRequestField(moreRequestIndex, "specialRate", e.target.checked)} />
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px" }}>
+                  <input type="checkbox" className="app-toggle app-toggle--checkbox" checked={Boolean(moreRequest.specialRate)} onChange={e => updateRequestField(moreRequestIndex, "specialRate", e.target.checked)} />
                   Special labour rate
                 </label>
                 <div style={moreFieldStyle}>
-                  <label style={moreLabelStyle}>Internal Notes</label>
+                  <label>Internal Notes</label>
                   <textarea value={moreRequest.noteText || ""} onChange={e => updateRequestField(moreRequestIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => {
+                  <Button type="button" variant="danger" onClick={() => {
                 handleRemoveRequest(moreRequestIndex);
                 setMoreRequestIndex(null);
-              }} className="app-btn app-btn--danger">Remove Request</button>
-                  <button type="button" onClick={() => setMoreRequestIndex(null)} className="app-btn app-btn--primary">Done</button>
+              }}>Remove Request</Button>
+                  <Button type="button" onClick={() => setMoreRequestIndex(null)}>Done</Button>
                 </div>
               </div>
-            </div>
-          </div>}
-        {showDetectedRequestsPopup && <div style={popupOverlayStyles} onClick={event => {
-      if (event.target === event.currentTarget) {
-        setShowDetectedRequestsPopup(false);
-      }
-    }}>
-            <div style={{
-        ...popupCardStyles,
+          </PopupModal>}
+        {showDetectedRequestsPopup && <PopupModal
+          isOpen
+          onClose={() => setShowDetectedRequestsPopup(false)}
+          ariaLabel="Detected job requests"
+          cardStyle={{
         width: "100%",
-        maxWidth: "620px",
-        maxHeight: "88vh",
-        overflowY: "auto",
-        border: "none"
-      }} onClick={event => event.stopPropagation()}>
+        maxWidth: "620px"
+      }}>
               <div style={{
           padding: "28px"
         }}>
-                <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px"
-          }}>
-                  <h3 style={{
-              margin: 0,
-              fontSize: "18px",
-              fontWeight: 700,
-              color: "var(--primary)",
-              letterSpacing: "0.02em"
-            }}>
+                <div className="app-popup-compact-header">
+                  <h3>
                     Job Requests
                   </h3>
-                  <button type="button" onClick={() => setShowDetectedRequestsPopup(false)} style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: "22px",
-              lineHeight: 1,
-              color: "var(--info)"
-            }} aria-label="Close job requests popup">
+                  <Button type="button" variant="ghost" size="xs" className="app-btn--icon" onClick={() => setShowDetectedRequestsPopup(false)} aria-label="Close job requests popup">
                     ×
-                  </button>
+                  </Button>
                 </div>
 
                 <div style={{
@@ -1357,11 +851,7 @@ export default function CreateJobCardPageUi(props) {
           }}>
                   {populatedRequests.map(request => {
               const requestDetections = visibleJobDetections.filter(detection => Number(detection.requestIndex) === request.index);
-              return <div key={`detected-request-popup-${request.index}`} style={{
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--surface)",
-                padding: "14px 16px",
+              return <LayerTheme key={`detected-request-popup-${request.index}`} radius="var(--radius-sm)" padding="14px 16px" style={{
                 display: "grid",
                 gap: "10px"
               }}>
@@ -1372,40 +862,28 @@ export default function CreateJobCardPageUi(props) {
                   gap: "12px",
                   flexWrap: "wrap"
                 }}>
-                          <span style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: "var(--text-1)"
-                  }}>
+                          <strong>
                             Request {request.index + 1}
-                          </span>
+                          </strong>
                           {requestDetections.length > 0 ? <div style={{
                     display: "flex",
                     gap: "6px",
                     flexWrap: "wrap",
                     justifyContent: "flex-end"
                   }}>
-                              {requestDetections.map((detection, index) => <span key={`request-detection-${request.index}-${index}`} className="app-btn app-btn--secondary app-btn--xs app-btn--pill" style={{
-                      pointerEvents: "none"
-                    }}>
+                              {requestDetections.map((detection, index) => <span key={`request-detection-${request.index}-${index}`} className="app-badge app-badge--accent-soft">
                                   {detection.jobType}
                                 </span>)}
                             </div> : null}
                         </div>
-                        <div style={{
-                  fontSize: "13px",
-                  lineHeight: 1.5,
-                  color: "var(--text-1)",
-                  whiteSpace: "pre-wrap"
-                }}>
+                        <div style={{ whiteSpace: "pre-wrap" }}>
                           {request.text}
                         </div>
-                      </div>;
+                      </LayerTheme>;
             })}
                 </div>
               </div>
-            </div>
-          </div>}
+          </PopupModal>}
       </DevLayoutSection>
     </>; // render extracted page section.
     default:

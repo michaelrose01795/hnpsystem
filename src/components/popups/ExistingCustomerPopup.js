@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
 import PopupModal from "@/components/popups/popupStyleApi";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
@@ -82,47 +84,32 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
 
         {customerList.length > 0 && (
           <div
+            className="dropdown-api__menu app-dropdown-menu"
             style={{
               maxHeight: "220px",
               overflowY: "auto",
               marginBottom: "16px",
-              border: "none",
-              borderRadius: "var(--input-radius)",
-              backgroundColor: "var(--surface)",
             }}
           >
             {customerList.map((c) => (
-              <div
+              <button
+                type="button"
                 key={c.id}
                 onClick={() => setSelectedCustomer(c)}
-                style={{
-                  padding: "10px 12px",
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedCustomer?.id === c.id ? "var(--surface)" : "var(--surface)",
-                  color: "var(--text-1)",
-                  borderBottom: "1px solid var(--separating-line)",
-                  fontSize: "14px",
-                  fontWeight: selectedCustomer?.id === c.id ? 600 : 500,
-                }}
+                className={`dropdown-api__option${selectedCustomer?.id === c.id ? " is-selected" : ""}`}
               >
                 {c.firstname} {c.lastname}
-              </div>
+              </button>
             ))}
           </div>
         )}
 
         {selectedCustomer && (
-          <div
+          <LayerTheme
+            radius="var(--input-radius)"
+            padding="16px"
             style={{
               marginBottom: "16px",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              padding: "16px",
-              borderRadius: "var(--input-radius)",
-              border: "none",
-              fontSize: "14px",
-              lineHeight: 1.5,
             }}
           >
             <p>
@@ -141,42 +128,26 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
             <p>
               <strong>Telephone:</strong> {selectedCustomer.telephone}
             </p>
-          </div>
+          </LayerTheme>
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-          <button
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "12px",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
+            style={{ flex: 1 }}
           >
             Close
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={handlePrimaryClick}
             disabled={!canUsePrimary}
-            style={{
-              flex: 1,
-              padding: "12px",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: canUsePrimary ? "pointer" : "not-allowed",
-              fontWeight: "600",
-              opacity: canUsePrimary ? 1 : 0.6,
-            }}
+            style={{ flex: 1 }}
           >
             {primaryButtonLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </PopupModal>

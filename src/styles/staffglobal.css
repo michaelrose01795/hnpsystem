@@ -5615,7 +5615,11 @@ html.staff-scope .popup-backdrop {
   width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
-  background-color: rgba(0, 0, 0, 0.68);
+  background-color: rgba(0, 0, 0, 0.62) !important;
+  background-image: linear-gradient(
+    rgba(var(--accentMainRgb), 0.14),
+    rgba(var(--accentMainRgb), 0.14)
+  ) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
