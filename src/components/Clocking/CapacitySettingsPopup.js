@@ -3,15 +3,19 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import LayerSurface from "@/components/ui/LayerSurface";
+import { MonthPicker } from "@/components/ui/monthPickerAPI";
 
 const pad = (value) => String(value).padStart(2, "0");
 const toDateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const toMonthKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 
-const getCapacityRange = () => {
+const getCapacityRange = (monthKey) => {
+  const [year, month] = monthKey.split("-").map(Number);
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0);
   const dates = [];
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  while (dates.length < 28) {
+  const cursor = new Date(firstDay);
+  while (cursor <= lastDay) {
     if (cursor.getDay() !== 0) dates.push(toDateKey(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -36,16 +40,27 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(() => toMonthKey(new Date()));
 
-  const range = useMemo(getCapacityRange, []);
+  const range = useMemo(() => getCapacityRange(selectedMonth), [selectedMonth]);
+
+  useEffect(() => {
+    if (isOpen) return;
+    setSchedule([]);
+    setSelectedDates(new Set());
+    setDrafts({});
+    setResets(new Set());
+    setFieldValues({});
+    setError("");
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     let active = true;
     setLoading(true);
     setError("");
-    setDrafts({});
-    setResets(new Set());
+    setSchedule([]);
+    setSelectedDates(new Set());
     setFieldValues({});
     fetch(`/api/technician-capacity?start=${range[0]}&end=${range[range.length - 1]}`)
       .then(async (response) => {
@@ -184,12 +199,12 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
       isOpen
       onClose={saving ? undefined : onClose}
       ariaLabel="Technician capacity settings"
-      cardClassName="app-settings-popup-card"
+      cardClassName="app-settings-popup-card capacity-settings-popup-card"
       cardStyle={{
         width: "min(1180px, 100%)",
         padding: "var(--page-card-padding)",
         overflowX: "hidden",
-        overflowY: "auto",
+        overflowY: "hidden",
       }}
     >
       <div className="app-settings-popup capacity-settings">
@@ -212,6 +227,14 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
                 <div><strong>Select dates</strong><span>{selectedDateList.length} selected</span></div>
                 <Button type="button" variant="secondary" size="xs" onClick={() => setSelectedDates(new Set(schedule.map((day) => day.date)))}>Select all</Button>
               </div>
+              <MonthPicker
+                aria-label="Capacity month"
+                value={selectedMonth}
+                onValueChange={setSelectedMonth}
+                disabled={loading || saving}
+                minYear={new Date().getFullYear() - 10}
+                maxYear={new Date().getFullYear() + 10}
+              />
               <div className="capacity-settings__date-list">
                 {schedule.map((day) => (
                   <label key={day.date} className="capacity-settings__date-option">
@@ -280,11 +303,13 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         .capacity-settings__header, .capacity-settings__section-heading, .capacity-settings__row-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .capacity-settings__header h2 { margin: 0; color: var(--text-accent); font-size: clamp(1.25rem, 3vw, 1.65rem); }
         .capacity-settings__layout { display: grid; grid-template-columns: minmax(230px, 0.68fr) minmax(0, 2fr); gap: var(--layout-card-gap); flex: 1; min-height: 0; overflow: hidden; }
-        .capacity-settings__dates, .capacity-settings__editor { height: 100%; min-height: 0; overflow: hidden; }
+        .capacity-settings__dates, .capacity-settings__editor { height: 100%; min-height: 0; }
+        .capacity-settings__dates { overflow: visible; }
+        .capacity-settings__editor { overflow: hidden; }
         .capacity-settings__section-heading > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .capacity-settings__section-heading span { color: var(--text-1); font-size: 0.78rem; }
-        .capacity-settings__date-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
-        .capacity-settings__tech-list { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-content: start; gap: 8px; padding-right: 4px; }
+        .capacity-settings__date-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+        .capacity-settings__tech-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-content: start; gap: 8px; padding-right: 4px; }
         .capacity-settings__date-option { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; }
         .capacity-settings__date-option input { width: 18px; height: 18px; accent-color: var(--accentMain); flex: 0 0 auto; }
         .capacity-settings__date-option span { display: flex; flex-direction: column; gap: 2px; }
@@ -298,11 +323,13 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         .capacity-settings__row-action > span { color: var(--text-1); font-size: 0.72rem; white-space: nowrap; }
         .capacity-settings__message { padding: 12px; border-radius: var(--radius-sm); background: var(--theme); }
         .capacity-settings__message--error { background: var(--danger-surface); color: var(--danger); }
+        :global(.capacity-settings-popup-card) { overflow: hidden !important; }
         @media (max-width: 767px) {
+          :global(.capacity-settings-popup-card) { overflow-y: auto !important; }
           .capacity-settings { height: auto; min-height: 100%; }
           .capacity-settings__header { align-items: center; }
           .capacity-settings__layout { flex: none; grid-template-columns: 1fr; grid-template-rows: auto; overflow: visible; }
-          .capacity-settings__dates { height: clamp(220px, 38dvh, 360px); min-height: 220px; overflow: hidden; }
+          .capacity-settings__dates { height: clamp(300px, 48dvh, 440px); min-height: 300px; overflow: visible; }
           .capacity-settings__editor { height: auto; overflow: visible; }
           .capacity-settings__date-list { overflow-y: auto; }
           .capacity-settings__tech-list { overflow-y: visible; }

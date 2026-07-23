@@ -1274,7 +1274,7 @@ export default function AppointmentsUi(props) {
 
   const dayJobsTableRef = useRef(null);
 
-  // A scheduler booking opens the day-jobs popup with its matching row briefly
+  // A scheduler booking opens the day-jobs popup with its matching row
   // highlighted. Once the modal is mounted, center that row in the scroll area
   // so the clicked booking stays visible even on a busy day.
   useEffect(() => {
@@ -1495,7 +1495,8 @@ export default function AppointmentsUi(props) {
                       const isCurrentlyCheckingIn = checkingInJobId === job.id;
                       const isHighlighted = String(highlightJob) === String(job.jobNumber || job.id);
                       const cellBorder = "var(--separating-line)";
-                      const rowBackground = isHighlighted ? "var(--success-surface)" : idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
+                      const rowBackground = idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
+                      const cellBackground = isHighlighted ? "var(--theme)" : "transparent";
                       return <tr key={idx} data-job-number={String(job.jobNumber || job.id)} style={{
                         backgroundColor: rowBackground,
                         transition: "background-color 0.2s ease"
@@ -1512,7 +1513,8 @@ export default function AppointmentsUi(props) {
                           padding: "12px 14px",
                           borderBottom: cellBorder,
                           fontWeight: "700",
-                          whiteSpace: "nowrap"
+                          whiteSpace: "nowrap",
+                          backgroundColor: cellBackground
                         }}>
                             {job.appointment?.time || "-"}
                           </td>
@@ -1520,7 +1522,8 @@ export default function AppointmentsUi(props) {
                           padding: "12px 14px",
                           borderBottom: cellBorder,
                           color: "var(--primary)",
-                          fontWeight: "700"
+                          fontWeight: "700",
+                          backgroundColor: cellBackground
                         }}>
                             <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobRowClick(job.jobNumber || job.id)} onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)} style={{ gap: "6px" }}>
                               <span>{job.jobNumber || job.id || "-"}</span>
@@ -1545,25 +1548,29 @@ export default function AppointmentsUi(props) {
                           padding: "12px 14px",
                           borderBottom: cellBorder,
                           fontWeight: "600",
-                          whiteSpace: "nowrap"
+                          whiteSpace: "nowrap",
+                          backgroundColor: cellBackground
                         }}>
                             {job.reg || "-"}
                           </td>
                           <td style={{
                           padding: "12px 14px",
-                          borderBottom: cellBorder
+                          borderBottom: cellBorder,
+                          backgroundColor: cellBackground
                         }}>
                             {getVehicleDisplay(job)}
                           </td>
                           <td style={{
                           padding: "12px 14px",
-                          borderBottom: cellBorder
+                          borderBottom: cellBorder,
+                          backgroundColor: cellBackground
                         }}>
                             {job.customer || "-"}
                           </td>
                           <td style={{
                           padding: "12px 14px",
-                          borderBottom: cellBorder
+                          borderBottom: cellBorder,
+                          backgroundColor: cellBackground
                         }}>
                             <div style={{
                             display: "flex",
@@ -1587,7 +1594,8 @@ export default function AppointmentsUi(props) {
                           </td>
                           <td style={{
                           padding: "12px 14px",
-                          borderBottom: cellBorder
+                          borderBottom: cellBorder,
+                          backgroundColor: cellBackground
                         }}>
                             <span style={{
                             display: "inline-flex",
@@ -1606,14 +1614,16 @@ export default function AppointmentsUi(props) {
                           padding: "12px 14px",
                           borderBottom: cellBorder,
                           fontWeight: "700",
-                          whiteSpace: "nowrap"
+                          whiteSpace: "nowrap",
+                          backgroundColor: cellBackground
                         }}>
                             {getEstimatedFinishTime(job)}
                           </td>
                           <td style={{
                           padding: "12px 14px",
                           borderBottom: cellBorder,
-                          textAlign: "center"
+                          textAlign: "center",
+                          backgroundColor: cellBackground
                         }}>
                             {isCheckedIn ? <span className="app-badge app-badge--success" style={{
                             minWidth: isCompactMobile ? "90px" : "110px",

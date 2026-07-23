@@ -131,6 +131,7 @@ export default function MobileMechanicEligibility({
                 aria-pressed={isMobileMechanic === choice}
                 data-tone="default"
                 className={`tab-api__item${isMobileMechanic === choice ? " is-active" : ""}`}
+                style={{ flex: "1 1 0", minWidth: "64px" }}
                 title={disabled ? "This job does not meet the Mobile Mechanic rules" : undefined}
               >
                 {choice ? "Yes" : "No"}

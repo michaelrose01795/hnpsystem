@@ -1999,13 +1999,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             width: 12%;
           }
         }
-        .catalog-qty-input::placeholder {
-          color: var(--grey-accent);
-          opacity: 0.75;
-        }
-        .catalog-qty-input {
-          color: var(--text-1);
-        }
       `}</style>
       {/* ===== Parts Metrics ===== */}
       <ul
@@ -2129,15 +2122,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               placeholder="Search parts in table..."
               style={{ flex: "1 1 200px", maxWidth: "320px" }}
             />
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={toggleBookPartPanel}
               disabled={!canAllocateParts}
-              className="app-table-action-btn app-table-action-btn--primary"
-              style={{ whiteSpace: "nowrap", opacity: canAllocateParts ? 1 : 0.6 }}
+              style={{ whiteSpace: "nowrap" }}
             >
               {showBookPartPanel ? "Hide" : "Book Part"}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -2235,20 +2229,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
                     </div>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={clearSelectedCatalogPart}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--text-1)",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      fontSize: "var(--text-label)",
-                    }}
                   >
                     Clear
-                  </button>
+                  </Button>
                 </div>
                 {/* auto-fit keeps the three fields in a row on desktop, stacks them on narrow screens (CLAUDE.md §3.6) */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: "10px" }}>
@@ -2260,7 +2248,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      className="catalog-qty-input"
+                      className="app-input"
                       value={catalogQuantity}
                       onChange={(e) => {
                         const next = e.target.value;
@@ -2269,15 +2257,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         }
                       }}
                       placeholder="1"
-                      style={{
-                        width: "100%",
-                        padding: "6px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none",
-                        fontSize: "var(--text-label)",
-                        background: "var(--theme)",
-                        color: "var(--text-1)",
-                      }}
                     />
                   </div>
                   <div>
@@ -2305,42 +2284,26 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 )}
                 {/* auto-fit keeps the buttons side-by-side on desktop, stacks them on very narrow screens (CLAUDE.md §3.6) */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))", gap: "8px" }}>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     onClick={handleAddPartFromStock}
                     disabled={!canAllocateParts || allocatingPart}
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: !canAllocateParts ? "var(--theme)" : "var(--accent-purple)",
-                      color: "var(--text-2)",
-                      fontWeight: 600,
-                      cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                      fontSize: "var(--text-body-sm)",
-                    }}
+                    busy={allocatingPart}
+                    style={{ width: "100%" }}
                   >
-                    {allocatingPart ? "Adding..." : "Add to Job"}
-                  </button>
-                  <button
+                    Add to Job
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={handleAddPartToOrderFromStock}
                     disabled={!canAllocateParts || allocatingPart}
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--theme)",
-                      color: !canAllocateParts ? "var(--text-1)" : "var(--accent-purple)",
-                      fontWeight: 600,
-                      cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                      fontSize: "var(--text-body-sm)",
-                    }}
+                    busy={allocatingPart}
+                    style={{ width: "100%" }}
                   >
-                    {allocatingPart ? "Adding..." : "Add to Order"}
-                  </button>
+                    Add to Order
+                  </Button>
                 </div>
               </LayerSurface>
             )}
@@ -2505,43 +2468,26 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               />
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => {
                     setShowPrePickPopup(false);
                     setSelectedPrePickPartId("");
                     setSelectedPrePickLocation("");
                   }}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontSize: "var(--text-label)",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="primary"
                   onClick={handleSubmitPrePickPopup}
                   disabled={!selectedPrePickPartId || savingPrePick}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    background: !selectedPrePickPartId || savingPrePick ? "var(--surface)" : "var(--primary)",
-                    color: !selectedPrePickPartId || savingPrePick ? "var(--text-1)" : "var(--text-2)",
-                    fontSize: "var(--text-label)",
-                    fontWeight: 600,
-                    cursor: !selectedPrePickPartId || savingPrePick ? "not-allowed" : "pointer",
-                  }}
+                  busy={savingPrePick}
                 >
-                  {savingPrePick ? "Saving..." : "Save Location"}
-                </button>
+                  Save Location
+                </Button>
               </div>
             </div>
           </div>

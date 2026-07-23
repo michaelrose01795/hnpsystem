@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"; // Import React hooks
+import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -416,7 +416,6 @@ export default function Appointments() {
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
   const [highlightJob, setHighlightJob] = useState("");
-  const highlightTimerRef = useRef(null);
   const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -788,21 +787,12 @@ export default function Appointments() {
 
   const showJobHighlight = useCallback((jobNumberValue) => {
     if (!jobNumberValue) return;
-    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
     setHighlightJob(String(jobNumberValue));
-    highlightTimerRef.current = window.setTimeout(() => {
-      setHighlightJob("");
-      highlightTimerRef.current = null;
-    }, 3000);
-  }, []);
-
-  useEffect(() => () => {
-    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
   }, []);
 
   // Clicking a scheduler day's time column selects that day and opens the
-  // day-jobs list popup. Booking-card clicks also reveal and briefly highlight
-  // the matching row so the user's selection remains visually anchored.
+  // day-jobs list popup. Booking-card clicks also reveal and highlight the
+  // matching row for as long as that selected booking remains in the popup.
   const handleOpenDayJobs = useCallback((date, jobNumberValue) => {
     if (date) {
       const next = date instanceof Date ? new Date(date.getTime()) : new Date(date);
@@ -811,6 +801,8 @@ export default function Appointments() {
     if (jobNumberValue) {
       setSearchQuery("");
       showJobHighlight(jobNumberValue);
+    } else {
+      setHighlightJob("");
     }
     setShowDayJobsPopup(true);
   }, [showJobHighlight]);

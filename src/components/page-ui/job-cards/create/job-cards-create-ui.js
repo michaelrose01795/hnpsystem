@@ -116,6 +116,10 @@ export default function CreateJobCardPageUi(props) {
     flexWrap: "nowrap",
     minWidth: "max-content"
   };
+  const yesNoButtonStyle = {
+    flex: "1 1 0",
+    minWidth: "64px"
+  };
   const moreFieldStyle = {
     display: "flex",
     flexDirection: "column",
@@ -607,7 +611,9 @@ export default function CreateJobCardPageUi(props) {
               display: "flex",
               gap: "10px",
               alignItems: "center",
-              flexWrap: "wrap"
+              flexWrap: "nowrap",
+              overflowX: "auto",
+              paddingBottom: "2px"
             }}>
                     <RequestPresetAutosuggestInput value={req.text || ""} onChange={nextValue => handleRequestChange(i, nextValue)} onPresetSelect={preset => {
                 const updated = [...requests];
@@ -623,8 +629,8 @@ export default function CreateJobCardPageUi(props) {
                 setJobDetections(detections);
                 setJobCategories(Array.from(new Set(detections.map(d => d.jobType))));
               }} placeholder="Enter job request (MOT, Service, Diagnostic)" containerStyle={{
-                flex: "1 1 520px",
-                minWidth: "320px"
+                flex: "1 1 auto",
+                minWidth: "280px"
               }} />
                     <div style={{
                 display: "flex",
@@ -648,7 +654,7 @@ export default function CreateJobCardPageUi(props) {
                         h
                       </span>
                     </div>
-                    <input type="number" min="0" step="0.01" value={req.setPrice ?? req.price ?? ""} onChange={e => updateRequestField(i, "setPrice", e.target.value)} placeholder="Price" className="app-input" style={moneyInputStyle} />
+                    <input type="number" min="0" step="0.01" value={req.setPrice ?? req.price ?? ""} onChange={e => updateRequestField(i, "setPrice", e.target.value)} placeholder="Cost" aria-label={`Request ${i + 1} cost`} className="app-input" style={moneyInputStyle} />
                     {/* Open the Question Prompts helper for this specific
                         request row. Disabled when the request text is empty
                         so advisors don't hit it by mistake — an empty
@@ -682,7 +688,7 @@ export default function CreateJobCardPageUi(props) {
                   Cosmetic Damage
                 </h4>
                 <div className="tab-api" style={yesNoToggleStyle}>
-                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`}>
+                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`} style={yesNoButtonStyle}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -702,7 +708,7 @@ export default function CreateJobCardPageUi(props) {
                   Wash
                 </h4>
                 <div className="tab-api" style={yesNoToggleStyle}>
-                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`}>
+                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`} style={yesNoButtonStyle}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -719,7 +725,7 @@ export default function CreateJobCardPageUi(props) {
                   VHC Required?
                 </h4>
                 <div className="tab-api" style={yesNoToggleStyle}>
-                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`}>
+                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`} style={yesNoButtonStyle}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
