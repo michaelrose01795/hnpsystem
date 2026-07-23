@@ -54,6 +54,7 @@ export default function PopupModal({
   closeOnBackdrop = true,
   backdropStyle,
   cardStyle,
+  cardClassName = "",
   role = "dialog",
   ariaLabel,
   children,
@@ -78,7 +79,7 @@ export default function PopupModal({
         }}
       >
         <DevLayoutSection
-          className="popup-card"
+          className={["popup-card", cardClassName].filter(Boolean).join(" ")}
           sectionKey="shared-popup-card"
           parentKey="shared-popup-backdrop"
           sectionType="content-card"

@@ -184,18 +184,21 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
       isOpen
       onClose={saving ? undefined : onClose}
       ariaLabel="Technician capacity settings"
+      cardClassName="app-settings-popup-card"
       cardStyle={{
         width: "min(1180px, 100%)",
-        height: "min(760px, calc(100dvh - (var(--popup-viewport-gap, 20px) * 2)))",
-        maxHeight: "min(760px, calc(100dvh - (var(--popup-viewport-gap, 20px) * 2)))",
         padding: "var(--page-card-padding)",
-        overflow: "hidden",
+        overflowX: "hidden",
+        overflowY: "auto",
       }}
     >
-      <div className="capacity-settings">
+      <div className="app-settings-popup capacity-settings">
         <header className="app-popup-compact-header capacity-settings__header">
           <h2>Technician capacity settings</h2>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={saving}>Close</Button>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="primary" size="sm" busy={saving} onClick={saveChanges} disabled={loading || (!Object.keys(drafts).length && !resets.size)}>Save capacity</Button>
+            <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={saving}>Close</Button>
+          </div>
         </header>
 
         {error ? <div className="capacity-settings__message capacity-settings__message--error" role="alert">{error}</div> : null}
@@ -207,7 +210,7 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__dates">
               <div className="capacity-settings__section-heading">
                 <div><strong>Select dates</strong><span>{selectedDateList.length} selected</span></div>
-                <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDates(new Set(schedule.map((day) => day.date)))}>Select all</Button>
+                <Button type="button" variant="secondary" size="xs" onClick={() => setSelectedDates(new Set(schedule.map((day) => day.date)))}>Select all</Button>
               </div>
               <div className="capacity-settings__date-list">
                 {schedule.map((day) => (
@@ -225,7 +228,7 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
                   <strong>Available hours by technician</strong>
                   <span>{selectedDateList.length === 1 ? formatDate(selectedDateList[0]) : `${selectedDateList.length} days use each entered value`}</span>
                 </div>
-                <Button type="button" variant="ghost" size="xs" onClick={resetAllSelected}>Use HR defaults</Button>
+                <Button type="button" variant="secondary" size="xs" onClick={resetAllSelected}>Use HR defaults</Button>
               </div>
 
               <div className="capacity-settings__tech-list">
@@ -260,7 +263,7 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
                       </label>
                       <div className="capacity-settings__row-action">
                         <span>{hasManual ? "Manual" : leaveCells.length ? "Leave adjusted" : "HR default"}</span>
-                        <Button type="button" variant="ghost" size="xs" onClick={() => resetTechnician(technician.userId)}>Reset</Button>
+                        <Button type="button" variant="secondary" size="xs" onClick={() => resetTechnician(technician.userId)}>Reset</Button>
                       </div>
                     </LayerSurface>
                   );
@@ -270,24 +273,17 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
           </div>
         )}
 
-        <footer className="capacity-settings__footer">
-          <span>{Object.keys(drafts).length + resets.size} pending cell changes</span>
-          <div>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="button" variant="primary" busy={saving} onClick={saveChanges} disabled={loading || (!Object.keys(drafts).length && !resets.size)}>Save capacity</Button>
-          </div>
-        </footer>
       </div>
 
       <style jsx>{`
         .capacity-settings { display: flex; flex-direction: column; gap: var(--layout-card-gap); height: 100%; min-height: 0; color: var(--text-1); }
-        .capacity-settings__header, .capacity-settings__section-heading, .capacity-settings__footer, .capacity-settings__row-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .capacity-settings__header, .capacity-settings__section-heading, .capacity-settings__row-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .capacity-settings__header h2 { margin: 0; color: var(--text-accent); font-size: clamp(1.25rem, 3vw, 1.65rem); }
         .capacity-settings__layout { display: grid; grid-template-columns: minmax(230px, 0.68fr) minmax(0, 2fr); gap: var(--layout-card-gap); flex: 1; min-height: 0; overflow: hidden; }
         .capacity-settings__dates, .capacity-settings__editor { height: 100%; min-height: 0; overflow: hidden; }
         .capacity-settings__section-heading > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .capacity-settings__section-heading span, .capacity-settings__footer > span { color: var(--text-1); font-size: 0.78rem; }
-        .capacity-settings__date-list { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+        .capacity-settings__section-heading span { color: var(--text-1); font-size: 0.78rem; }
+        .capacity-settings__date-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
         .capacity-settings__tech-list { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-content: start; gap: 8px; padding-right: 4px; }
         .capacity-settings__date-option { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; }
         .capacity-settings__date-option input { width: 18px; height: 18px; accent-color: var(--accentMain); flex: 0 0 auto; }
@@ -302,13 +298,15 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         .capacity-settings__row-action > span { color: var(--text-1); font-size: 0.72rem; white-space: nowrap; }
         .capacity-settings__message { padding: 12px; border-radius: var(--radius-sm); background: var(--theme); }
         .capacity-settings__message--error { background: var(--danger-surface); color: var(--danger); }
-        .capacity-settings__footer > div { display: flex; gap: 8px; }
         @media (max-width: 767px) {
+          .capacity-settings { height: auto; min-height: 100%; }
           .capacity-settings__header { align-items: center; }
-          .capacity-settings__layout { grid-template-columns: 1fr; grid-template-rows: minmax(150px, 0.72fr) minmax(250px, 1.6fr); }
+          .capacity-settings__layout { flex: none; grid-template-columns: 1fr; grid-template-rows: auto; overflow: visible; }
+          .capacity-settings__dates { height: clamp(220px, 38dvh, 360px); min-height: 220px; overflow: hidden; }
+          .capacity-settings__editor { height: auto; overflow: visible; }
+          .capacity-settings__date-list { overflow-y: auto; }
+          .capacity-settings__tech-list { overflow-y: visible; }
           .capacity-settings__tech-list { grid-template-columns: 1fr; }
-          .capacity-settings__footer { align-items: stretch; flex-direction: column; }
-          .capacity-settings__footer > div { display: grid; grid-template-columns: 1fr 1fr; }
         }
       `}</style>
     </PopupModal>

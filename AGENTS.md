@@ -126,6 +126,14 @@ Before writing or changing any code:
 
 Before building any new UI element, search `src/components/` for an existing match.
 
+### 3.4a Button Hierarchy
+- Prefer `primary` and `secondary` button variants for actions.
+- Use one `primary` button for the main action in a view, form, or popup.
+- Use `secondary` for supporting, close, reset, and utility actions.
+- Use `ghost` only when an intentionally low-emphasis tertiary action is required; it must not be the default choice.
+- Settings popups use `app-settings-popup-card` on `PopupModal` and `app-settings-popup` on their content so their height follows the usable viewport.
+- Settings popup actions belong in `app-popup-compact-header__actions` at the top right: the primary Save action first, then the secondary Close action. Do not add a separate Cancel button.
+
 ### 3.5 Spacing Rules
 - Use `var(--page-stack-gap)` for gaps between stacked section cards.
 - Use `var(--layout-card-gap)` for gaps inside a section card.

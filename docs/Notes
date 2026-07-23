@@ -11,10 +11,6 @@ go through all taps to adjust slight ui desing and make sure everythign works co
 CHECK 
 SETTING POPUP WITHIN CLOCKING PAGE
 
-CHECK
-Have it so the search bar and calendar picker within "Appointments Booking Toolbar | 1.2.2.1.1.1 | key appointments-booking-toolbar | file src/components/page-ui/appointments/appointments-ui.js:1291 | route /appointments | where Search, date, job number, time, book appointment | parent appointments-planner 1.2.2.1.1" section follows staffglobal,css design 
-
-
 
 TODO
 Within "https://hnpsystem.vercel.app/vhc/customer/00076/OSD7Ds_cq_77" for example page remove the notes button, this isn’t visible. Have it so the buttons authorise and decline are set to custglobal.css. Have it so the wheels and tires and brakes and hubs section shows the measurement as well as all of them showing the notes of the concern within the rows. Add a table bottom line in between the rows.  In the top right of this page add a profile button which takes the user to the website/login page or the website/profile page depending if the user is already logged in. Have it so this page is linked to the customers profile page as well so they can open it when they wish. Make sure this page follows the custglobal.CSS page fully. 

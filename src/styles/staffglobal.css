@@ -1031,6 +1031,39 @@ html.staff-scope .app-popup-compact-header > :is(h1, h2, h3) {
   min-width: 0;
 }
 
+/* Settings popup convention.
+   Opt in with app-settings-popup-card on PopupModal and app-settings-popup on
+   its content. The primary save action stays immediately left of Close in the
+   top-right header; settings popups do not use a separate Cancel action. */
+html.staff-scope .app-settings-popup-card {
+  height: calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2));
+  max-height: calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2));
+}
+
+html.staff-scope .app-settings-popup {
+  height: 100%;
+  min-height: 0;
+}
+
+html.staff-scope .app-popup-compact-header__actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  html.staff-scope .app-settings-popup .app-popup-compact-header {
+    flex-wrap: wrap;
+  }
+
+  html.staff-scope .app-settings-popup .app-popup-compact-header__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 /* Links */
 html.staff-scope a {
   color: var(--accent-strong);
