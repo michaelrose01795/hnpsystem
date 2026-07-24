@@ -115,14 +115,12 @@ html.staff-scope body {
 html.staff-scope button,
 html.staff-scope input,
 html.staff-scope optgroup,
-html.staff-scope select,
 html.staff-scope textarea {
   font-family: inherit;
 }
 
 @media (max-width: 768px), (pointer: coarse) {
   html.staff-scope input,
-  html.staff-scope select,
   html.staff-scope textarea {
     font-size: 16px !important;
     line-height: 1.35 !important;
@@ -1005,8 +1003,7 @@ html.staff-scope div.news-card {
   }
 
   html.staff-scope .popup-card input,
-  html.staff-scope .popup-card textarea,
-  html.staff-scope .popup-card select {
+  html.staff-scope .popup-card textarea {
     font-size: 16px !important;
     line-height: 1.35 !important;
   }
@@ -1204,14 +1201,14 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   content: none;
 }
 
-/* Inputs, Textareas & Selects — base resets only; sizing handled by Shared Field Surface below */
+/* Inputs and textareas — base resets only; sizing handled by Shared Field Surface below.
+   Native selects are intentionally excluded from staff styling: use DropdownField. */
 html.staff-scope input[type="text"],
 html.staff-scope input[type="number"],
 html.staff-scope input[type="email"],
 html.staff-scope input[type="date"],
 html.staff-scope input[type="search"],
-html.staff-scope textarea,
-html.staff-scope select {
+html.staff-scope textarea {
   width: 100%;
   font-family: inherit;
   outline: none;
@@ -1234,14 +1231,12 @@ html.staff-scope input[type="search"]::placeholder {
   color: var(--textfieldbackground);
 }
 html.staff-scope input:hover,
-html.staff-scope textarea:hover,
-html.staff-scope select:hover {
+html.staff-scope textarea:hover {
   background-color: var(--control-bg-hover);
   z-index: var(--hover-surface-z);
 }
 html.staff-scope input:focus,
-html.staff-scope textarea:focus,
-html.staff-scope select:focus {
+html.staff-scope textarea:focus {
   background-color: var(--control-bg-hover);
   box-shadow: var(--control-ring);
   z-index: var(--hover-surface-z);
@@ -2605,7 +2600,6 @@ html.staff-scope .calendar-api__control,
 html.staff-scope .timepicker-api__control,
 html.staff-scope .searchbar-api,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input),
-html.staff-scope select,
 html.staff-scope textarea {
   min-height: var(--control-height);
   padding: var(--control-padding);
@@ -2663,7 +2657,6 @@ html.staff-scope .timepicker-api__control {
    ───────────────────────────────────────────────────────────────────────── */
 html.staff-scope input.app-autowidth,
 html.staff-scope textarea.app-autowidth,
-html.staff-scope select.app-autowidth,
 html.staff-scope .app-input.app-autowidth,
 html.staff-scope .searchbar-api.app-autowidth,
 html.staff-scope .app-autowidth .searchbar-api {
@@ -2690,7 +2683,6 @@ html.staff-scope .calendar-api__control:hover:not(:disabled),
 html.staff-scope .timepicker-api__control:hover:not(:disabled),
 html.staff-scope .searchbar-api:hover,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
-html.staff-scope select:hover,
 html.staff-scope textarea:hover {
   background: var(--control-bg-hover) !important;
 }
@@ -2704,8 +2696,6 @@ html.staff-scope .timepicker-api__control:focus-visible,
 html.staff-scope .searchbar-api:focus-within,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus-visible,
-html.staff-scope select:focus,
-html.staff-scope select:focus-visible,
 html.staff-scope textarea:focus,
 html.staff-scope textarea:focus-visible {
   outline: none;
@@ -2717,7 +2707,6 @@ html.staff-scope .dropdown-api__control:disabled,
 html.staff-scope .calendar-api__control:disabled,
 html.staff-scope .timepicker-api__control:disabled,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):disabled,
-html.staff-scope select:disabled,
 html.staff-scope textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -3022,10 +3011,6 @@ html.staff-scope .multiselect-dropdown-api__option .dropdown-api__option-label {
   text-align: center;
   padding-left: 30px;
   padding-right: 30px;
-}
-
-html.staff-scope select {
-  padding: var(--control-padding);
 }
 
 html.staff-scope .dropdown-api__option-description,

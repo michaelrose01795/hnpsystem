@@ -17,6 +17,7 @@
 import React from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 
 // ===========================================================================
@@ -447,8 +448,6 @@ const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, mo
 // ===========================================================================
 // Job details modal
 // ===========================================================================
-const btnFlex = { flex: "1 1 auto", minWidth: "120px" };
-
 const Field = ({ label, value, wide }) => (
   <div style={{ padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "rgba(var(--surface-rgb), 0.5)", minWidth: 0, ...(wide ? { gridColumn: "1 / -1" } : null) }}>
     <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--surfaceTextMuted)", marginBottom: "4px" }}>{label}</div>
@@ -456,7 +455,7 @@ const Field = ({ label, value, wide }) => (
   </div>
 );
 
-function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, onQuickAction, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
+function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
   if (!job) return null;
 
   const statusMeta = getStatusMeta(job.status);
@@ -491,10 +490,19 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
           padding="28px"
           style={{ width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}
         >
-          <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
-          <p style={{ margin: "0 0 18px", fontSize: "12px", fontWeight: 600, color: "var(--surfaceTextMuted)" }}>
-            {vehicle} · {job.reg || "Reg TBC"} · {statusMeta.label}
-          </p>
+          <header className="app-popup-compact-header wqp-job-modal-header">
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
+              <p style={{ margin: 0, fontSize: "12px", fontWeight: 600, color: "var(--surfaceTextMuted)" }}>
+                {vehicle} · {job.reg || "Reg TBC"} · {statusMeta.label}
+              </p>
+            </div>
+            <div className="app-popup-compact-header__actions wqp-job-modal-header__actions">
+              <button type="button" className="app-btn app-btn--primary" onClick={onOpenJobCard}>Open Job Card</button>
+              <button type="button" className="app-btn app-btn--secondary" onClick={onAssign}>Assign Technician</button>
+              <button type="button" className="app-btn app-btn--secondary" onClick={onClose}>Close</button>
+            </div>
+          </header>
 
           {feedback && (
             <div style={{ marginBottom: "14px", padding: "10px 12px", borderRadius: "var(--radius-sm)", fontSize: "13px", fontWeight: 600, ...feedbackStyle }}>
@@ -534,17 +542,11 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
             </div>
           </div>
 
-          {/* Quick actions use the shared `.app-btn` family — no bespoke styles. */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            <button type="button" className="app-btn app-btn--primary" style={btnFlex} onClick={onOpenJobCard}>Open Job Card</button>
-            <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={onAssign}>Assign Technician</button>
-            <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={() => onQuickAction?.("move")}>Move Position</button>
-            <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={() => onQuickAction?.("ready")}>Mark Ready</button>
-            {job.assignedTech && (
-              <button type="button" className="app-btn app-btn--danger" style={btnFlex} onClick={onUnassign}>Unassign</button>
-            )}
-            <button type="button" className="app-btn app-btn--ghost" style={btnFlex} onClick={onClose}>Close</button>
-          </div>
+          {job.assignedTech && (
+            <div className="wqp-job-modal-footer">
+              <button type="button" className="app-btn app-btn--danger" onClick={onUnassign}>Unassign</button>
+            </div>
+          )}
         </LayerSurface>
       </div>
     </div>
@@ -594,25 +596,19 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
           Choose who should receive job #{job?.jobNumber}. It will be placed at the end of their row.
         </p>
 
-        <label htmlFor="workshop-technician-assignment" style={{ display: "block", marginBottom: "8px", fontSize: "12px", fontWeight: 700, color: "var(--text-1)" }}>
-          Technician
-        </label>
-        <select
+        <DropdownField
           id="workshop-technician-assignment"
-          className="app-input"
+          label="Technician"
+          placeholder="Select a technician"
+          options={technicians.map((technician) => ({
+            value: String(technician.id),
+            label: technician.name,
+          }))}
           value={technicianId}
           onChange={(event) => setTechnicianId(event.target.value)}
           disabled={isAssigning}
-          autoFocus
-          style={{ width: "100%", minHeight: "44px", marginBottom: "16px" }}
-        >
-          <option value="">Select a technician</option>
-          {technicians.map((technician) => (
-            <option key={String(technician.id)} value={String(technician.id)}>
-              {technician.name}
-            </option>
-          ))}
-        </select>
+          style={{ width: "100%", marginBottom: "16px" }}
+        />
 
         {errorMessage && (
           <div role="alert" style={{ marginBottom: "16px", padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
@@ -667,7 +663,6 @@ export default function WorkshopQueuePlanner({
   handleOpenJobDetails,
   selectedJob,
   feedbackMessage,
-  setFeedbackMessage,
   handleCloseJobDetails,
   handleViewSelectedJobCard,
   unassignTechFromJob,
@@ -740,14 +735,6 @@ export default function WorkshopQueuePlanner({
     deriveJobTypeLabel,
     formatAppointmentTime,
     estimateJobHours,
-  };
-
-  const handleQuickAction = (type) => {
-    if (type === "move") {
-      setFeedbackMessage?.({ type: "info", text: "Drag the job card onto a technician or MOT row to reassign it or change its queue position." });
-    } else if (type === "ready") {
-      setFeedbackMessage?.({ type: "info", text: "Mark Ready updates the workshop status — open the job card to set the status until this shortcut is wired up." });
-    }
   };
 
   const emptyRowStyle = (active) => ({
@@ -1045,7 +1032,6 @@ export default function WorkshopQueuePlanner({
           onOpenJobCard={handleViewSelectedJobCard}
           onUnassign={unassignTechFromJob}
           onAssign={() => setShowTechnicianAssignment(true)}
-          onQuickAction={handleQuickAction}
           estimateJobHours={estimateJobHours}
           deriveJobTypeLabel={deriveJobTypeLabel}
           formatAppointmentTime={formatAppointmentTime}
@@ -1067,22 +1053,35 @@ export default function WorkshopQueuePlanner({
           Scoped class names (wqp-*) keep this from leaking into other pages. */}
       <style jsx global>{`
         .wqp-shell {
-          --wqp-user-col: 200px;
+          --wqp-user-col: 150px;
           --wqp-card-w: 212px;
           --wqp-card-min-h: 132px;
           --wqp-gap: 14px;
           --wqp-row-min-h: 104px;
         }
+        .wqp-job-modal-header {
+          align-items: flex-start;
+          flex-wrap: nowrap;
+          margin-bottom: 18px;
+        }
+        .wqp-job-modal-header__actions {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .wqp-job-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+        }
         @media (max-width: 1279px) {
           .wqp-shell {
-            --wqp-user-col: 176px;
+            --wqp-user-col: 132px;
             --wqp-card-w: 198px;
             --wqp-row-min-h: 100px;
           }
         }
         @media (max-width: 767px) {
           .wqp-shell {
-            --wqp-user-col: 144px;
+            --wqp-user-col: 108px;
             --wqp-card-w: 184px;
             --wqp-row-min-h: 96px;
           }
@@ -1093,6 +1092,15 @@ export default function WorkshopQueuePlanner({
           }
           .wqp-fieldgrid {
             grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .wqp-job-modal-header {
+            flex-wrap: wrap;
+          }
+          .wqp-job-modal-header__actions {
+            width: 100%;
+          }
+          .wqp-job-modal-header__actions .app-btn {
+            flex: 1 1 140px;
           }
         }
         .wqp-searchwrap {

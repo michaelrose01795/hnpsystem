@@ -2007,7 +2007,6 @@ export default function NextJobsPage() {
       handleOpenJobDetails={handleOpenJobDetails}
       selectedJob={selectedJob}
       feedbackMessage={feedbackMessage}
-      setFeedbackMessage={setFeedbackMessage}
       handleCloseJobDetails={handleCloseJobDetails}
       handleViewSelectedJobCard={handleViewSelectedJobCard}
       unassignTechFromJob={unassignTechFromJob}

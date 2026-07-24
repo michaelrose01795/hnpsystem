@@ -3,11 +3,12 @@
 // One-command verification script for HNP System.
 // Usage: npm run verify
 //
-// Runs: lint → smoke tests → workflow tests → visual tests → report
+// Runs: staff dropdown guard → lint → smoke tests → workflow tests → visual tests → report
 
 import { execSync } from 'child_process';
 
 const steps = [
+  { name: 'Staff dropdown guard', cmd: 'npm run check:dropdowns', required: true },
   { name: 'Lint', cmd: 'npm run lint', required: false },
   { name: 'Smoke tests', cmd: 'npx playwright test --project=auth-setup --project=smoke', required: true },
   { name: 'Workflow tests', cmd: 'npx playwright test --project=auth-setup --project=workflows', required: true },

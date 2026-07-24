@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
-    "predev": "npm run presentation:sync && node tools/scripts/use-local-next-cache.js",
-    "prebuild": "npm run presentation:sync",
+    "predev": "npm run presentation:sync && npm run check:dropdowns && node tools/scripts/use-local-next-cache.js",
+    "prebuild": "npm run presentation:sync && npm run check:dropdowns",
     "dev": "next dev --webpack",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
@@ -15,6 +15,7 @@
     "check:encoding": "node tools/scripts/check-encoding.js",
     "check:layers": "node tools/scripts/check-layers.js",
     "check:borders": "node tools/scripts/check-borders.js",
+    "check:dropdowns": "node tools/scripts/check-dropdowns.js",
     "check:report-events": "node tools/scripts/check-report-events.js",
     "check:feedback": "node tools/scripts/check-feedback.js",
     "validate:reporting": "vitest run src/lib/reporting/validation",

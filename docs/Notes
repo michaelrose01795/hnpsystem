@@ -5,11 +5,9 @@ CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
 CHECK
 What style is the dropdown list within the "Assign Technician" popup using? 
 
-CHECK 
-no click nad drag still sitn working, i click on the cards and then try dragging but this doesn work. maybe it clashes within the opening of the popup with more details etc. 
+check popup style with assign button etc 
 
-TODO
-have it so all of the job card sections within the ""**Checked In Jobs** " and "Unassigned Jobs " and "**Technicians" section all follow the same design with text style, layout size etc. Reduce the width of the "Workshop Queue User 48 Tech 0 | 1.2.1.1.1.3.1.1.2 | key workshop-queue-user-48-tech-0 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:330 (dynamic pattern) | route /nextjobs | where Tech 6 Technician 12 jobs | parent workshop-queue-board-grid 1.2.1.1.1.3.1.1" section as well.** 
+
 
 --------------- VHC --------
 go through all taps to adjust slight ui desing and make sure everythign works correctly 
