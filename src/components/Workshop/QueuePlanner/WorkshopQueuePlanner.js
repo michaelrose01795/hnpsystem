@@ -17,6 +17,7 @@
 import React from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 // ===========================================================================
 // Shared style constants (replace the former CSS-module tokens)
@@ -150,7 +151,7 @@ function WorkshopQueueCard({
   deriveJobTypeLabel,
   formatAppointmentTime,
   estimateJobHours,
-  variant = "", // "assigned" | "unassigned" | ""
+  variant = "", // "assigned" | "unassigned" | "checked-in" | ""
   devSectionParent = "",
   devSectionPrefix = "workshop-queue-job",
 }) {
@@ -161,14 +162,22 @@ function WorkshopQueueCard({
   const typeLabel = deriveJobTypeLabel ? deriveJobTypeLabel(job) : job.type;
   const estHours = estimateJobHours ? estimateJobHours(job) : 0;
   const assigned = variant === "assigned";
+  const checkedIn = variant === "checked-in";
+  const timingText = checkedIn
+    ? `Checked in ${formatClock(job.checkedInAt)}`
+    : bookingTime && bookingTime !== "No appointment"
+      ? bookingTime
+      : "—";
 
   const cardStyle = {
     flex: "0 0 auto",
-    width: assigned ? "var(--wqp-assigned-w)" : variant === "unassigned" ? "100%" : "var(--wqp-card-w)",
+    width: "var(--wqp-card-w)",
+    minHeight: "var(--wqp-card-min-h)",
+    boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    gap: assigned ? "10px" : "7px",
-    padding: assigned ? "16px 18px" : "12px 14px 11px",
+    gap: "7px",
+    padding: "12px 14px",
     borderRadius: "var(--radius-md)",
     // Assigned card turns success-tinted once the technician is clocked onto it.
     background: assigned && isClockedOn ? "var(--success-surface)" : "var(--surface)",
@@ -178,7 +187,7 @@ function WorkshopQueueCard({
     touchAction: "none",
     opacity: isDragging ? 0.5 : 1,
     boxShadow: isHighlighted ? HIGHLIGHT_SHADOW : LIFT_SM,
-    ...(assigned ? { minHeight: 0, alignSelf: "center" } : null),
+    alignSelf: "center",
   };
 
   return (
@@ -201,7 +210,7 @@ function WorkshopQueueCard({
         <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--accent-strong)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           #{job.jobNumber}
         </span>
-        <span style={{ marginLeft: "auto", maxWidth: assigned ? "55%" : "46%", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(assigned ? { padding: "2px 8px", borderRadius: "var(--radius-xs)", background: "rgba(var(--accent-base-rgb), 0.1)" } : null) }}>
+        <span style={{ marginLeft: "auto", maxWidth: "55%", padding: "2px 8px", borderRadius: "var(--radius-xs)", background: "rgba(var(--accent-base-rgb), 0.1)", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {job.reg || "—"}
         </span>
       </div>
@@ -215,24 +224,24 @@ function WorkshopQueueCard({
           WebkitBoxOrient: "vertical",
           WebkitLineClamp: 2,
           wordBreak: "break-word",
-          ...(assigned ? { minHeight: "2.7em" } : null),
+          minHeight: "2.7em",
         }}
       >
         {vehicle} • {customer}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", flexWrap: "wrap", minWidth: 0, marginTop: "1px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", minWidth: 0, marginTop: "1px" }}>
         {typeLabel && (
-          <span style={{ maxWidth: "100%", fontSize: "10px", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", padding: "2px 7px", borderRadius: "var(--radius-pill)", background: "rgba(var(--accent-base-rgb), 0.1)", color: "var(--surfaceTextMuted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ flex: "1 1 auto", minWidth: 0, maxWidth: "100%", fontSize: "10px", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", padding: "2px 7px", borderRadius: "var(--radius-pill)", background: "rgba(var(--accent-base-rgb), 0.1)", color: "var(--surfaceTextMuted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {typeLabel}
           </span>
         )}
         <StatusPill meta={statusMeta} marginLeftAuto={true} />
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", flexWrap: "wrap", minWidth: 0, marginTop: "1px", paddingTop: assigned ? "2px" : 0 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>
-          {bookingTime && bookingTime !== "No appointment" ? bookingTime : "—"}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", minWidth: 0, marginTop: "1px" }}>
+        <span style={{ minWidth: 0, display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {timingText}
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>
+        <span style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>
           ~{shortHours(estHours)}
         </span>
       </div>
@@ -271,7 +280,7 @@ function WorkshopQueueDropZone({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "14px",
+        gap: "var(--wqp-gap)",
         padding: "18px 22px",
         minHeight: "var(--wqp-row-min-h)",
         background: isActive ? "rgba(var(--primary-rgb), 0.1)" : "var(--theme)",
@@ -326,6 +335,8 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
   return (
     <React.Fragment>
       <div
+        data-dnd-target-type="assignee"
+        data-dnd-target-key={row.panelKey}
         data-dev-section="1"
         data-dev-section-key={`workshop-queue-user-${toDevSectionKey(row.panelKey)}`}
         data-dev-section-parent={`workshop-queue-row-${toDevSectionKey(row.panelKey)}`}
@@ -362,11 +373,11 @@ function WorkshopQueueHeader({ title, count }) {
       data-dev-section-type="toolbar"
       data-dev-background-token="theme"
       data-dev-text-preview={`${title} ${count}`}
-      style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "10px", boxSizing: "border-box", minHeight: "69px", padding: "24px 22px 25px", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: "inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18)" }}
+      style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "10px", boxSizing: "border-box", minHeight: "56px", padding: "18px 22px", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: "inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18)" }}
     >
       <span style={{ position: "sticky", left: "22px", zIndex: 1, display: "inline-flex", alignItems: "baseline", gap: "8px" }}>
-        <span style={{ fontSize: "16px", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--accent-strong)" }}>{title}</span>
-        <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>({count})</span>
+        <span style={sectionTitleStyle}>{title}</span>
+        <span style={sectionMetaStyle}>{count}</span>
       </span>
     </div>
   );
@@ -445,7 +456,7 @@ const Field = ({ label, value, wide }) => (
   </div>
 );
 
-function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onQuickAction, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
+function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, onQuickAction, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
   if (!job) return null;
 
   const statusMeta = getStatusMeta(job.status);
@@ -526,7 +537,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
           {/* Quick actions use the shared `.app-btn` family — no bespoke styles. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             <button type="button" className="app-btn app-btn--primary" style={btnFlex} onClick={onOpenJobCard}>Open Job Card</button>
-            <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={() => onQuickAction?.("assign")}>Assign Technician</button>
+            <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={onAssign}>Assign Technician</button>
             <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={() => onQuickAction?.("move")}>Move Position</button>
             <button type="button" className="app-btn app-btn--secondary" style={btnFlex} onClick={() => onQuickAction?.("ready")}>Mark Ready</button>
             {job.assignedTech && (
@@ -537,6 +548,88 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
         </LayerSurface>
       </div>
     </div>
+  );
+}
+
+function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
+  const [technicianId, setTechnicianId] = React.useState("");
+  const [isAssigning, setIsAssigning] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState("");
+
+  React.useEffect(() => {
+    setTechnicianId("");
+    setIsAssigning(false);
+    setErrorMessage("");
+  }, [job?.id]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!technicianId || isAssigning) return;
+
+    setIsAssigning(true);
+    setErrorMessage("");
+    try {
+      await onAssign?.(technicianId);
+      onClose?.();
+    } catch (error) {
+      setErrorMessage(error?.message || "Failed to assign technician.");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  return (
+    <PopupModal
+      isOpen={Boolean(job)}
+      onClose={isAssigning ? undefined : onClose}
+      closeOnBackdrop={!isAssigning}
+      ariaLabel={`Assign technician to job ${job?.jobNumber || ""}`}
+      cardStyle={{ width: "min(100%, 440px)", padding: "24px" }}
+    >
+      <form onSubmit={handleSubmit}>
+        <h3 style={{ margin: "0 0 6px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>
+          Assign Technician
+        </h3>
+        <p style={{ margin: "0 0 20px", fontSize: "13px", color: "var(--surfaceTextMuted)" }}>
+          Choose who should receive job #{job?.jobNumber}. It will be placed at the end of their row.
+        </p>
+
+        <label htmlFor="workshop-technician-assignment" style={{ display: "block", marginBottom: "8px", fontSize: "12px", fontWeight: 700, color: "var(--text-1)" }}>
+          Technician
+        </label>
+        <select
+          id="workshop-technician-assignment"
+          className="app-input"
+          value={technicianId}
+          onChange={(event) => setTechnicianId(event.target.value)}
+          disabled={isAssigning}
+          autoFocus
+          style={{ width: "100%", minHeight: "44px", marginBottom: "16px" }}
+        >
+          <option value="">Select a technician</option>
+          {technicians.map((technician) => (
+            <option key={String(technician.id)} value={String(technician.id)}>
+              {technician.name}
+            </option>
+          ))}
+        </select>
+
+        {errorMessage && (
+          <div role="alert" style={{ marginBottom: "16px", padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
+            {errorMessage}
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px" }}>
+          <button type="submit" className="app-btn app-btn--primary" disabled={!technicianId || isAssigning}>
+            {isAssigning ? "Assigning…" : "Assign Technician"}
+          </button>
+          <button type="button" className="app-btn app-btn--secondary" onClick={onClose} disabled={isAssigning}>
+            Close
+          </button>
+        </div>
+      </form>
+    </PopupModal>
   );
 }
 
@@ -578,6 +671,8 @@ export default function WorkshopQueuePlanner({
   handleCloseJobDetails,
   handleViewSelectedJobCard,
   unassignTechFromJob,
+  assignableStaffList,
+  assignSelectedJobToTechnician,
 }) {
   // The job-type dropdown was removed — the single search box (page-driven) now
   // drives all matching across every section. The search only highlights matches
@@ -599,7 +694,14 @@ export default function WorkshopQueuePlanner({
   // any scroll); the cosmetic float is gated on focus + stuck. Blur → back to rest.
   const [searchFocused, setSearchFocused] = React.useState(false);
   const [searchStuck, setSearchStuck] = React.useState(false);
+  const [checkedInCollapsed, setCheckedInCollapsed] = React.useState(false);
+  const [unassignedCollapsed, setUnassignedCollapsed] = React.useState(false);
+  const [showTechnicianAssignment, setShowTechnicianAssignment] = React.useState(false);
   const searchSentinelRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!selectedJob) setShowTechnicianAssignment(false);
+  }, [selectedJob]);
 
   React.useEffect(() => {
     const node = searchSentinelRef.current;
@@ -641,7 +743,7 @@ export default function WorkshopQueuePlanner({
   };
 
   const handleQuickAction = (type) => {
-    if (type === "assign" || type === "move") {
+    if (type === "move") {
       setFeedbackMessage?.({ type: "info", text: "Drag the job card onto a technician or MOT row to reassign it or change its queue position." });
     } else if (type === "ready") {
       setFeedbackMessage?.({ type: "info", text: "Mark Ready updates the workshop status — open the job card to set the status until this shortcut is wired up." });
@@ -713,10 +815,16 @@ export default function WorkshopQueuePlanner({
         sectionType="content-card"
         backgroundToken="theme"
         radius={RADIUS_LG}
-        padding="18px"
+        padding={checkedInCollapsed ? "0 18px" : "18px"}
         gap="0"
         data-dev-text-preview={`Checked In Jobs ${checkedInJobs.length} checked in`}
-        style={{ boxShadow: LIFT }}
+        style={{
+          boxShadow: LIFT,
+          height: checkedInCollapsed ? "44px" : "auto",
+          minHeight: checkedInCollapsed ? "44px" : undefined,
+          maxHeight: checkedInCollapsed ? "44px" : undefined,
+          overflow: "hidden"
+        }}
       >
         <div
           data-dev-section="1"
@@ -724,12 +832,27 @@ export default function WorkshopQueuePlanner({
           data-dev-section-parent="workshop-checked-in-section"
           data-dev-section-type="toolbar"
           data-dev-background-token="transparent"
-          style={sectionHeadStyle}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!checkedInCollapsed}
+          onClick={() => setCheckedInCollapsed((collapsed) => !collapsed)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setCheckedInCollapsed((collapsed) => !collapsed);
+            }
+          }}
+          style={{
+            ...sectionHeadStyle,
+            minHeight: checkedInCollapsed ? "44px" : undefined,
+            cursor: "pointer",
+            flexWrap: checkedInCollapsed ? "nowrap" : "wrap"
+          }}
         >
           <h2 style={sectionTitleStyle}>Checked In Jobs</h2>
-          <span style={sectionMetaStyle}>{checkedInJobs.length} checked in</span>
+          {!checkedInCollapsed && <span style={sectionMetaStyle}>{checkedInJobs.length} checked in</span>}
         </div>
-        {checkedInJobs.length === 0 ? (
+        {!checkedInCollapsed && (checkedInJobs.length === 0 ? (
           <div
             data-dev-section="1"
             data-dev-section-key="workshop-checked-in-empty"
@@ -751,47 +874,27 @@ export default function WorkshopQueuePlanner({
             data-dev-background-token="transparent"
             style={{ display: "flex", gap: "var(--wqp-gap)", overflowX: "auto", overscrollBehaviorX: "contain", padding: "14px 2px 6px", scrollbarWidth: "thin", marginTop: "12px" }}
           >
-            {checkedInJobs.map((job) => {
-              const statusMeta = getStatusMeta(job.status);
-              const vehicle = [job.make, job.model].filter(Boolean).join(" ") || job.makeModel || "Vehicle TBC";
-              const checkedTime = formatClock(job.checkedInAt);
-              const isHighlighted = highlighted.includes(job.jobNumber);
-              return (
-                <button
-                  key={job.jobNumber}
-                  type="button"
-                  className="wqp-lift"
-                  // Register the DOM node so a search hit on a checked-in job can be
-                  // scrolled into view (search auto-scroll lives in nextjobs.js).
-                  ref={(node) => {
-                    if (node) jobCardRefs.current[job.jobNumber] = node;
-                    else if (jobCardRefs.current[job.jobNumber]) delete jobCardRefs.current[job.jobNumber];
-                  }}
-                  data-dev-section="1"
-                  data-dev-section-key={`workshop-checked-in-job-${toDevSectionKey(job.jobNumber)}`}
-                  data-dev-section-parent="workshop-checked-in-strip"
-                  data-dev-section-type="content-card"
-                  data-dev-background-token="surface"
-                  data-dev-text-preview={`${job.jobNumber || "Job"} ${job.reg || ""} ${vehicle} ${job.customer || ""} ${statusMeta.label}`}
-                  onClick={() => handleOpenJobDetails(job)}
-                  title={`#${job.jobNumber} · ${vehicle}`}
-                  style={{ flex: "0 0 auto", width: "236px", display: "flex", flexDirection: "column", gap: "5px", padding: "13px 14px", borderRadius: "var(--radius-md)", background: "var(--surface)", boxShadow: isHighlighted ? HIGHLIGHT_SHADOW : LIFT_SM, color: "var(--text-1)", textAlign: "left", cursor: "pointer" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                    <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber || "Pending"}</span>
-                    <span style={{ fontSize: "12px", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", padding: "2px 8px", borderRadius: "var(--radius-xs)", background: "rgba(var(--accent-base-rgb), 0.1)" }}>{job.reg || "—"}</span>
-                  </div>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vehicle}</span>
-                  <span style={{ fontSize: "12px", color: "var(--surfaceTextMuted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.customer || "Unknown customer"}</span>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "3px" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>Checked In {checkedTime}</span>
-                    <StatusPill meta={statusMeta} />
-                  </div>
-                </button>
-              );
-            })}
+            {checkedInJobs.map((job) => (
+              <WorkshopQueueCard
+                key={job.jobNumber}
+                job={job}
+                variant="checked-in"
+                refCallback={(node) => {
+                  if (node) jobCardRefs.current[job.jobNumber] = node;
+                  else if (jobCardRefs.current[job.jobNumber]) delete jobCardRefs.current[job.jobNumber];
+                }}
+                onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
+                isDragging={draggingJob?.jobNumber === job.jobNumber}
+                isHighlighted={highlighted.includes(job.jobNumber)}
+                deriveJobTypeLabel={deriveJobTypeLabel}
+                formatAppointmentTime={formatAppointmentTime}
+                estimateJobHours={estimateJobHours}
+                devSectionParent="workshop-checked-in-strip"
+                devSectionPrefix="workshop-checked-in-job"
+              />
+            ))}
           </div>
-        )}
+        ))}
       </LayerTheme>
 
       {/* ====================== Unassigned jobs (drop tray) ================ */}
@@ -805,12 +908,19 @@ export default function WorkshopQueuePlanner({
         sectionType="content-card"
         backgroundToken="theme"
         radius={RADIUS_LG}
-        padding="18px"
+        padding={unassignedCollapsed ? "0 18px" : "18px"}
         gap="0"
         data-dnd-target-type="outstanding"
         data-dnd-target-key="outstanding"
         data-dev-text-preview={`Unassigned Jobs ${outstanding.length} waiting to allocate`}
-        style={{ transition: "box-shadow 0.15s ease", boxShadow: activeDropTarget === "outstanding" ? `${LIFT}, inset 0 0 0 2px var(--primary)` : LIFT }}
+        style={{
+          transition: "box-shadow 0.15s ease, height 0.15s ease",
+          boxShadow: activeDropTarget === "outstanding" ? `${LIFT}, inset 0 0 0 2px var(--primary)` : LIFT,
+          height: unassignedCollapsed ? "44px" : "auto",
+          minHeight: unassignedCollapsed ? "44px" : undefined,
+          maxHeight: unassignedCollapsed ? "44px" : undefined,
+          overflow: "hidden"
+        }}
       >
         <div
           data-dev-section="1"
@@ -818,12 +928,27 @@ export default function WorkshopQueuePlanner({
           data-dev-section-parent="workshop-unassigned-section"
           data-dev-section-type="toolbar"
           data-dev-background-token="transparent"
-          style={sectionHeadStyle}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!unassignedCollapsed}
+          onClick={() => setUnassignedCollapsed((collapsed) => !collapsed)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setUnassignedCollapsed((collapsed) => !collapsed);
+            }
+          }}
+          style={{
+            ...sectionHeadStyle,
+            minHeight: unassignedCollapsed ? "44px" : undefined,
+            cursor: "pointer",
+            flexWrap: unassignedCollapsed ? "nowrap" : "wrap"
+          }}
         >
           <h2 style={sectionTitleStyle}>Unassigned Jobs</h2>
-          <span style={sectionMetaStyle}>{outstanding.length} waiting to allocate</span>
+          {!unassignedCollapsed && <span style={sectionMetaStyle}>{outstanding.length} waiting to allocate</span>}
         </div>
-        {outstanding.length === 0 ? (
+        {!unassignedCollapsed && (outstanding.length === 0 ? (
           <div
             data-dev-section="1"
             data-dev-section-key="workshop-unassigned-empty"
@@ -846,7 +971,7 @@ export default function WorkshopQueuePlanner({
             data-dev-section-parent="workshop-unassigned-section"
             data-dev-section-type="section-shell"
             data-dev-background-token="transparent"
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "var(--wqp-gap)", marginTop: "14px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, var(--wqp-card-w))", gap: "var(--wqp-gap)", marginTop: "14px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}
           >
             {outstanding.map((job) => (
               <React.Fragment key={job.jobNumber}>
@@ -875,7 +1000,7 @@ export default function WorkshopQueuePlanner({
               </React.Fragment>
             ))}
           </div>
-        )}
+        ))}
       </LayerTheme>
 
       {/* ===================== 4 + 5 · Next jobs board ===================== */}
@@ -885,6 +1010,7 @@ export default function WorkshopQueuePlanner({
       {isDragActive && draggingJob && (
         <div
           aria-hidden="true"
+          data-dnd-drag-preview="true"
           style={{
             position: "fixed",
             // Move via a compositor transform (not left/top) so the ghost glides
@@ -918,6 +1044,7 @@ export default function WorkshopQueuePlanner({
           onClose={handleCloseJobDetails}
           onOpenJobCard={handleViewSelectedJobCard}
           onUnassign={unassignTechFromJob}
+          onAssign={() => setShowTechnicianAssignment(true)}
           onQuickAction={handleQuickAction}
           estimateJobHours={estimateJobHours}
           deriveJobTypeLabel={deriveJobTypeLabel}
@@ -926,30 +1053,37 @@ export default function WorkshopQueuePlanner({
         />
       )}
 
+      {showTechnicianAssignment && selectedJob && (
+        <TechnicianAssignmentModal
+          job={selectedJob}
+          technicians={assignableStaffList || []}
+          onClose={() => setShowTechnicianAssignment(false)}
+          onAssign={assignSelectedJobToTechnician}
+        />
+      )}
+
       {/* The only non-inline styling: responsive sizing vars, hover lifts and the
           drag-active body lock — things inline styles fundamentally can't do.
           Scoped class names (wqp-*) keep this from leaking into other pages. */}
       <style jsx global>{`
         .wqp-shell {
-          --wqp-user-col: 248px;
+          --wqp-user-col: 200px;
           --wqp-card-w: 212px;
-          --wqp-assigned-w: 232px;
+          --wqp-card-min-h: 132px;
           --wqp-gap: 14px;
           --wqp-row-min-h: 104px;
         }
         @media (max-width: 1279px) {
           .wqp-shell {
-            --wqp-user-col: 210px;
+            --wqp-user-col: 176px;
             --wqp-card-w: 198px;
-            --wqp-assigned-w: 220px;
             --wqp-row-min-h: 100px;
           }
         }
         @media (max-width: 767px) {
           .wqp-shell {
-            --wqp-user-col: 158px;
+            --wqp-user-col: 144px;
             --wqp-card-w: 184px;
-            --wqp-assigned-w: 204px;
             --wqp-row-min-h: 96px;
           }
           .wqp-searchwrap {

@@ -98,6 +98,8 @@ const OUTSTANDING_CARD_HEIGHT = 210;
 const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING_CARD_HEIGHT}px`;
 const DRAG_START_THRESHOLD_PX = 8;
 const DRAG_PREVIEW_OFFSET_PX = 16;
+const DRAG_AUTO_SCROLL_EDGE_PX = 72;
+const DRAG_AUTO_SCROLL_STEP_PX = 18;
 
 // Two drop indicators are equivalent when all four positioning fields match. Used
 // to skip redundant state updates during a drag so the board only re-renders (and
@@ -111,6 +113,68 @@ const areDropIndicatorsEqual = (a, b) => {
     String(a.targetJobNumber || "") === String(b.targetJobNumber || "") &&
     a.placement === b.placement
   );
+};
+
+const autoScrollForDrag = (clientX, clientY) => {
+  if (typeof document === "undefined" || typeof window === "undefined") return false;
+
+  const element = document.elementFromPoint(clientX, clientY);
+  if (!element) return false;
+
+  let didScroll = false;
+  let verticalContainer = element.parentElement;
+  while (verticalContainer && verticalContainer !== document.body) {
+    const styles = window.getComputedStyle(verticalContainer);
+    const canScroll =
+      /(auto|scroll)/.test(styles.overflowY) &&
+      verticalContainer.scrollHeight > verticalContainer.clientHeight;
+    if (canScroll) break;
+    verticalContainer = verticalContainer.parentElement;
+  }
+
+  const rootScroller = document.scrollingElement;
+  const scrollTarget =
+    verticalContainer && verticalContainer !== document.body ?
+    verticalContainer :
+    rootScroller;
+
+  if (scrollTarget) {
+    const isRoot = scrollTarget === rootScroller;
+    const bounds = isRoot ?
+    { top: 0, bottom: window.innerHeight } :
+    scrollTarget.getBoundingClientRect();
+    let deltaY = 0;
+    if (clientY < bounds.top + DRAG_AUTO_SCROLL_EDGE_PX) {
+      deltaY = -DRAG_AUTO_SCROLL_STEP_PX;
+    } else if (clientY > bounds.bottom - DRAG_AUTO_SCROLL_EDGE_PX) {
+      deltaY = DRAG_AUTO_SCROLL_STEP_PX;
+    }
+
+    if (deltaY !== 0) {
+      const before = scrollTarget.scrollTop;
+      scrollTarget.scrollTop += deltaY;
+      didScroll = scrollTarget.scrollTop !== before;
+    }
+  }
+
+  const horizontalTarget = element.closest("[data-dnd-target-type='assignee']");
+  if (horizontalTarget && horizontalTarget.scrollWidth > horizontalTarget.clientWidth) {
+    const bounds = horizontalTarget.getBoundingClientRect();
+    let deltaX = 0;
+    if (clientX < bounds.left + DRAG_AUTO_SCROLL_EDGE_PX) {
+      deltaX = -DRAG_AUTO_SCROLL_STEP_PX;
+    } else if (clientX > bounds.right - DRAG_AUTO_SCROLL_EDGE_PX) {
+      deltaX = DRAG_AUTO_SCROLL_STEP_PX;
+    }
+
+    if (deltaX !== 0) {
+      const before = horizontalTarget.scrollLeft;
+      horizontalTarget.scrollLeft += deltaX;
+      didScroll = horizontalTarget.scrollLeft !== before || didScroll;
+    }
+  }
+
+  return didScroll;
 };
 
 const toDevSectionKey = (value) =>
@@ -914,11 +978,11 @@ export default function NextJobsPage() {
 
   const assignableStaffList = useMemo(
     () =>
-    staffDirectory.map((staff) => ({
+    techPanelList.map((staff) => ({
       id: staff.id || staff.normalizedName,
       name: staff.name
     })),
-    [staffDirectory]
+    [techPanelList]
   );
 
   const outstandingJobs = useMemo(
@@ -1112,7 +1176,7 @@ export default function NextJobsPage() {
     // Use the dedicated helper function - it now returns formatted job data or null
     let updatedJob;
     try {
-      updatedJob = await unassignTechnicianFromJob(jobId);
+      updatedJob = await unassignTechnicianFromJob(jobId, { status: "In Progress" });
     } catch (err) {
       console.error("❌ Exception unassigning technician:", err);
       setFeedbackMessage({
@@ -1190,6 +1254,7 @@ export default function NextJobsPage() {
         return;
       }
 
+      event.preventDefault();
       event.currentTarget.setPointerCapture?.(event.pointerId);
 
       const nextState = {
@@ -1232,17 +1297,28 @@ export default function NextJobsPage() {
       const draggingJobTech = normalizeDisplayName(draggingJobTechRaw);
       const targetTech = normalizeDisplayName(tech.name);
       const sameAssignee = draggingJobTech && draggingJobTech === targetTech;
+      const needsQueuePromotion = toStatusKey(job.status) !== "IN PROGRESS";
 
       if (sameAssignee && indicator?.targetJobNumber === job.jobNumber) {
         return;
       }
 
-      if (!sameAssignee) {
+      if (!sameAssignee || needsQueuePromotion) {
         const identifier =
         tech.id && Number.isInteger(Number(tech.id)) ?
         Number(tech.id) :
         tech.id || tech.name;
-        await assignTechnicianToJob(job.id, identifier, tech.name);
+        const assignmentResult = await assignTechnicianToJob(
+          job.id,
+          identifier,
+          tech.name,
+          needsQueuePromotion ? { status: "In Progress" } : undefined
+        );
+        if (!assignmentResult?.success) {
+          throw new Error(
+            assignmentResult?.error?.message || `Failed to assign ${job.jobNumber} to ${tech.name}`
+          );
+        }
       }
 
       const updatedTechJobs = tech.jobs.filter((entry) => entry.jobNumber !== job.jobNumber);
@@ -1267,6 +1343,56 @@ export default function NextJobsPage() {
     [assigneeLookup, findAssigneeForJob, updateJobPositions]
   );
 
+  const assignSelectedJobToTechnician = useCallback(
+    async (technicianId) => {
+      if (!selectedJob?.id) {
+        throw new Error("Select a job before assigning a technician.");
+      }
+
+      const selectedStaff = assignableStaffList.find(
+        (staff) => String(staff.id) === String(technicianId)
+      );
+      if (!selectedStaff) {
+        throw new Error("Select a technician from the list.");
+      }
+
+      const targetAssignee = Array.from(assigneeLookup.values()).find((assignee) => {
+        const idsMatch =
+          assignee.id != null &&
+          selectedStaff.id != null &&
+          String(assignee.id) === String(selectedStaff.id);
+        return idsMatch || normalizeDisplayName(assignee.name) === normalizeDisplayName(selectedStaff.name);
+      });
+      if (!targetAssignee) {
+        throw new Error("The selected technician does not have a workshop row.");
+      }
+
+      setFeedbackMessage(null);
+      await handleDropOnTech(selectedJob, {
+        targetType: "assignee",
+        targetKey: targetAssignee.panelKey,
+        targetJobNumber: null,
+        placement: "after"
+      });
+
+      const latestJobs = await fetchJobs();
+      revalidateAllJobs();
+      const refreshedJob = latestJobs.find((job) => job.id === selectedJob.id);
+      setSelectedJob(refreshedJob || selectedJob);
+      setFeedbackMessage({
+        type: "success",
+        text: `${selectedJob.jobNumber} assigned to ${selectedStaff.name} at the end of their row.`
+      });
+    },
+    [
+      assigneeLookup,
+      assignableStaffList,
+      fetchJobs,
+      handleDropOnTech,
+      selectedJob
+    ]
+  );
+
   const handleDropOnOutstanding = useCallback(
     async (job, indicator) => {
       if (!job) return;
@@ -1274,13 +1400,21 @@ export default function NextJobsPage() {
       const sourceAssignee = findAssigneeForJob(job);
       const draggingJobTechRaw = job.assignedTech?.name || job.technician || "";
       const isAssigned = normalizeDisplayName(draggingJobTechRaw) !== "";
+      const needsQueuePromotion = toStatusKey(job.status) !== "IN PROGRESS";
 
       if (!isAssigned && indicator?.targetJobNumber === job.jobNumber) {
         return;
       }
 
-      if (isAssigned) {
-        await unassignTechnicianFromJob(job.id);
+      if (isAssigned || needsQueuePromotion) {
+        const unassignmentResult = await unassignTechnicianFromJob(job.id, {
+          status: "In Progress"
+        });
+        if (!unassignmentResult?.success) {
+          throw new Error(
+            unassignmentResult?.error?.message || `Failed to move ${job.jobNumber} to Unassigned Jobs`
+          );
+        }
         if (sourceAssignee) {
           const sourceJobs = sourceAssignee.jobs.filter(
             (entry) => entry.jobNumber !== job.jobNumber
@@ -1327,8 +1461,6 @@ export default function NextJobsPage() {
   );
 
   useEffect(() => {
-    if (!dragStateRef.current) return undefined;
-
     // One animation frame's worth of drag work: move the ghost (via dragState
     // position) and re-resolve the drop target — but only commit a state update
     // when something actually changed. Coalescing here means N pointermove events
@@ -1347,12 +1479,21 @@ export default function NextJobsPage() {
         setDragState(nextState);
       }
 
+      const didAutoScroll = autoScrollForDrag(x, y);
+
       // Drop indicator: only update when the resolved target differs, so the drop
       // bar and the board don't flicker/re-render on every frame.
       const nextIndicator = resolveDropIndicator(x, y, currentState.job);
       if (!areDropIndicatorsEqual(nextIndicator, dropIndicatorRef.current)) {
         dropIndicatorRef.current = nextIndicator;
         setDropIndicator(nextIndicator);
+      }
+
+      // Keep scrolling while the pointer remains near an edge, even when the user
+      // holds it still. This makes long drags from the top trays to lower rows
+      // reliable without requiring repeated pointer movement.
+      if (didAutoScroll && pointerFrameRef.current == null) {
+        pointerFrameRef.current = requestAnimationFrame(runDragFrame);
       }
     };
 
@@ -1391,7 +1532,10 @@ export default function NextJobsPage() {
       if (event.pointerId !== dragStateRef.current?.pointerId) return;
 
       const currentState = dragStateRef.current;
-      const currentIndicator = dropIndicatorRef.current;
+      const currentIndicator = currentState?.started ?
+      resolveDropIndicator(event.clientX, event.clientY, currentState.job) ||
+      dropIndicatorRef.current :
+      dropIndicatorRef.current;
       clearDragState();
 
       if (!currentState?.started) {
@@ -1414,20 +1558,25 @@ export default function NextJobsPage() {
       }
     };
 
+    const handlePointerCancel = (event) => {
+      if (event.pointerId !== dragStateRef.current?.pointerId) return;
+      clearDragState();
+    };
+
     window.addEventListener("pointermove", handlePointerMove, { passive: false });
     window.addEventListener("pointerup", handlePointerEnd);
-    window.addEventListener("pointercancel", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerCancel);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerEnd);
-      window.removeEventListener("pointercancel", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerCancel);
       if (pointerFrameRef.current != null) {
         cancelAnimationFrame(pointerFrameRef.current);
         pointerFrameRef.current = null;
       }
     };
-  }, [clearDragState, completePointerDrop, Boolean(dragState), resolveDropIndicator]);
+  }, [clearDragState, completePointerDrop, resolveDropIndicator]);
 
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
@@ -1861,7 +2010,9 @@ export default function NextJobsPage() {
       setFeedbackMessage={setFeedbackMessage}
       handleCloseJobDetails={handleCloseJobDetails}
       handleViewSelectedJobCard={handleViewSelectedJobCard}
-      unassignTechFromJob={unassignTechFromJob} />);
+      unassignTechFromJob={unassignTechFromJob}
+      assignableStaffList={assignableStaffList}
+      assignSelectedJobToTechnician={assignSelectedJobToTechnician} />);
 
 
 

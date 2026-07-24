@@ -3405,7 +3405,8 @@ export const updateJobStatus = async (
 export const assignTechnicianToJob = async (
   jobId,
   technicianIdentifier,
-  technicianName
+  technicianName,
+  options = {}
 ) => {
   let resolvedTechnicianId = null;
 
@@ -3449,6 +3450,7 @@ export const assignTechnicianToJob = async (
 
   return updateJob(jobId, {
     assigned_to: resolvedTechnicianId,
+    ...(options.status ? { status: options.status } : {}),
   });
 };
 
@@ -3456,10 +3458,10 @@ export const assignTechnicianToJob = async (
    UNASSIGN TECHNICIAN FROM JOB
    Removes technician and resets status to "Open"
 ============================================ */
-export const unassignTechnicianFromJob = async (jobId) => {
+export const unassignTechnicianFromJob = async (jobId, options = {}) => {
   return updateJob(jobId, {
     assigned_to: null,
-    status: "Open",
+    status: options.status || "Open",
   });
 };
 
