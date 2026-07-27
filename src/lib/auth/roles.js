@@ -20,6 +20,8 @@ export const TECHNICIAN_ROLES = [
 export const WORKSHOP_CAPACITY_MANAGER_ROLES = [
   "service manager",
   "workshop manager",
+  "after sales director",
+  "after sales manager",
   "general manager",
   "admin manager",
   "owner",
@@ -28,6 +30,8 @@ export const WORKSHOP_CAPACITY_MANAGER_ROLES = [
 export const WORKSHOP_CAPACITY_VIEW_ROLES = Array.from(new Set([
   ...WORKSHOP_CAPACITY_MANAGER_ROLES,
   ...TECHNICIAN_ROLES,
+  "after sales director",
+  "after sales manager",
   "service",
   "mobile technician",
 ]));

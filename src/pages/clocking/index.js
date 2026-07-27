@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/database/supabaseClient";
-import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -14,6 +13,8 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui"; // Extracted presentation layer.
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
 import { useUser } from "@/context/UserContext";
 import { hasAnyRole, WORKSHOP_CAPACITY_MANAGER_ROLES } from "@/lib/auth/roles";
@@ -23,6 +24,19 @@ const MOT_ROLES = ["MOT Tester", "Tester"];
 const TARGET_ROLES = [...new Set([...TECH_ROLES, ...MOT_ROLES])];
 const TARGET_ROLE_SET = new Set(TARGET_ROLES.map((role) => role.toLowerCase()));
 const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
+
+const submitManagedClockingAction = async (payload) => {
+  const response = await fetch("/api/clocking/manage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.message || "Unable to update technician clocking.");
+  }
+  return result;
+};
 
 const SUMMARY_CARD_STYLES = {
   total: {
@@ -374,29 +388,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
     });
   }, [teamStatus, selectedTechnician]);
 
-  const resolveJobIdByNumber = useCallback(async (jobNumber) => {
-    const normalized = (jobNumber || "").trim();
-    if (!normalized) {
-      throw new Error("Enter a job number.");
-    }
-
-    const { data, error } = await supabase.
-    from("jobs").
-    select("id, job_number").
-    ilike("job_number", normalized).
-    maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data?.id) {
-      throw new Error("Job number not found.");
-    }
-
-    return data;
-  }, []);
-
   const closeClockModal = useCallback(() => {
     setSelectedTechnician(null);
     setModalJobNumber("");
@@ -423,26 +414,27 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
     setModalSubmitting(true);
     try {
-      const jobRecord = await resolveJobIdByNumber(trimmedNumber);
-      const result = await clockInToJob({
+      await submitManagedClockingAction({
+        action: "clock-in",
         userId: selectedTechnician.userId,
-        jobId: jobRecord.id,
-        jobNumber: jobRecord.job_number || trimmedNumber,
-        workType: "manual"
+        jobNumber: trimmedNumber,
       });
 
-      if (!result?.success) {
-        throw new Error(result?.error || "Unable to clock onto the job.");
-      }
-
-      await fetchClocking();
+      setTeamStatus((current) =>
+        current.map((technician) =>
+          technician.userId === selectedTechnician.userId
+            ? { ...technician, status: "In Progress", jobNumber: trimmedNumber, timeOnActivity: "0.00h" }
+            : technician
+        )
+      );
       closeClockModal();
+      await fetchClocking();
     } catch (err) {
       setModalError(err?.message || "Unable to clock onto the job.");
     } finally {
       setModalSubmitting(false);
     }
-  }, [selectedTechnician, modalJobNumber, resolveJobIdByNumber, fetchClocking, closeClockModal]);
+  }, [selectedTechnician, modalJobNumber, fetchClocking, closeClockModal]);
 
   const handleClockOutSubmit = useCallback(async () => {
     if (!selectedTechnician?.clockEntryId) {
@@ -451,37 +443,34 @@ function ClockingOverviewTab({ onSummaryChange }) {
     }
     setModalSubmitting(true);
     try {
-      const result = await clockOutFromJob({
+      await submitManagedClockingAction({
+        action: "clock-out",
         userId: selectedTechnician.userId,
-        jobId: selectedTechnician.jobId,
         clockingId: selectedTechnician.clockEntryId
       });
 
-      if (!result?.success) {
-        throw new Error(result?.error || "Unable to clock the user off.");
-      }
-
-      await fetchClocking();
-      setModalError("");
-      setModalJobNumber("");
-      setSelectedTechnician((prev) =>
-      prev ?
-      {
-        ...prev,
-        status: "Not Clocked In",
-        jobNumber: null,
-        jobId: null,
-        clockEntryId: null,
-        timeOnActivity: "—"
-      } :
-      prev
+      setTeamStatus((current) =>
+        current.map((technician) =>
+          technician.userId === selectedTechnician.userId
+            ? {
+                ...technician,
+                status: "Waiting for Job",
+                jobNumber: null,
+                jobId: null,
+                clockEntryId: null,
+                timeOnActivity: "—"
+              }
+            : technician
+        )
       );
+      closeClockModal();
+      await fetchClocking();
     } catch (err) {
       setModalError(err?.message || "Unable to clock the user off.");
     } finally {
       setModalSubmitting(false);
     }
-  }, [selectedTechnician, fetchClocking]);
+  }, [selectedTechnician, fetchClocking, closeClockModal]);
 
   const summaryStats = useMemo(() => {
     const summary = {
@@ -941,13 +930,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
           }}>
 
             {filteredTeamStatus.map((tech) => {
-            const showClockButton =
-            tech.status === "Not Clocked In" ||
-            tech.status === "In Progress" ||
-            tech.status === "On MOT";
-            const clockButtonLabel =
-            tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked on";
-            const statusActionLabel = showClockButton ? clockButtonLabel : tech.status;
+            const isClockedOnJob = tech.status === "In Progress" || tech.status === "On MOT";
+            const showClockButton = canManageCapacity;
+            const statusActionLabel = isClockedOnJob ? "Clocked on" : tech.status;
             const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
 
             const handleClockButtonClick = (event) => {
@@ -1157,28 +1142,52 @@ function ClockingOverviewTab({ onSummaryChange }) {
           aria-modal="true"
           aria-labelledby="clocking-modal-title">
 
-            <div
-            style={{
-              width: "min(460px, 100%)",
-              borderRadius: "var(--radius-lg)",
-              background: "var(--surface)",
-              border: "none",
-              boxShadow: "var(--shadow-xl)",
-              padding: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px"
-            }}>
+            <LayerSurface
+              className="popup-card"
+              sectionKey="clocking-control-modal"
+              sectionType="content-card"
+              backgroundToken="surface"
+              radius="var(--radius-lg)"
+              padding="24px"
+              gap="var(--layout-card-gap)"
+              style={{ width: "min(460px, 100%)", boxShadow: "var(--shadow-xl)" }}
+            >
 
-            <div>
-              <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                {selectedTechnician.name} · {selectedTechnician.role}
-              </p>
-              <h3 id="clocking-modal-title" style={{ margin: "6px 0 4px", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
+            <header className="app-popup-compact-header clocking-control-modal-header">
+              <h3 id="clocking-modal-title" style={{ fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                 Clocking control
               </h3>
-              {!modalTechClockedIn && <div style={{ height: "8px" }} />}
-            </div>
+              <div className="app-popup-compact-header__actions clocking-control-modal-actions">
+                <button
+                  type="button"
+                  className="app-btn app-btn--secondary"
+                  onClick={closeClockModal}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="app-btn app-btn--primary"
+                  onClick={modalTechClockedIn ? handleClockOutSubmit : handleClockInSubmit}
+                  disabled={modalActionDisabled}
+                >
+                  {modalActionLabel}
+                </button>
+              </div>
+            </header>
+
+            <LayerTheme
+              radius="var(--radius-md)"
+              padding="12px 14px"
+              gap="4px"
+            >
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>
+                Technician
+              </span>
+              <strong style={{ fontSize: "0.95rem", color: "var(--text-1)" }}>
+                {selectedTechnician.name} · {selectedTechnician.role}
+              </strong>
+            </LayerTheme>
 
             {modalError &&
             <div
@@ -1198,29 +1207,26 @@ function ClockingOverviewTab({ onSummaryChange }) {
             {modalTechClockedIn ?
             <div
               style={{
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                background: "var(--surface)",
-                padding: "16px",
                 display: "grid",
-                gap: "10px"
+                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                gap: "var(--layout-card-gap)"
               }}>
 
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
-                  <span style={{ fontWeight: 600 }}>Job number</span>
-                  <span>{selectedTechnician.jobNumber || "—"}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
-                  <span style={{ fontWeight: 600 }}>Time on job</span>
-                  <span>{selectedTechnician.timeOnActivity}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
-                  <span style={{ fontWeight: 600 }}>Status</span>
-                  <span>{selectedTechnician.status}</span>
-                </div>
+                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Job number</span>
+                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.jobNumber || "—"}</strong>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Time on job</span>
+                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.timeOnActivity}</strong>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Status</span>
+                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.status}</strong>
+                </LayerTheme>
               </div> :
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="8px">
                 <label htmlFor={jobNumberInputId} style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
                   Job number
                 </label>
@@ -1241,49 +1247,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   minHeight: "var(--control-height)"
                 }} />
 
-              </div>
+              </LayerTheme>
             }
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-              <button
-                type="button"
-                className="clocking-modal-btn-secondary"
-                onClick={closeClockModal}
-                style={{
-                  padding: "var(--control-padding)",
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  background: "var(--theme)",
-                  color: "var(--primary-selected)",
-                  fontSize: "var(--control-font-size)",
-                  fontWeight: 600,
-                  minHeight: "var(--control-height)"
-                }}>
-
-                Close
-              </button>
-              <button
-                type="button"
-                className="clocking-modal-btn-primary"
-                onClick={modalTechClockedIn ? handleClockOutSubmit : handleClockInSubmit}
-                disabled={modalActionDisabled}
-                style={{
-                  padding: "var(--control-padding)",
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "var(--text-2)",
-                  fontSize: "var(--control-font-size)",
-                  fontWeight: 600,
-                  minHeight: "var(--control-height)",
-                  cursor: modalActionDisabled ? "not-allowed" : "pointer",
-                  opacity: modalActionDisabled ? 0.7 : 1
-                }}>
-
-                {modalActionLabel}
-              </button>
-            </div>
-            </div>
+            </LayerSurface>
           </div>
         </ModalPortal>
       }
@@ -1302,30 +1269,20 @@ function ClockingOverviewTab({ onSummaryChange }) {
         :global(:not([data-theme="dark"])) .clocking-modal-overlay {
           background: rgba(50, 50, 50, 0.45);
         }
+        @media (max-width: 520px) {
+          .clocking-control-modal-header {
+            flex-wrap: wrap;
+          }
+          .clocking-control-modal-actions {
+            width: 100%;
+            justify-content: flex-end;
+          }
+        }
         :global(.clocking-status-pill),
         :global(.clocking-status-pill:hover),
         :global(.clocking-status-pill:active) {
           transform: none !important;
           box-shadow: none !important;
-        }
-        :global(.clocking-modal-btn-secondary),
-        :global(.clocking-modal-btn-secondary:hover) {
-          background: rgba(var(--primary-rgb), 0.08) !important;
-          color: var(--primary-selected) !important;
-          border: none !important;
-          transform: none !important;
-          box-shadow: none !important;
-        }
-        :global(.clocking-modal-btn-secondary:hover) {
-          background: rgba(var(--primary-rgb), 0.14) !important;
-        }
-        :global(.clocking-modal-btn-primary),
-        :global(.clocking-modal-btn-primary:hover) {
-          transform: none !important;
-          box-shadow: none !important;
-        }
-        :global(.clocking-modal-btn-primary:hover) {
-          background: var(--primary-hover) !important;
         }
       `}</style>
     </DevLayoutSection>);

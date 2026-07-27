@@ -31,7 +31,14 @@ const formatDate = (dateKey) => new Date(`${dateKey}T00:00:00`).toLocaleDateStri
 const cellKey = (date, userId) => `${date}:${userId}`;
 const formatHours = (value) => Number(value || 0).toFixed(Number(value) % 1 === 0 ? 0 : 2).replace(/0$/, "");
 
-export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
+export default function CapacitySettingsPopup({
+  isOpen,
+  onClose,
+  onSaved,
+  compact = false,
+  technicianUserId = null,
+  initialDate = "",
+}) {
   const [schedule, setSchedule] = useState([]);
   const [selectedDates, setSelectedDates] = useState(new Set());
   const [drafts, setDrafts] = useState({});
@@ -40,9 +47,16 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(() => toMonthKey(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(() => initialDate.slice(0, 7) || toMonthKey(new Date()));
 
-  const range = useMemo(() => getCapacityRange(selectedMonth), [selectedMonth]);
+  const range = useMemo(
+    () => compact && initialDate ? [initialDate] : getCapacityRange(selectedMonth),
+    [compact, initialDate, selectedMonth]
+  );
+
+  useEffect(() => {
+    if (isOpen && initialDate) setSelectedMonth(initialDate.slice(0, 7));
+  }, [initialDate, isOpen]);
 
   useEffect(() => {
     if (isOpen) return;
@@ -68,7 +82,10 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         if (!response.ok || !payload.success) throw new Error(payload.message || "Unable to load capacity settings.");
         if (!active) return;
         setSchedule(payload.data || []);
-        setSelectedDates(new Set(payload.data?.[0]?.date ? [payload.data[0].date] : []));
+        const preferredDate = initialDate && payload.data?.some((day) => day.date === initialDate)
+          ? initialDate
+          : payload.data?.[0]?.date;
+        setSelectedDates(new Set(preferredDate ? [preferredDate] : []));
       })
       .catch((fetchError) => {
         if (active) setError(fetchError.message || "Unable to load capacity settings.");
@@ -77,11 +94,13 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [isOpen, range]);
+  }, [initialDate, isOpen, range]);
 
   const selectedDateList = useMemo(() => [...selectedDates].sort(), [selectedDates]);
   const selectionKey = selectedDateList.join("|");
-  const technicians = schedule[0]?.technicians || [];
+  const technicians = (schedule[0]?.technicians || []).filter(
+    (technician) => !compact || String(technician.userId) === String(technicianUserId)
+  );
   const scheduleByDate = useMemo(() => new Map(schedule.map((day) => [day.date, day])), [schedule]);
 
   const getDisplayHours = (date, technician) => {
@@ -199,15 +218,21 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
       isOpen
       onClose={saving ? undefined : onClose}
       ariaLabel="Technician capacity settings"
-      cardClassName="app-settings-popup-card capacity-settings-popup-card"
+      cardClassName={`app-settings-popup-card capacity-settings-popup-card${compact ? " capacity-settings-popup-card--compact" : ""}`}
       cardStyle={{
-        width: "min(1180px, 100%)",
+        width: compact ? "min(520px, 100%)" : "min(1180px, 100%)",
+        height: compact ? "auto" : undefined,
+        minHeight: compact ? 0 : undefined,
         padding: "var(--page-card-padding)",
         overflowX: "hidden",
-        overflowY: "hidden",
+        overflowY: compact ? "auto" : "hidden",
+        boxSizing: "border-box",
       }}
     >
-      <div className="app-settings-popup capacity-settings">
+      <div
+        className={`app-settings-popup capacity-settings${compact ? " capacity-settings--compact" : ""}`}
+        style={compact ? { width: "100%", height: "auto", minHeight: 0, overflow: "visible" } : undefined}
+      >
         <header className="app-popup-compact-header capacity-settings__header">
           <h2>Technician capacity settings</h2>
           <div className="app-popup-compact-header__actions">
@@ -221,6 +246,54 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         {loading ? (
           <div className="capacity-settings__message">Loading technician capacity…</div>
         ) : (
+          compact ? (
+            <LayerTheme padding="12px" gap="10px" className="capacity-settings__compact-editor" style={{ width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "visible" }}>
+              <div className="capacity-settings__section-heading">
+                <div>
+                  <strong>Available hours</strong>
+                  <span>{selectedDateList[0] ? formatDate(selectedDateList[0]) : "Current day"}</span>
+                </div>
+              </div>
+              <div className="capacity-settings__tech-list capacity-settings__tech-list--compact">
+                {technicians.map((technician) => {
+                  const commonHours = getCommonHours(technician);
+                  const selectedCells = selectedDateList.map((date) => scheduleByDate.get(date)?.technicians.find((entry) => entry.userId === technician.userId)).filter(Boolean);
+                  const leaveCells = selectedCells.filter((entry) => entry.leaveHours > 0);
+                  const hasManual = selectedDateList.some((date) => {
+                    const key = cellKey(date, technician.userId);
+                    const entry = scheduleByDate.get(date)?.technicians.find((item) => item.userId === technician.userId);
+                    return Object.prototype.hasOwnProperty.call(drafts, key) || (!resets.has(key) && entry?.hasOverride);
+                  });
+                  return (
+                    <LayerSurface key={technician.userId} padding="12px" gap="8px" className="capacity-settings__tech-row capacity-settings__tech-row--compact">
+                      <div className="capacity-settings__tech-person">
+                        <strong>{technician.name}</strong>
+                        <span>{formatHours(technician.weeklyHours)}h/week · {formatHours(technician.dailyHours)}h standard day</span>
+                        {leaveCells.length ? <small>Capacity reduced by approved leave</small> : null}
+                      </div>
+                      <label className="capacity-settings__hours-field">
+                        <span>Available hours</span>
+                        <input
+                          className="app-input"
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={commonHours}
+                          onChange={(event) => setTechnicianHours(technician.userId, event.target.value)}
+                        />
+                      </label>
+                      <div className="capacity-settings__row-action">
+                        <span>{hasManual ? "Manual" : leaveCells.length ? "Leave adjusted" : "HR default"}</span>
+                        <Button type="button" variant="secondary" size="xs" onClick={() => resetTechnician(technician.userId)}>Reset</Button>
+                      </div>
+                    </LayerSurface>
+                  );
+                })}
+                {!technicians.length ? <div className="capacity-settings__message">This technician is not available in today&apos;s capacity schedule.</div> : null}
+              </div>
+            </LayerTheme>
+          ) : (
           <div className="capacity-settings__layout">
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__dates">
               <div className="capacity-settings__section-heading">
@@ -294,6 +367,7 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
               </div>
             </LayerTheme>
           </div>
+          )
         )}
 
       </div>
@@ -324,6 +398,14 @@ export default function CapacitySettingsPopup({ isOpen, onClose, onSaved }) {
         .capacity-settings__message { padding: 12px; border-radius: var(--radius-sm); background: var(--theme); }
         .capacity-settings__message--error { background: var(--danger-surface); color: var(--danger); }
         :global(.capacity-settings-popup-card) { overflow: hidden !important; }
+        :global(.capacity-settings-popup-card--compact) { height: auto !important; min-height: 0 !important; max-height: calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2)) !important; overflow-x: hidden !important; overflow-y: auto !important; }
+        .capacity-settings--compact { height: auto !important; min-height: 0; overflow: visible; }
+        .capacity-settings__compact-editor { width: 100%; min-width: 0; min-height: 0; overflow: visible; box-sizing: border-box; }
+        .capacity-settings__tech-list--compact { flex: none; width: 100%; min-width: 0; min-height: auto; overflow: visible; padding-right: 0; grid-template-columns: minmax(0, 1fr); box-sizing: border-box; }
+        .capacity-settings__tech-row--compact { width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); box-sizing: border-box; }
+        .capacity-settings__tech-row--compact .capacity-settings__hours-field { grid-column: 1; width: 100%; min-width: 0; }
+        .capacity-settings--compact .capacity-settings__header { width: 100%; min-width: 0; flex-wrap: wrap; }
+        .capacity-settings--compact .app-popup-compact-header__actions { width: 100%; justify-content: flex-end; }
         @media (max-width: 767px) {
           :global(.capacity-settings-popup-card) { overflow-y: auto !important; }
           .capacity-settings { height: auto; min-height: 100%; }

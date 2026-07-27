@@ -3454,6 +3454,35 @@ export const assignTechnicianToJob = async (
   });
 };
 
+export const getJobRequestCapacityProgress = async (jobIds = []) => {
+  const validJobIds = [...new Set(
+    jobIds.map((jobId) => Number(jobId)).filter((jobId) => Number.isInteger(jobId) && jobId > 0)
+  )];
+  if (!validJobIds.length) return {};
+
+  const { data, error } = await supabase
+    .from("job_requests")
+    .select("job_id, hours, status, request_source, vhc_item_id")
+    .in("job_id", validJobIds);
+
+  if (error) throw error;
+
+  return (data || []).reduce((progressByJobId, row) => {
+    const requestSource = String(row.request_source || "").trim().toLowerCase();
+    if (row.vhc_item_id || requestSource.includes("vhc")) return progressByJobId;
+    const jobKey = String(row.job_id);
+    const hours = Math.max(0, Number(row.hours) || 0);
+    const status = String(row.status || "").trim().toLowerCase();
+    const progress = progressByJobId[jobKey] || { totalHours: 0, completedHours: 0 };
+    progress.totalHours += hours;
+    if (status === "complete" || status === "completed" || status === "done") {
+      progress.completedHours += hours;
+    }
+    progressByJobId[jobKey] = progress;
+    return progressByJobId;
+  }, {});
+};
+
 /* ============================================
    UNASSIGN TECHNICIAN FROM JOB
    Removes technician and resets status to "Open"

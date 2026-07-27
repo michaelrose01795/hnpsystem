@@ -9,6 +9,7 @@ import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
 import {
   assignTechnicianToJob,
+  getJobRequestCapacityProgress,
   unassignTechnicianFromJob,
   updateJobPosition } from
 "@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
@@ -29,6 +30,12 @@ import {
   hasOutstandingAuthorisedVhcWork,
   TECH_JOB_STATUS,
 } from "@/features/vhc/vhcStatusEngine";
+import {
+  getDayCapacityProgress,
+  getDailyContractedHours,
+  getJobCapacityDateKey,
+  toCapacityDateKey,
+} from "@/lib/capacity/technicianCapacity";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer (loading / access / empty states).
@@ -460,7 +467,9 @@ export default function NextJobsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
   const [activeClockingsByUser, setActiveClockingsByUser] = useState({});
-  const [jobHoursByJobId, setJobHoursByJobId] = useState({}); // job_requests hours per job_id, for workload totals
+  const [capacityByUser, setCapacityByUser] = useState({});
+  const [capacityDate, setCapacityDate] = useState(() => toCapacityDateKey(new Date()));
+  const [jobProgressByJobId, setJobProgressByJobId] = useState({});
   const [hoveredRequestJobNumber, setHoveredRequestJobNumber] = useState(null);
   const [highlightedSearchJobNumbers, setHighlightedSearchJobNumbers] = useState([]);
   const dragStateRef = useRef(null);
@@ -760,31 +769,43 @@ export default function NextJobsPage() {
     }
   }, []);
 
-  // Estimated labour hours per job (job_requests.hours), summed by job_id. Used
-  // alongside authorised VHC labour to compute each technician's workload total.
-  const fetchJobRequestHours = useCallback(async () => {
+  const fetchTechnicianCapacity = useCallback(async () => {
+    try {
+      const now = new Date();
+      const today = toCapacityDateKey(now);
+      const query = new URLSearchParams({
+        start: today,
+        end: today,
+      });
+      const response = await fetch(`/api/technician-capacity?${query.toString()}`);
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || "Unable to load technician capacity.");
+      }
+
+      const byUser = {};
+      (payload.data?.[0]?.technicians || []).forEach((technician) => {
+        byUser[String(technician.userId)] = technician;
+      });
+      setCapacityDate(payload.data?.[0]?.date || today);
+      setCapacityByUser(byUser);
+    } catch (err) {
+      console.error("❌ Error fetching technician capacity:", err);
+    }
+  }, []);
+
+  const fetchJobRequestProgress = useCallback(async () => {
     const jobIds = Array.from(new Set((jobs || []).map((job) => job.id).filter(Boolean)));
     if (jobIds.length === 0) {
-      setJobHoursByJobId({});
+      setJobProgressByJobId({});
       return;
     }
 
-    const { data, error } = await supabase.
-    from("job_requests").
-    select("job_id, hours").
-    in("job_id", jobIds);
-
-    if (error) {
-      console.error("❌ Error fetching job request hours:", error);
-      return;
+    try {
+      setJobProgressByJobId(await getJobRequestCapacityProgress(jobIds));
+    } catch (error) {
+      console.error("❌ Error fetching job request capacity progress:", error);
     }
-
-    const aggregated = {};
-    (data || []).forEach((row) => {
-      if (!row?.job_id) return;
-      aggregated[row.job_id] = (aggregated[row.job_id] || 0) + (Number(row.hours) || 0);
-    });
-    setJobHoursByJobId(aggregated);
   }, [jobs]);
 
   // ✅ Fetch jobs and technicians from Supabase on component mount
@@ -792,18 +813,24 @@ export default function NextJobsPage() {
     fetchJobs(); // Load waiting jobs
     fetchTechnicians(); // Load staff lists
     fetchActiveClockings(); // Load current clocking per technician
-  }, [fetchJobs, fetchTechnicians, fetchActiveClockings]);
+    fetchTechnicianCapacity(); // Load today's effective technician capacity
+  }, [fetchJobs, fetchTechnicians, fetchActiveClockings, fetchTechnicianCapacity]);
 
-  useEffect(() => {// Refresh workload hours whenever the job set changes
-    fetchJobRequestHours();
-  }, [fetchJobRequestHours]);
+  useEffect(() => {
+    const refreshTimer = window.setInterval(fetchTechnicianCapacity, 60000);
+    return () => window.clearInterval(refreshTimer);
+  }, [fetchTechnicianCapacity]);
+
+  useEffect(() => {
+    fetchJobRequestProgress();
+  }, [fetchJobRequestProgress]);
 
   // Estimated labour hours for a single job: recorded request hours + authorised
   // VHC labour, falling back to a 1-hour nominal when nothing is recorded yet.
   const estimateJobHours = useCallback(
     (job) => {
       if (!job) return 0;
-      const requestHours = Number(jobHoursByJobId[job.id]) || 0;
+      const requestHours = Number(jobProgressByJobId[String(job.id)]?.totalHours) || 0;
       const vhcHours = (Array.isArray(job.vhcChecks) ? job.vhcChecks : []).reduce((sum, row) => {
         const status = String(row?.approval_status || "").trim().toLowerCase();
         if (status === "authorized" || status === "authorised" || status === "completed") {
@@ -814,7 +841,7 @@ export default function NextJobsPage() {
       const total = requestHours + vhcHours;
       return total > 0 ? total : 1;
     },
-    [jobHoursByJobId]
+    [jobProgressByJobId]
   );
 
   useEffect(() => {// Subscribe to Supabase changes for live updates
@@ -850,6 +877,41 @@ export default function NextJobsPage() {
       supabase.removeChannel(channel);
     };
   }, [fetchActiveClockings]);
+
+  useEffect(() => {
+    const channel = supabase.
+    channel("nextjobs-technician-capacity").
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "technician_capacity_overrides" },
+      fetchTechnicianCapacity
+    ).
+    subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchTechnicianCapacity]);
+
+  useEffect(() => {
+    const channel = supabase.
+    channel("nextjobs-labour-progress").
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "job_requests" },
+      fetchJobRequestProgress
+    ).
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "vhc_checks" },
+      fetchJobs
+    ).
+    subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchJobRequestProgress, fetchJobs]);
 
   const techIdSet = useMemo(() => {
     return new Set(
@@ -1012,11 +1074,11 @@ export default function NextJobsPage() {
   }, [jobs, searchTerm]);
 
   // ✅ Group jobs by technician (using assignedTech.name)
-  const getJobsForAssignee = (assignee) => {
+  const getJobsForAssignee = useCallback((assignee, sourceJobs = techPanelJobs) => {
     const normalizedAssignee = normalizeDisplayName(assignee?.name);
     const assigneeIdKey = toUserIdKey(assignee?.id);
 
-    return techPanelJobs.
+    return sourceJobs.
     filter((job) => {
       const jobAssignedIdKey = toUserIdKey(
         job.assignedTech?.id ?? job.assignedTo
@@ -1034,7 +1096,7 @@ export default function NextJobsPage() {
       return jobAssignedName && jobAssignedName === normalizedAssignee;
     }).
     sort(compareJobsForBoard);
-  };
+  }, [techPanelJobs]);
 
   const assignedJobs = useMemo(
     () =>
@@ -1043,7 +1105,7 @@ export default function NextJobsPage() {
       panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
       jobs: getJobsForAssignee(tech)
     })),
-    [techPanelJobs, techPanelList]
+    [getJobsForAssignee, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
@@ -1053,7 +1115,7 @@ export default function NextJobsPage() {
       panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
       jobs: getJobsForAssignee(tester)
     })),
-    [techPanelJobs, motPanelList]
+    [getJobsForAssignee, motPanelList]
   );
 
   const assigneeLookup = useMemo(() => {
@@ -1084,26 +1146,60 @@ export default function NextJobsPage() {
   // Board rows — every technician / MOT user (no hard cap, supports large rosters).
   const techRows = useMemo(
     () =>
-    assignedJobs.map((tech) => ({
-      panelKey: tech.panelKey,
-      name: tech.name,
-      role: "Technician",
-      jobs: tech.jobs,
-      isMot: false
-    })),
-    [assignedJobs]
+    assignedJobs.map((tech) => {
+      const userKey = String(tech.id);
+      const capacity = capacityByUser[userKey];
+      const dayJobs = getJobsForAssignee(tech, jobs).filter((job) => (
+        !String(job.status || "").toLowerCase().includes("cancel") &&
+        getJobCapacityDateKey(job, capacityDate) === capacityDate
+      ));
+      const dayProgress = getDayCapacityProgress(dayJobs, jobProgressByJobId);
+      return {
+        panelKey: tech.panelKey,
+        userId: tech.id,
+        name: tech.name,
+        role: "Technician",
+        jobs: tech.jobs,
+        isMot: false,
+        capacityHours: capacity?.effectiveHours ?? getDailyContractedHours(),
+        capacityDate,
+        capacitySource: capacity?.hasOverride ? "Manual" : capacity?.leaveHours > 0 ? "Leave adjusted" : "HR default",
+        capacityDayJobCount: dayJobs.length,
+        completedHours: dayProgress.completedHours,
+        plannedHours: dayProgress.plannedHours,
+        remainingHours: dayProgress.remainingHours,
+      };
+    }),
+    [assignedJobs, capacityByUser, capacityDate, getJobsForAssignee, jobProgressByJobId, jobs]
   );
 
   const motRows = useMemo(
     () =>
-    assignedMotJobs.map((tester) => ({
-      panelKey: tester.panelKey,
-      name: tester.name,
-      role: "MOT Tester",
-      jobs: tester.jobs,
-      isMot: true
-    })),
-    [assignedMotJobs]
+    assignedMotJobs.map((tester) => {
+      const userKey = String(tester.id);
+      const capacity = capacityByUser[userKey];
+      const dayJobs = getJobsForAssignee(tester, jobs).filter((job) => (
+        !String(job.status || "").toLowerCase().includes("cancel") &&
+        getJobCapacityDateKey(job, capacityDate) === capacityDate
+      ));
+      const dayProgress = getDayCapacityProgress(dayJobs, jobProgressByJobId);
+      return {
+        panelKey: tester.panelKey,
+        userId: tester.id,
+        name: tester.name,
+        role: "MOT Tester",
+        jobs: tester.jobs,
+        isMot: true,
+        capacityHours: capacity?.effectiveHours ?? getDailyContractedHours(),
+        capacityDate,
+        capacitySource: capacity?.hasOverride ? "Manual" : capacity?.leaveHours > 0 ? "Leave adjusted" : "HR default",
+        capacityDayJobCount: dayJobs.length,
+        completedHours: dayProgress.completedHours,
+        plannedHours: dayProgress.plannedHours,
+        remainingHours: dayProgress.remainingHours,
+      };
+    }),
+    [assignedMotJobs, capacityByUser, capacityDate, getJobsForAssignee, jobProgressByJobId, jobs]
   );
 
   const findAssigneeForJob = useCallback(
@@ -2011,7 +2107,8 @@ export default function NextJobsPage() {
       handleViewSelectedJobCard={handleViewSelectedJobCard}
       unassignTechFromJob={unassignTechFromJob}
       assignableStaffList={assignableStaffList}
-      assignSelectedJobToTechnician={assignSelectedJobToTechnician} />);
+      assignSelectedJobToTechnician={assignSelectedJobToTechnician}
+      onCapacitySaved={fetchTechnicianCapacity} />);
 
 
 

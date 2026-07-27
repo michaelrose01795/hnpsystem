@@ -279,6 +279,26 @@ const assertClockInAvailability = async ({
   requestId = null,
   workType = "initial",
 }) => {
+  const { data: activeUserRows, error: activeUserError } = await db
+    .from(TABLE_NAME)
+    .select("id, job_id, job_number, clock_in")
+    .eq("user_id", userId)
+    .is("clock_out", null)
+    .order("clock_in", { ascending: false })
+    .limit(1);
+
+  if (activeUserError) {
+    throw new Error(`Failed to validate the user's active clocking entry: ${activeUserError.message}`);
+  }
+
+  const activeUserRow = activeUserRows?.[0];
+  if (activeUserRow) {
+    const activeJobLabel = activeUserRow.job_number
+      ? `job ${activeUserRow.job_number}`
+      : "another job";
+    throw new Error(`This user is already clocked onto ${activeJobLabel}. Clock them off before starting another job.`);
+  }
+
   const normalizedWorkType = normaliseWorkType(workType);
   const { data, error } = await db
     .from(TABLE_NAME)
@@ -360,6 +380,12 @@ export const clockInToJob = async (...rawArgs) => {
       .single();
 
     if (error) {
+      if (
+        error.code === "23505" ||
+        error.message?.includes("job_clocking_one_open_per_user_idx")
+      ) {
+        throw new Error("This user is already clocked onto another job. Clock them off before starting another job.");
+      }
       throw new Error(`Failed to clock in to job ${jobNumberText}: ${error.message}`);
     }
 

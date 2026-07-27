@@ -27,6 +27,110 @@ export const getLeaveHoursForDate = (absence, dateKey, dailyHours) => {
   return roundHours(isHalfDay ? dailyHours / 2 : dailyHours);
 };
 
+export const getJobCapacityDateKey = (job, fallbackDate = "") => {
+  const scheduledValue = job?.appointment?.scheduledTime ?? job?.appointment?.scheduled_time;
+  if (scheduledValue) return toCapacityDateKey(scheduledValue);
+  // Undated work is treated as part of the active queue day. Using check-in
+  // time here would wrongly hide carry-over jobs that are still being worked.
+  return fallbackDate;
+};
+
+const isCompletedTechStatus = (value) => {
+  const status = String(value || "").trim().toLowerCase();
+  return status === "tech_complete" || status === "complete" || status === "completed";
+};
+
+export const getJobCapacityProgress = (job, requestProgressByJobId = {}) => {
+  const requestProgress = requestProgressByJobId?.[String(job?.id)] || {};
+  let plannedHours = Math.max(0, Number(requestProgress.totalHours) || 0);
+  let completedHours = Math.min(
+    plannedHours,
+    Math.max(0, Number(requestProgress.completedHours) || 0)
+  );
+
+  (Array.isArray(job?.vhcChecks) ? job.vhcChecks : []).forEach((check) => {
+    const approval = String(check?.approval_status || "").trim().toLowerCase();
+    if (!["authorized", "authorised", "completed"].includes(approval)) return;
+    const hours = Math.max(0, Number(check?.labour_hours) || 0);
+    plannedHours += hours;
+    if (check?.labour_complete === true || check?.Complete === true || approval === "completed") {
+      completedHours += hours;
+    }
+  });
+
+  if (plannedHours <= 0) plannedHours = 1;
+  if (isCompletedTechStatus(job?.techCompletionStatus)) completedHours = plannedHours;
+
+  return {
+    plannedHours: roundHours(plannedHours),
+    completedHours: roundHours(Math.min(plannedHours, completedHours)),
+    remainingHours: roundHours(Math.max(0, plannedHours - completedHours)),
+  };
+};
+
+export const getDayCapacityProgress = (jobs = [], requestProgressByJobId = {}) => {
+  const totals = jobs.reduce((progress, job) => {
+    const jobProgress = getJobCapacityProgress(job, requestProgressByJobId);
+    progress.plannedHours += jobProgress.plannedHours;
+    progress.completedHours += jobProgress.completedHours;
+    return progress;
+  }, { plannedHours: 0, completedHours: 0 });
+
+  return {
+    plannedHours: roundHours(totals.plannedHours),
+    completedHours: roundHours(totals.completedHours),
+    remainingHours: roundHours(Math.max(0, totals.plannedHours - totals.completedHours)),
+  };
+};
+
+export const buildWorkshopCapacitySegments = ({
+  capacityHours,
+  completedHours,
+  remainingPlannedHours,
+} = {}) => {
+  const capacity = Math.max(0, Number(capacityHours) || 0);
+  const completed = Math.max(0, Number(completedHours) || 0);
+  const remaining = Math.max(0, Number(remainingPlannedHours) || 0);
+  const totalLoad = roundHours(completed + remaining);
+  const overloadHours = roundHours(Math.max(0, totalLoad - capacity));
+
+  if (capacity === 0) {
+    return {
+      capacityHours: 0,
+      completedHours: roundHours(completed),
+      remainingPlannedHours: roundHours(remaining),
+      totalLoadHours: totalLoad,
+      overloadHours,
+      greenPct: 0,
+      amberPct: 0,
+      redPct: totalLoad > 0 ? 100 : 0,
+      neutralPct: totalLoad > 0 ? 0 : 100,
+    };
+  }
+
+  const isOverCapacity = totalLoad > capacity;
+  const displayTotal = isOverCapacity ? totalLoad : capacity;
+  const greenHours = Math.min(completed, capacity);
+  const amberHours = Math.min(remaining, Math.max(0, capacity - greenHours));
+  const greenPct = (greenHours / displayTotal) * 100;
+  const amberPct = (amberHours / displayTotal) * 100;
+  const redPct = (overloadHours / displayTotal) * 100;
+  const neutralPct = Math.max(0, 100 - greenPct - amberPct - redPct);
+
+  return {
+    capacityHours: roundHours(capacity),
+    completedHours: roundHours(completed),
+    remainingPlannedHours: roundHours(remaining),
+    totalLoadHours: totalLoad,
+    overloadHours,
+    greenPct: roundHours(greenPct),
+    amberPct: roundHours(amberPct),
+    redPct: roundHours(redPct),
+    neutralPct: roundHours(neutralPct),
+    capacityMarkerPct: roundHours((capacity / displayTotal) * 100),
+  };
+};
+
 export const buildTechnicianCapacitySchedule = ({
   users = [],
   absences = [],

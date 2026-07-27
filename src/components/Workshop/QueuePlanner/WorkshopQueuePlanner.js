@@ -19,6 +19,8 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
+import { buildWorkshopCapacitySegments } from "@/lib/capacity/technicianCapacity";
 
 // ===========================================================================
 // Shared style constants (replace the former CSS-module tokens)
@@ -34,8 +36,6 @@ const HIGHLIGHT_SHADOW =
 // ===========================================================================
 // Presentation helpers (pure display logic — no data fetching)
 // ===========================================================================
-const DAILY_CAPACITY_HOURS = 7.5;
-
 // status → soft visual treatment (calm tints only, no bright red).
 // `pillBg` is the pill background colour; the label always uses --text-1.
 const STATUS_META = {
@@ -73,14 +73,6 @@ const formatClock = (value) => {
   } catch {
     return "—";
   }
-};
-
-// capacity level from total hours (low <50% · medium 50–90% · high ≥90%).
-const getCapacity = (totalHours) => {
-  const pct = Math.min(100, Math.round((totalHours / DAILY_CAPACITY_HOURS) * 100));
-  if (pct >= 90) return { pct, level: "high", dot: "rgba(var(--warning-rgb), 1)", label: "High workload" };
-  if (pct >= 50) return { pct, level: "medium", dot: "rgba(59, 130, 246, 0.95)", label: "Medium workload" };
-  return { pct, level: "low", dot: "rgba(var(--success-rgb), 0.95)", label: "Low workload" };
 };
 
 const shortHours = (hours) => {
@@ -328,10 +320,19 @@ function WorkshopQueueDropZone({
 }
 
 // ----------------------------------------------------------------- One row ----
-function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
-  const totalHours = row.jobs.reduce((sum, job) => sum + (estimateJobHours(job) || 0), 0);
-  const capacity = getCapacity(totalHours);
+function WorkshopQueueRow({ row, estimateJobHours, onEditTechnicianCapacity, ...dropZoneProps }) {
+  const capacity = buildWorkshopCapacitySegments({
+    capacityHours: row.capacityHours,
+    completedHours: row.completedHours,
+    remainingPlannedHours: row.remainingHours,
+  });
   const unit = row.isMot ? (row.jobs.length === 1 ? "MOT" : "MOTs") : row.jobs.length === 1 ? "job" : "jobs";
+  const capacityTitle = [
+    `${shortHours(capacity.completedHours)} completed for ${row.capacityDate || "today"}`,
+    `${shortHours(capacity.remainingPlannedHours)} planned work left`,
+    `${shortHours(capacity.capacityHours)} available (${row.capacitySource || "daily default"})`,
+    capacity.overloadHours > 0 ? `${shortHours(capacity.overloadHours)} over capacity` : "Within capacity",
+  ].join(" • ");
 
   return (
     <React.Fragment>
@@ -344,17 +345,42 @@ function WorkshopQueueRow({ row, estimateJobHours, ...dropZoneProps }) {
         data-dev-section-type="content-card"
         data-dev-background-token="theme"
         data-dev-text-preview={`${row.name} ${row.role} ${row.jobs.length} ${unit}`}
-        style={{ position: "sticky", left: 0, zIndex: 2, display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", minHeight: "var(--wqp-row-min-h)", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: HAIRLINE_BOTTOM }}
+        className="wqp-capacity-trigger"
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit ${row.name} capacity for ${row.capacityDate || "today"}`}
+        onClick={() => {
+          if (!dropZoneProps.draggingJob) onEditTechnicianCapacity?.(row);
+        }}
+        onKeyDown={(event) => {
+          if ((event.key === "Enter" || event.key === " ") && !dropZoneProps.draggingJob) {
+            event.preventDefault();
+            onEditTechnicianCapacity?.(row);
+          }
+        }}
+        style={{ position: "sticky", left: 0, zIndex: 2, alignSelf: "stretch", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "12px", height: "100%", minHeight: "var(--wqp-row-min-h)", padding: "14px 16px", background: "rgba(var(--accent-base-rgb), 0.06)", boxShadow: HAIRLINE_BOTTOM, cursor: "pointer" }}
       >
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 auto" }}>
-          <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0, fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }} title={capacity.label}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, background: capacity.dot }} />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.jobs.length} {unit} • {shortHours(totalHours)}</span>
+          <span style={{ fontSize: "14px", fontWeight: 800, lineHeight: 1.3, color: "var(--text-1)", overflowWrap: "anywhere" }}>{row.name}</span>
+          <span style={{ display: "flex", alignItems: "flex-start", gap: "6px", minWidth: 0, fontSize: "11px", lineHeight: 1.35, fontWeight: 700, color: "var(--surfaceTextMuted)" }} title={capacityTitle}>
+            <span style={{ width: "8px", height: "8px", marginTop: "3px", borderRadius: "50%", flexShrink: 0, background: capacity.overloadHours > 0 ? "var(--danger)" : "var(--success)" }} />
+            <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+              <span>{row.jobs.length} {unit} queued • {row.capacityDayJobCount || 0} today</span>
+              <span>{shortHours(capacity.completedHours)} done • {shortHours(capacity.remainingPlannedHours)} left</span>
+              <span>{shortHours(capacity.capacityHours)} capacity</span>
+            </span>
           </span>
-          {/* Workload bar — visualises total hours against the 7.5h daily target */}
-          <span style={{ position: "relative", display: "block", width: "100%", height: "4px", borderRadius: "var(--radius-pill)", background: "rgba(var(--accent-base-rgb), 0.12)", overflow: "hidden" }} title={`${capacity.pct}% of daily capacity`}>
-            <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${capacity.pct}%`, borderRadius: "var(--radius-pill)", background: capacity.dot }} />
+          {/* Capacity bar: completed work, assigned time left, then overload. */}
+          <span
+            role="img"
+            aria-label={capacityTitle}
+            style={{ display: "flex", width: "100%", height: "6px", borderRadius: "var(--radius-pill)", background: "rgba(var(--accent-base-rgb), 0.12)", overflow: "hidden" }}
+            title={capacityTitle}
+          >
+            {capacity.greenPct > 0 && <span style={{ width: `${capacity.greenPct}%`, height: "100%", background: "var(--success)" }} />}
+            {capacity.amberPct > 0 && <span style={{ width: `${capacity.amberPct}%`, height: "100%", background: "var(--warning)" }} />}
+            {capacity.neutralPct > 0 && <span style={{ width: `${capacity.neutralPct}%`, height: "100%", background: "transparent" }} />}
+            {capacity.redPct > 0 && <span style={{ width: `${capacity.redPct}%`, height: "100%", background: "var(--danger)" }} />}
           </span>
         </div>
       </div>
@@ -449,10 +475,15 @@ const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, mo
 // Job details modal
 // ===========================================================================
 const Field = ({ label, value, wide }) => (
-  <div style={{ padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "rgba(var(--surface-rgb), 0.5)", minWidth: 0, ...(wide ? { gridColumn: "1 / -1" } : null) }}>
-    <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--surfaceTextMuted)", marginBottom: "4px" }}>{label}</div>
+  <LayerTheme
+    radius="var(--radius-sm)"
+    padding="10px 12px"
+    gap="4px"
+    style={{ minWidth: 0, ...(wide ? { gridColumn: "1 / -1" } : null) }}
+  >
+    <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--surfaceTextMuted)" }}>{label}</div>
     <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)", wordBreak: "break-word" }}>{value || "—"}</div>
-  </div>
+  </LayerTheme>
 );
 
 function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
@@ -493,9 +524,6 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
           <header className="app-popup-compact-header wqp-job-modal-header">
             <div style={{ minWidth: 0 }}>
               <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
-              <p style={{ margin: 0, fontSize: "12px", fontWeight: 600, color: "var(--surfaceTextMuted)" }}>
-                {vehicle} · {job.reg || "Reg TBC"} · {statusMeta.label}
-              </p>
             </div>
             <div className="app-popup-compact-header__actions wqp-job-modal-header__actions">
               <button type="button" className="app-btn app-btn--primary" onClick={onOpenJobCard}>Open Job Card</button>
@@ -503,6 +531,17 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
               <button type="button" className="app-btn app-btn--secondary" onClick={onClose}>Close</button>
             </div>
           </header>
+
+          <LayerTheme
+            radius="var(--radius-sm)"
+            padding="10px 12px"
+            gap="0"
+            style={{ width: "100%" }}
+          >
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--surfaceTextMuted)" }}>
+              {vehicle} · {job.reg || "Reg TBC"} · {statusMeta.label}
+            </div>
+          </LayerTheme>
 
           {feedback && (
             <div style={{ marginBottom: "14px", padding: "10px 12px", borderRadius: "var(--radius-sm)", fontSize: "13px", fontWeight: 600, ...feedbackStyle }}>
@@ -525,8 +564,13 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
             <Field label="VHC Status" value={vhcStatus} />
             <Field label="Parts Status" value={partsStatus} />
 
-            <div style={{ padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "rgba(var(--surface-rgb), 0.5)", minWidth: 0, gridColumn: "1 / -1" }}>
-              <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--surfaceTextMuted)", marginBottom: "4px" }}>Customer Requests</div>
+            <LayerTheme
+              radius="var(--radius-sm)"
+              padding="10px 12px"
+              gap="4px"
+              style={{ minWidth: 0, gridColumn: "1 / -1" }}
+            >
+              <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--surfaceTextMuted)" }}>Customer Requests</div>
               {requests.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "160px", overflowY: "auto" }}>
                   {requests.map((request, index) => (
@@ -539,7 +583,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
               ) : (
                 <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)", wordBreak: "break-word" }}>No requests recorded.</div>
               )}
-            </div>
+            </LayerTheme>
           </div>
 
           {job.assignedTech && (
@@ -592,9 +636,6 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
         <h3 style={{ margin: "0 0 6px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>
           Assign Technician
         </h3>
-        <p style={{ margin: "0 0 20px", fontSize: "13px", color: "var(--surfaceTextMuted)" }}>
-          Choose who should receive job #{job?.jobNumber}. It will be placed at the end of their row.
-        </p>
 
         <DropdownField
           id="workshop-technician-assignment"
@@ -668,6 +709,7 @@ export default function WorkshopQueuePlanner({
   unassignTechFromJob,
   assignableStaffList,
   assignSelectedJobToTechnician,
+  onCapacitySaved,
 }) {
   // The job-type dropdown was removed — the single search box (page-driven) now
   // drives all matching across every section. The search only highlights matches
@@ -692,6 +734,7 @@ export default function WorkshopQueuePlanner({
   const [checkedInCollapsed, setCheckedInCollapsed] = React.useState(false);
   const [unassignedCollapsed, setUnassignedCollapsed] = React.useState(false);
   const [showTechnicianAssignment, setShowTechnicianAssignment] = React.useState(false);
+  const [capacityTechnician, setCapacityTechnician] = React.useState(null);
   const searchSentinelRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -723,6 +766,9 @@ export default function WorkshopQueuePlanner({
 
   const searchSticky = searchFocused; // pinned position while in use
   const searchFloating = searchFocused && searchStuck; // elevated look only when stuck
+  const handleEditTechnicianCapacity = React.useCallback((row) => {
+    setCapacityTechnician(row);
+  }, []);
 
   const sharedDropProps = {
     draggingJob,
@@ -735,6 +781,7 @@ export default function WorkshopQueuePlanner({
     deriveJobTypeLabel,
     formatAppointmentTime,
     estimateJobHours,
+    onEditTechnicianCapacity: handleEditTechnicianCapacity,
   };
 
   const emptyRowStyle = (active) => ({
@@ -831,13 +878,15 @@ export default function WorkshopQueuePlanner({
           }}
           style={{
             ...sectionHeadStyle,
+            width: "100%",
+            minWidth: 0,
             minHeight: checkedInCollapsed ? "44px" : undefined,
             cursor: "pointer",
             flexWrap: checkedInCollapsed ? "nowrap" : "wrap"
           }}
         >
-          <h2 style={sectionTitleStyle}>Checked In Jobs</h2>
-          {!checkedInCollapsed && <span style={sectionMetaStyle}>{checkedInJobs.length} checked in</span>}
+          <h2 style={{ ...sectionTitleStyle, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Checked In Jobs</h2>
+          <span style={{ ...sectionMetaStyle, display: "inline-flex", flexShrink: 0, marginLeft: "auto", whiteSpace: "nowrap", visibility: "visible", opacity: 1 }}>{checkedInJobs.length} checked in</span>
         </div>
         {!checkedInCollapsed && (checkedInJobs.length === 0 ? (
           <div
@@ -927,13 +976,15 @@ export default function WorkshopQueuePlanner({
           }}
           style={{
             ...sectionHeadStyle,
+            width: "100%",
+            minWidth: 0,
             minHeight: unassignedCollapsed ? "44px" : undefined,
             cursor: "pointer",
             flexWrap: unassignedCollapsed ? "nowrap" : "wrap"
           }}
         >
-          <h2 style={sectionTitleStyle}>Unassigned Jobs</h2>
-          {!unassignedCollapsed && <span style={sectionMetaStyle}>{outstanding.length} waiting to allocate</span>}
+          <h2 style={{ ...sectionTitleStyle, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Unassigned Jobs</h2>
+          <span style={{ ...sectionMetaStyle, display: "inline-flex", flexShrink: 0, marginLeft: "auto", whiteSpace: "nowrap", visibility: "visible", opacity: 1 }}>{outstanding.length} waiting to allocate</span>
         </div>
         {!unassignedCollapsed && (outstanding.length === 0 ? (
           <div
@@ -1048,6 +1099,15 @@ export default function WorkshopQueuePlanner({
         />
       )}
 
+      <CapacitySettingsPopup
+        isOpen={Boolean(capacityTechnician)}
+        compact
+        technicianUserId={capacityTechnician?.userId}
+        initialDate={capacityTechnician?.capacityDate || ""}
+        onClose={() => setCapacityTechnician(null)}
+        onSaved={onCapacitySaved}
+      />
+
       {/* The only non-inline styling: responsive sizing vars, hover lifts and the
           drag-active body lock — things inline styles fundamentally can't do.
           Scoped class names (wqp-*) keep this from leaking into other pages. */}
@@ -1071,6 +1131,10 @@ export default function WorkshopQueuePlanner({
         .wqp-job-modal-footer {
           display: flex;
           justify-content: flex-end;
+        }
+        .wqp-capacity-trigger:focus-visible {
+          box-shadow: var(--focus-ring);
+          outline: none;
         }
         @media (max-width: 1279px) {
           .wqp-shell {
