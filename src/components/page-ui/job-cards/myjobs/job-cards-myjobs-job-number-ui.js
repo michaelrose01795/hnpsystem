@@ -71,20 +71,24 @@ export default function TechJobDetailPageUi(props) {
     BrakesHubsDetailsModal,
     Button,
     CustomerVideoButton,
+    CustomerRequestsTab,
     DevLayoutSection,
     DocumentsTab,
     DocumentsUploadPopup,
     ExternalDetailsModal,
     InlineLoading,
     InternalElectricsDetailsModal,
+    LocationUpdateModal,
     ModalPortal,
     MyJobCardShellSkeleton,
+    NotesTabNew,
     ServiceIndicatorDetailsModal,
     UndersideDetailsModal,
     VhcAssistantPanel,
     VhcCameraButton,
     WheelsTyresDetailsModal,
     WriteUpForm,
+    WriteUpWorkspace,
     activeSection,
     activeTab,
     authorisedVhcItems,
@@ -93,7 +97,9 @@ export default function TechJobDetailPageUi(props) {
     canClockIntoMotHandoff,
     canCompleteJob,
     canCompleteVhc,
+    canEditTrackingLocations,
     canManageDocuments,
+    canEditWorkspace,
     clockInLoading,
     clockOutLoading,
     completeJobFeedback,
@@ -116,8 +122,15 @@ export default function TechJobDetailPageUi(props) {
     handlePartsRequestSubmit,
     handleRenameDocument,
     handleReplaceDocument,
+    handleMarkAllRequestsComplete,
+    handleNotesChange,
+    handleSaveRequestWorkDetails,
+    handleSaveWriteUp,
     handleSectionComplete,
     handleSectionDismiss,
+    handleTrackerSave,
+    handleUpdateRequests,
+    handleUpdateRequestStatus,
     isHeaderCompleteStatus,
     isReopenMode,
     isVhcCompleted,
@@ -131,6 +144,7 @@ export default function TechJobDetailPageUi(props) {
     notes,
     notesLoading,
     notesSubmitting,
+    actingUserNumericId,
     openSection,
     partRequestDescription,
     partRequestQuantity,
@@ -158,6 +172,7 @@ export default function TechJobDetailPageUi(props) {
     setShowGreenItems,
     setShowJobTypesPopup,
     setShowVhcSummary,
+    setTrackerQuickModalOpen,
     showAddNote,
     showDocumentsPopup,
     showGreenItems,
@@ -166,6 +181,7 @@ export default function TechJobDetailPageUi(props) {
     showVhcSummary,
     techStatusDisplay,
     trackerEntry,
+    trackerQuickModalOpen,
     user,
     vehicle,
     vhcAssistantState,
@@ -175,6 +191,9 @@ export default function TechJobDetailPageUi(props) {
     vhcSummaryItems,
     vhcTabAmberReady,
     visibleTabs,
+    workspaceClockingEntries,
+    workspaceJobData,
+    workspaceOverallStatusId,
     writeUpTechComplete,
   } = props; // receive page logic props.
 
@@ -733,18 +752,37 @@ export default function TechJobDetailPageUi(props) {
             radius="var(--radius-sm)"
             padding="12px 14px"
             style={{
+              flexDirection: "row",
+              alignItems: "stretch",
               minWidth: 0,
               overflow: "hidden",
-              justifyContent: "center"
+              minHeight: "68px",
+              cursor: canEditTrackingLocations ? "pointer" : "default",
+              opacity: canEditTrackingLocations ? 1 : 0.75
             }}
           >
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "12px",
-              width: "100%"
-            }}>
-              <div style={{ minWidth: 0 }}>
+            <div
+              onClick={() => {
+                if (canEditTrackingLocations) {
+                  setTrackerQuickModalOpen(true);
+                }
+              }}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "stretch",
+                flex: 1,
+                width: "100%",
+                gap: "10px"
+              }}
+            >
+              <div style={{
+                flex: 1,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center"
+              }}>
                 <div style={{
                   fontSize: "12px",
                   lineHeight: 1.1,
@@ -762,7 +800,20 @@ export default function TechJobDetailPageUi(props) {
                   {keyLocationDisplay}
                 </div>
               </div>
-              <div style={{ minWidth: 0 }}>
+              <div style={{
+                width: "1px",
+                backgroundColor: "var(--surface)",
+                flexShrink: 0
+              }} />
+              <div style={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: "right",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "flex-end"
+              }}>
                 <div style={{
                   fontSize: "12px",
                   lineHeight: 1.1,
@@ -800,6 +851,7 @@ export default function TechJobDetailPageUi(props) {
             flexDirection: "row",
             flexWrap: "nowrap",
             alignItems: "center",
+            justifyContent: "flex-start",
             overflowX: "auto",
             overflowY: "hidden",
             flex: "0 0 auto",
@@ -839,28 +891,37 @@ export default function TechJobDetailPageUi(props) {
       })}
         </LayerTheme>
 
-        {/* Main Content Area with Scrolling */}
-        <LayerTheme as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="app-layout-page-card" backgroundToken="page-card-bg-alt" shell radius="var(--radius-xs)" padding="24px" style={{
+        {/* All technician tabs share the same canonical content shell as the
+            main job-card page. The transparent scroll region preserves the
+            landscape technician workflow without changing the shell design. */}
+        <LayerTheme as="section" className="app-layout-section-shell" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="app-layout-page-card" backgroundToken="theme" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-page="My job detail" data-dev-tab={activeTab} data-dev-card-section="tab content shell" data-dev-text-preview={`Tab content shell: ${activeTab}`} data-dev-active-tab={activeTab} data-dev-active-tab-label={activeTab} style={{
       flex: 1,
       overflow: "hidden",
       minHeight: 0
     }}>
           
-          <DevLayoutSection as="div" sectionKey="myjob-main-scroll" sectionType="section-shell" parentKey="myjob-main-content" backgroundToken="none" style={{
+          <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-main-scroll" sectionType="section-shell" parentKey="myjob-main-content" backgroundToken="none" style={{
         flex: 1,
         overflowY: "auto",
-        paddingRight: "8px",
         minHeight: 0
       }}>
           
           {/* OVERVIEW TAB */}
-          {activeTab === "overview" && <DevLayoutSection as="div" sectionKey="myjob-tab-overview" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
+          {activeTab === "overview" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-overview" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Overview" data-dev-card-section="overview tab" data-dev-text-preview="Overview tab" data-dev-auto-outline="cards">
+              {CustomerRequestsTab && workspaceJobData ? <CustomerRequestsTab
+                jobData={workspaceJobData}
+                canEdit={canEditWorkspace}
+                onUpdate={handleUpdateRequests}
+                onUpdateRequestStatus={handleUpdateRequestStatus}
+                onNavigateTab={setActiveTab}
+                clockingEntries={workspaceClockingEntries}
+                overallStatusId={workspaceOverallStatusId}
+                vhcChecks={vhcChecks}
+                notes={notes}
+                partsJobItems={workspaceJobData.parts_job_items || []}
+              /> : <>
               {/* Job Details */}
-              <LayerSurface as="div" sectionKey="myjob-overview-details" sectionType="content-card" parentKey="myjob-tab-overview" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
+              <LayerSurface as="section" sectionKey="myjob-overview-details" sectionType="content-card" parentKey="myjob-tab-overview" backgroundToken="surface" radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
                 <h3 style={{
               fontSize: "18px",
               fontWeight: "600",
@@ -1111,7 +1172,7 @@ export default function TechJobDetailPageUi(props) {
               }}>{jobCard.cosmeticNotes}</p>
                   </div>}
               </LayerSurface>
-
+              </>}
             </DevLayoutSection>}
 
           {/* VHC TAB */}
@@ -1881,7 +1942,16 @@ export default function TechJobDetailPageUi(props) {
             </DevLayoutSection>}
 
           {/* NOTES TAB */}
-          {activeTab === "notes" && <LayerSurface as="section" className="app-layout-section-shell" sectionKey="myjob-tab-notes" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="surface" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-page="My job detail" data-dev-tab="Notes" data-dev-card-section="tab content shell" data-dev-text-preview="Tab content shell: Notes">
+          {activeTab === "notes" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-notes" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Notes" data-dev-card-section="notes tab" data-dev-text-preview="Notes tab" data-dev-auto-outline="cards" style={{
+            gap: "var(--space-4)"
+          }}>
+              {NotesTabNew && workspaceJobData ? <NotesTabNew
+                jobData={workspaceJobData}
+                canEdit={canEditWorkspace}
+                actingUserNumericId={actingUserNumericId}
+                onNotesChange={handleNotesChange}
+                noteHistoryJobs={[]}
+              /> : <>
               <DevLayoutSection as="div" sectionKey="myjob-notes-toolbar" sectionType="toolbar" parentKey="myjob-tab-notes" backgroundToken="none" style={{
             display: "flex",
             justifyContent: "space-between",
@@ -2046,7 +2116,8 @@ export default function TechJobDetailPageUi(props) {
                       </DevLayoutSection>;
             })}
                 </DevLayoutSection>}
-            </LayerSurface>}
+              </>}
+            </DevLayoutSection>}
 
           {/* WRITE-UP TAB */}
           <DevLayoutSection
@@ -2065,7 +2136,41 @@ export default function TechJobDetailPageUi(props) {
               display: activeTab === "write-up" ? undefined : "none"
             }}
           >
-            <WriteUpForm jobNumber={jobNumber} jobCardData={jobData} showHeader={false} onCompletionChange={nextStatus => {
+            {WriteUpWorkspace && workspaceJobData ? <WriteUpWorkspace
+              jobData={workspaceJobData}
+              canEdit={canEditWorkspace}
+              onUpdate={handleUpdateRequests}
+              onUpdateRequestStatus={handleUpdateRequestStatus}
+              onSaveRequestWorkDetails={handleSaveRequestWorkDetails}
+              onMarkAllRequestsComplete={handleMarkAllRequestsComplete}
+              onSaveWriteUp={handleSaveWriteUp}
+              onCompletionChange={nextStatus => {
+                setJobData(prev => {
+                  if (!prev?.jobCard) return prev;
+                  const nextWriteUp = {
+                    ...(prev.jobCard.writeUp || {}),
+                    completion_status: nextStatus
+                  };
+                  return {
+                    ...prev,
+                    jobCard: {
+                      ...prev.jobCard,
+                      completionStatus: nextStatus,
+                      writeUp: nextWriteUp
+                    }
+                  };
+                });
+              }}
+              onTasksSnapshotChange={nextTasks => {
+                setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
+              }}
+              onNavigateTab={setActiveTab}
+              clockingEntries={workspaceClockingEntries}
+              overallStatusId={workspaceOverallStatusId}
+              vhcChecks={vhcChecks}
+              notes={notes}
+              partsJobItems={workspaceJobData.parts_job_items || []}
+            /> : <WriteUpForm jobNumber={jobNumber} jobCardData={jobData} showHeader={false} onCompletionChange={nextStatus => {
               setJobData(prev => {
                 if (!prev?.jobCard) return prev;
                 const nextWriteUp = {
@@ -2083,11 +2188,11 @@ export default function TechJobDetailPageUi(props) {
               });
             }} onTasksSnapshotChange={nextTasks => {
               setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
-            }} />
+            }} />}
           </DevLayoutSection>
 
           {/* DOCUMENTS TAB */}
-          {activeTab === "documents" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-documents" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell>
+          {activeTab === "documents" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-documents" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Documents" data-dev-card-section="documents tab" data-dev-text-preview="Documents tab" data-dev-auto-outline="cards">
               <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
             </DevLayoutSection>}
           </DevLayoutSection>
@@ -2095,6 +2200,18 @@ export default function TechJobDetailPageUi(props) {
 
         {/* Bottom Action Bar */}
       <DocumentsUploadPopup open={showDocumentsPopup} onClose={() => setShowDocumentsPopup(false)} jobId={jobData?.jobCard?.id ? String(jobData.jobCard.id) : null} userId={user?.user_id || dbUserId || null} onAfterUpload={fetchJobData} existingDocuments={jobDocuments} />
+      {LocationUpdateModal && trackerQuickModalOpen && <LocationUpdateModal
+        entry={{
+          jobNumber: jobCard?.jobNumber || jobNumber || "",
+          reg: vehicle?.reg || "",
+          customer: customerName,
+          serviceType: jobCard?.type || jobCard?.serviceType || "",
+          vehicleLocation: trackerEntry?.vehicleLocation || "N/A",
+          keyLocation: trackerEntry?.keyLocation || "N/A"
+        }}
+        onClose={() => setTrackerQuickModalOpen(false)}
+        onSave={handleTrackerSave}
+      />}
       {showJobTypesPopup && <ModalPortal>
           <div className="popup-backdrop" onClick={event => {
       if (event.target === event.currentTarget) {

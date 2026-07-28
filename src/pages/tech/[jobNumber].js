@@ -17,6 +17,11 @@ import {
   updateJob,
   updateJobStatus,
   deleteJobFile,
+  markAllJobRequestsComplete,
+  saveWriteUpToDatabase,
+  updateJobRequestStatus,
+  updateJobRequestWorkDetails,
+  upsertJobRequestsForJob,
   summarizeWriteUpTasks } from
 "@/lib/database/jobs";
 import { getVHCChecksByJob, updateVhcCheck } from "@/lib/database/vhc";
@@ -25,6 +30,12 @@ import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database
 import { fetchTrackingEntryForJob } from "@/lib/database/tracking";
 import { supabase } from "@/lib/database/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import NotesTabNew from "@/components/NotesTab";
+import {
+  CustomerRequestsTab,
+  LocationUpdateModal,
+  WriteUpWorkspace
+} from "@/pages/job-cards/[jobNumber]";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
@@ -67,6 +78,7 @@ import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { buildApiUrl } from "@/utils/apiClient";
 import themeConfig, {
   vhcCardStates // VHC section state colours — still comes from appTheme
 } from "@/styles/appTheme";
@@ -464,6 +476,7 @@ export default function TechJobDetailPage() {
   // State management
   const [jobData, setJobData] = useState(null);
   const [trackerEntry, setTrackerEntry] = useState(null);
+  const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
   const [statusSnapshot, setStatusSnapshot] = useState(null);
   const [vhcChecks, setVhcChecks] = useState([]);
   const [clockingStatus, setClockingStatus] = useState(null);
@@ -568,6 +581,32 @@ export default function TechJobDetailPage() {
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardStatus = jobData?.jobCard?.status || "";
   const jobRequiresVhc = jobData?.jobCard?.vhcRequired === true;
+  const workspaceJobData = useMemo(() => {
+    if (!jobData?.jobCard) return null;
+    return {
+      ...jobData.jobCard,
+      files: jobDocuments,
+      vhcChecks,
+      notes
+    };
+  }, [jobData?.jobCard, jobDocuments, notes, vhcChecks]);
+  const workspaceClockingEntries = useMemo(
+    () =>
+      clockingRows.map((row) => {
+        const startedAt = row?.clock_in ? Date.parse(row.clock_in) : Number.NaN;
+        const stoppedAt = row?.clock_out ? Date.parse(row.clock_out) : clockingNow;
+        const durationMs =
+          Number.isFinite(startedAt) && Number.isFinite(stoppedAt) && stoppedAt > startedAt
+            ? stoppedAt - startedAt
+            : 0;
+        return {
+          ...row,
+          requestId: row?.request_id ?? null,
+          hoursWorked: Number((durationMs / (1000 * 60 * 60)).toFixed(2))
+        };
+      }),
+    [clockingNow, clockingRows]
+  );
   const visibleTabs = useMemo(() => {
     const tabs = ["overview"];
     if (jobRequiresVhc) {
@@ -971,10 +1010,11 @@ export default function TechJobDetailPage() {
     }
   }, [jobCardId, jobNumber]);
 
-  const fetchJobData = useCallback(async () => {
+  const fetchJobData = useCallback(async (options = {}) => {
     if (!jobNumber) return;
 
-    setLoading(true);
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const { data: job, error: jobError } = await getJobByNumber(jobNumber);
 
@@ -1018,7 +1058,7 @@ export default function TechJobDetailPage() {
       alert("Failed to load job");
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [
   jobNumber,
@@ -1031,6 +1071,189 @@ export default function TechJobDetailPage() {
   loadVhcCustomerStatus,
   fetchClockedHoursTotal]
   );
+
+  const refreshWorkspaceData = useCallback(async () => {
+    await fetchJobData({ silent: true });
+    await fetchClockedHoursTotal();
+  }, [fetchClockedHoursTotal, fetchJobData]);
+
+  const handleTrackerSave = useCallback(async (form) => {
+    try {
+      const resolvedJobNumber = String(
+        jobData?.jobCard?.jobNumber || form?.jobNumber || jobNumber || ""
+      ).trim().toUpperCase();
+      const resolvedReg = String(
+        jobData?.vehicle?.reg ||
+        jobData?.jobCard?.vehicleReg ||
+        jobData?.jobCard?.vehicle?.reg ||
+        form?.reg ||
+        ""
+      ).trim().toUpperCase();
+      const payload = {
+        actionType: form?.actionType || "location_update",
+        jobId: jobData?.jobCard?.id || null,
+        jobNumber: resolvedJobNumber,
+        vehicleId:
+          jobData?.vehicle?.vehicleId ||
+          jobData?.vehicle?.vehicle_id ||
+          jobData?.jobCard?.vehicleId ||
+          jobData?.jobCard?.vehicle_id ||
+          null,
+        vehicleReg: resolvedReg,
+        keyLocation: form?.keyLocation,
+        vehicleLocation: form?.vehicleLocation,
+        notes: form?.notes,
+        performedBy: dbUserId || null,
+        vehicleStatus: form?.vehicleStatus || form?.status
+      };
+
+      const response = await fetch(buildApiUrl("/api/tracking/next-action"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const responsePayload = await response
+        .json()
+        .catch(() => ({ message: "Failed to read tracking response" }));
+
+      if (!response.ok) {
+        throw new Error(responsePayload?.message || "Failed to save tracking entry");
+      }
+
+      const keyEvent = responsePayload?.data?.keyEvent;
+      const vehicleEvent = responsePayload?.data?.vehicleEvent;
+      setTrackerEntry((previous) => ({
+        ...previous,
+        jobId: payload.jobId ?? previous?.jobId ?? null,
+        jobNumber: resolvedJobNumber || previous?.jobNumber,
+        vehicleReg: resolvedReg || previous?.vehicleReg,
+        reg: resolvedReg || previous?.reg,
+        keyLocation: keyEvent?.action || form?.keyLocation,
+        vehicleLocation: vehicleEvent?.location || form?.vehicleLocation,
+        status: vehicleEvent?.status || form?.vehicleStatus || form?.status || previous?.status,
+        updatedAt:
+          vehicleEvent?.occurred_at ||
+          keyEvent?.occurred_at ||
+          new Date().toISOString()
+      }));
+
+      const trackingResult = await fetchTrackingEntryForJob({
+        jobId: payload.jobId,
+        jobNumber: resolvedJobNumber,
+        vehicleReg: resolvedReg
+      });
+      if (trackingResult.success && trackingResult.data) {
+        setTrackerEntry(trackingResult.data);
+      }
+      setTrackerQuickModalOpen(false);
+    } catch (saveError) {
+      console.error("Failed to save tracking entry", saveError);
+    }
+  }, [dbUserId, jobData, jobNumber]);
+
+  const handleUpdateRequests = useCallback(async (updatedRequests) => {
+    if (!jobCardId) return;
+
+    const customerRequests = Array.isArray(updatedRequests)
+      ? updatedRequests
+      : Array.isArray(updatedRequests?.customerRequests)
+        ? updatedRequests.customerRequests
+        : [];
+    const normalized = customerRequests.map((entry, index) => ({
+      requestId: entry?.requestId ?? entry?.request_id ?? null,
+      presetId: entry?.presetId ?? entry?.job_request_preset_id ?? null,
+      text: entry?.text ?? entry?.description ?? "",
+      time: entry?.time ?? entry?.hours ?? "",
+      paymentType: entry?.paymentType ?? entry?.jobType ?? "Customer",
+      noteText: entry?.noteText ?? entry?.note_text ?? null,
+      prePickLocation: entry?.prePickLocation ?? entry?.pre_pick_location ?? null,
+      labourPrice: entry?.labourPrice ?? "",
+      menuPrice: entry?.menuPrice ?? "",
+      setPrice: entry?.setPrice ?? entry?.price ?? "",
+      discount: entry?.discount ?? "",
+      specialRate: Boolean(entry?.specialRate),
+      sortOrder: index + 1
+    }));
+
+    try {
+      const requestResult = await upsertJobRequestsForJob(jobCardId, normalized);
+      if (!requestResult?.success) {
+        throw requestResult?.error || new Error("Failed to update job requests");
+      }
+
+      const requestPayload = normalized.map((entry) => ({
+        text: entry.text,
+        time: entry.time,
+        paymentType: entry.paymentType,
+        labourPrice: entry.labourPrice,
+        menuPrice: entry.menuPrice,
+        setPrice: entry.setPrice,
+        discount: entry.discount,
+        specialRate: entry.specialRate,
+        noteText: entry.noteText
+      }));
+      const legacyResult = await updateJob(jobCardId, { requests: requestPayload });
+      if (!legacyResult?.success) {
+        throw legacyResult?.error || new Error("Failed to update legacy request details");
+      }
+      await refreshWorkspaceData();
+    } catch (requestError) {
+      console.error("Failed to update technician job requests:", requestError);
+    }
+  }, [jobCardId, refreshWorkspaceData]);
+
+  const handleUpdateRequestStatus = useCallback(async (requestId, nextStatus) => {
+    if (!requestId) return;
+    try {
+      const result = await updateJobRequestStatus(requestId, nextStatus);
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to update request status");
+      }
+      await refreshWorkspaceData();
+    } catch (requestError) {
+      console.error("Failed to update technician request status:", requestError);
+    }
+  }, [refreshWorkspaceData]);
+
+  const handleSaveRequestWorkDetails = useCallback(async (requestId, fields = {}) => {
+    if (!requestId) return;
+    try {
+      const result = await updateJobRequestWorkDetails(requestId, fields);
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to save request work details");
+      }
+      await refreshWorkspaceData();
+    } catch (requestError) {
+      console.error("Failed to save technician request details:", requestError);
+    }
+  }, [refreshWorkspaceData]);
+
+  const handleMarkAllRequestsComplete = useCallback(async () => {
+    if (!jobCardId) return;
+    try {
+      const result = await markAllJobRequestsComplete(jobCardId);
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to mark all requests complete");
+      }
+      await refreshWorkspaceData();
+    } catch (requestError) {
+      console.error("Failed to complete technician job requests:", requestError);
+    }
+  }, [jobCardId, refreshWorkspaceData]);
+
+  const handleSaveWriteUp = useCallback(async (writeUpData) => {
+    const targetJobNumber = jobData?.jobCard?.jobNumber || jobNumber;
+    if (!targetJobNumber) return;
+    try {
+      const result = await saveWriteUpToDatabase(targetJobNumber, writeUpData);
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to save write-up");
+      }
+      await refreshWorkspaceData();
+    } catch (writeUpError) {
+      console.error("Failed to save technician write-up:", writeUpError);
+    }
+  }, [jobData?.jobCard?.jobNumber, jobNumber, refreshWorkspaceData]);
 
   useEffect(() => {
     fetchJobData();
@@ -1202,7 +1425,15 @@ export default function TechJobDetailPage() {
       return;
     }
 
-    const confirmed = await confirm(`Clock out from Job ${jobCardNumber}?`);
+    const confirmed = await confirm({
+      details: [
+        {
+          label: "",
+          value: `Clock out from Job ${jobCardNumber}?`,
+          tone: "info"
+        }
+      ]
+    });
     if (!confirmed) return;
 
     setClockOutLoading(true);
@@ -2854,7 +3085,7 @@ export default function TechJobDetailPage() {
 
   }
 
-  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} ModalPortal={ModalPortal} newNote={newNote} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} WriteUpForm={WriteUpForm} writeUpTechComplete={writeUpTechComplete} />;
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTechComplete={writeUpTechComplete} />;
 
 
 
@@ -4876,6 +5107,7 @@ function DocumentsTab({
   const [isRenamingPreview, setIsRenamingPreview] = useState(false);
   const [previewRenameValue, setPreviewRenameValue] = useState("");
   const [editingDoc, setEditingDoc] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
@@ -4884,6 +5116,15 @@ function DocumentsTab({
       return bTime - aTime;
     });
   }, [documents]);
+  const filteredDocuments = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    if (!normalizedSearch) return sortedDocuments;
+    return sortedDocuments.filter((documentRow) =>
+      String(documentRow?.name || documentRow?.file_name || "")
+        .toLowerCase()
+        .includes(normalizedSearch)
+    );
+  }, [searchQuery, sortedDocuments]);
 
   const formatDate = (value) => {
     if (!value) return "";
@@ -5098,6 +5339,19 @@ function DocumentsTab({
         <span style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 500 }}>
           {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
         </span>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search documents…"
+          aria-label="Search documents"
+          style={{
+            flex: "1 1 200px",
+            minWidth: "160px",
+            maxWidth: "360px",
+            padding: "var(--control-padding)",
+            fontSize: "14px"
+          }} />
         {typeof onManageDocuments === "function" &&
         <button
           type="button"
@@ -5132,9 +5386,27 @@ function DocumentsTab({
           lineHeight: 1.6
         }}>
         
-          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
+        </LayerSurface> :
+      filteredDocuments.length === 0 ?
+      <LayerSurface
+        as="div"
+        sectionKey="myjob-documents-no-matches"
+        sectionType="content-card"
+        parentKey="myjob-documents-panel"
+        radius="var(--radius-md)"
+        padding="48px 24px"
+        gap={undefined}
+        style={{
+          textAlign: "center",
+          color: "var(--text-1)",
+          fontSize: "14px",
+          lineHeight: 1.6
+        }}>
+
+          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No matching documents</div>
+          No documents match “{searchQuery.trim()}”.
         </LayerSurface> :
 
       <div
@@ -5144,7 +5416,7 @@ function DocumentsTab({
           gap: "14px"
         }}>
         
-          {sortedDocuments.map((doc) => {
+          {filteredDocuments.map((doc) => {
           const docName = doc.name || doc.file_name || "Document";
           const docType = doc.type || doc.file_type || "";
           const docUrl = doc.url || doc.file_url || "";

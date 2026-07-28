@@ -1009,6 +1009,31 @@ html.staff-scope div.news-card {
   }
 }
 
+/* Shared ConfirmationDialog colour contract.
+   The dialog's two direct action buttons both use the component's 96px
+   minimum width, which scopes these rules without recolouring other popups or
+   the semantic detail tiles between the header and actions. */
+html.staff-scope
+  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
+  > div:first-child
+  p {
+  color: var(--text-1) !important;
+}
+
+html.staff-scope
+  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
+  > div:last-child
+  > button:first-child {
+  color: var(--text-1) !important;
+}
+
+html.staff-scope
+  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
+  > div:last-child
+  > button:last-child {
+  color: var(--text-2) !important;
+}
+
 /* Compact staff popup/section header convention.
    New operational popups and sections use one clear title plus actions only.
    Do not add eyebrow/kicker labels or descriptive header paragraphs. Put any

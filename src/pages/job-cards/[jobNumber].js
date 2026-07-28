@@ -5035,7 +5035,7 @@ class JobCardErrorBoundary extends React.Component {
 // ============================================
 
 // Customer Requests Tab
-function CustomerRequestsTab({
+export function CustomerRequestsTab({
   jobData,
   canEdit,
   onUpdate,
@@ -6511,7 +6511,7 @@ function CustomerRequestsTab({
         `}</style>
       </div>
 
-      {/* Additional Job Info */}
+      {/* Cosmetic damage belongs only to the first/customer-requests tab. */}
       <div style={{ marginTop: "0", paddingTop: "0", borderTop: "none" }}>
         {jobData.cosmeticNotes &&
         <div style={{ marginBottom: "16px" }}>
@@ -6540,7 +6540,7 @@ function CustomerRequestsTab({
 // toggles, and the summary KPIs. Completion is bridged back into job_writeups
 // (via onSaveWriteUp → saveWriteUpToDatabase) plus the optimistic write-up
 // handlers, so invoice gating and per-request "Completed" status keep working.
-function WriteUpWorkspace({
+export function WriteUpWorkspace({
   jobData,
   canEdit,
   onUpdate,
@@ -8235,30 +8235,11 @@ function WriteUpWorkspace({
         `}</style>
       </div>
 
-      {/* Additional Job Info */}
-      <div style={{ marginTop: "0", paddingTop: "0", borderTop: "none" }}>
-        {jobData.cosmeticNotes &&
-        <div style={{ marginBottom: "16px" }}>
-            <strong style={{ fontSize: "14px", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
-              Cosmetic Damage Notes:
-            </strong>
-            <div style={{
-            padding: "12px",
-            backgroundColor: "var(--warning-surface)",
-            borderRadius: "var(--control-radius)"
-          }}>
-              <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
-                {jobData.cosmeticNotes}
-              </p>
-            </div>
-          </div>
-        }
-      </div>
     </div>);
 
 }
 
-function LocationUpdateModal({ entry, onClose, onSave }) {
+export function LocationUpdateModal({ entry, onClose, onSave }) {
   const [form, setForm] = useState(() => ({
     ...emptyTrackingForm,
     ...entry,
@@ -8303,15 +8284,16 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
         }}>
 
         <div>
-          <h2 style={{ margin: 0 }}>Edit existing</h2>
+          <h2 style={{ margin: 0, color: "var(--text-1)" }}>Edit existing</h2>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--text-1)", fontWeight: 600 }}>
               Key Location
             </label>
             <DropdownField
+              className="location-update-text-field"
               options={keyLocationOptions}
               value={form.keyLocation}
               onValueChange={(value) => handleChange("keyLocation", value)}
@@ -8323,10 +8305,11 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--text-1)", fontWeight: 600 }}>
               Vehicle Location
             </label>
             <DropdownField
+              className="location-update-text-field"
               options={vehicleLocationOptions}
               value={form.vehicleLocation}
               onValueChange={(value) => handleChange("vehicleLocation", value)}
@@ -8337,6 +8320,15 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
 
           </div>
         </div>
+        {/* This local selector prevents theme variants from recolouring the
+            location values without changing the shared Dropdown API globally. */}
+        <style jsx global>{`
+          html.staff-scope .location-update-text-field .dropdown-api__control,
+          html.staff-scope .location-update-text-field .dropdown-api__value,
+          html.staff-scope .location-update-text-field .dropdown-api__chevron {
+            color: var(--text-1) !important;
+          }
+        `}</style>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button
@@ -9252,7 +9244,7 @@ function SchedulingTab({
             </span>
           </label>
           {!confirmCustomerDetails && canEdit &&
-          <div style={{ marginTop: "8px", marginLeft: "26px", fontSize: "12px", color: "var(--danger)", fontWeight: "500" }}>
+          <div style={{ marginTop: "8px", marginLeft: "26px", fontSize: "12px", color: "var(--text-1)", fontWeight: "500" }}>
               Please confirm customer details before saving.
             </div>
           }
