@@ -161,7 +161,7 @@ export default function InternalElectricsDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+      <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
       </Button>
       <Button variant="primary" size="sm" onClick={() => onComplete(data)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>

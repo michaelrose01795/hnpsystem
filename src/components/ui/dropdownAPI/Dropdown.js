@@ -1,5 +1,5 @@
 // file location: src/components/ui/dropdownAPI/Dropdown.js
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
 import {
@@ -171,7 +171,7 @@ export default function Dropdown({
     setIsOpen(false);
   };
 
-  const scrollMenuBy = (deltaY) => {
+  const scrollMenuBy = useCallback((deltaY) => {
     const menuNode = menuRef.current;
     if (!menuNode) return false;
     const maxScrollTop = menuNode.scrollHeight - menuNode.clientHeight;
@@ -180,20 +180,20 @@ export default function Dropdown({
     if (nextScrollTop === menuNode.scrollTop) return false;
     menuNode.scrollTop = nextScrollTop;
     return true;
-  };
+  }, []);
 
-  const handleMenuWheel = (event) => {
+  const handleMenuWheel = useCallback((event) => {
     if (scrollMenuBy(event.deltaY)) {
       event.preventDefault();
       event.stopPropagation();
     }
-  };
+  }, [scrollMenuBy]);
 
-  const handleMenuTouchStart = (event) => {
+  const handleMenuTouchStart = useCallback((event) => {
     touchYRef.current = event.touches?.[0]?.clientY ?? null;
-  };
+  }, []);
 
-  const handleMenuTouchMove = (event) => {
+  const handleMenuTouchMove = useCallback((event) => {
     const nextY = event.touches?.[0]?.clientY ?? null;
     const previousY = touchYRef.current;
     if (nextY === null || previousY === null) return;
@@ -202,11 +202,37 @@ export default function Dropdown({
       event.stopPropagation();
     }
     touchYRef.current = nextY;
-  };
+  }, [scrollMenuBy]);
 
-  const handleMenuTouchEnd = () => {
+  const handleMenuTouchEnd = useCallback(() => {
     touchYRef.current = null;
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const menuNode = menuRef.current;
+    if (!menuNode) return undefined;
+
+    menuNode.addEventListener("wheel", handleMenuWheel, { passive: false });
+    menuNode.addEventListener("touchstart", handleMenuTouchStart, { passive: true });
+    menuNode.addEventListener("touchmove", handleMenuTouchMove, { passive: false });
+    menuNode.addEventListener("touchend", handleMenuTouchEnd, { passive: true });
+    menuNode.addEventListener("touchcancel", handleMenuTouchEnd, { passive: true });
+
+    return () => {
+      menuNode.removeEventListener("wheel", handleMenuWheel);
+      menuNode.removeEventListener("touchstart", handleMenuTouchStart);
+      menuNode.removeEventListener("touchmove", handleMenuTouchMove);
+      menuNode.removeEventListener("touchend", handleMenuTouchEnd);
+      menuNode.removeEventListener("touchcancel", handleMenuTouchEnd);
+    };
+  }, [
+    handleMenuTouchEnd,
+    handleMenuTouchMove,
+    handleMenuTouchStart,
+    handleMenuWheel,
+    isOpen,
+  ]);
 
   const handleControlKeyDown = (event) => {
     if (disabled) return;
@@ -400,11 +426,6 @@ export default function Dropdown({
               role="listbox"
               aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
               ref={menuRef}
-              onWheel={handleMenuWheel}
-              onTouchStart={handleMenuTouchStart}
-              onTouchMove={handleMenuTouchMove}
-              onTouchEnd={handleMenuTouchEnd}
-              onTouchCancel={handleMenuTouchEnd}
               style={
                 usePortal
                   ? (menuPosition ? { ...(mergedMenuStyle || {}), ...menuPosition } : mergedMenuStyle)

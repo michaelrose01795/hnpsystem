@@ -11,6 +11,7 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
@@ -203,35 +204,6 @@ const computeAxleSeverityRank = (padSection, discSection) => {
   );
 };
 
-const tabGroupShellStyle = {
-  display: "inline-flex",
-  gap: "6px",
-  padding: "6px",
-  borderRadius: "var(--control-radius)",
-  border: "none",
-  background: "var(--tab-container-bg)",
-  alignItems: "center",
-  flexWrap: "nowrap",
-};
-
-const buildTabPillStyle = (active = false) => ({
-  flex: "0 0 auto",
-  borderRadius: "var(--control-radius-xs)",
-  border: "none",
-  minHeight: "var(--control-height-xs)",
-  padding: "var(--control-padding-xs)",
-  fontSize: "0.86rem",
-  fontWeight: 600,
-  cursor: "pointer",
-  background: active ? "var(--primary)" : "transparent",
-  color: active ? "var(--text-2)" : "var(--text-1)",
-  transition: "background-color 0.18s ease, color 0.18s ease",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  whiteSpace: "nowrap",
-});
-
 const PadsSection = ({
   title,
   padData = {},
@@ -307,27 +279,22 @@ const DiscsSection = ({
           {title}
         </h3>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <div style={tabGroupShellStyle}>
-            {["measurements", "visual"].map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => onTabChange?.(tab)}
-                style={buildTabPillStyle(activeTab === tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-            {showDrumButton && showSwitchInTabs ? (
-              <button
-                type="button"
-                onClick={onSwitchToDrum}
-                style={buildTabPillStyle(false)}
-              >
-                Switch to Drum Brakes
-              </button>
-            ) : null}
-          </div>
+          <TabGroup
+            items={[
+              { value: "measurements", label: "Measurements" },
+              { value: "visual", label: "Visual" },
+            ]}
+            value={activeTab}
+            onChange={onTabChange}
+            ariaLabel={`${title} inspection method`}
+            devSectionKey={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}-tabs`}
+            devSectionParent={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}-toolbar`}
+          />
+          {showDrumButton && showSwitchInTabs ? (
+            <Button variant="secondary" size="sm" onClick={onSwitchToDrum}>
+              Switch to Drum Brakes
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -381,19 +348,9 @@ const DiscsSection = ({
 
       {showDrumButton && !showSwitchInTabs && (
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
           onClick={onSwitchToDrum}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            border: "none",
-            color: palette.accent,
-            background: "var(--control-bg)",
-            marginTop: "8px",
-          }}
         >
           Switch to Drum Brakes
         </Button>
@@ -414,15 +371,9 @@ const DrumBrakesSection = ({
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           Drum Brakes
         </h3>
-        <div style={tabGroupShellStyle}>
-          <button
-            type="button"
-            onClick={onSwitchToDisc}
-            style={buildTabPillStyle(false)}
-          >
-            Switch to Disc Brakes
-          </button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={onSwitchToDisc}>
+          Switch to Disc Brakes
+        </Button>
       </div>
 
       <div

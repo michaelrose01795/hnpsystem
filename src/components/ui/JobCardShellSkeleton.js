@@ -9,7 +9,14 @@
 // child and the Layout overlay renders a single grey slab on the next visit.
 
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import LayerTheme from "@/components/ui/LayerTheme";
+import {
+  TECHNICIAN_JOB_TABS,
+  TechnicianJobContentShell,
+  TechnicianJobHeader,
+  TechnicianJobSummaryCard,
+  TechnicianJobSummaryGrid,
+  TechnicianJobTabRow,
+} from "@/components/JobCards/TechnicianJobLayout";
 
 // ─── Shared token references (match the actual pages) ──────────────────────
 const shellBg = "var(--tab-container-bg)";
@@ -243,48 +250,19 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
 // ─── Tech "My Jobs" job card shell skeleton ─────────────────────────────────
 // Mirrors src/pages/job-cards/myjobs/[jobNumber].js.
 // Same data-dev-section strategy: leaf sections are individually annotated so the
-// fingerprint has real structural blocks (header, 3 stat cards, tab row, content).
-
-const MYJOB_TABS = ["Overview", "VHC", "Parts", "Notes", "Write-Up", "Documents"];
+// fingerprint has real structural blocks (header, 4 summary cards, tab row, content).
 
 export function MyJobCardShellSkeleton({ jobNumber }) {
   return (
-    <div
-      data-dev-section="1"
-      data-dev-section-key="myjob-page-shell"
-      data-dev-section-type="page-shell"
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        padding: "8px 16px",
-        overflowY: "auto",
-        gap: "12px",
-      }}
-    >
+    <>
       <SkeletonKeyframes />
 
       {/* Header */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="myjob-header"
-        data-dev-section-type="section-header-row"
-        data-dev-section-parent="myjob-page-shell"
-        style={{
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-          marginBottom: "12px",
-          padding: "12px",
-          backgroundColor: "var(--theme)",
-          borderRadius: radiusXs,
-          flexShrink: 0,
-        }}
-      >
+      <TechnicianJobHeader>
         {/* Job number — sits directly inside header, no nested card */}
         <h1
           style={{
-            color: "var(--primary)",
+            color: "var(--text-1)",
             fontSize: "28px",
             fontWeight: "700",
             margin: 0,
@@ -295,7 +273,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           {jobNumber}
         </h1>
 
-        <SkeletonBlock width="170px" height="14px" borderRadius="5px" />
+        <SkeletonBlock width="150px" height="12px" borderRadius="5px" />
 
         {/* Right side: status + buttons — sit directly inside header, no nested cards */}
         <div
@@ -318,104 +296,71 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
             }}
           >
             <SkeletonButton width="96px" />
-            <SkeletonButton width="112px" />
+            <SkeletonButton width="144px" />
           </div>
         </div>
-      </div>
+      </TechnicianJobHeader>
 
       {/* Quick stats — layout-only grid with cards matching the live page keys */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
-          gap: "12px",
-          marginBottom: "12px",
-          flexShrink: 0,
-        }}
-      >
+      <TechnicianJobSummaryGrid>
         {[
-          { key: "myjob-quick-stat-job-requests", label: "Loading Job Requests" },
-          { key: "myjob-quick-stat-parts-authorised", label: "Loading Parts authorised" },
-          { key: "myjob-quick-stat-clocked-hours", label: "Loading Clocked Hours" },
-        ].map((stat) => (
-          <LayerTheme
-            key={stat.key}
-            sectionKey={stat.key}
-            sectionType="stat-card"
-            parentKey="myjob-page-shell"
-            backgroundToken="theme"
-            data-dev-text-preview={stat.label}
-            radius={radiusXs}
-            padding="16px"
-            gap="8px"
+          { key: "myjob-summary-vehicle", primary: "58%", secondary: "76%" },
+          { key: "myjob-summary-customer", primary: "72%", secondary: "62%" },
+          { key: "myjob-quick-stat-clocked-hours", primary: "54%", secondary: "68%", stat: true },
+          { key: "myjob-summary-locations", primary: "82%", secondary: "82%" },
+        ].map((card) => (
+          <TechnicianJobSummaryCard
+            key={card.key}
+            sectionKey={card.key}
+            sectionType={card.stat ? "stat-card" : "content-card"}
+            data-dev-text-preview={`Loading ${card.key}`}
             style={{
-              alignItems: "center",
               justifyContent: "center",
-              minHeight: "108px",
+              minWidth: 0,
+              minHeight: "68px",
+              overflow: "hidden",
             }}
           >
-            <SkeletonBlock width="60px" height="28px" borderRadius="var(--control-radius)" />
-            <SkeletonBlock width="80px" height="12px" borderRadius="4px" />
-          </LayerTheme>
+            <SkeletonBlock width={card.primary} height={card.stat ? "24px" : "17px"} borderRadius="5px" />
+            <SkeletonBlock width={card.secondary} height="12px" borderRadius="4px" />
+          </TechnicianJobSummaryCard>
         ))}
-      </div>
+      </TechnicianJobSummaryGrid>
 
       {/* Tab row */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="myjob-tab-row"
-        data-dev-section-type="tab-row"
-        data-dev-section-parent="myjob-page-shell"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginBottom: "12px",
-          overflowX: "hidden",
-          flexShrink: 0,
-        }}
-      >
-        {MYJOB_TABS.map((label) => (
+      <TechnicianJobTabRow>
+        {TECHNICIAN_JOB_TABS.map((tab) => (
           <SkeletonBlock
-            key={label}
-            width={`${label.length * 9 + 20}px`}
-            height="34px"
+            key={tab.id}
+            width={`${tab.label.length * 8 + 24}px`}
+            height="35px"
             borderRadius="var(--control-radius)"
           />
         ))}
-      </div>
+      </TechnicianJobTabRow>
 
       {/* Tab content — wraps in myjob-main-content shell to match the live page's theme background */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="myjob-main-content"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="myjob-page-shell"
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          padding: "12px",
-          backgroundColor: "var(--theme)",
-          borderRadius: radiusXs,
-          minHeight: "240px",
-        }}
-      >
+      <TechnicianJobContentShell activeTab="overview">
         <div
+          data-dev-section="1"
+          data-dev-section-key="myjob-main-scroll"
+          data-dev-section-type="section-shell"
+          data-dev-section-parent="myjob-main-content"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "12px",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--page-stack-gap)",
+            overflowY: "auto",
+            minHeight: 0,
           }}
         >
-          <SkeletonBlock width="100%" height="110px" borderRadius={radiusXs} />
-          <SkeletonBlock width="100%" height="110px" borderRadius={radiusXs} />
+          <SkeletonBlock width="100%" height="112px" borderRadius="var(--section-card-radius)" />
+          <SkeletonBlock width="100%" height="72px" borderRadius="var(--section-card-radius)" />
+          <SkeletonBlock width="72%" height="14px" borderRadius="5px" />
+          <SkeletonBlock width="56%" height="14px" borderRadius="5px" />
         </div>
-        <SkeletonBlock width="100%" height="60px" borderRadius={radiusXs} />
-        <SkeletonBlock width="65%" height="14px" borderRadius="5px" />
-        <SkeletonBlock width="50%" height="14px" borderRadius="5px" />
-      </div>
-    </div>
+      </TechnicianJobContentShell>
+    </>
   );
 }

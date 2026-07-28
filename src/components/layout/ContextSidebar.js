@@ -117,7 +117,7 @@ export default function ContextSidebar({
         const expanded = activeModuleKey === module.key;
         return (
           <div key={module.key} style={{ marginTop: dashboards.length > 0 ? "10px" : undefined }}>
-            <button className={`app-btn app-btn--secondary app-btn--nav${expanded ? " is-active" : ""}`} type="button"
+            <button className={`app-btn app-btn--secondary app-btn--nav app-sidebar__module-button${expanded ? " is-active" : ""}`} type="button"
               onClick={() => onModuleToggle?.(module.key)} aria-expanded={expanded}
               {...navLinkProps(module.label)}>
               {renderNavContent(module.label, null, expanded)}

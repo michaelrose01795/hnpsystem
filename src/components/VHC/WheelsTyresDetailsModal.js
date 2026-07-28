@@ -11,6 +11,7 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 
@@ -852,7 +853,7 @@ export default function WheelsTyresDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+      <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
       </Button>
       <Button
@@ -979,61 +980,22 @@ export default function WheelsTyresDetailsModal({
               </div>
             </div>
             {activeWheel === "Spare" && (
-              <div
-                style={{
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  background: "var(--tab-container-bg)",
-                  padding: "6px",
-                  width: "100%",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "6px",
-                    width: "100%",
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                    scrollbarWidth: "thin",
-                    alignItems: "center",
-                    flexWrap: "nowrap",
-                  }}
-                >
-                  {SPARE_TYPES.map((type) => {
-                    const isActive = tyres.Spare.type === type.key;
-                    return (
-                      <button
-                        key={type.key}
-                        type="button"
-                        onClick={() =>
-                          setTyres((prev) => ({
-                            ...prev,
-                            Spare: { ...prev.Spare, type: type.key },
-                          }))
-                        }
-                        style={{
-                          flex: "0 0 auto",
-                          borderRadius: "var(--control-radius-xs)",
-                          border: "none",
-                          minHeight: "var(--control-height-xs)",
-                          padding: "var(--control-padding-xs)",
-                          fontSize: "0.86rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          background: isActive ? "var(--primary)" : "transparent",
-                          color: isActive ? "var(--text-2)" : "var(--text-1)",
-                          transition: "background-color 0.18s ease, color 0.18s ease",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {type.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <TabGroup
+                items={SPARE_TYPES.map((type) => ({
+                  value: type.key,
+                  label: type.label,
+                }))}
+                value={tyres.Spare.type}
+                onChange={(type) =>
+                  setTyres((prev) => ({
+                    ...prev,
+                    Spare: { ...prev.Spare, type },
+                  }))
+                }
+                ariaLabel="Spare wheel type"
+                devSectionKey="vhc-wheels-spare-type-tabs"
+                devSectionParent="vhc-wheels-details"
+              />
             )}
 
             <div

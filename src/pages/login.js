@@ -25,6 +25,7 @@ const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
 const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
+const LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY = "hnp-login-redirect-in-progress";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
 const warmStaffLandingPage = () =>
@@ -193,7 +194,20 @@ export default function LoginPage() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const devLoginInProgressRef = useRef(false);
+  const redirectInProgressRef = useRef(
+    typeof window !== "undefined" &&
+      window.sessionStorage.getItem(LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY) === "1"
+  );
   const finalizedPendingLogoutRef = useRef(false);
+  const setRedirectInProgress = React.useCallback((inProgress) => {
+    redirectInProgressRef.current = inProgress;
+    if (typeof window === "undefined") return;
+    if (inProgress) {
+      window.sessionStorage.setItem(LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY, "1");
+    } else {
+      window.sessionStorage.removeItem(LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY);
+    }
+  }, []);
 
   useTraceMount("LoginPage");
   useTraceValue("login.isRedirecting", isRedirecting);
@@ -305,6 +319,7 @@ export default function LoginPage() {
     }
     if (devLoginInProgressRef.current) return;
     devLoginInProgressRef.current = true;
+    setRedirectInProgress(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -319,12 +334,14 @@ export default function LoginPage() {
     if (result?.error || !result?.ok) {
       setErrorMessage("Developer Platform login is disabled in this environment.");
       devLoginInProgressRef.current = false;
+      setRedirectInProgress(false);
       return;
     }
     showAppShellLoading();
     setIsRedirecting(true);
     await router.replace("/dev");
-  }, [allowDevUserSelection, router]);
+    setRedirectInProgress(false);
+  }, [allowDevUserSelection, router, setRedirectInProgress]);
 
   // Developer login routes through NextAuth's credentials provider with the
   // picked user's database id. Server-side Supabase access is reliable, so the
@@ -346,6 +363,7 @@ export default function LoginPage() {
       return;
     }
     devLoginInProgressRef.current = true;
+    setRedirectInProgress(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -374,6 +392,7 @@ export default function LoginPage() {
         trace("login", "devLogin: signIn FAILED");
         setErrorMessage("Developer login failed. Session was not created.");
         devLoginInProgressRef.current = false;
+        setRedirectInProgress(false);
         return;
       }
 
@@ -391,6 +410,7 @@ export default function LoginPage() {
       // user without a hard reload (same path as the email/password login).
       trace("login", "devLogin: router.replace", target);
       await router.replace(target);
+      setRedirectInProgress(false);
       return;
     }
 
@@ -399,6 +419,7 @@ export default function LoginPage() {
     if (!result?.success) {
       setErrorMessage("Developer login failed. Session was not created.");
       devLoginInProgressRef.current = false;
+      setRedirectInProgress(false);
       return;
     }
 
@@ -411,11 +432,14 @@ export default function LoginPage() {
     await commitUserTheme(userId);
     trace("login", "devLogin (fallback): router.replace", target);
     await router.replace(target);
+    setRedirectInProgress(false);
   };
 
   // Email/password login — routes through NextAuth CredentialsProvider
   const handleDbLogin = async (e) => {
     e.preventDefault();
+    if (redirectInProgressRef.current) return;
+    setRedirectInProgress(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -431,6 +455,7 @@ export default function LoginPage() {
 
       if (result?.error) {
         setErrorMessage("User not found or incorrect password.");
+        setRedirectInProgress(false);
         return;
       }
 
@@ -448,10 +473,14 @@ export default function LoginPage() {
         await commitUserTheme();
         trace("login", "dbLogin: router.replace", resolvedTarget);
         await router.replace(resolvedTarget);
+        setRedirectInProgress(false);
+        return;
       }
+      setRedirectInProgress(false);
     } catch (err) {
       console.error("Login error:", err);
       setErrorMessage("Login failed, please try again.");
+      setRedirectInProgress(false);
     }
   };
 
@@ -515,6 +544,8 @@ export default function LoginPage() {
     const activeUser =
     user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
+    if (redirectInProgressRef.current) return;
+    setRedirectInProgress(true);
 
     trace("login", "auto-redirect: active user detected", {
       username: activeUser.username,
@@ -562,9 +593,9 @@ export default function LoginPage() {
     }
     commitUserTheme(activeUser.id).finally(() => {
       trace("login", "auto-redirect: router.replace now", target);
-      router.replace(target);
+      router.replace(target).finally(() => setRedirectInProgress(false));
     });
-  }, [user, session, sessionStatus, router, dbUserId, logoutInProgress, commitUserTheme]);
+  }, [user, session, sessionStatus, router, dbUserId, logoutInProgress, commitUserTheme, setRedirectInProgress]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

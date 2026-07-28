@@ -266,7 +266,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
             Attention Needed
           </span>
           {summary.attentionItems.map((item, index) => (
-            <div key={item.code || index} style={STYLES.attentionItem}>
+            <div key={`${item.code || "attention"}-${index}`} style={STYLES.attentionItem}>
               <span style={STYLES.attentionIcon}>
                 {item.severity === "warning" ? "⚠" : "ℹ"}
               </span>
@@ -280,7 +280,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
       {summary.blockingReasons && summary.blockingReasons.length > 0 && (
         <div style={STYLES.blockingBanner}>
           {summary.blockingReasons.map((reason, index) => (
-            <span key={reason.code || index}>{reason.message}</span>
+            <span key={`${reason.code || "blocking"}-${index}`}>{reason.message}</span>
           ))}
         </div>
       )}

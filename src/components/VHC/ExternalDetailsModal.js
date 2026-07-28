@@ -197,7 +197,7 @@ export default function ExternalDetailsModal({
         />
       ) : null}
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={handleClose}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}

@@ -354,7 +354,7 @@ export default function ServiceIndicatorDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+      <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
       </Button>
       <Button

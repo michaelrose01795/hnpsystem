@@ -675,6 +675,23 @@ html.staff-scope .app-sidebar__section-title {
   text-transform: uppercase;
 }
 
+/* Workspace module geometry.
+   This class is intentionally scoped beneath .app-sidebar so the module
+   shape cannot affect buttons anywhere else. Modules remain 44px high:
+   rounded rows when expanded and rounded squares when collapsed. Page
+   links keep the canonical pill geometry and render as circles in the rail. */
+html.staff-scope .app-sidebar .app-sidebar__module-button.app-btn {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  border-radius: var(--radius-lg);
+}
+
+html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button.app-btn {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  border-radius: var(--radius-sm);
+}
+
 /* Sidebar nav links now use .app-btn .app-btn--secondary .app-btn--nav —
    the old .app-sidebar__link ruleset was removed during the 2026-04 UI
    audit. Sidebar link margin-bottom is applied inline because it is a
@@ -2985,7 +3002,7 @@ html.staff-scope button.dropdown-api__option {
   min-height: var(--control-height-sm);
   padding: var(--control-padding-sm);
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   /* Non-selected row wears the Primary-style look via dropdown-dedicated
      tokens — decoupled from .app-btn--primary / --input-bg / --control-bg
      so Primary can be reskinned without changing dropdown rows. */

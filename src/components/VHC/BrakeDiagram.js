@@ -2,19 +2,21 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 import CarImage from "@/components/VHC/CarImage";
+import useIsMobile from "@/hooks/useIsMobile";
 
 const { palette } = themeConfig;
 
 const DIAGRAM_WIDTH = 308;
 const DIAGRAM_HEIGHT = 380;
-const PAD_WIDTH = 26;
-const PAD_HEIGHT = 60;
+const HEIGHT_DRIVEN_DIAGRAM_SIZE = "109cqh";
+const PAD_WIDTH = 48;
+const PAD_HEIGHT = 110;
 
 const BRAKE_KEYS = [
-  { key: "nsf", label: "NSF", position: { xPct: 27.2, yPct: 23.2 } },
-  { key: "osf", label: "OSF", position: { xPct: 72.2, yPct: 23.2 } },
-  { key: "nsr", label: "NSR", position: { xPct: 27.2, yPct: 72.374 } },
-  { key: "osr", label: "OSR", position: { xPct: 72.2, yPct: 72.374 } },
+  { key: "nsf", label: "NSF", position: { left: 27.2, top: 23.2 } },
+  { key: "osf", label: "OSF", position: { left: 72.2, top: 23.2 } },
+  { key: "nsr", label: "NSR", position: { left: 27.2, top: 72.374 } },
+  { key: "osr", label: "OSR", position: { left: 72.2, top: 72.374 } },
 ];
 
 const getPadStatus = (value) => {
@@ -37,19 +39,19 @@ const resolveBrakeEntry = (entry) => {
 };
 
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, invalidPositions = [] }) {
+  const isMobile = useIsMobile(767);
   const activeKey = activeBrake?.toLowerCase();
   const invalidSet = new Set((invalidPositions || []).map((key) => String(key).toLowerCase()));
   const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
-  const unknownFill = "var(--primary)";
   const statusPalette = {
-    critical: { fill: "var(--danger)", text: "var(--text-2)", label: "var(--danger)" },
-    advisory: { fill: "var(--warning)", text: "var(--text-2)", label: "var(--warning)" },
-    good: { fill: "var(--success)", text: "var(--text-2)", label: "var(--success)" },
+    critical: { fill: "var(--danger)", text: "var(--text-2)", border: "none" },
+    advisory: { fill: "var(--warning)", text: "var(--text-2)", border: "none" },
+    good: { fill: "var(--success)", text: "var(--text-2)", border: "none" },
     unknown: {
       fill: "rgba(var(--primary-rgb), 0.22)",
       text: "var(--text-1)",
-      label: unknownFill,
+      border: "rgba(var(--primary-rgb), 0.45)",
     },
   };
   const selectedAxleFill = "rgba(var(--primary-rgb), 0.14)";
@@ -65,6 +67,8 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     gap: "8px",
     alignItems: "center",
     justifyContent: "center",
+    height: "100%",
+    minHeight: 0,
     color: palette.textPrimary,
     border: "1px solid var(--accent-border)",
     boxShadow: "none",
@@ -73,11 +77,29 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
   const stageStyle = {
     width: "100%",
     maxWidth: "none",
-    aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+    ...(isMobile
+      ? {
+          aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+          flexShrink: 0,
+        }
+      : {
+          flex: "1 1 auto",
+          minHeight: `${DIAGRAM_HEIGHT}px`,
+          containerType: "size", // Container-height units mirror the tyre diagram sizing.
+        }),
     position: "relative",
     background: "transparent",
     overflow: "visible",
   };
+  const diagramScaleStyle = isMobile
+    ? {
+        width: "140%",
+        height: "auto",
+      }
+    : {
+        width: HEIGHT_DRIVEN_DIAGRAM_SIZE,
+        height: HEIGHT_DRIVEN_DIAGRAM_SIZE,
+      };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram" style={containerStyle}>
@@ -99,15 +121,15 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "140%",
-            height: "auto",
+            ...diagramScaleStyle,
+            aspectRatio: "1 / 1",
+            maxWidth: "none",
             pointerEvents: "none",
             userSelect: "none",
           }}
         />
-      <svg
-        viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
-        role="img"
+      <div
+        role="group"
         aria-label="Brake pad and disc overview diagram"
         data-dev-section="1"
         data-dev-section-key="vhc-brakes-diagram-svg"
@@ -118,44 +140,13 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "140%",
-          height: "140%",
+          ...diagramScaleStyle,
+          aspectRatio: "1 / 1",
+          maxWidth: "none",
+          pointerEvents: "none",
         }}
       >
-        {isFrontActive ? (
-          <rect
-            x={((27.2 / 100) * DIAGRAM_WIDTH) - PAD_WIDTH / 2 - 16}
-            y={((23.2 / 100) * DIAGRAM_HEIGHT) - PAD_HEIGHT / 2 - 12}
-            width={((72.2 - 27.2) / 100) * DIAGRAM_WIDTH + PAD_WIDTH + 32}
-            height={PAD_HEIGHT + 24}
-            rx="18"
-            fill={selectedAxleFill}
-            stroke={selectedAxleStroke}
-            strokeWidth="2"
-            strokeDasharray="5 5"
-            pointerEvents="none"
-          />
-        ) : null}
-        {isRearActive ? (
-          <rect
-            x={((27.2 / 100) * DIAGRAM_WIDTH) - PAD_WIDTH / 2 - 16}
-            y={((72.374 / 100) * DIAGRAM_HEIGHT) - PAD_HEIGHT / 2 - 12}
-            width={((72.2 - 27.2) / 100) * DIAGRAM_WIDTH + PAD_WIDTH + 32}
-            height={PAD_HEIGHT + 24}
-            rx="18"
-            fill={selectedAxleFill}
-            stroke={selectedAxleStroke}
-            strokeWidth="2"
-            strokeDasharray="5 5"
-            pointerEvents="none"
-          />
-        ) : null}
-
-        {BRAKE_KEYS.map(({ key, position }) => {
-          const centerX = (position.xPct / 100) * DIAGRAM_WIDTH;
-          const centerY = (position.yPct / 100) * DIAGRAM_HEIGHT;
-          const x = centerX - PAD_WIDTH / 2;
-          const y = centerY - PAD_HEIGHT / 2;
+        {BRAKE_KEYS.map(({ key, label, position }) => {
           const entry = brakes?.[key];
           const { measurement, overrideStatus, isDrum } = resolveBrakeEntry(entry);
 
@@ -179,48 +170,69 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
           const isInvalid = invalidSet.has(key);
 
           return (
-            <g
-              key={key}
-              onClick={() => onSelect?.(isFrontWheel ? "front" : "rear")}
-              style={{ cursor: onSelect ? "pointer" : "default" }}
-              data-dev-section="1"
-              data-dev-section-key={`vhc-brakes-diagram-pad-${key}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="vhc-brakes-diagram-svg"
-            >
-              <rect
-                x={x}
-                y={y}
-                width={PAD_WIDTH}
-                height={PAD_HEIGHT}
-                rx="12"
-                fill={colors.fill}
-                stroke={
-                  isInvalid
-                    ? "var(--danger)"
-                    : isActive
-                    ? "var(--primary)"
-                    : status === "unknown"
-                    ? "rgba(var(--primary-rgb), 0.45)"
-                    : colors.fill
-                }
-                strokeWidth={isInvalid ? 3 : isActive ? 3 : 1.5}
-              />
-              <text
-                x={centerX}
-                y={centerY}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill={colors.text}
-                fontSize={isDrum ? "9" : "11"}
-                fontWeight="700"
+            <React.Fragment key={key}>
+              {isActive ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: `${position.left}%`,
+                    top: `${position.top}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: `${PAD_WIDTH + 22}px`,
+                    height: `${PAD_HEIGHT + 22}px`,
+                    borderRadius: "var(--radius-md)",
+                    border: `2px dashed ${selectedAxleStroke}`,
+                    background: selectedAxleFill,
+                    pointerEvents: "none",
+                    zIndex: 3,
+                  }}
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onSelect?.(isFrontWheel ? "front" : "rear")}
+                aria-label={`${label} brake`}
+                data-dev-section="1"
+                data-dev-section-key={`vhc-brakes-diagram-pad-${key}`}
+                data-dev-section-type="content-card"
+                data-dev-section-parent="vhc-brakes-diagram-svg"
+                style={{
+                  position: "absolute",
+                  left: `${position.left}%`,
+                  top: `${position.top}%`,
+                  transform: "translate(-50%, -50%)",
+                  width: `${PAD_WIDTH}px`,
+                  height: `${PAD_HEIGHT}px`,
+                  maxWidth: `${PAD_WIDTH}px`,
+                  minWidth: `${PAD_WIDTH}px`,
+                  borderRadius: "var(--radius-pill)",
+                  border: `${isInvalid ? 2 : isActive ? 2 : 1.5}px solid ${
+                    isInvalid ? "var(--danger)" : isActive ? "var(--primary)" : colors.border
+                  }`,
+                  background: colors.fill,
+                  boxSizing: "border-box",
+                  padding: 0,
+                  color: colors.text,
+                  fontSize: isDrum ? "13px" : "16px",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  cursor: onSelect ? "pointer" : "default",
+                  boxShadow: isInvalid ? "0 0 0 2px var(--danger-surface)" : "none",
+                  zIndex: 4,
+                  pointerEvents: "auto",
+                }}
               >
                 {text}
-              </text>
-            </g>
+              </button>
+            </React.Fragment>
           );
         })}
-      </svg>
+      </div>
       </div>
     </div>
   );

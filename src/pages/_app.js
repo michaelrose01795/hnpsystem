@@ -302,14 +302,17 @@ function AppWrapper({ Component, pageProps }) {
       navTargetHref = null;
     };
     const onRouteError = (err, url) => {
-      logElapsed("routeChangeError", {
+      const wasCancelled = Boolean(err?.cancelled);
+      logElapsed(wasCancelled ? "routeChangeCancelled" : "routeChangeError", {
         url,
         error: String(err?.message || err),
         stack: err?.stack ? String(err.stack).split("\n").slice(0, 4) : undefined,
       });
       native.log(
-        `%c[NAV] error — copy(window.__hnpTrace) for full trace`,
-        "color:#c33; font-weight:600"
+        wasCancelled
+          ? `%c[NAV] cancelled — a newer navigation took over`
+          : `%c[NAV] error — copy(window.__hnpTrace) for full trace`,
+        wasCancelled ? "color:#888; font-weight:600" : "color:#c33; font-weight:600"
       );
       navStartedAt = null;
       navTargetHref = null;

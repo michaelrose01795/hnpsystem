@@ -5,6 +5,14 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
+import {
+  TECHNICIAN_JOB_TAB_LABELS,
+  TechnicianJobContentShell,
+  TechnicianJobHeader,
+  TechnicianJobSummaryCard,
+  TechnicianJobSummaryGrid,
+  TechnicianJobTabRow,
+} from "@/components/JobCards/TechnicianJobLayout";
 
 const PART_PRIORITY_OPTIONS = ["Normal", "Required Today", "Vehicle Off Road", "Safety Related"];
 const PART_AREA_OPTIONS = ["Front", "Rear", "Engine Bay", "Interior", "Underbody", "Other"];
@@ -68,7 +76,7 @@ const resolveRequestPartName = (request) => {
   return `Individual request #${request?.request_id || request?.requestId || ""}`.trim();
 };
 
-function QuickStatCard({ stat, sectionKey, parentKey, scrollTargetId }) {
+function QuickStatCard({ stat, sectionKey, scrollTargetId }) {
   if (!stat) return null;
 
   const isClickable = Boolean(scrollTargetId || stat.onClick);
@@ -85,16 +93,13 @@ function QuickStatCard({ stat, sectionKey, parentKey, scrollTargetId }) {
   };
 
   return (
-    <LayerTheme
+    <TechnicianJobSummaryCard
       as={CardTag}
       type={isClickable ? "button" : undefined}
       sectionKey={sectionKey}
       sectionType="stat-card"
-      parentKey={parentKey}
       backgroundToken="theme"
       data-dev-text-preview={`${stat.value} ${stat.label}`}
-      radius="var(--radius-sm)"
-      padding="12px 14px"
       gap="6px"
       onClick={isClickable ? handleClick : undefined}
       style={{
@@ -125,7 +130,7 @@ function QuickStatCard({ stat, sectionKey, parentKey, scrollTargetId }) {
       }}>
         {stat.label}
       </span>
-    </LayerTheme>
+    </TechnicianJobSummaryCard>
   );
 }
 
@@ -733,12 +738,7 @@ export default function TechJobDetailPageUi(props) {
     case "section5":
       return <>
         {/* Header Section */}
-        <LayerTheme as="div" sectionKey="myjob-header" sectionType="section-header-row" parentKey="app-layout-page-card" radius="var(--radius-sm)" padding="20px" gap="12px" style={{
-      flexDirection: "row",
-      alignItems: "center",
-      margin: 0,
-      flexShrink: 0
-    }}>
+        <TechnicianJobHeader>
           <h1 style={{
         color: "var(--text-1)",
         fontSize: "28px",
@@ -802,7 +802,7 @@ export default function TechJobDetailPageUi(props) {
                 </Button>
               </div>
             </div>
-        </LayerTheme>
+        </TechnicianJobHeader>
 
         {completeJobFeedback ? <div style={{
       padding: "12px 14px",
@@ -828,19 +828,10 @@ export default function TechJobDetailPageUi(props) {
           </div> : null}
 
         {/* Vehicle, customer, clocked time, and location summary */}
-        <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
-      gap: "10px",
-      margin: 0,
-      flexShrink: 0
-    }}>
-          <LayerTheme
+        <TechnicianJobSummaryGrid>
+          <TechnicianJobSummaryCard
             sectionKey="myjob-summary-vehicle"
             sectionType="content-card"
-            parentKey="app-layout-page-card"
-            radius="var(--radius-sm)"
-            padding="12px 14px"
             style={{
               minWidth: 0,
               overflow: "hidden"
@@ -881,14 +872,11 @@ export default function TechJobDetailPageUi(props) {
             <div style={compactSummarySecondaryStyle}>
               {vehicle?.makeModel || [vehicle?.make, vehicle?.model].filter(Boolean).join(" ") || "N/A"}
             </div>
-          </LayerTheme>
+          </TechnicianJobSummaryCard>
 
-          <LayerTheme
+          <TechnicianJobSummaryCard
             sectionKey="myjob-summary-customer"
             sectionType="content-card"
-            parentKey="app-layout-page-card"
-            radius="var(--radius-sm)"
-            padding="12px 14px"
             style={{
               minWidth: 0,
               overflow: "hidden"
@@ -920,21 +908,17 @@ export default function TechJobDetailPageUi(props) {
                 VHC: {vhcCustomerStatusMeta.label}
               </span>
             </div>
-          </LayerTheme>
+          </TechnicianJobSummaryCard>
 
           <QuickStatCard
             stat={quickStats.find((stat) => stat.label === "Clocked Hours")}
             sectionKey="myjob-quick-stat-clocked-hours"
-            parentKey="app-layout-page-card"
             scrollTargetId="job-progress-total-time"
           />
 
-          <LayerTheme
+          <TechnicianJobSummaryCard
             sectionKey="myjob-summary-locations"
             sectionType="content-card"
-            parentKey="app-layout-page-card"
-            radius="var(--radius-sm)"
-            padding="12px 14px"
             style={{
               flexDirection: "row",
               alignItems: "stretch",
@@ -1016,46 +1000,17 @@ export default function TechJobDetailPageUi(props) {
                 </div>
               </div>
             </div>
-          </LayerTheme>
-        </div>
+          </TechnicianJobSummaryCard>
+        </TechnicianJobSummaryGrid>
 
         {/* Tab Row */}
-        <LayerTheme
-          as="div"
-          className="tab-scroll-row"
-          sectionKey="myjob-tab-row"
-          sectionType="tab-row"
-          parentKey="app-layout-page-card"
-          backgroundToken="theme"
-          data-dev-text-preview="My job tab navigation"
-          radius="var(--radius-sm)"
-          padding="8px"
-          gap="6px"
-          style={{
-            flexDirection: "row",
-            flexWrap: "nowrap",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            overflowX: "auto",
-            overflowY: "hidden",
-            flex: "0 0 auto",
-            margin: 0
-          }}
-        >
+        <TechnicianJobTabRow>
           {visibleTabs.map(tab => {
         const isActive = activeTab === tab;
         const isVhcTab = tab === "vhc";
         const isVhcGreen = isVhcTab && isVhcCompleted;
         const isVhcAmber = isVhcTab && vhcTabAmberReady;
         const isComplete = isVhcGreen || tab === "write-up" && writeUpTechComplete;
-        const labelMap = {
-          overview: "Overview",
-          vhc: "VHC",
-          parts: "Parts",
-          notes: "Notes",
-          "write-up": "Write-Up",
-          documents: "Documents"
-        };
         const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
         return <button
           key={tab}
@@ -1070,19 +1025,15 @@ export default function TechJobDetailPageUi(props) {
             });
           }}
         >
-                {labelMap[tab] || tab.replace("-", " ")}
+                {TECHNICIAN_JOB_TAB_LABELS[tab] || tab.replace("-", " ")}
               </button>;
       })}
-        </LayerTheme>
+        </TechnicianJobTabRow>
 
         {/* All technician tabs share the same canonical content shell as the
             main job-card page. The transparent scroll region preserves the
             landscape technician workflow without changing the shell design. */}
-        <LayerTheme as="section" className="app-layout-section-shell" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="app-layout-page-card" backgroundToken="theme" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-page="My job detail" data-dev-tab={activeTab} data-dev-card-section="tab content shell" data-dev-text-preview={`Tab content shell: ${activeTab}`} data-dev-active-tab={activeTab} data-dev-active-tab-label={activeTab} style={{
-      flex: 1,
-      overflow: "hidden",
-      minHeight: 0
-    }}>
+        <TechnicianJobContentShell activeTab={activeTab}>
           
           <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-main-scroll" sectionType="section-shell" parentKey="myjob-main-content" backgroundToken="none" style={{
         flex: 1,
@@ -1498,9 +1449,10 @@ export default function TechJobDetailPageUi(props) {
                     </div>
                   </DevLayoutSection>
 
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
-                    <VhcAssistantPanel state={vhcAssistantState} title="VHC Assistant (Technician)" chromeless />
-                  </DevLayoutSection>
+                  {/* TODO: Myjob VHC Assistant remains here but is intentionally hidden from the front end for now. */}
+                  {false && <DevLayoutSection as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                      <VhcAssistantPanel state={vhcAssistantState} title="VHC Assistant (Technician)" chromeless />
+                    </DevLayoutSection>}
 
                   {!showVhcSummary && <>
                       {/* Mandatory Sections */}
@@ -2227,7 +2179,7 @@ export default function TechJobDetailPageUi(props) {
               <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
             </DevLayoutSection>}
           </DevLayoutSection>
-        </LayerTheme>
+        </TechnicianJobContentShell>
 
         {/* Bottom Action Bar */}
       <DocumentsUploadPopup open={showDocumentsPopup} onClose={() => setShowDocumentsPopup(false)} jobId={jobData?.jobCard?.id ? String(jobData.jobCard.id) : null} userId={user?.user_id || dbUserId || null} onAfterUpload={fetchJobData} existingDocuments={jobDocuments} />

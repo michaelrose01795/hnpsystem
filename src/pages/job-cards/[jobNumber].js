@@ -8283,8 +8283,43 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
           gap: "16px"
         }}>
 
-        <div>
+        <div className="app-popup-compact-header">
           <h2 style={{ margin: 0, color: "var(--text-1)" }}>Edit existing</h2>
+          <div className="app-popup-compact-header__actions">
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                cursor: "pointer",
+                fontWeight: 600,
+                color: "var(--primary-selected)",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)"
+              }}>
+
+              Close
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
+                background: "var(--primary)",
+                color: "var(--text-2)",
+                fontWeight: 600,
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
+                cursor: "pointer"
+              }}>
+
+              Update
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
@@ -8330,41 +8365,6 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
           }
         `}</style>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: "var(--primary-selected)",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
-            }}>
-
-            Close
-          </button>
-          <button
-            type="submit"
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              background: "var(--primary)",
-              color: "var(--text-2)",
-              fontWeight: 600,
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              cursor: "pointer"
-            }}>
-
-            Update
-          </button>
-        </div>
       </form>
     </div>);
 

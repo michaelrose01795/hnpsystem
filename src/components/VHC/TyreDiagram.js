@@ -3,11 +3,13 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 import CarImage from "@/components/VHC/CarImage";
+import useIsMobile from "@/hooks/useIsMobile";
 
 const { palette } = themeConfig;
 
 const DIAGRAM_WIDTH = 308;
 const DIAGRAM_HEIGHT = 380;
+const HEIGHT_DRIVEN_DIAGRAM_SIZE = "109cqh";
 const TYRE_HIT_WIDTH = 48;
 const TYRE_HIT_HEIGHT = 110;
 const SHOW_ALIGNMENT_DEBUG = false;
@@ -74,6 +76,7 @@ export default function TyreDiagram({
   invalidTyres = [],
   invalidSpare = false,
 }) {
+  const isMobile = useIsMobile(767);
   const activeKey = activeTyre?.toLowerCase();
   const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
   const selectedWheelFill = "rgba(var(--primary-rgb), 0.14)";
@@ -89,6 +92,8 @@ export default function TyreDiagram({
     gap: "8px",
     alignItems: "center",
     justifyContent: "center",
+    height: "100%",
+    minHeight: 0,
     color: palette.textPrimary,
     border: "1px solid var(--accent-border)",
     boxShadow: "none",
@@ -97,12 +102,29 @@ export default function TyreDiagram({
   const stageStyle = {
     width: "100%",
     maxWidth: "none",
-    aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+    ...(isMobile
+      ? {
+          aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+          flexShrink: 0,
+        }
+      : {
+          flex: "1 1 auto",
+          minHeight: `${DIAGRAM_HEIGHT}px`,
+          containerType: "size", // Container-height units keep the square diagram driven by stage height.
+        }),
     position: "relative",
     background: "transparent",
     overflow: "visible",
-    flexShrink: 0,
   };
+  const diagramScaleStyle = isMobile
+    ? {
+        width: "140%",
+        height: "auto",
+      }
+    : {
+        width: HEIGHT_DRIVEN_DIAGRAM_SIZE,
+        height: HEIGHT_DRIVEN_DIAGRAM_SIZE,
+      };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram" style={containerStyle}>
@@ -124,8 +146,9 @@ export default function TyreDiagram({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "140%",
-            height: "auto",
+            ...diagramScaleStyle,
+            aspectRatio: "1 / 1",
+            maxWidth: "none",
             pointerEvents: "none",
             userSelect: "none",
           }}
@@ -137,8 +160,9 @@ export default function TyreDiagram({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "140%",
-            height: "140%",
+            ...diagramScaleStyle,
+            aspectRatio: "1 / 1",
+            maxWidth: "none",
             pointerEvents: "none",
           }}
         >

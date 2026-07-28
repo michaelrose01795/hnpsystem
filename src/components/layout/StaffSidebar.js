@@ -631,7 +631,7 @@ export default function Sidebar({
       sectionType="section-shell"
       shell
       backgroundToken="app-sidebar-shell"
-      className="app-sidebar"
+      className={`app-sidebar${isCollapsed ? " app-sidebar--collapsed" : ""}`}
       style={{
         padding: "0",
         width: isCollapsed ? "48px" : isCondensed ? "100%" : "260px",
@@ -789,7 +789,9 @@ export default function Sidebar({
 
         {!isSidebarNavigationLoading && workspaceNavEnabled && roleWorkspaceModules.length > 0 && (
           <>
-            {!isCollapsed && (
+            {isCollapsed ? (
+              renderSectionDivider("divider-workspace", { marginBottom: "10px" })
+            ) : (
               <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
                 Workspace
               </div>
