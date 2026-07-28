@@ -144,6 +144,7 @@ function WorkshopQueueCard({
   deriveJobTypeLabel,
   formatAppointmentTime,
   estimateJobHours,
+  getJobClockedTimeText,
   variant = "", // "assigned" | "unassigned" | "checked-in" | ""
   devSectionParent = "",
   devSectionPrefix = "workshop-queue-job",
@@ -154,6 +155,7 @@ function WorkshopQueueCard({
   const bookingTime = formatAppointmentTime ? formatAppointmentTime(job) : "";
   const typeLabel = deriveJobTypeLabel ? deriveJobTypeLabel(job) : job.type;
   const estHours = estimateJobHours ? estimateJobHours(job) : 0;
+  const clockedTimeText = getJobClockedTimeText ? getJobClockedTimeText(job) : "";
   const assigned = variant === "assigned";
   const checkedIn = variant === "checked-in";
   const timingText = checkedIn
@@ -235,7 +237,7 @@ function WorkshopQueueCard({
           {timingText}
         </span>
         <span style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "var(--surfaceTextMuted)" }}>
-          ~{shortHours(estHours)}
+          {clockedTimeText || `~${shortHours(estHours)}`}
         </span>
       </div>
     </div>
@@ -257,6 +259,7 @@ function WorkshopQueueDropZone({
   deriveJobTypeLabel,
   formatAppointmentTime,
   estimateJobHours,
+  getJobClockedTimeText,
 }) {
   const dropBar = <div style={{ flex: "0 0 auto", width: "3px", alignSelf: "stretch", margin: "8px 1px", borderRadius: "var(--radius-pill)", background: "var(--primary)" }} />;
 
@@ -307,6 +310,7 @@ function WorkshopQueueDropZone({
                 deriveJobTypeLabel={deriveJobTypeLabel}
                 formatAppointmentTime={formatAppointmentTime}
                 estimateJobHours={estimateJobHours}
+                getJobClockedTimeText={getJobClockedTimeText}
                 devSectionParent={`workshop-queue-dropzone-${toDevSectionKey(panelKey)}`}
                 devSectionPrefix={`workshop-queue-assigned-job-${toDevSectionKey(panelKey)}`}
               />
@@ -320,7 +324,7 @@ function WorkshopQueueDropZone({
 }
 
 // ----------------------------------------------------------------- One row ----
-function WorkshopQueueRow({ row, estimateJobHours, onEditTechnicianCapacity, ...dropZoneProps }) {
+function WorkshopQueueRow({ row, estimateJobHours, getJobClockedTimeText, onEditTechnicianCapacity, ...dropZoneProps }) {
   const capacity = buildWorkshopCapacitySegments({
     capacityHours: row.capacityHours,
     completedHours: row.completedHours,
@@ -384,7 +388,13 @@ function WorkshopQueueRow({ row, estimateJobHours, onEditTechnicianCapacity, ...
           </span>
         </div>
       </div>
-      <WorkshopQueueDropZone panelKey={row.panelKey} jobs={row.jobs} estimateJobHours={estimateJobHours} {...dropZoneProps} />
+      <WorkshopQueueDropZone
+        panelKey={row.panelKey}
+        jobs={row.jobs}
+        estimateJobHours={estimateJobHours}
+        getJobClockedTimeText={getJobClockedTimeText}
+        {...dropZoneProps}
+      />
     </React.Fragment>
   );
 }
@@ -486,7 +496,7 @@ const Field = ({ label, value, wide }) => (
   </LayerTheme>
 );
 
-function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, estimateJobHours, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
+function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, estimateJobHours, getJobClockedTimeText, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
   if (!job) return null;
 
   const statusMeta = getStatusMeta(job.status);
@@ -496,6 +506,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
   const motAssigned = role.includes("mot") ? technician : job.motTester || "Not assigned";
   const bookingTime = formatAppointmentTime ? formatAppointmentTime(job) : "";
   const estHours = estimateJobHours ? estimateJobHours(job) : 0;
+  const clockedTimeText = getJobClockedTimeText ? getJobClockedTimeText(job) : "";
   const requests = getJobRequestItems ? getJobRequestItems(job) : [];
 
   const vhcCount = Array.isArray(job.vhcChecks) ? job.vhcChecks.length : 0;
@@ -556,7 +567,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
             <Field label="Phone" value={job.customerPhone} />
             <Field label="Booking Time" value={bookingTime && bookingTime !== "No appointment" ? bookingTime : "—"} />
             <Field label="Checked In" value={formatCheckedIn(job.checkedInAt)} />
-            <Field label="Estimated Time" value={estHours ? `${estHours.toFixed(estHours % 1 === 0 ? 0 : 1)} hrs` : "—"} />
+            <Field label={clockedTimeText ? "Clocked Time" : "Estimated Time"} value={clockedTimeText || (estHours ? `${estHours.toFixed(estHours % 1 === 0 ? 0 : 1)} hrs` : "—")} />
             <Field label="Service Type" value={deriveJobTypeLabel ? deriveJobTypeLabel(job) : job.type} />
             <Field label="Status" value={statusMeta.label} />
             <Field label="Technician" value={technician} />
@@ -681,6 +692,7 @@ export default function WorkshopQueuePlanner({
   checkedInJobs,
   // helpers
   estimateJobHours,
+  getJobClockedTimeText,
   deriveJobTypeLabel,
   formatAppointmentTime,
   getJobRequestItems,
@@ -781,6 +793,7 @@ export default function WorkshopQueuePlanner({
     deriveJobTypeLabel,
     formatAppointmentTime,
     estimateJobHours,
+    getJobClockedTimeText,
     onEditTechnicianCapacity: handleEditTechnicianCapacity,
   };
 
@@ -925,6 +938,7 @@ export default function WorkshopQueuePlanner({
                 deriveJobTypeLabel={deriveJobTypeLabel}
                 formatAppointmentTime={formatAppointmentTime}
                 estimateJobHours={estimateJobHours}
+                getJobClockedTimeText={getJobClockedTimeText}
                 devSectionParent="workshop-checked-in-strip"
                 devSectionPrefix="workshop-checked-in-job"
               />
@@ -1029,6 +1043,7 @@ export default function WorkshopQueuePlanner({
                   deriveJobTypeLabel={deriveJobTypeLabel}
                   formatAppointmentTime={formatAppointmentTime}
                   estimateJobHours={estimateJobHours}
+                  getJobClockedTimeText={getJobClockedTimeText}
                   devSectionParent="workshop-unassigned-grid"
                   devSectionPrefix="workshop-unassigned-job"
                 />
@@ -1084,6 +1099,7 @@ export default function WorkshopQueuePlanner({
           onUnassign={unassignTechFromJob}
           onAssign={() => setShowTechnicianAssignment(true)}
           estimateJobHours={estimateJobHours}
+          getJobClockedTimeText={getJobClockedTimeText}
           deriveJobTypeLabel={deriveJobTypeLabel}
           formatAppointmentTime={formatAppointmentTime}
           getJobRequestItems={getJobRequestItems}

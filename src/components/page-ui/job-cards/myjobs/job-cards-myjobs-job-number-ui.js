@@ -1,9 +1,72 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js
-import { useState } from "react";
+import { useRef, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
+
+const PART_PRIORITY_OPTIONS = ["Normal", "Required Today", "Vehicle Off Road", "Safety Related"];
+const PART_AREA_OPTIONS = ["Front", "Rear", "Engine Bay", "Interior", "Underbody", "Other"];
+const PART_SIDE_OPTIONS = ["N/S", "O/S", "Centre", "N/A"];
+const PART_REASON_OPTIONS = ["Worn", "Damaged", "Failed", "Missing", "Recommended Replacement", "Other"];
+
+const compactLabelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  fontSize: "12px",
+  fontWeight: "700",
+  color: "var(--text-1)",
+};
+
+const buttonGroupStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "8px",
+};
+
+const metaGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: "8px",
+};
+
+const formatRequestStatusLabel = (status) => {
+  const value = String(status || "sent").trim().toLowerCase();
+  const labels = {
+    pending: "Sent",
+    waiting_authorisation: "Sent",
+    being_checked: "Being Checked",
+    priced: "Price Available",
+    awaiting_approval: "Awaiting Approval",
+    ordered: "Ordered",
+    on_order: "Ordered",
+    allocated: "Ready to Collect",
+    pre_picked: "Ready to Collect",
+    picked: "Ready to Collect",
+    stock: "Ready to Collect",
+    issued: "Issued",
+    fulfilled: "Fitted",
+    fitted: "Fitted",
+    declined: "Declined",
+    unavailable: "Declined",
+    cancelled: "Cancelled",
+  };
+  return labels[value] || value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const extractRequestDetail = (description = "", label) => {
+  const match = String(description || "").match(new RegExp(`${label}:\\s*([^\\n]+)`, "i"));
+  return match?.[1]?.trim() || "";
+};
+
+const resolveRequestPartName = (request) => {
+  if (request?.part?.name) return request.part.name;
+  const partRequired = extractRequestDetail(request?.description, "Part required");
+  if (partRequired) return partRequired;
+  return `Individual request #${request?.request_id || request?.requestId || ""}`.trim();
+};
 
 function QuickStatCard({ stat, sectionKey, parentKey, scrollTargetId }) {
   if (!stat) return null;
@@ -94,6 +157,8 @@ export default function TechJobDetailPageUi(props) {
     authorisedVhcItems,
     authorizedVhcRows,
     authorizedVhcRowsLoading,
+    authorizedParts,
+    authorizedPartsLoading,
     canClockIntoMotHandoff,
     canCompleteJob,
     canCompleteVhc,
@@ -120,6 +185,9 @@ export default function TechJobDetailPageUi(props) {
     handleJobClockIn,
     handleJobClockOut,
     handlePartsRequestSubmit,
+    handlePartsRequestAction,
+    handlePartsRequestNote,
+    handlePartJobItemAction,
     handleRenameDocument,
     handleReplaceDocument,
     handleMarkAllRequestsComplete,
@@ -201,6 +269,122 @@ export default function TechJobDetailPageUi(props) {
   // the job's files and the technician sees their capture immediately.
   const [galleryReloadToken, setGalleryReloadToken] = useState(0);
   const bumpGallery = () => setGalleryReloadToken((token) => token + 1);
+  const [partPriority, setPartPriority] = useState("Normal");
+  const [partArea, setPartArea] = useState("Front");
+  const [partSide, setPartSide] = useState("N/A");
+  const [partReason, setPartReason] = useState("Worn");
+  const [partAdditionalInfo, setPartAdditionalInfo] = useState("");
+  const [partAttachments, setPartAttachments] = useState([]);
+  const [partsUploadBusy, setPartsUploadBusy] = useState(false);
+  const [partsValidationError, setPartsValidationError] = useState("");
+  const [expandedPartRequestId, setExpandedPartRequestId] = useState(null);
+  const [editingPartRequestId, setEditingPartRequestId] = useState(null);
+  const [editingPartRequestText, setEditingPartRequestText] = useState("");
+  const [requestNoteDrafts, setRequestNoteDrafts] = useState({});
+  const partAttachmentInputRef = useRef(null);
+
+  const clearPartRequestForm = () => {
+    setPartRequestDescription("");
+    setPartRequestQuantity(1);
+    setPartRequestVhcItemId(null);
+    setPartPriority("Normal");
+    setPartArea("Front");
+    setPartSide("N/A");
+    setPartReason("Worn");
+    setPartAdditionalInfo("");
+    setPartAttachments([]);
+    setPartsUploadBusy(false);
+    setPartsValidationError("");
+    setPartsFeedback("");
+  };
+
+  const submitIndividualPartRequest = async () => {
+    const trimmedPart = String(partRequestDescription || "").trim();
+    if (!trimmedPart) {
+      setPartsValidationError("Enter the part required before sending the request.");
+      return;
+    }
+    setPartsValidationError("");
+    let uploadedAttachments = [];
+    if (partAttachments.length > 0) {
+      const targetJobId = jobData?.jobCard?.id || jobData?.id || null;
+      if (!targetJobId) {
+        setPartsValidationError("Job data is still loading. Try again in a moment.");
+        return;
+      }
+      setPartsUploadBusy(true);
+      try {
+        uploadedAttachments = await Promise.all(partAttachments.map(async (file) => {
+          const formData = new FormData();
+          formData.append("jobId", String(targetJobId));
+          formData.append("userId", String(user?.user_id || dbUserId || ""));
+          formData.append("file", file);
+          const response = await fetch("/api/jobcards/upload-document", {
+            method: "POST",
+            body: formData,
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(payload.message || payload.error || `Failed to upload ${file.name}`);
+          }
+          return {
+            name: payload.file?.filename || file.name,
+            fileId: payload.file?.fileId || null,
+            url: payload.file?.path || "",
+            size: file.size,
+            type: file.type,
+          };
+        }));
+      } catch (uploadError) {
+        setPartsUploadBusy(false);
+        setPartsFeedback(uploadError.message || "Failed to upload the selected images.");
+        return;
+      }
+      setPartsUploadBusy(false);
+    }
+    const result = await handlePartsRequestSubmit?.({
+      partRequired: trimmedPart,
+      quantity: partRequestQuantity,
+      priority: partPriority,
+      area: partArea,
+      side: partSide,
+      reason: partReason,
+      additionalInfo: partAdditionalInfo,
+      vhcItemId: partRequestVhcItemId,
+      attachments: uploadedAttachments,
+    });
+    if (result?.success !== false) {
+      clearPartRequestForm();
+    }
+  };
+
+  const startEditRequest = (request) => {
+    setEditingPartRequestId(request.request_id);
+    setEditingPartRequestText(resolveRequestPartName(request));
+  };
+
+  const saveEditRequest = async (request) => {
+    const trimmed = editingPartRequestText.trim();
+    if (!trimmed) return;
+    const currentDescription = String(request.description || "");
+    const nextDescription = /Part required:\s*[^\n]+/i.test(currentDescription)
+      ? currentDescription.replace(/Part required:\s*[^\n]+/i, `Part required: ${trimmed}`)
+      : [`Part required: ${trimmed}`, currentDescription].filter(Boolean).join("\n");
+    await handlePartsRequestAction?.({
+      requestId: request.request_id,
+      action: "edit",
+      updates: { description: nextDescription || `Part required: ${trimmed}` },
+    });
+    setEditingPartRequestId(null);
+    setEditingPartRequestText("");
+  };
+
+  const sendRequestNote = async (request) => {
+    const note = String(requestNoteDrafts[request.request_id] || "").trim();
+    if (!note) return;
+    await handlePartsRequestNote?.({ requestId: request.request_id, note });
+    setRequestNoteDrafts((prev) => ({ ...prev, [request.request_id]: "" }));
+  };
 
   const vhcCustomerStatusMeta = (() => {
     const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
@@ -1544,401 +1728,248 @@ export default function TechJobDetailPageUi(props) {
 
           {/* PARTS TAB */}
           {activeTab === "parts" && <DevLayoutSection as="div" sectionKey="myjob-tab-parts" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
-          backgroundColor: "transparent",
-          padding: 0,
-          borderRadius: 0,
-          border: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          alignItems: "stretch"
-        }}>
-              <LayerSurface as="div" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
-                <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-                  <h3 style={{
-                margin: 0,
-                fontSize: "18px",
-                fontWeight: "700",
-                color: "var(--text-1)"
-              }}>
-                    Request a Part
-                  </h3>
-                  <span style={{
-                fontSize: "12px",
-                color: "var(--text-1)"
-              }}>
-                    Surfaces in the VHC parts queue
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--page-stack-gap)",
+            alignItems: "stretch"
+          }}>
+              <LayerSurface as="section" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="16px">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <h3 style={{ margin: 0, fontSize: "19px", fontWeight: "700", color: "var(--text-1)" }}>
+                      Request an Individual Part
+                    </h3>
+                    <p style={{ margin: 0, color: "var(--text-1)", fontSize: "14px", maxWidth: "62ch" }}>
+                      Send a part request directly to the Parts team without completing a full VHC.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-1)", backgroundColor: "var(--theme)", borderRadius: "var(--control-radius)", padding: "6px 12px" }}>
+                    Sent directly to Parts
                   </span>
                 </div>
-                <p style={{
-              margin: 0,
-              color: "var(--text-1)",
-              fontSize: "14px"
-            }}>
-                  Describe the specific part you need—the parts team will price, approve, and pre-pick it alongside other VHC requests.
-                </p>
-                <textarea rows={3} value={partRequestDescription} onChange={e => {
-              setPartRequestDescription(e.target.value);
-              if (partsFeedback) {
-                setPartsFeedback("");
-              }
-            }} placeholder="e.g. Front right brake pad set (OEM) for MK3 1.6 diesel." style={{
-              width: "100%",
-              borderRadius: "var(--control-radius-xs)",
-              border: "1px solid var(--input-ring)",
-              padding: "12px",
-              fontSize: "14px",
-              resize: "vertical",
-              minHeight: "88px",
-              fontFamily: "inherit",
-              outline: "none"
-            }} onFocus={e => {
-              e.currentTarget.style.borderColor = "var(--warning)";
-            }} onBlur={e => {
-              e.currentTarget.style.borderColor = "var(--input-ring)";
-            }} />
-                <div style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "flex-end",
-              flexWrap: "wrap"
-            }}>
-                  <label style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "12px",
-                color: "var(--text-1)"
-              }}>
-                    Quantity
-                    <input type="number" min={1} value={partRequestQuantity} onChange={e => {
-                  let next = Number(e.target.value);
-                  if (Number.isNaN(next) || next < 1) next = 1;
-                  setPartRequestQuantity(next);
-                }} style={{
-                  marginTop: "4px",
-                  width: "80px",
-                  padding: "6px 10px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
-                  fontSize: "14px"
-                }} />
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
+                  <label style={compactLabelStyle}>
+                    Part Required
+                    <input
+                      type="search"
+                      className="app-input app-input--search"
+                      value={partRequestDescription}
+                      onChange={(event) => {
+                        setPartRequestDescription(event.target.value);
+                        setPartsValidationError("");
+                        if (partsFeedback) setPartsFeedback("");
+                      }}
+                      placeholder="Search or type the part needed"
+                    />
                   </label>
-                  {Array.isArray(vhcChecks) && vhcChecks.filter(c => c.section !== "VHC_CHECKSHEET").length > 0 && <label style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: "12px",
-                color: "var(--text-1)"
-              }}>
-                      Link to VHC item (optional)
-                      <select value={partRequestVhcItemId || ""} onChange={e => setPartRequestVhcItemId(e.target.value ? Number(e.target.value) : null)} style={{
-                  marginTop: "4px",
-                  padding: "6px 10px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
-                  fontSize: "14px",
-                  maxWidth: "240px"
-                }}>
-                        <option value="">None</option>
-                        {vhcChecks.filter(c => c.section !== "VHC_CHECKSHEET").map(c => <option key={c.vhc_id} value={c.vhc_id}>
-                              #{c.vhc_id} {(c.issue_title || c.section || "").slice(0, 40)}
-                            </option>)}
-                      </select>
-                    </label>}
-                  <button type="button" onClick={handlePartsRequestSubmit} disabled={partsSubmitting} style={{
-                padding: "10px 22px",
-                backgroundColor: partsSubmitting ? "var(--primary-border)" : "var(--warning)",
-                color: "var(--text-2)",
-                border: "none",
-                borderRadius: "var(--control-radius-xs)",
-                cursor: partsSubmitting ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}>
-                    {partsSubmitting ? "Submitting…" : "Request Part"}
-                  </button>
+
+                  <label style={compactLabelStyle}>
+                    Quantity
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(70px, 1fr) 44px", gap: "6px", alignItems: "center" }}>
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) - 1))}>-</Button>
+                      <input
+                        type="number"
+                        className="app-input"
+                        min={1}
+                        value={partRequestQuantity}
+                        onChange={(event) => setPartRequestQuantity(Math.max(1, Number(event.target.value) || 1))}
+                      />
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) + 1))}>+</Button>
+                    </div>
+                  </label>
                 </div>
-                {partsFeedback && <div style={{
-              fontSize: "13px",
-              color: "var(--text-1)",
-              backgroundColor: "var(--success-surface)",
-              borderRadius: "var(--radius-xs)",
-              padding: "10px 14px"
-            }}>
-                    {partsFeedback}
-                  </div>}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+                  <DropdownField label="Priority" value={partPriority} onChange={(event) => setPartPriority(event.target.value)} options={PART_PRIORITY_OPTIONS} />
+                  <DropdownField label="Vehicle area" value={partArea} onChange={(event) => setPartArea(event.target.value)} options={PART_AREA_OPTIONS} />
+                  <DropdownField label="Reason" value={partReason} onChange={(event) => setPartReason(event.target.value)} options={PART_REASON_OPTIONS} />
+                </div>
+
+                <div style={buttonGroupStyle} aria-label="Side required">
+                  {PART_SIDE_OPTIONS.map((option) => (
+                    <Button
+                      key={option}
+                      type="button"
+                      variant={partSide === option ? "primary" : "secondary"}
+                      size="sm"
+                      onClick={() => setPartSide(option)}
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+
+                {Array.isArray(vhcChecks) && vhcChecks.filter((check) => check.section !== "VHC_CHECKSHEET").length > 0 && (
+                  <DropdownField
+                    label="Link to technician finding (optional)"
+                    value={partRequestVhcItemId || ""}
+                    onChange={(event) => setPartRequestVhcItemId(event.target.value ? Number(event.target.value) : null)}
+                    placeholder="No linked finding"
+                    options={[
+                      { value: "", label: "No linked finding" },
+                      ...vhcChecks.filter((check) => check.section !== "VHC_CHECKSHEET").map((check) => ({
+                        value: check.vhc_id,
+                        label: `#${check.vhc_id} ${(check.issue_title || check.section || "").slice(0, 48)}`,
+                      })),
+                    ]}
+                  />
+                )}
+
+                <label style={compactLabelStyle}>
+                  Additional information (optional)
+                  <textarea
+                    className="app-input app-input--textarea"
+                    rows={3}
+                    value={partAdditionalInfo}
+                    onChange={(event) => setPartAdditionalInfo(event.target.value)}
+                    placeholder="Measurements, fault details, fitting notes or brand preference"
+                  />
+                </label>
+
+                <LayerTheme as="div" sectionKey="myjob-parts-upload-summary" sectionType="content-card" parentKey="myjob-parts-request" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="12px">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "start" }}>
+                    <label style={compactLabelStyle}>
+                      Photos or images (optional)
+                      <input
+                        ref={partAttachmentInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        onChange={(event) => setPartAttachments(Array.from(event.target.files || []))}
+                        style={{ display: "none" }}
+                      />
+                      <Button type="button" variant="secondary" onClick={() => partAttachmentInputRef.current?.click()}>
+                        Choose Images
+                      </Button>
+                      <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--text-1)" }}>
+                        {partAttachments.length ? `${partAttachments.length} image${partAttachments.length === 1 ? "" : "s"} selected` : "Capture a photo or upload existing images."}
+                      </span>
+                    </label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <strong style={{ color: "var(--text-1)", fontSize: "13px" }}>Live summary</strong>
+                      <div style={metaGridStyle}>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Part: {partRequestDescription || "Not entered"}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Qty: {Math.max(1, Number(partRequestQuantity) || 1)}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Priority: {partPriority}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Location: {partSide} {partArea}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Reason: {partReason}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Photos: {partAttachments.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </LayerTheme>
+
+                {partsValidationError && <div role="alert" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: "var(--danger-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
+                  {partsValidationError}
+                </div>}
+                {partsFeedback && <div role="status" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: partsFeedback.toLowerCase().includes("failed") || partsFeedback.toLowerCase().includes("unable") ? "var(--danger-surface)" : "var(--success-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
+                  {partsFeedback}
+                </div>}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
+                  <Button type="button" variant="secondary" onClick={clearPartRequestForm} disabled={partsSubmitting || partsUploadBusy}>Clear</Button>
+                  <Button type="button" variant="primary" busy={partsSubmitting || partsUploadBusy} onClick={submitIndividualPartRequest}>
+                    Send Request to Parts
+                  </Button>
+                </div>
               </LayerSurface>
 
-              <LayerSurface as="div" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
-                <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              gap: "10px"
-            }}>
-                  <h3 style={{
-                margin: 0,
-                fontSize: "18px",
-                fontWeight: "700"
-              }}>Active Requests</h3>
-                  <span style={{
-                fontSize: "12px",
-                color: "var(--text-1)"
-              }}>
+              <LayerSurface as="section" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Active Requests</h3>
+                  <span style={{ fontSize: "12px", color: "var(--text-1)" }}>
                     {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <p style={{
-              margin: 0,
-              fontSize: "13px",
-              color: "var(--text-1)"
-            }}>
-                  These entries are visible to the parts team in the VHC parts tab for pricing, approval, and pre-picks.
-                </p>
-                {partsRequestsLoading ? <p style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "var(--text-1)"
-            }}>Loading requests…</p> : partsRequests.length === 0 ? <p style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "var(--text-1)"
-            }}>
-                    No parts have been requested yet.
-                  </p> : <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              maxHeight: "340px",
-              overflowY: "auto",
-              paddingRight: "4px"
-            }}>
-                    {partsRequests.map(request => {
-                const statusLabel = (request.status || "pending").replace(/_/g, " ").toUpperCase();
-                const badgeStyle = getPartsStatusStyle(request.status);
-                const quantity = request.quantity ?? 1;
-                const partLabel = request.part ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}` : `Custom request #${request.request_id}`;
-                const requesterName = request.requester ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim() : "";
-                const sourceLabel = request.requested_by ? `Tech${requesterName ? ` (${requesterName})` : ""}` : "VHC";
-                return <div key={request.request_id} style={{
-                  padding: "16px",
-                  borderRadius: "var(--control-radius-xs)",
-                  backgroundColor: "var(--theme)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px"
-                }}>
-                          <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: "12px"
-                  }}>
-                            <div style={{
-                      flex: 1
-                    }}>
-                              <div style={{
-                        fontSize: "15px",
-                        fontWeight: "600",
-                        color: "var(--text-1)"
-                      }}>
-                                {partLabel}
-                              </div>
-                              <div style={{
-                        fontSize: "13px",
-                        color: "var(--text-1)",
-                        marginTop: "2px"
-                      }}>
-                                {request.description || "No description provided."}
-                              </div>
-                              <div style={{
-                        fontSize: "12px",
-                        color: "var(--text-1)",
-                        marginTop: "4px"
-                      }}>
-                                Requested by {sourceLabel}
-                              </div>
-                              <div style={{
-                        fontSize: "12px",
-                        color: "var(--text-1)",
-                        marginTop: "4px"
-                      }}>
-                                Requested {formatDateTime(request.created_at)}
-                              </div>
-                            </div>
-                            <span style={{
-                      ...badgeStyle,
-                      color: "var(--text-1)",
-                      padding: "4px 14px",
-                      borderRadius: "var(--control-radius)",
-                      fontSize: "11px",
-                      fontWeight: "600"
-                    }}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                          <div style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "12px",
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>
-                            <span>Qty: {quantity}</span>
-                          </div>
-                        </div>;
-              })}
-                  </div>}
+                {partsRequestsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading requests...</p> : partsRequests.length === 0 ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
+                  No part requests for this job yet.
+                </p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {partsRequests.map((request) => {
+                    const statusLabel = formatRequestStatusLabel(request.status);
+                    const badgeStyle = getPartsStatusStyle(request.status);
+                    const quantity = request.quantity ?? 1;
+                    const partLabel = resolveRequestPartName(request);
+                    const location = [extractRequestDetail(request.description, "Side"), extractRequestDetail(request.description, "Vehicle area")].filter(Boolean).join(" ") || "Not set";
+                    const priority = extractRequestDetail(request.description, "Priority") || statusLabel;
+                    const requesterName = request.requester ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim() : "";
+                    const canEditRequest = ["pending", "waiting_authorisation"].includes(String(request.status || "").toLowerCase()) && !request.fulfilled_by;
+                    const isExpanded = expandedPartRequestId === request.request_id;
+                    const latestUpdate = request.updated_at && request.updated_at !== request.created_at ? formatDateTime(request.updated_at) : "No Parts update yet";
+                    return <LayerTheme key={request.request_id} as="article" sectionKey={`myjob-parts-request-row-${request.request_id}`} sectionType="content-card" parentKey="myjob-parts-active-requests" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="10px">
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.4fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "start" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {editingPartRequestId === request.request_id ? (
+                            <input className="app-input" value={editingPartRequestText} onChange={(event) => setEditingPartRequestText(event.target.value)} />
+                          ) : (
+                            <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partLabel}</strong>
+                          )}
+                          <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Requested by {requesterName || "Technician"}</span>
+                          <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Requested {formatDateTime(request.created_at)}</span>
+                        </div>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Qty {quantity}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{location}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{priority}</span>
+                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                      </div>
+                      <div style={{ color: "var(--text-1)", fontSize: "12px" }}>Latest update: {latestUpdate}</div>
+                      {isExpanded && <div style={{ color: "var(--text-1)", fontSize: "13px", whiteSpace: "pre-wrap" }}>{request.description || "No detail supplied."}</div>}
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => setExpandedPartRequestId(isExpanded ? null : request.request_id)}>{isExpanded ? "Hide Details" : "View Details"}</Button>
+                        {editingPartRequestId === request.request_id ? <>
+                          <Button type="button" variant="primary" size="sm" onClick={() => saveEditRequest(request)}>Save Edit</Button>
+                          <Button type="button" variant="secondary" size="sm" onClick={() => setEditingPartRequestId(null)}>Cancel Edit</Button>
+                        </> : canEditRequest && <Button type="button" variant="secondary" size="sm" onClick={() => startEditRequest(request)}>Edit</Button>}
+                        {canEditRequest && <Button type="button" variant="secondary" size="sm" onClick={() => handlePartsRequestAction?.({ requestId: request.request_id, action: "cancel" })}>Cancel Request</Button>}
+                        {String(request.status || "").toLowerCase() === "issued" && <Button type="button" variant="primary" size="sm" onClick={() => handlePartsRequestAction?.({ requestId: request.request_id, action: "fitted", jobItemId: request.fulfilled_by })}>Mark Fitted</Button>}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", gap: "8px", alignItems: "center" }}>
+                        <input
+                          className="app-input"
+                          value={requestNoteDrafts[request.request_id] || ""}
+                          onChange={(event) => setRequestNoteDrafts((prev) => ({ ...prev, [request.request_id]: event.target.value }))}
+                          placeholder="Add a note for this request"
+                        />
+                        <Button type="button" variant="secondary" size="sm" onClick={() => sendRequestNote(request)}>Add Note</Button>
+                      </div>
+                    </LayerTheme>;
+                  })}
+                </div>}
               </LayerSurface>
 
-              {/* Parts Authorised Section */}
-              <LayerSurface as="div" sectionKey="myjob-parts-authorised" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
-                <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              gap: "10px"
-            }}>
-                  <h3 style={{
-                margin: 0,
-                fontSize: "18px",
-                fontWeight: "700",
-                color: "var(--text-1)"
-              }}>
-                    Parts Authorised
-                  </h3>
-                  <span style={{
-                fontSize: "12px",
-                color: "var(--text-1)"
-              }}>
-                    {authorizedVhcRows.length} item{authorizedVhcRows.length === 1 ? "" : "s"}
-                  </span>
+              {(Array.isArray(authorizedParts) && authorizedParts.length > 0) && <LayerSurface as="section" sectionKey="myjob-parts-ready-approved" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Ready or Approved Parts</h3>
+                  <span style={{ fontSize: "12px", color: "var(--text-1)" }}>{authorizedParts.length} item{authorizedParts.length === 1 ? "" : "s"}</span>
                 </div>
-                <p style={{
-              margin: 0,
-              fontSize: "13px",
-              color: "var(--text-1)"
-            }}>
-                  VHC items that have been authorised by the customer.
-                </p>
-                {authorizedVhcRowsLoading ? <p style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "var(--text-1)"
-            }}>Loading authorised items…</p> : authorizedVhcRows.length === 0 ? <p style={{
-              margin: 0,
-              fontSize: "14px",
-              color: "var(--text-1)"
-            }}>
-                    No authorised VHC items yet.
-                  </p> : <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              maxHeight: "400px",
-              overflowY: "auto",
-              paddingRight: "4px"
-            }}>
-                    {authorizedVhcRows.map(row => {
-                const title = row.issue_title || row.section || "Authorised item";
-                const description = row.issue_description || "";
-                const section = row.section || "";
-                const hours = row.labour_hours;
-                const partsCost = row.parts_cost;
-                const prePick = row.pre_pick_location || "";
-                const noteText = row.note_text || "";
-                const isComplete = row.Complete === true;
-                return <div key={row.vhc_id} style={{
-                  padding: "14px 16px",
-                  border: "none",
-                  borderRadius: "var(--control-radius-xs)",
-                  backgroundColor: "var(--success-surface)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px"
-                }}>
-                          <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: "12px"
-                  }}>
-                            <div style={{
-                      flex: 1
-                    }}>
-                              <div style={{
-                        fontSize: "15px",
-                        fontWeight: "600",
-                        color: "var(--text-1)"
-                      }}>
-                                {title}
-                              </div>
-                              {description && description.toLowerCase() !== title.toLowerCase() && <div style={{
-                        fontSize: "13px",
-                        color: "var(--text-1)",
-                        marginTop: "2px"
-                      }}>
-                                  {description}
-                                </div>}
-                              {section && section !== title && <div style={{
-                        fontSize: "12px",
-                        color: "var(--text-1)",
-                        marginTop: "2px"
-                      }}>
-                                  Section: {section}
-                                </div>}
-                              {noteText && <div style={{
-                        fontSize: "12px",
-                        color: "var(--text-1)",
-                        marginTop: "4px"
-                      }}>
-                                  Note: {noteText}
-                                </div>}
-                              {prePick && <div style={{
-                        fontSize: "12px",
-                        color: "var(--text-1)",
-                        marginTop: "4px"
-                      }}>
-                                  Pre-pick: {formatPrePickLabel(prePick)}
-                                </div>}
-                            </div>
-                            <div style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "4px"
-                    }}>
-                              <span style={{
-                        padding: "3px 10px",
-                        borderRadius: "var(--control-radius)",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        backgroundColor: isComplete ? "var(--theme)" : "var(--success-surface)",
-                        color: "var(--text-1)",
-                        border: "none"
-                      }}>
-                                {isComplete ? "Complete" : "Authorised"}
-                              </span>
-                            </div>
-                          </div>
-                          <div style={{
-                    display: "flex",
-                    gap: "16px",
-                    fontSize: "12px",
-                    color: "var(--text-1)",
-                    marginTop: "4px"
-                  }}>
-                            {hours != null && hours !== "" && <span>Labour: {hours}h</span>}
-                            {partsCost != null && partsCost !== "" && Number(partsCost) > 0 && <span>Parts: £{Number(partsCost).toFixed(2)}</span>}
-                          </div>
-                        </div>;
-              })}
-                  </div>}
-              </LayerSurface>
+                {authorizedPartsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading approved parts...</p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {authorizedParts.map((part) => {
+                    const statusLabel = formatRequestStatusLabel(part.status);
+                    const badgeStyle = getPartsStatusStyle(part.status);
+                    const partName = part.part?.name || part.part_name_snapshot || part.row_description || "Approved part";
+                    const canCollect = ["allocated", "pre_picked", "picked", "stock"].includes(String(part.status || "").toLowerCase());
+                    return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-ready-${part.id}`} sectionType="content-card" parentKey="myjob-parts-ready-approved" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="8px">
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.5fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "center" }}>
+                        <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partName}</strong>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Qty {part.quantity_requested || 1}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{part.authorised ? "Approved" : "Ordered"}</span>
+                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap", color: "var(--text-1)", fontSize: "12px" }}>
+                        <span>Latest update: {formatDateTime(part.updated_at || part.created_at)}</span>
+                        {canCollect && <Button type="button" variant="primary" size="sm" onClick={() => handlePartJobItemAction?.({ jobItemId: part.id, action: "collected" })}>Mark as Collected</Button>}
+                      </div>
+                    </LayerTheme>;
+                  })}
+                </div>}
+              </LayerSurface>}
+
+              {(!authorizedParts || authorizedParts.length === 0) && !authorizedVhcRowsLoading && authorizedVhcRows.length > 0 && <LayerSurface as="section" sectionKey="myjob-parts-authorised-findings" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="16px" gap="8px">
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--text-1)" }}>Approved technician findings</h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-1)" }}>{authorizedVhcRows.length} approved finding{authorizedVhcRows.length === 1 ? "" : "s"} waiting for parts allocation.</p>
+              </LayerSurface>}
             </DevLayoutSection>}
 
           {/* NOTES TAB */}

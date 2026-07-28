@@ -259,6 +259,13 @@ const getJobRequestsCount = (job) => {
   return getJobRequestsCountFromPayload(job?.requests);
 };
 
+const getCustomerRequestHours = (job) =>
+  getJobRequests(job).reduce((sum, request) => {
+    const source = String(request?.requestSource ?? request?.request_source ?? "").trim().toLowerCase();
+    if (request?.vhcItemId || request?.vhc_item_id || source.includes("vhc")) return sum;
+    return sum + Math.max(0, Number(request?.hours ?? request?.time) || 0);
+  }, 0);
+
 const formatAppointmentTime = (job) => {
   const appointment = job?.appointment;
   if (!appointment) return "No appointment";
@@ -391,6 +398,30 @@ const formatClockInTime = (value) => {
   }
 };
 
+const calculateClockingMinutesTotal = (rows = [], now = Date.now()) => {
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+  return Math.max(
+    0,
+    Math.round(
+      rows.reduce((sum, row) => {
+        if (!row?.clock_in) return sum;
+        const start = Date.parse(row.clock_in);
+        const end = row.clock_out ? Date.parse(row.clock_out) : now;
+        if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return sum;
+        return sum + (end - start) / (1000 * 60);
+      }, 0)
+    )
+  );
+};
+
+const formatClockingDuration = (totalMinutes) => {
+  const safeMinutes = Number.isFinite(totalMinutes) ? Math.max(0, totalMinutes) : 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  const minuteLabel = minutes === 1 ? "min" : "mins";
+  return `${hours}h${minutes}${minuteLabel}`;
+};
+
 const toUserIdKey = (value) => {
   if (value === null || value === undefined) return null;
   const numeric = Number(value);
@@ -470,6 +501,8 @@ export default function NextJobsPage() {
   const [capacityByUser, setCapacityByUser] = useState({});
   const [capacityDate, setCapacityDate] = useState(() => toCapacityDateKey(new Date()));
   const [jobProgressByJobId, setJobProgressByJobId] = useState({});
+  const [jobClockingRowsByJobKey, setJobClockingRowsByJobKey] = useState({});
+  const [clockingNow, setClockingNow] = useState(() => Date.now());
   const [hoveredRequestJobNumber, setHoveredRequestJobNumber] = useState(null);
   const [highlightedSearchJobNumbers, setHighlightedSearchJobNumbers] = useState([]);
   const dragStateRef = useRef(null);
@@ -603,6 +636,8 @@ export default function NextJobsPage() {
     } :
     null;
 
+    const jobRequests = Array.isArray(row.job_requests) ? row.job_requests : [];
+
     return {
       id: row.id,
       jobNumber: row.job_number,
@@ -620,7 +655,9 @@ export default function NextJobsPage() {
       [row.job_categories].flat() :
       [],
       requests: row.requests || null,
-      jobRequestsCount: getJobRequestsCountFromPayload(row.requests),
+      jobRequests,
+      job_requests: jobRequests,
+      jobRequestsCount: canonicalRequestsCount({ job_requests: jobRequests, requests: row.requests }),
       vhcChecks: Array.isArray(row.vhc_checks) ? row.vhc_checks : [],
       vhcRequired: Boolean(row.vhc_required),
       // Tech-side completion flag — drives reappearance in the outstanding queue
@@ -687,6 +724,7 @@ export default function NextJobsPage() {
         customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
         vehicle:vehicle_id(registration, reg_number, make, model, make_model),
         appointments(appointment_id, scheduled_time, status, notes),
+        job_requests(request_id, job_id, description, hours, job_type, sort_order, status, request_source, vhc_item_id, pre_pick_location, note_text, job_request_preset_id, fault_reported, diagnosis, rectification, customer_approved, created_at, updated_at),
         vhc_checks(vhc_id, section, issue_title, issue_description, approval_status, authorization_state, severity, display_status, labour_complete, labour_hours, Complete)
       `
     ).
@@ -818,6 +856,39 @@ export default function NextJobsPage() {
     }
   }, [jobs]);
 
+  const fetchJobClockingRows = useCallback(async () => {
+    const jobIds = Array.from(
+      new Set((jobs || []).map((job) => Number(job.id)).filter((jobId) => Number.isInteger(jobId) && jobId > 0))
+    );
+    if (jobIds.length === 0) {
+      setJobClockingRowsByJobKey({});
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("job_clocking")
+        .select("id, job_id, job_number, clock_in, clock_out")
+        .in("job_id", jobIds);
+      if (error) throw error;
+
+      const byKey = {};
+      (Array.isArray(data) ? data : []).forEach((row) => {
+        const keys = [
+          row?.job_id !== null && row?.job_id !== undefined ? `id:${row.job_id}` : null,
+          row?.job_number ? `number:${String(row.job_number).trim()}` : null
+        ].filter(Boolean);
+        keys.forEach((key) => {
+          byKey[key] = [...(byKey[key] || []), row];
+        });
+      });
+      setJobClockingRowsByJobKey(byKey);
+    } catch (error) {
+      console.error("❌ Error fetching job clocking totals:", error);
+      setJobClockingRowsByJobKey({});
+    }
+  }, [jobs]);
+
   // ✅ Fetch jobs and technicians from Supabase on component mount
   useEffect(() => {// Kick off initial data fetch
     fetchJobs(); // Load waiting jobs
@@ -835,12 +906,18 @@ export default function NextJobsPage() {
     fetchJobRequestProgress();
   }, [fetchJobRequestProgress]);
 
+  useEffect(() => {
+    fetchJobClockingRows();
+  }, [fetchJobClockingRows]);
+
   // Estimated labour hours for a single job: recorded request hours + authorised
   // VHC labour, falling back to a 1-hour nominal when nothing is recorded yet.
   const estimateJobHours = useCallback(
     (job) => {
       if (!job) return 0;
-      const requestHours = Number(jobProgressByJobId[String(job.id)]?.totalHours) || 0;
+      const requestHoursFromProgress = Number(jobProgressByJobId[String(job.id)]?.totalHours) || 0;
+      const requestHoursFromJob = getCustomerRequestHours(job);
+      const requestHours = Math.max(requestHoursFromProgress, requestHoursFromJob);
       const vhcHours = (Array.isArray(job.vhcChecks) ? job.vhcChecks : []).reduce((sum, row) => {
         const status = String(row?.approval_status || "").trim().toLowerCase();
         if (status === "authorized" || status === "authorised" || status === "completed") {
@@ -879,6 +956,7 @@ export default function NextJobsPage() {
       { event: "*", schema: "public", table: "job_clocking" },
       () => {
         fetchActiveClockings();
+        fetchJobClockingRows();
       }
     ).
     subscribe();
@@ -886,7 +964,7 @@ export default function NextJobsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchActiveClockings]);
+  }, [fetchActiveClockings, fetchJobClockingRows]);
 
   useEffect(() => {
     const channel = supabase.
@@ -1152,6 +1230,30 @@ export default function NextJobsPage() {
     filter(Boolean),
     [activeClockingsByUser]
   );
+
+  const getJobClockedTimeText = useCallback(
+    (job) => {
+      if (!job) return "";
+      const rows =
+        jobClockingRowsByJobKey[`id:${job.id}`] ||
+        jobClockingRowsByJobKey[`number:${String(job.jobNumber || "").trim()}`] ||
+        [];
+      if (!rows.length) return "";
+      return formatClockingDuration(calculateClockingMinutesTotal(rows, clockingNow));
+    },
+    [clockingNow, jobClockingRowsByJobKey]
+  );
+
+  useEffect(() => {
+    const hasOpenClocking = Object.values(jobClockingRowsByJobKey).some((rows) =>
+      (Array.isArray(rows) ? rows : []).some((row) => row && !row.clock_out)
+    );
+    if (!hasOpenClocking) return undefined;
+    const intervalId = window.setInterval(() => {
+      setClockingNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [jobClockingRowsByJobKey]);
 
   // Board rows — every technician / MOT user (no hard cap, supports large rosters).
   const techRows = useMemo(
@@ -2093,6 +2195,7 @@ export default function NextJobsPage() {
       outstandingJobs={outstandingJobs}
       checkedInJobs={checkedInJobs}
       estimateJobHours={estimateJobHours}
+      getJobClockedTimeText={getJobClockedTimeText}
       deriveJobTypeLabel={deriveJobTypeLabel}
       formatAppointmentTime={formatAppointmentTime}
       getJobRequestItems={getJobRequestItems}

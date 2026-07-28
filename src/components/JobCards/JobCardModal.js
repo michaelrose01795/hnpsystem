@@ -16,6 +16,7 @@ import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/database/supabaseClient";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
@@ -351,26 +352,30 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         className="popup-card"
         data-draft-ignore="true"
         style={{
-          borderRadius: "var(--radius-xl)",
           width: "100%",
           maxWidth: "600px",
           maxHeight: "90vh",
           overflowY: "auto",
-          padding: "32px",
+          padding: "var(--section-card-padding)",
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >
-        <h2
-          style={{
-            marginBottom: "20px", // Space under heading
-            color: "var(--primary)", // Red brand accent
-            fontSize: "24px", // Large title
-            fontWeight: "700", // Bold
-            textAlign: "center" // Centered
-          }}
+        <div
+          className="app-popup-compact-header"
+          style={{ marginBottom: "var(--layout-card-gap)" }}
         >
-          Start Job
-        </h2>
+          <h2>Start Job</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
 
         {/* Active clock-ins */}
         {activeJobs.length > 0 && (
@@ -421,26 +426,19 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   </div>
                 </div>
 
-                <button
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
                   onClick={(e) => { // ✅ Prevent parent click when clicking clock out
                     e.stopPropagation();
                     handleClockOut(job.jobId, job.jobNumber, job.clockingId);
                   }}
                   disabled={loading || dbUserId == null} // Disable if busy or unmapped
-                style={{
-                  padding: "8px 16px", // Button padding
-                  backgroundColor: loading ? "var(--surface)" : "var(--danger)", // Grey when loading
-                  color: "white", // Text colour
-                  border: "none", // No border
-                  borderRadius: "var(--radius-xs)", // Rounded
-                  cursor: loading || dbUserId == null ? "not-allowed" : "pointer", // Cursor state
-                  fontSize: "13px", // Font size
-                  fontWeight: "600", // Bold
-                  transform: "none" // Keep hit target aligned
-                }}
-              >
-                Clock Out {/* Button label */}
-              </button>
+                  style={{ flexShrink: 0 }}
+                >
+                  Clock Out {/* Button label */}
+                </Button>
               </LayerTheme>
             ))}
           </div>
@@ -457,9 +455,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             style={{
               display: "block", // Own line
               marginBottom: "8px", // Gap below
-              fontSize: "14px", // Label size
-              fontWeight: "600", // Bold
-              color: "var(--text-1)" // Text colour
             }}
           >
             Enter Job Number: {/* Label text */}
@@ -476,14 +471,10 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             onKeyDown={handleKeyDown} // Enter handler
             placeholder="e.g., 00001" // Example format
             disabled={loading} // Disable when loading
+            className="app-input"
             style={{
               width: "100%", // Full width
-              padding: "12px", // Comfortable size
               marginBottom: "12px", // Gap below
-              borderRadius: "var(--radius-xs)", // Rounded
-              border: "none", // Subtle border
-              fontSize: "16px", // Readable size
-              outline: "none" // No outline
             }}
           />
 
@@ -523,48 +514,19 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             </p>
           )}
 
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onClick={handleClockIn} // Start clocking
             disabled={loading || !jobNumber.trim() || dbUserId == null} // Disable until ready
+            busy={loading}
             style={{
               width: "100%", // Full width
-              padding: "12px", // Button padding
-              backgroundColor:
-                loading || !jobNumber.trim() || dbUserId == null ? "var(--surface)" : "var(--primary)", // Grey when disabled
-              color: "white", // Text colour
-              border: "none", // No border
-              borderRadius: "var(--radius-xs)", // Rounded
-              fontWeight: "600", // Bold
-              fontSize: "16px", // Size
-              cursor:
-                loading || !jobNumber.trim() || dbUserId == null ? "not-allowed" : "pointer", // Cursor
-              transition: "background-color 0.2s", // Smooth hover
-              transform: "none" // Prevent hover shift offset
             }}
           >
             {loading ? "Clocking In..." : "Clock In"} {/* Label */}
-          </button>
+          </Button>
         </LayerTheme>
-
-        {/* Cancel button */}
-        <button
-          onClick={onClose} // Close modal
-          disabled={loading} // Disable when busy
-          style={{
-            width: "100%", // Full width
-            marginTop: "16px", // Gap
-            padding: "10px", // Padding
-            backgroundColor: "var(--surface)", // Neutral bg
-            color: "var(--grey-accent)", // Muted text
-            border: "none", // No border
-            borderRadius: "var(--radius-xs)", // Rounded
-            fontWeight: "600", // Bold
-            cursor: loading ? "not-allowed" : "pointer", // Cursor state
-            transform: "none" // Prevent hover offset
-          }}
-        >
-          Cancel {/* Label */}
-        </button>
       </div>
     </div>
   );

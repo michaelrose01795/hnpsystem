@@ -670,7 +670,11 @@ export default function TechJobDetailPage() {
             quantity,
             status,
             description,
+            source,
+            vhc_item_id,
+            fulfilled_by,
             created_at,
+            updated_at,
             part:part_id(
               id,
               part_number,
@@ -744,6 +748,14 @@ export default function TechJobDetailPage() {
             unit_price,
             status,
             vhc_item_id,
+            pre_pick_location,
+            request_notes,
+            row_description,
+            part_number_snapshot,
+            part_name_snapshot,
+            created_at,
+            updated_at,
+            source_request_id,
             part:part_id(
               id,
               part_number,
@@ -1479,56 +1491,85 @@ export default function TechJobDetailPage() {
   confirm]
   );
 
-  const handlePartsRequestSubmit = useCallback(async () => {
+  const handlePartsRequestSubmit = useCallback(async (requestForm = null) => {
     if (!jobCardId) {
-      alert("Unable to submit a part request before the job data is loaded.");
-      return;
+      setPartsFeedback("Unable to submit a part request before the job data is loaded.");
+      return { success: false };
     }
 
     const requesterId = dbUserId ?? user?.id;
     if (!requesterId) {
-      alert("Unable to resolve your workshop profile. Try refreshing the page.");
-      return;
+      setPartsFeedback("Unable to resolve your workshop profile. Try refreshing the page.");
+      return { success: false };
     }
 
-    const trimmedDescription = partRequestDescription.trim();
-    if (!trimmedDescription) {
-      alert("Describe the part you need so the parts team can act on it.");
-      return;
+    const form = requestForm && typeof requestForm === "object" ? requestForm : {};
+    const partRequired = String(form.partRequired ?? partRequestDescription ?? "").trim();
+    if (!partRequired) {
+      setPartsFeedback("Enter the part required before sending the request.");
+      return { success: false };
     }
 
     setPartsSubmitting(true);
     setPartsFeedback("");
 
     try {
+      const attachmentSummary = Array.isArray(form.attachments) && form.attachments.length
+        ? form.attachments.map((file) => [file?.name, file?.fileId ? `file ${file.fileId}` : ""].filter(Boolean).join(" ")).filter(Boolean).join(", ")
+        : "";
+      const descriptionLines = [
+        `Part required: ${partRequired}`,
+        `Priority: ${form.priority || "Normal"}`,
+        `Vehicle area: ${form.area || "Front"}`,
+        `Side: ${form.side || "N/A"}`,
+        `Reason: ${form.reason || "Worn"}`,
+        form.additionalInfo ? `Additional information: ${String(form.additionalInfo).trim()}` : "",
+        attachmentSummary ? `Photos selected: ${attachmentSummary}` : "",
+        "Sent directly to Parts",
+      ].filter(Boolean);
       const insertPayload = { // Build request payload with optional VHC link.
         job_id: jobCardId,
         requested_by: requesterId,
-        quantity: Math.max(1, Number(partRequestQuantity) || 1),
-        description: trimmedDescription,
+        quantity: Math.max(1, Number(form.quantity ?? partRequestQuantity) || 1),
+        description: descriptionLines.join("\n"),
         status: "waiting_authorisation",
         source: "tech_request",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      if (partRequestVhcItemId) {// Attach VHC item link if tech selected one.
-        insertPayload.vhc_item_id = partRequestVhcItemId;
+      const linkedVhcItemId = form.vhcItemId ?? partRequestVhcItemId;
+      if (linkedVhcItemId) {// Attach VHC item link if tech selected one.
+        insertPayload.vhc_item_id = linkedVhcItemId;
       }
 
-      const { error } = await supabase.from("parts_requests").insert(insertPayload);
+      const { data: insertedRequest, error } = await supabase
+        .from("parts_requests")
+        .insert(insertPayload)
+        .select("request_id")
+        .single();
 
       if (error) {
         throw error;
       }
 
+      await createJobNote({
+        job_id: jobCardId,
+        user_id: Number.isFinite(Number(requesterId)) ? Number(requesterId) : null,
+        note_text: `Parts request sent directly to Parts: ${partRequired}`,
+        hidden_from_customer: true,
+        linked_vhc_id: linkedVhcItemId || null,
+      });
+
       setPartRequestDescription("");
       setPartRequestQuantity(1);
       setPartRequestVhcItemId(null); // Reset VHC link after submission.
-      setPartsFeedback("Part request submitted. Parts will review it alongside VHC items.");
+      setPartsFeedback("Part request sent to Parts.");
       await fetchJobData();
+      return { success: true, requestId: insertedRequest?.request_id };
     } catch (submitError) {
       console.error("Failed to submit part request:", submitError);
-      alert(submitError.message || "Failed to raise the part request. Try again.");
+      setPartsFeedback(submitError.message || "Failed to raise the part request. Try again.");
+      return { success: false };
     } finally {
       setPartsSubmitting(false);
     }
@@ -1541,6 +1582,134 @@ export default function TechJobDetailPage() {
   partRequestVhcItemId,
   fetchJobData]
   );
+
+  const handlePartsRequestAction = useCallback(async ({ requestId, action, updates = {}, jobItemId = null } = {}) => {
+    if (!requestId || !action || !jobCardId) {
+      setPartsFeedback("Unable to update this parts request.");
+      return { success: false };
+    }
+
+    const actorId = dbUserId ?? user?.id ?? null;
+    setPartsFeedback("");
+
+    try {
+      if (action === "cancel") {
+        const { error } = await supabase
+          .from("parts_requests")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("request_id", requestId);
+        if (error) throw error;
+        await createJobNote({
+          job_id: jobCardId,
+          user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
+          note_text: `Parts request #${requestId} cancelled by technician.`,
+          hidden_from_customer: true,
+        });
+        setPartsFeedback("Parts request cancelled.");
+      } else if (action === "edit") {
+        const safeUpdates = {};
+        if (typeof updates.description === "string") safeUpdates.description = updates.description;
+        if (updates.quantity !== undefined) safeUpdates.quantity = Math.max(1, Number(updates.quantity) || 1);
+        safeUpdates.updated_at = new Date().toISOString();
+        const { error } = await supabase.from("parts_requests").update(safeUpdates).eq("request_id", requestId);
+        if (error) throw error;
+        await createJobNote({
+          job_id: jobCardId,
+          user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
+          note_text: `Parts request #${requestId} edited by technician.`,
+          hidden_from_customer: true,
+        });
+        setPartsFeedback("Parts request updated.");
+      } else if (action === "fitted") {
+        if (jobItemId) {
+          const response = await fetch("/api/parts/update-status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ partItemId: jobItemId, status: "fitted" }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || "Failed to mark part as fitted.");
+        } else {
+          const { error } = await supabase
+            .from("parts_requests")
+            .update({ status: "fulfilled", updated_at: new Date().toISOString() })
+            .eq("request_id", requestId);
+          if (error) throw error;
+        }
+        await createJobNote({
+          job_id: jobCardId,
+          user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
+          note_text: `Parts request #${requestId} marked as fitted.`,
+          hidden_from_customer: true,
+        });
+        setPartsFeedback("Part marked as fitted.");
+      }
+
+      await fetchJobData();
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to update parts request:", error);
+      setPartsFeedback(error.message || "Failed to update the parts request.");
+      return { success: false };
+    }
+  }, [dbUserId, fetchJobData, jobCardId, user?.id]);
+
+  const handlePartsRequestNote = useCallback(async ({ requestId, note } = {}) => {
+    const trimmedNote = String(note || "").trim();
+    if (!jobCardId || !requestId || !trimmedNote) {
+      return { success: false };
+    }
+    const actorId = dbUserId ?? user?.id ?? null;
+    const result = await createJobNote({
+      job_id: jobCardId,
+      user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
+      note_text: `Parts request #${requestId}: ${trimmedNote}`,
+      hidden_from_customer: true,
+    });
+    if (result?.success) {
+      setPartsFeedback("Note added to the parts request.");
+      await loadNotes(jobCardId);
+      return { success: true };
+    }
+    setPartsFeedback(result?.error?.message || "Failed to add the request note.");
+    return { success: false };
+  }, [dbUserId, jobCardId, loadNotes, user?.id]);
+
+  const handlePartJobItemAction = useCallback(async ({ jobItemId, action } = {}) => {
+    if (!jobItemId || !action) {
+      setPartsFeedback("Unable to update this part.");
+      return { success: false };
+    }
+
+    const statusByAction = {
+      collected: "picked",
+      fitted: "fitted",
+    };
+    const nextStatus = statusByAction[action];
+    if (!nextStatus) {
+      setPartsFeedback("Unsupported parts action.");
+      return { success: false };
+    }
+
+    try {
+      const response = await fetch("/api/parts/update-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partItemId: jobItemId, status: nextStatus }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to update part status.");
+      }
+      setPartsFeedback(action === "collected" ? "Part marked as collected." : "Part marked as fitted.");
+      await fetchJobData();
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to update job part:", error);
+      setPartsFeedback(error.message || "Failed to update part status.");
+      return { success: false };
+    }
+  }, [fetchJobData]);
 
   // VHC Callbacks
   const markSectionState = useCallback((sectionKey, nextState) => {
@@ -3085,7 +3254,7 @@ export default function TechJobDetailPage() {
 
   }
 
-  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTechComplete={writeUpTechComplete} />;
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedParts={authorizedParts} authorizedPartsLoading={authorizedPartsLoading} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartJobItemAction={handlePartJobItemAction} handlePartsRequestAction={handlePartsRequestAction} handlePartsRequestNote={handlePartsRequestNote} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTechComplete={writeUpTechComplete} />;
 
 
 

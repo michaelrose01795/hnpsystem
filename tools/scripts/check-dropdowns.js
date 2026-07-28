@@ -31,7 +31,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/VHC/VhcDetailsPanel.js", 1],
   ["src/components/Workshop/JobClockingCard.js", 1],
   ["src/components/page-ui/job-cards/ContactTab.js", 1],
-  ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 1],
   ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 1],
   ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 1],
   ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 1],
