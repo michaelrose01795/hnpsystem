@@ -15,6 +15,7 @@ import {
 import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { supabase } from "@/lib/database/supabaseClient";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
@@ -376,9 +377,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           <div
             style={{
               marginBottom: "24px", // Space below
-              padding: "16px", // Inner padding
-              backgroundColor: "var(--surface)", // Light red bg
-              borderRadius: "var(--radius-xs)", // Rounded
             }}
           >
             <h3
@@ -393,25 +391,19 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             </h3>
 
             {activeJobs.map((job) => (
-              <div
+              <LayerTheme
                 key={job.clockingId} // List key
+                radius="var(--radius-xs)"
+                padding="12px"
+                gap="var(--layout-card-gap)"
                 onClick={() => handleActiveJobClick(job)} // ✅ NEW: Click to navigate to job
                 style={{
-                  display: "flex", // Row
+                  flexDirection: "row", // Keep job details and action on one row
                   justifyContent: "space-between", // Space between cols
                   alignItems: "center", // Vertically center
-                  padding: "12px", // Inner spacing
-                  backgroundColor: "var(--surface)", // Card bg
-                  borderRadius: "var(--radius-xs)", // Rounded
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable
-                  transition: "all 0.2s", // ✅ NEW: Smooth hover effect
-                }}
-                onMouseEnter={(e) => { // ✅ NEW: Hover effect
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                }}
-                onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
+                  transition: "background-color 0.2s", // Keep colour changes smooth
                 }}
               >
                 <div style={{ flex: 1 }}> {/* Left column */}
@@ -449,13 +441,18 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               >
                 Clock Out {/* Button label */}
               </button>
-              </div>
+              </LayerTheme>
             ))}
           </div>
         )}
 
         {/* Manual Entry */}
-        <div style={{ marginBottom: "20px" }}> {/* Entry section */}
+        <LayerTheme
+          radius="var(--radius-xs)"
+          padding="16px"
+          gap="var(--layout-card-gap)"
+          style={{ marginBottom: "20px" }}
+        > {/* Entry section */}
           <label
             style={{
               display: "block", // Own line
@@ -547,7 +544,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           >
             {loading ? "Clocking In..." : "Clock In"} {/* Label */}
           </button>
-        </div>
+        </LayerTheme>
 
         {/* Cancel button */}
         <button

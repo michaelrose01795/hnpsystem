@@ -46,6 +46,8 @@ import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
+import { getTechnicianTopbarSnapshot } from "@/lib/database/technicianTopbar";
+import { buildTechnicianKpis } from "@/config/topbar/technicianKpis";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -341,6 +343,25 @@ export default function Layout({
       }),
     [departmentCode, operationalSnapshot.metrics, presentationShell]
   );
+  const technicianTopbarKey =
+    !presentationShell && isTech && dbUserId && !isTablet
+      ? ["technician-topbar", Number(dbUserId)]
+      : null;
+  const { data: technicianTopbarSnapshot } = useSWR(
+    technicianTopbarKey,
+    () => getTechnicianTopbarSnapshot(dbUserId),
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: true,
+    }
+  );
+  const technicianKpis = useMemo(
+    () =>
+      technicianTopbarSnapshot
+        ? buildTechnicianKpis(technicianTopbarSnapshot)
+        : [],
+    [technicianTopbarSnapshot]
+  );
   // Phase 2.4: configurable role-specific quick actions (manifest wins, else the
   // capability defaults). Preserves the previous behaviour, de-hardcoded.
   const topbarQuickActions = resolveQuickActions({
@@ -350,7 +371,10 @@ export default function Layout({
   });
   // Phase 2.3: Continue Where You Left Off.
   const continueContext = useContinueContext(router.asPath, {
-    enabled: !presentationShell,
+    // Technicians already have the live current-job action in the topbar.
+    // Recording /tech as generic history creates a duplicate, less accurate
+    // resume link beside "Open Job <number>".
+    enabled: !presentationShell && !isTech,
   });
   // Two most-used pages for the topbar quick-access buttons. READ-ONLY: the visit
   // counting is already done by WorkspaceCommandCenter's behaviour model (mounted
@@ -363,8 +387,14 @@ export default function Layout({
     record: false,
   });
   const topPages = useMemo(
-    () => (behaviourReadOnly.topActions || []).slice(0, 2),
-    [behaviourReadOnly.topActions]
+    () => {
+      const learnedPages = behaviourReadOnly.topActions || [];
+      if (!isTech) return learnedPages.slice(0, 2);
+      return learnedPages.length > 0
+        ? learnedPages.slice(0, 1)
+        : [{ href: "/tech", label: "My Jobs" }];
+    },
+    [behaviourReadOnly.topActions, isTech]
   );
   // The current page as a candidate for the command palette's favourite/recent
   // surfaces (WorkspaceCommandCenter). The bar's own Pinned Shortcuts section was
@@ -1304,8 +1334,8 @@ export default function Layout({
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
             colors={colors}
-            kpis={topbarSections.kpis}
-            insightViews={topbarSections.insights}
+            kpis={isTech ? technicianKpis : topbarSections.kpis}
+            insightViews={isTech ? [] : topbarSections.insights}
             topPages={topPages}
             isTech={isTech}
             status={status}
@@ -1315,7 +1345,7 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            resumeItem={continueContext.mostRecent}
+            resumeItem={isTech ? null : continueContext.mostRecent}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}

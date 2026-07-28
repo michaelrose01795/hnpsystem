@@ -2,21 +2,42 @@ CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
 
 03969 continue within service,  just added parts more to add. add to nextjob for tech 1, check tech 1 has access, get tech 1 to complete there side and then pass back to controller, then controller do last checks etc and invoice
 
+
 TODO
-Update the Tech topbar to what they see etc"
+so within the "/job-cards/03969" page wihtin the overview page it has "Jobcard Header | 1.2.2.1.1.1 | key jobcard-header | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:250 | route /job-cards/03969 | where Job Card # 03969 In Progress Retail Link Job | parent jobcard-page-shell 1.2.2.1.1" section this size and shape of this card needs to match "Myjob Header | 1.2.2.1.1.1 | key myjob-header | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:443 | route /tech/03969 | where 03969 | parent myjob-page-shell 1.2.2.1.1" card. the height of "Jobcard Summary Vehicle | 1.2.2.1.1.2 | key jobcard-summary-vehicle | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:392 | route /job-cards/03969 | where YE10RUO Mileage RENAULT | parent jobcard-page-shell 1.2.2.1.1" card needs to match the cards which were within the "Myjob Quick Stats | 1.2.2.1.1.2 | key myjob-quick-stats | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:538 | route /tech/03969 | where Service Job Requests 0 Parts authorised 0h12mins Clocked Hours | parent myjob-page-shell 1.2.2.1.1" section. the style of the "Myjob Tab Row | 1.2.2.1.1.3 | key myjob-tab-row | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:603 | route /tech/03969 | where Overview VHC Write-Up Parts Notes Documents | parent myjob-page-shell 1.2.2.1.1" needs to match the same as "Jobcard Tab Row | 1.2.2.1.1.6 | key jobcard-tab-row | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:650 | route /job-cards/03969 | where Job card tab navigation | parent jobcard-page-shell 1.2.2.1.1" tab section. and then have it so the spacing between all  and "Myjob Main Content | 1.2.2.1.1.4 | key myjob-main-content | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:658 | route /tech/03969 | where Myjob Main Content | parent myjob-page-shell 1.2.2.1.1 | 1 child" of that is the same as the spacing within "Jobcard Page Shell | 1.2.2.1.1 | key jobcard-page-shell | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:232 | route /job-cards/03969 | where Jobcard Page Shell | parent app-layout-page-card 1.2.2.1 | 7 children" secton for example deep dive, we arent changing anything wihtin the "/job-cards/03969" page for example, but we are adjusting the card layout and styleing within "/tech/03969" only
+
+TODO
+have it so "Jobcard Summary Vehicle | 1.2.1.1.1.2 | key jobcard-summary-vehicle | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:392 | route /job-cards/03969 | where YE10RUO Mileage RENAULT | parent jobcard-page-shell 1.2.1.1.1" "Jobcard Summary Customer | 1.2.1.1.1.3 | key jobcard-summary-customer | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:449 | route /job-cards/03969 | where Darcy Vine 07732891981 VHC: Pending | parent jobcard-page-shell 1.2.1.1.1" sections replacing the conntents within the "Myjob Quick Stat Job Requests | 1.2.2.1.1.2 | key myjob-quick-stat-job-requests | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:554 (dynamic pattern) | route /tech/03969 | where Service Job Requests | parent myjob-page-shell 1.2.2.1.1" seciton, then have it so the contents within "Jobcard Summary Customer | 1.2.1.1.1.3 | key jobcard-summary-customer | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:449 | route /job-cards/03969 | where Darcy Vine 07732891981 VHC: Pending | parent jobcard-page-shell 1.2.1.1.1" repalces the "Myjob Quick Stat Parts Authorised | 1.2.2.1.1.3 | key myjob-quick-stat-parts-authorised | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:615 | route /tech/03969 | where 0 Parts authorised | parent myjob-page-shell 1.2.2.1.1" contents, and then add another section so there are 4 cards all on a line like the "Myjob Quick Stat Parts Authorised | 1.2.2.1.1.3 | key myjob-quick-stat-parts-authorised | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:615 | route /tech/03969 | where 0 Parts authorised | parent myjob-page-shell 1.2.2.1.1" section, haev the 3rd card show "Myjob Quick Stat Clocked Hours | 1.2.2.1.1.4 | key myjob-quick-stat-clocked-hours | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:620 | route /tech/03969 | where 0h20mins Clocked Hours | parent myjob-page-shell 1.2.2.1.1" contents, and then the last card show "Jobcard Summary Locations | 1.2.1.1.1.5 | key jobcard-summary-locations | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:562 | route /job-cards/03969 | where Key location N/A Car location N/A | parent jobcard-page-shell 1.2.1.1.1" contents. have it so this is then moving the "Myjob Overview Vehicle | 1.2.2.1.1.6.1.1.2.1 | key myjob-overview-vehicle | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:960 | route /tech/03969 | where Vehicle Information Registration: YE10RUO Make & Model: RENAULT Mileage: 67,281 miles Colour: SILVER | parent myjob-overview-summary-grid 1.2.2.1.1.6.1.1.2" and ""Myjob Overview Customer | 1.2.2.1.1.6.1.1.2.2 | key myjob-overview-customer | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:1030 | route /tech/03969 | where Customer Information Name: Darcy Vine Mobile: 07732891981 Email: darcyvine@gmail.com | parent myjob-overview-summary-grid 1.2.2.1.1.6.1.1.22 section for example to the top cleanring that up 
+
+TODO
+Remove "Myjob Page Shell | 1.2.2.1.1 | key myjob-page-shell | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:496 | route /tech/03969 | where Myjob Page Shell | parent app-layout-page-card 1.2.2.1 | 6 children" card and move the contents into the main page section for that page. then we are going to adjust this section to match the layout and styling of the "Jobcard Tab Customer Requests | 1.2.1.1.1.7.1 | key jobcard-tab-customer-requests | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:753 | route /job-cards/03969 | where Job card detail > Customer Requests tab > customer requests tab | parent jobcard-tab-content-shell 1.2.1.1.1.7 | 13 children" section. deep dive to make this change to the "/tech/03969" page section only. 
+
+TODO
+have it so this "Myjob Tab Writeup | 1.2.2.1.1.6.1.1 | key myjob-tab-writeup | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:2023 | route /tech/03969 | where Myjob Tab Writeup | parent myjob-main-scroll 1.2.2.1.1.6.1 | 1 child" section write up section matchs "Jobcard Tab Writeup | 1.2.1.1.1.7.1 | key jobcard-tab-writeup | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:824 | route /job-cards/03969 | where Job card detail > Write-up tab > write-up tab | parent jobcard-tab-content-shell 1.2.1.1.1.7 | 12 children" write up section. dont change the "/job-cards/03969" write up tab page section at all just the "Myjob Tab Writeup | 1.2.2.1.1.6.1.1 | key myjob-tab-writeup | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:2023 | route /tech/03969 | where Myjob Tab Writeup | parent myjob-main-scroll 1.2.2.1.1.6.1 | 1 child" section to match the style and layout. 
+
+TODO
+have it so "Myjob Tab Notes | 1.2.2.1.1.6.1.1 | key myjob-tab-notes | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:1855 | route /tech/03969 | where Myjob Tab Notes | parent myjob-main-scroll 1.2.2.1.1.6.1 | 2 children" notes section matches the layout and style of the "Jobcard Tab Content Shell | 1.2.2.1.1.7 | key jobcard-tab-content-shell | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:743 | route /job-cards/03969 | where Job card detail > Notes tab > tab content shell | parent jobcard-page-shell 1.2.2.1.1 | 2 children" section 
+
+TODO
+Have it so "Myjob Documents Panel | 1.2.2.1.1.6.1.1.2 | key myjob-documents-panel | file src/pages/tech/[jobNumber].js:4904 | route /tech/03969 | where Myjob Documents Panel | parent myjob-tab-documents 1.2.2.1.1.6.1.1 | 2 children" section matches the "Jobcard Tab Documents | 1.2.2.1.1.7.1 | key jobcard-tab-documents | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:890 | route /job-cards/03969 | where Job card detail > Documents tab > documents tab | parent jobcard-tab-content-shell 1.2.2.1.1.7" seciton for its style and design. 
+
+TODO 
+within the "Jobcard Tab Documents | 1.2.2.1.1.7.1 | key jobcard-tab-documents | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:890 | route /job-cards/03969 | where Job card detail > Documents tab > documents tab | parent jobcard-tab-content-shell 1.2.2.1.1.7" section the it says "ðŸ“„ No documents attached Upload check-sheets, signed paperwork, or photos to keep everything in one place." can this be fixed so it doesnt show "ðŸ“„" for example. 
+
+
+
+
+
+CHECK
+Update the Tech topbar so instead it saying "Resume: Tech" it says "Clocked job" instead. 
+
 
 CHECK Drag and drop wihtin next job
 
-CHECK
-assign popup style layout
 
-CHECK 
-tech Clocking control popup layout
-    
-CHECK
-next job progression bar
 
-TODO
+
+CHAT GPT TODO
 look into the users not having to click clock on manaully, but this doing it automatically, liek the app knowing when the user is on the job and then finished the job and then on road test etc find out how this can be as automated as possible etc. 
 
 --------------- VHC --------

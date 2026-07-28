@@ -92,7 +92,7 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   headerCard: { background: _p.modalGradient, borderRadius: _r.xl, padding: "var(--space-lg)", boxShadow: "none", display: "flex", flexDirection: "column", gap: "var(--space-5)" },
   headerTopRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-lg)" },
   headerTitleBlock: { display: "flex", flexDirection: "column", gap: "var(--space-1)" },
-  headerTitle: { fontSize: "28px", fontWeight: "700", color: _p.accent, margin: 0 },
+  headerTitle: { fontSize: "28px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   headerSubtitle: { fontSize: "14px", color: _p.textMuted, margin: 0 },
   progressWrapper: { minWidth: "220px", display: "flex", flexDirection: "column", gap: "var(--space-1)" },
   progressLabel: { fontSize: "12px", fontWeight: "600", color: _p.textMuted },
@@ -100,11 +100,11 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   progressFill: { height: "100%", borderRadius: _r.pill, background: "var(--primary)", transition: "width 0.3s ease" },
   metaRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-md)" },
   metaItem: { backgroundColor: _p.accentSurface, borderRadius: _r.lg, padding: "var(--space-md)", display: "flex", flexDirection: "column", gap: "var(--space-1)" },
-  metaLabel: { fontSize: "11px", fontWeight: "700", color: "var(--danger-dark)", letterSpacing: "0.4px", textTransform: "uppercase" },
+  metaLabel: { fontSize: "11px", fontWeight: "700", color: "var(--text-1)", letterSpacing: "0.4px", textTransform: "uppercase" },
   metaValue: { fontSize: "16px", fontWeight: "600", color: _p.textPrimary },
   mainCard: { flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-lg)", padding: "var(--space-lg)", borderRadius: _r.xl, background: "var(--surface)", boxShadow: "none", overflow: "hidden" },
   sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: { fontSize: "18px", fontWeight: "700", color: _p.accent, margin: 0 },
+  sectionTitle: { fontSize: "18px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   sectionSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0 },
   sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-md)" },
   sectionCard: { position: "relative", textAlign: "left", backgroundColor: _p.surface, borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "none", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
@@ -204,17 +204,17 @@ const STATUS_COLORS = {
 };
 
 const STATUS_BADGE_STYLES = {
-  "Waiting": { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  "In Progress": { background: "var(--theme)", color: "var(--accent-purple)" },
-  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
-  "Write Up Complete": { background: "var(--theme)", color: "var(--accent-purple)" },
-  "Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "Started": { background: "var(--theme)", color: "var(--accent-purple)" }
+  "Waiting": { background: "var(--warning-surface)", color: "var(--text-1)" },
+  "In Progress": { background: "var(--theme)", color: "var(--text-1)" },
+  "VHC Complete": { background: "var(--success-surface)", color: "var(--text-1)" },
+  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--text-1)" },
+  "Write Up Complete": { background: "var(--theme)", color: "var(--text-1)" },
+  "Complete": { background: "var(--success-surface)", color: "var(--text-1)" },
+  "Started": { background: "var(--theme)", color: "var(--text-1)" }
 };
 
 const getStatusBadgeStyle = (status, fallbackColor) =>
-STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "white" };
+STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "var(--text-2)" };
 
 const IN_PROGRESS_STATUS = "In Progress";
 
@@ -273,22 +273,22 @@ const deriveStoragePathFromUrl = (url = "") => {
 const JOB_DOCUMENT_BUCKET = "job-documents";
 
 const PARTS_STATUS_STYLES = {
-  pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  awaiting_stock: { background: "var(--danger-surface)", color: "var(--danger)" },
-  priced: { background: "var(--theme)", color: "var(--accent-purple)" },
-  "pre-pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "pre_pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "on-order": { background: "var(--warning-surface)", color: "var(--warning)" },
-  "on_order": { background: "var(--warning-surface)", color: "var(--warning)" },
-  allocated: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  picked: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  fitted: { background: "var(--theme)", color: "var(--accent-purple)" },
-  cancelled: { background: "var(--theme)", color: "var(--info)" }
+  pending: { background: "var(--warning-surface)", color: "var(--text-1)" },
+  awaiting_stock: { background: "var(--danger-surface)", color: "var(--text-1)" },
+  priced: { background: "var(--theme)", color: "var(--text-1)" },
+  "pre-pick": { background: "var(--success-surface)", color: "var(--text-1)" },
+  "pre_pick": { background: "var(--success-surface)", color: "var(--text-1)" },
+  "on-order": { background: "var(--warning-surface)", color: "var(--text-1)" },
+  "on_order": { background: "var(--warning-surface)", color: "var(--text-1)" },
+  allocated: { background: "var(--success-surface)", color: "var(--text-1)" },
+  picked: { background: "var(--success-surface)", color: "var(--text-1)" },
+  fitted: { background: "var(--theme)", color: "var(--text-1)" },
+  cancelled: { background: "var(--theme)", color: "var(--text-1)" }
 };
 
 const getPartsStatusStyle = (status) => {
-  if (!status) return { background: "var(--theme)", color: "var(--info-dark)" };
-  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--theme)", color: "var(--info-dark)" };
+  if (!status) return { background: "var(--theme)", color: "var(--text-1)" };
+  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--theme)", color: "var(--text-1)" };
 };
 
 // Helper to get status after clock out
@@ -381,7 +381,7 @@ const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => (
   fontWeight: 600,
   fontSize: "12px",
   backgroundColor: active ? "var(--accent-purple)" : "var(--theme)",
-  color: active ? "var(--surface)" : "var(--accent-purple)",
+  color: active ? "var(--text-2)" : "var(--text-1)",
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.5 : 1,
   transition: "all 0.18s ease"
@@ -1418,8 +1418,10 @@ export default function TechJobDetailPage() {
     );
   }, [vhcData]);
 
-  const getBadgeState = useCallback((stateKey) =>
-  vhcCardStates[stateKey] || vhcCardStates.pending, []);
+  const getBadgeState = useCallback((stateKey) => ({
+    ...(vhcCardStates[stateKey] || vhcCardStates.pending),
+    color: "var(--text-1)"
+  }), []);
 
   // Extract and categorize all VHC items
   const extractVhcSummary = useCallback(() => {
@@ -4811,17 +4813,17 @@ export async function getServerSideProps() {
 }
 
 const DOC_TYPE_META = {
-  pdf: { label: "PDF", bg: "var(--danger-surface)", color: "var(--danger)" },
-  png: { label: "PNG", bg: "var(--theme)", color: "var(--accent-strong)" },
-  jpg: { label: "JPG", bg: "var(--theme)", color: "var(--accent-strong)" },
-  jpeg: { label: "JPG", bg: "var(--theme)", color: "var(--accent-strong)" },
-  gif: { label: "GIF", bg: "var(--theme)", color: "var(--accent-strong)" },
-  webp: { label: "WEBP", bg: "var(--theme)", color: "var(--accent-strong)" },
-  svg: { label: "SVG", bg: "var(--theme)", color: "var(--accent-strong)" },
-  doc: { label: "DOC", bg: "var(--warning-surface)", color: "var(--warning)" },
-  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)" },
-  xls: { label: "XLS", bg: "var(--success-surface)", color: "var(--success)" },
-  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--success)" }
+  pdf: { label: "PDF", bg: "var(--danger-surface)", color: "var(--text-1)" },
+  png: { label: "PNG", bg: "var(--theme)", color: "var(--text-1)" },
+  jpg: { label: "JPG", bg: "var(--theme)", color: "var(--text-1)" },
+  jpeg: { label: "JPG", bg: "var(--theme)", color: "var(--text-1)" },
+  gif: { label: "GIF", bg: "var(--theme)", color: "var(--text-1)" },
+  webp: { label: "WEBP", bg: "var(--theme)", color: "var(--text-1)" },
+  svg: { label: "SVG", bg: "var(--theme)", color: "var(--text-1)" },
+  doc: { label: "DOC", bg: "var(--warning-surface)", color: "var(--text-1)" },
+  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--text-1)" },
+  xls: { label: "XLS", bg: "var(--success-surface)", color: "var(--text-1)" },
+  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--text-1)" }
 };
 
 function getDocTypeMeta(mimeOrExt = "") {
@@ -5235,7 +5237,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "5px 0",
                     borderRadius: "var(--radius-xs)", border: "none",
-                    backgroundColor: "var(--theme)", color: "var(--accent-strong)",
+                    backgroundColor: "var(--theme)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
                     opacity: docUrl ? 1 : 0.5
                   }}>
@@ -5249,7 +5251,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "5px 0",
                     borderRadius: "var(--radius-xs)", border: "none",
-                    backgroundColor: "var(--danger-surface)", color: "var(--danger)",
+                    backgroundColor: "var(--danger-surface)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: "pointer"
                   }}>
                   

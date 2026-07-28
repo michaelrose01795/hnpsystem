@@ -9,6 +9,7 @@
 // child and the Layout overlay renders a single grey slab on the next visit.
 
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // ─── Shared token references (match the actual pages) ──────────────────────
 const shellBg = "var(--tab-container-bg)";
@@ -322,37 +323,32 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
         </div>
       </div>
 
-      {/* Quick stats — section-shell (filtered) with three individually annotated cards */}
+      {/* Quick stats — layout-only grid with cards matching the live page keys */}
       <div
-        data-dev-section="1"
-        data-dev-section-key="myjob-quick-stats"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="myjob-page-shell"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
           gap: "12px",
           marginBottom: "12px",
-          padding: "12px",
-          backgroundColor: "var(--theme)",
-          borderRadius: radiusXs,
           flexShrink: 0,
         }}
       >
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            data-dev-section="1"
-            data-dev-section-key={`myjob-stat-${i}`}
-            data-dev-section-type="content-card"
-            data-dev-section-parent="myjob-quick-stats"
+        {[
+          { key: "myjob-quick-stat-job-requests", label: "Loading Job Requests" },
+          { key: "myjob-quick-stat-parts-authorised", label: "Loading Parts authorised" },
+          { key: "myjob-quick-stat-clocked-hours", label: "Loading Clocked Hours" },
+        ].map((stat) => (
+          <LayerTheme
+            key={stat.key}
+            sectionKey={stat.key}
+            sectionType="stat-card"
+            parentKey="myjob-page-shell"
+            backgroundToken="theme"
+            data-dev-text-preview={stat.label}
+            radius={radiusXs}
+            padding="16px"
+            gap="8px"
             style={{
-              backgroundColor: "var(--surface)",
-              borderRadius: radiusXs,
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
               alignItems: "center",
               justifyContent: "center",
               minHeight: "108px",
@@ -360,7 +356,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           >
             <SkeletonBlock width="60px" height="28px" borderRadius="var(--control-radius)" />
             <SkeletonBlock width="80px" height="12px" borderRadius="4px" />
-          </div>
+          </LayerTheme>
         ))}
       </div>
 
