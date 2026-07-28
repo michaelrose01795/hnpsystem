@@ -2,6 +2,12 @@
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
+const getStatusBadgeClassName = (statusLabel) => {
+  if (statusLabel === "In Progress") return "app-badge--success";
+  if (statusLabel === "Waiting") return "app-badge--warning";
+  return "app-badge--neutral";
+};
+
 export default function MyJobsPageUi(props) {
   const {
     InlineLoading,
@@ -15,7 +21,6 @@ export default function MyJobsPageUi(props) {
     filter,
     filteredJobs,
     getMakeModel,
-    getStatusBadgeStyle,
     getTechStatusCategory,
     handleJobClick,
     loading,
@@ -81,12 +86,14 @@ export default function MyJobsPageUi(props) {
     minHeight: "100%"
   }}>
         {/* Search and Filter Bar */}
-        <LayerTheme data-presentation="my-jobs-filters" sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="theme-filter-card" className="myjobs-filter-toolbar" style={{
+        <div className="myjobs-filter-toolbar" style={{
       display: "flex",
       flexDirection: "row",
       gap: "12px",
       alignItems: "center",
-      flexWrap: "wrap"
+      flexWrap: "nowrap",
+      width: "100%",
+      overflowX: "auto"
     }}>
           {/* Search Input */}
           <SearchBar placeholder="Search by job number, customer, reg, or vehicle..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClear={() => setSearchTerm("")} style={{
@@ -95,10 +102,11 @@ export default function MyJobsPageUi(props) {
       }} />
 
           {/* Filter Buttons */}
-          <div data-dev-section="1" data-dev-section-key="myjobs-filter-buttons" data-dev-section-type="toolbar" data-dev-section-parent="myjobs-filter-toolbar" style={{
+          <div data-dev-section="1" data-dev-section-key="myjobs-filter-buttons" data-dev-section-type="toolbar" data-dev-section-parent="app-layout-page-card" style={{
         display: "flex",
         gap: "8px",
-        flexWrap: "wrap"
+        flexWrap: "nowrap",
+        flexShrink: 0
       }}>
             {[{
           value: "all",
@@ -119,7 +127,7 @@ export default function MyJobsPageUi(props) {
                 {label}
               </Button>)}
           </div>
-        </LayerTheme>
+        </div>
 
         {/* Jobs List */}
         <LayerTheme data-presentation="my-jobs-results" sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
@@ -134,7 +142,7 @@ export default function MyJobsPageUi(props) {
         overflowY: "hidden",
         minHeight: 0
       }}>
-              <table className="app-data-table app-table-shell app-table-shell--with-headings myjobs-table" data-dev-section="1" data-dev-section-key="myjobs-results-table-loading" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
+              <table className="app-data-table app-table-shell app-table-shell--with-headings" data-dev-section="1" data-dev-section-key="myjobs-results-table-loading" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
                 <thead data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-table-loading">
                   <tr>
                     <th>Status</th>
@@ -178,7 +186,7 @@ export default function MyJobsPageUi(props) {
         overflowY: "auto",
         minHeight: 0
       }}>
-              <table className="app-data-table app-table-shell app-table-shell--with-headings myjobs-table" data-dev-section="1" data-dev-section-key="myjobs-results-table" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
+              <table className="app-data-table app-table-shell app-table-shell--with-headings" data-dev-section="1" data-dev-section-key="myjobs-results-table" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
                 <thead data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-table">
                   <tr>
                     <th>Status</th>
@@ -195,7 +203,6 @@ export default function MyJobsPageUi(props) {
           const displayStatusLabel = resolveTechStatusLabel(job, {
             isClockedOn
           });
-          const statusStyle = getStatusBadgeStyle(displayStatusLabel);
           const statusTooltip = resolveTechStatusTooltip(job, {
             isClockedOn
           });
@@ -203,77 +210,42 @@ export default function MyJobsPageUi(props) {
           const jobType = deriveJobTypeDisplay(job, {
             includeExtraCount: true
           });
-          return <tr key={job.id || job.jobNumber} className="myjobs-row" data-dev-section="1" data-dev-section-key={`myjobs-row-${job.id || job.jobNumber}`} data-dev-section-type="table-row" data-dev-section-parent="myjobs-results-rows" data-dev-background-token={`myjobs-status-${getTechStatusCategory(displayStatusLabel)}`} onClick={() => handleJobClick(job)} style={{
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            position: "relative",
-            zIndex: 0
-          }} onMouseEnter={e => {
-            e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+          return <tr key={job.id || job.jobNumber} data-dev-section="1" data-dev-section-key={`myjobs-row-${job.id || job.jobNumber}`} data-dev-section-type="table-row" data-dev-section-parent="myjobs-results-rows" data-dev-background-token={`myjobs-status-${getTechStatusCategory(displayStatusLabel)}`} onClick={() => handleJobClick(job)} style={{
+            cursor: "pointer"
+          }} onMouseEnter={() => {
             prefetchJob(job.jobNumber); // warm SWR cache on hover
-          }} onMouseLeave={e => {
-            e.currentTarget.style.zIndex = "0";
           }}>
                     {/* Status Badge */}
-                    <td className="myjobs-cell myjobs-status-cell" title={statusTooltip}>
-                      <span className="myjobs-status-badge" style={{
-              backgroundColor: statusStyle.background,
-              color: statusStyle.color,
-              height: "var(--table-action-btn-height, 32px)",
-              padding: "0 12px",
-              borderRadius: "var(--radius-xs)",
-              fontSize: "11px",
-              fontWeight: "700",
-              whiteSpace: "nowrap",
-              minWidth: "110px",
-              textAlign: "center",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
+                    <td title={statusTooltip}>
+                      <span className={`app-badge app-badge--control ${getStatusBadgeClassName(displayStatusLabel)}`}>
                       {displayStatusLabel}
                       </span>
                     </td>
 
                     {/* Job Number */}
-                    <td className="myjobs-cell myjobs-jobnumber" style={{
-              fontSize: "16px",
-              fontWeight: "700",
-              color: "var(--text-1)"
+                    <td style={{
+              fontWeight: "700"
             }}>
                       {job.jobNumber || "No Job #"}
                     </td>
 
                     {/* Registration */}
-                    <td className="myjobs-cell myjobs-reg" style={{
-              fontSize: "14px",
-              color: "var(--text-1)",
-              fontWeight: "600"
-            }}>
+                    <td>
                       {job.reg || "No Reg"}
                     </td>
 
                     {/* Customer */}
-                    <td className="myjobs-cell myjobs-customer" style={{
-              fontSize: "13px",
-              color: "var(--text-1)"
-            }}>
+                    <td>
                       {job.customer || "Unknown"}
                     </td>
 
                     {/* Make/Model */}
-                    <td className="myjobs-cell myjobs-make" style={{
-              fontSize: "13px",
-              color: "var(--text-1)"
-            }}>
+                    <td>
                       {makeModel}
                     </td>
 
                     {/* Job Type */}
-                    <td className="myjobs-cell myjobs-type" style={{
-              fontSize: "12px",
-              color: "var(--text-1)"
-            }}>
+                    <td>
                       {jobType}
                     </td>
 
@@ -386,43 +358,17 @@ export default function MyJobsPageUi(props) {
           :global(.app-page-stack) {
             gap: 12px !important;
           }
-          :global([data-dev-section-key="myjobs-filter-toolbar"]) {
-            padding: 12px !important;
+          :global(.myjobs-filter-toolbar) {
             gap: 10px !important;
           }
-          :global([data-dev-section-key="myjobs-filter-toolbar"] .search-bar) {
-            min-width: 0 !important;
+          :global(.myjobs-filter-toolbar .searchbar-api) {
+            min-width: 180px !important;
           }
           :global([data-dev-section-key="myjobs-filter-buttons"]) {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            width: 100%;
             gap: 8px !important;
           }
           :global([data-dev-section-key="myjobs-filter-buttons"] button) {
-            width: 100%;
-            min-width: 0;
-          }
-          :global([data-dev-section-key="myjobs-results-scroll"]) {
-            gap: 10px !important;
-            padding-right: 0 !important;
-          }
-          :global(.myjobs-row) {
-            gap: 8px !important;
-            padding: 12px !important;
-            border-radius: 14px !important;
-          }
-          :global(.myjobs-status) {
-            max-width: 100% !important;
-          }
-          :global(.myjobs-jobnumber),
-          :global(.myjobs-reg),
-          :global(.myjobs-type) {
-            flex: 1 1 calc(50% - 4px) !important;
-          }
-          :global(.myjobs-customer),
-          :global(.myjobs-make) {
-            flex: 1 1 100% !important;
+            min-width: max-content;
           }
           :global([data-dev-section-key="myjobs-summary"]) {
             padding: 12px !important;

@@ -476,6 +476,10 @@ export default function NextJobsPage() {
   const dropIndicatorRef = useRef(null);
   const searchHighlightTimeoutRef = useRef(null);
   const jobCardRefs = useRef({});
+  // Realtime job events can start several overlapping reloads while a drag/drop
+  // reindexes a row. Only the newest request may commit its snapshot, otherwise
+  // a slower pre-drop response can overwrite the persisted queue order.
+  const jobsFetchSequenceRef = useRef(0);
   // Drag is rAF-throttled: pointermove only records the latest coords; a single
   // animation frame does the hit-testing + state updates, so a fast pointer can't
   // out-run React with a flood of re-renders (the old source of the glitchiness).
@@ -651,6 +655,8 @@ export default function NextJobsPage() {
   };
 
   const fetchJobs = useCallback(async () => {// Wrap Supabase fetch in stable callback to avoid TDZ
+    const fetchSequence = jobsFetchSequenceRef.current + 1;
+    jobsFetchSequenceRef.current = fetchSequence;
     setLoading(true); // Start loading to show spinner
 
     const { data, error } = await supabase.
@@ -689,8 +695,10 @@ export default function NextJobsPage() {
 
     if (error) {
       console.error("❌ Error fetching waiting jobs:", error);
-      setJobs([]);
-      setLoading(false);
+      if (fetchSequence === jobsFetchSequenceRef.current) {
+        setJobs([]);
+        setLoading(false);
+      }
       return [];
     }
 
@@ -698,8 +706,10 @@ export default function NextJobsPage() {
     map(mapJobFromDatabase).
     filter((job) => job.jobNumber && job.jobNumber.trim() !== "");
 
-    setJobs(formatted);
-    setLoading(false); // Stop loading
+    if (fetchSequence === jobsFetchSequenceRef.current) {
+      setJobs(formatted);
+      setLoading(false); // Stop loading
+    }
     return formatted;
   }, []);
 

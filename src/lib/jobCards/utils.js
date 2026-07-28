@@ -184,7 +184,11 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
 // ---------------------------------------------------------------------------
 
 const getSortablePosition = (job) => {
-  const numeric = Number(job?.position);
+  const rawPosition = job?.position;
+  if (rawPosition === null || rawPosition === undefined || rawPosition === "") {
+    return null;
+  }
+  const numeric = Number(rawPosition);
   return Number.isFinite(numeric) ? numeric : null;
 };
 

@@ -336,6 +336,7 @@ const _getAllJobsUncached = async () => {
       cosmetic_notes,
       vhc_required,
       checked_in_at,
+      queue_position,
       vhc_completed_at,
       maintenance_info,
       service_mode,
@@ -2514,6 +2515,7 @@ const formatJobData = (data) => {
     vhcCompletedAt: data.vhc_completed_at || null,
     maintenanceInfo: data.maintenance_info || {},
     checkedInAt: data.checked_in_at || null,
+    position: data.queue_position ?? null,
     serviceMode: data.service_mode || "workshop",
     
     // ✅ Technician info
