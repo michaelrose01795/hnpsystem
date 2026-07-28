@@ -841,3 +841,47 @@ export const fetchTrackingSnapshot = async () => {
     data: entries,
   };
 };
+
+export const fetchTrackingEntryForJob = async ({
+  jobId = null,
+  jobNumber = "",
+  vehicleReg = "",
+} = {}) => {
+  const snapshot = await fetchTrackingSnapshot();
+  if (!snapshot.success) {
+    return snapshot;
+  }
+
+  const normalizedJobId =
+    jobId !== null && jobId !== undefined ? String(jobId) : "";
+  const normalizedJobNumber = String(jobNumber || "").trim().toLowerCase();
+  const normalizedVehicleReg = String(vehicleReg || "").trim().toLowerCase();
+  const matches = (snapshot.data || []).filter((entry) => {
+    if (!entry) return false;
+    const entryJobId =
+      entry.jobId !== null && entry.jobId !== undefined
+        ? String(entry.jobId)
+        : "";
+    const entryJobNumber = String(entry.jobNumber || "").trim().toLowerCase();
+    const entryVehicleReg = String(
+      entry.vehicleReg || entry.reg || ""
+    ).trim().toLowerCase();
+
+    return (
+      (normalizedJobId && entryJobId === normalizedJobId) ||
+      (normalizedJobNumber && entryJobNumber === normalizedJobNumber) ||
+      (normalizedVehicleReg && entryVehicleReg === normalizedVehicleReg)
+    );
+  });
+
+  const latestMatch = matches.sort(
+    (a, b) =>
+      new Date(b?.updatedAt || 0).getTime() -
+      new Date(a?.updatedAt || 0).getTime()
+  )[0];
+
+  return {
+    success: true,
+    data: latestMatch || null,
+  };
+};

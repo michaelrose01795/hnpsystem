@@ -30,15 +30,13 @@ function QuickStatCard({ stat, sectionKey, parentKey, scrollTargetId }) {
       parentKey={parentKey}
       backgroundToken="theme"
       data-dev-text-preview={`${stat.value} ${stat.label}`}
-      radius="var(--radius-xs)"
-      padding="16px"
+      radius="var(--radius-sm)"
+      padding="12px 14px"
       gap="6px"
       onClick={isClickable ? handleClick : undefined}
       style={{
-        border: "none",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "108px",
         width: "100%",
         cursor: isClickable ? "pointer" : "default"
       }}
@@ -167,6 +165,7 @@ export default function TechJobDetailPageUi(props) {
     showVhcReopenButton,
     showVhcSummary,
     techStatusDisplay,
+    trackerEntry,
     user,
     vehicle,
     vhcAssistantState,
@@ -209,6 +208,43 @@ export default function TechJobDetailPageUi(props) {
       color: "var(--text-1)",
     };
   })();
+  const compactSummaryPrimaryStyle = {
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "var(--text-1)",
+    margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+  const compactSummarySecondaryStyle = {
+    fontSize: "13px",
+    color: "var(--grey-accent)",
+    margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+  const customerStatusToneClass =
+    vhcCustomerStatusMeta.label === "Viewed"
+      ? "app-badge--success"
+      : vhcCustomerStatusMeta.label === "Sent"
+        ? "app-badge--accent-soft"
+        : "app-badge--warning";
+  const customerName =
+    [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") ||
+    "N/A";
+  const customerContact =
+    customer?.mobile || customer?.telephone || customer?.email || "No contact info";
+  const mileageDisplay =
+    vehicle?.mileage !== null && vehicle?.mileage !== undefined
+      ? Number(vehicle.mileage).toLocaleString()
+      : "N/A";
+  const keyLocationDisplay = String(trackerEntry?.keyLocation || "")
+    .trim()
+    .replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "")
+    .replace(/^Key locations?\s*[-:–]\s*/i, "") || "N/A";
+  const vehicleLocationDisplay = trackerEntry?.vehicleLocation || "N/A";
 
   // Pre-pick location resolves from the allocated/linked part(s) — the single
   // source of truth on parts_job_items — with the legacy job_requests value kept
@@ -493,20 +529,11 @@ export default function TechJobDetailPageUi(props) {
 
     case "section5":
       return <>
-      <DevLayoutSection as="div" sectionKey="myjob-page-shell" sectionType="page-shell" shell style={{
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    padding: "8px 16px",
-    overflowY: "auto",
-    gap: "12px"
-  }}>
-        
         {/* Header Section */}
-        <LayerTheme as="div" sectionKey="myjob-header" sectionType="section-header-row" parentKey="myjob-page-shell" radius="var(--radius-xs)" padding="12px" gap="12px" style={{
+        <LayerTheme as="div" sectionKey="myjob-header" sectionType="section-header-row" parentKey="app-layout-page-card" radius="var(--radius-sm)" padding="20px" gap="12px" style={{
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: "12px",
+      margin: 0,
       flexShrink: 0
     }}>
           <h1 style={{
@@ -580,7 +607,7 @@ export default function TechJobDetailPageUi(props) {
       backgroundColor: "var(--warning-surface)",
       border: "none",
       color: "var(--text-1)",
-      marginBottom: "12px"
+      margin: 0
     }}>
             <div style={{
         fontSize: "13px",
@@ -597,45 +624,188 @@ export default function TechJobDetailPageUi(props) {
             </div>
           </div> : null}
 
-        {/* Quick Stats Grid */}
+        {/* Vehicle, customer, clocked time, and location summary */}
         <div style={{
       display: "grid",
       gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))",
-      gap: "12px",
-      marginBottom: "12px",
+      gap: "10px",
+      margin: 0,
       flexShrink: 0
     }}>
-          <QuickStatCard
-            stat={quickStats.find((stat) => stat.label === "Job Requests")}
-            sectionKey="myjob-quick-stat-job-requests"
-            parentKey="myjob-page-shell"
-          />
-          <QuickStatCard
-            stat={quickStats.find((stat) => stat.label === "Parts authorised")}
-            sectionKey="myjob-quick-stat-parts-authorised"
-            parentKey="myjob-page-shell"
-          />
+          <LayerTheme
+            sectionKey="myjob-summary-vehicle"
+            sectionType="content-card"
+            parentKey="app-layout-page-card"
+            radius="var(--radius-sm)"
+            padding="12px 14px"
+            style={{
+              minWidth: 0,
+              overflow: "hidden"
+            }}
+          >
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "start",
+              columnGap: "10px"
+            }}>
+              <div style={compactSummaryPrimaryStyle}>
+                {vehicle?.reg || "N/A"}
+              </div>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                whiteSpace: "nowrap"
+              }}>
+                <span style={{
+                  fontSize: "13px",
+                  color: "var(--text-1)",
+                  fontWeight: "600"
+                }}>
+                  Mileage
+                </span>
+                <span style={{
+                  fontSize: "14px",
+                  color: "var(--text-1)",
+                  fontWeight: "600",
+                  fontVariantNumeric: "tabular-nums"
+                }}>
+                  {mileageDisplay}
+                </span>
+              </div>
+            </div>
+            <div style={compactSummarySecondaryStyle}>
+              {vehicle?.makeModel || [vehicle?.make, vehicle?.model].filter(Boolean).join(" ") || "N/A"}
+            </div>
+          </LayerTheme>
+
+          <LayerTheme
+            sectionKey="myjob-summary-customer"
+            sectionType="content-card"
+            parentKey="app-layout-page-card"
+            radius="var(--radius-sm)"
+            padding="12px 14px"
+            style={{
+              minWidth: 0,
+              overflow: "hidden"
+            }}
+          >
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "center",
+              columnGap: "10px"
+            }}>
+              <div style={{
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              }}>
+                <div style={compactSummaryPrimaryStyle}>
+                  {customerName}
+                </div>
+                <div style={compactSummarySecondaryStyle}>
+                  {customerContact}
+                </div>
+              </div>
+              <span
+                title={vhcCustomerStatusMeta.detail}
+                className={`app-badge app-badge--control app-badge--uppercase ${customerStatusToneClass}`}
+              >
+                VHC: {vhcCustomerStatusMeta.label}
+              </span>
+            </div>
+          </LayerTheme>
+
           <QuickStatCard
             stat={quickStats.find((stat) => stat.label === "Clocked Hours")}
             sectionKey="myjob-quick-stat-clocked-hours"
-            parentKey="myjob-page-shell"
+            parentKey="app-layout-page-card"
             scrollTargetId="job-progress-total-time"
           />
+
+          <LayerTheme
+            sectionKey="myjob-summary-locations"
+            sectionType="content-card"
+            parentKey="app-layout-page-card"
+            radius="var(--radius-sm)"
+            padding="12px 14px"
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              justifyContent: "center"
+            }}
+          >
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: "12px",
+              width: "100%"
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: "12px",
+                  lineHeight: 1.1,
+                  fontWeight: "700",
+                  color: "var(--text-1)",
+                  marginBottom: "6px"
+                }}>
+                  Key location
+                </div>
+                <div style={{
+                  ...compactSummaryPrimaryStyle,
+                  fontSize: "17px",
+                  lineHeight: 1.15
+                }}>
+                  {keyLocationDisplay}
+                </div>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: "12px",
+                  lineHeight: 1.1,
+                  fontWeight: "700",
+                  color: "var(--text-1)",
+                  marginBottom: "6px"
+                }}>
+                  Car location
+                </div>
+                <div style={{
+                  ...compactSummaryPrimaryStyle,
+                  fontSize: "17px",
+                  lineHeight: 1.15
+                }}>
+                  {vehicleLocationDisplay}
+                </div>
+              </div>
+            </div>
+          </LayerTheme>
         </div>
 
         {/* Tab Row */}
-        <DevLayoutSection as="div" className="app-layout-tab-row" sectionKey="myjob-tab-row" sectionType="tab-row" parentKey="myjob-page-shell" style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      marginBottom: "12px",
-      overflowX: "auto",
-      flexShrink: 0,
-      scrollbarWidth: "thin",
-      scrollbarColor: "var(--scrollbar-thumb) transparent",
-      scrollBehavior: "smooth",
-      WebkitOverflowScrolling: "touch"
-    }}>
+        <LayerTheme
+          as="div"
+          className="tab-scroll-row"
+          sectionKey="myjob-tab-row"
+          sectionType="tab-row"
+          parentKey="app-layout-page-card"
+          backgroundToken="theme"
+          data-dev-text-preview="My job tab navigation"
+          radius="var(--radius-sm)"
+          padding="8px"
+          gap="6px"
+          style={{
+            flexDirection: "row",
+            flexWrap: "nowrap",
+            alignItems: "center",
+            overflowX: "auto",
+            overflowY: "hidden",
+            flex: "0 0 auto",
+            margin: 0
+          }}
+        >
           {visibleTabs.map(tab => {
         const isActive = activeTab === tab;
         const isVhcTab = tab === "vhc";
@@ -651,35 +821,26 @@ export default function TechJobDetailPageUi(props) {
           documents: "Documents"
         };
         const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
-        const baseBackground = isActive ? "var(--primary)" : "transparent";
-        const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
-        const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
-        const background = tabTone === "success" ? completeBackground : tabTone === "warning" ? amberBackground : baseBackground;
-        const color = isActive ? "var(--text-2)" : "var(--text-1)";
-        return <button key={tab} onClick={() => setActiveTab(tab)} style={{
-          flex: "0 0 auto",
-          borderRadius: "var(--control-radius)",
-          border: "1px solid transparent",
-          padding: "10px 20px",
-          fontSize: "0.9rem",
-          fontWeight: 600,
-          cursor: "pointer",
-          background,
-          color,
-          transition: "all 0.15s ease",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          textTransform: "capitalize",
-          whiteSpace: "nowrap"
-        }}>
+        return <button
+          key={tab}
+          className={`tab-api__item${isActive ? " is-active" : ""}`}
+          data-tone={tabTone}
+          onClick={event => {
+            setActiveTab(tab);
+            event.currentTarget.scrollIntoView({
+              behavior: "smooth",
+              inline: "center",
+              block: "nearest"
+            });
+          }}
+        >
                 {labelMap[tab] || tab.replace("-", " ")}
               </button>;
       })}
-        </DevLayoutSection>
+        </LayerTheme>
 
         {/* Main Content Area with Scrolling */}
-        <LayerTheme as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" shell radius="var(--radius-xs)" padding="24px" style={{
+        <LayerTheme as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="app-layout-page-card" backgroundToken="page-card-bg-alt" shell radius="var(--radius-xs)" padding="24px" style={{
       flex: 1,
       overflow: "hidden",
       minHeight: 0
@@ -951,138 +1112,6 @@ export default function TechJobDetailPageUi(props) {
                   </div>}
               </LayerSurface>
 
-              <DevLayoutSection as="div" sectionKey="myjob-overview-summary-grid" sectionType="section-shell" parentKey="myjob-tab-overview" backgroundToken="none" style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "16px"
-          }}>
-                {/* Vehicle Info */}
-                <LayerSurface as="div" sectionKey="myjob-overview-vehicle" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
-                  <h3 style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                marginBottom: "16px"
-              }}>
-                    Vehicle Information
-                  </h3>
-                  <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "12px"
-              }}>
-                    <div>
-                      <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Registration:</span>
-                      <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "var(--text-1)",
-                    margin: "4px 0 0 0"
-                  }}>
-                        {vehicle?.reg}
-                      </p>
-                    </div>
-                    <div>
-                      <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Make & Model:</span>
-                      <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    margin: "4px 0 0 0"
-                  }}>
-                        {vehicle?.makeModel}
-                      </p>
-                    </div>
-                    {vehicle?.mileage && <div>
-                        <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Mileage:</span>
-                        <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    margin: "4px 0 0 0"
-                  }}>
-                          {vehicle?.mileage.toLocaleString()} miles
-                        </p>
-                      </div>}
-                    {vehicle?.colour && <div>
-                        <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Colour:</span>
-                        <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    margin: "4px 0 0 0"
-                  }}>
-                          {vehicle?.colour}
-                        </p>
-                      </div>}
-                  </div>
-                </LayerSurface>
-
-                {/* Customer Info */}
-                <LayerSurface as="div" sectionKey="myjob-overview-customer" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
-                  <h3 style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                marginBottom: "16px"
-              }}>
-                    Customer Information
-                  </h3>
-                  <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "12px"
-              }}>
-                    <div>
-                      <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Name:</span>
-                      <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    margin: "4px 0 0 0"
-                  }}>
-                        {customer?.firstName} {customer?.lastName}
-                      </p>
-                    </div>
-                    <div>
-                      <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Mobile:</span>
-                      <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    margin: "4px 0 0 0"
-                  }}>
-                        {customer?.mobile}
-                      </p>
-                    </div>
-                    {customer?.email && <div>
-                        <span style={{
-                    fontSize: "13px",
-                    color: "var(--text-1)"
-                  }}>Email:</span>
-                        <p style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "var(--text-1)",
-                    margin: "4px 0 0 0"
-                  }}>
-                          {customer?.email}
-                        </p>
-                      </div>}
-                  </div>
-                </LayerSurface>
-              </DevLayoutSection>
             </DevLayoutSection>}
 
           {/* VHC TAB */}
@@ -2020,19 +2049,23 @@ export default function TechJobDetailPageUi(props) {
             </LayerSurface>}
 
           {/* WRITE-UP TAB */}
-          <LayerSurface as="div" sectionKey="myjob-tab-writeup" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="layer-section-level-2" shell radius="var(--radius-sm)" style={{
-          height: "100%",
-          overflow: "hidden",
-          display: activeTab === "write-up" ? "flex" : "none"
-        }}>
-            <DevLayoutSection as="div" sectionKey="myjob-writeup-form-shell" sectionType="content-card" parentKey="myjob-tab-writeup" backgroundToken="transparent" style={{
-            flex: 1,
-            minHeight: 0,
-            borderRadius: "var(--radius-sm)",
-            overflow: "hidden",
-            backgroundColor: "transparent"
-          }}>
-              <WriteUpForm jobNumber={jobNumber} jobCardData={jobData} showHeader={false} onCompletionChange={nextStatus => {
+          <DevLayoutSection
+            as="div"
+            className="app-page-stack"
+            sectionKey="myjob-tab-writeup"
+            sectionType="content-card"
+            parentKey="myjob-main-scroll"
+            backgroundToken="none"
+            data-dev-page="My job detail"
+            data-dev-tab="Write-up"
+            data-dev-card-section="write-up tab"
+            data-dev-text-preview="Write-up tab"
+            data-dev-auto-outline="cards"
+            style={{
+              display: activeTab === "write-up" ? undefined : "none"
+            }}
+          >
+            <WriteUpForm jobNumber={jobNumber} jobCardData={jobData} showHeader={false} onCompletionChange={nextStatus => {
               setJobData(prev => {
                 if (!prev?.jobCard) return prev;
                 const nextWriteUp = {
@@ -2051,8 +2084,7 @@ export default function TechJobDetailPageUi(props) {
             }} onTasksSnapshotChange={nextTasks => {
               setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
             }} />
-            </DevLayoutSection>
-          </LayerSurface>
+          </DevLayoutSection>
 
           {/* DOCUMENTS TAB */}
           {activeTab === "documents" && <DevLayoutSection as="div" sectionKey="myjob-tab-documents" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
@@ -2073,7 +2105,6 @@ export default function TechJobDetailPageUi(props) {
         </LayerTheme>
 
         {/* Bottom Action Bar */}
-      </DevLayoutSection>
       <DocumentsUploadPopup open={showDocumentsPopup} onClose={() => setShowDocumentsPopup(false)} jobId={jobData?.jobCard?.id ? String(jobData.jobCard.id) : null} userId={user?.user_id || dbUserId || null} onAfterUpload={fetchJobData} existingDocuments={jobDocuments} />
       {showJobTypesPopup && <ModalPortal>
           <div className="popup-backdrop" onClick={event => {
