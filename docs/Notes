@@ -15,13 +15,13 @@ Remove "Myjob Page Shell | 1.2.2.1.1 | key myjob-page-shell | file src/component
 CHECK
 have it so this "Myjob Tab Writeup | 1.2.2.1.1.6.1.1 | key myjob-tab-writeup | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:2023 | route /tech/03969 | where Myjob Tab Writeup | parent myjob-main-scroll 1.2.2.1.1.6.1 | 1 child" section write up section matchs "Jobcard Tab Writeup | 1.2.1.1.1.7.1 | key jobcard-tab-writeup | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:824 | route /job-cards/03969 | where Job card detail > Write-up tab > write-up tab | parent jobcard-tab-content-shell 1.2.1.1.1.7 | 12 children" write up section. dont change the "/job-cards/03969" write up tab page section at all just the "Myjob Tab Writeup | 1.2.2.1.1.6.1.1 | key myjob-tab-writeup | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:2023 | route /tech/03969 | where Myjob Tab Writeup | parent myjob-main-scroll 1.2.2.1.1.6.1 | 1 child" section to match the style and layout. 
 
-TODO
+CHECK
 have it so "Myjob Tab Notes | 1.2.2.1.1.6.1.1 | key myjob-tab-notes | file src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:1855 | route /tech/03969 | where Myjob Tab Notes | parent myjob-main-scroll 1.2.2.1.1.6.1 | 2 children" notes section matches the layout and style of the "Jobcard Tab Content Shell | 1.2.2.1.1.7 | key jobcard-tab-content-shell | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:743 | route /job-cards/03969 | where Job card detail > Notes tab > tab content shell | parent jobcard-page-shell 1.2.2.1.1 | 2 children" section 
 
-TODO
+CHECK
 Have it so "Myjob Documents Panel | 1.2.2.1.1.6.1.1.2 | key myjob-documents-panel | file src/pages/tech/[jobNumber].js:4904 | route /tech/03969 | where Myjob Documents Panel | parent myjob-tab-documents 1.2.2.1.1.6.1.1 | 2 children" section matches the "Jobcard Tab Documents | 1.2.2.1.1.7.1 | key jobcard-tab-documents | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:890 | route /job-cards/03969 | where Job card detail > Documents tab > documents tab | parent jobcard-tab-content-shell 1.2.2.1.1.7" seciton for its style and design. 
 
-TODO 
+CHECK 
 within the "Jobcard Tab Documents | 1.2.2.1.1.7.1 | key jobcard-tab-documents | file src/components/page-ui/job-cards/job-cards-job-number-ui.js:890 | route /job-cards/03969 | where Job card detail > Documents tab > documents tab | parent jobcard-tab-content-shell 1.2.2.1.1.7" section the it says "ðŸ“„ No documents attached Upload check-sheets, signed paperwork, or photos to keep everything in one place." can this be fixed so it doesnt show "ðŸ“„" for example. 
 
 

@@ -1881,7 +1881,7 @@ export default function TechJobDetailPageUi(props) {
             </DevLayoutSection>}
 
           {/* NOTES TAB */}
-          {activeTab === "notes" && <LayerSurface as="div" sectionKey="myjob-tab-notes" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="surface" radius="var(--radius-sm)" padding="24px" gap="20px">
+          {activeTab === "notes" && <LayerSurface as="section" className="app-layout-section-shell" sectionKey="myjob-tab-notes" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="surface" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-page="My job detail" data-dev-tab="Notes" data-dev-card-section="tab content shell" data-dev-text-preview="Tab content shell: Notes">
               <DevLayoutSection as="div" sectionKey="myjob-notes-toolbar" sectionType="toolbar" parentKey="myjob-tab-notes" backgroundToken="none" style={{
             display: "flex",
             justifyContent: "space-between",
@@ -2087,19 +2087,8 @@ export default function TechJobDetailPageUi(props) {
           </DevLayoutSection>
 
           {/* DOCUMENTS TAB */}
-          {activeTab === "documents" && <DevLayoutSection as="div" sectionKey="myjob-tab-documents" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
-          backgroundColor: "transparent",
-          padding: 0,
-          borderRadius: 0,
-          border: "none"
-        }}>
-              <DevLayoutSection as="div" sectionKey="myjob-documents-browser" sectionType="content-card" parentKey="myjob-tab-documents" backgroundToken="surface" style={{
-            borderRadius: "var(--radius-sm)",
-            overflow: "hidden",
-            backgroundColor: "var(--surface)"
-          }}>
-                <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
-              </DevLayoutSection>
+          {activeTab === "documents" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-documents" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell>
+              <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
             </DevLayoutSection>}
           </DevLayoutSection>
         </LayerTheme>

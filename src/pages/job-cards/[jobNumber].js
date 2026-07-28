@@ -12913,7 +12913,7 @@ function DocumentsTab({
           lineHeight: 1.6
         }}>
 
-          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>ðŸ“„</div>
+          <div aria-hidden="true" style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>&#x1F4C4;</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </div> :
@@ -12994,7 +12994,7 @@ function DocumentsTab({
                   }}>
 
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
-                        {docType.includes("pdf") ? "ðŸ“•" : docType.includes("sheet") || docName.match(/\.xls/i) ? "ðŸ“—" : docType.includes("word") || docName.match(/\.doc/i) ? "ðŸ“˜" : "ðŸ“„"}
+                        {docType.includes("pdf") ? "\u{1F4D5}" : docType.includes("sheet") || docName.match(/\.xls/i) ? "\u{1F4D7}" : docType.includes("word") || docName.match(/\.doc/i) ? "\u{1F4D8}" : "\u{1F4C4}"}
                       </span>
                       <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: typeMeta.color }}>
                         {typeMeta.label}

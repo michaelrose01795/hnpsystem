@@ -4895,11 +4895,16 @@ function DocumentsTab({
   return (
     <DevLayoutSection
       as="div"
+      className="app-page-stack"
       sectionKey="myjob-documents-panel"
-      sectionType="section-shell"
+      sectionType="content-card"
       parentKey="myjob-tab-documents"
-      backgroundToken="layer-section-level-1"
-      style={{ backgroundColor: "var(--surface)" }}>
+      backgroundToken="none"
+      data-dev-page="My job detail"
+      data-dev-tab="Documents"
+      data-dev-card-section="documents tab"
+      data-dev-text-preview="Documents tab"
+      data-dev-auto-outline="cards">
       
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
