@@ -1670,6 +1670,7 @@ export default function FullScreenCapture({
                 tyres={panel?.tyres || []}
                 brakes={panel?.brakes || []}
                 external={panel?.external || []}
+                additionalSections={panel?.additionalSections || []}
                 activeRowIds={activeRowIds}
                 onInsertWidget={insertWidgetFromRow}
                 isLive={isLive}

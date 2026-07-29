@@ -14,6 +14,10 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
+import {
+  issueReportEyebrowStyle,
+  issueReportTitleStyle,
+} from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -1263,10 +1267,10 @@ export default function BrakesHubsDetailsModal({
                   gap: "16px",
                 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                    <span style={issueReportEyebrowStyle}>
                       Issue report
                     </span>
-                    <h4 style={{ fontSize: "20px", fontWeight: 800, color: palette.textPrimary, margin: 0 }}>
+                    <h4 style={issueReportTitleStyle}>
                       {areaLabels[concernPopup.category] || concernPopup.category}
                     </h4>
                   </div>

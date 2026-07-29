@@ -99,7 +99,8 @@ export default function ConfirmationDialog({
               fontSize: "0.75rem",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "var(--info)",
+              color: "var(--text-1)",
+              opacity: 0.72,
               fontWeight: 600,
             }}
           >

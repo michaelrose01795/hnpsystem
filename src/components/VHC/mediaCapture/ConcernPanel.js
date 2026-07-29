@@ -45,6 +45,13 @@ const STATUS_STYLES = {
   },
 };
 
+function concernLabelFontSize(label) {
+  const length = String(label || "").trim().length;
+  if (length >= 140) return "var(--text-caption)";
+  if (length >= 72) return "calc(var(--text-body-sm) * 0.92)";
+  return "var(--text-body-sm)";
+}
+
 function ConcernRow({ row, onInsert, isActive }) {
   const status = STATUS_STYLES[row.status] || STATUS_STYLES.default;
   const measurement = String(row.measurement || "").trim();
@@ -98,16 +105,13 @@ function ConcernRow({ row, onInsert, isActive }) {
           — the colour IS the status. */}
       <span
         style={{
-          fontSize: "var(--text-body-sm)",
+          fontSize: concernLabelFontSize(row.label),
           fontWeight: 700,
           letterSpacing: "0.01em",
           lineHeight: "var(--leading-tight)",
           minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
+          overflowWrap: "anywhere",
+          whiteSpace: "normal",
         }}
       >
         {row.label}
@@ -167,12 +171,23 @@ function EmptyRowHint({ children }) {
 export default function ConcernPanel({
   tyres = [],
   brakes = [],
+  additionalSections = [],
   external = [], // External concerns (amber + red only) — wipers, lights, etc.
   onInsertWidget,
   isLive = false,
   activeRowIds,
 }) {
-  const total = (tyres?.length || 0) + (brakes?.length || 0) + (external?.length || 0);
+  const additionalTotal = additionalSections.reduce(
+    (sum, section) => sum + (section?.rows?.length || 0),
+    0,
+  );
+  const total =
+    (tyres?.length || 0) +
+    (brakes?.length || 0) +
+    (external?.length || 0) +
+    additionalTotal;
+  const serviceSection = additionalSections.find((section) => section?.key === "service");
+  const remainingSections = additionalSections.filter((section) => section?.key !== "service");
   const activeCount = activeRowIds ? activeRowIds.size : 0;
   const isRowActive = (rowId) => Boolean(activeRowIds && activeRowIds.has(rowId));
 
@@ -275,6 +290,7 @@ export default function ConcernPanel({
         width: 260,
         maxWidth: "72vw",
         height: "100%",
+        boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         gap: 0,
@@ -353,7 +369,13 @@ export default function ConcernPanel({
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
+          overflowX: "hidden",
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-y",
+          scrollbarGutter: "stable",
           display: "grid",
+          alignContent: "start",
           // Tighter inter-section gap so Tyres / Brakes / External
           // sit close together in the panel.
           gap: "var(--space-1)",
@@ -407,6 +429,25 @@ export default function ConcernPanel({
               any wiper/light issues stay uncluttered. The row itself
               displays only the issue text; the category is intentionally
               omitted per the capture-section UX brief. */}
+          {serviceSection ? (
+            <section
+              data-dev-section-key="capture-panel-service"
+              data-dev-section-type="section-shell"
+              style={{ display: "grid", gap: 2 }}
+            >
+              <SectionHeader>{serviceSection.label}</SectionHeader>
+              {serviceSection.rows.map((row) => (
+                <ConcernRow
+                  key={row.id}
+                  row={row}
+                  onInsert={onInsertWidget}
+                  isLive={isLive}
+                  isActive={isRowActive(row.id)}
+                />
+              ))}
+            </section>
+          ) : null}
+
           {external.length > 0 ? (
             <section
               data-dev-section-key="capture-panel-external"
@@ -425,6 +466,26 @@ export default function ConcernPanel({
               ))}
             </section>
           ) : null}
+
+          {remainingSections.map((section) => (
+            <section
+              key={section.key}
+              data-dev-section-key={`capture-panel-${section.key}`}
+              data-dev-section-type="section-shell"
+              style={{ display: "grid", gap: 2 }}
+            >
+              <SectionHeader>{section.label}</SectionHeader>
+              {section.rows.map((row) => (
+                <ConcernRow
+                  key={row.id}
+                  row={row}
+                  onInsert={onInsertWidget}
+                  isLive={isLive}
+                  isActive={isRowActive(row.id)}
+                />
+              ))}
+            </section>
+          ))}
       </div>
       {devPortal}
     </aside>

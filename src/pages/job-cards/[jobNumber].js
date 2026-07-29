@@ -3345,7 +3345,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // both job_writeups (completion_status + task_checklist + aggregated
   // fault/cause/rectification) and job_requests.status, then we refetch.
   const handleSaveWriteUp = async (writeUpData) => {
-    if (!canEdit || !jobData?.id) return;
+    if (!canEdit || !jobData?.id) {
+      return { success: false, error: "Write-up editing is unavailable" };
+    }
     try {
       const result = await saveWriteUpToDatabase(jobData?.jobNumber || jobNumber, writeUpData);
       if (!result?.success) {
@@ -3353,9 +3355,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       }
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
+      return result;
     } catch (error) {
       console.error("Error saving write-up:", error);
-      alert("Failed to save write-up");
+      throw error instanceof Error ? error : new Error(String(error || "Failed to save write-up"));
     }
   };
 
@@ -6561,6 +6564,10 @@ export function WriteUpWorkspace({
   notes = [],
   partsJobItems = []
 }) {
+  const completionInFlightRef = useRef(new Set());
+  const [completionSavingKeys, setCompletionSavingKeys] = useState(() => new Set());
+  const [completionSaveError, setCompletionSaveError] = useState("");
+
   const buildEditRequests = useCallback(() => {
     const source = Array.isArray(jobData?.jobRequests) ?
     jobData.jobRequests :
@@ -7753,7 +7760,10 @@ export function WriteUpWorkspace({
             : row.normalizedStatus === "completed";
         return {
           source: row.kind === "authorised" ? "vhc" : "request",
-          sourceKey: row.key,
+          sourceKey:
+            row.kind === "customer" && row.requestId != null
+              ? `reqid-${row.requestId}`
+              : row.key,
           label: row.description || `Request ${index + 1}`,
           status: isComplete ? "complete" : "inprogress",
           checked: isComplete,
@@ -7796,33 +7806,76 @@ export function WriteUpWorkspace({
   );
 
   const persistCompletion = useCallback(
-    async (tasks) => {
+    async (tasks, actionKey) => {
+      if (completionInFlightRef.current.has(actionKey)) return false;
+
+      const previousTasks = buildWriteUpTasks();
       const requestStatuses = tasks.map((t) => ({
         requestId: t.requestId ?? null,
         sortOrder: t.sortOrder ?? null,
         status: t.checked ? "complete" : "inprogress"
       }));
-      // Optimistic — instant tab highlight / invoice gate / request statuses.
-      onTasksSnapshotChange(tasks);
-      onRequestStatusesChange(requestStatuses);
-      onCompletionChange(deriveCompletionStatus(tasks));
-      // Persist to job_writeups + job_requests, then refetch.
-      await onSaveWriteUp(buildWriteUpData(tasks));
+
+      completionInFlightRef.current.add(actionKey);
+      setCompletionSavingKeys(new Set(completionInFlightRef.current));
+      setCompletionSaveError("");
+
+      try {
+        // Optimistic — instant tab highlight / invoice gate / request statuses.
+        onTasksSnapshotChange(tasks);
+        onRequestStatusesChange(requestStatuses);
+        onCompletionChange(deriveCompletionStatus(tasks));
+
+        // Parent handlers force-refetch before resolving, so the completed
+        // button settles only after the persisted state has been read back.
+        const result = await onSaveWriteUp(buildWriteUpData(tasks));
+        if (!result?.success) {
+          throw new Error(result?.error || "Failed to save write-up completion");
+        }
+        onSaveSuccess(result);
+        return true;
+      } catch (error) {
+        const rollbackStatuses = previousTasks.map((task) => ({
+          requestId: task.requestId ?? null,
+          sortOrder: task.sortOrder ?? null,
+          status: task.checked ? "complete" : "inprogress"
+        }));
+        onTasksSnapshotChange(previousTasks);
+        onRequestStatusesChange(rollbackStatuses);
+        onCompletionChange(deriveCompletionStatus(previousTasks));
+        setCompletionSaveError(error?.message || "Failed to save write-up completion");
+        console.error("Failed to persist write-up completion:", error);
+        return false;
+      } finally {
+        completionInFlightRef.current.delete(actionKey);
+        setCompletionSavingKeys(new Set(completionInFlightRef.current));
+      }
     },
-    [onTasksSnapshotChange, onRequestStatusesChange, onCompletionChange, onSaveWriteUp, buildWriteUpData]
+    [
+      buildWriteUpData,
+      buildWriteUpTasks,
+      onCompletionChange,
+      onRequestStatusesChange,
+      onSaveSuccess,
+      onSaveWriteUp,
+      onTasksSnapshotChange
+    ]
   );
 
   const handleToggleRequestComplete = useCallback(
-    (row) => {
+    async (row) => {
       if (!canEdit || !row?.requestId) return;
-      persistCompletion(buildWriteUpTasks({ requestId: row.requestId, complete: true }));
+      await persistCompletion(
+        buildWriteUpTasks({ requestId: row.requestId, complete: true }),
+        row.key
+      );
     },
     [canEdit, persistCompletion, buildWriteUpTasks]
   );
 
-  const handleMarkAllComplete = useCallback(() => {
+  const handleMarkAllComplete = useCallback(async () => {
     if (!canEdit) return;
-    persistCompletion(buildWriteUpTasks({ all: true }));
+    await persistCompletion(buildWriteUpTasks({ all: true }), "all");
   }, [canEdit, persistCompletion, buildWriteUpTasks]);
 
   // Parts count + total cost for the selected request's linked parts.
@@ -7907,11 +7960,16 @@ export function WriteUpWorkspace({
           <button
             type="button"
             className="app-btn app-btn--primary jc-req-markall-btn"
-            disabled={requestStats.totalRequests === 0 || requestStats.outstanding === 0}
+            disabled={requestStats.totalRequests === 0 || requestStats.outstanding === 0 || completionSavingKeys.size > 0}
+            aria-busy={completionSavingKeys.has("all") || undefined}
             onClick={handleMarkAllComplete}>
             Mark All Complete
           </button>}
         </div>
+        {completionSaveError &&
+        <div role="alert" style={{ color: "var(--danger)", fontWeight: 600 }}>
+          {completionSaveError}. The completion tick was restored; please try again.
+        </div>}
 
         {editing ?
         /* ---------- EDIT MODE: 60/40 list + per-request editor ---------- */
@@ -8033,6 +8091,7 @@ export function WriteUpWorkspace({
                 {combinedRequestRows.map((row) => {
                   const isSel = selectedRow && selectedRow.key === row.key;
                   const rowComplete = row.normalizedStatus === "completed";
+                  const rowSaving = completionSavingKeys.has(row.key);
                   return (
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ width: "52px", minWidth: "52px", fontWeight: 600, verticalAlign: "top", textAlign: "center", whiteSpace: "nowrap" }}>{row.numberLabel}</td>
@@ -8045,12 +8104,14 @@ export function WriteUpWorkspace({
                       <td style={{ textAlign: "center", verticalAlign: "top" }}>
                         <button
                           type="button"
-                          title={rowComplete ? "Completed" : "Mark this request complete"}
-                          aria-label={rowComplete ? "Request completed" : "Mark request complete"}
-                          className="jc-req-tick"
+                          title={rowSaving ? "Saving completion..." : rowComplete ? "Completed" : "Mark this request complete"}
+                          aria-label={rowSaving ? "Saving request completion" : rowComplete ? "Request completed" : "Mark request complete"}
+                          aria-busy={rowSaving || undefined}
+                          className={`app-btn ${rowComplete ? "app-btn--secondary" : "app-btn--ghost"} jc-req-tick`}
                           data-complete={rowComplete ? "1" : "0"}
-                          disabled={!canEdit || !row.requestId || rowComplete}
-                          onClick={(e) => { e.stopPropagation(); handleToggleRequestComplete(row); }}>
+                          data-saving={rowSaving ? "1" : "0"}
+                          disabled={!canEdit || !row.requestId || rowComplete || completionSavingKeys.size > 0}
+                          onClick={(e) => { e.stopPropagation(); void handleToggleRequestComplete(row); }}>
                           <span className="jc-req-tick-icon">
                             <RequestCompleteIcon />
                           </span>
@@ -8182,11 +8243,9 @@ export function WriteUpWorkspace({
             background-color: var(--secondary-pressed);
           }
           html.staff-scope .app-data-table button.jc-req-tick {
-            width: 32px;
-            min-width: 32px;
+            width: 44px;
+            min-width: 44px;
             padding: 0;
-            border-radius: var(--radius-xs);
-            background: var(--theme);
             color: var(--success);
             line-height: 1;
           }
@@ -8199,8 +8258,7 @@ export function WriteUpWorkspace({
             background: transparent;
           }
           html.staff-scope .app-data-table button.jc-req-tick[data-complete="1"] {
-            background: var(--success);
-            color: var(--text-2);
+            color: var(--theme);
           }
           html.staff-scope .app-data-table button.jc-req-tick[data-complete="1"]:disabled {
             opacity: 1;

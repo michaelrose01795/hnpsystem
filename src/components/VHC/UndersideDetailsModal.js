@@ -16,6 +16,8 @@ import {
   STATUS_OPTIONS,
   fieldLabelStyle,
   inputStyle,
+  issueReportEyebrowStyle,
+  issueReportTitleStyle,
   statusSelectStyle,
   lockedRowOverlayStyle,
   lockedRowBadgeStyle,
@@ -299,10 +301,10 @@ export default function UndersideDetailsModal({
               background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                <span style={issueReportEyebrowStyle}>
                   Issue report
                 </span>
-                <h3 style={{ fontSize: "20px", fontWeight: 800, color: palette.accent, margin: 0 }}>
+                <h3 style={issueReportTitleStyle}>
                   {activeConcern.category}
                 </h3>
               </div>

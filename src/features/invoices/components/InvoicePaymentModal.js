@@ -332,7 +332,7 @@ export default function InvoicePaymentModal({
     >
       <header className={styles.paymentModalHeader}>
         <div>
-          <h2 style={{ margin: 0, color: "var(--primary)" }}>Payment Journey</h2>
+          <h2 style={{ margin: 0, color: "var(--text-1)" }}>Payment Journey</h2>
           <p style={{ margin: "6px 0 0", color: "var(--text-1)" }}>
             {invoice?.invoice_number || "Invoice"} · {formatCurrency(invoiceTotal)}
           </p>

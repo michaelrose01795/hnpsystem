@@ -5,12 +5,14 @@
 // Row visibility rules (per latest refinement):
 //   - Tyres:  show green + amber + red rows
 //   - Brakes: show green + amber + red rows
-//   - Other sections (if ever added here): amber + red only
+//   - Service / External / Internal / Underside: amber + red issues
 //
 // Measurement rules (preserved):
 //   - Disc rows ONLY appear when a real measurement is present.
 //     Visual-only disc entries are always skipped.
 //   - The same measured-only gating applies to drums.
+
+import { collectSectionConcerns } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 
 // List of tyre wheel keys the VHC data uses for the four road wheels.
 const WHEEL_KEYS = ["NSF", "OSF", "NSR", "OSR"];
@@ -374,15 +376,62 @@ function buildExternalRows(vhcData = {}) {
   return rows; // External rows ready
 }
 
-// Main entry: returns { tyres, brakes, external } given the job's vhcData.
-// Tyres and brakes include green + amber + red rows. Discs/drums are
-// measurement-only. External items are amber + red only — a green
-// external entry is rarely interesting during a customer video.
+// Customer Video keeps useful measurement summaries and every individual
+// actionable issue across all VHC sections.
+const ADDITIONAL_SECTION_LABELS = {
+  service: "Service & Under Bonnet",
+  internal: "Internal & Electrics",
+  underside: "Underside",
+};
+
+function mapReportedConcern(concern, { includeCategory = true } = {}) {
+  const category = String(concern?.categoryLabel || "").trim();
+  const issue = String(concern?.label || "").trim();
+  const label = includeCategory && category ? `${category}: ${issue}` : issue;
+
+  return {
+    id: `reported-${concern.concernId}`,
+    kind: "reported-concern",
+    section: concern.section,
+    label,
+    measurement: "",
+    status: concern.status,
+    widget: {
+      title: category || ADDITIONAL_SECTION_LABELS[concern.section] || "",
+      value: issue,
+      status: concern.status,
+    },
+  };
+}
+
+function buildReportedRows(sectionKey, vhcData, options) {
+  return collectSectionConcerns(sectionKey, vhcData).map((concern) =>
+    mapReportedConcern(concern, options),
+  );
+}
+
+function buildAdditionalSections(vhcData = {}) {
+  return ["service", "internal", "underside"]
+    .map((key) => ({
+      key,
+      label: ADDITIONAL_SECTION_LABELS[key],
+      rows: buildReportedRows(key, vhcData),
+    }))
+    .filter((section) => section.rows.length > 0);
+}
+
 export function buildInspectionConcerns(vhcData = {}) {
-  return { // Composite result
-    tyres: buildTyreRows(vhcData), // Tyre row list (green + amber + red)
-    brakes: buildBrakeRows(vhcData), // Brake row list (green + amber + red, discs/drums measurement-only)
-    external: buildExternalRows(vhcData), // External concerns (amber + red only)
+  return {
+    tyres: [
+      ...buildTyreRows(vhcData),
+      ...buildReportedRows("wheels", vhcData),
+    ],
+    brakes: [
+      ...buildBrakeRows(vhcData),
+      ...buildReportedRows("brakes", vhcData),
+    ],
+    external: buildExternalRows(vhcData),
+    additionalSections: buildAdditionalSections(vhcData),
   };
 }
 

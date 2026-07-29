@@ -12,6 +12,10 @@ import themeConfig, {
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
+import {
+  issueReportEyebrowStyle,
+  issueReportTitleStyle,
+} from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -605,10 +609,10 @@ export default function ServiceIndicatorDetailsModal({
               background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                <span style={issueReportEyebrowStyle}>
                   Issue report
                 </span>
-                <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: palette.accent }}>
+                <h3 style={issueReportTitleStyle}>
                   {activeConcernLabel}
                 </h3>
               </div>

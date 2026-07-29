@@ -273,5 +273,5 @@ const modalCloseButtonStyle = {
   background: "transparent",
   fontSize: "1.25rem",
   cursor: "pointer",
-  color: "var(--info)",
+  color: "var(--text-1)",
 };

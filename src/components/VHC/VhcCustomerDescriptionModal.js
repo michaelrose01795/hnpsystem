@@ -112,7 +112,8 @@ export default function VhcCustomerDescriptionModal({
               fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              color: "var(--info)",
+              color: "var(--text-1)",
+              opacity: 0.72,
             }}
           >
             {categoryLabel || "Customer description"}
@@ -122,7 +123,7 @@ export default function VhcCustomerDescriptionModal({
               margin: "4px 0 0",
               fontSize: "1.05rem",
               fontWeight: 700,
-              color: "var(--primary, var(--primary))",
+              color: "var(--text-1)",
             }}
           >
             {itemLabel || "Edit customer description"}
@@ -149,7 +150,8 @@ export default function VhcCustomerDescriptionModal({
                   fontSize: 11,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
+                  opacity: 0.72,
                   marginBottom: 4,
                 }}
               >

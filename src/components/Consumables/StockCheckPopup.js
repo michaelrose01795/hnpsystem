@@ -1028,7 +1028,7 @@ function StockCheckPopup({
                 </div>
               )}
               {!shouldShowStockList ? null : loading ? (
-                <p style={{ margin: 0, color: "var(--info)" }}>Loading stock...</p>
+                <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.72 }}>Loading stock...</p>
               ) : visibleItems === 0 ? (
                 <p style={{ margin: 0, ...mutedTextStyle }}>
                   {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}

@@ -4135,8 +4135,27 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     }
 
     const requestStatusUpdates = filteredTasks
-      .filter((task) => task.source === "request")
+      .filter((task) => {
+        const requestId = Number(task.requestId);
+        return task.source === "request" || (Number.isInteger(requestId) && requestId > 0);
+      })
       .map((task) => {
+        const directRequestId = Number(task.requestId);
+        if (Number.isInteger(directRequestId) && directRequestId > 0) {
+          return {
+            requestId: directRequestId,
+            sortOrder: null,
+            status: task.checked === true ? "complete" : "inprogress",
+          };
+        }
+        const directSortOrder = Number(task.sortOrder);
+        if (Number.isInteger(directSortOrder) && directSortOrder > 0) {
+          return {
+            requestId: null,
+            sortOrder: directSortOrder,
+            status: task.checked === true ? "complete" : "inprogress",
+          };
+        }
         const sourceKey = String(task.sourceKey || "");
         const requestIdMatch = sourceKey.match(/^reqid-(\d+)$/i);
         if (requestIdMatch) {
@@ -4174,6 +4193,10 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
         if (requestUpdateError) {
           console.error("⚠️ Error updating job request status:", requestUpdateError);
+          return {
+            success: false,
+            error: `Failed to save request completion: ${requestUpdateError.message}`,
+          };
         }
       }
     }

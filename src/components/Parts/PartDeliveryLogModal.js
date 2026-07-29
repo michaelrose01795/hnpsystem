@@ -184,10 +184,10 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>
               Log Part Delivery
             </h2>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-1)", opacity: 0.72 }}>
               {selectedPart?.part_number} · {selectedPart?.name}
             </p>
           </div>
@@ -198,7 +198,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               padding: "8px 12px",
               borderRadius: "var(--radius-xs)",
               background: "var(--surface)",
-              color: "var(--info-dark)",
+              color: "var(--text-1)",
               cursor: "pointer",
               fontSize: "16px",
               fontWeight: 600,
@@ -220,7 +220,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           }}
         >
           {loading && (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--info)" }}>
+            <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)", opacity: 0.72 }}>
               Loading previous delivery information...
             </div>
           )}
@@ -233,10 +233,10 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 background: "var(--theme)",
               }}
             >
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "8px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "8px" }}>
                 Last Delivery Info (Auto-filled)
               </div>
-              <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+              <div style={{ fontSize: "13px", color: "var(--text-1)" }}>
                 <div>Supplier: {lastDelivery.supplier || "—"}</div>
                 <div>Order Ref: {lastDelivery.order_reference || "—"}</div>
                 <div>Qty Ordered: {lastDelivery.qty_ordered} · Qty Received: {lastDelivery.qty_received}</div>
@@ -248,7 +248,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
 
           {/* Form Fields */}
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Supplier
             </label>
             <input
@@ -267,7 +267,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Order Reference
             </label>
             <input
@@ -287,7 +287,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
                 Qty Ordered *
               </label>
               <input
@@ -307,7 +307,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
                 Qty Received *
               </label>
               <input
@@ -328,7 +328,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Unit Cost (£)
             </label>
             <input
@@ -356,7 +356,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           />
 
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--info-dark)", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Notes
             </label>
             <textarea
@@ -422,7 +422,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               padding: "10px 20px",
               borderRadius: "var(--radius-xs)",
               background: "var(--surface)",
-              color: "var(--info-dark)",
+              color: "var(--text-1)",
               fontWeight: 600,
               cursor: submitting ? "not-allowed" : "pointer",
               opacity: submitting ? 0.6 : 1,
@@ -438,7 +438,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               padding: "10px 20px",
               borderRadius: "var(--radius-xs)",
               background: submitting || loading ? "var(--surface)" : "var(--primary)",
-              color: submitting || loading ? "var(--info)" : "var(--surface)",
+              color: submitting || loading ? "var(--text-1)" : "var(--text-2)",
               fontWeight: 600,
               cursor: submitting || loading ? "not-allowed" : "pointer",
             }}

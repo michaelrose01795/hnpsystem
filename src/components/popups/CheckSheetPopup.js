@@ -16,11 +16,11 @@ export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerD
         {/* Cancel */}
         <button onClick={onClose} style={{ padding: "8px 16px" }}>Cancel</button> {/* Cancel */}
         {/* Add Check Sheet */}
-        <button onClick={() => { onAddCheckSheet && onAddCheckSheet(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "white" }}>
+        <button onClick={() => { onAddCheckSheet?.(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "var(--text-2)" }}>
           Add Check Sheet
         </button> {/* Add check sheet */}
         {/* Add Dealer Car Details */}
-        <button onClick={() => { onAddDealerDetails && onAddDealerDetails(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "white" }}>
+        <button onClick={() => { onAddDealerDetails?.(); onClose(); }} style={{ padding: "8px 16px", backgroundColor: "var(--primary)", color: "var(--text-2)" }}>
           Add Dealer Car Details
         </button> {/* Add dealer details */}
       </div>

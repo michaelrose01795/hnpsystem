@@ -388,7 +388,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               style={{
                 fontSize: "16px", // Heading size
                 fontWeight: "600", // Bold
-                color: "var(--primary)", // Accent
+                color: "var(--text-1)", // Neutral heading on the popup surface
                 marginBottom: "12px" // Space under
               }}
             >
@@ -415,7 +415,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   <div
                     style={{
                       fontWeight: "600", // Bold
-                      color: "var(--primary)", // Accent
+                      color: "var(--text-1)", // Neutral job heading on the popup surface
                       marginBottom: "4px" // Tight spacing
                     }}
                   >

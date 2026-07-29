@@ -560,7 +560,7 @@ export default function DocumentsUploadPopup({
                             display: "flex",
                             justifyContent: "space-between",
                             fontSize: "11px",
-                            color: "var(--info)"
+                            color: "var(--text-1)"
                           }}
                         >
                           <div>
@@ -580,7 +580,7 @@ export default function DocumentsUploadPopup({
                               <span style={{ color: "var(--danger)", fontWeight: "600" }}>Upload Failed</span>
                             )}
                             {item.status === "pending" && (
-                              <span style={{ color: "var(--info-dark)" }}>Waiting...</span>
+                              <span style={{ color: "var(--text-1)", opacity: 0.72 }}>Waiting...</span>
                             )}
                           </div>
                           <div>

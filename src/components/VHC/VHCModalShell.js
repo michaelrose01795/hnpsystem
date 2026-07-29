@@ -69,7 +69,7 @@ export default function VHCModalShell({
           style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3, border: "none" }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <h2 style={vhcModalStyles.headerTitle}>{title}</h2>
+            <h2 style={{ ...vhcModalStyles.headerTitle, color: "var(--text-1)" }}>{title}</h2>
             {subtitle ? (
               <p style={vhcModalStyles.headerSubtitle}>{subtitle}</p>
             ) : null}

@@ -15,6 +15,11 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
+import {
+  fieldLabelStyle,
+  issueReportEyebrowStyle,
+  issueReportTitleStyle,
+} from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -97,7 +102,12 @@ const tyreSizes = [
   "255/35 R19",
 ];
 
-const months = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(
+  (label, index) => ({
+    label: `${label} (${index + 1})`,
+    value: `${index + 1}`,
+  })
+);
 const years = Array.from({ length: 3000 - 2015 + 1 }, (_, i) => `${2015 + i}`);
 
 const defaultTread = { outer: "", middle: "", inner: "" };
@@ -1021,8 +1031,8 @@ export default function WheelsTyresDetailsModal({
                         >
                           <option value="">Month</option>
                           {months.map((month) => (
-                            <option key={month} value={month}>
-                              {month}
+                            <option key={month.value} value={month.value}>
+                              {month.label}
                             </option>
                           ))}
                         </DropdownField>
@@ -1222,15 +1232,15 @@ export default function WheelsTyresDetailsModal({
               background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                <span style={issueReportEyebrowStyle}>
                   Issue report
                 </span>
-                <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: palette.accent }}>
+                <h3 style={issueReportTitleStyle}>
                   {concernTarget} Tyre
                 </h3>
               </div>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={() => {
                   setConcernTarget(null);

@@ -26,7 +26,7 @@ export default function DeliverySchedulerModal({
   deliveries = [],
   onScheduled,
 }) {
-  const closeButtonColor = "var(--accent-purple)";
+  const closeButtonColor = "var(--text-1)";
   const [scheduleMode, setScheduleMode] = useState("existing");
   const [selectedDeliveryId, setSelectedDeliveryId] = useState("");
   const [newDeliveryDate, setNewDeliveryDate] = useState(todayIso());
@@ -144,10 +144,10 @@ export default function DeliverySchedulerModal({
           }}
         >
           <div>
-            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--primary-selected)" }}>
+            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)", opacity: 0.72 }}>
               Schedule delivery
             </p>
-            <h3 style={{ margin: "6px 0 0", fontSize: "1.25rem", color: "var(--primary)" }}>
+            <h3 style={{ margin: "6px 0 0", fontSize: "1.25rem", color: "var(--text-1)" }}>
               Job {job?.job_number || job?.jobNumber || "—"}
             </h3>
           </div>
@@ -204,7 +204,7 @@ export default function DeliverySchedulerModal({
                 border: "none",
                 padding: "10px 12px",
                 fontWeight: 600,
-                color: "var(--primary-selected)",
+                color: "var(--text-1)",
               }}
             >
               <option value="">Select a delivery</option>
@@ -316,8 +316,8 @@ export default function DeliverySchedulerModal({
               disabled={loading}
               style={{
                 ...buttonStyle,
-                background: "var(--info-dark)",
-                color: "var(--surface)",
+                background: "var(--primary)",
+                color: "var(--text-2)",
                 flex: "1 1 140px",
                 minWidth: "140px",
                 opacity: loading ? 0.6 : 1,
@@ -332,7 +332,7 @@ export default function DeliverySchedulerModal({
                 ...buttonStyle,
                 border: "none",
                 background: "var(--surface)",
-                color: "var(--primary-selected)",
+                color: "var(--text-1)",
                 flex: "1 1 140px",
                 minWidth: "140px",
               }}

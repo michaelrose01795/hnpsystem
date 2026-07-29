@@ -74,7 +74,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/hr/performance.js", 1],
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
-  ["src/pages/job-cards/[jobNumber].js", 48],
+  ["src/pages/job-cards/[jobNumber].js", 47],
   ["src/pages/messages/index.js", 2],
   ["src/pages/new-order/[orderNumber].js", 1],
   ["src/pages/password-reset/new.js", 2],

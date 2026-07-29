@@ -76,6 +76,26 @@ const resolveRequestPartName = (request) => {
   return `Individual request #${request?.request_id || request?.requestId || ""}`.trim();
 };
 
+const resolveBookedPartName = (part) =>
+  part?.part?.name ||
+  part?.part_name_snapshot ||
+  part?.partNameSnapshot ||
+  part?.row_description ||
+  part?.rowDescription ||
+  "Booked part";
+
+const resolveBookedPartNumber = (part) =>
+  part?.part?.partNumber ||
+  part?.part?.part_number ||
+  part?.part_number_snapshot ||
+  part?.partNumberSnapshot ||
+  "";
+
+const resolveBookedPartQuantity = (part, camelKey, snakeKey) => {
+  const value = Number(part?.[camelKey] ?? part?.[snakeKey] ?? 0);
+  return Number.isFinite(value) ? value : 0;
+};
+
 function QuickStatCard({ stat, sectionKey, scrollTargetId }) {
   if (!stat) return null;
 
@@ -274,6 +294,10 @@ export default function TechJobDetailPageUi(props) {
   // the job's files and the technician sees their capture immediately.
   const [galleryReloadToken, setGalleryReloadToken] = useState(0);
   const bumpGallery = () => setGalleryReloadToken((token) => token + 1);
+  // The tech route supplies the page payload as `{ jobCard, vehicle, ... }`.
+  // Media uploads can fall back to jobNumber, but the gallery requires the
+  // numeric job id, so every camera/gallery call must use the nested id.
+  const resolvedJobId = jobData?.jobCard?.id || jobData?.id || jobCard?.id || null;
   const [partPriority, setPartPriority] = useState("Normal");
   const [partArea, setPartArea] = useState("Front");
   const [partSide, setPartSide] = useState("N/A");
@@ -462,6 +486,50 @@ export default function TechJobDetailPageUi(props) {
     ...(Array.isArray(jobCard?.partsAllocations) ? jobCard.partsAllocations : []),
     ...(Array.isArray(jobCard?.parts_job_items) ? jobCard.parts_job_items : [])
   ];
+  const bookedJobPartsSource = Array.isArray(jobCard?.partsAllocations) && jobCard.partsAllocations.length > 0 ?
+    jobCard.partsAllocations :
+    Array.isArray(jobCard?.parts_job_items) ?
+      jobCard.parts_job_items :
+      [];
+  const bookedJobParts = bookedJobPartsSource.filter((part) => {
+    const status = String(part?.status || "").trim().toLowerCase();
+    return !["cancelled", "removed", "unavailable"].includes(status);
+  });
+  const requestFulfilledPartIds = new Set(
+    (Array.isArray(partsRequests) ? partsRequests : []).
+    map((request) => request?.fulfilled_by ?? request?.fulfilledBy ?? null).
+    filter(Boolean).
+    map(String)
+  );
+  const partsRequestIds = new Set(
+    (Array.isArray(partsRequests) ? partsRequests : []).
+    map((request) => request?.request_id ?? request?.requestId ?? null).
+    filter(Boolean).
+    map(String)
+  );
+  const directlyBookedJobParts = bookedJobParts.filter((part) => {
+    if (requestFulfilledPartIds.has(String(part?.id || ""))) return false;
+    const sourceRequestId = part?.sourceRequestId ?? part?.source_request_id ?? null;
+    return !sourceRequestId || !partsRequestIds.has(String(sourceRequestId));
+  });
+  const findBookedPartForRequest = (request) => {
+    const fulfilledPartId = request?.fulfilled_by ?? request?.fulfilledBy ?? null;
+    if (fulfilledPartId) {
+      const fulfilledPart = bookedJobParts.find((part) => String(part?.id) === String(fulfilledPartId));
+      if (fulfilledPart) return fulfilledPart;
+    }
+
+    const requestId = request?.request_id ?? request?.requestId ?? null;
+    if (!requestId) return null;
+    return bookedJobParts.find((part) => {
+      const sourceRequestId = part?.sourceRequestId ?? part?.source_request_id ?? null;
+      return sourceRequestId && String(sourceRequestId) === String(requestId);
+    }) || null;
+  };
+  const resolveBookedPartCollectionLocation = (part) => {
+    const prePickLocation = part?.prePickLocation ?? part?.pre_pick_location ?? "";
+    return prePickLocation ? formatPrePickLabel?.(prePickLocation) || String(prePickLocation) : "Not allocated";
+  };
   const resolveRowPrePickLocation = (row) =>
     resolveLinkedPrePickLocation({
       linkedPartRows: collectLinkedPartRows({
@@ -659,7 +727,13 @@ export default function TechJobDetailPageUi(props) {
     width: "100%"
   };
   const renderVhcSummaryItem = (item, idx) => (
-    <div key={idx} className="vhc-summary-item">
+    <LayerTheme
+      key={idx}
+      className="vhc-summary-item"
+      radius="var(--radius-xs)"
+      padding="12px 16px"
+      gap="0"
+    >
       <div className="vhc-summary-item__section" style={{
         color: "var(--text-1)"
       }}>
@@ -683,7 +757,7 @@ export default function TechJobDetailPageUi(props) {
             Unmatched
           </span> : null}
       </div>
-    </div>
+    </LayerTheme>
   );
 
   switch (props.view) { // choose the page section requested by logic.
@@ -1430,7 +1504,7 @@ export default function TechJobDetailPageUi(props) {
                 })()}
 
                       {/* Camera Button - Always visible for technicians */}
-                      {jobNumber && <VhcCameraButton jobId={jobData?.id} jobNumber={jobNumber} userId={dbUserId || user?.id} buttonStyle={{
+                      {jobNumber && <VhcCameraButton jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id} buttonStyle={{
                   minHeight: "var(--control-height)",
                   padding: "6px 12px",
                   borderRadius: "var(--radius-xs)",
@@ -1567,14 +1641,6 @@ export default function TechJobDetailPageUi(props) {
                   marginBottom: 0
                 }}>
                       VHC Summary
-                      <span style={{
-                    fontSize: "12px",
-                    fontWeight: "normal",
-                    marginLeft: "8px",
-                    color: "var(--text-1)"
-                  }}>
-                        Review all items reported across sections
-                      </span>
                     </h3>
                   </div>
 
@@ -1649,32 +1715,32 @@ export default function TechJobDetailPageUi(props) {
               {/* Captured media — read-only viewer so the technician can see the
                   photos / videos they took against concerns during this check. */}
               {!activeSection && <DevLayoutSection as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
-                  <VhcMediaGallery jobId={jobData?.id} reloadToken={galleryReloadToken} />
+                  <VhcMediaGallery jobId={resolvedJobId} reloadToken={galleryReloadToken} />
                 </DevLayoutSection>}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-wheels" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <WheelsTyresDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("wheelsTyres", data)} onComplete={data => handleSectionComplete("wheelsTyres", data)} initialData={vhcData.wheelsTyres} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <WheelsTyresDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("wheelsTyres", data)} onComplete={data => handleSectionComplete("wheelsTyres", data)} initialData={vhcData.wheelsTyres} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "brakesHubs" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-brakes" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <BrakesHubsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("brakesHubs", data)} onComplete={data => handleSectionComplete("brakesHubs", data)} initialData={vhcData.brakesHubs} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <BrakesHubsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("brakesHubs", data)} onComplete={data => handleSectionComplete("brakesHubs", data)} initialData={vhcData.brakesHubs} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "serviceIndicator" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-service" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <ServiceIndicatorDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("serviceIndicator", data)} onComplete={data => handleSectionComplete("serviceIndicator", data)} initialData={vhcData.serviceIndicator} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <ServiceIndicatorDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("serviceIndicator", data)} onComplete={data => handleSectionComplete("serviceIndicator", data)} initialData={vhcData.serviceIndicator} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "externalInspection" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-external" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <ExternalDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("externalInspection", data)} onComplete={data => handleSectionComplete("externalInspection", data)} initialData={vhcData.externalInspection} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <ExternalDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("externalInspection", data)} onComplete={data => handleSectionComplete("externalInspection", data)} initialData={vhcData.externalInspection} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "internalElectrics" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-internal" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <InternalElectricsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("internalElectrics", data)} onComplete={data => handleSectionComplete("internalElectrics", data)} initialData={vhcData.internalElectrics} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <InternalElectricsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("internalElectrics", data)} onComplete={data => handleSectionComplete("internalElectrics", data)} initialData={vhcData.internalElectrics} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
               {activeSection === "underside" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-underside" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
-                  <UndersideDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("underside", data)} onComplete={data => handleSectionComplete("underside", data)} initialData={vhcData.underside} isReopenMode={isReopenMode} jobId={jobData?.id || null} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
+                  <UndersideDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("underside", data)} onComplete={data => handleSectionComplete("underside", data)} initialData={vhcData.underside} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
             </DevLayoutSection>}
 
@@ -1833,17 +1899,19 @@ export default function TechJobDetailPageUi(props) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Active Requests</h3>
                   <span style={{ fontSize: "12px", color: "var(--text-1)" }}>
-                    {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"}
+                    {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"} · {bookedJobParts.length} booked part{bookedJobParts.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                {partsRequestsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading requests...</p> : partsRequests.length === 0 ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
-                  No part requests for this job yet.
-                </p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {partsRequestsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading requests and booked parts...</p> : partsRequests.length === 0 && bookedJobParts.length === 0 ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
+                  No part requests or booked parts for this job yet.
+                </p> : partsRequests.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {partsRequests.map((request) => {
                     const statusLabel = formatRequestStatusLabel(request.status);
                     const badgeStyle = getPartsStatusStyle(request.status);
                     const quantity = request.quantity ?? 1;
-                    const partLabel = resolveRequestPartName(request);
+                    const bookedPart = findBookedPartForRequest(request);
+                    const partLabel = bookedPart ? resolveBookedPartName(bookedPart) : resolveRequestPartName(request);
+                    const partNumber = bookedPart ? resolveBookedPartNumber(bookedPart) : request?.part?.part_number || request?.part?.partNumber || "";
                     const location = [extractRequestDetail(request.description, "Side"), extractRequestDetail(request.description, "Vehicle area")].filter(Boolean).join(" ") || "Not set";
                     const priority = extractRequestDetail(request.description, "Priority") || statusLabel;
                     const requesterName = request.requester ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim() : "";
@@ -1858,11 +1926,13 @@ export default function TechJobDetailPageUi(props) {
                           ) : (
                             <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partLabel}</strong>
                           )}
+                          {partNumber && <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Part number: {partNumber}</span>}
                           <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Requested by {requesterName || "Technician"}</span>
                           <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Requested {formatDateTime(request.created_at)}</span>
                         </div>
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Qty {quantity}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{location}</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Vehicle: {location}</span>
+                        {bookedPart && <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Collect: {resolveBookedPartCollectionLocation(bookedPart)}</span>}
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{priority}</span>
                         <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
                       </div>
@@ -1889,6 +1959,45 @@ export default function TechJobDetailPageUi(props) {
                     </LayerTheme>;
                   })}
                 </div>}
+                {directlyBookedJobParts.length > 0 && <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
+                    <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "var(--text-1)" }}>Booked to this job</h4>
+                    <span style={{ fontSize: "12px", color: "var(--text-1)" }}>From the job-card Parts tab</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {directlyBookedJobParts.map((part) => {
+                      const statusLabel = formatRequestStatusLabel(part.status);
+                      const badgeStyle = getPartsStatusStyle(part.status);
+                      const partName = resolveBookedPartName(part);
+                      const partNumber = resolveBookedPartNumber(part);
+                      const quantityBooked = resolveBookedPartQuantity(part, "quantityRequested", "quantity_requested");
+                      const quantityAllocated = resolveBookedPartQuantity(part, "quantityAllocated", "quantity_allocated");
+                      const quantityFitted = resolveBookedPartQuantity(part, "quantityFitted", "quantity_fitted");
+                      const stockLocation = part?.storageLocation ?? part?.storage_location ?? part?.part?.storageLocation ?? part?.part?.storage_location ?? "";
+                      const requestNotes = part?.requestNotes ?? part?.request_notes ?? "";
+                      const updatedAt = part?.updatedAt ?? part?.updated_at ?? part?.createdAt ?? part?.created_at ?? null;
+
+                      return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-booked-row-${part.id}`} sectionType="content-card" parentKey="myjob-parts-active-requests" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="10px">
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.5fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "start" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partName}</strong>
+                            <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Part number: {partNumber || "Not recorded"}</span>
+                          </div>
+                          <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Booked: {quantityBooked || 1}</span>
+                          <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Allocated: {quantityAllocated}</span>
+                          <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Fitted: {quantityFitted}</span>
+                          <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", color: "var(--text-1)", fontSize: "12px" }}>
+                          <span>Collection location: {resolveBookedPartCollectionLocation(part)}</span>
+                          <span>Stock location: {stockLocation || "Not recorded"}</span>
+                          <span>Latest update: {updatedAt ? formatDateTime(updatedAt) : "Not recorded"}</span>
+                        </div>
+                        {requestNotes && <div style={{ color: "var(--text-1)", fontSize: "12px", whiteSpace: "pre-wrap" }}>Parts note: {requestNotes}</div>}
+                      </LayerTheme>;
+                    })}
+                  </div>
+                </>}
               </LayerSurface>
 
               {(Array.isArray(authorizedParts) && authorizedParts.length > 0) && <LayerSurface as="section" sectionKey="myjob-parts-ready-approved" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">

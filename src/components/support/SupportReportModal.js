@@ -208,7 +208,8 @@ export default function SupportReportModal() {
               fontSize: "0.7rem",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "var(--accentText)",
+              color: "var(--text-1)",
+              opacity: 0.72,
             }}
           >
             Help &amp; Support

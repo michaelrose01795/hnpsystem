@@ -109,7 +109,7 @@ export default function PrePickLocationModal({
               marginBottom: "8px",
               fontSize: "14px",
               fontWeight: 600,
-              color: "var(--primary)",
+              color: "var(--text-1)",
             }}
           >
             Picked Location
@@ -126,7 +126,7 @@ export default function PrePickLocationModal({
               borderRadius: "var(--radius-xs)",
               border: "none",
               background: "var(--surface)",
-              color: "var(--primary)",
+              color: "var(--text-1)",
               fontWeight: 500,
               fontSize: "14px",
               cursor: "pointer",
@@ -157,7 +157,7 @@ export default function PrePickLocationModal({
             borderRadius: "var(--radius-xs)",
             background: "var(--theme)",
             fontSize: "13px",
-            color: "var(--info-dark)",
+            color: "var(--text-1)",
           }}
         >
           <strong>Note:</strong> You can {allowSkip ? "skip this step and " : ""}

@@ -88,8 +88,7 @@ export default function CustomerVideoButton({
   // vhcData changes so freshly-entered concerns appear on the panel.
   const panelData = useMemo(() => {
     if (!vhcData) return null; // No data → no panel (hook still works without it)
-    const { tyres, brakes, external } = buildInspectionConcerns(vhcData); // Extract concerns including external items (wipers, lights, etc.)
-    return { tyres, brakes, external }; // Panel input shape
+    return buildInspectionConcerns(vhcData);
   }, [vhcData]);
 
   // Capture hand-off — FullScreenCapture finishes and gives us the file + widgets snapshot.

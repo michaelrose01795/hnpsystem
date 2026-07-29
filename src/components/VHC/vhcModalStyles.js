@@ -20,6 +20,23 @@ export const fieldLabelStyle = {
   letterSpacing: "var(--tracking-caps)",
 };
 
+export const issueReportEyebrowStyle = {
+  margin: 0,
+  fontSize: "11px",
+  fontWeight: 700,
+  color: "var(--text-1)",
+  opacity: 0.72,
+  textTransform: "uppercase",
+  letterSpacing: "0.12em",
+};
+
+export const issueReportTitleStyle = {
+  margin: 0,
+  fontSize: "20px",
+  fontWeight: 800,
+  color: "var(--text-1)",
+};
+
 // Inputs and selects now inherit the global control styling defined in
 // staffglobal.css (input / select / .dropdown-api__control rules). These exports
 // remain so existing spread patterns (`{ ...inputStyle, width: "8ch" }`) keep

@@ -32,7 +32,7 @@ const statusLabelForAction = (actionType, fallback) => {
 export default function NextActionPrompt() {
   const { nextAction, clearNextAction, markOpened } = useNextAction(); // read action state
   const { dbUserId, user } = useUser(); // read supabase user id and identity
-  const closeButtonColor = "var(--accent-purple)";
+  const closeButtonColor = "var(--text-1)";
   const [isOpen, setIsOpen] = useState(false); // track modal visibility
   const [keyLocation, setKeyLocation] = useState(KEY_LOCATIONS[0]); // selected key hook
   const [vehicleLocation, setVehicleLocation] = useState(VEHICLE_LOCATIONS[0]); // selected bay
@@ -147,8 +147,8 @@ export default function NextActionPrompt() {
                 <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--danger)" }}>
                   Next Action Required
                 </p>
-                <h2 style={{ margin: "4px 0 0", color: "var(--info-dark)" }}>{nextAction.title}</h2>
-                <p style={{ margin: "8px 0 0", color: "var(--info-dark)", lineHeight: 1.5 }}>{nextAction.instruction}</p>
+                <h2 style={{ margin: "4px 0 0", color: "var(--text-1)" }}>{nextAction.title}</h2>
+                <p style={{ margin: "8px 0 0", color: "var(--text-1)", lineHeight: 1.5 }}>{nextAction.instruction}</p>
               </div>
               <button
                 type="button"
@@ -182,23 +182,23 @@ export default function NextActionPrompt() {
               }}
             >
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Job Number</p>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-1)", opacity: 0.72, letterSpacing: "0.08em" }}>Job Number</p>
                 <strong style={{ fontSize: "1rem", color: "var(--danger)" }}>{nextAction.jobNumber || "Unknown"}</strong>
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Registration</p>
-                <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>{nextAction.vehicleReg || "N/A"}</strong>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-1)", opacity: 0.72, letterSpacing: "0.08em" }}>Registration</p>
+                <strong style={{ fontSize: "1rem", color: "var(--text-1)" }}>{nextAction.vehicleReg || "N/A"}</strong>
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--info)", letterSpacing: "0.08em" }}>Suggested Status</p>
-                <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-1)", opacity: 0.72, letterSpacing: "0.08em" }}>Suggested Status</p>
+                <strong style={{ fontSize: "1rem", color: "var(--text-1)" }}>
                   {statusLabelForAction(nextAction.actionType, nextAction.defaultVehicleStatus)}
                 </strong>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
                 Key Location
                 <select
                   value={keyLocation}
@@ -208,7 +208,7 @@ export default function NextActionPrompt() {
                     borderRadius: "var(--input-radius)",
                     border: "none",
                     background: "var(--surface)",
-                    color: "var(--info-dark)",
+                    color: "var(--text-1)",
                     fontWeight: 600,
                   }}
                 >
@@ -220,7 +220,7 @@ export default function NextActionPrompt() {
                 </select>
               </label>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
                 Vehicle Location
                 <select
                   value={vehicleLocation}
@@ -230,7 +230,7 @@ export default function NextActionPrompt() {
                     borderRadius: "var(--input-radius)",
                     border: "none",
                     background: "var(--surface)",
-                    color: "var(--info-dark)",
+                    color: "var(--text-1)",
                     fontWeight: 600,
                   }}
                 >
@@ -242,7 +242,7 @@ export default function NextActionPrompt() {
                 </select>
               </label>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--info-dark)", fontWeight: 600 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
                 Additional Notes
                 <textarea
                   value={notes}
@@ -282,7 +282,7 @@ export default function NextActionPrompt() {
                     borderRadius: "var(--input-radius)",
                     border: "none",
                     background: "var(--surface)",
-                    color: "var(--info-dark)",
+                    color: "var(--text-1)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}

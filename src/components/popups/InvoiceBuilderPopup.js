@@ -317,7 +317,7 @@ export default function InvoiceBuilderPopup({
       <div style={{ maxWidth: "900px" }}>
         <header style={{ marginBottom: "16px" }}>
           <h2 style={{ margin: "0 0 4px 0" }}>Create Invoice</h2>
-          <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "14px" }}>
+          <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.72, fontSize: "14px" }}>
             Review the proforma preview, verify VHC and parts pricing, and create the live invoice from this snapshot.
           </p>
         </header>
@@ -338,7 +338,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   display: "block",
                   fontSize: "12px",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   marginBottom: "6px",
                   fontWeight: 600
                 }}
@@ -362,7 +362,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   marginTop: "8px",
                   fontSize: "12px",
-                  color: "var(--info-dark)",
+                  color: "var(--text-1)",
                   display: "flex",
                   gap: "14px"
                 }}
@@ -377,7 +377,7 @@ export default function InvoiceBuilderPopup({
         <section style={{ marginBottom: "18px" }}>
           <h3 style={{ marginBottom: "12px" }}>Parts & VHC Items</h3>
           {partLines.length === 0 ? (
-            <p style={{ color: "var(--info)" }}>
+            <p style={{ color: "var(--text-1)", opacity: 0.72 }}>
               No priced parts yet; VHC additions populate here automatically.
             </p>
           ) : (
@@ -415,7 +415,7 @@ export default function InvoiceBuilderPopup({
                 >
                   <div>
                     <div style={{ fontWeight: 600 }}>{line.name}</div>
-                    <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                    <div style={{ fontSize: "12px", color: "var(--text-1)", opacity: 0.72 }}>
                       {line.partNumber} · {line.source}
                     </div>
                   </div>
@@ -443,7 +443,7 @@ export default function InvoiceBuilderPopup({
               background: "var(--surface)"
             }}
           >
-            <label style={{ fontSize: "12px", color: "var(--info)" }}>
+            <label style={{ fontSize: "12px", color: "var(--text-1)" }}>
               Labour total
             </label>
             <input
@@ -469,7 +469,7 @@ export default function InvoiceBuilderPopup({
               background: "var(--surface)"
             }}
           >
-            <label style={{ fontSize: "12px", color: "var(--info)" }}>
+            <label style={{ fontSize: "12px", color: "var(--text-1)" }}>
               VAT rate
             </label>
             <select
@@ -568,7 +568,7 @@ export default function InvoiceBuilderPopup({
               </button>
             </div>
             {shareFeedback && (
-              <p style={{ marginTop: "10px", color: "var(--info-dark)" }}>{shareFeedback}</p>
+              <p style={{ marginTop: "10px", color: "var(--text-1)" }}>{shareFeedback}</p>
             )}
           </section>
         )}
@@ -632,7 +632,7 @@ export default function InvoiceBuilderPopup({
                 justifyContent: "space-between",
                 marginBottom: "4px",
                 fontSize: "12px",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}
             >
               <span>VAT ({(vatRate * 100).toFixed(0)}%)</span>

@@ -200,7 +200,7 @@ function Detail({ label, value }) {
       <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--danger)", fontWeight: 700 }}>
         {label}
       </span>
-      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--info-dark)" }}>{value || "-"}</span>
+      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-1)" }}>{value || "-"}</span>
     </div>
   );
 }

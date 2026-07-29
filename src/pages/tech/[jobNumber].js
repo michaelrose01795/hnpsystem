@@ -1028,7 +1028,9 @@ export default function TechJobDetailPage() {
     const silent = options?.silent === true;
     if (!silent) setLoading(true);
     try {
-      const { data: job, error: jobError } = await getJobByNumber(jobNumber);
+      const { data: job, error: jobError } = await getJobByNumber(jobNumber, {
+        force: options?.force === true
+      });
 
       if (jobError || !job) {
         alert("Job not found");
@@ -1085,7 +1087,7 @@ export default function TechJobDetailPage() {
   );
 
   const refreshWorkspaceData = useCallback(async () => {
-    await fetchJobData({ silent: true });
+    await fetchJobData({ silent: true, force: true });
     await fetchClockedHoursTotal();
   }, [fetchClockedHoursTotal, fetchJobData]);
 
@@ -1255,15 +1257,22 @@ export default function TechJobDetailPage() {
 
   const handleSaveWriteUp = useCallback(async (writeUpData) => {
     const targetJobNumber = jobData?.jobCard?.jobNumber || jobNumber;
-    if (!targetJobNumber) return;
+    if (!targetJobNumber) {
+      return { success: false, error: "Job number is unavailable" };
+    }
     try {
       const result = await saveWriteUpToDatabase(targetJobNumber, writeUpData);
       if (!result?.success) {
         throw result?.error || new Error("Failed to save write-up");
       }
       await refreshWorkspaceData();
+      revalidateAllJobs();
+      return result;
     } catch (writeUpError) {
       console.error("Failed to save technician write-up:", writeUpError);
+      throw writeUpError instanceof Error
+        ? writeUpError
+        : new Error(String(writeUpError || "Failed to save write-up"));
     }
   }, [jobData?.jobCard?.jobNumber, jobNumber, refreshWorkspaceData]);
 
