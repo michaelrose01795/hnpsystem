@@ -4,7 +4,7 @@ export const accountsInvoicesSlide = {
   id: "accounts-invoices",
   route: "/accounts/invoices",
   title: "Accounts - Invoices",
-  roles: ["admin", "admin manager", "owner", "accounts", "accounts manager", "general manager"],
+  roles: ["admin", "admin manager", "accounts", "accounts manager", "general manager"],
   workflowIndex: WORKFLOW.ACCOUNTS_INVOICES,
   steps: [
     {

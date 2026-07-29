@@ -69,16 +69,16 @@ Groups are listed in manifest order. "Assigned roles" is the output of `getWorks
 | Tracker | `/tracking` | Override (restriction) | Limited to `techs, service, service manager, workshop manager, valet service, admin`. Operational tracker — not for all staff. |
 
 ### Admin — `management`
-**Assigned roles:** `admin manager, buying director, general manager, manager, owner, sales director` · **Category:** departments · **Home:** `/dashboard/managers`
+**Assigned roles:** `admin manager, buying director, general manager, manager, sales director` · **Category:** departments · **Home:** `/dashboard/managers`
 
 | Page | Route | Mode | Notes |
 |---|---|---|---|
 | Next Jobs | `/nextjobs` | Override (restriction) · Classic-locked | `admin manager` only within the group (legacy per-role curation). |
 | Job Cards | `/jobs` | Override (restriction) · Classic-locked | `admin manager` only. |
-| User Admin | `/admin/users` | Override (restriction) · Classic-locked | `admin manager, owner`. Sensitive user administration. |
-| Compliance | `/admin/compliance` | Override (restriction) · Classic-locked | `admin manager, owner`. |
-| HR Manager | `/hr/manager` | Override (restriction) · Classic-locked | `owner` only. |
-| Website Manager | `/website-manager` | Override (cross-grant) | `owner, admin, admin manager, general manager, sales`. Shared content/analytics area — grants **admin** and **sales** (outside the group). Keep in sync with `WEBSITE_MANAGER_ROLES` in `src/pages/staff/website-manager.js`. |
+| User Admin | `/admin/users` | Override (restriction) · Classic-locked | `admin manager`. Sensitive user administration. |
+| Compliance | `/admin/compliance` | Override (restriction) · Classic-locked | `admin manager`. |
+| HR Manager | `/hr/manager` | Override (restriction) · Classic-locked | `admin manager` only. |
+| Website Manager | `/website-manager` | Override (cross-grant) | `admin, admin manager, general manager, sales`. Shared content/analytics area — grants **admin** and **sales** (outside the group). Keep in sync with `WEBSITE_MANAGER_ROLES` in `src/pages/staff/website-manager.js`. |
 | Website Preview | `/website-manager?tab=preview` | Override (cross-grant) | Same audience as Website Manager. |
 | Website Shop | `/website-manager?tab=shop` | Override (cross-grant) | Same audience. |
 | Public Shop (live) | `/website#shop` | Override (cross-grant) | Same audience. |
@@ -142,7 +142,7 @@ Groups are listed in manifest order. "Assigned roles" is the output of `getWorks
 
 | Page | Route | Mode | Notes |
 |---|---|---|---|
-| Payslips | `/accounts/payslips` | Override (cross-grant) · Classic-locked | `accounts, accounts manager, admin, admin manager, owner`. Payroll oversight extends to admin/management beyond the group. |
+| Payslips | `/accounts/payslips` | Override (cross-grant) · Classic-locked | `accounts, accounts manager, admin, admin manager`. Payroll oversight extends to admin/management beyond the group. |
 | Accounts | `/accounts` | **Inherit (group-wide)** | Workspace-only (`WORKSPACE_CONTEXT_NAV_SECTIONS`). De-duplicated in Phase 8 — no per-page `roles`; inherits `{accounts, accounts manager}`. |
 | Company Accounts | `/company-accounts` | **Inherit (group-wide)** | As above. |
 | Invoices | `/accounts/invoices` | **Inherit (group-wide)** | As above. |

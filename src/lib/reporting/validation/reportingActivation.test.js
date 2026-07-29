@@ -151,7 +151,7 @@ describe("Phase 5 §2 — Department Dimension Activation", () => {
 
   it("prefers an operational department over the catch-all management for multi-role users", () => {
     expect(resolveDepartmentForRoles(["Workshop Manager", "Manager"])).toBe("workshop");
-    expect(resolveDepartmentForRoles(["Owner"])).toBe("management");
+    expect(resolveDepartmentForRoles(["General Manager"])).toBe("management");
   });
 });
 
@@ -363,9 +363,9 @@ describe("Phase 5 §9 — Reporting Audit & Permission validation", () => {
     expect(canSeeDepartment(tech, "accounts")).toBe(false);
     expect(canSeeDepartment(tech, "workshop")).toBe(true);
 
-    const owner = resolveScope({ user: { id: 2, roles: ["Owner"] } });
-    expect(owner.departments).toBe("all");
-    expect(canSeeDepartment(owner, "accounts")).toBe(true);
+    const executive = resolveScope({ user: { id: 2, roles: ["General Manager"] } });
+    expect(executive.departments).toBe("all");
+    expect(canSeeDepartment(executive, "accounts")).toBe(true);
   });
 
   it("server-side engine blocks cross-department operational KPIs without a department filter", async () => {

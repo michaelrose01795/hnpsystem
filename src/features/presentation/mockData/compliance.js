@@ -27,7 +27,7 @@ export const breachRecords = [
     reportable_to_subjects: true,
     decision_rationale: "Low volume and limited data — reported to the ICO for completeness.",
     status: "Closed",
-    owner_user_id: 12,
+    owner_user_id: 11,
   },
   {
     id: "demo-breach-002",
@@ -47,7 +47,7 @@ export const breachRecords = [
     reportable_to_subjects: false,
     decision_rationale: "No unauthorised access and device encrypted — not reportable.",
     status: "Under review",
-    owner_user_id: 12,
+    owner_user_id: 11,
   },
   {
     id: "demo-breach-003",
@@ -67,7 +67,7 @@ export const breachRecords = [
     reportable_to_subjects: false,
     decision_rationale: "Within the 72-hour assessment window — decision pending.",
     status: "Open",
-    owner_user_id: 12,
+    owner_user_id: 11,
   },
 ];
 
@@ -92,7 +92,7 @@ export const dpiaRecords = [
     status: "Approved",
     risk_level: "Low",
     mitigations: "Signage in place, 30-day retention, access limited to managers.",
-    signed_off_by: "Demo Owner",
+    signed_off_by: "Demo Admin Manager",
     signed_off_at: iso(120),
     next_review: iso(-245),
     document_url: "https://demo.invalid/dpia/cctv.pdf",
@@ -189,7 +189,7 @@ export const processingActivities = [
     international_transfers: "None",
     security_measures: "Role-based access, encryption in transit, audit logging.",
     retention_summary: "7 years — see job_cards retention policy.",
-    owner_user_id: 12,
+    owner_user_id: 11,
     last_reviewed_at: iso(45),
     next_review_at: iso(-320),
   },
@@ -217,7 +217,7 @@ export const processingActivities = [
     international_transfers: "None",
     security_measures: "Consent ledger, one-click unsubscribe, suppression list.",
     retention_summary: "Until consent is withdrawn.",
-    owner_user_id: 12,
+    owner_user_id: 11,
     last_reviewed_at: iso(20),
     next_review_at: iso(-345),
   },

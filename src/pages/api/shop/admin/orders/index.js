@@ -4,7 +4,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { listOrders } from "@/lib/database/shop";
 
-const ROLES = ["owner", "admin", "admin manager", "general manager", "sales", "accounts"];
+const ROLES = ["admin", "admin manager", "general manager", "sales", "accounts"];
 
 async function handler(req, res) {
   if (req.method !== "GET") {

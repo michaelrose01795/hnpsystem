@@ -29,7 +29,7 @@
 //
 // PERMISSION: executive reporting exposes whole-company commercial signal. Every
 // mgt KPI carries MGT_REPORT_PERMISSION (= EXECUTIVE_ROLES), so the engine's
-// per-KPI permission gate (Phase-1 §14) restricts it to Dealer Principal / Owner,
+// per-KPI permission gate (Phase-1 §14) restricts it to Dealer Principals,
 // Directors and Senior Management. Operational department managers (workshop /
 // parts / service managers etc.) are intentionally excluded — they keep their
 // department reporting packages unless explicitly granted an executive role.

@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import InvoiceDetailPageUi from "@/components/page-ui/accounts/invoices/accounts-invoices-invoice-id-ui"; // Extracted presentation layer.
-const DETAIL_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
+const DETAIL_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
 const statusBadgeStyles = {

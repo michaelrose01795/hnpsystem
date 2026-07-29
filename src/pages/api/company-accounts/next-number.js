@@ -3,7 +3,7 @@ import createHandler, { denyUnless } from "@/lib/api/createHandler";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import supabase from "@/lib/database/supabaseClient";
 
-const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
+const allowedRoles = ["admin", "admin manager", "accounts", "accounts manager"];
 const PREFIX = "CA";
 const PAD_LENGTH = 4;
 const MAX_ATTEMPTS = 10;

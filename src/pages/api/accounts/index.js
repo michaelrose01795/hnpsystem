@@ -2,7 +2,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard helper to enforce Keycloak RBAC
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import supabase from "@/lib/database/supabaseClient";
-const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager", "general manager", "service manager", "workshop manager", "sales"];
+const allowedRoles = ["admin", "admin manager", "accounts", "accounts manager", "general manager", "service manager", "workshop manager", "sales"];
 const numberOrNull = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;

@@ -15,7 +15,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import CompanyAccountsIndexPageUi from "@/components/page-ui/company-accounts/company-accounts-ui"; // Extracted presentation layer.
 
-const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
+const ALLOWED_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
 export default function CompanyAccountsIndexPage() {
   const router = useRouter();

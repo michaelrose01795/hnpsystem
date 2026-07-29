@@ -208,7 +208,7 @@ const classifyUsers = (users) => {
     technicians,
     mot: byRole("mot"),
     parts: users.filter((u) => String(u.role || "").toLowerCase().includes("parts")),
-    managers: users.filter((u) => String(u.role || "").toLowerCase().includes("manager") || String(u.role || "").toLowerCase().includes("director") || String(u.role || "").toLowerCase() === "owner"),
+    managers: users.filter((u) => String(u.role || "").toLowerCase().includes("manager") || String(u.role || "").toLowerCase().includes("director")),
     sales: byRole("sales"),
     admin: users.filter((u) => String(u.role || "").toLowerCase().includes("admin") || String(u.role || "").toLowerCase().includes("reception")),
     service: users.filter((u) => String(u.role || "").toLowerCase().includes("service")),

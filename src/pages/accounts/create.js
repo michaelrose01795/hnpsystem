@@ -7,7 +7,7 @@ import { isPresentationMode } from "@/features/presentation/runtime/presentation
 import RouterParamsOverride from "@/features/presentation/runtime/RouterParamsOverride";
 import AccountsListPage from "@/pages/accounts/index";
 
-const CREATE_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
+const CREATE_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
 export default function CreateAccountRouteShim() {
   const router = useRouter();

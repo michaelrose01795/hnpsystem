@@ -2,7 +2,7 @@
 // /admin/compliance. Deck order is driven by docs/ui/ui-presentation, so the
 // workflowIndex values here only need to be unique numbers.
 
-const COMPLIANCE_ROLES = ["admin", "admin manager", "owner"];
+const COMPLIANCE_ROLES = ["admin", "admin manager"];
 
 export const adminComplianceSlide = {
   id: "admin-compliance",

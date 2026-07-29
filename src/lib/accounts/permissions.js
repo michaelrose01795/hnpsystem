@@ -1,6 +1,6 @@
 // file location: src/lib/accounts/permissions.js // path header for clarity
 import { normalizeRoles } from "@/lib/auth/roles"; // reuse the shared role normalizer so RBAC stays consistent
-const ADMIN_ROLES = new Set(["admin", "owner", "admin manager"]);
+const ADMIN_ROLES = new Set(["admin", "admin manager"]);
 const ACCOUNT_ROLES = new Set(["accounts", "accounts manager"]);
 const MANAGER_KEYWORDS = ["manager", "director"];
 const SALES_KEYWORDS = ["sales"];

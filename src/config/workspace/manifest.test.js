@@ -128,38 +128,30 @@ function buildGoldenSidebarSections() {
       label: "Admin Manager",
       category: "departments",
       items: [
+        { label: "HR Manager", href: "/hr/manager", roles: ["admin manager"] },
         { label: "Next Jobs", href: "/nextjobs", roles: ["admin manager"] },
         { label: "Job Cards", href: "/jobs", roles: ["admin manager"] },
         { label: "User Admin", href: "/admin/users", roles: ["admin manager"] },
         { label: "Compliance", href: "/admin/compliance", roles: ["admin manager"] },
-      ],
-    },
-    {
-      label: "Owner",
-      category: "departments",
-      items: [
-        { label: "HR Manager", href: "/hr/manager", roles: ["owner"] },
-        { label: "User Admin", href: "/admin/users", roles: ["owner"] },
-        { label: "Compliance", href: "/admin/compliance", roles: ["owner"] },
         {
           label: "Website Manager",
           href: "/website-manager",
-          roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+          roles: ["admin", "admin manager", "general manager", "sales"],
         },
         {
           label: "Website Preview",
           href: "/website-manager?tab=preview",
-          roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+          roles: ["admin", "admin manager", "general manager", "sales"],
         },
         {
           label: "Website Shop",
           href: "/website-manager?tab=shop",
-          roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+          roles: ["admin", "admin manager", "general manager", "sales"],
         },
         {
           label: "Public Shop (live)",
           href: "/website#shop",
-          roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+          roles: ["admin", "admin manager", "general manager", "sales"],
         },
       ],
     },
@@ -262,7 +254,7 @@ function buildGoldenSidebarSections() {
         {
           label: "Payslips",
           href: "/accounts/payslips",
-          roles: ["accounts", "accounts manager", "admin", "admin manager", "owner"],
+          roles: ["accounts", "accounts manager", "admin", "admin manager"],
         },
       ],
     },
@@ -357,7 +349,6 @@ const REPRESENTATIVE_ROLES = [
   ["valet service"],
   ["accounts manager"],
   ["admin manager"],
-  ["owner"],
   ["admin"],
   ["general manager"],
   ["dev"],
@@ -384,7 +375,7 @@ const ALL_EXISTING_ROLE_COMBINATIONS = Array.from(
       ...REPRESENTATIVE_ROLES,
       ["service", "parts"],
       ["accounts", "accounts manager"],
-      ["admin manager", "owner", "general manager"],
+      ["admin manager", "general manager"],
       ["SERVICE MANAGER"],
     ].map((roles) => [roles.join("|"), roles])
   ).values()
@@ -774,7 +765,7 @@ describe("workspace manifest — per-user sidebar access override", () => {
 describe("workspace manifest — dev platform gating stays strict", () => {
   it("/dev is landable ONLY for the dev role", () => {
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
-    for (const staff of ["service", "workshop manager", "admin manager", "owner", "parts", "techs"]) {
+    for (const staff of ["service", "workshop manager", "admin manager", "parts", "techs"]) {
       expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
     }
     expect(getAccessibleNavPaths([]).has("/dev")).toBe(false);
@@ -832,7 +823,7 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
   });
 
   it("the lock never leaks the Developer group/button to non-dev roles", () => {
-    for (const staff of ["service", "workshop manager", "admin manager", "owner", "parts", "techs", "accounts manager"]) {
+    for (const staff of ["service", "workshop manager", "admin manager", "parts", "techs", "accounts manager"]) {
       expect(getWorkspaceGroups([staff]).map((g) => g.key)).not.toContain("developer");
       expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
     }
@@ -927,7 +918,6 @@ describe("workspace manifest — department-first selectors", () => {
       "admin",
       "admin manager",
       "general manager",
-      "owner",
     ]);
     expect(departmentDashboardShortcuts).toEqual(allDashboardShortcuts);
     expect(getDashboardShortcutsForRoles(["parts"]).map((item) => item.href)).toContain("/dashboard/parts");
@@ -1172,7 +1162,7 @@ describe("workspace group inheritance (Phase 8 — default permission model)", (
       for (const href of workspaceOnlyHrefs) expect(hrefs).toContain(href);
     }
     // Roles outside the group inherit nothing (the pages are group-wide only).
-    for (const role of ["service", "workshop manager", "parts manager", "admin manager", "owner"]) {
+    for (const role of ["service", "workshop manager", "parts manager", "admin manager"]) {
       const hrefs = getDepartmentWorkspaceNav("accounts", [role]).items.map((i) => i.href);
       for (const href of workspaceOnlyHrefs) expect(hrefs).not.toContain(href);
     }
@@ -1198,9 +1188,9 @@ describe("workspace group inheritance (Phase 8 — default permission model)", (
   });
 
   it("intentional overrides keep their own gate regardless of group assignment", () => {
-    // Financial cross-grant: Payslips is granted to admin/admin manager/owner as
+    // Financial cross-grant: Payslips is granted to admin/admin manager as
     // well as the accounts group — inheritance must NOT narrow it to the group.
-    const payslipRoles = ["accounts", "accounts manager", "admin", "admin manager", "owner"];
+    const payslipRoles = ["accounts", "accounts manager", "admin", "admin manager"];
     for (const role of payslipRoles) {
       expect(getAccessibleNavPaths([role]).has("/accounts/payslips")).toBe(true);
     }
@@ -1210,7 +1200,7 @@ describe("workspace group inheritance (Phase 8 — default permission model)", (
     expect(getAccessibleNavPaths(["sales"]).has("/website-manager")).toBe(true);
     // Developer boundary: /dev stays dev-only (explicit override on a dev page).
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
-    for (const staff of ["service", "workshop manager", "admin manager", "owner", "accounts manager"]) {
+    for (const staff of ["service", "workshop manager", "admin manager", "accounts manager"]) {
       expect(getAccessibleNavPaths([staff]).has("/dev")).toBe(false);
     }
     // Reports group derives no roles (not in ROLE_DEPARTMENT_MAP), so its pages

@@ -16,7 +16,6 @@ const DEMO_NAMES = {
   "hr-manager": "Demo HR Manager",
   "mobile-technician": "Demo Mobile Technician",
   "mot-tester": "Demo MOT Tester",
-  owner: "Demo Owner",
   painters: "Demo Painter",
   "parts-manager": "Demo Parts Manager",
   receptionist: "Demo Receptionist",

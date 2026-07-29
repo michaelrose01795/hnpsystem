@@ -307,7 +307,7 @@ Integrates with the existing role system (`roles.js`, `hasAnyRole`, `withRoleGua
 2. **Scope filter** — `permissionScope.js` maps roles → visible scope:
    - **Operational role** (e.g. Techs, Parts, Valet) → own records / own department only.
    - **Department manager** (Service/Workshop/Parts/Accounts Manager) → their department, all members.
-   - **Management** (`MANAGER_SCOPED_ROLES`, General Manager, Owner) → all departments.
+   - **Management** (`MANAGER_SCOPED_ROLES`, General Manager) → all departments.
    - **HR/Finance sensitive data** (pay, payslips, disciplinary) → `HR_CORE_ROLES` / Accounts only, regardless of department.
 3. **Column gate** — sensitive columns (NI number, salary, home address) are stripped unless the role is in the sensitive allow-list.
 
@@ -582,7 +582,7 @@ Built entirely on the existing role system; no parallel permission store for ide
 | **Self** | operational roles (Techs, Parts, Valet Service, MOT Tester, Painters) | own records + own-department operational KPIs |
 | **Department** | Service/Workshop/Parts/Accounts Managers, After-Sales | full department: members, trends, drill-downs |
 | **Cross-department** | `MANAGER_SCOPED_ROLES`, General Manager | multiple/all departments |
-| **Executive** | Owner, Admin Manager, Directors | everything incl. executive tier |
+| **Executive** | Admin Manager, General Manager, Directors | everything incl. executive tier |
 | **Sensitive (orthogonal)** | `HR_CORE_ROLES` (pay/PII), Accounts (financial detail) | pay, payslips, NI, disciplinary, full financial detail — regardless of department level |
 
 ### 14.2 Enforcement
@@ -700,7 +700,7 @@ For each department: **ownership**, **KPIs**, **reporting requirements**, **summ
 - **Future roadmap:** data-quality monitoring suite, KPI-catalog admin, access-review reporting.
 
 ### 16.9 Management
-- **Ownership:** cross-department oversight; consumes all departments. Roles: `MANAGER_SCOPED_ROLES`, General Manager, Owner, Directors.
+- **Oversight:** cross-department visibility; consumes all departments. Roles: `MANAGER_SCOPED_ROLES`, General Manager and Directors.
 - **KPIs:** executive suite (§13.3) — revenue/margin by department, throughput, site-wide recovery/utilisation, VHC upsell contribution, department efficiency comparison, SLA attainment.
 - **Reporting requirements:** cross-department comparison; period-over-period; targets; exception/escalation visibility.
 - **Summary dashboard:** executive overview — top KPIs across all departments with trend + target.

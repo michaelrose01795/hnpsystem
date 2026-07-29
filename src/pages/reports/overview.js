@@ -7,7 +7,7 @@
 // department packages; it creates no new reporting infrastructure.
 //
 // STRICT ACCESS CONTROL: executive reporting exposes whole-company commercial
-// signal. The page is gated to Dealer Principal / Owner, Directors and Senior
+// signal. The page is gated to Dealer Principals, Directors and Senior
 // Management (EXECUTIVE_ROLES) ONLY — operational department managers keep their
 // department reporting packages unless explicitly granted an executive role. This
 // page gate mirrors the per-KPI MGT_REPORT_PERMISSION the engine enforces
@@ -33,7 +33,7 @@ import ExecutiveDrilldownTab from "@/components/reporting/management/ExecutiveDr
 import ManagementUtilitiesTab from "@/components/reporting/management/ManagementUtilitiesTab";
 import { MGT_DEPARTMENT, MGT_TABS } from "@/components/reporting/management/managementReportConfig";
 
-// Executive roles only (Dealer Principal/Owner, Directors, Senior Management).
+// Executive roles only (Dealer Principals, Directors, Senior Management).
 const EXECUTIVE_REPORT_ROLES = Array.from(
   new Set([...MGT_REPORT_PERMISSION, ...EXECUTIVE_ROLES])
 ).map((role) => role.toUpperCase());

@@ -5,7 +5,7 @@ export const jobCreateSlide = {
   route: "/new-job",
   title: "Create a Job Card",
   roles: [
-    "admin", "admin manager", "owner", "service", "service manager",
+    "admin", "admin manager", "service", "service manager",
     "workshop manager", "general manager", "after sales director", "aftersales manager",
     "receptionist",
   ],

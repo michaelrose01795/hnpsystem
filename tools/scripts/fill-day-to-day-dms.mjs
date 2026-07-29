@@ -96,7 +96,7 @@ const topUp = async (table, target, maker, batchSize = 500) => {
 
 const staffRoles = (users) => users.filter((u) => String(u.role || "").toLowerCase() !== "customer");
 const techRoles = (users) => users.filter((u) => /tech|mot tester/i.test(`${u.role} ${u.job_title}`));
-const managerRoles = (users) => users.filter((u) => /manager|director|owner/i.test(`${u.role}`));
+const managerRoles = (users) => users.filter((u) => /manager|director/i.test(`${u.role}`));
 const partsRoles = (users) => users.filter((u) => /parts/i.test(`${u.role}`));
 
 const main = async () => {

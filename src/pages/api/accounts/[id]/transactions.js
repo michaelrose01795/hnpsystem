@@ -2,7 +2,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard for RBAC handling
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import supabase from "@/lib/database/supabaseClient";
-const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager", "general manager", "service manager", "sales"];
+const allowedRoles = ["admin", "admin manager", "accounts", "accounts manager", "general manager", "service manager", "sales"];
 async function handler(req, res, session) {
   const permissions = deriveAccountPermissions(session.user?.roles || []);
   const { id } = req.query;

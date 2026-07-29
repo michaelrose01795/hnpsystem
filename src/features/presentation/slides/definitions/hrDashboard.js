@@ -4,7 +4,7 @@ export const hrDashboardSlide = {
   id: "hr-dashboard",
   route: "/hr",
   title: "HR Dashboard",
-  roles: ["admin", "admin manager", "owner", "hr manager", "general manager"],
+  roles: ["admin", "admin manager", "hr manager", "general manager"],
   workflowIndex: WORKFLOW.HR_DASHBOARD,
   steps: [
     {

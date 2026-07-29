@@ -162,7 +162,7 @@ HR Manager
 1. /presentation/hr-manager/hr/0
 Route: /hr
 
-2. /presentation/hr-manager/hr-manager/1 !!!!!!!!!!!!!!!!!!!!!!
+2. /presentation/hr-manager/hr-manager/1
 Route: /hr/manager
 
 3. /presentation/hr-manager/hr-attendance/2
@@ -213,17 +213,6 @@ MOT Tester
 
 1. /presentation/mot-tester/dashboard-mot/0
 Route: /dashboard/mot
-
-
-====================================================
-Owner
-====================================================
-
-1. /presentation/owner/dashboard-managers/0
-Route: /dashboard/managers
-
-2. /presentation/owner/hr-manager/1 !!!!!!!!!!!!!!!!!!!!!!
-Route: /hr/manager
 
 
 ====================================================

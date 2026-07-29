@@ -28,7 +28,6 @@ const REQUIRED_ROLES = [
   "Admin Manager",
   "Accounts",
   "Accounts Manager",
-  "Owner",
   "General Manager",
   "Valet Sales",
   "Buying Director",

@@ -103,13 +103,6 @@ Format to edit:
 - /tech/efficiency
 - /vhc
 
-## Owner
-
-- /dashboard/managers
-- /hr/manager
-- /admin/users
-- /accounts/payslips
-
 ## Painters
 
 - /dashboard/painting

@@ -8,7 +8,7 @@ import { writeAuditLog } from "@/lib/audit/auditLog";
 import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
 import { normalizeSidebarAccess } from "@/lib/sidebarAccess";
 
-const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
+const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["admin manager"];
 
 async function handler(req, res) {
   if (req.method === "GET") {

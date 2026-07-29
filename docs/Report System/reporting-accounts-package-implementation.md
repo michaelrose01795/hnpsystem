@@ -252,7 +252,7 @@ a later phase once the prerequisite lands. **All remain financial-gated.**
 ## 7. Permission & Security Observations
 
 - **Highest permission tier applied throughout.** Every `acc.*` KPI carries
-  `permission = FINANCIAL_SENSITIVE_ROLES` (Accounts + Accounts Manager + executives: Owner, Admin
+  `permission = FINANCIAL_SENSITIVE_ROLES` (Accounts + Accounts Manager + executives: Admin
   Manager, General Manager, After Sales/Sales/Buying Directors). The engine's per-KPI gate refuses these
   KPIs to any other role — a technician, parts operator or general admin gets `null` + a "not permitted"
   warning, never a figure. Confirmed by the activation test (a tech is refused `acc.revenue`; Accounts

@@ -2,7 +2,7 @@
 import createHandler from "@/lib/api/createHandler";
 import supabase from "@/lib/database/supabaseClient";
 
-const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
+const allowedRoles = ["admin", "admin manager", "accounts", "accounts manager"];
 const TABLE = "account_settings";
 
 export default createHandler({

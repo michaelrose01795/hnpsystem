@@ -21,7 +21,6 @@ import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // E
 
 const ALLOWED_ROLES = [
 "ADMIN",
-"OWNER",
 "ADMIN MANAGER",
 "ACCOUNTS",
 "ACCOUNTS MANAGER",

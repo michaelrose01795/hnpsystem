@@ -22,7 +22,6 @@ import {
 } from "@/lib/database/website";
 
 const WRITE_ROLES = [
-  "owner",
   "admin",
   "admin manager",
   "general manager",

@@ -4,7 +4,7 @@ export const valetSlide = {
   id: "valet",
   route: "/valet",
   title: "Valet Queue",
-  roles: ["admin", "admin manager", "owner", "valet service", "valet sales", "service manager", "workshop manager"],
+  roles: ["admin", "admin manager", "valet service", "valet sales", "service manager", "workshop manager"],
   workflowIndex: WORKFLOW.VALET,
   steps: [
     {

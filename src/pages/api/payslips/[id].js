@@ -21,7 +21,6 @@ import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
 const ADMIN_ROLES = new Set([
   "admin",
   "admin manager",
-  "owner",
   "accounts",
   "accounts manager",
 ]);

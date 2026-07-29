@@ -880,7 +880,7 @@ const getAvailableCommands = (userRoles = []) => {
     autocomplete: "/invoice",
     pattern: "invoice",
     hasInput: true,
-    roles: ['accounts', 'service manager', 'workshop manager', 'admin', 'owner'],
+    roles: ['accounts', 'service manager', 'workshop manager', 'admin'],
     getLink: (num) => `/accounts/invoices/${num}`
   },
   {
@@ -889,7 +889,7 @@ const getAvailableCommands = (userRoles = []) => {
     autocomplete: "/account",
     pattern: "account",
     hasInput: true,
-    roles: ['accounts', 'service manager', 'workshop manager', 'admin', 'owner'],
+    roles: ['accounts', 'service manager', 'workshop manager', 'admin'],
     getLink: (id) => `/accounts/view/${id}`
   },
 
@@ -920,7 +920,7 @@ const getAvailableCommands = (userRoles = []) => {
     autocomplete: "/hr",
     pattern: "hr",
     hasInput: false,
-    roles: ['hr manager', 'admin manager', 'owner', 'admin'],
+    roles: ['hr manager', 'admin manager', 'admin'],
     getLink: () => '/hr/manager'
   },
   {

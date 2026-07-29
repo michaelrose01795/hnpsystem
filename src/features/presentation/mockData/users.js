@@ -8,7 +8,6 @@ const rawRows = [
   { id: "demo-user-007", username: "demo.painter", display_name: "Demo Painter", email: "demo.painter@hnp.example", roles: ["painters"], department: "Body Shop", active: true, created_at: "2024-07-19T09:00:00.000Z" },
   { id: "demo-user-008", username: "demo.valet", display_name: "Demo Valet", email: "demo.valet@hnp.example", roles: ["valet service"], department: "Valeting", active: true, created_at: "2024-08-26T09:00:00.000Z" },
   { id: "demo-user-009", username: "demo.mobile", display_name: "Demo Mobile", email: "demo.mobile@hnp.example", roles: ["mobile technician", "techs"], department: "Mobile", active: true, created_at: "2024-09-11T09:00:00.000Z" },
-  { id: "demo-user-010", username: "demo.owner", display_name: "Demo Owner", email: "demo.owner@hnp.example", roles: ["owner"], department: "Management", active: true, created_at: "2023-10-02T09:00:00.000Z" },
   { id: "demo-user-011", username: "demo.hr", display_name: "Demo HR", email: "demo.hr@hnp.example", roles: ["hr manager"], department: "HR", active: true, created_at: "2024-11-08T09:00:00.000Z" },
   { id: "demo-user-012", username: "demo.admin", display_name: "Demo Admin", email: "demo.admin@hnp.example", roles: ["admin manager"], department: "Admin", active: true, created_at: "2024-12-15T09:00:00.000Z" },
 ];

@@ -1,10 +1,10 @@
 // Who is allowed to read/write compliance registers (SARs, breaches, DPIAs,
 // ROPA, retention). Until a dedicated DPO / Privacy Lead role is defined,
-// access piggybacks on the existing admin/owner roles.
+// access piggybacks on the existing admin roles.
 
 import { hasAnyRole } from "@/lib/auth/roles";
 
-export const COMPLIANCE_ADMIN_ROLES = ["owner", "admin manager", "admin"];
+export const COMPLIANCE_ADMIN_ROLES = ["admin manager", "admin"];
 
 export function isComplianceAdmin(userRoles) {
   return hasAnyRole(userRoles, COMPLIANCE_ADMIN_ROLES);

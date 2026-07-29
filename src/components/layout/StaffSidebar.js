@@ -29,6 +29,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config";
+import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
 import {
   isOverlayHidden as readOverlayHidden,
   setOverlayHidden as writeOverlayHidden,
@@ -204,8 +205,6 @@ export default function Sidebar({
   const fullName = (user?.username || "").trim();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
-  const canShowDevItems = !inPresentationMode && canShowDevSidebarItems(user);
-  const canShowDevPagesLink = !inPresentationMode && canShowDevPages();
   // In presentation mode the sidebar belongs to the demo role, not the real
   // signed-in user — pass null to skip the unread-messages query so the badge
   // doesn't surface the presenter's actual inbox count.
@@ -257,6 +256,13 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
+  const isDevRole = userRoles.includes(DEV_PLATFORM_ROLE);
+  const canShowDevItems =
+    isDevRole && !inPresentationMode && canShowDevSidebarItems(user);
+  const canShowDevPagesLink =
+    isDevRole && !inPresentationMode && canShowDevPages();
+  const canShowDevOverlayControl =
+    isDevRole && !inPresentationMode && canUseDevOverlay;
   // Per-user sidebar-access override (admin-set snapshot). Skipped in
   // presentation mode (the rail belongs to the demo role, not the real user).
   // When no snapshot exists, snapshotAllowed is null and every filter below is
@@ -981,7 +987,7 @@ export default function Sidebar({
                         Logout
                       </button>
                     </div>
-                    {(canShowDevItems || canShowDevPagesLink) && (
+                    {(canShowDevItems || canShowDevPagesLink || canShowDevOverlayControl) && (
                       <div
                         style={{
                           display: "flex",
@@ -1001,7 +1007,7 @@ export default function Sidebar({
                             Diagnostics
                           </Link>
                         )}
-                        {canUseDevOverlay && (
+                        {canShowDevOverlayControl && (
                           <button
                             type="button"
                             role="switch"
@@ -1016,7 +1022,7 @@ export default function Sidebar({
                         )}
                       </div>
                     )}
-                    {!inPresentationMode && (
+                    {isDevRole && !inPresentationMode && (
                       <Link
                         className="app-btn"
                         style={{

@@ -7,7 +7,7 @@ import { isPresentationMode } from "@/features/presentation/runtime/presentation
 import RouterParamsOverride from "@/features/presentation/runtime/RouterParamsOverride";
 import AccountsListPage from "@/pages/accounts/index";
 
-const SETTINGS_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
+const SETTINGS_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
 export default function AccountsSettingsRedirectPage() {
   const router = useRouter();

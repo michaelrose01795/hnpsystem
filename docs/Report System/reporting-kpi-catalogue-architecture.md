@@ -83,7 +83,7 @@ The catalogue also fixes the standards every metric obeys: dashboard card layout
 | **Operational** | Now / today | Team + team lead | Live / short-TTL | Jobs in progress, cars waiting wash, open parts by status |
 | **Tactical** | Week / month | Department manager | Daily snapshot + WoW/MoM | Technician efficiency, fill rate, VHC conversion, DSO |
 | **Strategic** | Quarter / year | Senior management | Monthly/quarterly rollup | Department profitability, capacity utilisation, stock turn |
-| **Executive** | Year / multi-year | Owner / directors | Quarterly/yearly + forecast | Revenue & margin by department, growth, cost-to-serve |
+| **Executive** | Year / multi-year | Directors / senior management | Quarterly/yearly + forecast | Revenue & margin by department, growth, cost-to-serve |
 
 A KPI's tier governs default permission breadth, default trend granularity, and which scorecard (§3.1) it appears on. Some KPIs appear at two tiers (e.g. "jobs completed" is operational daily and tactical as a weekly trend) — the catalogue tags the **primary** tier; secondary appearances are noted.
 

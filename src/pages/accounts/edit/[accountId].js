@@ -7,7 +7,7 @@ import { isPresentationMode } from "@/features/presentation/runtime/presentation
 import RouterParamsOverride from "@/features/presentation/runtime/RouterParamsOverride";
 import AccountsListPage from "@/pages/accounts/index";
 
-const EDIT_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER"];
+const EDIT_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER"];
 
 export default function EditAccountRouteShim() {
   const router = useRouter();

@@ -17,11 +17,11 @@ import { summariseGroup } from "@/config/topbar/teamPresence";
 import { resolveKpis } from "@/config/topbar/departmentKpis";
 
 // Broad manager gate: any management-tier role. Kept local + permissive so the
-// tools show for workshop/service/parts managers, directors and owners alike.
+// tools show for workshop/service/parts managers and directors alike.
 export function isManagerRole(roles = []) {
   return (Array.isArray(roles) ? roles : []).some((r) => {
     const role = String(r).toLowerCase();
-    return role.includes("manager") || role.includes("director") || role === "owner";
+    return role.includes("manager") || role.includes("director");
   });
 }
 

@@ -10,7 +10,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import { prefetchJob } from "@/lib/swr/prefetch";
 import CompanyAccountDetailPageUi from "@/components/page-ui/company-accounts/company-accounts-account-number-ui"; // Extracted presentation layer.
 
-const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
+const ALLOWED_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 const HISTORY_DEFAULT = { jobs: [], invoices: [] };
 const ACCOUNT_TABS = [
 { id: "overview", label: "Overview" },

@@ -4,7 +4,6 @@ import supabase from "@/lib/database/supabaseClient"; // import Supabase client 
 
 const allowedRoles = [ // roles allowed to read/write company profile
   "admin",
-  "owner",
   "admin manager",
   "accounts",
   "accounts manager",

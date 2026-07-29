@@ -164,7 +164,7 @@ Assigned: accounts and accounts-manager. Financial sensitivity remains server-en
   - **P** Invoices — `/accounts/invoices` — inherited.
   - **Detail** `/accounts/invoices/[invoiceId]`.
   - **P** Accounts Reports — `/accounts/reports` — inherited; distinct from enterprise `/reports/accounts`.
-  - **P** Payslips — `/accounts/payslips` — cross-grant to admin/admin-manager/owner; sensitive exception.
+  - **P** Payslips — `/accounts/payslips` — cross-grant to admin/admin-manager; sensitive exception.
 
 ### Reports
 
@@ -192,15 +192,15 @@ Assigned: derived management roles. Admin is the requested display name for curr
   - **D** Admin Dashboard — `/dashboard/admin` — admin/admin-manager exception.
   - **D** Paint Dashboard — `/dashboard/painting` — painters only; retain as an exception until Paint gets a real workspace.
 - **People & HR**
-  - **P** HR Manager — `/hr/manager` — owner only today; dashboard tabs are **T**.
+  - **P** HR Manager — `/hr/manager` — admin-manager only; dashboard tabs are **T**.
   - **P** Employee Records — `/hr/employees` — HR-core plus scoped-manager edge policy; keep role/proxy rules aligned.
   - **P** Attendance, Leave, Payroll, Performance, Training, Incidents, Recruitment, HR Reports, HR Settings — `/hr/*` — HR-core restrictions; these are Pages in this module, not a separate top-level HR Group.
-  - **P** User Administration — `/admin/users` — admin/admin-manager/owner exception.
+  - **P** User Administration — `/admin/users` — admin/admin-manager exception.
 - **Governance**
-  - **P** Compliance — `/admin/compliance` — admin-manager/owner exception.
+  - **P** Compliance — `/admin/compliance` — admin-manager exception.
   - **Detail/tab-only** breaches, DPIAs, retention, ROPA and SARs — `/admin/compliance/*`; retain inside Compliance, not sidebar pages.
 - **Website Operations**
-  - **P** Website Manager — `/website-manager` — cross-grant to owner, admin, admin-manager, general-manager and sales.
+  - **P** Website Manager — `/website-manager` — cross-grant to admin, admin-manager, general-manager and sales.
   - Content, Preview, Shop, Media, SEO, Analytics and Activity are **T** (`?tab=`). Remove legacy sidebar duplicates `/website-manager?tab=preview`, `/website-manager?tab=shop`, and `/website#shop`; public shop remains external/customer navigation.
   - **Hidden** `/newpage` is a legacy content-management tool; retain only if Website Manager links to it, otherwise retire after migration.
 

@@ -160,7 +160,7 @@ const ROLE_FILTERS = ["workshop", "parts", "advisor", "manager"];
 const roleGroupOf = (role) => {
   const r = String(role || "").toLowerCase();
   if (!r) return "other";
-  if (r.includes("manager") || r.includes("owner") || r.includes("admin")) return "manager";
+  if (r.includes("manager") || r.includes("admin")) return "manager";
   if (r.includes("part")) return "parts";
   if (r.includes("advisor") || r.includes("service")) return "advisor";
   if (

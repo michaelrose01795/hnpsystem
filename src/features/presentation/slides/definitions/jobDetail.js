@@ -5,7 +5,7 @@ export const jobDetailSlide = {
   route: "/job-cards/DEMO-1042",
   title: "Job Detail - Full Write-up",
   roles: [
-    "admin", "admin manager", "owner", "service", "service manager",
+    "admin", "admin manager", "service", "service manager",
     "workshop manager", "general manager", "after sales director", "aftersales manager",
     "receptionist", "techs", "mobile technician", "mot tester", "parts", "parts manager",
     "valet service", "valet sales", "accounts", "accounts manager",

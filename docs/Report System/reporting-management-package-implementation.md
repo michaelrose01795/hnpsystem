@@ -29,7 +29,7 @@ department KPI's own resolver** — never recalculated — so there is exactly o
 3. Saved views, CSV exports, filters, drill-downs, permission scope, trends and audit logging reuse the
    existing reporting APIs, hooks and UI components — **no separate executive reporting system** was created.
 4. Every `mgt.*` KPI carries `MGT_REPORT_PERMISSION` (= `EXECUTIVE_ROLES`), so the engine's per-KPI
-   permission gate restricts the data to Dealer Principal / Owner, Directors and Senior Management.
+   permission gate restricts the data to Dealer Principals, Directors and Senior Management.
    Operational department managers (workshop / parts / service managers) are **excluded** — they keep their
    department reporting packages unless explicitly granted an executive role.
 

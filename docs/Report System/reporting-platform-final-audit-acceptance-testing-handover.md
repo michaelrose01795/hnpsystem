@@ -368,13 +368,12 @@ Seeded local users from `supabase/seed/test-seed.sql`:
 | 5 | `parts@test.local` | Parts Manager | Parts report |
 | 7 | `mobile-tech@test.local` | Mobile Technician | Negative/mobile-scope checks |
 
-The seed does not provide Accounts, Owner, MOT Tester, Valet Service, or Painters users. For full manual coverage, add temporary users in a test database only:
+The seed does not provide Accounts, MOT Tester, Valet Service, or Painters users. For full manual coverage, add temporary users in a test database only:
 
 ```sql
 insert into users (user_id, first_name, last_name, email, role, password_hash)
 values
   (901, 'Test', 'Accounts', 'accounts-report@test.local', 'Accounts', 'testpass123'),
-  (902, 'Test', 'Owner', 'owner-report@test.local', 'Owner', 'testpass123'),
   (903, 'Test', 'MOT', 'mot-report@test.local', 'MOT Tester', 'testpass123'),
   (904, 'Test', 'Valet', 'valeting-report@test.local', 'Valet Service', 'testpass123'),
   (905, 'Test', 'Painter', 'paint-report@test.local', 'Painters', 'testpass123')
@@ -531,7 +530,7 @@ Expected:
 
 Financial positive test:
 
-1. Login as user id 901 (`Accounts`) or 902 (`Owner`).
+1. Login as user id 901 (`Accounts`) or user id 1 (`Admin Manager`).
 2. Open `/reports/accounts`.
 3. Run:
 
@@ -576,10 +575,10 @@ Routes, roles, and key tabs:
 | `/reports/service` | Service user 2 | Service Overview, Customer Communications, Appointment & Booking, VHC Performance, Reporting Utilities |
 | `/reports/mot` | MOT Tester user 903 | MOT Overview, MOT Operations, Tester Activity, Revenue & Conversion, Reporting Utilities |
 | `/reports/paint` | Painters user 905 | Paint Overview, Paint Operations, Paint Workflow, Paint Workload, Reporting Utilities |
-| `/reports/accounts` | Accounts user 901 or Owner user 902 | Overview, Revenue & Invoicing, Payments & Receivables, Financial Operations, Reporting Utilities |
+| `/reports/accounts` | Accounts user 901 or Admin Manager user 1 | Overview, Revenue & Invoicing, Payments & Receivables, Financial Operations, Reporting Utilities |
 | `/reports/valeting` | Valet Service user 904 | Valeting Overview, Valeting Operations, Valeter Activity, Vehicle Preparation, Reporting Utilities |
-| `/reports/admin` | Admin Manager user 1 or Owner user 902 | Admin Overview, User & Access, Audit & Compliance, Data Quality & System, Reporting Utilities |
-| `/reports/overview` | Owner user 902 | Executive Overview, Department Performance, Operational Performance, Revenue & Profitability, Capacity & Bottlenecks, Executive Trends, Executive Drill-down, Reporting Utilities |
+| `/reports/admin` | Admin Manager user 1 | Admin Overview, User & Access, Audit & Compliance, Data Quality & System, Reporting Utilities |
+| `/reports/overview` | Admin Manager user 1 | Executive Overview, Department Performance, Operational Performance, Revenue & Profitability, Capacity & Bottlenecks, Executive Trends, Executive Drill-down, Reporting Utilities |
 
 Expected:
 
@@ -794,7 +793,7 @@ If no history rows appear:
 
 ### 9.11 Data-quality endpoint test
 
-Login as Admin Manager or Owner, then run:
+Login as Admin Manager, then run:
 
 ```js
 await fetch('/api/reports/data-quality?range=last_30d', { credentials: 'include' }).then(r => r.json())

@@ -25,7 +25,7 @@ describe("dev platform role", () => {
   it("hasDevPlatformAccess accepts the dev role and configured user roles case-insensitively", () => {
     expect(hasDevPlatformAccess(["dev"])).toBe(true);
     expect(hasDevPlatformAccess(["DEV"])).toBe(true);
-    expect(hasDevPlatformAccess(["Owner", "Admin"])).toBe(true);
+    expect(hasDevPlatformAccess(["Admin"])).toBe(true);
     expect(hasDevPlatformAccess(["Customer"])).toBe(true);
     expect(hasDevPlatformAccess([])).toBe(false);
   });
@@ -43,6 +43,5 @@ describe("dev platform role", () => {
 
   it("broad staff roles satisfy the shared Developer Platform gate", () => {
     expect(hasDevPlatformAccess(["admin manager"])).toBe(true);
-    expect(hasDevPlatformAccess(["owner"])).toBe(true);
   });
 });

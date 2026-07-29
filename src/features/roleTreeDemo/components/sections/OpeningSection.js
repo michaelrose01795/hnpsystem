@@ -18,7 +18,7 @@ export default function OpeningSection() {
         <h1 className={styles.title}>Built From the Bottom of the Operation</h1>
         <p className={styles.subtitle}>
           A connected dealership system shaped by the work happening on the floor, then lifted up
-          into the views owners, directors and managers need.
+          into the views directors and managers need.
         </p>
       </header>
 

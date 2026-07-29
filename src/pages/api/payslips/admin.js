@@ -14,7 +14,6 @@ import { getAuditContext } from "@/lib/audit/auditContext";
 const ALLOWED_ROLES = [
   "admin",
   "admin manager",
-  "owner",
   "accounts",
   "accounts manager",
 ];

@@ -1,5 +1,5 @@
 // file location: src/features/roleTreeDemo/components/sections/TopRolesSection.js
-// Top of the role tree: Owner / Directors / Managers as focused cards, with
+// Top of the role tree: Directors / Managers as focused cards, with
 // a deeper dashboard view and role-stack explanation for the active level.
 
 import React, { useState } from "react";
@@ -16,7 +16,7 @@ export default function TopRolesSection() {
     <div className={styles.sectionFlow}>
       <header className={styles.heading}>
         <span className={styles.chapter}>Chapter 02 &middot; Top of the role tree</span>
-        <h2 className={styles.title}>Owner, Directors &amp; Managers</h2>
+        <h2 className={styles.title}>Directors &amp; Managers</h2>
         <p className={styles.subtitle}>
           Each level needs a different view, but the source of truth stays the same. Choose a role
           to see how the same operational data changes shape.
@@ -67,7 +67,7 @@ export default function TopRolesSection() {
 
         <div className={styles.roleTreeSceneGrid}>
           <div className={styles.roleTreeColumn}>
-            {["Owner", "Directors", "Managers", "Departments", "Workshop floor"].map((label, index) => (
+            {["Directors", "Managers", "Departments", "Workshop floor"].map((label, index) => (
               <span key={label}>
                 <small>{String(index + 1).padStart(2, "0")}</small>
                 <strong>{label}</strong>

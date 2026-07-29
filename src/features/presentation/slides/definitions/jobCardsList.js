@@ -5,7 +5,7 @@ export const jobCardsListSlide = {
   route: "/jobs",
   title: "Job Cards - Workshop Backbone",
   roles: [
-    "admin", "admin manager", "owner", "service", "service manager",
+    "admin", "admin manager", "service", "service manager",
     "workshop manager", "general manager", "after sales director", "aftersales manager",
     "receptionist", "parts", "parts manager",
   ],

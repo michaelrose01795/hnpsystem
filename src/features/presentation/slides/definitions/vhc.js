@@ -5,7 +5,7 @@ export const vhcSlide = {
   route: "/vhc",
   title: "Vehicle Health Check",
   roles: [
-    "admin", "admin manager", "owner", "service", "service manager",
+    "admin", "admin manager", "service", "service manager",
     "workshop manager", "general manager", "after sales director", "aftersales manager",
     "receptionist", "techs", "mobile technician", "mot tester", "customer",
   ],

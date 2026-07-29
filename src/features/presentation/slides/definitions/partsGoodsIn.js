@@ -4,7 +4,7 @@ export const partsGoodsInSlide = {
   id: "parts-goods-in",
   route: "/goods-in",
   title: "Parts - Goods In",
-  roles: ["admin", "admin manager", "owner", "parts", "parts manager", "service", "service manager", "workshop manager"],
+  roles: ["admin", "admin manager", "parts", "parts manager", "service", "service manager", "workshop manager"],
   workflowIndex: WORKFLOW.PARTS_GOODS_IN,
   steps: [
     {

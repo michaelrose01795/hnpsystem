@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/login-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function LoginPageUi(props) {
   const {
@@ -48,73 +49,149 @@ export default function LoginPageUi(props) {
 
     case "section2":
       return <>
-      <div className="login-page-wrapper">
-        <div className="login-center-stage">
-          <div className="login-brand">
-            <BrandLogo alt="HP Automotive" className="login-logo" />
-          </div>
-          <LoginCard className="login-card--auth" title="Login">
-            <form onSubmit={handleDbLogin} className="login-form">
-              <div className="login-identity-grid" aria-label="Login user lookup">
-                <label className="login-field login-identity-field" htmlFor="loginFullName">
-                  <span className="login-label">Full name</span>
-                  <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" />
-                </label>
-
-                <label className="login-field login-identity-field" htmlFor="loginUserId">
-                  <span className="login-label">User id</span>
-                  <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" />
-                </label>
-
-                <label className="login-field login-identity-field login-identity-field--email" htmlFor="email">
-                  <span className="login-label">Email</span>
-                  <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required />
-                </label>
-              </div>
-
-              <div className="login-field">
-                <label htmlFor="password" className="login-label">
-                  Password
-                </label>
-                <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
-              </div>
-
-              {errorMessage && <p className="login-error" role="alert">
-                  {errorMessage}
-                </p>}
-
-              <Button type="submit" variant="primary" style={{
-            width: "100%"
+      <div
+        className="login-page-wrapper"
+        style={{
+          flexDirection: "column",
+          overflowY: "auto"
+        }}>
+        <div
+          style={{
+            width: "min(calc(520px + var(--login-dev-panel-width) + var(--login-dev-panel-gap)), 100%)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
+            alignItems: "center",
+            justifyItems: "center",
+            gap: "var(--login-dev-panel-gap)"
           }}>
-                Login
-              </Button>
-              <Button type="button" variant="ghost" size="xs" onClick={openResetModal} style={{
-            alignSelf: "center",
-            marginTop: "8px"
-          }}>
-                Reset password
-              </Button>
-            </form>
-          </LoginCard>
-        </div>
-        {allowDevUserSelection && <div className="login-dev-panel">
-            <LoginCard className="login-card--dev" title="Developer Login">
-              <div className="login-dev-content">
-                <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
+          <div className="login-center-stage">
+            <div className="login-brand">
+              <BrandLogo alt="HP Automotive" className="login-logo" />
+            </div>
+            <LoginCard className="login-card--auth" title="Login">
+              <form onSubmit={handleDbLogin} className="login-form">
+                <div className="login-identity-grid" aria-label="Login user lookup">
+                  <label className="login-field login-identity-field" htmlFor="loginFullName">
+                    <span className="login-label">Full name</span>
+                    <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" />
+                  </label>
 
-                <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
-                  Loading database users for dev login...
-                </p>
+                  <label className="login-field login-identity-field" htmlFor="loginUserId">
+                    <span className="login-label">User id</span>
+                    <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" />
+                  </label>
 
+                  <label className="login-field login-identity-field login-identity-field--email" htmlFor="email">
+                    <span className="login-label">Email</span>
+                    <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required />
+                  </label>
+                </div>
 
-                <Button type="button" onClick={handleDevLogin} variant="primary" style={{
-            width: "100%"
-          }}>
-                  Dev Login
+                <div className="login-field">
+                  <label htmlFor="password" className="login-label">
+                    Password
+                  </label>
+                  <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
+                </div>
+
+                {errorMessage && <p className="login-error" role="alert">
+                    {errorMessage}
+                  </p>}
+
+                <Button type="submit" variant="primary" style={{
+              width: "100%"
+            }}>
+                  Login
                 </Button>
-              </div>
+                <Button type="button" variant="ghost" size="xs" onClick={openResetModal} style={{
+              alignSelf: "center",
+              marginTop: "8px"
+            }}>
+                  Reset password
+                </Button>
+              </form>
             </LoginCard>
-          </div>}
+          </div>
+          {allowDevUserSelection && <div className="login-dev-panel">
+              <LoginCard className="login-card--dev" title="Developer Login">
+                <div className="login-dev-content">
+                  <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
+
+                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
+                    Loading database users for dev login...
+                  </p>
+
+
+                  <Button type="button" onClick={handleDevLogin} variant="primary" style={{
+              width: "100%"
+            }}>
+                    Dev Login
+                  </Button>
+                </div>
+              </LoginCard>
+            </div>}
+        </div>
+        {allowDevUserSelection && <LayerSurface
+          as="section"
+          aria-label="Manager preview guide"
+          radius="var(--radius-xl)"
+          padding="var(--section-card-padding)"
+          style={{
+            width: "min(1280px, calc(100% - 32px))",
+            alignSelf: "center",
+            boxShadow: "var(--shadow-xl)"
+          }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
+              gap: "var(--layout-card-gap)"
+            }}>
+              <div>
+                <h2 style={{
+                  color: "var(--text-1)",
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
+                  margin: 0
+                }}>
+                  Thank you for taking the time to look at the HNPSystem DMS
+                </h2>
+                <p style={{
+                  color: "var(--text-secondary)",
+                  margin: "8px 0 0"
+                }}>
+                  Please have a play with the system and explore how it supports each department.
+                </p>
+                <p style={{
+                  color: "var(--text-secondary)",
+                  margin: "8px 0 0"
+                }}>
+                  <strong>Note:</strong> All data and information in this demonstration is completely made up and nothing is real. You can use the system normally and explore it safely.
+                </p>
+              </div>
+              <div>
+                <h3 style={{
+                  color: "var(--text-1)",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  margin: 0
+                }}>
+                  What to do
+                </h3>
+                <p style={{
+                  color: "var(--text-secondary)",
+                  margin: "8px 0 0"
+                }}>
+                  In Developer Login, open the first dropdown. Select <strong>Retail</strong>, then choose Workshop Manager, Parts Manager, Techs, Valet Service, or Service. You can also select <strong>Sales</strong>, then choose Admin Manager.
+                </p>
+                <p style={{
+                  color: "var(--text-secondary)",
+                  margin: "8px 0 0"
+                }}>
+                  Once you are logged in, click your role at the bottom of the sidebar, below <strong>Account</strong>, to open your profile page.
+                </p>
+              </div>
+            </div>
+          </LayerSurface>}
       </div>
       {showResetModal && <div style={{
     position: "fixed",

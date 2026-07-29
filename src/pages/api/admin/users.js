@@ -5,7 +5,7 @@ import {
   listAdminUsers,
 } from "@/lib/database/adminUsers";
 
-const allowedRoles = ["admin manager", "admin", "owner"];
+const allowedRoles = ["admin manager", "admin"];
 
 async function handler(req, res, session) {
   try {

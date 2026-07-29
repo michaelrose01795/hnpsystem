@@ -990,7 +990,7 @@ export default function Layout({
     });
   }
 
-  const hrAccessRoles = ["hr manager", "admin manager", "owner", "admin"];
+  const hrAccessRoles = ["hr manager", "admin manager", "admin"];
   if (userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("HR Dashboard", "/hr", {
       keywords: ["hr", "people", "culture", "training"],

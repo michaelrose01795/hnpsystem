@@ -200,10 +200,10 @@
       "title": "HR Manager",
       "keywords": ["hr", "hr manager", "human resources", "staff management", "employee", "personnel", "payroll"],
       "route": "/hr/manager",
-      "roles": ["owner"],
-      "description": "The HR Manager page is the Owner's workspace for managing staff records, HR administration, and payroll-related tasks.",
-      "details": "This section is restricted to Owners only. It provides tools for managing employee records, reviewing staff information, and handling HR-sensitive data. It is not accessible to any other role including Admin Managers.",
-      "relatedIds": ["role-owner", "page-user-admin"]
+      "roles": ["admin manager"],
+      "description": "The HR Manager page is the Admin Manager's workspace for managing staff records, HR administration, and payroll-related tasks.",
+      "details": "This section is restricted to Admin Managers. It provides tools for managing employee records, reviewing staff information, and handling HR-sensitive data.",
+      "relatedIds": ["role-admin-manager", "page-user-admin"]
     },
     {
       "id": "page-user-admin",
@@ -211,10 +211,10 @@
       "title": "User Admin",
       "keywords": ["user admin", "users", "manage users", "add user", "user management", "accounts", "staff accounts", "roles", "permissions"],
       "route": "/admin/users",
-      "roles": ["admin manager", "owner"],
-      "description": "User Admin is where Admin Managers and Owners create, edit, and manage user accounts and their roles.",
-      "details": "From this page you can add new staff members, update their roles and access levels, reset passwords, and deactivate accounts. Role assignments made here directly control what each user can see and do across the entire system. Only Admin Managers and Owners can access this page.",
-      "relatedIds": ["concept-page-access", "feature-role-access", "role-admin-manager", "role-owner"],
+      "roles": ["admin manager"],
+      "description": "User Admin is where Admin Managers create, edit, and manage user accounts and their roles.",
+      "details": "From this page you can add new staff members, update their roles and access levels, reset passwords, and deactivate accounts. Role assignments made here directly control what each user can see and do across the entire system. Only Admin Managers can access this page.",
+      "relatedIds": ["concept-page-access", "feature-role-access", "role-admin-manager"],
       "fields": [
         { "name": "Role", "description": "The user's job role, which controls their access across the system." },
         { "name": "Email", "description": "The user's email address used for login." },
@@ -338,10 +338,10 @@
       "title": "Role-Based Access Control",
       "keywords": ["role", "roles", "access", "permissions", "page access", "rbac", "restricted", "who can see", "who can access"],
       "route": "/admin/users",
-      "roles": ["admin manager", "owner"],
+      "roles": ["admin manager"],
       "description": "Role-Based Access Control determines which pages and features each user can see and use based on their assigned role.",
-      "details": "Every user is assigned a role in User Admin. That role controls which sidebar menu items appear, which pages they can navigate to, and which actions they can perform. Roles are defined in the navigation config (src/config/navigation.js) with arrays of allowed roles per section. The role guard (src/lib/auth/roleGuard.js) enforces this on all API endpoints. Roles are managed exclusively by Admin Managers and Owners through the User Admin page.",
-      "relatedIds": ["concept-page-access", "page-user-admin", "role-admin-manager", "role-owner"]
+      "details": "Every user is assigned a role in User Admin. That role controls which sidebar menu items appear, which pages they can navigate to, and which actions they can perform. Roles are defined in the navigation config (src/config/navigation.js) with arrays of allowed roles per section. The role guard (src/lib/auth/roleGuard.js) enforces this on all API endpoints. Roles are managed exclusively by Admin Managers through the User Admin page.",
+      "relatedIds": ["concept-page-access", "page-user-admin", "role-admin-manager"]
     },
     {
       "id": "concept-job-card",
@@ -362,7 +362,7 @@
       "route": null,
       "roles": [],
       "description": "Page Access refers to which roles are permitted to view a specific page or use a specific feature in the system.",
-      "details": "Each page and section of the system has a list of allowed roles. If your role is not in that list, the page will not appear in your sidebar and you cannot navigate to it directly. For example, the HR Manager page is only accessible to Owners. The Job Cards page is visible to Admin Managers, Service Managers, Workshop Managers, Aftersales Managers, Parts, and Parts Managers but not to Technicians or Valet Service staff. Access is managed through User Admin by assigning the correct role to each user. If you believe you should have access to a page but cannot see it, ask an Admin Manager or Owner to check your role.",
+      "details": "Each page and section of the system has a list of allowed roles. If your role is not in that list, the page will not appear in your sidebar and you cannot navigate to it directly. For example, the HR Manager page is only accessible to Admin Managers. The Job Cards page is visible to Admin Managers, Service Managers, Workshop Managers, Aftersales Managers, Parts, and Parts Managers but not to Technicians or Valet Service staff. Access is managed through User Admin by assigning the correct role to each user. If you believe you should have access to a page but cannot see it, ask an Admin Manager to check your role.",
       "relatedIds": ["feature-role-access", "page-user-admin", "howto-add-user"]
     },
     {
@@ -439,18 +439,7 @@
       "route": null,
       "roles": ["admin manager"],
       "description": "Admin Managers have broad administrative access across job cards, user management, and department operations.",
-      "details": "Admin Managers can access: Next Jobs, Job Cards, and User Admin. They are classed as a core HR and admin role. They can create and manage user accounts and assign roles. They can view the full job card list and manage department operations. They cannot access the HR Manager page (that is Owner-only).",
-      "relatedIds": ["page-user-admin", "page-job-cards-list", "feature-role-access"]
-    },
-    {
-      "id": "role-owner",
-      "type": "role",
-      "title": "Owner Role",
-      "keywords": ["owner", "proprietor", "business owner", "highest access", "full access", "top level"],
-      "route": null,
-      "roles": ["owner"],
-      "description": "The Owner role has the highest level of access in the system, including HR Manager and User Admin.",
-      "details": "Owners can access all the same areas as Admin Managers, plus the HR Manager page. The Owner role is typically reserved for the business owner or director. They can manage all user accounts and roles, and access HR-sensitive staff information. In the role hierarchy, Owner sits above Admin Manager for HR-related access.",
+      "details": "Admin Managers can access Next Jobs, Job Cards, User Admin, and the HR Manager page. They are classed as a core HR and admin role. They can create and manage user accounts, assign roles, view the full job card list, manage department operations, and access HR-sensitive staff information.",
       "relatedIds": ["page-hr-manager", "page-user-admin", "feature-role-access"]
     },
     {
@@ -716,10 +705,10 @@
       "title": "How to Add a New User",
       "keywords": ["add user", "create user", "new user", "add staff", "create account", "staff account", "new employee"],
       "route": "/admin/users",
-      "roles": ["admin manager", "owner"],
+      "roles": ["admin manager"],
       "description": "How to create a new user account and assign a role for a new staff member.",
       "steps": [
-        "Navigate to User Admin in the sidebar (requires Admin Manager or Owner role).",
+        "Navigate to User Admin in the sidebar (requires the Admin Manager role).",
         "Click 'Add User' or 'New User'.",
         "Enter the staff member's first name, last name, and email address.",
         "Set a temporary password (they can change it on first login).",
@@ -756,7 +745,7 @@
       "title": "Where to Configure Floating Notes Permissions",
       "keywords": ["floating notes permissions", "notes permissions", "change notes access", "who can use notes", "notes visibility config", "configure floating notes"],
       "route": null,
-      "roles": ["admin manager", "owner"],
+      "roles": ["admin manager"],
       "description": "Floating Notes is available to all authenticated users. Access is controlled by authentication rather than role, but sharing and global visibility have their own controls.",
       "details": "Floating Notes is accessible to any logged-in user — there is no role restriction on the widget itself. However, within the Notes panel: the Share button is only enabled if you own the note, the Global toggle is only enabled for note owners, and deleting a tab is restricted to the note owner. The widget code is in src/components/GlobalNotesWidget.js. The database layer is in src/lib/database/floatingNotes.js. If you want to restrict who can create or view global notes at an infrastructure level, that would require modifying the Supabase RLS policies on the floating_notes table, or adding a role check to the floatingNotes database functions.",
       "relatedIds": ["feature-floating-notes", "concept-global-note", "concept-page-access"]

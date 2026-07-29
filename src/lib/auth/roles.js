@@ -2,10 +2,10 @@
 
 import { roleCategories } from "@/config/users";
 
-export const HR_CORE_ROLES = ["hr manager", "admin manager", "owner", "admin"];
-export const HR_MANAGER_ROLES = ["admin manager", "owner", "admin"];
+export const HR_CORE_ROLES = ["hr manager", "admin manager", "admin"];
+export const HR_MANAGER_ROLES = ["admin manager", "admin"];
 export const MANAGER_SCOPED_ROLES = ["manager", "service manager", "workshop manager", "general manager"];
-export const HR_MANAGER_DASHBOARD_ROLES = ["owner", "admin manager"];
+export const HR_MANAGER_DASHBOARD_ROLES = ["admin manager"];
 export const MOBILE_TECH_ROLES = ["mobile technician"];
 export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
 export const WORKSHOP_CONTROLLER_ROLES = ["workshop manager", "workshop controller"];
@@ -24,7 +24,6 @@ export const WORKSHOP_CAPACITY_MANAGER_ROLES = [
   "after sales manager",
   "general manager",
   "admin manager",
-  "owner",
   "admin",
 ];
 export const WORKSHOP_CAPACITY_VIEW_ROLES = Array.from(new Set([
@@ -45,7 +44,6 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
       "Manager",
       "Admin",
       "Admin Manager",
-      "Owner",
       "General Manager",
       "Accounts",
       "Accounts Manager",

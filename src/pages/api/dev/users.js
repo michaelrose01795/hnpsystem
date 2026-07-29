@@ -3,7 +3,7 @@
 // Dev-only user directory for the Developer Platform "Sidebar Access" area.
 // Returns the same rows as the Admin user list (listAdminUsers) but gated
 // strictly to the synthetic `dev` role — the Admin users endpoint is scoped to
-// admin/owner roles, which a dev session does not carry. Read-only (GET).
+// admin roles, which a dev session does not carry. Read-only (GET).
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
 import { isSidebarAccessPersistenceReady, listAdminUsers } from "@/lib/database/adminUsers";

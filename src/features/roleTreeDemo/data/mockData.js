@@ -104,20 +104,6 @@ export const openingSignals = [
 
 export const topRoles = [
   {
-    id: "owner",
-    title: "Owner",
-    summary: "Sets direction, protects the business, owns the long view.",
-    signal: "Business health, exposure and direction.",
-    cadence: "Daily exception view with weekly trend confidence.",
-    risk: "Late visibility into pressure, margin leakage or customer risk.",
-    needs: [
-      "Confidence the business is running cleanly day to day",
-      "A single place to see what is actually happening",
-      "Numbers without chasing for them",
-      "Risk visibility before it becomes a problem",
-    ],
-  },
-  {
     id: "directors",
     title: "Directors",
     summary: "Translate strategy into department-level outcomes.",
@@ -254,7 +240,7 @@ export const technicianWorkflow = [
 export const demoSteps = [
   {
     id: "demo-top",
-    level: "Owner & Directors",
+    level: "Directors",
     callout: "What the top needs: confidence the business is running cleanly without chasing it.",
     focus: "top",
   },

@@ -24,7 +24,6 @@ import { resolveDepartmentForRoles, resolveDepartmentForRole } from "./config/de
 
 // Reporting-specific role groupings (lowercase), layered on the shared constants.
 export const EXECUTIVE_ROLES = Object.freeze([
-  "owner",
   "admin manager",
   "general manager",
   "after sales director",

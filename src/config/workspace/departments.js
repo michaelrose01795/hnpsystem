@@ -125,7 +125,7 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
     icon: "management",
     home: "/dashboard/managers",
     order: 10,
-    // Derived from ROLE_DEPARTMENT_MAP (admin manager / owner / general manager /
+    // Derived from ROLE_DEPARTMENT_MAP (admin manager / general manager /
     // manager / directors → management). Left explicit-null so selectors derive.
     roles: undefined,
     sensitive: null,
@@ -275,7 +275,6 @@ export const WORKSPACE_DASHBOARD_SHORTCUTS = Object.freeze([
       "admin manager",
       "accounts manager",
       "general manager",
-      "owner",
     ],
     description: "Executive view for service, workshop, and support leaders",
     department: "management",
@@ -475,7 +474,7 @@ export const WORKSPACE_PAGE_TABS = Object.freeze([
 //
 // The `order` values leave gaps so future sections can slot in without a
 // renumber. Current global order (do not change without updating the test):
-//   General 0 · Admin Manager 10 · Owner 20 · Service 30 · Service Manager 40 ·
+//   General 0 · Admin Manager 10 · Service 30 · Service Manager 40 ·
 //   Workshop Manager 50 · Aftersales Manager 60 · Techs 70 · Mobile Technician 80 ·
 //   MOT Tester 90 · Parts 100 · Parts Manager 110 · Valet Service 120 ·
 //   Accounts Manager 130 · Developer 150 · Reports 155 · Account 160
@@ -517,48 +516,37 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
+      { label: "HR Manager", href: "/hr/manager", roles: ["admin manager"] },
       { label: "Next Jobs", href: "/nextjobs", roles: ["admin manager"] },
       { label: "Job Cards", href: "/jobs", roles: ["admin manager"] },
       { label: "User Admin", href: "/admin/users", roles: ["admin manager"] },
       { label: "Compliance", href: "/admin/compliance", roles: ["admin manager"] },
-    ],
-  },
-  {
-    department: "management",
-    order: 20,
-    label: "Owner",
-    category: "departments",
-    flag: null,
-    items: [
-      { label: "HR Manager", href: "/hr/manager", roles: ["owner"] },
-      { label: "User Admin", href: "/admin/users", roles: ["owner"] },
-      { label: "Compliance", href: "/admin/compliance", roles: ["owner"] },
       {
         // Staff-side Website Management area (content + analytics).
         // Access: Admin, Managers and Sales — keep this list in sync with
         // WEBSITE_MANAGER_ROLES in src/pages/staff/website-manager.js.
         label: "Website Manager",
         href: "/website-manager",
-        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+        roles: ["admin", "admin manager", "general manager", "sales"],
       },
       {
         // Deep-link into the Live Preview tab inside the Website Manager
         // (sidebar reads ?tab=preview on first render — see WebsiteManager.js).
         label: "Website Preview",
         href: "/website-manager?tab=preview",
-        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+        roles: ["admin", "admin manager", "general manager", "sales"],
       },
       {
         // Deep-link into the Shop tab (products / categories / orders).
         label: "Website Shop",
         href: "/website-manager?tab=shop",
-        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+        roles: ["admin", "admin manager", "general manager", "sales"],
       },
       {
         // Quick jump to the public-facing shop section as customers see it.
         label: "Public Shop (live)",
         href: "/website#shop",
-        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+        roles: ["admin", "admin manager", "general manager", "sales"],
       },
     ],
   },
@@ -707,7 +695,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
       {
         label: "Payslips",
         href: "/accounts/payslips",
-        roles: ["accounts", "accounts manager", "admin", "admin manager", "owner"],
+        roles: ["accounts", "accounts manager", "admin", "admin manager"],
       },
     ],
   },

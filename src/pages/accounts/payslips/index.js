@@ -18,7 +18,6 @@ import PayslipsAdminPageUi from "@/components/page-ui/accounts/payslips/payslips
 const ALLOWED_ROLES = [
   "ADMIN",
   "ADMIN MANAGER",
-  "OWNER",
   "ACCOUNTS",
   "ACCOUNTS MANAGER",
 ];

@@ -156,17 +156,6 @@ Legacy `sidebar_access.items/groups` JSON remains valid. v4 layouts add `sourceR
 - Financial Reports: `/reports/accounts`
 - Communication: `/newsfeed`, `/messages`
 
-### Owner
-
-- Leadership: `/dashboard/managers`
-- People & HR: `/hr/manager`, `/hr`, `/hr/employees`, `/hr/attendance`, `/hr/leave`, `/hr/payroll`, `/hr/performance`, `/hr/training`, `/hr/disciplinary`, `/hr/recruitment`, `/hr/reports`, `/hr/settings`, `/admin/users`
-- Governance: `/admin/compliance`
-- Website Operations: `/website-manager`
-- Staff Finance: `/accounts/payslips`
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
-
 ### General Manager
 
 - Leadership: `/dashboard/managers`

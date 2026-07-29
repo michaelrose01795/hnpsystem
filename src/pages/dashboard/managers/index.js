@@ -23,7 +23,6 @@ const MANAGER_ROLES = [
   "admin manager",
   "accounts manager",
   "general manager",
-  "owner",
 ];
 
 // MetricCard — single stat tile. Lives inside a Section (LayerSurface),

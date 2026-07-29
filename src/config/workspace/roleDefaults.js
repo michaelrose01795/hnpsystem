@@ -47,7 +47,6 @@ export const WORKSPACE_ROLE_DEFAULT_NAMES = Object.freeze([
   "Admin Manager",
   "Accounts",
   "Accounts Manager",
-  "Owner",
   "General Manager",
   "Valet Sales",
   "Buying Director",
@@ -183,20 +182,6 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     navModule("billing", "Billing", ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"]),
     navModule("financial-reports", "Financial Reports", ["/reports/accounts"]),
     COMMUNICATION
-  ),
-  owner: layout(
-    navModule("leadership", "Leadership", ["/dashboard/managers"]),
-    navModule("people-hr", "People & HR", [
-      "/hr/manager", "/hr", "/hr/employees", "/hr/attendance", "/hr/leave", "/hr/payroll",
-      "/hr/performance", "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
-      "/hr/settings", "/admin/users",
-    ]),
-    navModule("governance", "Governance", ["/admin/compliance"]),
-    navModule("website-operations", "Website Operations", ["/website-manager"]),
-    navModule("staff-finance", "Staff Finance", ["/accounts/payslips"]),
-    REPORTS_ALL,
-    COMMUNICATION,
-    RECORDS
   ),
   "general manager": layout(
     navModule("leadership", "Leadership", ["/dashboard/managers"]),

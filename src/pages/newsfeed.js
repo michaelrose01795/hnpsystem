@@ -124,7 +124,7 @@ const deriveDepartmentsFromRoles = (roles = []) => {
     if (normalized.includes("hr")) {
       mapped.add("HR");
     }
-    if (normalized.includes("admin") || normalized.includes("owner")) {
+    if (normalized.includes("admin")) {
       mapped.add("Admin");
     }
   });
@@ -162,7 +162,7 @@ const formatTimeAgo = (value) => {
 };
 
 const isManagerRole = (roles = []) =>
-roles.some((role) => /(manager|director|owner)/i.test(role));
+roles.some((role) => /(manager|director)/i.test(role));
 
 const matchesSection = (update, section) => {
   const payload = Array.isArray(update.departments) ? update.departments : [];

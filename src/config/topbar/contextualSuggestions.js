@@ -130,7 +130,7 @@ const SUGGESTION_RULES = [
   {
     id: "hr-leave",
     weight: 30,
-    when: (ctx) => hasRole(ctx, "hr manager", "admin manager", "owner"),
+    when: (ctx) => hasRole(ctx, "hr manager", "admin manager"),
     build: () => ({
       label: "Review leave requests",
       href: "/hr/leave",

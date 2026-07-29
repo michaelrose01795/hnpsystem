@@ -3,7 +3,7 @@ import createHandler, { denyUnless, sendError } from "@/lib/api/createHandler";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import supabase from "@/lib/database/supabaseClient";
 
-const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
+const allowedRoles = ["admin", "admin manager", "accounts", "accounts manager"];
 const COMPANY_ACCOUNTS_TABLE = "company_accounts";
 const HISTORY_LIMIT = 50;
 const editableFields = [

@@ -4,7 +4,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { updateSeo, logActivity } from "@/lib/database/website";
 
-const WRITE_ROLES = ["owner", "admin", "admin manager", "general manager", "sales"];
+const WRITE_ROLES = ["admin", "admin manager", "general manager", "sales"];
 
 const actorFromSession = (session) =>
   session?.user?.username || session?.user?.name || session?.user?.email || "Staff User";

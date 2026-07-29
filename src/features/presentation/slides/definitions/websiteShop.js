@@ -4,7 +4,7 @@
 // checkout sub-pages. Visible to staff who manage the shop (so they can
 // preview the customer journey from inside the presentation deck).
 
-const SHOP_ROLES = ["owner", "admin", "admin manager", "general manager", "sales"];
+const SHOP_ROLES = ["admin", "admin manager", "general manager", "sales"];
 
 // The customer-facing shop is also part of the customer presentation deck.
 const SHOP_VIEW_ROLES = [...SHOP_ROLES, "customer"];

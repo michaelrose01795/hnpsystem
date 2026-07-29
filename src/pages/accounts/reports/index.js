@@ -9,7 +9,7 @@ import { REPORT_PERIODS } from "@/config/accounts";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountsReportsPageUi from "@/components/page-ui/accounts/reports/accounts-reports-ui"; // Extracted presentation layer.
 
-const REPORT_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER"];
+const REPORT_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER"];
 
 const metricsGridStyle = {
   display: "grid",

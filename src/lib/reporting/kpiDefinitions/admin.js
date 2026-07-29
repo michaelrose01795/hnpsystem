@@ -42,7 +42,6 @@ export const ADMIN_REPORT_PERMISSION = Object.freeze([
   "admin manager",
   "general manager",
   "manager",
-  "owner",
 ]);
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 // file location: src/pages/hr/manager/index.js
 // HR Manager Dashboard - Comprehensive interface for HR management
-// This page is only accessible to users with "owner" or "admin manager" roles.
+// This page is only accessible to users with the "admin manager" role.
 // Provides tabbed access to all HR functions from a single interface.
 
 import React, { useState } from "react";

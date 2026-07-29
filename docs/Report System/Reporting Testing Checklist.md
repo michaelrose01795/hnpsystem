@@ -103,7 +103,6 @@ Seed missing acceptance users in staging if needed:
 insert into users (user_id, first_name, last_name, email, role, password_hash)
 values
   (901, 'Test', 'Accounts', 'accounts-report@test.local', 'Accounts', 'testpass123'),
-  (902, 'Test', 'Owner', 'owner-report@test.local', 'Owner', 'testpass123'),
   (903, 'Test', 'MOT', 'mot-report@test.local', 'MOT Tester', 'testpass123'),
   (904, 'Test', 'Valet', 'valeting-report@test.local', 'Valet Service', 'testpass123'),
   (905, 'Test', 'Painter', 'paint-report@test.local', 'Painters', 'testpass123')
@@ -118,7 +117,6 @@ Use these logins:
 - [ ] `tech@test.local` / Techs / user 4.
 - [ ] `parts@test.local` / Parts Manager / user 5.
 - [ ] `accounts-report@test.local` / Accounts / user 901.
-- [ ] `owner-report@test.local` / Owner / user 902.
 - [ ] `mot-report@test.local` / MOT Tester / user 903.
 - [ ] `valeting-report@test.local` / Valet Service / user 904.
 - [ ] `paint-report@test.local` / Painters / user 905.
@@ -523,7 +521,7 @@ Primary sources: composed KPIs from Accounts, Workshop, Parts, Service, MOT, Val
 - [ ] Validate company revenue against `acc.revenue`.
 - [ ] Validate upsell contribution against `vhc.upsell_revenue / acc.revenue`.
 - [ ] Validate department performance rows against the underlying department package KPIs.
-- [ ] Confirm cross-department links open the relevant report pages for Owner.
+- [ ] Confirm cross-department links open the relevant report pages for Admin Manager.
 
 ---
 

@@ -3,7 +3,7 @@
 // docs/ui/ui-presentation.
 
 const JOB_CARD_MANAGER_ROLES = [
-  "admin", "admin manager", "owner", "service", "service manager",
+  "admin", "admin manager", "service", "service manager",
   "workshop manager", "general manager", "receptionist",
 ];
 

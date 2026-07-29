@@ -116,16 +116,6 @@ export const PRESENTATION_ROLES = [
     ]
   },
   {
-    "key": "owner",
-    "roleId": "owner",
-    "label": "Owner",
-    "demoName": "Demo Owner",
-    "routes": [
-      "/dashboard/managers",
-      "/hr/manager"
-    ]
-  },
-  {
     "key": "parts-manager",
     "roleId": "parts manager",
     "label": "Parts Manager",

@@ -4,7 +4,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { upsertCategory, deleteCategory } from "@/lib/database/shop";
 
-const ROLES = ["owner", "admin", "admin manager", "general manager", "sales"];
+const ROLES = ["admin", "admin manager", "general manager", "sales"];
 
 const actor = (s) => s?.user?.username || s?.user?.name || s?.user?.email || "Staff User";
 

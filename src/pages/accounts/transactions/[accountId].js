@@ -8,7 +8,7 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountTransactionsPageUi from "@/components/page-ui/accounts/transactions/accounts-transactions-account-id-ui"; // Extracted presentation layer.
-const TRANSACTION_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "SALES"];
+const TRANSACTION_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "SALES"];
 export default function AccountTransactionsPage() {
   const router = useRouter();
   const { accountId } = router.query;

@@ -1,7 +1,7 @@
 // file location: src/pages/website-manager.js
 // Staff-side Website Manager page — route: /website-manager
 //
-// Access: Admin, Managers and Sales (plus Owner). Two guards apply:
+// Access: Admin, Managers and Sales. Two guards apply:
 //   1. PageAccessGuard in _app.js derives accessible routes from the sidebar
 //      config — users without a matching role are bounced to /dashboard
 //      before this renders.
@@ -17,7 +17,6 @@ import WebsiteManager from "@/features/websiteManager/WebsiteManager";
 
 // ProtectedRoute compares against UPPER-CASED user roles.
 const WEBSITE_MANAGER_ROLES = [
-  "OWNER",
   "ADMIN",
   "ADMIN MANAGER",
   "GENERAL MANAGER",

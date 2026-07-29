@@ -535,7 +535,7 @@ function answerWhy(topEntry, allEntries, userRoles, rawQuery) {
 
     if (!accessible) {
       parts.push(`**${topEntry.title}** is restricted to: ${accessDesc}.`);
-      parts.push("Your current role does not include access to this section. To gain access, ask an Admin Manager or Owner to update your role in User Admin (/admin/users).");
+      parts.push("Your current role does not include access to this section. To gain access, ask an Admin Manager to update your role in User Admin (/admin/users).");
     } else {
       parts.push(`You should have access to **${topEntry.title}**. It is available to ${accessDesc}.`);
       parts.push("If you cannot see it, try logging out and back in, or contact an Admin Manager to verify your role is correctly set.");

@@ -10,7 +10,7 @@
 //
 // Access: management oversight only. The reporting platform's data-quality view
 // is a governance surface, so it is gated to CROSS-DEPARTMENT / EXECUTIVE scope
-// (Management, General/Admin Manager, Owner) — operational and single-department
+// (Management and General/Admin Manager) — operational and single-department
 // users are refused, consistent with the Admin report package's gating.
 
 import { withReportingAuth } from "@/lib/reporting/api";

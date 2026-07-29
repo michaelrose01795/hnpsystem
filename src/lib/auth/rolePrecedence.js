@@ -21,7 +21,6 @@
 // the app (see src/config/users.js roleCategories + src/lib/auth/roles.js).
 export const ROLE_PRECEDENCE = [
   // Executive / leadership
-  "owner",
   "general manager",
   "admin manager",
   "sales director",

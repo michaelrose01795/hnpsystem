@@ -5,7 +5,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { getOrderById, updateOrderStatus } from "@/lib/database/shop";
 
-const ROLES = ["owner", "admin", "admin manager", "general manager", "sales", "accounts"];
+const ROLES = ["admin", "admin manager", "general manager", "sales", "accounts"];
 
 const actor = (s) => s?.user?.username || s?.user?.name || s?.user?.email || "Staff User";
 

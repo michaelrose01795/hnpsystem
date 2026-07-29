@@ -24,7 +24,6 @@ export const roleCategories = {
     "Admin Manager",
     "Accounts",
     "Accounts Manager",
-    "Owner",
     "General Manager",
     "Valet Sales",
     "Buying Director",

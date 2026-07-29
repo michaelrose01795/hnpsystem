@@ -25,7 +25,7 @@ describe("getPrimaryRole", () => {
   });
 
   it("prefers leadership over a department manager", () => {
-    expect(getPrimaryRole(["service manager", "owner"])).toBe("owner");
+    expect(getPrimaryRole(["service manager", "general manager"])).toBe("general manager");
   });
 
   it("is case-insensitive and trims", () => {

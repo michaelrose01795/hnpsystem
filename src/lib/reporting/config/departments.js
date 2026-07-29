@@ -107,7 +107,6 @@ const ROLE_DEPARTMENT_ENTRIES = [
   ["admin manager", "management"],
   ["general manager", "management"],
   ["manager", "management"],
-  ["owner", "management"],
   ["sales director", "management"],
   ["buying director", "management"],
 ];

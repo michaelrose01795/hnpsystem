@@ -36,7 +36,7 @@ describe("navigation — Developer Platform sidebar entry", () => {
     const { item } = findDevItem();
     expect(canSee(item, ["dev"])).toBe(true);
     // Representative staff roles must NOT see it.
-    for (const staffRole of ["service", "workshop manager", "admin manager", "owner", "parts", "techs"]) {
+    for (const staffRole of ["service", "workshop manager", "admin manager", "parts", "techs"]) {
       expect(canSee(item, [staffRole])).toBe(false);
     }
   });
@@ -50,7 +50,7 @@ describe("navigation — Developer Platform sidebar entry", () => {
 describe("Developer Platform route access", () => {
   it("accepts the dev role and configured application roles", () => {
     expect(hasDevPlatformAccess(["dev"])).toBe(true);
-    for (const staffRole of ["service", "workshop manager", "admin manager", "owner", "admin"]) {
+    for (const staffRole of ["service", "workshop manager", "admin manager", "admin"]) {
       expect(hasDevPlatformAccess([staffRole])).toBe(true);
     }
     expect(hasDevPlatformAccess([])).toBe(false);

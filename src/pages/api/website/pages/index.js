@@ -8,7 +8,7 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { getPages } from "@/lib/database/website";
 
-const WRITE_ROLES = ["owner", "admin", "admin manager", "general manager", "sales"];
+const WRITE_ROLES = ["admin", "admin manager", "general manager", "sales"];
 
 async function handler(req, res) {
   if (req.method !== "GET") {
