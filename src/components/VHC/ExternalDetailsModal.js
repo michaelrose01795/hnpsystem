@@ -1,5 +1,5 @@
 // file location: src/components/VHC/ExternalDetailsModal.js
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
@@ -21,6 +21,7 @@ import {
   lockedRowBadgeStyle,
 } from "@/components/VHC/vhcModalStyles";
 import { useConcernLock } from "@/components/VHC/useConcernLock";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const HORN_LEGACY_LABEL = "Horn/Washers/Wipers";
 const HORN_LABEL = "Wipers/Washers/Horn";
@@ -67,8 +68,7 @@ export default function ExternalDetailsModal({
   summaryItems = [],
   inlineMode = false,
   // Job identifiers for the per-section camera button. When all three
-  // are present the camera button is rendered in the footer; otherwise
-  // the footer falls back to the previous Close / Save & Complete pair.
+  // are present the camera button is rendered in the footer.
   jobId = null,
   jobNumber = null,
   userId = null,
@@ -121,7 +121,24 @@ export default function ExternalDetailsModal({
     return defaults;
   };
 
-  const [data, setData] = useState(() => buildInitialData(initialData));
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "externalInspection",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
+  const [data, setData] = useState(() => buildInitialData(readDraft(initialData)));
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setData(buildInitialData(readDraft(initialData)));
+  }, [initialData, isOpen, readDraft]);
+
+  useEffect(() => {
+    persistDraft(data);
+  }, [data, persistDraft]);
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
@@ -181,6 +198,10 @@ export default function ExternalDetailsModal({
     }
   };
 
+  const handleComplete = async () => {
+    await completeDraft(data);
+  };
+
   const canShowCamera = Boolean(jobId || jobNumber);
 
   const modalFooter = (
@@ -207,10 +228,11 @@ export default function ExternalDetailsModal({
       <Button
         variant="primary"
         size="sm"
-        onClick={() => onComplete(data)}
+        onClick={handleComplete}
+        disabled={locked}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
-        Save & Complete
+        Complete
       </Button>
     </>
   );
@@ -229,7 +251,7 @@ export default function ExternalDetailsModal({
       footer={modalFooter}
       sectionKey="vhc-external"
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-external-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-external-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-external-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-external-body">
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-external-layout"

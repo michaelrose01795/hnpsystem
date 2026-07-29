@@ -14,6 +14,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const palette = themeConfig.palette;
 
@@ -253,101 +254,6 @@ const formatTreadDisplay = (tread = {}) => {
 };
 
 
-function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState(null);
-  const inputRef = useRef(null);
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return options || [];
-    return (options || []).filter((o) => String(o).toLowerCase().includes(q));
-  }, [query, options]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (inputRef.current && !inputRef.current.contains(e.target) && !e.target.closest("[data-tyre-menu]")) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const openMenu = useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 2, left: rect.left, width: rect.width });
-    }
-    setQuery("");
-    setOpen(true);
-  }, []);
-
-  const handleSelect = useCallback((opt) => {
-    onChange(opt);
-    setQuery("");
-    setOpen(false);
-    if (onSelect) onSelect(opt);
-  }, [onChange, onSelect]);
-
-  const menu = open && filtered.length > 0 && createPortal(
-    <div
-      data-tyre-menu=""
-      style={{
-        position: "fixed",
-        top: pos ? `${pos.top}px` : 0,
-        left: pos ? `${pos.left}px` : 0,
-        width: pos ? `${pos.width}px` : 200,
-        maxHeight: "240px",
-        overflowY: "auto",
-        backgroundColor: "var(--surface)",
-        borderRadius: "var(--radius-sm)",
-        zIndex: "var(--z-dropdown)",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-      }}
-    >
-      {filtered.map((opt) => (
-        <div
-          key={opt}
-          onMouseDown={(e) => { e.preventDefault(); handleSelect(opt); }}
-          style={{
-            padding: "10px 12px",
-            fontSize: "14px",
-            cursor: "pointer",
-            color: "var(--text-1)",
-            backgroundColor: opt === value ? "var(--surface)" : "transparent",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = opt === value ? "var(--surface)" : "transparent"; }}
-        >
-          {opt}
-        </div>
-      ))}
-    </div>,
-    document.body
-  );
-
-  return (
-    <div style={{ width: "100%" }}>
-      <input
-        ref={inputRef}
-        value={open ? query : (value || "")}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          if (!open) openMenu();
-        }}
-        onFocus={openMenu}
-        placeholder={placeholder}
-        style={{ ...baseInputStyle, width: "100%" }}
-      />
-      {menu}
-    </div>
-  );
-}
-
 function TyreSpecInputRow({ children }) {
   return (
     <div
@@ -382,6 +288,16 @@ function TyreSpecFields({ tyre, onFieldChange }) {
   const sizeRef = useRef(null);
   const loadRef = useRef(null);
   const speedRef = useRef(null);
+  const manufacturerOptions = useMemo(() => {
+    const currentManufacturer = String(tyre.manufacturer || "").trim();
+    if (
+      !currentManufacturer ||
+      tyreBrands.some((brand) => brand.toLowerCase() === currentManufacturer.toLowerCase())
+    ) {
+      return tyreBrands;
+    }
+    return [currentManufacturer, ...tyreBrands];
+  }, [tyre.manufacturer]);
 
   // Raw size input state (digits only while typing)
   const [rawSize, setRawSize] = useState("");
@@ -440,18 +356,19 @@ function TyreSpecFields({ tyre, onFieldChange }) {
       {/* Make + Size group — stay together on narrow screens */}
       <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flex: "1 1 360px", minWidth: 0 }}>
         <div style={{ flex: "1 1 210px", minWidth: "160px" }}>
-          <label style={labelStyle}>
-            <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
-            <AutoCompleteInput
-              value={tyre.manufacturer}
-              onChange={(value) => onFieldChange("manufacturer", value)}
-              onSelect={() => {
-                setTimeout(() => { sizeRef.current?.focus(); }, 50);
-              }}
-              options={tyreBrands}
-              placeholder="Type to search make"
-            />
-          </label>
+          <DropdownField
+            label="Make"
+            value={tyre.manufacturer}
+            options={manufacturerOptions}
+            onChange={(event) => {
+              onFieldChange("manufacturer", event.target.value);
+              setTimeout(() => { sizeRef.current?.focus(); }, 50);
+            }}
+            placeholder="Select tyre make"
+            searchable
+            searchPlaceholder="Search tyre makes"
+            style={{ width: "100%" }}
+          />
         </div>
         <div style={{ flex: "0 0 140px", minWidth: "140px", maxWidth: "140px" }}>
           <label style={labelStyle}>
@@ -510,12 +427,27 @@ export default function WheelsTyresDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
-  const normalizedInitialTyres = useMemo(() => buildNormalizedTyres(initialData || {}), [initialData]);
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "wheelsTyres",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
+  const normalizedInitialTyres = useMemo(
+    () => buildNormalizedTyres(readDraft(initialData || {})),
+    [initialData, readDraft]
+  );
   const [tyres, setTyres] = useState(normalizedInitialTyres);
 
   useEffect(() => {
     setTyres(normalizedInitialTyres);
   }, [normalizedInitialTyres]);
+
+  useEffect(() => {
+    persistDraft(tyres);
+  }, [persistDraft, tyres]);
 
   const [activeWheel, setActiveWheel] = useState("NSF");
   const [copyActive, setCopyActive] = useState(false);
@@ -619,14 +551,14 @@ export default function WheelsTyresDetailsModal({
   const missingWheelKeys = getMissingWheelKeys();
   const canComplete = missingWheelKeys.length === 0;
 
-  const handleSaveComplete = () => {
+  const handleSaveComplete = async () => {
     if (!canComplete) {
       setShowValidation(true);
       const firstMissing = missingWheelKeys[0];
       if (firstMissing) setActiveWheel(firstMissing);
       return;
     }
-    onComplete({
+    await completeDraft({
       NSF: createWheelEntry(tyres.NSF),
       OSF: createWheelEntry(tyres.OSF),
       NSR: createWheelEntry(tyres.NSR),
@@ -863,7 +795,7 @@ export default function WheelsTyresDetailsModal({
         disabled={locked}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
-        Save & Complete
+        Complete
       </Button>
     </>
   );
@@ -883,7 +815,7 @@ export default function WheelsTyresDetailsModal({
       footer={footer}
       sectionKey="vhc-wheels"
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-body">
           <div
             data-dev-section="1"
             data-dev-section-key="vhc-wheels-layout"

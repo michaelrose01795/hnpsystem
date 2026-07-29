@@ -1,5 +1,5 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
@@ -21,6 +21,7 @@ import {
   lockedRowBadgeStyle,
 } from "@/components/VHC/vhcModalStyles";
 import { useConcernLock } from "@/components/VHC/useConcernLock";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const CATEGORY_ORDER = [
   "Exhaust system/catalyst",
@@ -42,6 +43,15 @@ const UNDERSIDE_SECTION_KEYS = {
 
 const isMiscCategory = (category = "") => category === "Miscellaneous";
 
+const buildInitialData = (initialData) => ({
+  "Exhaust system/catalyst": { concerns: [] },
+  Steering: { concerns: [] },
+  "Front suspension": { concerns: [] },
+  "Rear suspension": { concerns: [] },
+  "Driveshafts/oil leaks": { concerns: [] },
+  Miscellaneous: { concerns: [] },
+  ...(initialData || {}),
+});
 
 export default function UndersideDetailsModal({
   isOpen,
@@ -56,6 +66,14 @@ export default function UndersideDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "underside",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
   const { isConcernLocked, getLockReason } = useConcernLock(summaryItems, "Underside");
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
@@ -85,15 +103,16 @@ export default function UndersideDetailsModal({
     });
   };
 
-  const [data, setData] = useState(() => ({
-    "Exhaust system/catalyst": { concerns: [] },
-    Steering: { concerns: [] },
-    "Front suspension": { concerns: [] },
-    "Rear suspension": { concerns: [] },
-    "Driveshafts/oil leaks": { concerns: [] },
-    Miscellaneous: { concerns: [] },
-    ...initialData,
-  }));
+  const [data, setData] = useState(() => buildInitialData(readDraft(initialData)));
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setData(buildInitialData(readDraft(initialData)));
+  }, [initialData, isOpen, readDraft]);
+
+  useEffect(() => {
+    persistDraft(data);
+  }, [data, persistDraft]);
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
@@ -146,8 +165,8 @@ export default function UndersideDetailsModal({
     }
   };
 
-  const handleSaveComplete = () => {
-    onComplete(data);
+  const handleSaveComplete = async () => {
+    await completeDraft(data);
   };
 
   const canShowCamera = Boolean(jobId || jobNumber);
@@ -168,8 +187,8 @@ export default function UndersideDetailsModal({
       <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
       </Button>
-      <Button variant="primary" size="sm" onClick={handleSaveComplete} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-        Save & Complete
+      <Button variant="primary" size="sm" onClick={handleSaveComplete} disabled={locked} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+        Complete
       </Button>
     </>
   );
@@ -188,7 +207,7 @@ export default function UndersideDetailsModal({
       footer={modalFooter}
       sectionKey="vhc-underside"
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-underside-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-underside-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-underside-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-underside-body">
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-underside-layout"

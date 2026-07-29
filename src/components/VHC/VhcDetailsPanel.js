@@ -2455,11 +2455,11 @@ export default function VhcDetailsPanel({
 
   const handleSectionComplete = useCallback(
     async (sectionKey, sectionPayload) => {
-      if (!sectionKey) return;
+      if (!sectionKey) return false;
       const next = { ...vhcData, [sectionKey]: sectionPayload };
       setVhcData(next);
       setActiveSection(null);
-      await persistVhcSections(next);
+      return persistVhcSections(next);
     },
     [vhcData, persistVhcSections]
   );

@@ -1,5 +1,5 @@
 // file location: src/components/VHC/InternalElectricsDetailsModal.js
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
@@ -21,6 +21,7 @@ import {
   lockedRowBadgeStyle,
 } from "@/components/VHC/vhcModalStyles";
 import { useConcernLock } from "@/components/VHC/useConcernLock";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const CATEGORY_ORDER = [
   "Interior Lights",
@@ -42,6 +43,15 @@ const INTERNAL_SECTION_KEYS = {
 
 const isMiscCategory = (category = "") => category === "Miscellaneous";
 
+const buildInitialData = (initialData) => ({
+  "Interior Lights": { concerns: [] },
+  "Media Systems": { concerns: [] },
+  "Air Con/Heating/ventilation": { concerns: [] },
+  "Warning Lamps": { concerns: [] },
+  Seatbelt: { concerns: [] },
+  Miscellaneous: { concerns: [] },
+  ...(initialData || {}),
+});
 
 export default function InternalElectricsDetailsModal({
   isOpen,
@@ -56,6 +66,14 @@ export default function InternalElectricsDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "internalElectrics",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
   const { isConcernLocked, getLockReason } = useConcernLock(summaryItems, "Internal");
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
@@ -85,15 +103,16 @@ export default function InternalElectricsDetailsModal({
     });
   };
 
-  const [data, setData] = useState(() => ({
-    "Interior Lights": { concerns: [] },
-    "Media Systems": { concerns: [] },
-    "Air Con/Heating/ventilation": { concerns: [] },
-    "Warning Lamps": { concerns: [] },
-    Seatbelt: { concerns: [] },
-    Miscellaneous: { concerns: [] },
-    ...initialData,
-  }));
+  const [data, setData] = useState(() => buildInitialData(readDraft(initialData)));
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setData(buildInitialData(readDraft(initialData)));
+  }, [initialData, isOpen, readDraft]);
+
+  useEffect(() => {
+    persistDraft(data);
+  }, [data, persistDraft]);
 
   const [activeConcern, setActiveConcern] = useState({
     open: false,
@@ -146,6 +165,10 @@ export default function InternalElectricsDetailsModal({
     }
   };
 
+  const handleComplete = async () => {
+    await completeDraft(data);
+  };
+
   const canShowCamera = Boolean(jobId || jobNumber);
 
   const modalFooter = (
@@ -164,8 +187,8 @@ export default function InternalElectricsDetailsModal({
       <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
       </Button>
-      <Button variant="primary" size="sm" onClick={() => onComplete(data)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-        Save & Complete
+      <Button variant="primary" size="sm" onClick={handleComplete} disabled={locked} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+        Complete
       </Button>
     </>
   );
@@ -184,7 +207,7 @@ export default function InternalElectricsDetailsModal({
       footer={modalFooter}
       sectionKey="vhc-internal"
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-internal-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-internal-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-internal-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-internal-body">
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-internal-layout"

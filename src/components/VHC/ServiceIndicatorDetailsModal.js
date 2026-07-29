@@ -11,6 +11,7 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const palette = themeConfig.palette;
 
@@ -90,6 +91,15 @@ export default function ServiceIndicatorDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "serviceIndicator",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
+  const restoredInitialData = readDraft(initialData || {});
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
@@ -106,9 +116,9 @@ export default function ServiceIndicatorDetailsModal({
     padding: "16px 20px",
   };
 
-  const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
-  const [oilStatus, setOilStatus] = useState(normaliseOilStatus(initialData?.oilStatus ?? null));
-  const [concerns, setConcerns] = useState(() => initialData?.concerns ?? []);
+  const [serviceChoice, setServiceChoice] = useState(restoredInitialData?.serviceChoice ?? null);
+  const [oilStatus, setOilStatus] = useState(normaliseOilStatus(restoredInitialData?.oilStatus ?? null));
+  const [concerns, setConcerns] = useState(() => restoredInitialData?.concerns ?? []);
   const [showConcernModal, setShowConcernModal] = useState(false);
   const [activeConcernTarget, setActiveConcernTarget] = useState(null);
   const [newConcern, setNewConcern] = useState("");
@@ -118,12 +128,17 @@ export default function ServiceIndicatorDetailsModal({
     (concern?.text ?? concern?.description ?? concern?.issue ?? "").toString();
 
   useEffect(() => {
-    if (!initialData) return;
-    setServiceChoice(initialData.serviceChoice ?? null);
-    setOilStatus(normaliseOilStatus(initialData.oilStatus ?? null));
-    setConcerns(initialData.concerns ?? []);
+    if (!isOpen) return;
+    const nextData = readDraft(initialData || {});
+    setServiceChoice(nextData?.serviceChoice ?? null);
+    setOilStatus(normaliseOilStatus(nextData?.oilStatus ?? null));
+    setConcerns(nextData?.concerns ?? []);
     setShowValidation(false);
-  }, [initialData]);
+  }, [initialData, isOpen, readDraft]);
+
+  useEffect(() => {
+    persistDraft({ serviceChoice, oilStatus, concerns });
+  }, [concerns, oilStatus, persistDraft, serviceChoice]);
 
   const openConcernFor = (source) => {
     setActiveConcernTarget(source);
@@ -326,12 +341,12 @@ export default function ServiceIndicatorDetailsModal({
     });
   };
 
-  const handleSaveComplete = () => {
+  const handleSaveComplete = async () => {
     if (!canComplete) {
       setShowValidation(true);
       return;
     }
-    onComplete({
+    await completeDraft({
       serviceChoice,
       oilStatus,
       concerns,
@@ -364,7 +379,7 @@ export default function ServiceIndicatorDetailsModal({
         disabled={locked}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
-        Save & Complete
+        Complete
       </Button>
     </>
   );
@@ -382,7 +397,7 @@ export default function ServiceIndicatorDetailsModal({
       footer={footer}
       sectionKey="vhc-service"
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-service-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-service-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-body">
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-service-layout"

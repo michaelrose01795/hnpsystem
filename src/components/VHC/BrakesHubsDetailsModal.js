@@ -13,6 +13,7 @@ import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 
 const palette = themeConfig.palette;
 
@@ -419,7 +420,24 @@ export default function BrakesHubsDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
-  const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
+  const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
+    sectionKey: "brakesHubs",
+    jobId,
+    jobNumber,
+    userId,
+    isOpen,
+    onComplete,
+  });
+  const normalisedInitial = useMemo(() => {
+    const storedDraft = readDraft(null);
+    if (storedDraft?.data && typeof storedDraft.data === "object") {
+      return {
+        data: storedDraft.data,
+        showDrum: Boolean(storedDraft.showDrum),
+      };
+    }
+    return normaliseBrakesState(initialData);
+  }, [initialData, readDraft]);
 
   const [data, setData] = useState(normalisedInitial.data);
   const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
@@ -444,6 +462,10 @@ export default function BrakesHubsDetailsModal({
     setShowValidation(false);
     hasInitializedRef.current = true;
   }, [isOpen, normalisedInitial]);
+
+  useEffect(() => {
+    persistDraft({ data, showDrum });
+  }, [data, persistDraft, showDrum]);
 
   const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
   const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
@@ -933,7 +955,7 @@ export default function BrakesHubsDetailsModal({
     background: "var(--danger-surface)",
   };
 
-  const handleSaveComplete = () => {
+  const handleSaveComplete = async () => {
     if (!canComplete) {
       setShowValidation(true);
       if (missingSections.frontPads || missingSections.frontDiscs) {
@@ -944,7 +966,7 @@ export default function BrakesHubsDetailsModal({
       }
       return;
     }
-    onComplete(buildPayload());
+    await completeDraft(buildPayload());
   };
 
   if (!isOpen) return null;
@@ -983,12 +1005,12 @@ export default function BrakesHubsDetailsModal({
             disabled={locked}
             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
           >
-            Save & Complete
+            Complete
           </Button>
         </>
       }
     >
-      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-brakes-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-body">
+      <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-brakes-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-body">
 
         <div
           data-dev-section="1"
