@@ -54,6 +54,7 @@ const CATEGORIES = [
     step: 0.2,
     actions: ["replace", "inspect and replace", "service and replace"],
     tasks: ["brake pads and discs", "brake pads", "brake disc", "caliper slide", "brake hose"],
+    taskHours: [1.5, 1.0, 1.0, 0.8, 1.0],
     tags: ["brakes", "pads", "discs"],
   },
   {
@@ -66,10 +67,11 @@ const CATEGORIES = [
   },
   {
     name: "tyres",
-    baseHours: 0.4,
-    step: 0.1,
+    baseHours: 0.5,
+    step: 0,
     actions: ["replace", "repair", "remove and refit"],
     tasks: ["tyre below legal", "tyre sidewall damage", "tyre puncture", "wheel balance", "valve leaking"],
+    taskHours: [0.5, 0.5, 0.5, 0.3, 0.3],
     tags: ["tyres", "wheels", "balance"],
   },
   {
@@ -207,12 +209,15 @@ const buildPresets = () => {
             if (!normalizedKey || seen.has(dedupeKey)) return;
             seen.add(dedupeKey);
 
+            const standardTaskHours = category.taskHours?.[taskIndex];
             const dynamicHours = toHours(
-              category.baseHours +
-                category.step * taskIndex +
-                0.05 * actionIndex +
-                0.03 * locationIndex +
-                0.02 * phraseIndex
+              Number.isFinite(standardTaskHours)
+                ? standardTaskHours
+                : category.baseHours +
+                    category.step * taskIndex +
+                    0.05 * actionIndex +
+                    0.03 * locationIndex +
+                    0.02 * phraseIndex
             );
 
             rows.push({
@@ -242,7 +247,7 @@ const buildPresets = () => {
   rows.push({
     normalized_key: normalizeText("OSF brake pads and discs, replace"),
     display_description: "OSF brake pads and discs, replace",
-    default_time_hours: 1.2,
+    default_time_hours: 1.5,
     tags: ["osf", "brake", "pads", "disc"],
   });
   rows.push({

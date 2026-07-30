@@ -6,6 +6,10 @@ import { useRouter } from "next/router";
 import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
+import {
+  aggregateConsolidatedBrakeValues,
+  consolidateBrakePartsDisplayRows,
+} from "@/lib/vhc/partsDisplayRows";
 import { saveChecksheet } from "@/lib/database/jobs";
 import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 // Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
@@ -1205,6 +1209,20 @@ const consolidateBrakeRowsByLocation = (items = []) => {
       });
     });
 
+    const {
+      sourceVhcIds,
+      partsTotal,
+      labourHours,
+      partsComplete,
+      labourComplete,
+    } = aggregateConsolidatedBrakeValues(entry.items);
+    const labourRate = Number(primary?.labour_rate_gbp);
+    const resolvedLabourRate = Number.isFinite(labourRate) ? labourRate : LABOUR_RATE;
+    const totalOverride = Number(primary?.vhcCheck?.total_override);
+    const total = Number.isFinite(totalOverride) && totalOverride > 0
+      ? totalOverride
+      : partsTotal + labourHours * resolvedLabourRate;
+
     return {
       ...primary,
       label: `${entry.location.charAt(0).toUpperCase()}${entry.location.slice(1)} brakes`,
@@ -1214,6 +1232,17 @@ const consolidateBrakeRowsByLocation = (items = []) => {
       measurement: "",
       rows: [],
       consolidatedBrakeRow: true,
+      sourceVhcIds,
+      parts_gbp: partsTotal,
+      partsCost: partsTotal,
+      labour_hours: labourHours,
+      labourHours,
+      labour_rate_gbp: resolvedLabourRate,
+      labour_gbp: labourHours * resolvedLabourRate,
+      total_gbp: total,
+      total,
+      partsComplete,
+      labourComplete,
     };
   });
 };
@@ -1806,7 +1835,8 @@ export default function VhcDetailsPanel({
   const [labourSuggestionsLoadingByItem, setLabourSuggestionsLoadingByItem] = useState({});
   const [openLabourSuggestionItemId, setOpenLabourSuggestionItemId] = useState(null);
   const [, setSelectedLabourSuggestionByItem] = useState({});
-  const [savedLabourOverrideByItem, setSavedLabourOverrideByItem] = useState({});
+  const [labourPersistedAtByItem, setLabourPersistedAtByItem] = useState({});
+  const [labourPersistErrorByItem, setLabourPersistErrorByItem] = useState({});
   const [labourCostModal, setLabourCostModal] = useState({
     open: false,
     itemId: null,
@@ -1815,6 +1845,9 @@ export default function VhcDetailsPanel({
   });
   const labourOverrideDebounceRef = useRef({});
   const labourHoursPersistDebounceRef = useRef({});
+  const labourPersistFunctionRef = useRef(null);
+  const labourPersistChainRef = useRef({});
+  const labourHoursTouchedRef = useRef(new Set());
   const labourSuggestionRequestRef = useRef({});
   const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
@@ -2330,6 +2363,17 @@ export default function VhcDetailsPanel({
   }, [authorizedViewRows]);
 
   useEffect(() => {
+    Object.entries(labourHoursPersistDebounceRef.current).forEach(([itemId, pending]) => {
+      const timeoutHandle = pending?.timeoutHandle ?? pending;
+      clearTimeout(timeoutHandle);
+      if (pending?.hoursValue !== undefined) {
+        labourPersistFunctionRef.current?.(itemId, pending.hoursValue, { suppressRefresh: true });
+      }
+    });
+    labourHoursPersistDebounceRef.current = {};
+    labourHoursTouchedRef.current.clear();
+    setLabourPersistedAtByItem({});
+    setLabourPersistErrorByItem({});
     setItemEntries({});
     setSeveritySelections({ red: [], amber: [] });
   }, [resolvedJobNumber]);
@@ -4023,19 +4067,26 @@ export default function VhcDetailsPanel({
 
           // Update labour hours if present in database
           const hasLabourHours = approvalData.labourHours !== null && approvalData.labourHours !== undefined;
+          const labourWasTouched = [item.id, canonicalId].some((id) =>
+            labourHoursTouchedRef.current.has(String(id))
+          );
           const approvalLabourHours = Number(approvalData.labourHours);
           const hasExplicitLabourHours =
             hasLabourHours &&
             Number.isFinite(approvalLabourHours) &&
             (approvalLabourHours > 0 || approvalData.labourComplete === true);
-          if (hasLabourHours) {
+          if (!labourWasTouched && hasLabourHours) {
             if (hasExplicitLabourHours) {
               updatedEntry.laborHours = String(approvalData.labourHours);
             } else if (!hasLocalEntry) {
               updatedEntry.laborHours = null;
             }
           }
-          if (approvalData.labourComplete !== null && approvalData.labourComplete !== undefined) {
+          if (
+            !labourWasTouched &&
+            approvalData.labourComplete !== null &&
+            approvalData.labourComplete !== undefined
+          ) {
             updatedEntry.labourComplete = approvalData.labourComplete;
           }
 
@@ -4159,6 +4210,7 @@ export default function VhcDetailsPanel({
     const parsedHours = Number(labourCostModal.hoursInput);
     const resolvedHours = Number.isFinite(parsedHours) && parsedHours >= 0 ? parsedHours : 0;
     const hoursValue = resolvedHours.toFixed(2);
+    labourHoursTouchedRef.current.add(String(itemId));
 
     setItemEntries((prev) => ({
       ...prev,
@@ -4677,8 +4729,8 @@ export default function VhcDetailsPanel({
           });
 
           const result = await response.json();
-          if (response.ok && result?.success) {
-            setSavedLabourOverrideByItem((prev) => ({ ...prev, [itemId]: Date.now() }));
+          if (!response.ok || !result?.success) {
+            console.warn("Failed to save labour override", result?.message);
           }
         } catch (error) {
           console.warn("Failed to save labour override", error);
@@ -4757,8 +4809,12 @@ export default function VhcDetailsPanel({
 
   useEffect(() => {
     return () => {
-      Object.values(labourHoursPersistDebounceRef.current).forEach((timeoutHandle) => {
+      Object.entries(labourHoursPersistDebounceRef.current).forEach(([itemId, pending]) => {
+        const timeoutHandle = pending?.timeoutHandle ?? pending;
         clearTimeout(timeoutHandle);
+        if (pending?.hoursValue !== undefined) {
+          labourPersistFunctionRef.current?.(itemId, pending.hoursValue, { suppressRefresh: true });
+        }
       });
       labourHoursPersistDebounceRef.current = {};
       Object.values(labourOverrideDebounceRef.current).forEach((timeoutHandle) => {
@@ -5045,7 +5101,6 @@ export default function VhcDetailsPanel({
                 const quoteParts = Number.isFinite(Number(item.parts_gbp)) ? Number(item.parts_gbp) : null;
                 const quoteLabourHours = Number.isFinite(Number(item.labour_hours)) ? Number(item.labour_hours) : null;
                 const quoteLabourRate = Number.isFinite(Number(item.labour_rate_gbp)) ? Number(item.labour_rate_gbp) : LABOUR_RATE;
-                const quoteTotal = Number.isFinite(Number(item.total_gbp)) ? Number(item.total_gbp) : null;
                 const resolvedPartsCost = quoteParts !== null ? quoteParts : resolvePartsCost(item.id, entry);
                 const hasLocalLabourHoursValue =
                   entry?.laborHours !== null &&
@@ -5069,12 +5124,18 @@ export default function VhcDetailsPanel({
                         ? String(resolvedLabourHours)
                         : "";
                     })();
+                const resolvedLabourHoursNumber = Number(resolvedLabourHours);
                 const labourCost =
-                  quoteLabourHours !== null
-                    ? quoteLabourHours * quoteLabourRate
-                    : computeLabourCost(resolvedLabourHours);
+                  Number.isFinite(resolvedLabourHoursNumber) && resolvedLabourHoursNumber >= 0
+                    ? resolvedLabourHoursNumber * quoteLabourRate
+                    : 0;
+                const persistedTotalOverride = Number(item?.vhcCheck?.total_override);
                 const totalCost =
-                  quoteTotal !== null ? quoteTotal : computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
+                  entry.totalOverride !== "" && entry.totalOverride !== null
+                    ? parseNumericValue(entry.totalOverride)
+                    : Number.isFinite(persistedTotalOverride) && persistedTotalOverride > 0
+                      ? persistedTotalOverride
+                      : Number(resolvedPartsCost || 0) + labourCost;
                 const totalDisplayValue = (() => {
                   if (entry.totalOverride !== "" && entry.totalOverride !== null)
                     return entry.totalOverride;
@@ -5236,8 +5297,9 @@ export default function VhcDetailsPanel({
                 const labourSuggestions = Array.isArray(labourSuggestionsByItem[item.id]) ? labourSuggestionsByItem[item.id] : [];
                 const labourSuggestionsLoading = Boolean(labourSuggestionsLoadingByItem[item.id]);
                 const labourSuggestionOpen = openLabourSuggestionItemId === item.id;
-                const recentSavedAt = Number(savedLabourOverrideByItem[item.id] || 0);
+                const recentSavedAt = Number(labourPersistedAtByItem[item.id] || 0);
                 const showSavedBadge = recentSavedAt > 0 && Date.now() - recentSavedAt < 2500;
+                const labourPersistError = labourPersistErrorByItem[item.id] || "";
 
                 return (
                   <tr
@@ -5580,7 +5642,7 @@ export default function VhcDetailsPanel({
                               return;
 
                             const value = event.target.value;
-                            const isBlank = value === "";
+                            labourHoursTouchedRef.current.add(String(item.id));
                             const existingSession = labourEditSessionRef.current[item.id] || {};
                             setItemEntries((prev) => ({
                               ...prev,
@@ -5613,8 +5675,7 @@ export default function VhcDetailsPanel({
                               value !== "" &&
                               Number.isFinite(parsedValue) &&
                               (initialRaw === "" || !Number.isFinite(initialParsedValue) || Math.abs(initialParsedValue - parsedValue) > 0.0001);
-                            flushQueuedLabourPersist(item.id);
-                            persistLabourHours(item.id, value);
+                            flushQueuedLabourPersist(item.id, value);
                             if (hasChangedValue) {
                               saveLabourOverride({
                                 itemId: item.id,
@@ -5658,9 +5719,46 @@ export default function VhcDetailsPanel({
                         {showSavedBadge ? (
                           <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 600 }}>Saved</span>
                         ) : null}
-                        <span style={{ fontSize: "12px", color: "var(--text-1)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
+                        {labourPersistError ? (
+                          <span role="alert" style={{ fontSize: "11px", color: "var(--danger)", fontWeight: 600 }}>
+                            Not saved — edit or leave the field to retry
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => openLabourCostModal(item.id, resolvedLabourHours)}
+                          aria-label={`Edit labour cost, currently £${labourCost.toFixed(2)}`}
+                          title="Edit labour cost"
+                          disabled={
+                            readOnly ||
+                            severity === "authorized" ||
+                            severity === "declined"
+                          }
+                          style={{
+                            minWidth: "44px",
+                            minHeight: "44px",
+                            padding: "0 4px",
+                            border: "none",
+                            background: "transparent",
+                            color: "var(--text-1)",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                            cursor:
+                              readOnly ||
+                              severity === "authorized" ||
+                              severity === "declined"
+                                ? "default"
+                                : "pointer",
+                          }}
+                        >
+                          £{labourCost.toFixed(2)}
+                        </button>
                         {labourSuggestionOpen ? (
-                          <div
+                          <LayerTheme
+                            padding="0"
+                            gap="0"
+                            radius="var(--input-radius)"
                             style={{
                               position: "absolute",
                               top: "100%",
@@ -5670,8 +5768,6 @@ export default function VhcDetailsPanel({
                               maxWidth: "calc(100vw - 48px)",
                               maxHeight: "240px",
                               overflowY: "auto",
-                              borderRadius: "var(--input-radius)",
-                              background: "var(--surface)",
                               boxShadow: "0 12px 24px rgba(var(--text-1-rgb), 0.14)",
                               zIndex: 12,
                             }}
@@ -5688,6 +5784,7 @@ export default function VhcDetailsPanel({
                                   onMouseDown={(event) => event.preventDefault()}
                                   onClick={() => {
                                     const nextValue = Number(suggestion.timeHours).toFixed(1);
+                                    labourHoursTouchedRef.current.add(String(item.id));
                                     setItemEntries((prev) => ({
                                       ...prev,
                                       [item.id]: {
@@ -5715,8 +5812,7 @@ export default function VhcDetailsPanel({
                                   style={{
                                     width: "100%",
                                     border: "none",
-                                    borderBottom: "1px solid var(--separating-line)",
-                                    background: "var(--surface)",
+                                    background: "transparent",
                                     textAlign: "left",
                                     padding: "9px 11px",
                                     cursor: "pointer",
@@ -5727,18 +5823,18 @@ export default function VhcDetailsPanel({
                                     <div
                                       style={{
                                         fontSize: "12px",
-                                        color: suggestion.source === "fallback" ? "var(--warning)" : "var(--text-1)",
+                                        color: "var(--text-1)",
                                         fontWeight: 600,
                                         whiteSpace: "nowrap",
                                       }}
                                     >
-                                      {`AI suggestion: ${Number(suggestion.timeHours).toFixed(1)}h`}
+                                      {`Suggestion: ${Number(suggestion.timeHours).toFixed(1)}h`}
                                     </div>
                                   </div>
                                 </button>
                               ))
                             )}
-                          </div>
+                          </LayerTheme>
                         ) : null}
                       </div>
                     </td>
@@ -6778,10 +6874,16 @@ export default function VhcDetailsPanel({
     }
   }, [job, resolvedJobNumber, setJob, setVhcChecksData, refreshJobData]);
 
-  const persistLabourHours = useCallback(
+  const persistLabourHoursNow = useCallback(
     async (displayVhcId, hoursValue, options = {}) => {
       const { suppressRefresh = false } = options;
-      if (!job?.id) return;
+      if (!job?.id) return false;
+      setLabourPersistErrorByItem((prev) => {
+        if (!prev[displayVhcId]) return prev;
+        const next = { ...prev };
+        delete next[displayVhcId];
+        return next;
+      });
       const canonicalId = resolveCanonicalVhcId(displayVhcId);
       const parsedId = Number(canonicalId);
       const isBlank = hoursValue === "" || hoursValue === null || hoursValue === undefined;
@@ -6801,53 +6903,62 @@ export default function VhcDetailsPanel({
         if (Number.isInteger(vhcItemIdToUse)) {
           // Update the vhc_checks table - this is the primary source of truth for labour hours
           // Also set labourComplete to true when labour hours are entered
-          const vhcResponse = await fetch("/api/vhc/update-item-status", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                vhcItemId: vhcItemIdToUse,
-                labourHours: hasValidHours ? labourHours : null,
-                labourComplete: hasValidHours,
-                approvedBy: authUserId || dbUserId || null,
-              }),
-            });
-          const vhcResult = await vhcResponse.json();
-          if (!vhcResponse.ok || !vhcResult?.success) {
-            console.warn("Failed to update vhc_checks labour hours:", vhcResult?.message);
-          } else {
-            setVhcChecksData((prev) => prev.map((check) => {
-              if (String(check.vhc_id) !== String(vhcItemIdToUse)) return check;
-              return { ...check, labour_hours: hasValidHours ? labourHours : null, labour_complete: hasValidHours };
-            }));
+          let vhcResult = null;
+          let vhcSaved = false;
+          for (let attempt = 0; attempt < 2 && !vhcSaved; attempt += 1) {
+            const vhcResponse = await fetch("/api/vhc/update-item-status", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  vhcItemId: vhcItemIdToUse,
+                  labourHours: hasValidHours ? labourHours : null,
+                  labourComplete: hasValidHours,
+                  approvedBy: authUserId || dbUserId || null,
+                }),
+              });
+            vhcResult = await vhcResponse.json();
+            vhcSaved = vhcResponse.ok && Boolean(vhcResult?.success);
           }
+          if (!vhcSaved) {
+            throw new Error(vhcResult?.message || "Failed to update VHC labour hours");
+          }
+          setVhcChecksData((prev) => prev.map((check) => {
+            if (String(check.vhc_id) !== String(vhcItemIdToUse)) return check;
+            return { ...check, labour_hours: hasValidHours ? labourHours : null, labour_complete: hasValidHours };
+          }));
+          setLabourPersistedAtByItem((prev) => ({ ...prev, [displayVhcId]: Date.now() }));
 
           // Update parts_job_items if there are any parts linked to this VHC item
-          const partsResponse = await fetch("/api/parts/vhc-labour", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: job.id,
-              vhcItemId: vhcItemIdToUse,
-              labourHours,
-              userId: authUserId || null,
-              userNumericId: dbUserId || null,
-            }),
-          });
-          const partsResult = await partsResponse.json();
-
-          // Update parts in local state if any were updated
-          if (partsResponse.ok && Array.isArray(partsResult.items) && partsResult.items.length > 0) {
-            setJob((prev) => {
-              if (!prev) return prev;
-              const existingParts = Array.isArray(prev.parts_job_items) ? prev.parts_job_items : [];
-              const updatedMap = new Map(existingParts.map((part) => [part.id, part]));
-              partsResult.items.forEach((item) => {
-                if (!item?.id) return;
-                const current = updatedMap.get(item.id) || {};
-                updatedMap.set(item.id, { ...current, ...item });
-              });
-              return { ...prev, parts_job_items: Array.from(updatedMap.values()) };
+          try {
+            const partsResponse = await fetch("/api/parts/vhc-labour", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                jobId: job.id,
+                vhcItemId: vhcItemIdToUse,
+                labourHours,
+                userId: authUserId || null,
+                userNumericId: dbUserId || null,
+              }),
             });
+            const partsResult = await partsResponse.json();
+
+            // Update parts in local state if any were updated
+            if (partsResponse.ok && Array.isArray(partsResult.items) && partsResult.items.length > 0) {
+              setJob((prev) => {
+                if (!prev) return prev;
+                const existingParts = Array.isArray(prev.parts_job_items) ? prev.parts_job_items : [];
+                const updatedMap = new Map(existingParts.map((part) => [part.id, part]));
+                partsResult.items.forEach((item) => {
+                  if (!item?.id) return;
+                  const current = updatedMap.get(item.id) || {};
+                  updatedMap.set(item.id, { ...current, ...item });
+                });
+                return { ...prev, parts_job_items: Array.from(updatedMap.values()) };
+              });
+            }
+          } catch (partsSyncError) {
+            console.warn("Labour hours saved to VHC, but linked parts labour sync failed", partsSyncError);
           }
 
           // Refresh vhcChecksData to include the new/updated record
@@ -6865,37 +6976,69 @@ export default function VhcDetailsPanel({
           if (!suppressRefresh) {
             refreshJobData();
           }
+          return true;
         }
+        throw new Error(`Unable to resolve a persisted VHC row for ${displayVhcId}`);
       } catch (error) {
         console.error("Failed to persist labour hours", error);
+        setLabourPersistErrorByItem((prev) => ({
+          ...prev,
+          [displayVhcId]: error?.message || "Failed to save labour hours",
+        }));
+        return false;
       }
     },
     [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, createVhcCheckForDisplayId, refreshJobData, hasValidLabourHoursInput]
   );
+  const persistLabourHours = useCallback(
+    (displayVhcId, hoursValue, options = {}) => {
+      const key = String(displayVhcId);
+      const previous = labourPersistChainRef.current[key] || Promise.resolve(true);
+      const next = previous
+        .catch(() => false)
+        .then(() => persistLabourHoursNow(displayVhcId, hoursValue, options));
+      labourPersistChainRef.current[key] = next;
+      next.finally(() => {
+        if (labourPersistChainRef.current[key] === next) {
+          delete labourPersistChainRef.current[key];
+        }
+      });
+      return next;
+    },
+    [persistLabourHoursNow]
+  );
+  labourPersistFunctionRef.current = persistLabourHours;
 
   const queuePersistLabourHours = useCallback(
     (displayVhcId, hoursValue) => {
       const key = String(displayVhcId);
-      if (labourHoursPersistDebounceRef.current[key]) {
-        clearTimeout(labourHoursPersistDebounceRef.current[key]);
+      const currentPending = labourHoursPersistDebounceRef.current[key];
+      if (currentPending) {
+        clearTimeout(currentPending?.timeoutHandle ?? currentPending);
       }
-      labourHoursPersistDebounceRef.current[key] = setTimeout(() => {
-        persistLabourHours(displayVhcId, hoursValue, { suppressRefresh: true });
+      const pending = { timeoutHandle: null, hoursValue };
+      pending.timeoutHandle = setTimeout(() => {
+        if (labourHoursPersistDebounceRef.current[key] !== pending) return;
         delete labourHoursPersistDebounceRef.current[key];
+        persistLabourHours(displayVhcId, hoursValue, { suppressRefresh: true });
       }, 300);
+      labourHoursPersistDebounceRef.current[key] = pending;
     },
     [persistLabourHours]
   );
 
   const flushQueuedLabourPersist = useCallback(
-    (displayVhcId) => {
+    (displayVhcId, fallbackHoursValue) => {
       const key = String(displayVhcId);
-      if (labourHoursPersistDebounceRef.current[key]) {
-        clearTimeout(labourHoursPersistDebounceRef.current[key]);
+      const pending = labourHoursPersistDebounceRef.current[key];
+      const hoursValue = pending?.hoursValue ?? fallbackHoursValue;
+      if (pending) {
+        clearTimeout(pending?.timeoutHandle ?? pending);
         delete labourHoursPersistDebounceRef.current[key];
       }
+      return persistLabourHours(displayVhcId, hoursValue);
     },
-    []
+    [persistLabourHours]
   );
 
   // Handler for "Here" button click (moves part back from On Order to Authorised)
@@ -7999,16 +8142,18 @@ export default function VhcDetailsPanel({
       addPartToLookup(String(inferredCanonicalId), part);
     });
 
-    const displayItems = quoteItems.map((item) => {
-      const canonicalId = String(resolveCanonicalVhcId(item.canonicalId || item.id));
-      const linkedParts = partsByVhcId.get(canonicalId) || [];
-      return {
-        vhcItem: item,
-        linkedParts,
-        vhcId: String(item.id),
-        canonicalVhcId: canonicalId,
-      };
-    });
+    const displayItems = consolidateBrakePartsDisplayRows(
+      quoteItems.map((item) => {
+        const canonicalId = String(resolveCanonicalVhcId(item.canonicalId || item.id));
+        const linkedParts = partsByVhcId.get(canonicalId) || [];
+        return {
+          vhcItem: item,
+          linkedParts,
+          vhcId: String(item.id),
+          canonicalVhcId: canonicalId,
+        };
+      })
+    );
 
     if (!displayItems || displayItems.length === 0) {
       return <EmptyStateMessage message="No VHC repairs have been recorded yet." />;
@@ -8044,7 +8189,13 @@ export default function VhcDetailsPanel({
       const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
       const severity = resolveRowSeverity(vhcItem);
       const isNotRequired = partsNotRequired.has(vhcId);
-      const mappedPartsCost = Number(partsCostByVhcItem.get(canonicalVhcId || vhcId) || 0);
+      const sourceVhcIds = Array.isArray(item.sourceVhcIds) && item.sourceVhcIds.length > 0
+        ? item.sourceVhcIds
+        : [canonicalVhcId || vhcId];
+      const mappedPartsCost = sourceVhcIds.reduce(
+        (total, sourceId) => total + Number(partsCostByVhcItem.get(String(sourceId)) || 0),
+        0
+      );
       const linkedPartsCost = (linkedParts || []).reduce((total, part) => {
         const qtyValue = Number(part?.quantity_requested);
         const qty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
@@ -8193,7 +8344,13 @@ export default function VhcDetailsPanel({
                 const isGroupStart = idx === 0 || filteredItems[idx - 1]?.group !== group;
                 const isPartsNotRequired = partsNotRequired.has(vhcId);
                 const hasParts = linkedParts.length > 0;
-                const mappedPartsCost = Number(partsCostByVhcItem.get(canonicalVhcId || vhcId) || 0);
+                const sourceVhcIds = Array.isArray(item.sourceVhcIds) && item.sourceVhcIds.length > 0
+                  ? item.sourceVhcIds
+                  : [canonicalVhcId || vhcId];
+                const mappedPartsCost = sourceVhcIds.reduce(
+                  (total, sourceId) => total + Number(partsCostByVhcItem.get(String(sourceId)) || 0),
+                  0
+                );
                 const linkedPartsCost = linkedParts.reduce((total, part) => {
                   const qtyValue = Number(part?.quantity_requested);
                   const qty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
@@ -8224,6 +8381,7 @@ export default function VhcDetailsPanel({
                 const tyreMakeSizeDetail = resolveTyreMakeSizeDetail(vhcRows, vhcNotes);
                 const vhcDetailText = tyreMakeSizeDetail || vhcNotes;
                 const isServiceIndicatorRow = vhcItem?.category?.id === "service_indicator";
+                const showDetailRows = isServiceIndicatorRow || vhcItem?.isConsolidatedBrakeRow;
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
                   : null;
@@ -8346,7 +8504,7 @@ export default function VhcDetailsPanel({
                         <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-accent)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           <span>{vhcLabel}</span>
                         </div>
-                        {isServiceIndicatorRow && vhcRows.length > 0 ? (
+                        {showDetailRows && vhcRows.length > 0 ? (
                           <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
                             {vhcRows.map((row, rowIdx) => (
                               <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
@@ -10893,6 +11051,7 @@ export default function VhcDetailsPanel({
         width="960px"
         height="720px"
         overlayStyle={{
+          "--surface": "var(--theme)",
           background: "rgba(0, 0, 0, 0.6)",
           zIndex: "var(--z-modal)",
           padding: "20px",

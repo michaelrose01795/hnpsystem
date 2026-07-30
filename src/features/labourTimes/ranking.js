@@ -59,8 +59,8 @@ export const rankSuggestions = ({
   });
 
   scored.sort((a, b) => {
-    if (a._sourcePriority !== b._sourcePriority) return a._sourcePriority - b._sourcePriority;
     if (b._textualScore !== a._textualScore) return b._textualScore - a._textualScore;
+    if (a._sourcePriority !== b._sourcePriority) return a._sourcePriority - b._sourcePriority;
     if (b._usageCount !== a._usageCount) return b._usageCount - a._usageCount;
     return a._fallbackOrder - b._fallbackOrder;
   });

@@ -85,14 +85,10 @@ async function handler(req, res) {
       return;
     }
 
-    const cacheKey = `labour:suggest:${normalizedKey}:${isValidUuid(userId) ? userId : "anon"}`;
+    const cacheKey = `labour:suggest:v2:${normalizedKey}:${isValidUuid(userId) ? userId : "anon"}`;
     const cached = getCachedValue(cacheKey, 45000);
     if (cached) {
-      const cachedWithFallback = Array.isArray(cached) ? cached : [];
-      const hasFallback = cachedWithFallback.some((item) => item?.source === "fallback");
-      const suggestions = hasFallback
-        ? cachedWithFallback
-        : [...cachedWithFallback.slice(0, 7), toSuggestionResponse(fallbackSuggestion)];
+      const suggestions = Array.isArray(cached) ? cached.slice(0, 1) : [];
       res.status(200).json({ success: true, normalizedKey, suggestions: suggestions.map(toSuggestionResponse), cached: true });
       return;
     }
@@ -194,7 +190,7 @@ async function handler(req, res) {
         id: row.id,
         source: "learned",
         scope: row.scope,
-        displayDescription: description,
+        displayDescription: row.normalized_key,
         normalizedKey: row.normalized_key,
         timeHours: Number(row.override_time_hours),
         usageCount: Number(row.usage_count || 0),
@@ -217,22 +213,26 @@ async function handler(req, res) {
       });
     });
 
-    candidates.push(fallbackSuggestion);
-
-    const rankedRaw = rankSuggestions({
-      queryText: description,
-      suggestions: dedupeByKey(candidates),
-      limit: 8,
-    });
-
-    const hasFallbackInRanked = rankedRaw.some((item) => item?.source === "fallback");
-    const ranked = hasFallbackInRanked ? rankedRaw : [...rankedRaw.slice(0, 7), toSuggestionResponse(fallbackSuggestion)];
+    const reliableStandardMatch = fallbackSuggestion.confidence === "high" || fallbackSuggestion.confidence === "medium";
+    const bestDataMatch = reliableStandardMatch
+      ? null
+      : rankSuggestions({
+          queryText: description,
+          suggestions: dedupeByKey(candidates),
+          limit: 1,
+        })[0];
+    const ranked = [
+      reliableStandardMatch || !bestDataMatch
+        ? toSuggestionResponse(fallbackSuggestion)
+        : bestDataMatch,
+    ];
 
     if (LABOUR_SUGGEST_DEBUG) {
       console.log("[labour-time-suggestions] Ranked suggestions", {
         normalizedKey,
         count: ranked.length,
-        hasFallback: ranked.some((item) => item?.source === "fallback"),
+        selectedSource: ranked[0]?.source || null,
+        selectedReason: ranked[0]?.reason || null,
       });
     }
 

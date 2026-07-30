@@ -35,6 +35,16 @@ const hasAllKeywords = (text = "", keywords = []) => {
   return keywords.every((keyword) => text.includes(keyword));
 };
 
+const hasTyreReplacementConcern = (text = "") => {
+  const hasTyre = /\b(?:tyre|tire)\b/.test(text);
+  if (!hasTyre) return false;
+
+  return (
+    /\b(?:replace|renew|worn|wear|low|below|illegal|legal limit|sidewall|bulge|crack|cord|damaged|damage)\b/.test(text) ||
+    /\b\d+(?:\.\d+)?\s*mm\b/.test(text)
+  );
+};
+
 export const estimateLabourHours = (description = "") => {
   const cleaned = normalizeText(description);
 
@@ -42,12 +52,10 @@ export const estimateLabourHours = (description = "") => {
     return { hours: 0.5, reason: "fallback default", confidence: "low" };
   }
 
-  if (hasAnyKeyword(cleaned, ["puncture", "nail", "screw", "plug repair", "plugged", "plug"])) {
+  if (
+    /\b(?:puncture|punctured|nail|screw|plug repair|plugged|flat tyre|flat tire|slow puncture)\b/.test(cleaned)
+  ) {
     return { hours: 0.5, reason: "fallback rule, puncture repair keywords", confidence: "high" };
-  }
-
-  if (hasAnyKeyword(cleaned, ["tyre low", "tire low", "tyre worn", "tire worn", "replace tyre", "replace tire", "tyre below limit", "tire below limit"])) {
-    return { hours: 0.3, reason: "fallback rule, tyre replace keywords", confidence: "high" };
   }
 
   if (hasAnyKeyword(cleaned, ["wheel balance", "balance"])) {
@@ -56,6 +64,14 @@ export const estimateLabourHours = (description = "") => {
 
   if (hasAnyKeyword(cleaned, ["tracking", "alignment", "wheel alignment"])) {
     return { hours: 0.5, reason: "fallback rule, tracking or alignment keywords", confidence: "medium" };
+  }
+
+  if (hasTyreReplacementConcern(cleaned)) {
+    return { hours: 0.5, reason: "fallback rule, single tyre replacement concern", confidence: "high" };
+  }
+
+  if (/\b(?:tyre|tire)\b/.test(cleaned)) {
+    return { hours: 0.5, reason: "fallback rule, single tyre work", confidence: "medium" };
   }
 
   if (hasAnyKeyword(cleaned, ["wiper blade", "wiper blades", "replace wiper"])) {
@@ -67,26 +83,25 @@ export const estimateLabourHours = (description = "") => {
   }
 
   if (hasAnyKeyword(cleaned, ["pads only", "pad only"])) {
-    return { hours: 0.8, reason: "fallback rule, brake pads only keywords", confidence: "high" };
+    return { hours: 1, reason: "fallback rule, brake pads only keywords", confidence: "high" };
   }
 
   if (hasAnyKeyword(cleaned, ["discs only", "disc only", "rotors only", "rotor only"])) {
-    return { hours: 0.9, reason: "fallback rule, brake discs only keywords", confidence: "high" };
+    return { hours: 1, reason: "fallback rule, brake discs only keywords", confidence: "high" };
   }
 
-  const hasPads = hasAnyKeyword(cleaned, ["pad", "pads"]);
-  const hasDiscs = hasAnyKeyword(cleaned, ["disc", "discs", "rotor", "rotors"]);
-  const hasBrake = cleaned.includes("brake");
-  if (hasBrake && hasPads && hasDiscs) {
-    return { hours: 1.2, reason: "fallback rule, brake pads and discs keywords", confidence: "high" };
+  const hasPads = /\b(?:pad|pads)\b/.test(cleaned);
+  const hasDiscs = /\b(?:disc|discs|rotor|rotors)\b/.test(cleaned);
+  if (hasPads && hasDiscs) {
+    return { hours: 1.5, reason: "fallback rule, brake pads and discs keywords", confidence: "high" };
   }
 
-  if (hasBrake && hasPads && !hasDiscs) {
-    return { hours: 0.8, reason: "fallback rule, brake pads only keywords", confidence: "high" };
+  if (hasPads && !hasDiscs) {
+    return { hours: 1, reason: "fallback rule, brake pads only keywords", confidence: "high" };
   }
 
-  if (hasBrake && hasDiscs && !hasPads) {
-    return { hours: 0.9, reason: "fallback rule, brake discs only keywords", confidence: "high" };
+  if (hasDiscs && !hasPads) {
+    return { hours: 1, reason: "fallback rule, brake discs only keywords", confidence: "high" };
   }
 
   if (hasAnyKeyword(cleaned, ["brake fluid change", "brake fluid"])) {
@@ -113,6 +128,18 @@ export const estimateLabourHours = (description = "") => {
     return { hours: 0.6, reason: "fallback rule, drop link keywords", confidence: "medium" };
   }
 
+  if (hasAnyKeyword(cleaned, ["wheel bearing", "hub bearing"])) {
+    return { hours: 1.5, reason: "fallback rule, wheel bearing keywords", confidence: "medium" };
+  }
+
+  if (hasAnyKeyword(cleaned, ["wishbone", "lower arm", "control arm"])) {
+    return { hours: 1.5, reason: "fallback rule, suspension arm keywords", confidence: "medium" };
+  }
+
+  if (hasAnyKeyword(cleaned, ["track rod end", "tie rod end"])) {
+    return { hours: 0.8, reason: "fallback rule, track rod end keywords", confidence: "medium" };
+  }
+
   if (hasAnyKeyword(cleaned, ["shock absorber", "shock", "damper"])) {
     return { hours: 1.2, reason: "fallback rule, shock absorber keywords", confidence: "medium" };
   }
@@ -131,6 +158,10 @@ export const estimateLabourHours = (description = "") => {
 
   if (hasAnyKeyword(cleaned, ["fault code read", "diagnostic code", "code read", "scan fault", "read fault"])) {
     return { hours: 0.3, reason: "fallback rule, diagnostics keywords", confidence: "medium" };
+  }
+
+  if (hasAnyKeyword(cleaned, ["exhaust clamp", "exhaust section", "rear silencer", "centre silencer", "center silencer"])) {
+    return { hours: 0.8, reason: "fallback rule, exhaust repair keywords", confidence: "medium" };
   }
 
   return { hours: 0.5, reason: "fallback default", confidence: "low" };
