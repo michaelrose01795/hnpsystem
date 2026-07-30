@@ -51,7 +51,13 @@ import {
   normaliseDecisionStatus } from
 "@/features/vhc/vhcStatusEngine";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
-import { clockInToJob, getUserActiveJobs, switchJob, getJobClockingEntries } from "@/lib/database/jobClocking";
+import {
+  clockInToJob,
+  getUserActiveJobs,
+  switchJob,
+  getJobClockingEntries,
+  sumJobClockingHours
+} from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab";
 import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
@@ -63,6 +69,7 @@ import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
+import Button from "@/components/ui/Button";
 // Scheduling dashboard sections (Scheduling tab redesign) — one file per tab (CLAUDE.md §4.3).
 import {
   TechnicianAssignmentSection,
@@ -1068,6 +1075,23 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData?.vhcChecks]);
   const hasRedAmberRepairRows = vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised > 0;
+  const vhcAllRedAmberRowsAwaitingDecision = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const redAmberRows = checks.filter((check) => {
+      const section = String(check?.section || "").trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const severity = resolveVhcSeverity(check);
+      return severity === "red" || severity === "amber";
+    });
+
+    return (
+      redAmberRows.length > 0 &&
+      redAmberRows.every((check) => {
+        const item = projectVhcItem(check, { job: jobData });
+        return getDisplayStatus(item)?.dotStateKey === "awaiting";
+      })
+    );
+  }, [jobData]);
   const vhcAuthorizedWorkCompleted = vhcRowsMarkedCompleted;
   const vhcTabComplete =
   vhcResolutionSnapshot.total > 0 &&
@@ -3802,10 +3826,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
     const writeUpState = getWriteUpCompletionState({
       completionStatus: writeUpCompletionStatus,
-      checklistTasks: writeUpChecklistTasks
+      checklistTasks: writeUpChecklistTasks,
+      requestRows:
+      Array.isArray(jobData.jobRequests) ?
+      jobData.jobRequests :
+      Array.isArray(jobData.job_requests) ?
+      jobData.job_requests :
+      []
     });
-    const writeUpRowsAllChecked = writeUpState.allRowsChecked;
-    const writeUpComplete = writeUpState.statusMarkedComplete;
     const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
     const mileageRecorded = pickMileageValue(jobData.mileage, jobData.milage) !== null;
     const partsReadyBase = arePartsPricedAndAssigned(jobData.partsAllocations);
@@ -3824,8 +3852,17 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     partsAllocatedBase &&
     partsReadyBase;
     const writeUpCompleteInstant = writeUpState.isCompleteInstant;
-    const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData.vhcCompletedAt);
-    const vhcTabAmberReadyInstant = hasRedAmberRepairRows && !vhcTabCompleteInstant;
+    const writeUpPartiallyCompleteInstant = writeUpState.isPartiallyComplete;
+    const vhcTechnicianCompleteInstant = Boolean(jobData.vhcCompletedAt);
+    const vhcTabCompleteInstant = vhcTechnicianCompleteInstant && vhcTabComplete;
+    const vhcTabAmberReadyInstant =
+    vhcTechnicianCompleteInstant &&
+    vhcAllRedAmberRowsAwaitingDecision &&
+    !vhcTabCompleteInstant;
+    const vhcTabDangerReadyInstant =
+    vhcTechnicianCompleteInstant &&
+    !vhcTabAmberReadyInstant &&
+    !vhcTabCompleteInstant;
     const statusReadyForInvoicing = isStatusReadyForInvoicing(
       jobData.status,
       overallStatusId
@@ -3836,7 +3873,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     // 800ms autosave hasn't yet rewritten writeUp.completion_status in the
     // DB. Without this, ticking the final box flips the tab green but the
     // invoice tab still shows "Complete and mark the write up as finished."
-    const writeUpCompleteForInvoice = writeUpComplete || writeUpCompleteInstant;
+    const writeUpCompleteForInvoice = writeUpCompleteInstant;
     const invoiceWorkflow = getInvoiceWorkflowState({
       writeUpComplete: writeUpCompleteForInvoice,
       vhcRequired: Boolean(jobData.vhcRequired),
@@ -3951,7 +3988,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} vhcTabDangerReadyInstant={vhcTabDangerReadyInstant} writeUpCompleteInstant={writeUpCompleteInstant} writeUpPartiallyCompleteInstant={writeUpPartiallyCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -5377,8 +5414,7 @@ export function CustomerRequestsTab({
         itemVhcId !== null &&
         itemVhcId !== undefined &&
         String(itemVhcId).trim() === normalizedVhcId;
-        if (!matchesRequest && !matchesVhc) return false;
-
+        return Boolean(matchesRequest || matchesVhc);
       });
 
       const deduped = new Map();
@@ -6028,6 +6064,11 @@ export function CustomerRequestsTab({
     [clockedHoursByRequestId]
   );
 
+  const totalJobClockedHours = useMemo(
+    () => sumJobClockingHours(clockingEntries),
+    [clockingEntries]
+  );
+
   // Combined customer + authorised rows, each fully resolved for table + detail.
   const combinedRequestRows = useMemo(() => {
     const rows = [];
@@ -6129,12 +6170,12 @@ export function CustomerRequestsTab({
   const requestStats = useMemo(() => {
     const totalRequests = combinedRequestRows.length;
     const totalHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.hoursValue) || 0), 0);
-    const clockedHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.clockedHours) || 0), 0);
+    const clockedHours = totalJobClockedHours;
     const prePicked = combinedRequestRows.filter((r) => r.prePick).length;
     const inProgress = combinedRequestRows.filter((r) => r.normalizedStatus === "inprogress").length;
     const complete = combinedRequestRows.filter((r) => r.normalizedStatus === "completed").length;
     return { totalRequests, totalHours, clockedHours, prePicked, inProgress, complete };
-  }, [combinedRequestRows]);
+  }, [combinedRequestRows, totalJobClockedHours]);
 
   const selectedRow = useMemo(() => {
     if (!combinedRequestRows.length) return null;
@@ -6408,23 +6449,25 @@ export function CustomerRequestsTab({
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Linked Parts</div>
                 {selectedRow.linkedParts.length > 0 ?
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ color: "var(--grey-accent)", textAlign: "left" }}>
-                      <th style={{ padding: "4px 8px 6px 0" }}>Part No</th>
-                      <th style={{ padding: "4px 8px 6px" }}>Description</th>
-                      <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedRow.linkedParts.map((item, i) =>
-                    <tr key={item.id || i} style={{ color: "var(--text-1)" }}>
-                      <td style={{ padding: "4px 8px 4px 0" }}>{item.part?.partNumber || item.part_number || "—"}</td>
-                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "—"}</td>
-                      <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
-                    </tr>)}
-                  </tbody>
-                </table> :
+                <div className="app-table-shell-scroll">
+                  <table className="app-data-table app-data-table--rounded app-table-shell app-table-shell--with-headings">
+                    <thead>
+                      <tr>
+                        <th>Part No</th>
+                        <th>Description</th>
+                        <th style={{ textAlign: "right" }}>Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedRow.linkedParts.map((item, i) =>
+                      <tr key={item.id || i}>
+                        <td>{item.part?.partNumber || item.parts_catalog?.part_number || item.part_number_snapshot || item.part_number || "—"}</td>
+                        <td>{item.part?.name || item.part?.description || item.parts_catalog?.name || item.parts_catalog?.description || item.part_name_snapshot || item.row_description || "—"}</td>
+                        <td style={{ textAlign: "right" }}>{item.quantityAllocated ?? item.quantity_allocated ?? item.quantityRequested ?? item.quantity_requested ?? 0}</td>
+                      </tr>)}
+                    </tbody>
+                  </table>
+                </div> :
                 <div style={{ fontSize: "13px", color: "var(--grey-accent)", fontStyle: "italic" }}>No linked parts.</div>}
               </div>
 
@@ -6915,8 +6958,7 @@ export function WriteUpWorkspace({
         itemVhcId !== null &&
         itemVhcId !== undefined &&
         String(itemVhcId).trim() === normalizedVhcId;
-        if (!matchesRequest && !matchesVhc) return false;
-
+        return Boolean(matchesRequest || matchesVhc);
       });
 
       const deduped = new Map();
@@ -7566,6 +7608,11 @@ export function WriteUpWorkspace({
     [clockedHoursByRequestId]
   );
 
+  const totalJobClockedHours = useMemo(
+    () => sumJobClockingHours(clockingEntries),
+    [clockingEntries]
+  );
+
   // Combined customer + authorised rows, each fully resolved for table + detail.
   const combinedRequestRows = useMemo(() => {
     const rows = [];
@@ -7680,14 +7727,14 @@ export function WriteUpWorkspace({
   const requestStats = useMemo(() => {
     const totalRequests = combinedRequestRows.length;
     const totalHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.hoursValue) || 0), 0);
-    const clockedHours = combinedRequestRows.reduce((sum, r) => sum + (Number(r.clockedHours) || 0), 0);
+    const clockedHours = totalJobClockedHours;
     const prePicked = combinedRequestRows.filter((r) => r.prePick).length;
     const inProgress = combinedRequestRows.filter((r) => r.normalizedStatus === "inprogress").length;
     const complete = combinedRequestRows.filter((r) => r.normalizedStatus === "completed").length;
     const percentComplete = totalRequests > 0 ? Math.round((complete / totalRequests) * 100) : 0;
     const outstanding = totalRequests - complete;
     return { totalRequests, totalHours, clockedHours, prePicked, inProgress, complete, percentComplete, outstanding };
-  }, [combinedRequestRows]);
+  }, [combinedRequestRows, totalJobClockedHours]);
 
   const selectedRow = useMemo(() => {
     if (!combinedRequestRows.length) return null;
@@ -8094,7 +8141,6 @@ export function WriteUpWorkspace({
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                           <span style={{ color: "var(--text-1)" }}>{row.description || "—"}</span>
-                          <span className="app-badge" style={{ ...row.statusBadgeStyle, alignSelf: "flex-start" }}>{row.statusLabel}</span>
                         </div>
                       </td>
                       <td style={{ textAlign: "center", verticalAlign: "top" }}>
@@ -8103,7 +8149,7 @@ export function WriteUpWorkspace({
                           title={rowSaving ? "Saving completion..." : rowComplete ? "Completed" : "Mark this request complete"}
                           aria-label={rowSaving ? "Saving request completion" : rowComplete ? "Request completed" : "Mark request complete"}
                           aria-busy={rowSaving || undefined}
-                          className={`app-btn ${rowComplete ? "app-btn--secondary" : "app-btn--ghost"} jc-req-tick`}
+                          className={`app-btn ${rowComplete ? "app-tone-success-strong" : "app-btn--ghost"} jc-req-tick`}
                           data-complete={rowComplete ? "1" : "0"}
                           data-saving={rowSaving ? "1" : "0"}
                           disabled={!canEdit || !row.requestId || rowComplete || completionSavingKeys.size > 0}
@@ -8254,7 +8300,7 @@ export function WriteUpWorkspace({
             background: transparent;
           }
           html.staff-scope .app-data-table button.jc-req-tick[data-complete="1"] {
-            color: var(--theme);
+            color: var(--text-2);
           }
           html.staff-scope .app-data-table button.jc-req-tick[data-complete="1"]:disabled {
             opacity: 1;
@@ -12093,40 +12139,22 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 {submitting ? "Clocking..." : "Just clock"}
               </button> :
             null}
-            <button
+            <Button
               type="submit"
-              disabled={!canEdit || submitting}
-              style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                backgroundColor: "var(--primary)",
-                color: "var(--text-2)",
-                padding: "12px 20px",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: !canEdit || submitting ? "not-allowed" : "pointer",
-                opacity: !canEdit || submitting ? 0.6 : 1
-              }}>
+              variant="primary"
+              disabled={!canEdit}
+              busy={submitting}>
 
               {submitting ? "Saving..." : "Save clocking entry"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleReset}
-              disabled={submitting}
-              style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                backgroundColor: "transparent",
-                color: "var(--info)",
-                padding: "12px 20px",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: submitting ? "not-allowed" : "pointer"
-              }}>
+              disabled={submitting}>
 
               Reset form
-            </button>
+            </Button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end", alignItems: "center" }}>
             <button

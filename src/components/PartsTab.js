@@ -2528,34 +2528,65 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               <div
                 style={{
                   display: "flex",
-                  alignItems: "flex-start",
+                  alignItems: "center",
                   justifyContent: "space-between",
                   gap: "var(--layout-card-gap)",
                   flexWrap: "wrap",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: "var(--text-h3)",
-                      fontWeight: 700,
-                      color: "var(--text-1)",
-                    }}
-                  >
-                    Part Details
-                  </div>
-                  <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.78 }}>
-                    Edit any detail for this job item — changes apply on Save.
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setPartPopup({ open: false, part: null })}
+                <div
+                  style={{
+                    fontSize: "var(--text-h3)",
+                    fontWeight: 700,
+                    color: "var(--text-1)",
+                  }}
                 >
-                  Close
-                </Button>
+                  Part Details
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    justifyContent: "flex-end",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleRemovePartFromPopup("partial")}
+                    disabled={!canEdit || savingPartDetails}
+                  >
+                    Remove
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleRemovePartFromPopup("all")}
+                    disabled={!canEdit || savingPartDetails}
+                  >
+                    Remove All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSavePartDetails}
+                    disabled={!canEdit || savingPartDetails}
+                  >
+                    {savingPartDetails ? "Saving..." : "Save changes"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setPartPopup({ open: false, part: null })}
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
 
               <LayerTheme radius="var(--radius-xs)" padding="14px" gap="8px">
@@ -2776,55 +2807,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }
               `}</style>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.74 }}>
-                  {canEdit ? "Changes apply to this job item only." : "Read-only: editing is unavailable."}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleRemovePartFromPopup("partial")}
-                    disabled={!canEdit || savingPartDetails}
-                  >
-                    Remove
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleRemovePartFromPopup("all")}
-                    disabled={!canEdit || savingPartDetails}
-                  >
-                    Remove All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSavePartDetails}
-                    disabled={!canEdit || savingPartDetails}
-                  >
-                    {savingPartDetails ? "Saving..." : "Save changes"}
-                  </Button>
-                </div>
-              </div>
             </LayerSurface>
           </div>
         </ModalPortal>

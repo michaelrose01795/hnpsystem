@@ -17,7 +17,30 @@ vi.mock("@/lib/canonical/fields", () => ({
   getVehicleRegistration: vi.fn(() => ""),
 }));
 
-import { clockInToJob } from "./jobClocking";
+import { clockInToJob, sumJobClockingHours } from "./jobClocking";
+
+describe("sumJobClockingHours", () => {
+  it("includes both job-level and request-linked clocking entries", () => {
+    expect(
+      sumJobClockingHours([
+        { requestId: null, hoursWorked: 40.39 },
+        { requestId: null, hoursWorked: 3.12 },
+        { requestId: 1, hoursWorked: 0.01 },
+      ])
+    ).toBe(43.52);
+  });
+
+  it("accepts database-shaped values and ignores invalid durations", () => {
+    expect(
+      sumJobClockingHours([
+        { hours_worked: "2.5" },
+        { hours_worked: null },
+        { hoursWorked: -1 },
+        { hoursWorked: "not-a-number" },
+      ])
+    ).toBe(2.5);
+  });
+});
 
 describe("clockInToJob single-active-job guard", () => {
   beforeEach(() => {

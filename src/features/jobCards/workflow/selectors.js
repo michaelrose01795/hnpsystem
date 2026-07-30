@@ -11,6 +11,7 @@ const normalizeText = (value = "") =>
 export const getWriteUpCompletionState = ({
   completionStatus = "",
   checklistTasks = [],
+  requestRows = [],
 } = {}) => {
   const normalized = normalizeText(completionStatus);
   const statusMarkedComplete =
@@ -19,22 +20,44 @@ export const getWriteUpCompletionState = ({
     normalized === "completed" ||
     normalized === "done";
 
-  const allRowsChecked =
-    Array.isArray(checklistTasks) &&
-    checklistTasks.length > 0 &&
-    checklistTasks.every((task) => {
-      if (!task || typeof task !== "object") return false;
-      if (typeof task.checked === "boolean") return task.checked;
-      const taskStatus = normalizeText(task.status);
-      return taskStatus === "complete" || taskStatus === "completed" || taskStatus === "done";
-    });
+  const checkedTaskCount = Array.isArray(checklistTasks)
+    ? checklistTasks.filter((task) => {
+        if (!task || typeof task !== "object") return false;
+        if (typeof task.checked === "boolean") return task.checked;
+        const taskStatus = normalizeText(task.status);
+        return taskStatus === "complete" || taskStatus === "completed" || taskStatus === "done";
+      }).length
+    : 0;
+
+  const completedRequestCount = Array.isArray(requestRows)
+    ? requestRows.filter((row) => {
+        const rowStatus = normalizeText(row?.status);
+        return rowStatus === "complete" || rowStatus === "completed" || rowStatus === "done";
+      }).length
+    : 0;
+
+  const hasChecklistTasks = Array.isArray(checklistTasks) && checklistTasks.length > 0;
+  const hasRequestRows = Array.isArray(requestRows) && requestRows.length > 0;
+  // Persisted job-request rows drive the visible Write-up table, so they are
+  // authoritative when present. The checklist remains the fallback for legacy
+  // or synthetic rows that have not yet been materialised in job_requests.
+  const checkedRowCount = hasRequestRows ? completedRequestCount : checkedTaskCount;
+  const rowCount = hasRequestRows
+    ? requestRows.length
+    : hasChecklistTasks
+      ? checklistTasks.length
+      : 0;
+  const allRowsChecked = rowCount > 0 && checkedRowCount === rowCount;
 
   return {
     normalized,
     statusMarkedComplete,
+    checkedRowCount,
+    rowCount,
     allRowsChecked,
+    isPartiallyComplete: checkedRowCount > 0 && !allRowsChecked,
     isCompleteInstant:
-      Array.isArray(checklistTasks) && checklistTasks.length > 0
+      hasRequestRows || hasChecklistTasks
         ? allRowsChecked
         : statusMarkedComplete,
   };

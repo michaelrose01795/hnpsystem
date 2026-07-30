@@ -9,6 +9,7 @@
 // child and the Layout overlay renders a single grey slab on the next visit.
 
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerTheme from "@/components/ui/LayerTheme";
 import {
   TECHNICIAN_JOB_TABS,
   TechnicianJobContentShell,
@@ -19,9 +20,7 @@ import {
 } from "@/components/JobCards/TechnicianJobLayout";
 
 // ─── Shared token references (match the actual pages) ──────────────────────
-const shellBg = "var(--tab-container-bg)";
 const radius = "var(--radius-sm)";
-const radiusXs = "var(--radius-xs)";
 
 // ─── Small primitives ───────────────────────────────────────────────────────
 
@@ -70,9 +69,13 @@ const DEFAULT_TABS = [
 export function JobCardPageShellSkeleton({ jobNumber }) {
   return (
     <div
+      role="status"
+      aria-live="polite"
+      aria-label={`Loading job card ${jobNumber || ""}`.trim()}
       data-dev-section="1"
       data-dev-section-key="jobcard-page-shell"
       data-dev-section-type="page-shell"
+      data-dev-shell="1"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -81,23 +84,18 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
     >
       <SkeletonKeyframes />
 
-      {/* Header section — annotated so fingerprint captures it as a named block */}
-      <section
-        data-dev-section="1"
-        data-dev-section-key="jobcard-header"
-        data-dev-section-type="section-header-row"
-        data-dev-section-parent="jobcard-page-shell"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          padding: "20px",
-          backgroundColor: shellBg,
-          borderRadius: radius,
-          flexShrink: 0,
-        }}
+      {/* Header mirrors the live single-row title, status and action layout. */}
+      <LayerTheme
+        as="section"
+        sectionKey="jobcard-header"
+        sectionType="section-header-row"
+        parentKey="jobcard-page-shell"
+        radius={radius}
+        padding="20px"
+        gap="12px"
+        style={{ flexShrink: 0, margin: 0 }}
       >
-        {/* Row 1: title + badges + action buttons */}
+        {/* Title, status badges and actions */}
         <div
           style={{
             display: "flex",
@@ -126,33 +124,17 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
               Job Card #{jobNumber}
             </h1>
             <SkeletonBadge width="68px" />
+            <SkeletonBadge width="82px" />
           </div>
 
           {/* Action buttons */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <SkeletonButton width="88px" />
             <SkeletonButton width="104px" />
-            <SkeletonButton width="80px" />
           </div>
         </div>
 
-        {/* Row 2: timestamps */}
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-          <SkeletonBlock width="180px" height="14px" borderRadius="5px" />
-          <SkeletonBlock width="150px" height="14px" borderRadius="5px" />
-        </div>
-      </section>
-
-      {/* Workflow assistant card — own annotation so fingerprint shows a mid-card strip */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="jobcard-workflow"
-        data-dev-section-type="content-card"
-        data-dev-section-parent="jobcard-page-shell"
-        style={{ borderRadius: radius }}
-      >
-        <SkeletonBlock width="100%" height="54px" borderRadius={radius} />
-      </div>
+      </LayerTheme>
 
       {/* Vehicle & Customer Info Bar — the summary-shell wrapper has been removed;
           the four content cards now sit directly inside the page shell (transparent
@@ -169,34 +151,93 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           flexShrink: 0,
         }}
       >
-        {[130, 130, 130, 130].map((h, i) => (
-          <div
-            key={i}
-            data-dev-section="1"
-            data-dev-section-key={`jobcard-info-card-${i}`}
-            data-dev-section-type="content-card"
-            data-dev-section-parent="jobcard-page-shell"
-            style={{ borderRadius: radiusXs, height: `${h}px` }}
-          >
-            <SkeletonBlock width="100%" height="100%" borderRadius={radiusXs} />
+        <LayerTheme
+          sectionKey="jobcard-summary-vehicle"
+          sectionType="content-card"
+          parentKey="jobcard-page-shell"
+          radius={radius}
+          padding="12px 14px"
+          gap="6px"
+          style={{ minWidth: 0, minHeight: "68px", justifyContent: "center" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+            <SkeletonBlock width="44%" height="17px" borderRadius="5px" />
+            <SkeletonBlock width="86px" height="30px" borderRadius="var(--input-radius)" />
           </div>
+          <SkeletonBlock width="68%" height="12px" borderRadius="4px" />
+        </LayerTheme>
+
+        <LayerTheme
+          sectionKey="jobcard-summary-customer"
+          sectionType="content-card"
+          parentKey="jobcard-page-shell"
+          radius={radius}
+          padding="12px 14px"
+          gap="6px"
+          style={{ minWidth: 0, minHeight: "68px", justifyContent: "center" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+              <SkeletonBlock width="58%" height="17px" borderRadius="5px" />
+              <SkeletonBlock width="76%" height="12px" borderRadius="4px" />
+            </div>
+            <SkeletonBadge width="72px" />
+          </div>
+        </LayerTheme>
+
+        {[
+          { key: "jobcard-summary-vhc-financials", left: "52%", right: "62%" },
+          { key: "jobcard-summary-locations", left: "68%", right: "74%" },
+        ].map((card) => (
+          <LayerTheme
+            key={card.key}
+            sectionKey={card.key}
+            sectionType={card.key.includes("financials") ? "stat-card" : "content-card"}
+            parentKey="jobcard-page-shell"
+            radius={radius}
+            padding="12px 14px"
+            gap="10px"
+            style={{
+              minWidth: 0,
+              minHeight: "68px",
+              flexDirection: "row",
+              alignItems: "stretch",
+            }}
+          >
+            {[card.left, card.right].map((lineWidth, index) => (
+              <div
+                key={lineWidth}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: index === 0 ? "flex-start" : "flex-end",
+                  gap: "6px",
+                }}
+              >
+                <SkeletonBlock width="54%" height="11px" borderRadius="4px" />
+                <SkeletonBlock width={lineWidth} height="20px" borderRadius="5px" />
+              </div>
+            ))}
+          </LayerTheme>
         ))}
       </section>
 
       {/* Tab bar — annotated as tab-row so the strip shows as its own fingerprint block */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="jobcard-tab-row"
-        data-dev-section-type="tab-row"
-        data-dev-section-parent="jobcard-page-shell"
+      <LayerTheme
+        sectionKey="jobcard-tab-row"
+        sectionType="tab-row"
+        parentKey="jobcard-page-shell"
+        radius={radius}
+        padding="8px"
+        gap="6px"
         style={{
-          display: "flex",
-          gap: "6px",
+          flexDirection: "row",
           flexWrap: "nowrap",
           overflowX: "hidden",
-          backgroundColor: shellBg,
-          borderRadius: radius,
-          padding: "8px",
+          alignItems: "center",
           flexShrink: 0,
         }}
       >
@@ -204,45 +245,69 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           <SkeletonBlock
             key={label}
             width={`${label.length * 8 + 24}px`}
-            height="34px"
+            height="35px"
             borderRadius="var(--control-radius)"
           />
         ))}
-      </div>
+      </LayerTheme>
 
-      {/* Tab content — annotated content-card so fingerprint has the large bottom block */}
-      <div
-        data-dev-section="1"
-        data-dev-section-key="jobcard-tab-content"
-        data-dev-section-type="content-card"
-        data-dev-section-parent="jobcard-page-shell"
+      {/* Default Customer Requests tab: metrics above its responsive split workspace. */}
+      <LayerTheme
+        as="section"
+        sectionKey="jobcard-tab-content-shell"
+        sectionType="section-shell"
+        parentKey="jobcard-page-shell"
+        shell
+        radius="var(--section-card-radius)"
+        padding="var(--section-card-padding)"
+        gap="var(--space-4)"
         style={{
-          backgroundColor: shellBg,
-          borderRadius: radius,
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
           flexShrink: 0,
-          minHeight: "320px",
+          minHeight: "360px",
         }}
       >
-        <SkeletonBlock width="35%" height="16px" borderRadius="5px" />
+        <div style={{ display: "flex", alignItems: "stretch", gap: "8px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              flex: "1 1 720px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+              gap: "8px",
+            }}
+          >
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonBlock key={index} width="100%" height="44px" borderRadius={radius} />
+            ))}
+          </div>
+          <SkeletonButton width="112px" />
+        </div>
+
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "12px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+            gap: "16px",
+            alignItems: "start",
           }}
         >
-          <SkeletonBlock width="100%" height="90px" borderRadius={radiusXs} />
-          <SkeletonBlock width="100%" height="90px" borderRadius={radiusXs} />
-          <SkeletonBlock width="100%" height="90px" borderRadius={radiusXs} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <SkeletonBlock width="100%" height="36px" borderRadius={radius} />
+            {Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonBlock key={index} width="100%" height="46px" borderRadius={radius} />
+            ))}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <SkeletonBlock width="38%" height="18px" borderRadius="5px" />
+              <SkeletonBadge width="86px" />
+            </div>
+            <SkeletonBlock width="66%" height="13px" borderRadius="4px" />
+            <SkeletonBlock width="100%" height="62px" borderRadius={radius} />
+            <SkeletonBlock width="100%" height="62px" borderRadius={radius} />
+            <SkeletonBlock width="46%" height="22px" borderRadius="5px" />
+          </div>
         </div>
-        <SkeletonBlock width="100%" height="48px" borderRadius={radiusXs} />
-        <SkeletonBlock width="75%" height="14px" borderRadius="5px" />
-        <SkeletonBlock width="60%" height="14px" borderRadius="5px" />
-      </div>
+      </LayerTheme>
     </div>
   );
 }

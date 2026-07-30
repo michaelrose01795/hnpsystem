@@ -59,4 +59,57 @@ describe("getGlobalSearchMatchScore", () => {
       )
     ).toBeGreaterThan(100);
   });
+
+  it("expands a customer-name match into linked job-card results without duplicates", async () => {
+    process.env.PLAYWRIGHT_TEST_AUTH = "1";
+    const { getCustomerLinkedJobResults, getGlobalSearchMatchScore } = await import(
+      "@/lib/database/globalSearch"
+    );
+
+    const linkedResults = getCustomerLinkedJobResults({
+      term: "Darcy Vine",
+      customers: [
+        {
+          id: "customer-1",
+          firstname: "Darcy",
+          lastname: "Vine",
+        },
+      ],
+      jobs: [
+        {
+          id: 3969,
+          customer_id: "customer-1",
+          job_number: "03969",
+          vehicle_reg: "YE10RUO",
+          status: "New",
+          created_at: "2026-07-30T10:00:00.000Z",
+        },
+        {
+          id: 3970,
+          customer_id: "customer-1",
+          job_number: "03970",
+          vehicle_reg: "YE10RUO",
+          status: "New",
+          created_at: "2026-07-29T10:00:00.000Z",
+        },
+      ],
+      existingJobs: [
+        {
+          type: "job",
+          id: 3970,
+          jobNumber: "03970",
+        },
+      ],
+    });
+
+    expect(linkedResults).toHaveLength(1);
+    expect(linkedResults[0]).toMatchObject({
+      type: "job",
+      jobNumber: "03969",
+      title: "Job #03969",
+      subtitle: "Darcy Vine - YE10RUO",
+      customerName: "Darcy Vine",
+    });
+    expect(getGlobalSearchMatchScore(linkedResults[0], "Darcy Vine")).toBeGreaterThan(100);
+  });
 });

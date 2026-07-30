@@ -154,7 +154,9 @@ export default function JobCardDetailPageUi(props) {
     vhcSummaryCounts,
     vhcTabAmberReadyInstant,
     vhcTabCompleteInstant,
+    vhcTabDangerReadyInstant,
     writeUpCompleteInstant,
+    writeUpPartiallyCompleteInstant,
     writeUpTabMounted,
   } = props; // receive page logic props.
   const activeTabLabel = tabs?.find(tab => tab.id === activeTab)?.label || activeTab;
@@ -672,8 +674,10 @@ export default function JobCardDetailPageUi(props) {
             const isVhcTab = tab.id === "vhc";
             const isVhcCompleteHighlight = isVhcTab && vhcTabCompleteInstant;
             const isVhcAmberHighlight = isVhcTab && vhcTabAmberReadyInstant;
+            const isVhcDangerHighlight = isVhcTab && vhcTabDangerReadyInstant;
             const isCompleteHighlight = isPartsTab && partsTabCompleteInstant || isWriteUpTab && writeUpCompleteInstant || isVhcCompleteHighlight;
-            const tabTone = isCompleteHighlight ? "success" : isVhcAmberHighlight ? "warning" : "default";
+            const isWarningHighlight = isWriteUpTab && writeUpPartiallyCompleteInstant || isVhcAmberHighlight;
+            const tabTone = isCompleteHighlight ? "success" : isWarningHighlight ? "warning" : isVhcDangerHighlight ? "danger" : "default";
             return <button key={tab.id} className={`tab-api__item${isActive ? " is-active" : ""}`} data-tone={tabTone} onClick={e => {
               handleTabClick(tab.id);
               e.currentTarget.scrollIntoView({

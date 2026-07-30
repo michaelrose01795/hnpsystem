@@ -99,6 +99,19 @@ const calculateHoursWorked = (clockIn, clockOut) => {
   return Number(hours.toFixed(2));
 };
 
+export const sumJobClockingHours = (entries = []) => {
+  if (!Array.isArray(entries)) {
+    return 0;
+  }
+
+  const total = entries.reduce((sum, entry) => {
+    const hours = Number(entry?.hoursWorked ?? entry?.hours_worked ?? 0);
+    return Number.isFinite(hours) && hours > 0 ? sum + hours : sum;
+  }, 0);
+
+  return Number(total.toFixed(2));
+};
+
 const formatCustomerName = (customer = {}) => {
   const first =
     customer.customer_firstname ??

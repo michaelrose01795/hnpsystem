@@ -3983,6 +3983,7 @@ html.staff-scope.app-dropdown-menu {
 
 html.staff-scope .searchbar-api__results-menu {
   max-height: 320px;
+  container-type: inline-size;
 }
 
 html.staff-scope .searchbar-api__results-menu[role="status"] {
@@ -3990,20 +3991,70 @@ html.staff-scope .searchbar-api__results-menu[role="status"] {
 }
 
 html.staff-scope button.searchbar-api__result {
-  min-height: 56px;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title type"
+    "description description";
+  align-items: center;
+  column-gap: var(--space-md);
+  row-gap: 4px;
+  padding: 10px 12px;
 }
 
 html.staff-scope .searchbar-api__result-title {
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
+  grid-area: title;
+  min-width: 0;
+  width: auto;
 }
 
 html.staff-scope .searchbar-api__result-title-text {
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+html.staff-scope .searchbar-api__result-description {
+  grid-area: description;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .searchbar-api__result > .app-badge {
+  grid-area: type;
+  justify-self: end;
+  min-width: 0;
+  min-height: 22px;
+  padding-inline: var(--space-1);
+  white-space: nowrap;
+}
+
+@media (max-width: 479px) {
+  html.staff-scope button.searchbar-api__result {
+    grid-template-areas:
+      "title title"
+      "description type";
+  }
+
+  html.staff-scope .searchbar-api__result-description {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@container (min-width: 34rem) {
+  html.staff-scope button.searchbar-api__result {
+    min-height: 56px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas: "title description type";
+  }
 }
 
 /* Clear button. Independent from the .app-btn family and intentionally
@@ -4803,6 +4854,17 @@ html.staff-scope .tab-api__item[data-tone="warning"] {
 
 html.staff-scope .tab-api__item[data-tone="warning"].is-active {
   background: var(--warning);
+  color: var(--text-2);
+}
+
+html.staff-scope .tab-api__item[data-tone="danger"] {
+  border: none;
+  background: var(--danger-surface);
+  color: var(--danger-dark);
+}
+
+html.staff-scope .tab-api__item[data-tone="danger"].is-active {
+  background: var(--danger);
   color: var(--text-2);
 }
 

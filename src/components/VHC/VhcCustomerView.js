@@ -24,6 +24,21 @@ const SEVERITY_THEME = {
   declined: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Declined", toneClass: "app-tone-danger" }
 };
 
+function CustomerDivider() {
+  return (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      style={{
+        width: "100%",
+        height: 1,
+        flexShrink: 0,
+        background: "color-mix(in srgb, var(--accentMain) 16%, transparent)"
+      }}
+    />
+  );
+}
+
 const normaliseDetailText = (value) =>
   String(value || "")
     .toLowerCase()
@@ -306,6 +321,7 @@ function TotalsGrid({ totals }) {
       >
         Work Summary
       </div>
+      <CustomerDivider />
       <div
         style={{
           display: "grid",
@@ -738,7 +754,6 @@ export default function VhcCustomerView({
         <header
           style={{
             background: "var(--surface)",
-            boxShadow: "inset 0 -1px 0 var(--separating-line)",
             position: "sticky",
             top: 0,
             zIndex: 50,
@@ -751,7 +766,7 @@ export default function VhcCustomerView({
               maxWidth: 900,
               margin: "0 auto",
               boxSizing: "border-box",
-              padding: "10px 12px 0"
+              padding: "12px 12px 0"
             }}
           >
             <div
@@ -805,37 +820,47 @@ export default function VhcCustomerView({
               >
                 ← Back
               </button>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Tab switcher */}
-          <div
-            style={{
-              display: "flex",
-              gap: 4,
-              marginTop: 10,
-              overflowX: "auto"
-            }}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  padding: "10px 14px",
-                  background: "transparent",
-                  fontWeight: activeTab === tab.id ? 700 : 500,
-                  fontSize: 13,
-                  color: activeTab === tab.id ? "var(--accentText)" : "var(--txt-mute)",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+            <div style={{ marginTop: 12 }}>
+              <CustomerDivider />
+            </div>
+
+            {/* Tab switcher */}
+            <nav
+              aria-label="Vehicle health check sections"
+              style={{
+                display: "flex",
+                gap: 6,
+                padding: "6px 0",
+                overflowX: "auto",
+                scrollbarWidth: "none"
+              }}
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={activeTab === tab.id ? "page" : undefined}
+                  style={{
+                    minHeight: 44,
+                    padding: "10px 16px",
+                    borderRadius: "var(--radius-sm)",
+                    background: activeTab === tab.id ? "var(--theme)" : "transparent",
+                    fontWeight: activeTab === tab.id ? 700 : 500,
+                    fontSize: 13,
+                    color: activeTab === tab.id ? "var(--accentText)" : "var(--txt-mute)",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+            <CustomerDivider />
           </div>
         </header>
 
@@ -843,7 +868,7 @@ export default function VhcCustomerView({
         <main
           style={{
             flex: 1,
-            padding: "14px 12px 28px",
+            padding: "18px 12px 28px",
             width: "100%",
             maxWidth: 900,
             margin: "0 auto",
@@ -920,11 +945,13 @@ export default function VhcCustomerView({
         <footer
           style={{
             background: "var(--surface)",
-            boxShadow: "inset 0 1px 0 var(--separating-line)",
             padding: "12px 14px",
             textAlign: "center"
           }}
         >
+          <div style={{ margin: "-12px -14px 12px" }}>
+            <CustomerDivider />
+          </div>
           <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>
             Vehicle Health Check Report · Job #{jobNumber}
             {expiresAt && (

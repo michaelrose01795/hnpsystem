@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
@@ -1797,7 +1798,6 @@ export default function VhcDetailsPanel({
   const [vhcIdAliases, setVhcIdAliases] = useState({});
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
-  const [hoveredStatusId, setHoveredStatusId] = useState(null);
   // Customer description override modal — opened when user clicks the
   // description text on a Summary tab row to edit what the customer sees.
   const [customerDescriptionEditTarget, setCustomerDescriptionEditTarget] = useState(null);
@@ -1834,6 +1834,7 @@ export default function VhcDetailsPanel({
   const [labourSuggestionsByItem, setLabourSuggestionsByItem] = useState({});
   const [labourSuggestionsLoadingByItem, setLabourSuggestionsLoadingByItem] = useState({});
   const [openLabourSuggestionItemId, setOpenLabourSuggestionItemId] = useState(null);
+  const [labourSuggestionPosition, setLabourSuggestionPosition] = useState(null);
   const [, setSelectedLabourSuggestionByItem] = useState({});
   const [labourPersistedAtByItem, setLabourPersistedAtByItem] = useState({});
   const [labourPersistErrorByItem, setLabourPersistErrorByItem] = useState({});
@@ -1849,10 +1850,47 @@ export default function VhcDetailsPanel({
   const labourPersistChainRef = useRef({});
   const labourHoursTouchedRef = useRef(new Set());
   const labourSuggestionRequestRef = useRef({});
+  const labourSuggestionInputRefs = useRef({});
   const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
   const vhcPartsStatusSyncRef = useRef(new Set());
   const vhcPartsCostSyncRef = useRef(new Set());
+
+  useEffect(() => {
+    if (openLabourSuggestionItemId === null || typeof window === "undefined") {
+      setLabourSuggestionPosition(null);
+      return undefined;
+    }
+
+    const updatePosition = () => {
+      const input = labourSuggestionInputRefs.current[openLabourSuggestionItemId];
+      if (!input) return;
+
+      const rect = input.getBoundingClientRect();
+      const viewportPadding = 8;
+      const menuWidth = Math.min(240, window.innerWidth - viewportPadding * 2);
+      const centredLeft = rect.left + rect.width / 2 - menuWidth / 2;
+
+      setLabourSuggestionPosition({
+        itemId: openLabourSuggestionItemId,
+        bottom: Math.max(viewportPadding, window.innerHeight - rect.top + viewportPadding),
+        left: Math.max(
+          viewportPadding,
+          Math.min(centredLeft, window.innerWidth - menuWidth - viewportPadding)
+        ),
+        width: menuWidth,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [openLabourSuggestionItemId]);
   // Track item IDs where totalOverride has been touched by the user so the
   // DB-init effect never overwrites an in-progress edit or an explicit clear.
   const totalOverrideTouchedRef = useRef(new Set());
@@ -5145,6 +5183,17 @@ export default function VhcDetailsPanel({
                 })();
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
+                const isPartsNotRequired = [
+                  item.id,
+                  resolveCanonicalVhcId(item.id),
+                  item?.canonicalId,
+                  item?.vhcCheck?.vhc_id,
+                ].some(
+                  (candidateId) =>
+                    candidateId !== null &&
+                    candidateId !== undefined &&
+                    partsNotRequired.has(String(candidateId))
+                );
                 const effectiveEntry =
                   itemsOverride && item
                     ? {
@@ -5285,8 +5334,6 @@ export default function VhcDetailsPanel({
                   labelKey.length > 0 &&
                   contentKey.length > 0 &&
                   (contentKey.includes(labelKey) || labelKey.includes(contentKey));
-                const statusKey = `${severity}-${item.id}`;
-                const isStatusHovered = hoveredStatusId === statusKey;
                 const labourSuggestionDescription = buildLabourSuggestionDescription({
                   detailLabel,
                   detailContent: deferredIssueNote || detailContent,
@@ -5621,13 +5668,24 @@ export default function VhcDetailsPanel({
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-accent)" }}>
-                          {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
+                          {isPartsNotRequired
+                            ? "Not Req"
+                            : partsDisplayValue
+                              ? `£${partsDisplayValue}`
+                              : "—"}
                         </div>
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
                         <input
+                          ref={(node) => {
+                            if (node) {
+                              labourSuggestionInputRefs.current[item.id] = node;
+                            } else {
+                              delete labourSuggestionInputRefs.current[item.id];
+                            }
+                          }}
                           className="labour-hours-input"
                           type="number"
                           min="0"
@@ -5754,33 +5812,36 @@ export default function VhcDetailsPanel({
                         >
                           £{labourCost.toFixed(2)}
                         </button>
-                        {labourSuggestionOpen ? (
-                          <LayerTheme
-                            padding="0"
-                            gap="0"
-                            radius="var(--input-radius)"
+                        {labourSuggestionOpen &&
+                        labourSuggestionPosition?.itemId === item.id &&
+                        typeof document !== "undefined"
+                          ? createPortal(
+                          <div
+                            className="app-global-tooltip is-visible"
+                            role="listbox"
+                            aria-label="Suggested labour times"
                             style={{
-                              position: "absolute",
-                              top: "100%",
-                              left: "24px",
-                              marginTop: "6px",
-                              width: "fit-content",
-                              maxWidth: "calc(100vw - 48px)",
-                              maxHeight: "240px",
-                              overflowY: "auto",
-                              boxShadow: "0 12px 24px rgba(var(--text-1-rgb), 0.14)",
-                              zIndex: 12,
+                              top: "auto",
+                              bottom: `${labourSuggestionPosition.bottom}px`,
+                              left: `${labourSuggestionPosition.left}px`,
+                              width: `${labourSuggestionPosition.width}px`,
+                              height: "var(--control-height)",
+                              minHeight: "var(--control-height)",
+                              maxHeight: "var(--control-height)",
+                              pointerEvents: "auto",
                             }}
                           >
                             {labourSuggestionsLoading ? (
-                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--text-1)" }}>Loading suggestions…</div>
+                              <div>Loading suggestions…</div>
                             ) : labourSuggestions.length === 0 ? (
-                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--text-1)" }}>Suggested labour time</div>
+                              <div>Suggested labour time</div>
                             ) : (
                               labourSuggestions.map((suggestion) => (
                                 <button
                                   key={`${item.id}-${suggestion.id}-${suggestion.timeHours}`}
                                   type="button"
+                                  role="option"
+                                  aria-selected="false"
                                   onMouseDown={(event) => event.preventDefault()}
                                   onClick={() => {
                                     const nextValue = Number(suggestion.timeHours).toFixed(1);
@@ -5811,21 +5872,23 @@ export default function VhcDetailsPanel({
                                   }}
                                   style={{
                                     width: "100%",
+                                    height: "100%",
+                                    minHeight: 0,
                                     border: "none",
                                     background: "transparent",
-                                    textAlign: "left",
-                                    padding: "9px 11px",
+                                    color: "inherit",
+                                    font: "inherit",
+                                    padding: 0,
                                     cursor: "pointer",
-                                    whiteSpace: "nowrap",
+                                    whiteSpace: "inherit",
                                   }}
                                 >
-                                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
+                                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                                     <div
                                       style={{
-                                        fontSize: "12px",
-                                        color: "var(--text-1)",
-                                        fontWeight: 600,
-                                        whiteSpace: "nowrap",
+                                        color: "inherit",
+                                        font: "inherit",
+                                        whiteSpace: "inherit",
                                       }}
                                     >
                                       {`Suggestion: ${Number(suggestion.timeHours).toFixed(1)}h`}
@@ -5834,8 +5897,10 @@ export default function VhcDetailsPanel({
                                 </button>
                               ))
                             )}
-                          </LayerTheme>
-                        ) : null}
+                          </div>,
+                          document.body
+                        )
+                          : null}
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
@@ -5932,10 +5997,8 @@ export default function VhcDetailsPanel({
                     </td>
                     <td style={{ padding: "12px 8px", textAlign: "center" }}>
                       <div
-                        onMouseEnter={() => setHoveredStatusId(statusKey)}
-                        onMouseLeave={() => setHoveredStatusId(null)}
-                        onFocus={() => setHoveredStatusId(statusKey)}
-                        onBlur={() => setHoveredStatusId(null)}
+                        className="app-hover-tooltip"
+                        data-tooltip={statusState.label}
                         style={{
                           position: "relative",
                           display: "flex",
@@ -5990,27 +6053,6 @@ export default function VhcDetailsPanel({
                             </svg>
                           )}
                         </span>
-                        {isStatusHovered && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              left: "50%",
-                              top: "-8px",
-                              transform: "translate(-50%, -100%)",
-                              background: "var(--surface)",
-                              border: "none",
-                              borderRadius: "var(--radius-sm)",
-                              padding: "10px 14px",
-                              boxShadow: "0 8px 16px rgba(var(--text-1-rgb), 0.12)",
-                              whiteSpace: "nowrap",
-                              zIndex: 5,
-                            }}
-                          >
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-accent)" }}>
-                              {statusState.label}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </td>
                     {selectionEnabled && (
@@ -9952,7 +9994,7 @@ export default function VhcDetailsPanel({
                           <span style={VHC_COMPACT_STAT_VALUE_STYLE}>
                             {tile.count}
                           </span>
-                          {tile.value !== null && tile.value > 0 ? (
+                          {tile.value !== null ? (
                             <span style={{ flexBasis: "100%", fontSize: "12px", fontWeight: 700, color: tile.color, lineHeight: 1.1, textAlign: "right", whiteSpace: "nowrap" }}>
                               {formatCurrency(tile.value)}
                             </span>
@@ -10018,19 +10060,15 @@ export default function VhcDetailsPanel({
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: "18px",
+                          gap: "8px",
                           border: "none",
                           borderRadius: "var(--radius-lg)",
                           padding: "20px",
                           background: severityTheme.background,
                         }}
                       >
-                        <div
-                          style={{
-                            paddingBottom: "10px",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                               <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                               {selectedSet.size > 0 && (
@@ -10074,7 +10112,7 @@ export default function VhcDetailsPanel({
 
                         display: "flex",
                         flexDirection: "column",
-                        gap: "18px",
+                        gap: "8px",
                       }}
                     >
                       <div>
@@ -10495,12 +10533,8 @@ export default function VhcDetailsPanel({
                         background: severityTheme.background,
                       }}
                     >
-                      <div
-                        style={{
-                          paddingBottom: "10px",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                             {selectedSet.size > 0 && (

@@ -2,9 +2,7 @@ CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
 
 03969 continue within service,  just added parts more to add. add to nextjob for tech 1, check tech 1 has access, get tech 1 to complete there side and then pass back to controller, then controller do last checks etc and invoice
 
-TODO
 
-Delete the Owner role completly from everywhere this isnt required. Hide the other selection wihtin the "Select Area" seciton so they cant select this, do not delete it. also hide the "Diagnostics Overlay Vision " button inside the sidebar except for the dev role, every other roles to be hiden wihtin the sidebar. Also within the message box inside the login page have it say as well along the line "click the role at the bottom of the sidebar when u are loged in to view the profile page which is below the "Account" text. Put all data and information is completly made up and nothing is real as a note. you can use this as an actual sytem and all will be ok. 
 
 CHECK Drag and drop wihtin next job
 

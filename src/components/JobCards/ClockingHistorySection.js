@@ -353,9 +353,6 @@ export default function ClockingHistorySection({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600, color: "var(--text-1)" }}>{title}</h3>
-          <p style={{ margin: "4px 0 0", fontSize: "0.9rem", color: "var(--grey-accent)" }}>
-            All live clocking and manual entries linked to Job #{jobNumber || "—"}.
-          </p>
         </div>
         {loading && (
           <span style={{ fontSize: "0.85rem", color: "var(--grey-accent)" }}>

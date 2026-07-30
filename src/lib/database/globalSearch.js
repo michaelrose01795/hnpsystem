@@ -8,7 +8,7 @@ const SEARCH_LIMIT_PER_TYPE = 15;
 const RESULT_LIMIT = 25;
 
 const SEARCH_FIELDS = {
-  jobs: ["job_number", "vehicle_reg", "vehicle_make_model", "description"],
+  jobs: ["job_number", "customer", "vehicle_reg", "vehicle_make_model", "description"],
   customers: ["firstname", "lastname", "email", "mobile", "telephone"],
   orders: ["order_number", "customer_name", "vehicle_reg", "vehicle_make", "vehicle_model"],
   parts: ["part_number", "name", "supplier", "category", "description"],
@@ -197,8 +197,65 @@ const sortBySearchScore = (results) =>
     })
     .map(stripSearchOnlyFields);
 
-const getPreferredJobsByCustomer = async (customerIds) => {
-  if (!customerIds.length) return {};
+const createJobSearchResult = (job, term, customerNameOverride = "") => {
+  const customerName =
+    customerNameOverride ||
+    [job.customer?.firstname, job.customer?.lastname].filter(Boolean).join(" ") ||
+    job.customer_text ||
+    "";
+
+  return {
+    type: "job",
+    id: job.id,
+    jobNumber: job.job_number,
+    status: job.status,
+    title: `Job #${job.job_number}`,
+    subtitle: [customerName || "No customer", job.vehicle_reg || ""].filter(Boolean).join(" - "),
+    customerId: job.customer_id,
+    customerName,
+    vehicleReg: job.vehicle_reg,
+    vehicleMakeModel: job.vehicle_make_model,
+    description: job.description,
+    createdAt: job.created_at,
+    searchTerm: term,
+  };
+};
+
+const getJobResultKey = (job = {}) =>
+  job.id ? `id:${job.id}` : `number:${normaliseText(job.jobNumber || job.job_number)}`;
+
+export const getCustomerLinkedJobResults = ({
+  jobs = [],
+  customers = [],
+  existingJobs = [],
+  term = "",
+} = {}) => {
+  const customerNames = new Map(
+    customers.map((customer) => [
+      customer.id,
+      [customer.firstname, customer.lastname]
+        .filter(Boolean)
+        .map((part) => toTitleCase(part))
+        .join(" ")
+        .trim(),
+    ])
+  );
+  const seenJobKeys = new Set(existingJobs.map(getJobResultKey));
+
+  return jobs.reduce((linkedResults, job) => {
+    const jobKey = getJobResultKey(job);
+    if (seenJobKeys.has(jobKey)) return linkedResults;
+
+    seenJobKeys.add(jobKey);
+    linkedResults.push(
+      createJobSearchResult(job, term, customerNames.get(job.customer_id) || "")
+    );
+    return linkedResults;
+  }, []);
+};
+
+const getJobsByCustomerIds = async (customerIds) => {
+  if (!customerIds.length) return [];
 
   const { data, error } = await supabase
     .from("jobs")
@@ -210,17 +267,23 @@ const getPreferredJobsByCustomer = async (customerIds) => {
         customer_id,
         vehicle_reg,
         vehicle_make_model,
+        description,
         created_at
       `
     )
-    .in("customer_id", customerIds);
+    .in("customer_id", customerIds)
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Global search customer job lookup error:", error);
-    return {};
+    return [];
   }
 
-  return (data || []).reduce((acc, job) => {
+  return data || [];
+};
+
+const getPreferredJobsByCustomer = (jobs) =>
+  jobs.reduce((acc, job) => {
     const existing = acc[job.customer_id] || { latest: null, active: null };
     const jobStatusId = resolveMainStatusId(job.status);
 
@@ -239,7 +302,6 @@ const getPreferredJobsByCustomer = async (customerIds) => {
     acc[job.customer_id] = existing;
     return acc;
   }, {});
-};
 
 export const searchGlobalRecords = async (term) => {
   const cleanTerm = cleanForPostgrestFilter(term);
@@ -256,6 +318,7 @@ export const searchGlobalRecords = async (term) => {
             job_number,
             status,
             description,
+            customer_text:customer,
             customer_id,
             vehicle_reg,
             vehicle_make_model,
@@ -364,27 +427,21 @@ export const searchGlobalRecords = async (term) => {
   const results = [];
 
   (jobResponse.data || []).forEach((job) => {
-    const customerName = [job.customer?.firstname, job.customer?.lastname].filter(Boolean).join(" ");
-
-    results.push({
-      type: "job",
-      id: job.id,
-      jobNumber: job.job_number,
-      status: job.status,
-      title: `Job #${job.job_number}`,
-      subtitle: [customerName || "No customer", job.vehicle_reg || ""].filter(Boolean).join(" - "),
-      customerId: job.customer_id,
-      customerName,
-      vehicleReg: job.vehicle_reg,
-      vehicleMakeModel: job.vehicle_make_model,
-      description: job.description,
-      createdAt: job.created_at,
-      searchTerm: term,
-    });
+    results.push(createJobSearchResult(job, term));
   });
 
   const customerIds = (customerResponse.data || []).map((customer) => customer.id);
-  const customerJobIndex = await getPreferredJobsByCustomer(customerIds);
+  const customerJobs = await getJobsByCustomerIds(customerIds);
+  const customerJobIndex = getPreferredJobsByCustomer(customerJobs);
+
+  results.push(
+    ...getCustomerLinkedJobResults({
+      jobs: customerJobs,
+      customers: customerResponse.data || [],
+      existingJobs: results,
+      term,
+    })
+  );
 
   (customerResponse.data || []).forEach((customer) => {
     const jobRecord = customerJobIndex[customer.id] || {};

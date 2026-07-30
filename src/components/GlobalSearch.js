@@ -230,11 +230,14 @@ const GlobalSearch = ({
       const anchor = controlRef.current || containerRef.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
       setDropdownStyle({
         position: "fixed",
         top: rect.bottom + 12,
         left: rect.left,
         width: rect.width,
+        maxHeight: Math.max(180, viewportHeight - rect.bottom - 24),
         right: "auto",
         margin: 0,
         boxSizing: "border-box",
@@ -358,8 +361,13 @@ const GlobalSearch = ({
                       {item.title}
                     </span>
                   </span>
-                  <span className="searchbar-api__result-description dropdown-api__option-description">
-                    {[item.subtitle, chipLabel].filter(Boolean).join(" - ")}
+                  {item.subtitle && (
+                    <span className="searchbar-api__result-description dropdown-api__option-description">
+                      {item.subtitle}
+                    </span>
+                  )}
+                  <span className="app-badge app-badge--neutral">
+                    {chipLabel}
                   </span>
                 </button>
               );

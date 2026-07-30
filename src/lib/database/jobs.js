@@ -72,6 +72,21 @@ const buildJobNumberLookupCandidates = (value) => {
   return Array.from(candidates).filter(Boolean);
 };
 
+const pickLatestWriteUp = (rows = []) => {
+  const candidates = Array.isArray(rows) ? rows.filter(Boolean) : [];
+  if (candidates.length === 0) return null;
+
+  return [...candidates].sort((left, right) => {
+    const leftUpdatedAt = new Date(left?.updated_at || left?.created_at || 0).getTime();
+    const rightUpdatedAt = new Date(right?.updated_at || right?.created_at || 0).getTime();
+    const timestampDifference =
+      (Number.isFinite(rightUpdatedAt) ? rightUpdatedAt : 0) -
+      (Number.isFinite(leftUpdatedAt) ? leftUpdatedAt : 0);
+    if (timestampDifference !== 0) return timestampDifference;
+    return Number(right?.writeup_id || 0) - Number(left?.writeup_id || 0);
+  })[0];
+};
+
 export const formatJobNumberFromId = (jobId) => {
   if (!jobId) {
     return null;
@@ -2416,7 +2431,7 @@ const formatJobData = (data) => {
     ? data.booking_request[0]
     : data.booking_request;
 
-  const rawWriteUp = data.job_writeups?.[0] || null;
+  const rawWriteUp = pickLatestWriteUp(data.job_writeups);
   const requestItems = normaliseRequestsForWriteUp({
     jobRequests: data.job_requests || [],
     legacyRequests: data.requests,
@@ -3884,6 +3899,9 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         .from("job_writeups")
         .select("*")
         .eq("job_id", job.id)
+        .order("updated_at", { ascending: false })
+        .order("writeup_id", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       // Canonical "Authorised VHC Items" source: vhc_checks (authorized) + linked parts.
       getAuthorizedVhcItemsWithDetails(job.id),
@@ -4023,11 +4041,18 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       return { success: false, error: "Job not found" };
     }
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingWriteUpError } = await supabase
       .from("job_writeups")
       .select("writeup_id")
       .eq("job_id", job.id)
+      .order("updated_at", { ascending: false })
+      .order("writeup_id", { ascending: false })
+      .limit(1)
       .maybeSingle();
+
+    if (existingWriteUpError) {
+      throw existingWriteUpError;
+    }
 
     const rawTasks = Array.isArray(writeUpData?.tasks) ? writeUpData.tasks : [];
     const filteredTasks = rawTasks
