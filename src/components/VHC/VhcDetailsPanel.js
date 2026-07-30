@@ -49,6 +49,7 @@ import {
   StockStatusBadge,
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { isValidUuid } from "@/features/labourTimes/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
@@ -842,6 +843,13 @@ const formatTreadDepthSummary = (tread = {}) => {
   return segments.length > 0 ? segments.join(" • ") : null;
 };
 
+const formatMillimetreValue = (value) => {
+  const measurement = formatMeasurement(value)?.trim();
+  if (!measurement) return null;
+  if (/^-?\d+(?:\.\d+)?$/.test(measurement)) return `${measurement}mm`;
+  return measurement;
+};
+
 const buildTyreSpecLines = (tyre) => {
   if (!tyre || typeof tyre !== "object") return [];
   const specs = [];
@@ -1088,6 +1096,126 @@ const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
   }
 
   return displayItems.length > 0 ? displayItems : items;
+};
+
+const SummarySupplementaryBlock = ({ useTheme = false, children }) => {
+  if (useTheme) {
+    return (
+      <LayerTheme
+        radius="var(--radius-sm)"
+        padding="10px 12px"
+        gap="6px"
+        style={{ marginTop: "8px" }}
+      >
+        {children}
+      </LayerTheme>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: "8px",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--surface)",
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const GreenCheckItemBlock = ({ useTheme = false, children, ...rest }) => {
+  if (useTheme) {
+    return (
+      <LayerTheme
+        radius="var(--radius-md)"
+        padding="14px"
+        gap="6px"
+        {...rest}
+      >
+        {children}
+      </LayerTheme>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        borderRadius: "var(--radius-md)",
+        background: "var(--surface)",
+        border: "none",
+        padding: "14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
+
+const consolidateBrakeRowsByLocation = (items = []) => {
+  const consolidated = [];
+  const brakeGroups = new Map();
+
+  items.forEach((item) => {
+    if (item?.categoryId !== "brakes_hubs") {
+      consolidated.push(item);
+      return;
+    }
+
+    const location = deriveBrakeLocationKey(item);
+    if (!location) {
+      consolidated.push(item);
+      return;
+    }
+
+    if (!brakeGroups.has(location)) {
+      const group = { location, items: [] };
+      brakeGroups.set(location, group);
+      consolidated.push(group);
+    }
+    brakeGroups.get(location).items.push(item);
+  });
+
+  return consolidated.map((entry) => {
+    if (!entry?.items) return entry;
+
+    const primary =
+      entry.items.find((item) => item.customerDescription || item.concernText) ||
+      entry.items.find((item) => item.notes) ||
+      entry.items.find((item) => item.vhcCheck) ||
+      entry.items[0];
+    const noteKeys = new Set();
+    const issueNotes = [];
+    entry.items.forEach((item) => {
+      [item.customerDescription, item.concernText, item.notes].forEach((value) => {
+        const note = String(value || "").trim().replace(/^-\s*/, "");
+        const key = normalizeText(note).replace(/\s+/g, " ");
+        if (!note || noteKeys.has(key)) return;
+        noteKeys.add(key);
+        issueNotes.push(note);
+      });
+    });
+
+    return {
+      ...primary,
+      label: `${entry.location.charAt(0).toUpperCase()}${entry.location.slice(1)} brakes`,
+      sourceIssueTitle: `${entry.location.charAt(0).toUpperCase()}${entry.location.slice(1)} brakes`,
+      concernText: issueNotes.join(" "),
+      notes: "",
+      measurement: "",
+      rows: [],
+      consolidatedBrakeRow: true,
+    };
+  });
 };
 
 const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collapsedProp, onToggle }) => {
@@ -2797,13 +2925,13 @@ export default function VhcDetailsPanel({
     };
 
     const padConfigs = [
-      { key: "frontPads", label: "Front Pads", location: "front" },
-      { key: "rearPads", label: "Rear Pads", location: "rear" },
+      { key: "frontPads", label: "Pads", location: "front" },
+      { key: "rearPads", label: "Pads", location: "rear" },
     ];
     padConfigs.forEach(({ key, label, location }) => {
       const pad = brakes[key];
       if (!pad || typeof pad !== "object") return;
-      const measurement = formatMeasurement(pad.measurement);
+      const measurement = formatMillimetreValue(pad.measurement);
       const padStatus = normaliseColour(pad.status);
       const concernStatuses = Array.isArray(pad.concerns)
         ? pad.concerns.map((concern) => normaliseColour(concern?.status)).filter(Boolean)
@@ -2813,14 +2941,14 @@ export default function VhcDetailsPanel({
       pushEntry(location, {
         id: `${location}-${key}`,
         label,
-        measurement: measurement ? `Pad thickness: ${measurement}` : null,
+        measurement,
         status,
       });
     });
 
     const discConfigs = [
-      { key: "frontDiscs", label: "Front Discs", location: "front" },
-      { key: "rearDiscs", label: "Rear Discs", location: "rear" },
+      { key: "frontDiscs", label: "Discs", location: "front" },
+      { key: "rearDiscs", label: "Discs", location: "rear" },
     ];
     discConfigs.forEach(({ key, label, location }) => {
       const disc = brakes[key];
@@ -2842,11 +2970,19 @@ export default function VhcDetailsPanel({
         directStatus ||
         null;
       const note = (disc.visual?.notes || disc.visual?.note || "").trim();
+      const hasVisualCheck =
+        String(disc.tab || "").toLowerCase() === "visual" ||
+        Boolean(disc.visual?.status) ||
+        Boolean(note);
       if (!measurement && !status && !note) return;
       pushEntry(location, {
         id: `${location}-${key}`,
         label,
-        measurement: measurement ? `Disc thickness: ${measurement}` : null,
+        measurement: measurement
+          ? `Disc thickness: ${formatMillimetreValue(measurement)}`
+          : hasVisualCheck
+            ? "visual check"
+            : null,
         status,
         note: note || null,
       });
@@ -4789,6 +4925,7 @@ export default function VhcDetailsPanel({
             return severityRank(a) - severityRank(b);
           })
         : itemsRaw;
+    items = consolidateBrakeRowsByLocation(items);
 
     // Keep rows grouped by reported category inside each summary section
     // (Red / Amber / Authorised / Declined) without adding visible separators.
@@ -5029,6 +5166,27 @@ export default function VhcDetailsPanel({
                   ...getBrakeSupplementaryRows(item),
                   ...getTyreSupplementaryRows(item),
                 ];
+                const isBrakeSummaryRow =
+                  item.categoryId === "brakes_hubs" && supplementaryRows.length > 0;
+                const isTyreSummaryRow =
+                  item.categoryId === "wheels_tyres" && supplementaryRows.length > 0;
+                let detailMeasurement = item.measurement || "";
+                let deferredIssueNote = "";
+                if (isBrakeSummaryRow) {
+                  const brakeLocation = deriveBrakeLocationKey(item);
+                  detailLabel = brakeLocation
+                    ? `${brakeLocation.charAt(0).toUpperCase()}${brakeLocation.slice(1)} brakes`
+                    : "Brakes";
+                  detailRows = [];
+                  detailMeasurement = "";
+                }
+                if (isTyreSummaryRow) {
+                  detailMeasurement = "";
+                }
+                if (isBrakeSummaryRow || isTyreSummaryRow) {
+                  deferredIssueNote = detailContent.trim().replace(/^-\s*/, "");
+                  detailContent = "";
+                }
                 const isServiceIndicatorRow = item.categoryId === "service_indicator";
                 const detailLabelKey = normaliseServiceText(detailLabel);
                 const detailRowsKey = normaliseServiceText(detailRows.join(" "));
@@ -5070,9 +5228,9 @@ export default function VhcDetailsPanel({
                 const isStatusHovered = hoveredStatusId === statusKey;
                 const labourSuggestionDescription = buildLabourSuggestionDescription({
                   detailLabel,
-                  detailContent,
+                  detailContent: deferredIssueNote || detailContent,
                   detailRows,
-                  measurement: item.measurement || "",
+                  measurement: detailMeasurement,
                   locationLabel: locationLabel ? `Location ${locationLabel}` : "",
                 });
                 const labourSuggestions = Array.isArray(labourSuggestionsByItem[item.id]) ? labourSuggestionsByItem[item.id] : [];
@@ -5222,8 +5380,8 @@ export default function VhcDetailsPanel({
                           + Add customer description
                         </button>
                       )}
-                      {item.measurement ? (
-                        <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>{item.measurement}</div>
+                      {detailMeasurement ? (
+                        <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>{detailMeasurement}</div>
                       ) : null}
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>Location: {locationLabel}</div>
@@ -5235,7 +5393,7 @@ export default function VhcDetailsPanel({
                         const categoryId = item.categoryId || "";
                         const labelLower = (item.label || "").toLowerCase();
                         const categoryLower = (item.categoryLabel || "").toLowerCase();
-                        const allText = [item.measurement || "", detailContent, item.label || "", item.notes || ""].join(" ");
+                        const allText = [detailMeasurement, deferredIssueNote || detailContent, item.label || "", item.notes || ""].join(" ");
 
                         // Check if this is a tyre item
                         const isTyreItem = categoryId === "wheels_tyres" ||
@@ -5291,16 +5449,11 @@ export default function VhcDetailsPanel({
                         ) : null;
                       })()}
                       {supplementaryRows.length > 0 ? (
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            borderRadius: "var(--radius-sm)",
-                            background: "var(--surface)",
-                            padding: "10px 12px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
-                          }}
+                        <SummarySupplementaryBlock
+                          useTheme={
+                            item.categoryId === "wheels_tyres" ||
+                            item.categoryId === "brakes_hubs"
+                          }
                         >
                           {supplementaryRows.map((entry) => {
                             const entryStatusLabel =
@@ -5324,7 +5477,7 @@ export default function VhcDetailsPanel({
                                   <span style={{ fontWeight: 600, color: "var(--text-accent)" }}>{entry.label}</span>
                                 ) : null}
                                 {entry.measurement ? <span>{entry.measurement}</span> : null}
-                                {entryStatusLabel && badgeStyles ? (
+                                {item.categoryId !== "brakes_hubs" && entryStatusLabel && badgeStyles ? (
                                   <span
                                     style={{
                                       padding: "2px 10px",
@@ -5374,7 +5527,33 @@ export default function VhcDetailsPanel({
                               </div>
                             );
                           })}
-                        </div>
+                        </SummarySupplementaryBlock>
+                      ) : null}
+                      {deferredIssueNote ? (
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to edit the customer description"
+                          style={{
+                            marginTop: "8px",
+                            fontWeight: 500,
+                            color: "var(--text-1)",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            font: "inherit",
+                            width: "100%",
+                          }}
+                        >
+                          - {deferredIssueNote}
+                          {isCustomerOverride ? (
+                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-accent)", fontWeight: 700 }}>
+                              âœŽ customer
+                            </span>
+                          ) : null}
+                        </button>
                       ) : null}
                     </td>
                     <td style={{ padding: "12px 8px" }}>
@@ -9755,17 +9934,9 @@ export default function VhcDetailsPanel({
                             ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                             : null;
                           return (
-                            <div
+                            <GreenCheckItemBlock
                               key={item.id}
-                              style={{
-                                borderRadius: "var(--radius-md)",
-                                background: "var(--surface)",
-                                border: "none",
-                                padding: "14px",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "6px",
-                              }}
+                              useTheme={item.category?.id === "wheels_tyres"}
                             >
                               <span
                                 style={{
@@ -9797,7 +9968,7 @@ export default function VhcDetailsPanel({
                                   ))}
                                 </div>
                               ) : null}
-                            </div>
+                            </GreenCheckItemBlock>
                           );
                         })}
                       </div>

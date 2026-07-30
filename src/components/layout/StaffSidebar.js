@@ -28,7 +28,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config";
+import { canShowDevPages } from "@/lib/dev-tools/config";
 import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
 import {
   isOverlayHidden as readOverlayHidden,
@@ -257,12 +257,10 @@ export default function Sidebar({
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
   const isDevRole = userRoles.includes(DEV_PLATFORM_ROLE);
-  const canShowDevItems =
-    isDevRole && !inPresentationMode && canShowDevSidebarItems(user);
   const canShowDevPagesLink =
-    isDevRole && !inPresentationMode && canShowDevPages();
+    Boolean(user) && !inPresentationMode && canShowDevPages();
   const canShowDevOverlayControl =
-    isDevRole && !inPresentationMode && canUseDevOverlay;
+    Boolean(user) && !inPresentationMode && canUseDevOverlay;
   // Per-user sidebar-access override (admin-set snapshot). Skipped in
   // presentation mode (the rail belongs to the demo role, not the real user).
   // When no snapshot exists, snapshotAllowed is null and every filter below is
@@ -953,8 +951,42 @@ export default function Sidebar({
             {accountSections.flatMap((section) => section.items).map((item) => {
               if (item.action === "logout") {
                 // Collapsed rail shows only nav icons down to Profile — the
-                // clock / logout / vision / dev controls are hidden here.
-                if (isCollapsed) return null;
+                // clock / logout / vision controls are hidden here.
+                if (isCollapsed) {
+                  return (
+                    <Fragment key="collapsed-dev-controls">
+                      {canShowDevPagesLink && (
+                        <Link
+                          className="app-btn app-btn--nav"
+                          href="/dev/user-diagnostic"
+                          prefetch={inPresentationMode ? false : undefined}
+                          onClick={handleNavigationPress}
+                          {...navLinkProps("Dev")}
+                        >
+                          {renderNavContent(
+                            "Dev",
+                            "/dev/user-diagnostic",
+                            isItemActive("/dev/user-diagnostic")
+                          )}
+                        </Link>
+                      )}
+                      {canShowDevOverlayControl && (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={devOverlayEnabled}
+                          className="app-btn app-btn--nav"
+                          onClick={toggleDevOverlay}
+                          {...navLinkProps("Overlay", {
+                            ...(devOverlayEnabled ? successGhostControlStyle : ghostControlStyle),
+                          })}
+                        >
+                          {renderNavContent("Overlay", "", devOverlayEnabled)}
+                        </button>
+                      )}
+                    </Fragment>
+                  );
+                }
                 return (
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
@@ -987,7 +1019,7 @@ export default function Sidebar({
                         Logout
                       </button>
                     </div>
-                    {(canShowDevItems || canShowDevPagesLink || canShowDevOverlayControl) && (
+                    {(canShowDevPagesLink || canShowDevOverlayControl) && (
                       <div
                         style={{
                           display: "flex",
@@ -1004,7 +1036,7 @@ export default function Sidebar({
                             style={{ flex: 1 }}
                             onClick={handleNavigationPress}
                           >
-                            Diagnostics
+                            Dev
                           </Link>
                         )}
                         {canShowDevOverlayControl && (
