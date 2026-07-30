@@ -24,7 +24,7 @@ import {
   upsertJobRequestsForJob,
   summarizeWriteUpTasks } from
 "@/lib/database/jobs";
-import { getVHCChecksByJob, updateVhcCheck } from "@/lib/database/vhc";
+import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { fetchTrackingEntryForJob } from "@/lib/database/tracking";
@@ -60,7 +60,6 @@ import {
   hasOutstandingAuthorisedVhcWork,
   TECH_JOB_STATUS,
   CLOCKING_WORK_TYPE,
-  WORKFLOW_STATUS,
 } from "@/features/vhc/vhcStatusEngine";
 
 // VHC Section Modals
@@ -3147,39 +3146,10 @@ export default function TechJobDetailPage() {
       }
     }
 
-    // Pressing Complete Job is the tech's "I'm done with all my work" signal.
-    // Authorised VHC rows whose Complete flag never got flipped (e.g. write-up
-    // checklist was completed without the tech revisiting each VHC row) would
-    // otherwise force the engine into AUTHORISED_ITEMS and keep the job on the
-    // Next Jobs board. Treat the press as a bulk-complete for any still-open
-    // authorised items so the engine reads the job as truly finished.
-    const preProjection = projectVhcItems(vhcChecks || [], { job: jobCard });
-    const outstandingAuthorisedIds = preProjection.
-    filter((item) =>
-    item.workflow_status === WORKFLOW_STATUS.APPROVED ||
-    item.workflow_status === WORKFLOW_STATUS.IN_PROGRESS).
-    map((item) => item.vhcId).
-    filter((id) => typeof id === "number");
-
-    let updatedVhcChecks = vhcChecks || [];
-    if (outstandingAuthorisedIds.length > 0) {
-      try {
-        await Promise.all(
-          outstandingAuthorisedIds.map((id) => updateVhcCheck(id, { Complete: true }))
-        );
-        updatedVhcChecks = (vhcChecks || []).map((row) => {
-          const rowId = row?.vhcId ?? row?.id ?? null;
-          if (typeof rowId !== "number") return row;
-          return outstandingAuthorisedIds.includes(rowId) ?
-          { ...row, Complete: true, complete: true } :
-          row;
-        });
-        setVhcChecks(updatedVhcChecks);
-      } catch (vhcUpdateError) {
-        console.error("Error marking authorised VHC items complete:", vhcUpdateError);
-        // Fall through — the engine guard below will catch any rows that didn't update.
-      }
-    }
+    // Complete Job records that the technician has finished the main requested
+    // work. VHC authorisation and VHC-row completion are separate, explicit
+    // actions: this button must never change either state.
+    const currentVhcChecks = vhcChecks || [];
 
     const statusSyncResult = await syncJobStatus("Technician Work Completed", jobCardStatus, {
       status: "In Progress",
@@ -3199,7 +3169,7 @@ export default function TechJobDetailPage() {
     // press of Complete Job. If any authorised VHC items are still outstanding
     // we write "authorised_items" instead of "tech_complete" so the job
     // reappears on the Next Jobs page and the next clock-in is Additional Work.
-    const projectedVhcItems = projectVhcItems(updatedVhcChecks, { job: jobCard });
+    const projectedVhcItems = projectVhcItems(currentVhcChecks, { job: jobCard });
     const resolvedTechStatus = getJobTechStatusFromVhcItems(projectedVhcItems, {
       techHasCompletedMainWork: true,
     });

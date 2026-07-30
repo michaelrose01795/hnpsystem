@@ -365,6 +365,20 @@ describe("hasOutstandingAuthorisedVhcWork", () => {
     expect(hasOutstandingAuthorisedVhcWork(items)).toBe(false);
   });
 
+  it("false for resolved green/N/A inspection rows", () => {
+    const items = projectVhcItems([
+      baseCheck({
+        vhc_id: "green-check",
+        approval_status: "n/a",
+        authorization_state: "n/a",
+        severity: "green",
+      }),
+    ]);
+    expect(items[0].workflow_status).toBe(WORKFLOW_STATUS.APPROVED);
+    expect(items[0].isAuthorizedLike).toBe(false);
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(false);
+  });
+
   it("false when all authorised items are completed", () => {
     const items = projectVhcItems([
       baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: true }),

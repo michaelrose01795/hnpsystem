@@ -85,6 +85,7 @@ const buildAuthOptions = (req) => ({
                 email: "ci-test@example.com",
                 role: "Admin",
                 roles: ["Admin"],
+                department: "Development",
                 isDevLogin: true,
               };
             }
@@ -122,6 +123,7 @@ const buildAuthOptions = (req) => ({
               email: "",
               role: "dev",
               roles: ["dev"],
+              department: "Development",
               isDevLogin: true,
             };
           }
@@ -142,7 +144,7 @@ const buildAuthOptions = (req) => ({
             }
             const { data, error } = await supabase
               .from("users")
-              .select("user_id, first_name, last_name, email, role")
+              .select("user_id, first_name, last_name, email, role, department")
               .eq("user_id", parseInt(credentials.userId, 10))
               .single();
 
@@ -154,6 +156,7 @@ const buildAuthOptions = (req) => ({
               email: data.email,
               role: data.role,
               roles: data.role ? [data.role] : [],
+              department: data.department || null,
               isDevLogin: true,
             };
           }
@@ -178,7 +181,7 @@ const buildAuthOptions = (req) => ({
 
           const { data, error } = await supabase
             .from("users")
-            .select("user_id, first_name, last_name, email, password_hash, password_algo, role, is_active")
+            .select("user_id, first_name, last_name, email, password_hash, password_algo, role, department, is_active")
             .ilike("email", email)
             .single();
 
@@ -279,6 +282,7 @@ const buildAuthOptions = (req) => ({
             name: [data.first_name, data.last_name].filter(Boolean).join(" ") || "User",
             email: data.email,
             role: data.role,
+            department: data.department || null,
             isDevLogin: false,
           };
         } catch (err) {
@@ -319,6 +323,7 @@ const buildAuthOptions = (req) => ({
             ? [user.role]
             : [];
           token.isDevLogin = Boolean(user.isDevLogin);
+          token.department = user.department || null;
           token.accessToken = null;
           token.idToken = null;
         }
@@ -332,6 +337,7 @@ const buildAuthOptions = (req) => ({
       session.user = session.user || {};
       session.user.id = token.userId || session.user.id || null;
       session.user.roles = token.roles || [];
+      session.user.department = token.department || null;
       session.user.isDevLogin = Boolean(token.isDevLogin);
       session.accessToken = token.accessToken || null;
       session.idToken = token.idToken || null;

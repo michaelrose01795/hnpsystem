@@ -67,6 +67,17 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
 // gated by isDevAuthAllowed()). It remains separate from roleCategories so it
 // can never be picked in the HR role-assignment surfaces.
 export const DEV_PLATFORM_ROLE = "dev";
+export const AUDIT_ADMIN_ROLES = [
+  "Admin",
+  "Admin Manager",
+  "General Manager",
+  DEV_PLATFORM_ROLE,
+];
+export const AUDIT_SCOPED_VIEW_ROLES = ["Manager"];
+export const AUDIT_VIEW_ROLES = [
+  ...AUDIT_ADMIN_ROLES,
+  ...AUDIT_SCOPED_VIEW_ROLES,
+];
 // The platform is also available to every configured application user. Keeping
 // the access list here means both the /dev pages and their APIs use the same
 // rule, while the synthetic dev login continues to work independently.

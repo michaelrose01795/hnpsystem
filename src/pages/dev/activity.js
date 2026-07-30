@@ -7,11 +7,11 @@
 
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
+import ActivityLogView from "@/components/activity/ActivityLogView";
+import { AUDIT_VIEW_ROLES } from "@/lib/auth/roles";
 import { withDevPlatformLayout } from "@/components/dev-platform/DevPlatformLayout";
-import ActivitySection from "@/components/dev-platform/sections/ActivitySection";
 
-const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
+const ALLOWED = AUDIT_VIEW_ROLES.map((role) => role.toUpperCase());
 
 export default function DevActivityPage() {
   return (
@@ -19,7 +19,7 @@ export default function DevActivityPage() {
       <Head>
         <title>Activity &amp; Audit — Developer Platform</title>
       </Head>
-      <ActivitySection />
+      <ActivityLogView />
     </ProtectedRoute>
   );
 }

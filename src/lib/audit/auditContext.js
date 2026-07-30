@@ -30,8 +30,12 @@ export async function getAuditContext(req, res) {
   // multi-API-call user action can be correlated), otherwise mint one.
   const incomingId =
     req?.headers?.["x-request-id"] || req?.headers?.["x-correlation-id"];
+  const incomingSessionId = req?.headers?.["x-audit-session-id"];
+  const isUuid = (value) =>
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const requestId =
-    typeof incomingId === "string" && incomingId.length > 0
+    isUuid(incomingId)
       ? incomingId
       : crypto.randomUUID();
 
@@ -41,6 +45,7 @@ export async function getAuditContext(req, res) {
     ip: getClientIp(req),
     userAgent: getUserAgent(req),
     requestId,
+    sessionId: isUuid(incomingSessionId) ? incomingSessionId : null,
   };
 }
 

@@ -26,7 +26,9 @@ export function useContinueContext(currentAsPath, { enabled = true } = {}) {
   const userId = dbUserId || user?.id || user?.username || null;
   const key = buildKey(FEATURE, userId);
 
-  const [recent, setRecent] = useState(() => (enabled ? readJSON(key, []) : []));
+  // Keep the server render and the client's hydration render identical. Browser
+  // storage is restored by the effect below once hydration has completed.
+  const [recent, setRecent] = useState([]);
 
   // Re-hydrate when the storage key (i.e. the signed-in user) changes.
   useEffect(() => {

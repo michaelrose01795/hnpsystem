@@ -5648,9 +5648,7 @@ export function CustomerRequestsTab({
       return (
         decision === "authorized" ||
         decision === "completed" ||
-        decision === "added_to_job" ||
-        row?.Complete === true ||
-        row?.complete === true);
+        decision === "added_to_job");
 
     }).
     map((row) => {
@@ -7188,9 +7186,7 @@ export function WriteUpWorkspace({
       return (
         decision === "authorized" ||
         decision === "completed" ||
-        decision === "added_to_job" ||
-        row?.Complete === true ||
-        row?.complete === true);
+        decision === "added_to_job");
 
     }).
     map((row) => {

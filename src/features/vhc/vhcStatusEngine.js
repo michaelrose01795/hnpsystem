@@ -629,6 +629,10 @@ export const hasOutstandingAuthorisedVhcWork = (vhcItems = []) => {
   if (!Array.isArray(vhcItems) || vhcItems.length === 0) return false; // No items → no work outstanding.
   return vhcItems.some((item) => {
     if (!item) return false; // Defensive null guard.
+    // Workflow APPROVED is also used for inspection-only N/A rows so that the
+    // VHC summary can render them as resolved. It is not, by itself, evidence
+    // of customer authorisation.
+    if (item.isAuthorizedLike !== true) return false;
     if (item.workflow_status === WORKFLOW_STATUS.COMPLETED) return false; // Done — does not count.
     if (item.workflow_status === WORKFLOW_STATUS.DECLINED) return false; // Customer said no — does not count.
     // Authorised AND not yet complete. Both APPROVED and IN_PROGRESS workflow

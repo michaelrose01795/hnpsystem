@@ -183,9 +183,21 @@ const resilientFetch = async (input, init = {}) => {
     );
 
     try {
+      let requestInit = init;
+      if (typeof window !== "undefined" && !isRetriableMethod(method)) {
+        const auditSessionId = window.sessionStorage?.getItem("hnp:audit:server-session");
+        const headers = new Headers(
+          init?.headers || (typeof input === "object" ? input?.headers : undefined) || {}
+        );
+        if (auditSessionId) headers.set("x-audit-session-id", auditSessionId);
+        if (!headers.has("x-request-id") && typeof crypto?.randomUUID === "function") {
+          headers.set("x-request-id", crypto.randomUUID());
+        }
+        requestInit = { ...init, headers };
+      }
       // Any HTTP response (including 4xx/5xx) is a success at the transport
       // layer — only thrown errors (network failure / abort) are retried.
-      return await fetch(input, { ...init, signal: controller.signal });
+      return await fetch(input, { ...requestInit, signal: controller.signal });
     } catch (error) {
       lastError = error;
       // Caller-initiated abort: propagate immediately, never retry.

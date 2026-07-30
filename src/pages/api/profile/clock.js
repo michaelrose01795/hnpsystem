@@ -8,6 +8,8 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { buildCiClockRows, buildCiClockStatus, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
 import { isSyntheticDevPlatformSession } from "@/lib/auth/devSession";
+import { getAuditContext } from "@/lib/audit/auditContext";
+import { writeAuditLog } from "@/lib/audit/auditLog";
 
 async function resolveUserId(req, res) {
   const queryUserId = req.query.userId || req.body?.userId;
@@ -229,6 +231,7 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const userId = await resolveUserId(req, res);
       const { action } = req.body || {};
+      const auditContext = await getAuditContext(req, res);
 
       if (action === "clock-in") {
         // Check for ANY active (un-clocked-out) record across all dates
@@ -275,6 +278,19 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, message: "Failed to clock in." });
         }
 
+        await writeAuditLog({
+          ...auditContext,
+          action: "attendance_clocked_in",
+          entityType: "time_record",
+          entityId: inserted.id,
+          beforeData: { clocked_in: false },
+          afterData: {
+            clocked_in: true,
+            clock_in: inserted.clock_in,
+            date: inserted.date,
+          },
+          diff: { target_user_id: userId },
+        });
         return res.status(200).json({
           success: true,
           message: existing ? "Previous session auto-closed at midnight. Clocked in successfully." : "Clocked in successfully.",
@@ -328,6 +344,23 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, message: "Failed to clock out." });
         }
 
+        await writeAuditLog({
+          ...auditContext,
+          action: "attendance_clocked_out",
+          entityType: "time_record",
+          entityId: updated.id,
+          beforeData: {
+            clocked_in: true,
+            clock_in: activeRecord.clock_in,
+            clock_out: null,
+          },
+          afterData: {
+            clocked_in: false,
+            clock_out: updated.clock_out,
+            hours_worked: updated.hours_worked,
+          },
+          diff: { target_user_id: userId },
+        });
         return res.status(200).json({
           success: true,
           message: "Clocked out successfully.",

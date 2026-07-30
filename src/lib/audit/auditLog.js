@@ -15,6 +15,7 @@
 
 import crypto from "crypto";
 import { supabaseService } from "@/lib/database/supabaseClient";
+import { recordAuditEvent } from "@/lib/database/auditActivity";
 
 // Field names that must never appear verbatim in the diff. Extend as new
 // sensitive fields are added to the schema.
@@ -95,6 +96,9 @@ export async function writeAuditLog({
   ip = null,
   userAgent = null,
   requestId = null,
+  sessionId = null,
+  beforeData = null,
+  afterData = null,
 } = {}) {
   if (!supabaseService) return;
   if (!action) {
@@ -103,6 +107,32 @@ export async function writeAuditLog({
   }
   try {
     const safeDiff = diff ? redactDiff(diff) : null;
+    try {
+      await recordAuditEvent({
+        session_id: sessionId,
+        actor_user_id: typeof actorUserId === "number" ? actorUserId : null,
+        actor_role: actorRole,
+        event_name: action,
+        action_category: entityType === "user" ? "security" : "record_change",
+        feature: entityType,
+        record_type: entityType,
+        record_id: entityId == null ? null : String(entityId),
+        outcome: /fail|error|denied/i.test(action) ? "failure" : "success",
+        request_id: requestId,
+        dedupe_key: requestId ? `server:${requestId}:${action}` : null,
+        before_data: beforeData,
+        after_data: afterData,
+        metadata: {
+          reason,
+          legacy_diff: safeDiff,
+          user_agent: userAgent ? String(userAgent).slice(0, 240) : null,
+        },
+        ip_address: ip,
+      });
+    } catch (centralError) {
+      console.error("[audit] central event write failed:", centralError?.message || centralError);
+    }
+
     const prevHash = await fetchPrevHash();
     const occurredAt = new Date().toISOString();
 

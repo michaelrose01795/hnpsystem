@@ -46,6 +46,7 @@ import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import GlobalTableShells from "@/components/App/GlobalTableShells";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
 import GlobalTooltip from "@/components/ui/GlobalTooltip";
+import ActivityTracker from "@/components/activity/ActivityTracker";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
@@ -553,6 +554,7 @@ export default function MyApp({ Component, pageProps }) {
       <style dangerouslySetInnerHTML={{ __html: FONT_VARIABLE_STYLE }} />
       <span className={interFont.className} style={{ display: "none" }} aria-hidden="true" />
     <SessionProvider session={pageProps.session}>
+      <ActivityTracker />
       <AlertProvider>
         <ConfirmationProvider>
           <UserProvider>

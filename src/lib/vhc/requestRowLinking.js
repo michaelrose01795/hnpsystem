@@ -49,12 +49,12 @@ const isChecksheetRow = (row) => {
 const isAllocatableVhcRow = (row) => {
   // Single source of truth: resolveVhcItemState normalises approval_status +
   // authorization_state (in either snake_case or camelCase) and exposes
-  // isAuthorizedLike (true for AUTHORIZED and COMPLETED). The Complete flag
-  // is kept as a separate condition because legacy rows can have Complete=true
-  // without a recognised decision string.
+  // isAuthorizedLike (true for AUTHORIZED and COMPLETED). A completion flag
+  // is never authorization evidence; only an explicit customer decision can
+  // make a row allocatable.
   if (!row || isChecksheetRow(row)) return false;
   const state = resolveVhcItemState(row);
-  return state.isAuthorizedLike || row?.Complete === true || row?.complete === true;
+  return state.isAuthorizedLike;
 };
 
 const extractWheelPositionToken = (...values) => {

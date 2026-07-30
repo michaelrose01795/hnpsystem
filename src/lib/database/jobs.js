@@ -708,7 +708,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
         const decision =
           normaliseAuthorizationState(row?.authorization_state) ||
           normaliseAuthorizationState(row?.approval_status);
-        return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
+        return decision === "authorized" || decision === "completed";
       })
       .map((row) => {
       const base = row.issue_title || row.section || "Authorised item";
@@ -2426,7 +2426,7 @@ const formatJobData = (data) => {
       const decision =
         normalizeAuthorizationDecision(row?.authorization_state) ||
         normalizeAuthorizationDecision(row?.approval_status);
-      return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
+      return decision === "authorized" || decision === "completed";
     })
     .map((row, index) => {
       const vhcId = row?.vhc_id ?? row?.vhcItemId ?? `idx-${index + 1}`;

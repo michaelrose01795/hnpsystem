@@ -1,0 +1,13 @@
+Vercel CLI 56.3.1 (Node.js 24.16.0)
+Retrieving project…
+> NOTE: Requested port 3000 is already in use
+> Running Dev Command “node tools/scripts/next-dev.js”
+[31m[1m⨯[22m[39m Another [36mnext dev[39m server is already running.
+
+- Local:        [36mhttp://localhost:63751[39m
+- PID:          11904
+- Dir:          C:\Users\micha\hnpsystem
+- Log:          .next\dev\logs\next-development.log
+
+Run [36mtaskkill /PID 11904 /F[39m to stop it.
+> Ready! Available at http://localhost:3001

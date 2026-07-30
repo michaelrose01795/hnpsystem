@@ -11,6 +11,8 @@ import {
   getUserActiveJobs,
 } from "@/lib/database/jobClocking";
 import { getUserById } from "@/lib/database/users";
+import { getAuditContext } from "@/lib/audit/auditContext";
+import { writeAuditLog } from "@/lib/audit/auditLog";
 
 const parsePositiveInteger = (value) => {
   const parsed = Number(value);
@@ -24,6 +26,7 @@ export async function manageClockingHandler(req, res) {
   }
 
   try {
+    const auditContext = await getAuditContext(req, res);
     const action = String(req.body?.action || "").trim().toLowerCase();
     const userId = parsePositiveInteger(req.body?.userId);
 
@@ -61,6 +64,25 @@ export async function manageClockingHandler(req, res) {
         throw new Error(result?.error || "Unable to clock the technician off.");
       }
 
+      await writeAuditLog({
+        ...auditContext,
+        action: "job_clocked_off",
+        entityType: "job_card",
+        entityId: activeEntry.jobNumber || activeEntry.jobId,
+        beforeData: {
+          clocked_on: true,
+          clocking_id: activeEntry.clockingId,
+          clock_in: activeEntry.clockIn,
+          clock_out: null,
+        },
+        afterData: {
+          clocked_on: false,
+          clocking_id: result.data?.clockingId,
+          clock_out: result.data?.clockOut,
+          hours_worked: result.data?.hoursWorked,
+        },
+        diff: { target_user_id: userId, source: "clocking_manager" },
+      });
       return res.status(200).json({ success: true, data: result.data });
     }
 
@@ -86,6 +108,20 @@ export async function manageClockingHandler(req, res) {
       throw new Error(result?.error || "Unable to clock the technician onto the job.");
     }
 
+    await writeAuditLog({
+      ...auditContext,
+      action: "job_clocked_on",
+      entityType: "job_card",
+      entityId: job.job_number || jobNumber,
+      beforeData: { clocked_on: false },
+      afterData: {
+        clocked_on: true,
+        clocking_id: result.data?.clockingId,
+        clock_in: result.data?.clockIn,
+        work_type: result.data?.workType,
+      },
+      diff: { target_user_id: userId, source: "clocking_manager" },
+    });
     return res.status(200).json({ success: true, data: result.data });
   } catch (error) {
     console.error("/api/clocking/manage error", error);

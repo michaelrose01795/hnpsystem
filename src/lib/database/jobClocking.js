@@ -1,6 +1,7 @@
 import { getDatabaseClient } from "@/lib/database/client";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
+import { recordClientAuditEvent } from "@/lib/audit/client";
 
 const db = getDatabaseClient();
 const TABLE_NAME = "job_clocking";
@@ -440,6 +441,25 @@ export const clockInToJob = async (...rawArgs) => {
           detail: { jobNumber: String(jobNumberText) },
         })
       );
+      void recordClientAuditEvent({
+        eventName: "job_clocked_on",
+        actionCategory: "record_change",
+        feature: "job_clocking",
+        route: window.location.pathname,
+        pageTitle: document.title,
+        actionLabel: `Clocked onto job ${jobNumberText}`,
+        recordType: "job_card",
+        recordId: jobNumberText,
+        outcome: "success",
+        beforeData: { clocked_on: false },
+        afterData: {
+          clocked_on: true,
+          clock_in: data.clock_in,
+          work_type: data.work_type,
+          clocking_id: data.id,
+        },
+        dedupeKey: `job-clock-on:${data.id}`,
+      });
     }
     return { success: true, data: mapped };
   } catch (err) {
@@ -550,6 +570,30 @@ export const clockOutFromJob = async (...rawArgs) => {
           detail: { jobNumber: String(mapped.jobNumber) },
         })
       );
+      void recordClientAuditEvent({
+        eventName: "job_clocked_off",
+        actionCategory: "record_change",
+        feature: "job_clocking",
+        route: window.location.pathname,
+        pageTitle: document.title,
+        actionLabel: `Clocked off job ${mapped.jobNumber}`,
+        recordType: "job_card",
+        recordId: mapped.jobNumber,
+        outcome: "success",
+        beforeData: {
+          clocked_on: true,
+          clock_in: data.clock_in,
+          clock_out: null,
+          clocking_id: data.id,
+        },
+        afterData: {
+          clocked_on: false,
+          clock_out: data.clock_out,
+          hours_worked: mapped.hoursWorked,
+          clocking_id: data.id,
+        },
+        dedupeKey: `job-clock-off:${data.id}:${data.clock_out}`,
+      });
     }
     return { success: true, data: mapped, hoursWorked: mapped.hoursWorked };
   } catch (err) {

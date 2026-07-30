@@ -227,7 +227,7 @@ export function buildInvoiceRequestRows(data, jobData = null) {
       const section = String(row?.section || "").trim();
       if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
       const state = row?.authorization_state ?? row?.approval_status ?? row?.status ?? null;
-      return isAuthorizedVhcDecision(state) || row?.Complete === true || row?.complete === true;
+      return isAuthorizedVhcDecision(state);
     })
     .forEach(pushAuthorisedMeta);
 
