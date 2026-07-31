@@ -22,7 +22,7 @@ async function buildSnapshot() {
   return { locations, unassigned, stockChecks };
 }
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const data = await buildSnapshot();
@@ -46,11 +46,14 @@ async function handler(req, res, session) {
           return res.status(201).json({ success: true, data });
         }
         case "submit": {
-          const { consumableIds, technicianId } = req.body || {};
-          if (!Array.isArray(consumableIds) || consumableIds.length === 0) {
+          const { consumableIds, consumableSelections, technicianId } = req.body || {};
+          const selections = Array.isArray(consumableSelections)
+            ? consumableSelections
+            : (consumableIds || []).map((consumableId) => ({ consumableId, quantity: 1 }));
+          if (!Array.isArray(selections) || selections.length === 0) {
             return res.status(400).json({ success: false, message: "Select at least one consumable." });
           }
-          await submitStockCheckRequest({ consumableIds, technicianId: technicianId ?? null });
+          await submitStockCheckRequest({ consumableSelections: selections, technicianId: technicianId ?? null });
           const data = await buildSnapshot();
           return res.status(201).json({ success: true, data });
         }

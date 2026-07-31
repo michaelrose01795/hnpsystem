@@ -438,7 +438,7 @@ const _getAllJobsUncached = async () => {
         created_at,
         updated_at
       ),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id, Complete),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,

@@ -1,48 +1,84 @@
 // file location: src/components/page-ui/tech/tech-consumables-request-ui.js
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import PopupModal from "@/components/popups/popupStyleApi";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
+
+// Quantity steppers intentionally use the compact 32px table-control geometry.
+// Lock every sizing axis so the global 44px raw-button floor cannot distort the circles.
+const quantityCircleButtonStyle = {
+  width: "var(--table-action-btn-height)",
+  minWidth: "var(--table-action-btn-height)",
+  maxWidth: "var(--table-action-btn-height)",
+  height: "var(--table-action-btn-height)",
+  minHeight: "var(--table-action-btn-height)",
+  maxHeight: "var(--table-action-btn-height)",
+  flex: "0 0 var(--table-action-btn-height)",
+  aspectRatio: "1 / 1",
+  padding: 0,
+  borderRadius: "50%",
+  lineHeight: 1,
+};
+
+const quantityInputStyle = {
+  width: "72px",
+  height: "var(--table-action-btn-height)",
+  minHeight: "var(--table-action-btn-height)",
+  maxHeight: "var(--table-action-btn-height)",
+  padding: "0 8px",
+  textAlign: "center",
+};
 
 export default function TechConsumableRequestPageUi(props) {
   const {
     DevLayoutSection,
     Link,
     SearchBar,
-    StockCheckPopup,
+    addStockItemToSelection,
     addingTemporaryItem,
+    applyStockSearch,
     cardStyle,
+    clearStockSearch,
     createTemporaryStockItem,
-    dbUserId,
-    fetchRequests,
     fieldLabelStyle,
     filteredRequests,
     findStockItemByName,
-    handleInputChange,
-    handleSubmit,
-    inputStyle,
+    handleStockSearchKeyDown,
     isMobile,
-    isWorkshopManager,
     loadingRequests,
+    openSendPopup,
     pageWrapperStyle,
     requestCardMetaGridStyle,
     requestCardStyle,
     requestError,
     requestForm,
-    requestFormStyle,
     requestMonth,
     requestPanelStyle,
     requestsToolbarStyle,
+    removeSelectedStockItem,
     searchTerm,
+    selectedStockItems,
+    sendError,
+    sendLoading,
+    sendSelectedByEmail,
+    sendSelectedToRequests,
     setRequestForm,
     setRequestMonth,
     setSearchTerm,
-    setShowStockCheck,
-    showStockCheck,
+    setShowSendPopup,
+    setShowStockList,
+    showSendPopup,
+    showStockList,
     statusBadgeStyles,
     stockError,
+    stockItems,
     stockLoading,
     stockMatches,
     successMessage,
     tableHeaderStyle,
+    updateSelectedStockQuantity,
+    visibleStockItems,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -92,39 +128,38 @@ export default function TechConsumableRequestPageUi(props) {
       return <>
       <div style={pageWrapperStyle}>
         <LayerTheme as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
-          <DevLayoutSection as="form" sectionKey="tech-consumables-request-form" parentKey="tech-consumables-request-panel" sectionType="form-grid" backgroundToken="transparent" onSubmit={handleSubmit} style={requestFormStyle}>
-            <DevLayoutSection as="div" sectionKey="tech-consumables-item-field" parentKey="tech-consumables-request-form" sectionType="form-block" backgroundToken="surface" style={{
+          <DevLayoutSection as="div" sectionKey="tech-consumables-stock-workspace" parentKey="tech-consumables-request-panel" sectionType="form-grid" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+            <DevLayoutSection as="div" sectionKey="tech-consumables-item-field" parentKey="tech-consumables-stock-workspace" sectionType="form-block" backgroundToken="surface" style={{
           display: "flex",
           flexDirection: "column",
           gap: "6px"
         }}>
-              <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "max-content minmax(0, 1fr)",
-            gap: "10px",
-            alignItems: "stretch",
-            width: "100%"
-          }}>
-                <DevLayoutSection as="div" sectionKey="tech-consumables-stock-check-action" parentKey="tech-consumables-item-field" sectionType="floating-action" backgroundToken="transparent">
-                  <button type="button" onClick={() => setShowStockCheck(true)} style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "1px solid var(--ghostbutton-ring)",
-                background: "var(--surface)",
-                color: "var(--primary-selected)",
-                fontWeight: 600,
-                cursor: "pointer",
-                width: isMobile ? "100%" : "auto",
-                height: "100%",
-                whiteSpace: "nowrap"
-              }}>
-                    Stock Check
-                  </button>
-                </DevLayoutSection>
-                <input id="partName" name="partName" type="text" aria-label="Part Name" value={requestForm.partName} onChange={handleInputChange} placeholder="Create consumable request" style={{
-              ...inputStyle,
-              minWidth: 0
-            }} required />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>Stock Check</h2>
+                <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
+                  {stockLoading ? "Loading…" : `${stockItems.length} items`}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
+                <SearchBar
+                  value={requestForm.partName}
+                  onChange={(event) => setRequestForm({ partName: event.target.value })}
+                  onClear={clearStockSearch}
+                  onKeyDown={handleStockSearchKeyDown}
+                  placeholder="Search consumables"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  style={{ flex: "1 1 220px", minWidth: "200px" }}
+                />
+                <Button type="button" onClick={applyStockSearch} variant="secondary" disabled={stockLoading}>
+                  Search
+                </Button>
+                <Button type="button" onClick={() => setShowStockList((previous) => !previous)} variant="secondary" disabled={stockLoading || stockItems.length === 0}>
+                  {showStockList ? "Hide list" : "Show list"}
+                </Button>
+                <Button type="button" onClick={openSendPopup} variant="primary" disabled={selectedStockItems.length === 0}>
+                  Send
+                </Button>
               </div>
               {requestForm.partName.trim() && <DevLayoutSection as="div" sectionKey="tech-consumables-stock-suggestions" parentKey="tech-consumables-item-field" sectionType="content-card" backgroundToken="surface-light" style={{
             marginTop: "4px",
@@ -146,43 +181,26 @@ export default function TechConsumableRequestPageUi(props) {
               }}>Matching stock items:</span>
                       <div data-dev-section="1" data-dev-section-key="tech-consumables-stock-suggestion-list" data-dev-section-type="list" data-dev-section-parent="tech-consumables-stock-suggestions" style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: "4px"
+                flexDirection: "row",
+                flexWrap: "wrap",
+                alignItems: "center",
+                alignContent: "flex-start",
+                gap: "8px",
+                width: "100%"
               }}>
-                        {stockMatches.map(item => <button key={item.id} type="button" onClick={() => setRequestForm(previous => ({
-                  ...previous,
-                  partName: item.name
-                }))} style={{
-                  textAlign: "left",
-                  border: "none",
-                  borderRadius: "var(--control-radius)",
-                  padding: "6px 10px",
-                  background: "var(--surface)",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                  color: "var(--primary-selected)"
-                }}>
-                            {item.name}
-                          </button>)}
+                        {stockMatches.map(item => <Button key={item.id} type="button" onClick={() => addStockItemToSelection(item)} variant="secondary" size="sm" style={{ flex: "0 1 auto", maxWidth: "100%" }}>
+                            Add {item.name}
+                          </Button>)}
                       </div>
                     </> : <span style={{
               color: "var(--grey-accent-dark)",
               fontSize: "0.85rem"
             }}>
-                      No matching stock items. Create a temporary entry below.
+                      No matching stock items. Add this item to stock to include it below.
                     </span>}
-                  {requestForm.partName.trim() && !stockLoading && !findStockItemByName(requestForm.partName) && <button type="button" onClick={() => createTemporaryStockItem(requestForm.partName.trim())} disabled={addingTemporaryItem} style={{
-              padding: "6px 12px",
-              borderRadius: "var(--control-radius)",
-              border: "1px solid var(--ghostbutton-ring)",
-              background: addingTemporaryItem ? "rgba(var(--primary-rgb),0.35)" : "var(--surface)",
-              color: "var(--primary-selected)",
-              fontWeight: 600,
-              cursor: addingTemporaryItem ? "not-allowed" : "pointer",
-              alignSelf: "flex-start"
-            }}>
-                      {addingTemporaryItem ? "Adding…" : `Add "${requestForm.partName.trim()}" to stock`}
-                    </button>}
+                  {requestForm.partName.trim() && !stockLoading && !findStockItemByName(requestForm.partName) && <Button type="button" onClick={() => createTemporaryStockItem(requestForm.partName.trim())} busy={addingTemporaryItem} variant="secondary" size="sm" style={{ alignSelf: "flex-start" }}>
+                      {`Add "${requestForm.partName.trim()}" to stock`}
+                    </Button>}
                   {stockError && <span style={{
               color: "var(--primary-selected)",
               fontSize: "0.8rem"
@@ -190,33 +208,52 @@ export default function TechConsumableRequestPageUi(props) {
                 </DevLayoutSection>}
             </DevLayoutSection>
 
-            <DevLayoutSection as="div" sectionKey="tech-consumables-quantity-field" parentKey="tech-consumables-request-form" sectionType="form-block" backgroundToken="surface" style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px"
-        }}>
-              <input id="quantity" name="quantity" type="number" aria-label="Quantity Needed" min="1" step="1" value={requestForm.quantity} onChange={handleInputChange} placeholder="Quantity" style={inputStyle} />
-            </DevLayoutSection>
+            {showStockList && (
+              <DevLayoutSection as="div" sectionKey="tech-consumables-stock-list" parentKey="tech-consumables-stock-workspace" sectionType="list" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
+                {visibleStockItems.length > 0 ? visibleStockItems.map((item) => (
+                  <Button key={item.id} type="button" onClick={() => addStockItemToSelection(item)} variant="secondary" size="sm" style={{ alignSelf: "flex-start" }}>
+                    Add {item.name}
+                  </Button>
+                )) : (
+                  <p style={{ margin: 0, color: "var(--text-1)" }}>No consumables match the current search.</p>
+                )}
+              </DevLayoutSection>
+            )}
 
-            <DevLayoutSection as="div" sectionKey="tech-consumables-submit-action" parentKey="tech-consumables-request-form" sectionType="toolbar" backgroundToken="transparent" style={{
-          gridColumn: "span 1",
-          display: "flex",
-          justifyContent: "flex-end"
-        }}>
-              <button type="submit" style={{
-            padding: "var(--control-padding)",
-            borderRadius: "var(--control-radius)",
-            border: "none",
-            background: "var(--primary)",
-            color: "var(--surface)",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "none",
-            width: "100%"
-          }}>
-                Submit Request
-              </button>
-            </DevLayoutSection>
+            <LayerSurface as="div" sectionKey="tech-consumables-selected-table-shell" parentKey="tech-consumables-stock-workspace" sectionType="data-table-shell" padding="0" style={{ overflowX: "auto" }}>
+              <table className="app-data-table" style={{ width: "100%", minWidth: "520px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "88px" }}>Select</th>
+                    <th>Consumable name</th>
+                    <th style={{ width: "210px" }}>Quantity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedStockItems.length > 0 ? selectedStockItems.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <input type="checkbox" checked onChange={() => removeSelectedStockItem(item.id)} aria-label={`Remove ${item.name} from the request`} />
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{item.name}</td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <button className="app-table-action-btn" type="button" onClick={() => updateSelectedStockQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1} aria-label={`Decrease quantity for ${item.name}`} style={quantityCircleButtonStyle}>-</button>
+                          <input className="app-input" type="number" min="1" max="999" step="1" inputMode="numeric" value={item.quantity} onChange={(event) => updateSelectedStockQuantity(item.id, event.target.value)} aria-label={`Quantity for ${item.name}`} style={quantityInputStyle} />
+                          <button className="app-table-action-btn" type="button" onClick={() => updateSelectedStockQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= 999} aria-label={`Increase quantity for ${item.name}`} style={quantityCircleButtonStyle}>+</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: "center", color: "var(--text-1)" }}>
+                        Search for a consumable and add it to begin the stock check.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </LayerSurface>
           </DevLayoutSection>
         </LayerTheme>
 
@@ -236,15 +273,13 @@ export default function TechConsumableRequestPageUi(props) {
           width: isMobile ? "100%" : "auto"
         }}>
               <DevLayoutSection as="div" sectionKey="tech-consumables-requests-month" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
-            width: isMobile ? "100%" : "170px"
+            width: isMobile ? "100%" : "320px"
           }}>
-                <input type="month" aria-label="Filter requests by month" value={requestMonth} onChange={event => setRequestMonth(event.target.value)} style={{
-              ...inputStyle,
-              height: "44px",
-              color: "var(--text-1)",
-              background: "var(--surface)",
-              cursor: "pointer"
-            }} />
+                <MonthPickerField
+                  value={requestMonth}
+                  onValueChange={setRequestMonth}
+                  aria-label="Filter requests by month"
+                />
               </DevLayoutSection>
               <DevLayoutSection as="div" sectionKey="tech-consumables-requests-search" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
             maxWidth: isMobile ? "100%" : "240px",
@@ -309,7 +344,7 @@ export default function TechConsumableRequestPageUi(props) {
               whiteSpace: "nowrap",
               ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending)
             }}>
-                        {request.status === "fulfilled" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : request.status === "ordered" ? "📦" : "📦"}
+                        {request.status === "fulfilled" || request.status === "arrived" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </div>
@@ -418,7 +453,7 @@ export default function TechConsumableRequestPageUi(props) {
                   whiteSpace: "nowrap",
                   ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending)
                 }}>
-                            {request.status === "fulfilled" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : request.status === "ordered" ? "📦" : "📦"}
+                            {request.status === "fulfilled" || request.status === "arrived" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
                             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                           </span>
                         </td>
@@ -461,7 +496,54 @@ export default function TechConsumableRequestPageUi(props) {
             </LayerSurface>}
         </DevLayoutSection>
       </div>
-      {showStockCheck && <StockCheckPopup open={showStockCheck} onClose={() => setShowStockCheck(false)} isManager={isWorkshopManager} technicianId={dbUserId} onRequestsSubmitted={fetchRequests} />}
+      <PopupModal
+        isOpen={showSendPopup}
+        onClose={sendLoading ? undefined : () => setShowSendPopup(false)}
+        closeOnBackdrop={false}
+        ariaLabel="Send consumable request"
+        cardStyle={{ width: "min(100%, 620px)", padding: "var(--section-card-padding)" }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+          <div className="app-popup-compact-header">
+            <h2 style={{ margin: 0, color: "var(--primary-selected)" }}>Send consumable request</h2>
+            <div className="app-popup-compact-header__actions">
+              <Button type="button" onClick={sendSelectedToRequests} busy={sendLoading} variant="primary" size="sm">
+                Send to Requests
+              </Button>
+              <Button type="button" onClick={sendSelectedByEmail} variant="secondary" size="sm" disabled={sendLoading}>
+                Send Email
+              </Button>
+              <Button type="button" onClick={() => setShowSendPopup(false)} variant="secondary" size="sm" disabled={sendLoading}>
+                Close
+              </Button>
+            </div>
+          </div>
+          <div style={{
+            width: "100%",
+            overflowX: "auto",
+            overflowY: selectedStockItems.length > 10 ? "auto" : "visible",
+            maxHeight: selectedStockItems.length > 10 ? "484px" : "none", // One 44px heading plus ten global 44px table rows.
+          }}>
+            <table className="app-data-table app-data-table--rounded" aria-label="Consumables ready to send">
+              <thead>
+                <tr style={{ height: "var(--table-row-height)" }}>
+                  <th>Consumable name</th>
+                  <th style={{ width: "120px" }}>Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedStockItems.map((item) => (
+                  <tr key={item.id}>
+                    <td style={{ fontWeight: 600 }}>{item.name}</td>
+                    <td>{item.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {sendError && <p role="alert" style={{ margin: 0, color: "var(--primary-selected)", fontWeight: 600 }}>{sendError}</p>}
+        </div>
+      </PopupModal>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

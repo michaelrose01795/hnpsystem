@@ -33,7 +33,7 @@ const mapStockCheckStatusToRequest = (status) => {
   return "pending";
 };
 
-async function logTechnicianRequestsFromStockChecks(rows = []) {
+async function logTechnicianRequestsFromStockChecks(rows = [], quantityByConsumableId = new Map()) {
   if (!Array.isArray(rows) || !rows.length) {
     return;
   }
@@ -50,7 +50,7 @@ async function logTechnicianRequestsFromStockChecks(rows = []) {
       return {
         id: row.id,
         item_name: itemName,
-        quantity: 1,
+        quantity: quantityByConsumableId.get(row.consumableId) || 1,
         requested_by: row.technicianId || null,
         requested_by_name: row.technicianName || null,
         requested_at: row.createdAt || new Date().toISOString(),
@@ -66,7 +66,7 @@ async function logTechnicianRequestsFromStockChecks(rows = []) {
 
   const { error } = await supabase
     .from("workshop_consumable_requests")
-    .upsert(payload, { onConflict: "id" });
+    .upsert(payload, { onConflict: "id", ignoreDuplicates: true });
 
   if (error) {
     throw error;
@@ -153,12 +153,23 @@ export async function addTemporaryConsumables(names = []) {
   return (data || []).map(formatConsumable);
 }
 
-export async function submitStockCheckRequest({ consumableIds = [], technicianId = null }) {
-  if (!Array.isArray(consumableIds) || consumableIds.length === 0) {
+export async function submitStockCheckRequest({ consumableSelections = [], technicianId = null }) {
+  if (!Array.isArray(consumableSelections) || consumableSelections.length === 0) {
     throw new Error("No consumables selected.");
   }
 
-  const rows = consumableIds.map((consumableId) => ({
+  const normalizedSelections = consumableSelections
+    .map((selection) => ({
+      consumableId: selection?.consumableId,
+      quantity: Math.min(999, Math.max(1, Number.parseInt(selection?.quantity, 10) || 1)),
+    }))
+    .filter((selection) => Boolean(selection.consumableId));
+
+  if (!normalizedSelections.length) {
+    throw new Error("No valid consumables selected.");
+  }
+
+  const rows = normalizedSelections.map(({ consumableId }) => ({
     consumable_id: consumableId,
     technician_id: technicianId,
     status: "pending",
@@ -184,7 +195,10 @@ export async function submitStockCheckRequest({ consumableIds = [], technicianId
   }
 
   const formattedRows = (data || []).map(formatStockCheckRow);
-  await logTechnicianRequestsFromStockChecks(formattedRows);
+  const quantityByConsumableId = new Map(
+    normalizedSelections.map(({ consumableId, quantity }) => [consumableId, quantity])
+  );
+  await logTechnicianRequestsFromStockChecks(formattedRows, quantityByConsumableId);
   return formattedRows;
 }
 

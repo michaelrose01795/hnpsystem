@@ -7,11 +7,23 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"; // Imp
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
-import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 import TechConsumableRequestPageUi from "@/components/page-ui/tech/tech-consumables-request-ui"; // Extracted presentation layer.
-import { reportError, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
+
+const flattenStockData = (payloadData = {}) => {
+  const locatedItems = (payloadData.locations || []).flatMap((location) =>
+    (location.consumables || []).map((item) => ({
+      id: item.id,
+      name: item.name || "Unnamed item"
+    }))
+  );
+  const unassignedItems = (payloadData.unassigned || []).map((item) => ({
+    id: item.id,
+    name: item.name || "Unnamed item"
+  }));
+  return locatedItems.concat(unassignedItems);
+};
 
 const pageWrapperStyle = {
   width: "100%", // Fill the available content area like the news feed page
@@ -25,14 +37,6 @@ const pageWrapperStyle = {
 
 const cardStyle = {
   textAlign: "center"
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "var(--control-radius)",
-  border: "none",
-  fontSize: "0.95rem"
 };
 
 const tableHeaderStyle = {
@@ -83,6 +87,11 @@ const statusBadgeStyles = {
     color: "var(--success-dark)",
     border: "none"
   },
+  arrived: {
+    backgroundColor: "var(--success-surface)",
+    color: "var(--success-dark)",
+    border: "none"
+  },
   rejected: {
     backgroundColor: "rgba(var(--danger-rgb), 0.15)",
     color: "var(--danger)",
@@ -98,9 +107,14 @@ const TechConsumableRequestPage = () => {
   const isWorkshopManager = userRoles.includes("workshop manager") || userRoles.includes("workshop_manager");
 
   const [requestForm, setRequestForm] = useState({
-    partName: "", // Requested item name
-    quantity: 1 // Requested quantity
+    partName: "" // Stock search input
   });
+  const [selectedStockItems, setSelectedStockItems] = useState([]);
+  const [stockSearchQuery, setStockSearchQuery] = useState("");
+  const [showStockList, setShowStockList] = useState(false);
+  const [showSendPopup, setShowSendPopup] = useState(false);
+  const [sendLoading, setSendLoading] = useState(false);
+  const [sendError, setSendError] = useState("");
 
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -108,7 +122,6 @@ const TechConsumableRequestPage = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [searchTerm, setSearchTerm] = useState(""); // Track request search input
-  const [showStockCheck, setShowStockCheck] = useState(false);
   const [stockItems, setStockItems] = useState([]);
   const [stockLoading, setStockLoading] = useState(false);
   const [stockError, setStockError] = useState("");
@@ -157,22 +170,14 @@ const TechConsumableRequestPage = () => {
       if (!payload.success) {
         throw new Error(payload.message || "Unable to load stock items.");
       }
-      const locations = payload.data?.locations || [];
-      const unassigned = payload.data?.unassigned || [];
-      const flattened = [];
-      locations.forEach((location) => {
-        (location.consumables || []).forEach((item) => {
-          flattened.push({ id: item.id, name: item.name || "Unnamed item" });
-        });
-      });
-      (unassigned || []).forEach((item) => {
-        flattened.push({ id: item.id, name: item.name || "Unnamed item" });
-      });
+      const flattened = flattenStockData(payload.data);
       setStockItems(flattened);
+      return flattened;
     } catch (error) {
       console.error("❌ Failed to load stock items", error);
       setStockItems([]);
       setStockError(error?.message || "Unable to load stock items.");
+      return [];
     } finally {
       setStockLoading(false);
     }
@@ -194,6 +199,32 @@ const TechConsumableRequestPage = () => {
     },
     [stockItems, normalizeName]
   );
+
+  const addStockItemToSelection = useCallback((item) => {
+    if (!item?.id) return;
+    setSelectedStockItems((previous) => {
+      if (previous.some((selectedItem) => selectedItem.id === item.id)) {
+        return previous;
+      }
+      return previous.concat({
+        id: item.id,
+        name: item.name || "Unnamed item",
+        quantity: 1
+      });
+    });
+  }, []);
+
+  const removeSelectedStockItem = useCallback((itemId) => {
+    setSelectedStockItems((previous) => previous.filter((item) => item.id !== itemId));
+  }, []);
+
+  const updateSelectedStockQuantity = useCallback((itemId, value) => {
+    const parsedQuantity = Number.parseInt(value, 10);
+    const quantity = Math.min(999, Math.max(1, Number.isFinite(parsedQuantity) ? parsedQuantity : 1));
+    setSelectedStockItems((previous) => previous.map((item) =>
+      item.id === itemId ? { ...item, quantity } : item
+    ));
+  }, []);
 
   const filteredRequests = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase(); // Normalise search term
@@ -217,32 +248,6 @@ const TechConsumableRequestPage = () => {
     [isMobile]
   );
 
-  const requestHeaderStyle = useMemo(
-    () => ({
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: isMobile ? "stretch" : "center",
-      flexDirection: isMobile ? "column" : "row",
-      gap: isMobile ? "12px" : "16px",
-      width: "100%"
-    }),
-    [isMobile]
-  );
-
-  const requestFormStyle = useMemo(
-    () => ({
-      marginTop: 0,
-      display: "grid",
-      gridTemplateColumns: isMobile ?
-      "minmax(0, 1fr)" :
-      "minmax(320px, 1fr) minmax(88px, 104px) minmax(180px, 220px)",
-      gap: isMobile ? "12px" : "16px",
-      alignItems: "end",
-      width: "100%"
-    }),
-    [isMobile]
-  );
-
   const requestsToolbarStyle = useMemo(
     () => ({
       display: "flex",
@@ -262,14 +267,40 @@ const TechConsumableRequestPage = () => {
     }
     return stockItems.
     filter((item) => normalizeName(item.name).includes(query)).
-    slice(0, 5);
+    slice(0, 8);
   }, [requestForm.partName, stockItems, normalizeName]);
+
+  const visibleStockItems = useMemo(() => {
+    const query = normalizeName(stockSearchQuery);
+    if (!showStockList) return [];
+    if (!query) return stockItems;
+    return stockItems.filter((item) => normalizeName(item.name).includes(query));
+  }, [normalizeName, showStockList, stockItems, stockSearchQuery]);
+
+  const applyStockSearch = useCallback(() => {
+    setStockSearchQuery(requestForm.partName.trim());
+    setShowStockList(true);
+  }, [requestForm.partName]);
+
+  const clearStockSearch = useCallback(() => {
+    setRequestForm({ partName: "" });
+    setStockSearchQuery("");
+  }, []);
+
+  const handleStockSearchKeyDown = useCallback((event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyStockSearch();
+    }
+  }, [applyStockSearch]);
 
   const createTemporaryStockItem = useCallback(
     async (name) => {
       const trimmed = (name || "").trim();
       if (!trimmed || findStockItemByName(trimmed)) {
-        return;
+        const existingItem = findStockItemByName(trimmed);
+        if (existingItem) addStockItemToSelection(existingItem);
+        return existingItem || null;
       }
       setAddingTemporaryItem(true);
       setRequestError("");
@@ -287,71 +318,82 @@ const TechConsumableRequestPage = () => {
         if (!payload.success) {
           throw new Error(payload.message || "Unable to add consumable.");
         }
-        await fetchStockItems();
+        const nextItems = flattenStockData(payload.data);
+        setStockItems(nextItems);
         setSuccessMessage(`"${trimmed}" added to consumable stock for review.`);
+        const createdItem = nextItems.find((item) => normalizeName(item.name) === normalizeName(trimmed));
+        if (createdItem) addStockItemToSelection(createdItem);
+        return createdItem || null;
       } catch (error) {
         console.error("❌ Failed to add temporary consumable", error);
         setRequestError(error?.message || "Unable to add consumable to stock.");
-        throw error;
+        return null;
       } finally {
         setAddingTemporaryItem(false);
       }
     },
-    [findStockItemByName, fetchStockItems]
+    [addStockItemToSelection, findStockItemByName, normalizeName]
   );
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target; // Extract the input field
-    setRequestForm((previous) => ({ ...previous, [name]: value })); // Update the relevant form field
-  };
+  const openSendPopup = useCallback(() => {
+    if (!selectedStockItems.length) return;
+    setSendError("");
+    setShowSendPopup(true);
+  }, [selectedStockItems.length]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const sendSelectedByEmail = useCallback(() => {
+    if (!selectedStockItems.length || typeof window === "undefined") return;
+    const itemLines = selectedStockItems.map(
+      (item, index) => `${index + 1}. ${item.name} (quantity: ${item.quantity})`
+    );
+    const body = [
+      "Hi,",
+      "",
+      "Please stock take the following consumables:",
+      "",
+      ...itemLines,
+      "",
+      "Thanks,",
+    ].join("\n");
+    window.location.href =
+      `mailto:darrell@humphriesandpark.co.uk` +
+      `?subject=${encodeURIComponent("Stock Take")}` +
+      `&body=${encodeURIComponent(body)}`;
+    setShowSendPopup(false);
+  }, [selectedStockItems]);
 
-    const trimmedName = requestForm.partName.trim();
-    if (!trimmedName) {
-      reportWarning("Please provide the name of the consumable you need.");
-      return;
-    }
-
-    try {
-      if (!findStockItemByName(trimmedName)) {
-        await createTemporaryStockItem(trimmedName);
-      }
-    } catch {
-      return;
-    }
-
-    setSuccessMessage("");
+  const sendSelectedToRequests = useCallback(async () => {
+    if (!selectedStockItems.length) return;
+    setSendLoading(true);
+    setSendError("");
     try {
       const response = await fetch("/api/workshop/consumables/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          itemName: trimmedName,
-          quantity: Number(requestForm.quantity) || 1,
+          items: selectedStockItems.map((item) => ({
+            itemName: item.name,
+            quantity: item.quantity,
+          })),
           requestedById: dbUserId,
-          requestedByName: user?.username || null
-        })
+          requestedByName: user?.username || null,
+        }),
       });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({ message: "Unable to submit request." }));
-        throw new Error(body.message || "Unable to submit request.");
+      const payload = await response.json().catch(() => ({ message: "Unable to send the request." }));
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || "Unable to send the request.");
       }
-
-      const payload = await response.json();
-      if (!payload.success) {
-        throw new Error(payload.message || "Unable to submit request.");
-      }
-      setRequestForm({ partName: "", quantity: 1 });
-      setSuccessMessage("Request submitted.");
-      fetchRequests();
+      setSelectedStockItems([]);
+      setShowSendPopup(false);
+      setSuccessMessage(`${selectedStockItems.length} consumable request${selectedStockItems.length === 1 ? "" : "s"} sent.`);
+      await fetchRequests();
     } catch (error) {
-      // Raw error → devInfo; the user sees a friendly message + reference code.
-      reportError("Unable to submit request.", error, { source: "consumables-request" });
+      console.error("❌ Failed to send consumable requests", error);
+      setSendError(error?.message || "Unable to send the request.");
+    } finally {
+      setSendLoading(false);
     }
-  };
+  }, [dbUserId, fetchRequests, selectedStockItems, user?.username]);
 
   if (!isTechRole && !isWorkshopManager) {
     return <TechConsumableRequestPageUi view="section1" cardStyle={cardStyle} DevLayoutSection={DevLayoutSection} Link={Link} />;
@@ -407,7 +449,7 @@ const TechConsumableRequestPage = () => {
 
   }
 
-  return <TechConsumableRequestPageUi view="section2" addingTemporaryItem={addingTemporaryItem} createTemporaryStockItem={createTemporaryStockItem} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} fetchRequests={fetchRequests} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleInputChange={handleInputChange} handleSubmit={handleSubmit} inputStyle={inputStyle} isMobile={isMobile} isWorkshopManager={isWorkshopManager} loadingRequests={loadingRequests} pageWrapperStyle={pageWrapperStyle} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestFormStyle={requestFormStyle} requestHeaderStyle={requestHeaderStyle} requestMonth={requestMonth} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} setRequestForm={setRequestForm} setRequestMonth={setRequestMonth} setSearchTerm={setSearchTerm} setShowStockCheck={setShowStockCheck} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} stockError={stockError} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} tableHeaderStyle={tableHeaderStyle} />;
+  return <TechConsumableRequestPageUi view="section2" addStockItemToSelection={addStockItemToSelection} addingTemporaryItem={addingTemporaryItem} applyStockSearch={applyStockSearch} clearStockSearch={clearStockSearch} createTemporaryStockItem={createTemporaryStockItem} DevLayoutSection={DevLayoutSection} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleStockSearchKeyDown={handleStockSearchKeyDown} isMobile={isMobile} loadingRequests={loadingRequests} openSendPopup={openSendPopup} pageWrapperStyle={pageWrapperStyle} removeSelectedStockItem={removeSelectedStockItem} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestMonth={requestMonth} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} selectedStockItems={selectedStockItems} sendError={sendError} sendLoading={sendLoading} sendSelectedByEmail={sendSelectedByEmail} sendSelectedToRequests={sendSelectedToRequests} setRequestForm={setRequestForm} setRequestMonth={setRequestMonth} setSearchTerm={setSearchTerm} setShowSendPopup={setShowSendPopup} setShowStockList={setShowStockList} showSendPopup={showSendPopup} showStockList={showStockList} statusBadgeStyles={statusBadgeStyles} stockError={stockError} stockItems={stockItems} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} tableHeaderStyle={tableHeaderStyle} updateSelectedStockQuantity={updateSelectedStockQuantity} visibleStockItems={visibleStockItems} />;
 
 
 

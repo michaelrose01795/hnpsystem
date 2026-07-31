@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
+import { invalidateCache } from "@/lib/database/queryCache";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/database/supabaseClient";
@@ -14,6 +15,11 @@ import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import { compareJobsForBoard } from "@/lib/jobCards/utils";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import {
+  hasOutstandingAuthorisedVhcWork,
+  projectVhcItems,
+  TECH_JOB_STATUS
+} from "@/features/vhc/vhcStatusEngine";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
@@ -36,11 +42,33 @@ STATUS_BADGE_STYLES[status] || { background: "var(--theme)", color: "var(--info-
 const normalizeStatusKey = (status) =>
 typeof status === "string" ? status.trim().toLowerCase() : "";
 
+const hasOutstandingAuthorisedWork = (job) =>
+hasOutstandingAuthorisedVhcWork(
+  projectVhcItems(Array.isArray(job?.vhcChecks) ? job.vhcChecks : [], { job })
+);
+
 const resolveTechStatusLabel = (job, { isClockedOn = false } = {}) => {
   const rawStatus = normalizeStatusKey(job?.rawStatus || job?.status);
   const completionStatus = normalizeStatusKey(
     job?.techCompletionStatus || job?.tech_completion_status
   );
+  if (completionStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS) {
+    return "Authorised";
+  }
+  const technicianPreviouslyCompleted =
+  rawStatus.includes("tech complete") ||
+  rawStatus.includes("technician work completed") ||
+  rawStatus.includes("invoiced") ||
+  rawStatus === "complete" ||
+  rawStatus === "completed" ||
+  completionStatus === TECH_JOB_STATUS.COMPLETED ||
+  completionStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS ||
+  completionStatus === "complete" ||
+  completionStatus === "completed";
+
+  if (technicianPreviouslyCompleted && hasOutstandingAuthorisedWork(job)) {
+    return "Authorised";
+  }
   if (
   rawStatus.includes("tech complete") ||
   rawStatus.includes("technician work completed") ||
@@ -48,7 +76,8 @@ const resolveTechStatusLabel = (job, { isClockedOn = false } = {}) => {
   rawStatus === "complete" ||
   rawStatus === "completed" ||
   completionStatus === "tech_complete" ||
-  completionStatus === "complete")
+  completionStatus === "complete" ||
+  completionStatus === "completed")
   {
     return "Complete";
   }
@@ -66,9 +95,6 @@ const resolveTechStatusTooltip = (job, { isClockedOn = false } = {}) => {
   job?.writeUpTaskSummary?.technicianTasksComplete === true ||
   writeUpStatus === "complete" ||
   writeUpStatus === "waiting_additional_work";
-  const completionStatus = normalizeStatusKey(
-    job?.techCompletionStatus || job?.tech_completion_status
-  );
   const missing = [];
 
   if (!writeUpComplete) {
@@ -78,10 +104,10 @@ const resolveTechStatusTooltip = (job, { isClockedOn = false } = {}) => {
     missing.push("VHC incomplete");
   }
 
-  const statusLabel =
-  completionStatus === "tech_complete" || completionStatus === "complete" ?
-  "Complete" :
-  resolveTechStatusLabel(job, { isClockedOn });
+  const statusLabel = resolveTechStatusLabel(job, { isClockedOn });
+  if (statusLabel === "Authorised") {
+    return "Authorised: VHC work has been approved and is waiting for technician completion.";
+  }
   if (statusLabel === "Complete") {
     return "Complete: all criteria met.";
   }
@@ -116,7 +142,7 @@ const isTechTaskComplete = (job = {}) => {
   const completionStatus = normalizeStatusKey(
     job?.techCompletionStatus || job?.tech_completion_status
   );
-  return (
+  return !hasOutstandingAuthorisedWork(job) && (
     rawStatus.includes("tech complete") ||
     rawStatus.includes("technician work completed") ||
     rawStatus.includes("invoiced") ||
@@ -455,6 +481,19 @@ export default function MyJobsPage() {
         filter: `job_id=in.(${jobIdsFilterString})`
       },
       () => {
+        fetchJobsForTechnician();
+      }
+    ).
+    on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "vhc_checks",
+        filter: `job_id=in.(${jobIdsFilterString})`
+      },
+      () => {
+        invalidateCache("jobs:");
         fetchJobsForTechnician();
       }
     ).

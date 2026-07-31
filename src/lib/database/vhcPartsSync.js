@@ -52,7 +52,7 @@ const pickLatestByUpdatedAt = (rows) => {
 // Phase 5 of the VHC refactor: the local normaliseApprovalStatus wrapper was
 // removed because it just delegated to the engine. Callers now use
 // normalizeDecision directly so there is one normalisation entry point.
-import { normalizeDecision } from "@/features/vhc/vhcStatusEngine";
+import { normalizeDecision, TECH_JOB_STATUS } from "@/features/vhc/vhcStatusEngine";
 
 export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStatus }) => {
   if (!jobId || vhcItemId === null || vhcItemId === undefined) return;
@@ -153,7 +153,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
     .from("vhc_checks")
     .update(vhcUpdatePayload)
     .eq("vhc_id", canonicalVhcId)
-    .select("job_id, vhc_id, issue_title, issue_description, section");
+    .select("job_id, vhc_id, issue_title, issue_description, section, Complete");
 
   if (vhcUpdateError) {
     // Log but don't throw - the vhc_checks record might not exist yet
@@ -164,7 +164,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
   if (!vhcRow) {
     const { data: vhcFetch, error: vhcFetchError } = await supabase
       .from("vhc_checks")
-      .select("job_id, vhc_id, issue_title, issue_description, section")
+      .select("job_id, vhc_id, issue_title, issue_description, section, Complete")
       .eq("vhc_id", canonicalVhcId)
       .maybeSingle();
 
@@ -176,6 +176,45 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
   const resolvedJobId = vhcRow?.job_id ?? jobId;
   if (!resolvedJobId) return;
+
+  // Reopen the technician workflow when additional VHC work is authorised
+  // after the main work was completed. Keep this marker until the technician
+  // presses Complete Job again; completing the VHC row alone must not make the
+  // My Jobs table look fully complete.
+  if (nextApprovalStatus === APPROVAL_AUTHORIZED && vhcRow?.Complete !== true) {
+    const { data: jobRow, error: jobLoadError } = await supabase
+      .from("jobs")
+      .select("status, tech_completion_status")
+      .eq("id", resolvedJobId)
+      .maybeSingle();
+
+    if (jobLoadError) {
+      throw new Error(`Failed to load job ${resolvedJobId} completion state: ${jobLoadError.message}`);
+    }
+
+    const mainStatus = String(jobRow?.status || "").trim().toLowerCase();
+    const techStatus = String(jobRow?.tech_completion_status || "").trim().toLowerCase();
+    const technicianPreviouslyCompleted =
+      mainStatus === "complete" ||
+      mainStatus === "completed" ||
+      mainStatus.includes("tech complete") ||
+      mainStatus.includes("technician work completed") ||
+      mainStatus.includes("invoiced") ||
+      techStatus === TECH_JOB_STATUS.COMPLETED ||
+      techStatus === "complete" ||
+      techStatus === "completed";
+
+    if (technicianPreviouslyCompleted) {
+      const { error: jobUpdateError } = await supabase
+        .from("jobs")
+        .update({ tech_completion_status: TECH_JOB_STATUS.AUTHORISED_ITEMS, updated_at: now })
+        .eq("id", resolvedJobId);
+
+      if (jobUpdateError) {
+        throw new Error(`Failed to reopen job ${resolvedJobId} for authorised work: ${jobUpdateError.message}`);
+      }
+    }
+  }
 
   const description =
     (vhcRow?.issue_title || vhcRow?.issue_description || vhcRow?.section || "")

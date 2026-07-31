@@ -100,6 +100,7 @@ export async function listConsumablesForTracker() {
       item_name,
       supplier,
       unit_cost,
+      stock_quantity,
       estimated_quantity,
       last_order_date,
       next_estimated_order_date,
@@ -139,6 +140,7 @@ export async function listConsumablesForTracker() {
       name: rawName || `Consumable ${row.id}`,
       supplier: row.supplier || null,
       unitCost: toNumber(row.unit_cost ?? row.unitCost),
+      stockQuantity: toNumber(row.stock_quantity ?? row.stockQuantity),
       manualEstimatedQuantity: null,
       nextEstimatedOrderDate: null,
       reorderFrequencyDays: row.reorder_frequency_days ?? row.reorderFrequencyDays ?? null,
@@ -154,6 +156,7 @@ export async function listConsumablesForTracker() {
 
     existing.supplier = existing.supplier || row.supplier || null;
     existing.unitCost = existing.unitCost || toNumber(row.unit_cost ?? row.unitCost);
+    existing.stockQuantity = toNumber(row.stock_quantity ?? row.stockQuantity);
     const manualEstimate = toNumber(row.estimated_quantity ?? row.estimatedQuantity);
     if (manualEstimate > 0) {
       existing.manualEstimatedQuantity = manualEstimate;
@@ -262,6 +265,7 @@ export async function listConsumablesForTracker() {
       name: entry.name,
       supplier: entry.supplier,
       unitCost: entry.unitCost,
+      stockQuantity: entry.stockQuantity,
       estimatedQuantity,
       lastOrderDate,
       nextEstimatedOrderDate,
@@ -368,4 +372,80 @@ export async function addConsumableOrder(
   }
 
   return { orderDate: payloadDate };
+}
+
+export async function listConsumableRequestRows() {
+  const { data, error } = await supabase
+    .from("workshop_consumable_requests")
+    .select("*")
+    .order("requested_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createConsumableRequestRows(rows = []) {
+  const { data, error } = await supabase
+    .from("workshop_consumable_requests")
+    .insert(rows)
+    .select("*");
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createConsumableReorderRequest({ sourceRequestId, consumableId, quantity }) {
+  const { data: sourceRequest, error: sourceError } = await supabase
+    .from("workshop_consumable_requests")
+    .select("item_name, requested_by, requested_by_name, status")
+    .eq("id", sourceRequestId)
+    .single();
+
+  if (sourceError) throw sourceError;
+  if (sourceRequest.status !== "arrived") {
+    throw new Error("Only an arrived request can be reordered.");
+  }
+
+  const { data, error } = await supabase
+    .from("workshop_consumable_requests")
+    .insert({
+      item_name: sourceRequest.item_name,
+      quantity,
+      requested_by: sourceRequest.requested_by,
+      requested_by_name: sourceRequest.requested_by_name,
+      consumable_id: consumableId,
+      status: "ordered",
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateConsumableRequest({ id, status, consumableId, quantity }) {
+  const updatePayload = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (consumableId !== undefined) updatePayload.consumable_id = consumableId || null;
+  if (quantity !== undefined) updatePayload.quantity = quantity;
+  if (status === "ordered") updatePayload.arrived_at = null;
+
+  const { error } = await supabase
+    .from("workshop_consumable_requests")
+    .update(updatePayload)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function markConsumableRequestArrived({ requestId, consumableId }) {
+  const { error } = await supabase.rpc("mark_workshop_consumable_request_arrived", {
+    p_request_id: requestId,
+    p_consumable_id: consumableId || null,
+  });
+
+  if (error) throw error;
 }

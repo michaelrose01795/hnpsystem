@@ -288,12 +288,18 @@ export default function LoginDropdown({
   }, [selectedCategory]);
 
   const categoryOptions = useMemo(
-    () =>
-      Object.keys(roleCategories || {}).map((category) => ({
+    () => [
+      ...Object.keys(roleCategories || {}).map((category) => ({
         key: category,
         value: category,
         label: category,
       })),
+      {
+        key: OTHER_CATEGORY_VALUE,
+        value: OTHER_CATEGORY_VALUE,
+        label: "Other",
+      },
+    ],
     [roleCategories]
   );
 

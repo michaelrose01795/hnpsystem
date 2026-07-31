@@ -5158,23 +5158,6 @@ export function CustomerRequestsTab({
     ...requestRowBaseStyle,
     backgroundColor: "var(--success-surface)"
   };
-  const requestPillButtonStyle = {
-    height: "var(--control-height)",
-    minHeight: "var(--control-height)",
-    maxHeight: "var(--control-height)",
-    padding: "var(--control-padding)",
-    backgroundColor: "var(--control-bg)",
-    color: "var(--accentText)",
-    border: "none",
-    borderRadius: "var(--control-radius)",
-    fontSize: "var(--control-font-size)",
-    fontWeight: "600",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    lineHeight: 1,
-    whiteSpace: "nowrap"
-  };
   // Read-only pre-pick display, styled as a staffglobal `.app-input` text field.
   // Pre-pick is now set per-part from the Parts tab "Part Details" popup; these
   // request rows only mirror the linked part's saved location, so they render a
@@ -5250,12 +5233,10 @@ export function CustomerRequestsTab({
     const isInternal = normalizedType === "internal";
     const isDanger = normalizedType === "insurance" || normalizedType === "lease company";
     return {
-      ...requestPillButtonStyle,
       backgroundColor: isCustomer ? "var(--success-surface)" : isWarranty || isInternal ? "var(--warning-surface)" : isDanger ? "var(--danger-surface)" : isGoodwill ? "var(--theme)" : "var(--control-bg)",
-      color: isCustomer ? "var(--success-text)" : isWarranty || isInternal ? "var(--warning-text)" : isDanger ? "var(--danger-text)" : isGoodwill ? "var(--info)" : "var(--accentText)",
-      border: "none"
+      color: isCustomer ? "var(--success-text)" : isWarranty || isInternal ? "var(--warning-text)" : isDanger ? "var(--danger-text)" : isGoodwill ? "var(--info)" : "var(--accentText)"
     };
-  }, [requestPillButtonStyle]);
+  }, []);
   const getStatusPillStyle = useCallback((normalizedStatus = "") => {
     // "Authorised" deliberately omitted here so it falls through to the default
     // pill style (var(--theme) bg / var(--info) text) — i.e. the same styling as
@@ -5264,12 +5245,10 @@ export function CustomerRequestsTab({
     const isDanger = ["removed", "declined", "cancelled", "canceled"].includes(normalizedStatus);
     const isWarning = ["not_started", "on_hold", "hold", "pending"].includes(normalizedStatus);
     return {
-      ...requestPillButtonStyle,
       backgroundColor: isSuccess ? "var(--success-surface)" : isDanger ? "var(--danger-surface)" : isWarning ? "var(--warning-surface)" : "var(--theme)",
-      color: isSuccess ? "var(--success-text)" : isDanger ? "var(--danger-text)" : isWarning ? "var(--warning-text)" : "var(--info)",
-      border: "none"
+      color: isSuccess ? "var(--success-text)" : isDanger ? "var(--danger-text)" : isWarning ? "var(--warning-text)" : "var(--info)"
     };
-  }, [requestPillButtonStyle]);
+  }, []);
   const formatPrePickLabel = (value = "") => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return "";
@@ -6288,7 +6267,7 @@ export function CustomerRequestsTab({
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
                       <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</div></td>
-                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
+                      <td>{req.paymentType ? <span className="app-badge app-badge--control" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
@@ -6392,14 +6371,14 @@ export function CustomerRequestsTab({
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
                       <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{row.description || "—"}</div></td>
-                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
+                      <td>{row.jobType ? <span className="app-badge app-badge--control" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
                       <td>{formatHoursDisplay(row.hours)}</td>
                       {/* Authorised (additional work) rows display only "Authorised"
                           in this section — not the derived workflow status. Declined/
                           reported VHC items never reach here (see authorisedRows). */}
                       <td>{row.kind === "authorised"
-                        ? <span className="app-badge app-badge--success">Authorised</span>
-                        : <span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span>}</td>
+                        ? <span className="app-badge app-badge--control app-badge--success">Authorised</span>
+                        : <span className="app-badge app-badge--control" style={row.statusBadgeStyle}>{row.statusLabel}</span>}</td>
                     </tr>
                   );
                 })}
@@ -6418,7 +6397,7 @@ export function CustomerRequestsTab({
                     pill. Customer-request rows keep their normal status pill. */}
                 {selectedRow.kind === "authorised"
                   ? <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">Authorised</span>
-                  : <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
+                  : <span className="app-badge app-badge--control" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
               </div>
 
               {/* Meta line */}

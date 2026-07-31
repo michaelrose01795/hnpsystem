@@ -1084,20 +1084,25 @@ html.staff-scope .app-settings-popup {
   min-height: 0;
 }
 
+/* Popup action convention.
+   Primary completion actions render first, followed by secondary Close.
+   The group stays at the top right and wraps as a unit on narrower screens. */
 html.staff-scope .app-popup-compact-header__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 8px;
   margin-left: auto;
 }
 
 @media (max-width: 640px) {
-  html.staff-scope .app-settings-popup .app-popup-compact-header {
+  html.staff-scope .app-popup-compact-header {
     flex-wrap: wrap;
   }
 
-  html.staff-scope .app-settings-popup .app-popup-compact-header__actions {
+  html.staff-scope .app-popup-compact-header__actions {
     width: 100%;
     justify-content: flex-end;
   }

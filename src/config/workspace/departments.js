@@ -875,7 +875,12 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     ],
   },
   { key: "department-paint", label: "Paint", department: "paint", hrefs: ["/dashboard/painting"] },
-  { key: "department-tech", label: "Tech", department: "tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
+  {
+    key: "department-tech",
+    label: "Tech",
+    department: "tech",
+    hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"],
+  },
 ]);
 
 // Phase 9: presentation-only grouping for the Workspace Group Sidebar. Pages

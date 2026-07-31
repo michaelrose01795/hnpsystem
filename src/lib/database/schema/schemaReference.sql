@@ -777,6 +777,7 @@ CREATE TABLE public.workshop_consumables (
   part_number text,
   supplier text,
   unit_cost numeric NOT NULL DEFAULT 0,
+  stock_quantity integer NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
   estimated_quantity integer NOT NULL DEFAULT 0,
   last_order_date date,
   next_estimated_order_date date,
@@ -807,11 +808,14 @@ CREATE TABLE public.workshop_consumable_requests (
   quantity integer NOT NULL DEFAULT 0,
   requested_by integer,
   requested_by_name text,
+  consumable_id uuid,
   requested_at timestamp with time zone NOT NULL DEFAULT now(),
   status text NOT NULL DEFAULT 'pending'::text,
+  arrived_at timestamp with time zone,
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumable_requests_pkey PRIMARY KEY (id),
-  CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id)
+  CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id),
+  CONSTRAINT workshop_consumable_requests_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id)
 );
 CREATE TABLE public.parts_delivery_runs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

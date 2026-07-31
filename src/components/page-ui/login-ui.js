@@ -153,7 +153,7 @@ export default function LoginPageUi(props) {
                   fontWeight: 600,
                   margin: 0
                 }}>
-                  Thank you for taking the time to look at the HNPSystem DMS
+                  Thank you for taking the time to look at the system I have been creating
                 </h2>
                 <p style={{
                   color: "var(--text-secondary)",

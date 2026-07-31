@@ -54,6 +54,14 @@ describe("sidebar access snapshots", () => {
       ]);
     expect(synced.find((module) => module.key === "department-workshop")?.items)
       .not.toContain("/tech");
+    expect(syncAssignedStandardModules([
+      { key: "department-tech", label: "Tech", items: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
+    ])[0].items).toEqual([
+      "/tech/dashboard",
+      "/tech",
+      "/tech/efficiency",
+      "/consumables-request",
+    ]);
     expect(synced.find((module) => module.key === "department-account"))
       .toBeUndefined();
     expect(synced.find((module) => module.key === "department-paint")?.label)

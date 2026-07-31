@@ -490,7 +490,9 @@ describe("workspace manifest - module bundle placement", () => {
         "/reports/overview",
       ] },
       { key: "department-paint", hrefs: ["/dashboard/painting"] },
-      { key: "department-tech", hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
+      { key: "department-tech", hrefs: [
+        "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
+      ] },
     ]);
     expect(
       moduleCatalog.find((module) => module.label === "Reception")?.items
@@ -516,6 +518,16 @@ describe("workspace manifest - module bundle placement", () => {
       "/jobs",
       "/deliveries",
     ]));
+  });
+
+  it("keeps the technician consumable request page in the Tech module", () => {
+    const tech = getSidebarModuleCatalog().find((module) => module.key === "department-tech");
+    expect(tech.items.map((item) => item.href)).toEqual([
+      "/tech/dashboard",
+      "/tech",
+      "/tech/efficiency",
+      "/consumables-request",
+    ]);
   });
 
   it("projects standard-module buttons in library order without changing the saved layout", () => {

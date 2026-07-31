@@ -289,6 +289,11 @@ const statusBadgeStyles = {
     color: "var(--success-dark)",
     border: "none"
   },
+  arrived: {
+    backgroundColor: "var(--success-surface)",
+    color: "var(--success-dark)",
+    border: "none"
+  },
   rejected: {
     backgroundColor: "rgba(var(--danger-rgb), 0.12)",
     color: "var(--danger)",
@@ -329,6 +334,7 @@ function ConsumablesTrackerPage() {
   const [requestsError, setRequestsError] = useState("");
   const [orderingRequestId, setOrderingRequestId] = useState(null);
   const [pendingRequestOrderId, setPendingRequestOrderId] = useState(null);
+  const [pendingRequestCreatesNewLine, setPendingRequestCreatesNewLine] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState("");
   const [logsSummary, setLogsSummary] = useState({
@@ -397,10 +403,11 @@ function ConsumablesTrackerPage() {
     setShowEditForm(false);
     setOrderModalError("");
     setPendingRequestOrderId(null);
+    setPendingRequestCreatesNewLine(false);
   }, []);
 
   const openOrderModal = useCallback(
-    (item, { requestId } = {}) => {
+    (item, { requestId, createNewRequest = false } = {}) => {
       if (!item) {
         return;
       }
@@ -424,6 +431,7 @@ function ConsumablesTrackerPage() {
       setShowEditForm(false);
       setOrderModalError("");
       setPendingRequestOrderId(requestId ?? null);
+      setPendingRequestCreatesNewLine(Boolean(createNewRequest));
     },
     [todayIso]
   );
@@ -535,23 +543,29 @@ function ConsumablesTrackerPage() {
         );
         return;
       }
-      openOrderModal(consumable, { requestId: request.id });
+      openOrderModal(consumable, {
+        requestId: request.id,
+        createNewRequest: request.status === "arrived",
+      });
     },
     [findConsumableByName, openOrderModal]
   );
 
   const handleRequestOrdered = useCallback(
-    async (requestId) => {
+    async (requestId, consumableId, quantity, createNewRequest = false) => {
       if (!requestId) {
         return;
       }
 
       setOrderingRequestId(requestId);
+      setRequestsError("");
       try {
         const response = await fetch("/api/workshop/consumables/requests", {
-          method: "PATCH",
+          method: createNewRequest ? "POST" : "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: requestId, status: "ordered" })
+          body: JSON.stringify(createNewRequest
+            ? { action: "reorder", sourceRequestId: requestId, consumableId, quantity }
+            : { id: requestId, status: "ordered", consumableId, quantity })
         });
 
         if (!response.ok) {
@@ -566,15 +580,60 @@ function ConsumablesTrackerPage() {
           throw new Error(payload.message || "Unable to update request.");
         }
 
-        setTechRequests(payload.data || []);
+        if (createNewRequest) {
+          await fetchTechRequests();
+        } else {
+          setTechRequests(payload.data || []);
+        }
       } catch (error) {
         console.error("❌ Failed to update consumable request", error);
         setRequestsError(error?.message || "Unable to update request.");
+        throw error;
       } finally {
         setOrderingRequestId(null);
       }
     },
-    []
+    [fetchTechRequests]
+  );
+
+  const handleRequestArrived = useCallback(
+    async (request) => {
+      if (!request) return;
+      const consumable = findConsumableByName(request.itemName);
+      if (!consumable) {
+        setRequestsError(
+          `Consumable "${request.itemName}" isn't in the tracker, so its stock cannot be updated.`
+        );
+        return;
+      }
+
+      setOrderingRequestId(request.id);
+      setRequestsError("");
+      try {
+        const response = await fetch("/api/workshop/consumables/requests", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: request.id,
+            status: "arrived",
+            consumableId: consumable.id,
+          }),
+        });
+        const payload = await response.json().catch(() => ({ message: "Unable to mark the order as arrived." }));
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.message || "Unable to mark the order as arrived.");
+        }
+
+        setTechRequests(payload.data || []);
+        await refreshConsumables();
+      } catch (error) {
+        console.error("Failed to receive consumable request", error);
+        setRequestsError(error?.message || "Unable to mark the order as arrived.");
+      } finally {
+        setOrderingRequestId(null);
+      }
+    },
+    [findConsumableByName, refreshConsumables]
   );
 
   const currentMonthNumber = useMemo(() => new Date().getMonth() + 1, []);
@@ -881,6 +940,7 @@ function ConsumablesTrackerPage() {
     return consumables.filter((item) => {
       const candidateValues = [
       item.name,
+      item.stockQuantity,
       formatDate(item.lastOrderDate),
       formatDate(item.nextEstimatedOrderDate),
       item.supplier,
@@ -921,8 +981,14 @@ function ConsumablesTrackerPage() {
     try {
       await addConsumableOrder(orderModalConsumable.id, payload);
       if (pendingRequestOrderId) {
-        await handleRequestOrdered(pendingRequestOrderId);
+        await handleRequestOrdered(
+          pendingRequestOrderId,
+          orderModalConsumable.id,
+          payload.quantity,
+          pendingRequestCreatesNewLine
+        );
         setPendingRequestOrderId(null);
+        setPendingRequestCreatesNewLine(false);
       }
       await refreshConsumables();
       await fetchMonthlyLogs();
@@ -937,6 +1003,7 @@ function ConsumablesTrackerPage() {
   fetchMonthlyLogs,
   handleRequestOrdered,
   orderModalConsumable,
+  pendingRequestCreatesNewLine,
   pendingRequestOrderId,
   refreshConsumables,
   todayIso]
@@ -965,8 +1032,14 @@ function ConsumablesTrackerPage() {
           estimatedQuantityOverride: payload.quantity
         });
         if (pendingRequestOrderId) {
-          await handleRequestOrdered(pendingRequestOrderId);
+          await handleRequestOrdered(
+            pendingRequestOrderId,
+            orderModalConsumable.id,
+            payload.quantity,
+            pendingRequestCreatesNewLine
+          );
           setPendingRequestOrderId(null);
+          setPendingRequestCreatesNewLine(false);
         }
         await refreshConsumables();
         await fetchMonthlyLogs();
@@ -983,6 +1056,7 @@ function ConsumablesTrackerPage() {
     handleRequestOrdered,
     orderForm,
     orderModalConsumable,
+    pendingRequestCreatesNewLine,
     pendingRequestOrderId,
     refreshConsumables,
     todayIso]
@@ -1024,7 +1098,7 @@ function ConsumablesTrackerPage() {
 
   }
 
-  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthValueChange={handleMonthValueChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} maxMonthValue={maxMonthValue} monthLabel={monthLabel} monthlyLogs={monthlyLogs} MonthPickerField={MonthPickerField} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} selectedMonthValue={selectedMonthValue} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
+  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthValueChange={handleMonthValueChange} handleOrderFormChange={handleOrderFormChange} handleRequestArrived={handleRequestArrived} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} maxMonthValue={maxMonthValue} monthLabel={monthLabel} monthlyLogs={monthlyLogs} MonthPickerField={MonthPickerField} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} selectedMonthValue={selectedMonthValue} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
 
 
 

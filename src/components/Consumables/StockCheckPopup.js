@@ -123,10 +123,21 @@ const rejectActionButtonStyle = {
 
 const defaultData = { locations: [], unassigned: [], stockChecks: [] };
 const MAX_SEARCH_SUGGESTIONS = 8;
+const MIN_REQUEST_QUANTITY = 1;
+const MAX_REQUEST_QUANTITY = 999;
+
+const normalizeRequestQuantity = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return MIN_REQUEST_QUANTITY;
+  return Math.min(MAX_REQUEST_QUANTITY, Math.max(MIN_REQUEST_QUANTITY, parsed));
+};
 
 function StockCheckPopup({
   open,
   onClose,
+  addOnly = false,
+  initialName = "",
+  onConsumableAdded = null,
   isManager = false,
   technicianId = null,
   onRequestsSubmitted = null,
@@ -136,6 +147,7 @@ function StockCheckPopup({
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [selectedItems, setSelectedItems] = useState(() => new Set());
+  const [selectedQuantities, setSelectedQuantities] = useState({});
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renameItemState, setRenameItemState] = useState({ id: null, value: "" });
   const [managerActionLoading, setManagerActionLoading] = useState(false);
@@ -150,6 +162,8 @@ function StockCheckPopup({
     unitCost: "",
   });
   const [newConsumableLoading, setNewConsumableLoading] = useState(false);
+  const [newConsumableError, setNewConsumableError] = useState("");
+  const [isAddConsumableOpen, setIsAddConsumableOpen] = useState(false);
 
   const allConsumables = useMemo(() => {
     const locatedItems = (data.locations || []).flatMap((location) => location.consumables || []);
@@ -259,6 +273,17 @@ function StockCheckPopup({
         });
         return filtered;
       });
+      setSelectedQuantities((previous) => {
+        const validIds = new Set(
+          (nextData.locations || [])
+            .flatMap((location) => location.consumables || [])
+            .concat(nextData.unassigned || [])
+            .map((item) => item.id)
+        );
+        return Object.fromEntries(
+          Object.entries(previous).filter(([id]) => validIds.has(id))
+        );
+      });
     } catch (fetchError) {
       console.error("❌ Failed to load stock data", fetchError);
       setError(fetchError.message || "Unable to load stock data.");
@@ -274,8 +299,17 @@ function StockCheckPopup({
   }, [open, fetchData]);
 
   useEffect(() => {
+    if (open && addOnly) {
+      setNewConsumableForm({ name: initialName.trim(), supplier: "", unitCost: "" });
+      setNewConsumableError("");
+      setIsAddConsumableOpen(true);
+    }
+  }, [addOnly, initialName, open]);
+
+  useEffect(() => {
     if (!open) {
       setSelectedItems(new Set());
+      setSelectedQuantities({});
       setStatusMessage("");
       setError("");
       setRenameItemState({ id: null, value: "" });
@@ -284,36 +318,71 @@ function StockCheckPopup({
       setShowStockList(false);
       setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
       setNewConsumableLoading(false);
+      setNewConsumableError("");
+      setIsAddConsumableOpen(false);
       return () => {};
     }
 
     const handleKey = (event) => {
       if (event.key === "Escape") {
-        closePopup();
+        if (isAddConsumableOpen) {
+          if (addOnly) {
+            closePopup();
+          } else {
+            setIsAddConsumableOpen(false);
+          }
+        } else {
+          closePopup();
+        }
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => {
       window.removeEventListener("keydown", handleKey);
     };
-  }, [open, closePopup]);
+  }, [addOnly, open, closePopup, isAddConsumableOpen]);
 
   const toggleItem = (itemId) => {
+    const isSelected = selectedItems.has(itemId);
     setSelectedItems((previous) => {
       const next = new Set(previous);
-      if (next.has(itemId)) {
+      if (isSelected) {
         next.delete(itemId);
       } else {
         next.add(itemId);
       }
       return next;
     });
+    setSelectedQuantities((quantities) => {
+      const nextQuantities = { ...quantities };
+      if (isSelected) {
+        delete nextQuantities[itemId];
+      } else {
+        nextQuantities[itemId] = quantities[itemId] || MIN_REQUEST_QUANTITY;
+      }
+      return nextQuantities;
+    });
+  };
+
+  const updateItemQuantity = (itemId, value) => {
+    const quantity = normalizeRequestQuantity(value);
+    setSelectedQuantities((previous) => ({ ...previous, [itemId]: quantity }));
   };
 
   const handleNewConsumableChange = (field) => (event) => {
     const value = event.target.value;
     setNewConsumableForm((previous) => ({ ...previous, [field]: value }));
   };
+
+  const openAddConsumable = useCallback(() => {
+    setNewConsumableForm({
+      name: stockSearchInput.trim(),
+      supplier: "",
+      unitCost: "",
+    });
+    setNewConsumableError("");
+    setIsAddConsumableOpen(true);
+  }, [stockSearchInput]);
 
   const applyStockSearch = useCallback((nextQuery = stockSearchInput) => {
     const trimmedQuery = (nextQuery || "").trim();
@@ -344,14 +413,21 @@ function StockCheckPopup({
     event.preventDefault();
     const itemName = (newConsumableForm.name || "").trim();
     if (!itemName) {
-      setError("Consumable name is required.");
+      setNewConsumableError("Consumable name is required.");
+      return;
+    }
+    const duplicateItem = allConsumables.find(
+      (item) => (item.name || "").trim().toLowerCase() === itemName.toLowerCase()
+    );
+    if (duplicateItem) {
+      setNewConsumableError(`"${duplicateItem.name}" is already in consumable stock.`);
       return;
     }
     const supplier = (newConsumableForm.supplier || "").trim();
     const unitCost = Number(newConsumableForm.unitCost) || 0;
     setNewConsumableLoading(true);
     setStatusMessage("");
-    setError("");
+    setNewConsumableError("");
     try {
       const response = await fetch("/api/workshop/consumables/items", {
         method: "POST",
@@ -371,9 +447,21 @@ function StockCheckPopup({
       setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
       setStatusMessage(`"${itemName}" added to consumable stock.`);
       await fetchData();
+      setStockSearchInput(itemName);
+      setStockSearchQuery(itemName);
+      setShowStockList(true);
+      setNewConsumableError("");
+      if (typeof onConsumableAdded === "function") {
+        await onConsumableAdded({ name: itemName });
+      }
+      if (addOnly) {
+        closePopup();
+      } else {
+        setIsAddConsumableOpen(false);
+      }
     } catch (newItemError) {
       console.error("❌ Failed to add consumable", newItemError);
-      setError(newItemError.message || "Unable to add consumable.");
+      setNewConsumableError(newItemError.message || "Unable to add consumable.");
     } finally {
       setNewConsumableLoading(false);
     }
@@ -393,7 +481,10 @@ function StockCheckPopup({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "submit",
-          consumableIds: Array.from(selectedItems),
+          consumableSelections: Array.from(selectedItems).map((consumableId) => ({
+            consumableId,
+            quantity: normalizeRequestQuantity(selectedQuantities[consumableId]),
+          })),
           technicianId,
         }),
       });
@@ -410,6 +501,7 @@ function StockCheckPopup({
       const nextState = payload.data || defaultData;
       setData(nextState);
       setSelectedItems(new Set());
+      setSelectedQuantities({});
       setStatusMessage("Stock check request submitted to Workshop Management.");
       if (typeof onRequestsSubmitted === "function") {
         onRequestsSubmitted(nextState.stockChecks || []);
@@ -431,7 +523,8 @@ function StockCheckPopup({
     const selectedList = allConsumables.filter((item) => selectedItems.has(item.id));
     const itemLines = selectedList.map((item, index) => {
       const itemName = (item?.name || "Unnamed consumable").toString().trim();
-      return `${index + 1}. ${itemName}`;
+      const quantity = normalizeRequestQuantity(selectedQuantities[item.id]);
+      return `${index + 1}. ${itemName} (quantity: ${quantity})`;
     });
 
     const body = [
@@ -556,34 +649,75 @@ function StockCheckPopup({
   const renderConsumableRow = (item) => {
     const checked = selectedItems.has(item.id);
     const isRenaming = renameItemState.id === item.id;
+    const quantity = normalizeRequestQuantity(selectedQuantities[item.id]);
     return (
       <div
         key={item.id}
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
-          padding: "12px",
+          gap: isRenaming ? "8px" : 0,
+          padding: "0 8px",
           borderRadius: "var(--radius-sm)",
           background: checked ? "var(--theme)" : "var(--surface)",
+          minHeight: "44px",
         }}
       >
         <div
+          className="app-popup-compact-header"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             gap: "12px",
+            height: "44px",
+            minHeight: "44px",
           }}
         >
-          <label style={{ ...checkboxLabelStyle, margin: 0 }}>
+          <label style={{ ...checkboxLabelStyle, margin: 0, minWidth: 0, flex: "1 1 auto" }}>
             <input
               type="checkbox"
               checked={checked}
               onChange={() => toggleItem(item.id)}
             />
-            <span>{item.name}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
           </label>
+          {checked && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "0 0 auto" }}>
+              <button
+                type="button"
+                className="app-table-action-btn"
+                onClick={() => updateItemQuantity(item.id, quantity - 1)}
+                disabled={quantity <= MIN_REQUEST_QUANTITY}
+                aria-label={`Decrease quantity for ${item.name}`}
+                style={{ width: "var(--control-height)", minWidth: "var(--control-height)", height: "var(--control-height)", minHeight: "var(--control-height)", padding: 0, background: "transparent", borderRadius: "50%" }}
+              >
+                <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "var(--table-action-btn-height)", height: "var(--table-action-btn-height)", borderRadius: "50%", background: "var(--surface)" }}>-</span>
+              </button>
+              <input
+                className="app-input"
+                type="number"
+                min={MIN_REQUEST_QUANTITY}
+                max={MAX_REQUEST_QUANTITY}
+                step="1"
+                inputMode="numeric"
+                value={quantity}
+                onChange={(event) => updateItemQuantity(item.id, event.target.value)}
+                aria-label={`Quantity for ${item.name}`}
+                style={{ width: "64px", height: "var(--control-height)", minHeight: "var(--control-height)", padding: "0 8px", textAlign: "center" }}
+              />
+              <button
+                type="button"
+                className="app-table-action-btn"
+                onClick={() => updateItemQuantity(item.id, quantity + 1)}
+                disabled={quantity >= MAX_REQUEST_QUANTITY}
+                aria-label={`Increase quantity for ${item.name}`}
+                style={{ width: "var(--control-height)", minWidth: "var(--control-height)", height: "var(--control-height)", minHeight: "var(--control-height)", padding: 0, background: "transparent", borderRadius: "50%" }}
+              >
+                <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "var(--table-action-btn-height)", height: "var(--table-action-btn-height)", borderRadius: "50%", background: "var(--surface)" }}>+</span>
+              </button>
+            </div>
+          )}
           {isManager && (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <Button
@@ -646,7 +780,7 @@ function StockCheckPopup({
   return (
     <>
     <PopupModal
-      isOpen={open}
+      isOpen={open && !addOnly}
       onClose={closePopup}
       closeOnBackdrop={false}
       ariaLabel="Stock Check"
@@ -666,6 +800,7 @@ function StockCheckPopup({
             <h2 style={{ margin: 0, color: "var(--text-1)" }}>Stock Check</h2>
           </div>
           <div
+            className="app-popup-compact-header__actions"
             style={{
               display: "flex",
               alignItems: "center",
@@ -794,62 +929,6 @@ function StockCheckPopup({
                   order: 2,
                 }}
               >
-              <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", order: 2 }}>
-                <h3 style={sectionHeadingStyle}>Add new consumable</h3>
-                <form
-                  onSubmit={handleNewConsumableSubmit}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                    gap: "12px",
-                    width: "100%",
-                  }}
-                >
-                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                    Item name
-                    <input
-                      type="text"
-                      value={newConsumableForm.name}
-                      onChange={handleNewConsumableChange("name")}
-                      placeholder="e.g. nitrile gloves"
-                      style={inputFieldStyle}
-                      required
-                    />
-                  </label>
-                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                    Default supplier
-                    <input
-                      type="text"
-                      value={newConsumableForm.supplier}
-                      onChange={handleNewConsumableChange("supplier")}
-                      placeholder="Optional supplier"
-                      style={inputFieldStyle}
-                    />
-                  </label>
-                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                    Default unit cost (£)
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newConsumableForm.unitCost}
-                      onChange={handleNewConsumableChange("unitCost")}
-                      placeholder="0.00"
-                      style={inputFieldStyle}
-                    />
-                  </label>
-                  <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-                    <Button
-                      type="submit"
-                      disabled={newConsumableLoading}
-                      variant="primary"
-                    >
-                      {newConsumableLoading ? "Adding…" : "Add Consumable"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-
               <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", order: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                   <h3 style={sectionHeadingStyle}>Recent stock check requests</h3>
@@ -963,8 +1042,8 @@ function StockCheckPopup({
                     inputMode="search"
                     enterKeyHint="search"
                     style={{
-                      flex: "1 1 260px",
-                      minWidth: "240px",
+                      flex: "1 1 220px",
+                      minWidth: "200px",
                     }}
                   />
                   <Button
@@ -982,6 +1061,9 @@ function StockCheckPopup({
                     disabled={totalItems === 0}
                   >
                     {showStockList && !hasAppliedSearch ? "Hide list" : "Show list"}
+                  </Button>
+                  <Button type="button" onClick={openAddConsumable} variant="secondary">
+                    Add New
                   </Button>
                 </div>
               </div>
@@ -1007,9 +1089,14 @@ function StockCheckPopup({
                     )}
                   </div>
                   {searchSuggestions.length === 0 ? (
-                    <p style={{ margin: 0, ...mutedTextStyle }}>
-                      No matching consumables found.
-                    </p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+                      <p style={{ margin: 0, ...mutedTextStyle }}>
+                        No matching consumables found. Select Add to create this item.
+                      </p>
+                      <Button type="button" onClick={openAddConsumable} variant="secondary" size="sm">
+                        Add &quot;{stockSearchInput.trim()}&quot;
+                      </Button>
+                    </div>
                   ) : (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                       {searchSuggestions.map((item) => (
@@ -1042,6 +1129,46 @@ function StockCheckPopup({
             </div>
           </div>
 
+    </PopupModal>
+    <PopupModal
+      isOpen={open && (addOnly || isAddConsumableOpen)}
+      onClose={() => addOnly ? closePopup() : setIsAddConsumableOpen(false)}
+      closeOnBackdrop={false}
+      ariaLabel="Add new consumable"
+      cardStyle={{ width: "min(100%, 680px)", padding: "var(--section-card-padding)" }}
+    >
+      <form onSubmit={handleNewConsumableSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+        <div className="app-popup-compact-header">
+          <h2 style={sectionHeadingStyle}>Add new consumable</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" busy={newConsumableLoading} variant="primary" size="sm">
+              Add Consumable
+            </Button>
+            <Button type="button" onClick={() => addOnly ? closePopup() : setIsAddConsumableOpen(false)} variant="secondary" size="sm">
+              Close
+            </Button>
+          </div>
+        </div>
+        {newConsumableError && (
+          <p style={{ margin: 0, color: "var(--danger)", fontWeight: 700 }} role="alert">
+            {newConsumableError}
+          </p>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--layout-card-gap)" }}>
+          <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
+            Item name
+            <input className="app-input" type="text" value={newConsumableForm.name} onChange={handleNewConsumableChange("name")} placeholder="e.g. nitrile gloves" required autoFocus />
+          </label>
+          <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
+            Default supplier
+            <input className="app-input" type="text" value={newConsumableForm.supplier} onChange={handleNewConsumableChange("supplier")} placeholder="Optional supplier" />
+          </label>
+          <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
+            Default unit cost (£)
+            <input className="app-input" type="number" min="0" step="0.01" value={newConsumableForm.unitCost} onChange={handleNewConsumableChange("unitCost")} placeholder="0.00" />
+          </label>
+        </div>
+      </form>
     </PopupModal>
     <ConfirmationDialog
       isOpen={!!confirmDialog}

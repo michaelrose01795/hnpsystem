@@ -106,14 +106,13 @@ Current page count: **5**
 
 ---
 
-## Technicians
+## Tech
 
 Module key: `department-tech`  
-Department: `Technicians`  
-Current page count: **5**
+Department: `tech`
+Current page count: **4**
 
 - Tech Dashboard - `/tech/dashboard`
-- Mobile Tech Dashboard - `/mobile/dashboard`
 - My Jobs - `/tech`
 - Efficiency - `/tech/efficiency`
 - Request Consumables - `/consumables-request`

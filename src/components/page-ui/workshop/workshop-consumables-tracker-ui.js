@@ -1,5 +1,6 @@
 import LayerTheme from "@/components/ui/LayerTheme"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
 import LayerSurface from "@/components/ui/LayerSurface";
+import Button from "@/components/ui/Button";
 
 const tableButtonStyle = {
   minHeight: "32px",
@@ -94,6 +95,7 @@ export default function ConsumablesTrackerPageUi(props) {
     handleEditedOrder,
     handleMonthValueChange,
     handleOrderFormChange,
+    handleRequestArrived,
     handleRequestOrder,
     handleSameDetails,
     highlightRowBackground,
@@ -779,6 +781,9 @@ export default function ConsumablesTrackerPageUi(props) {
                         }}>Item</th>
                       <th style={{
                           padding: "8px"
+                        }}>Stock</th>
+                      <th style={{
+                          padding: "8px"
                         }}>Last Ordered</th>
                       <th style={{
                           padding: "8px"
@@ -802,21 +807,21 @@ export default function ConsumablesTrackerPageUi(props) {
                   </thead>
                   <tbody>
                     {loadingConsumables ? <tr>
-                        <td colSpan={8} style={{
+                        <td colSpan={10} style={{
                           padding: "14px",
                           color: "var(--info)"
                         }}>
                           Loading consumable data…
                         </td>
                       </tr> : consumablesError ? <tr>
-                        <td colSpan={8} style={{
+                        <td colSpan={10} style={{
                           padding: "14px",
                           color: "var(--text-1)"
                         }}>
                           {consumablesError}
                         </td>
                       </tr> : consumables.length === 0 ? <tr>
-                        <td colSpan={8} style={{
+                        <td colSpan={10} style={{
                           padding: "14px",
                           color: "var(--info)"
                         }}>
@@ -846,6 +851,12 @@ export default function ConsumablesTrackerPageUi(props) {
                             }}>
                                 {item.name}
                               </strong>
+                            </td>
+                            <td style={{
+                            padding: "12px",
+                            color: mutedTextColor
+                          }}>
+                              {(Number(item.stockQuantity) || 0).toLocaleString()}
                             </td>
                             <td style={{
                             padding: "12px",
@@ -1020,38 +1031,22 @@ export default function ConsumablesTrackerPageUi(props) {
                           borderRadius: "var(--radius-pill)",
                           fontWeight: 600,
                           fontSize: "var(--text-caption)",
-                          ...(statusBadgeStyles[request.status === "ordered" ? "ordered" : request.status] || statusBadgeStyles.pending)
+                          ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending)
                         }}>
-                          {request.status === "ordered" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
+                          {request.status === "arrived" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
                           {(request.status || "pending").charAt(0).toUpperCase() + (request.status || "pending").slice(1)}
                         </span>
                       </td>
                       <td style={{
                         padding: "12px"
                       }}>
-                        {request.status === "pending" ? <button type="button" disabled={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)} style={{
-                          ...orderModalButtonStyle,
-                          ...tableButtonStyle,
-                          fontSize: "0.9rem",
-                          width: "auto"
-                        }}>
+                        {request.status === "pending" ? <Button type="button" disabled={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)} variant="primary" size="sm">
                             {orderingRequestId === request.id ? "Ordering…" : "Order"}
-                          </button> : request.status === "ordered" ? <span style={{
-                          color: "var(--success-dark)",
-                          fontWeight: 600
-                        }}>
-                            Ordered
-                          </span> : request.status === "rejected" ? <span style={{
-                          color: "var(--danger)",
-                          fontWeight: 600
-                        }}>
-                            Rejected
-                          </span> : request.status === "ordered" ? <span style={{
-                          color: "var(--success-dark)",
-                          fontWeight: 600
-                        }}>
-                            Ordered
-                          </span> : request.status === "rejected" ? <span style={{
+                          </Button> : request.status === "ordered" ? <Button type="button" disabled={orderingRequestId === request.id} onClick={() => handleRequestArrived(request)} variant="primary" size="sm">
+                            {orderingRequestId === request.id ? "Updating…" : "Arrived"}
+                          </Button> : request.status === "arrived" ? <Button type="button" disabled={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)} variant="secondary" size="sm">
+                            Reorder
+                          </Button> : request.status === "rejected" ? <span style={{
                           color: "var(--danger)",
                           fontWeight: 600
                         }}>
