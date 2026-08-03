@@ -84,7 +84,7 @@
     "eslint": "9.39.3",
     "eslint-config-next": "^16.2.12",
     "playwright": "^1.62.1",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vite": "8.1.5",
     "vitest": "^4.1.10"
   },
