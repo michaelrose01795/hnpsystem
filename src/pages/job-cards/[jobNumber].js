@@ -6566,6 +6566,7 @@ export function CustomerRequestsTab({
 export function WriteUpWorkspace({
   jobData,
   canEdit,
+  equalSplit = false,
   onUpdate,
   onUpdateRequestPrePickLocation = async () => {},
   onUpdateRequestStatus = async () => {},
@@ -7995,9 +7996,9 @@ export function WriteUpWorkspace({
 
         {editing ?
         /* ---------- EDIT MODE: 60/40 list + per-request editor ---------- */
-        <div className="jc-req-split">
+        <div className={`jc-req-split${equalSplit ? " jc-req-split--equal" : ""}`}>
           <div className="jc-req-table-wrap">
-            <table className="app-data-table app-data-table--rounded">
+            <table className={`app-data-table app-data-table--rounded${equalSplit ? " jc-req-table--scrollable" : ""}`}>
               <thead>
                 <tr>
                   <th style={{ width: "44px" }}>#</th>
@@ -8099,9 +8100,9 @@ export function WriteUpWorkspace({
         </div> :
 
         (combinedRequestRows.length > 0 ?
-        <div className="jc-req-split">
+        <div className={`jc-req-split${equalSplit ? " jc-req-split--equal" : ""}`}>
           <div className="jc-req-table-wrap">
-            <table className="app-data-table app-data-table--rounded">
+            <table className={`app-data-table app-data-table--rounded${equalSplit ? " jc-req-table--scrollable" : ""}`}>
               <thead>
                 <tr>
                   <th style={{ width: "52px", minWidth: "52px", whiteSpace: "nowrap", textAlign: "center" }}>#</th>
@@ -8255,7 +8256,14 @@ export function WriteUpWorkspace({
           }
           html.staff-scope .jc-req-table-wrap {
             min-width: 0;
+            max-width: 100%;
             overflow-x: auto;
+          }
+          html.staff-scope .jc-req-split--equal {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          html.staff-scope .jc-req-table--scrollable {
+            min-width: 480px;
           }
           html.staff-scope .jc-req-row {
             transition: background-color 0.15s ease;

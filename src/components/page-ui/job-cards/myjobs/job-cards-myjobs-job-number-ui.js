@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
-import { DropdownField } from "@/components/ui/dropdownAPI";
+import useIsMobile from "@/hooks/useIsMobile";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 import {
@@ -14,11 +14,6 @@ import {
   TechnicianJobTabRow,
 } from "@/components/JobCards/TechnicianJobLayout";
 
-const PART_PRIORITY_OPTIONS = ["Normal", "Required Today", "Vehicle Off Road", "Safety Related"];
-const PART_AREA_OPTIONS = ["Front", "Rear", "Engine Bay", "Interior", "Underbody", "Other"];
-const PART_SIDE_OPTIONS = ["N/S", "O/S", "Centre", "N/A"];
-const PART_REASON_OPTIONS = ["Worn", "Damaged", "Failed", "Missing", "Recommended Replacement", "Other"];
-
 const compactLabelStyle = {
   display: "flex",
   flexDirection: "column",
@@ -26,18 +21,6 @@ const compactLabelStyle = {
   fontSize: "12px",
   fontWeight: "700",
   color: "var(--text-1)",
-};
-
-const buttonGroupStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-  gap: "8px",
-};
-
-const metaGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-  gap: "8px",
 };
 
 const formatRequestStatusLabel = (status) => {
@@ -241,7 +224,6 @@ export default function TechJobDetailPageUi(props) {
     openSection,
     partRequestDescription,
     partRequestQuantity,
-    partRequestVhcItemId,
     partsFeedback,
     partsRequests,
     partsRequestsLoading,
@@ -258,7 +240,6 @@ export default function TechJobDetailPageUi(props) {
     setNewNote,
     setPartRequestDescription,
     setPartRequestQuantity,
-    setPartRequestVhcItemId,
     setPartsFeedback,
     setShowAddNote,
     setShowDocumentsPopup,
@@ -287,7 +268,8 @@ export default function TechJobDetailPageUi(props) {
     workspaceClockingEntries,
     workspaceJobData,
     workspaceOverallStatusId,
-    writeUpTechComplete,
+    writeUpTabComplete,
+    writeUpTabPartiallyComplete,
   } = props; // receive page logic props.
 
   // Bumped after any VHC media upload so the read-only gallery below re-fetches
@@ -298,11 +280,7 @@ export default function TechJobDetailPageUi(props) {
   // Media uploads can fall back to jobNumber, but the gallery requires the
   // numeric job id, so every camera/gallery call must use the nested id.
   const resolvedJobId = jobData?.jobCard?.id || jobData?.id || jobCard?.id || null;
-  const [partPriority, setPartPriority] = useState("Normal");
-  const [partArea, setPartArea] = useState("Front");
-  const [partSide, setPartSide] = useState("N/A");
-  const [partReason, setPartReason] = useState("Worn");
-  const [partAdditionalInfo, setPartAdditionalInfo] = useState("");
+  const isMobile = useIsMobile(767);
   const [partAttachments, setPartAttachments] = useState([]);
   const [partsUploadBusy, setPartsUploadBusy] = useState(false);
   const [partsValidationError, setPartsValidationError] = useState("");
@@ -315,12 +293,6 @@ export default function TechJobDetailPageUi(props) {
   const clearPartRequestForm = () => {
     setPartRequestDescription("");
     setPartRequestQuantity(1);
-    setPartRequestVhcItemId(null);
-    setPartPriority("Normal");
-    setPartArea("Front");
-    setPartSide("N/A");
-    setPartReason("Worn");
-    setPartAdditionalInfo("");
     setPartAttachments([]);
     setPartsUploadBusy(false);
     setPartsValidationError("");
@@ -374,12 +346,6 @@ export default function TechJobDetailPageUi(props) {
     const result = await handlePartsRequestSubmit?.({
       partRequired: trimmedPart,
       quantity: partRequestQuantity,
-      priority: partPriority,
-      area: partArea,
-      side: partSide,
-      reason: partReason,
-      additionalInfo: partAdditionalInfo,
-      vhcItemId: partRequestVhcItemId,
       attachments: uploadedAttachments,
     });
     if (result?.success !== false) {
@@ -1084,8 +1050,10 @@ export default function TechJobDetailPageUi(props) {
         const isVhcTab = tab === "vhc";
         const isVhcGreen = isVhcTab && isVhcCompleted;
         const isVhcAmber = isVhcTab && vhcTabAmberReady;
-        const isComplete = isVhcGreen || tab === "write-up" && writeUpTechComplete;
-        const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
+        const isWriteUpTab = tab === "write-up";
+        const isComplete = isVhcGreen || isWriteUpTab && writeUpTabComplete;
+        const isAmber = isVhcAmber || isWriteUpTab && writeUpTabPartiallyComplete;
+        const tabTone = isComplete ? "success" : isAmber ? "warning" : "default";
         return <button
           key={tab}
           className={`tab-api__item${isActive ? " is-active" : ""}`}
@@ -1752,149 +1720,6 @@ export default function TechJobDetailPageUi(props) {
             gap: "var(--page-stack-gap)",
             alignItems: "stretch"
           }}>
-              <LayerSurface as="section" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="16px">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <h3 style={{ margin: 0, fontSize: "19px", fontWeight: "700", color: "var(--text-1)" }}>
-                      Request an Individual Part
-                    </h3>
-                    <p style={{ margin: 0, color: "var(--text-1)", fontSize: "14px", maxWidth: "62ch" }}>
-                      Send a part request directly to the Parts team without completing a full VHC.
-                    </p>
-                  </div>
-                  <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-1)", backgroundColor: "var(--theme)", borderRadius: "var(--control-radius)", padding: "6px 12px" }}>
-                    Sent directly to Parts
-                  </span>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
-                  <label style={compactLabelStyle}>
-                    Part Required
-                    <input
-                      type="search"
-                      className="app-input app-input--search"
-                      value={partRequestDescription}
-                      onChange={(event) => {
-                        setPartRequestDescription(event.target.value);
-                        setPartsValidationError("");
-                        if (partsFeedback) setPartsFeedback("");
-                      }}
-                      placeholder="Search or type the part needed"
-                    />
-                  </label>
-
-                  <label style={compactLabelStyle}>
-                    Quantity
-                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(70px, 1fr) 44px", gap: "6px", alignItems: "center" }}>
-                      <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) - 1))}>-</Button>
-                      <input
-                        type="number"
-                        className="app-input"
-                        min={1}
-                        value={partRequestQuantity}
-                        onChange={(event) => setPartRequestQuantity(Math.max(1, Number(event.target.value) || 1))}
-                      />
-                      <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) + 1))}>+</Button>
-                    </div>
-                  </label>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-                  <DropdownField label="Priority" value={partPriority} onChange={(event) => setPartPriority(event.target.value)} options={PART_PRIORITY_OPTIONS} />
-                  <DropdownField label="Vehicle area" value={partArea} onChange={(event) => setPartArea(event.target.value)} options={PART_AREA_OPTIONS} />
-                  <DropdownField label="Reason" value={partReason} onChange={(event) => setPartReason(event.target.value)} options={PART_REASON_OPTIONS} />
-                </div>
-
-                <div style={buttonGroupStyle} aria-label="Side required">
-                  {PART_SIDE_OPTIONS.map((option) => (
-                    <Button
-                      key={option}
-                      type="button"
-                      variant={partSide === option ? "primary" : "secondary"}
-                      size="sm"
-                      onClick={() => setPartSide(option)}
-                    >
-                      {option}
-                    </Button>
-                  ))}
-                </div>
-
-                {Array.isArray(vhcChecks) && vhcChecks.filter((check) => check.section !== "VHC_CHECKSHEET").length > 0 && (
-                  <DropdownField
-                    label="Link to technician finding (optional)"
-                    value={partRequestVhcItemId || ""}
-                    onChange={(event) => setPartRequestVhcItemId(event.target.value ? Number(event.target.value) : null)}
-                    placeholder="No linked finding"
-                    options={[
-                      { value: "", label: "No linked finding" },
-                      ...vhcChecks.filter((check) => check.section !== "VHC_CHECKSHEET").map((check) => ({
-                        value: check.vhc_id,
-                        label: `#${check.vhc_id} ${(check.issue_title || check.section || "").slice(0, 48)}`,
-                      })),
-                    ]}
-                  />
-                )}
-
-                <label style={compactLabelStyle}>
-                  Additional information (optional)
-                  <textarea
-                    className="app-input app-input--textarea"
-                    rows={3}
-                    value={partAdditionalInfo}
-                    onChange={(event) => setPartAdditionalInfo(event.target.value)}
-                    placeholder="Measurements, fault details, fitting notes or brand preference"
-                  />
-                </label>
-
-                <LayerTheme as="div" sectionKey="myjob-parts-upload-summary" sectionType="content-card" parentKey="myjob-parts-request" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="12px">
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "start" }}>
-                    <label style={compactLabelStyle}>
-                      Photos or images (optional)
-                      <input
-                        ref={partAttachmentInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        multiple
-                        onChange={(event) => setPartAttachments(Array.from(event.target.files || []))}
-                        style={{ display: "none" }}
-                      />
-                      <Button type="button" variant="secondary" onClick={() => partAttachmentInputRef.current?.click()}>
-                        Choose Images
-                      </Button>
-                      <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--text-1)" }}>
-                        {partAttachments.length ? `${partAttachments.length} image${partAttachments.length === 1 ? "" : "s"} selected` : "Capture a photo or upload existing images."}
-                      </span>
-                    </label>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <strong style={{ color: "var(--text-1)", fontSize: "13px" }}>Live summary</strong>
-                      <div style={metaGridStyle}>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Part: {partRequestDescription || "Not entered"}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Qty: {Math.max(1, Number(partRequestQuantity) || 1)}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Priority: {partPriority}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Location: {partSide} {partArea}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Reason: {partReason}</span>
-                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>Photos: {partAttachments.length}</span>
-                      </div>
-                    </div>
-                  </div>
-                </LayerTheme>
-
-                {partsValidationError && <div role="alert" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: "var(--danger-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
-                  {partsValidationError}
-                </div>}
-                {partsFeedback && <div role="status" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: partsFeedback.toLowerCase().includes("failed") || partsFeedback.toLowerCase().includes("unable") ? "var(--danger-surface)" : "var(--success-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
-                  {partsFeedback}
-                </div>}
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
-                  <Button type="button" variant="secondary" onClick={clearPartRequestForm} disabled={partsSubmitting || partsUploadBusy}>Clear</Button>
-                  <Button type="button" variant="primary" busy={partsSubmitting || partsUploadBusy} onClick={submitIndividualPartRequest}>
-                    Send Request to Parts
-                  </Button>
-                </div>
-              </LayerSurface>
-
               <LayerSurface as="section" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Active Requests</h3>
@@ -2031,6 +1856,101 @@ export default function TechJobDetailPageUi(props) {
                 <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--text-1)" }}>Approved technician findings</h3>
                 <p style={{ margin: 0, fontSize: "13px", color: "var(--text-1)" }}>{authorizedVhcRows.length} approved finding{authorizedVhcRows.length === 1 ? "" : "s"} waiting for parts allocation.</p>
               </LayerSurface>}
+
+              <LayerSurface as="section" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="16px">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                    <h3 style={{ margin: 0, fontSize: "19px", fontWeight: "700", color: "var(--text-1)" }}>
+                      Request an Individual Part
+                    </h3>
+                    <p style={{ margin: 0, color: "var(--text-1)", fontSize: "14px", maxWidth: "62ch" }}>
+                      Send a part request directly to the Parts team without completing a full VHC.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-1)", backgroundColor: "var(--theme)", borderRadius: "var(--control-radius)", padding: "6px 12px" }}>
+                    Sent directly to Parts
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    // Equal outer tracks keep Part Required and Photos at a 50/50 split; quantity occupies the centre track.
+                    gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(140px, 180px) minmax(0, 1fr)",
+                    gap: "var(--layout-card-gap)",
+                    alignItems: "stretch",
+                  }}
+                >
+                  <LayerTheme sectionKey="myjob-parts-required-field" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px">
+                    <label style={compactLabelStyle}>
+                      Part Required
+                      <input
+                        type="search"
+                        className="app-input app-input--search"
+                        value={partRequestDescription}
+                        onChange={(event) => {
+                          setPartRequestDescription(event.target.value);
+                          setPartsValidationError("");
+                          if (partsFeedback) setPartsFeedback("");
+                        }}
+                        placeholder="Search or type the part needed"
+                      />
+                    </label>
+                  </LayerTheme>
+
+                  <LayerTheme sectionKey="myjob-parts-quantity-field" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px" style={{ justifyContent: "center" }}>
+                    <label style={compactLabelStyle}>
+                      Quantity
+                      <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) 44px", gap: "var(--space-2)", alignItems: "center" }}>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) - 1))}>-</Button>
+                        <input
+                          type="number"
+                          className="app-input"
+                          min={1}
+                          value={partRequestQuantity}
+                          onChange={(event) => setPartRequestQuantity(Math.max(1, Number(event.target.value) || 1))}
+                        />
+                        <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) + 1))}>+</Button>
+                      </div>
+                    </label>
+                  </LayerTheme>
+
+                  <LayerTheme sectionKey="myjob-parts-upload-summary" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px">
+                    <label style={compactLabelStyle}>
+                      Photos or images (optional)
+                      <input
+                        ref={partAttachmentInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        onChange={(event) => setPartAttachments(Array.from(event.target.files || []))}
+                        style={{ display: "none" }}
+                      />
+                      <Button type="button" variant="secondary" onClick={() => partAttachmentInputRef.current?.click()}>
+                        Choose Images
+                      </Button>
+                      <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--text-1)" }}>
+                        {partAttachments.length ? `${partAttachments.length} image${partAttachments.length === 1 ? "" : "s"} selected` : "Capture a photo or upload existing images."}
+                      </span>
+                    </label>
+                  </LayerTheme>
+                </div>
+
+                {partsValidationError && <div role="alert" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: "var(--danger-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
+                  {partsValidationError}
+                </div>}
+                {partsFeedback && <div role="status" style={{ fontSize: "13px", color: "var(--text-1)", backgroundColor: partsFeedback.toLowerCase().includes("failed") || partsFeedback.toLowerCase().includes("unable") ? "var(--danger-surface)" : "var(--success-surface)", borderRadius: "var(--radius-xs)", padding: "10px 14px" }}>
+                  {partsFeedback}
+                </div>}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                  <Button type="button" variant="secondary" onClick={clearPartRequestForm} disabled={partsSubmitting || partsUploadBusy}>Clear</Button>
+                  <Button type="button" variant="primary" busy={partsSubmitting || partsUploadBusy} onClick={submitIndividualPartRequest}>
+                    Send Request to Parts
+                  </Button>
+                </div>
+              </LayerSurface>
             </DevLayoutSection>}
 
           {/* NOTES TAB */}
@@ -2230,6 +2150,7 @@ export default function TechJobDetailPageUi(props) {
           >
             {WriteUpWorkspace && workspaceJobData ? <WriteUpWorkspace
               jobData={workspaceJobData}
+              equalSplit
               canEdit={canEditWorkspace}
               onUpdate={handleUpdateRequests}
               onUpdateRequestStatus={handleUpdateRequestStatus}

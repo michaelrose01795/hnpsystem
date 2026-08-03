@@ -6,11 +6,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
-import { getAllJobs } from "@/lib/database/jobs";
+import { getAllJobs, subscribeToJobChanges } from "@/lib/database/jobs";
 import { invalidateCache } from "@/lib/database/queryCache";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
-import { getUserActiveJobs } from "@/lib/database/jobClocking";
-import { supabase } from "@/lib/database/supabaseClient";
+import {
+  getOpenJobClockingByJobIds,
+  getUserActiveJobs,
+  subscribeToUserClockingChanges
+} from "@/lib/database/jobClocking";
 import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import { compareJobsForBoard } from "@/lib/jobCards/utils";
 import { normalizeDisplayName } from "@/utils/nameUtils";
@@ -38,6 +41,43 @@ const STATUS_BADGE_STYLES = {
 
 const getStatusBadgeStyle = (status) =>
 STATUS_BADGE_STYLES[status] || { background: "var(--theme)", color: "var(--info-dark)" };
+
+const MY_JOBS_CACHE_VERSION = 1;
+const getMyJobsCacheKey = (userId) => `hnp:my-jobs:${userId}:v${MY_JOBS_CACHE_VERSION}`;
+
+const readMyJobsSnapshot = (userId) => {
+  if (typeof window === "undefined" || !userId) return null;
+  try {
+    const stored = window.sessionStorage.getItem(getMyJobsCacheKey(userId));
+    if (!stored) return null;
+    const snapshot = JSON.parse(stored);
+    if (!Array.isArray(snapshot?.jobs)) return null;
+    return snapshot;
+  } catch {
+    return null;
+  }
+};
+
+const persistMyJobsSnapshot = (userId, jobs, activeJobIds) => {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    window.sessionStorage.setItem(
+      getMyJobsCacheKey(userId),
+      JSON.stringify({
+        jobs: Array.isArray(jobs) ? jobs : [],
+        activeJobIds: Array.from(activeJobIds || []),
+        savedAt: Date.now()
+      })
+    );
+  } catch {
+    // Storage can be unavailable or full; the live fetch remains the fallback.
+  }
+};
+
+const isManualPageReload = () => {
+  if (typeof window === "undefined" || typeof window.performance === "undefined") return false;
+  return window.performance.getEntriesByType?.("navigation")?.[0]?.type === "reload";
+};
 
 const normalizeStatusKey = (status) =>
 typeof status === "string" ? status.trim().toLowerCase() : "";
@@ -155,23 +195,25 @@ const isTechTaskComplete = (job = {}) => {
 
 export default function MyJobsPage() {
   const router = useRouter();
-  const { user, status: techStatus, currentJob, dbUserId } = useUser();
+  const { user, dbUserId } = useUser();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
 
-  const [jobs, setJobs] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, in-progress, pending, complete
   const [searchTerm, setSearchTerm] = useState("");
   const [showStartJobModal, setShowStartJobModal] = useState(false); // Control Start Job modal visibility
   const [prefilledJobNumber, setPrefilledJobNumber] = useState(""); // Prefill job number in modal
   const [activeJobIds, setActiveJobIds] = useState(new Set());
+  const myJobsRef = useRef([]);
+  const activeJobIdsRef = useRef(new Set());
+  const initialLoadKeyRef = useRef("");
+  const queueRefreshTimerRef = useRef(null);
 
   const username = user?.username?.trim();
-  const techsList = usersByRole?.["Techs"] || [];
-  const motTestersList = usersByRole?.["MOT Tester"] || [];
+  const techsList = useMemo(() => usersByRole?.["Techs"] || [], [usersByRole]);
+  const motTestersList = useMemo(() => usersByRole?.["MOT Tester"] || [], [usersByRole]);
   // ⚠️ Mock data found — replacing with Supabase query
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const allowedTechNames = useMemo(
@@ -247,48 +289,6 @@ export default function MyJobsPage() {
     [dbUserId, normalizedUserNames]
   );
 
-  const fetchOpenClockingByJob = useCallback(async (jobIds = []) => {
-    const numericIds = Array.from(
-      new Set(
-        (Array.isArray(jobIds) ? jobIds : []).
-        map((id) => Number(id)).
-        filter((id) => Number.isInteger(id))
-      )
-    );
-
-    if (numericIds.length === 0) {
-      return new Map();
-    }
-
-    try {
-      const { data, error } = await supabase.
-      from("job_clocking").
-      select("id, job_id, user_id, request_id, work_type, clock_in, clock_out").
-      in("job_id", numericIds).
-      is("clock_out", null);
-
-      if (error) {
-        throw error;
-      }
-
-      const nextMap = new Map();
-      (data || []).forEach((row) => {
-        const jobId = Number(row?.job_id);
-        if (!Number.isInteger(jobId)) {
-          return;
-        }
-        if (!nextMap.has(jobId)) {
-          nextMap.set(jobId, []);
-        }
-        nextMap.get(jobId).push(row);
-      });
-      return nextMap;
-    } catch (error) {
-      console.error("[MyJobs] failed to fetch open job clocking:", error);
-      return new Map();
-    }
-  }, []);
-
   const shouldShowMotHandoffJob = useCallback(
     (job, clockingMap) => {
       if (!isMotTester || !dbUserId || !job) {
@@ -319,18 +319,20 @@ export default function MyJobsPage() {
     [isMotTester, dbUserId]
   );
 
-  const fetchJobsForTechnician = useCallback(async () => {
+  const fetchJobsForTechnician = useCallback(async ({ showLoading = true, forceFresh = false } = {}) => {
     if (!hasTechnicianAccess || !dbUserId) return;
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
 
     try {
+      if (forceFresh) invalidateCache("jobs:");
       const fetchedJobs = await getAllJobs();
-      console.log("[MyJobs] fetched jobs:", fetchedJobs);
-      setJobs(fetchedJobs);
-      const clockingMap = await fetchOpenClockingByJob(
+      const clockingMap = await getOpenJobClockingByJobIds(
         fetchedJobs.map((job) => job?.id).filter(Boolean)
-      );
+      ).catch((error) => {
+        console.error("[MyJobs] failed to fetch open job clocking:", error);
+        return new Map();
+      });
 
       let assignedJobs;
       if (isMobileTech) {
@@ -352,8 +354,10 @@ export default function MyJobsPage() {
       // Order matches the board panel on Next Jobs (position → checkedInAt → createdAt)
       const sortedJobs = assignedJobs.sort(compareJobsForBoard);
 
+      myJobsRef.current = sortedJobs;
       setMyJobs(sortedJobs);
       setFilteredJobs(sortedJobs);
+      persistMyJobsSnapshot(dbUserId, sortedJobs, activeJobIdsRef.current);
     } catch (error) {
       console.error("[MyJobs] error fetching jobs:", error);
     } finally {
@@ -364,14 +368,36 @@ export default function MyJobsPage() {
   dbUserId,
   isMobileTech,
   isAssignedToTechnician,
-  fetchOpenClockingByJob,
-  shouldShowMotHandoffJob,
-  activeJobIds]
+  shouldShowMotHandoffJob]
   );
 
   useEffect(() => {
     if (!hasTechnicianAccess || !dbUserId) return;
-    fetchJobsForTechnician();
+
+    const loadKey = String(dbUserId);
+    if (initialLoadKeyRef.current === loadKey) return;
+    initialLoadKeyRef.current = loadKey;
+
+    const cachedSnapshot = readMyJobsSnapshot(dbUserId);
+    if (cachedSnapshot) {
+      const cachedActiveJobIds = new Set(
+        (cachedSnapshot.activeJobIds || []).map(Number).filter(Number.isInteger)
+      );
+      myJobsRef.current = cachedSnapshot.jobs;
+      activeJobIdsRef.current = cachedActiveJobIds;
+      setMyJobs(cachedSnapshot.jobs);
+      setFilteredJobs(cachedSnapshot.jobs);
+      setActiveJobIds(cachedActiveJobIds);
+      setLoading(false);
+    }
+
+    const manualReload = isManualPageReload();
+    if (!cachedSnapshot || manualReload) {
+      void fetchJobsForTechnician({
+        showLoading: !cachedSnapshot,
+        forceFresh: manualReload
+      });
+    }
   }, [hasTechnicianAccess, dbUserId, fetchJobsForTechnician]);
 
   const fetchActiveJobs = useCallback(async () => {
@@ -384,8 +410,11 @@ export default function MyJobsPage() {
       const result = await getUserActiveJobs(dbUserId);
       if (result.success) {
         const ids = new Set(result.data.map((entry) => Number(entry.jobId)));
+        activeJobIdsRef.current = ids;
         setActiveJobIds(ids);
+        persistMyJobsSnapshot(dbUserId, myJobsRef.current, ids);
       } else {
+        activeJobIdsRef.current = new Set();
         setActiveJobIds(new Set());
       }
     } catch (error) {
@@ -393,20 +422,6 @@ export default function MyJobsPage() {
       setActiveJobIds(new Set());
     }
   }, [dbUserId]);
-
-  const jobIdsFilterString = useMemo(() => {
-    const ids = myJobs.
-    map((job) => {
-      if (Number.isInteger(job?.id)) return job.id;
-      if (job?.id) return Number(job.id);
-      return null;
-    }).
-    filter((id) => Number.isInteger(id));
-    return ids.length > 0 ? ids.join(",") : "";
-  }, [myJobs]);
-
-  const statusRefetchGuard = useRef(false);
-  const previousFetchRef = useRef(fetchJobsForTechnician);
 
   useEffect(() => {
     fetchActiveJobs();
@@ -423,130 +438,42 @@ export default function MyJobsPage() {
       return normalized ? normalizedUserNames.has(normalized) : false;
     };
 
-    const channel = supabase.
-    channel(`myjobs-jobs-${dbUserId}`).
-    on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "jobs"
-      },
-      (payload) => {
-        const nextAssigned = payload?.new?.assigned_to;
-        const previousAssigned = payload?.old?.assigned_to;
-        if (
-        isMotTester ||
-        isMobileTech ||
-        matchesUserAssignment(nextAssigned) ||
-        matchesUserAssignment(previousAssigned))
-        {
-          fetchJobsForTechnician();
-        }
+    const unsubscribe = subscribeToJobChanges(`myjobs-${dbUserId}`, (payload) => {
+      const nextRow = payload?.new || {};
+      const previousRow = payload?.old || {};
+      const jobId = Number(nextRow.id ?? previousRow.id);
+      const cachedJob = myJobsRef.current.find((job) => Number(job?.id) === jobId);
+      const nextAssigned = nextRow.assigned_to;
+      const previousAssigned = previousRow.assigned_to ?? cachedJob?.assignedTo;
+      const assignmentChanged =
+        matchesUserAssignment(nextAssigned) !== matchesUserAssignment(previousAssigned);
+      const nextPosition = nextRow.queue_position;
+      const cachedPosition = cachedJob?.position;
+      const queuePositionChanged =
+        nextPosition !== undefined && String(nextPosition ?? "") !== String(cachedPosition ?? "");
+      const affectsSpecialistQueue = (isMotTester || isMobileTech) && queuePositionChanged;
+
+      if (assignmentChanged || affectsSpecialistQueue || (cachedJob && queuePositionChanged)) {
+        if (queueRefreshTimerRef.current) window.clearTimeout(queueRefreshTimerRef.current);
+        queueRefreshTimerRef.current = window.setTimeout(() => {
+          void fetchJobsForTechnician({ showLoading: false, forceFresh: true });
+        }, 120);
       }
-    ).
-    subscribe();
+    });
 
     return () => {
-      channel.unsubscribe();
-      if (typeof supabase.removeChannel === "function") {
-        supabase.removeChannel(channel);
-      }
+      if (queueRefreshTimerRef.current) window.clearTimeout(queueRefreshTimerRef.current);
+      queueRefreshTimerRef.current = null;
+      unsubscribe();
     };
   }, [dbUserId, fetchJobsForTechnician, normalizedUserNames, isMotTester, isMobileTech]);
 
   useEffect(() => {
-    if (!dbUserId || !jobIdsFilterString) return;
-
-    const channel = supabase.
-    channel(`myjobs-requests-${dbUserId}-${jobIdsFilterString}`).
-    on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "job_requests",
-        filter: `job_id=in.(${jobIdsFilterString})`
-      },
-      () => {
-        fetchJobsForTechnician();
-      }
-    ).
-    on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "parts_requests",
-        filter: `job_id=in.(${jobIdsFilterString})`
-      },
-      () => {
-        fetchJobsForTechnician();
-      }
-    ).
-    on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "vhc_checks",
-        filter: `job_id=in.(${jobIdsFilterString})`
-      },
-      () => {
-        invalidateCache("jobs:");
-        fetchJobsForTechnician();
-      }
-    ).
-    subscribe();
-
-    return () => {
-      channel.unsubscribe();
-      if (typeof supabase.removeChannel === "function") {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [dbUserId, jobIdsFilterString, fetchJobsForTechnician]);
-
-  useEffect(() => {
     if (!dbUserId) return;
-
-    const channel = supabase.
-    channel(`myjobs-clocking-${dbUserId}-${jobIdsFilterString || "none"}`).
-    on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "job_clocking"
-      },
-      () => {
-        fetchActiveJobs();
-        fetchJobsForTechnician();
-      }
-    ).
-    subscribe();
-
-    return () => {
-      channel.unsubscribe();
-      if (typeof supabase.removeChannel === "function") {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [dbUserId, jobIdsFilterString, fetchActiveJobs, fetchJobsForTechnician]);
-
-  useEffect(() => {
-    if (previousFetchRef.current !== fetchJobsForTechnician) {
-      statusRefetchGuard.current = false;
-      previousFetchRef.current = fetchJobsForTechnician;
-    }
-
-    if (!statusRefetchGuard.current) {
-      statusRefetchGuard.current = true;
-      return;
-    }
-
-    fetchJobsForTechnician();
-  }, [techStatus, currentJob?.jobNumber, fetchJobsForTechnician]);
+    return subscribeToUserClockingChanges(dbUserId, () => {
+      void fetchActiveJobs();
+    });
+  }, [dbUserId, fetchActiveJobs]);
 
   // Apply filters when filter or search changes
   useEffect(() => {
@@ -588,9 +515,9 @@ export default function MyJobsPage() {
     }
 
     setFilteredJobs(filtered);
-  }, [filter, searchTerm, myJobs]);
+  }, [filter, searchTerm, myJobs, activeJobIds]);
 
-  if (rosterLoading) {
+  if (rosterLoading && !hasRoleAccess && !isMobileTech) {
     return <MyJobsPageUi view="section1" InlineLoading={InlineLoading} />;
 
 

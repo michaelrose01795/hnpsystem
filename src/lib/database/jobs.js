@@ -324,6 +324,41 @@ const normaliseCauseEntries = (entries = []) => {
 export const getAllJobs = () =>
   cachedQuery("jobs:all", _getAllJobsUncached);
 
+export const getJobRequestsForClocking = async (jobId) => {
+  const numericJobId = Number(jobId);
+  if (!Number.isInteger(numericJobId)) return [];
+
+  const { data, error } = await supabase
+    .from("job_requests")
+    .select("request_id, description, hours, sort_order, request_source")
+    .eq("job_id", numericJobId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const subscribeToJobChanges = (channelKey, onChange) => {
+  if (typeof onChange !== "function") return () => {};
+
+  const safeChannelKey = String(channelKey || "all").replace(/[^a-zA-Z0-9_-]/g, "-");
+  const channel = supabase
+    .channel(`jobs-${safeChannelKey}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "jobs" },
+      onChange
+    )
+    .subscribe();
+
+  return () => {
+    void channel.unsubscribe();
+    if (typeof supabase.removeChannel === "function") {
+      void supabase.removeChannel(channel);
+    }
+  };
+};
+
 const _getAllJobsUncached = async () => {
   console.log("🔍 getAllJobs: Starting fetch..."); // Debug log
 

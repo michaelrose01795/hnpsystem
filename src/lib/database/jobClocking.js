@@ -643,6 +643,64 @@ export const getUserActiveJobs = async (rawUserId) => {
   }
 };
 
+export const getOpenJobClockingByJobIds = async (jobIds = []) => {
+  const ids = [
+    ...new Set(
+      (Array.isArray(jobIds) ? jobIds : [])
+        .map((id) => coerceInteger(id))
+        .filter((id) => id !== null)
+    ),
+  ];
+
+  if (ids.length === 0) return new Map();
+
+  const { data, error } = await db
+    .from(TABLE_NAME)
+    .select("id, job_id, user_id, request_id, work_type, clock_in, clock_out")
+    .in("job_id", ids)
+    .is("clock_out", null);
+
+  if (error) {
+    throw new Error(`Failed to load open job clocking entries: ${error.message}`);
+  }
+
+  return (data || []).reduce((rowsByJobId, row) => {
+    const jobId = coerceInteger(row?.job_id);
+    if (jobId === null) return rowsByJobId;
+    if (!rowsByJobId.has(jobId)) rowsByJobId.set(jobId, []);
+    rowsByJobId.get(jobId).push(row);
+    return rowsByJobId;
+  }, new Map());
+};
+
+export const subscribeToUserClockingChanges = (userId, onChange) => {
+  const normalizedUserId = coerceInteger(userId);
+  if (normalizedUserId === null || typeof onChange !== "function") {
+    return () => {};
+  }
+
+  const channel = db
+    .channel(`user-clocking-${normalizedUserId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: TABLE_NAME,
+        filter: `user_id=eq.${normalizedUserId}`,
+      },
+      onChange
+    )
+    .subscribe();
+
+  return () => {
+    void channel.unsubscribe();
+    if (typeof db.removeChannel === "function") {
+      void db.removeChannel(channel);
+    }
+  };
+};
+
 export const getJobClockingEntries = async (jobId) => {
   const jobIdInt = assertInteger(jobId, "jobId");
   const { data, error } = await db

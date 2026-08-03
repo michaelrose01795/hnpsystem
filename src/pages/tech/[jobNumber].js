@@ -51,6 +51,7 @@ import {
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
+import { getWriteUpCompletionState } from "@/features/jobCards/workflow/selectors";
 import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
 import {
   normaliseDecisionStatus,
@@ -1527,11 +1528,6 @@ export default function TechJobDetailPage() {
         : "";
       const descriptionLines = [
         `Part required: ${partRequired}`,
-        `Priority: ${form.priority || "Normal"}`,
-        `Vehicle area: ${form.area || "Front"}`,
-        `Side: ${form.side || "N/A"}`,
-        `Reason: ${form.reason || "Worn"}`,
-        form.additionalInfo ? `Additional information: ${String(form.additionalInfo).trim()}` : "",
         attachmentSummary ? `Photos selected: ${attachmentSummary}` : "",
         "Sent directly to Parts",
       ].filter(Boolean);
@@ -2142,7 +2138,7 @@ export default function TechJobDetailPage() {
     jobData.jobCard.completionStatus.toLowerCase() :
     "";
   })();
-  const writeUpChecklistRowsComplete = (() => {
+  const writeUpChecklistTasks = useMemo(() => {
     const checklistRaw = jobData?.jobCard?.writeUp?.task_checklist;
     let checklistTasks = [];
 
@@ -2163,17 +2159,16 @@ export default function TechJobDetailPage() {
       }
     }
 
-    if (checklistTasks.length === 0) {
-      return null;
-    }
-
-    return checklistTasks.every((task) => {
+    return checklistTasks;
+  }, [jobData?.jobCard?.writeUp?.task_checklist]);
+  const writeUpChecklistRowsComplete = writeUpChecklistTasks.length > 0 ?
+    writeUpChecklistTasks.every((task) => {
       if (!task || typeof task !== "object") return false;
       if (typeof task.checked === "boolean") return task.checked;
       const normalizedTaskStatus = String(task.status || "").trim().toLowerCase();
       return normalizedTaskStatus === "complete" || normalizedTaskStatus === "completed";
-    });
-  })();
+    }) :
+    null;
   const writeUpComplete =
   typeof writeUpChecklistRowsComplete === "boolean" ?
   writeUpChecklistRowsComplete :
@@ -2186,6 +2181,25 @@ export default function TechJobDetailPage() {
   liveWriteUpTasks !== null ?
   writeUpTaskSummary :
   jobData?.jobCard?.writeUpTaskSummary || null;
+  const writeUpTabState = useMemo(
+    () => getWriteUpCompletionState({
+      completionStatus: writeUpCompletion,
+      checklistTasks: liveWriteUpTasks !== null ? liveWriteUpTasks : writeUpChecklistTasks,
+      requestRows: liveWriteUpTasks !== null ? [] :
+        Array.isArray(jobData?.jobCard?.jobRequests) ? jobData.jobCard.jobRequests :
+        Array.isArray(jobData?.jobCard?.job_requests) ? jobData.jobCard.job_requests :
+        []
+    }),
+    [
+      jobData?.jobCard?.jobRequests,
+      jobData?.jobCard?.job_requests,
+      liveWriteUpTasks,
+      writeUpChecklistTasks,
+      writeUpCompletion
+    ]
+  );
+  const writeUpTabComplete = writeUpTabState.isCompleteInstant;
+  const writeUpTabPartiallyComplete = writeUpTabState.isPartiallyComplete;
   const writeUpTechComplete =
   effectiveWriteUpTaskSummary?.technicianTasksComplete === true || writeUpComplete;
   const pendingMotTasks = effectiveWriteUpTaskSummary?.pendingMotTasks || [];
@@ -3233,7 +3247,7 @@ export default function TechJobDetailPage() {
 
   }
 
-  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedParts={authorizedParts} authorizedPartsLoading={authorizedPartsLoading} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartJobItemAction={handlePartJobItemAction} handlePartsRequestAction={handlePartsRequestAction} handlePartsRequestNote={handlePartsRequestNote} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTechComplete={writeUpTechComplete} />;
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedParts={authorizedParts} authorizedPartsLoading={authorizedPartsLoading} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartJobItemAction={handlePartJobItemAction} handlePartsRequestAction={handlePartsRequestAction} handlePartsRequestNote={handlePartsRequestNote} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTabComplete={writeUpTabComplete} writeUpTabPartiallyComplete={writeUpTabPartiallyComplete} writeUpTechComplete={writeUpTechComplete} />;
 
 
 

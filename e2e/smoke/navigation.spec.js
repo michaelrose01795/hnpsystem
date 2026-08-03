@@ -2,7 +2,7 @@
 // Smoke tests — verify sidebar navigation renders and key links exist.
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { test, expect, waitForAppReady } = require('../helpers/fixtures.js');
+const { test, expect } = require('../helpers/fixtures.js');
 
 test.describe('Smoke — Navigation', () => {
   test.describe.configure({ timeout: 90_000 });
@@ -15,6 +15,13 @@ test.describe('Smoke — Navigation', () => {
   };
 
   test('sidebar renders with navigation links', async ({ page }) => {
+    const realtimeSubscriptionErrors = [];
+    page.on('pageerror', (error) => {
+      if (String(error?.message || error).includes('cannot add `postgres_changes` callbacks')) {
+        realtimeSubscriptionErrors.push(String(error.message || error));
+      }
+    });
+
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
@@ -23,8 +30,8 @@ test.describe('Smoke — Navigation', () => {
 
     // Check that navigation structure is present
     const navElements = page.locator('nav, [role="navigation"], aside');
-    const count = await navElements.count();
-    expect(count).toBeGreaterThan(0);
+    await expect(navElements.first()).toBeVisible({ timeout: 30_000 });
+    expect(realtimeSubscriptionErrors).toEqual([]);
   });
 
   test('login page is accessible when logged out', async ({ browser }) => {

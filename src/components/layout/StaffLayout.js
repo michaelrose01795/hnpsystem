@@ -45,7 +45,11 @@ import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
-import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
+import { getUserActiveJobs, clockOutFromJob, switchJob } from "@/lib/database/jobClocking";
+import {
+  STATUSES as CLOCKING_STATUSES,
+  WORK_TYPES as CLOCKING_WORK_TYPES,
+} from "@/lib/status/catalog/clocking";
 import { getTechnicianTopbarSnapshot } from "@/lib/database/technicianTopbar";
 import { buildTechnicianKpis } from "@/config/topbar/technicianKpis";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
@@ -95,7 +99,15 @@ export default function Layout({
   presentationShell = false,
   publicRoute = false,
 }) {
-  const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
+  const {
+    user,
+    loading: userLoading,
+    status,
+    setStatus,
+    currentJob,
+    dbUserId,
+    refreshCurrentJob,
+  } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
   const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
@@ -645,37 +657,92 @@ export default function Layout({
     }
   };
 
-  // Handle Tea Break - unclock from all active jobs
-  const handleTeaBreak = async () => {
-    if (!dbUserId) return;
+  const loadActiveJobs = async () => {
+    if (!dbUserId) return [];
+    const result = await getUserActiveJobs(dbUserId);
+    if (!result?.success) {
+      throw new Error(result?.error || "Unable to load active job clocking.");
+    }
+    return Array.isArray(result.data) ? result.data : [];
+  };
 
-    try {
-      const { success, data: activeJobs } = await getUserActiveJobs(dbUserId);
-
-      if (success && activeJobs && activeJobs.length > 0) {
-        // Clock out from all active jobs
-        for (const job of activeJobs) {
-          await clockOutFromJob({
-            userId: dbUserId,
-            jobId: job.jobId,
-            clockingId: job.clockingId
-          });
-        }
+  const clockOffActiveJobs = async (activeJobs) => {
+    for (const job of activeJobs) {
+      const result = await clockOutFromJob({
+        userId: dbUserId,
+        jobId: job.jobId,
+        clockingId: job.clockingId,
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to clock off the active job.");
       }
-
-      setStatus("Tea Break");
-    } catch (error) {
-      console.error("Error handling tea break:", error);
-      setStatus("Tea Break");
     }
   };
 
-  // Handle status change
+  const switchActiveJobWorkType = async (activeJob, workType) => {
+    const result = await switchJob({
+      userId: dbUserId,
+      currentJobId: activeJob.jobId,
+      newJobId: activeJob.jobId,
+      newJobNumber: activeJob.jobNumber,
+      workType,
+    });
+    if (!result?.success) {
+      throw new Error(result?.error || "Unable to update the active job clocking type.");
+    }
+  };
+
+  // Status changes also keep the technician's active job rows in sync.
   const handleStatusChange = async (newStatus) => {
-    if (newStatus === "Tea Break") {
-      await handleTeaBreak();
-    } else {
+    if (!dbUserId) {
       setStatus(newStatus);
+      return;
+    }
+
+    try {
+      const activeJobs = await loadActiveJobs();
+      const activeJob = activeJobs[0] || null;
+
+      if (newStatus === CLOCKING_STATUSES.ROAD_TEST) {
+        if (!activeJob) {
+          setStatus(CLOCKING_STATUSES.WAITING_FOR_JOB);
+          return;
+        }
+        if (activeJob.workType !== CLOCKING_WORK_TYPES.ROAD_TEST) {
+          await switchActiveJobWorkType(activeJob, CLOCKING_WORK_TYPES.ROAD_TEST);
+        }
+        await refreshCurrentJob();
+        setStatus(CLOCKING_STATUSES.ROAD_TEST);
+        return;
+      }
+
+      if (newStatus === CLOCKING_STATUSES.IN_PROGRESS) {
+        if (!activeJob) {
+          setStatus(CLOCKING_STATUSES.WAITING_FOR_JOB);
+          return;
+        }
+        if (activeJob.workType === CLOCKING_WORK_TYPES.ROAD_TEST) {
+          await switchActiveJobWorkType(activeJob, CLOCKING_WORK_TYPES.STANDARD);
+          await refreshCurrentJob();
+        }
+        setStatus(CLOCKING_STATUSES.IN_PROGRESS);
+        return;
+      }
+
+      const offJobStatuses = new Set([
+        CLOCKING_STATUSES.WAITING_FOR_JOB,
+        CLOCKING_STATUSES.TEA_BREAK,
+        CLOCKING_STATUSES.WORKSHOP_MAINTENANCE,
+        CLOCKING_STATUSES.MEETING_TRAINING,
+      ]);
+      if (offJobStatuses.has(newStatus)) {
+        await clockOffActiveJobs(activeJobs);
+        await refreshCurrentJob();
+      }
+      setStatus(newStatus);
+    } catch (error) {
+      console.error("Error changing technician status:", error);
+      await refreshCurrentJob();
     }
   };
 
@@ -690,13 +757,19 @@ export default function Layout({
         if (success) {
           if (activeJobs && activeJobs.length > 0) {
             // User is clocked into a job
-            if (status !== "In Progress" && status !== "Tea Break") {
-              setStatus("In Progress");
+            const nextStatus = activeJobs[0]?.workType === CLOCKING_WORK_TYPES.ROAD_TEST
+              ? CLOCKING_STATUSES.ROAD_TEST
+              : CLOCKING_STATUSES.IN_PROGRESS;
+            if (status !== nextStatus) {
+              setStatus(nextStatus);
             }
           } else {
             // User is not clocked into any job
-            if (status === "In Progress") {
-              setStatus("Waiting for Job");
+            if (
+              status === CLOCKING_STATUSES.IN_PROGRESS ||
+              status === CLOCKING_STATUSES.ROAD_TEST
+            ) {
+              setStatus(CLOCKING_STATUSES.WAITING_FOR_JOB);
             }
           }
         }

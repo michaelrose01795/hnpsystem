@@ -5,6 +5,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { supabase } from "@/lib/database/supabaseClient";
 import { clockOutFromJob } from "@/lib/database/jobClocking";
+import { WORK_TYPES as CLOCKING_WORK_TYPES } from "@/lib/status/catalog/clocking";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -106,6 +107,7 @@ export default function ClockingHistorySection({
         jobNumber: row.job_number || "",
         clockIn: row.clock_in,
         clockOut: row.clock_out,
+        workType: row.work_type || CLOCKING_WORK_TYPES.STANDARD,
         requestId: row.request_id ?? null,
         requestDescription: row.request?.description || "",
         requestHours:
@@ -226,19 +228,24 @@ export default function ClockingHistorySection({
   const derivedRows = useMemo(() => {
     return entries.map((entry) => {
       const hasRequest = Boolean(entry.requestId);
+      const isRoadTest = entry.workType === CLOCKING_WORK_TYPES.ROAD_TEST;
       const requestIndex = hasRequest
         ? entry.requestSortOrder !== null && !Number.isNaN(entry.requestSortOrder)
           ? entry.requestSortOrder
           : entry.requestId
         : null;
       const baseJobNumber = entry.jobNumber || jobNumber || "";
-      const requestLabel = hasRequest
+      const requestLabel = isRoadTest
+        ? "Road Test"
+        : hasRequest
         ? `Req ${requestIndex}: ${baseJobNumber}`.trim()
         : `Job: ${baseJobNumber}`.trim();
       const requestTitle = requestLabel;
       const requestHours =
         entry.requestHours !== null && entry.requestHours !== undefined
           ? entry.requestHours
+          : isRoadTest
+          ? null
           : hasRequest
           ? null
           : fallbackJobHours;

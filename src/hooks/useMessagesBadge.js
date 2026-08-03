@@ -52,8 +52,14 @@ export function useMessagesBadge(userId) {
       return undefined;
     }
 
+    // Realtime 2.111 reuses an existing channel when its topic matches. This
+    // hook can be mounted by more than one shell component, and React Strict
+    // Mode can start a replacement effect before async channel removal has
+    // finished, so each subscription instance needs its own topic.
+    const channelInstanceId =
+      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`customer-messages-badge-${userId}`)
+      .channel(`customer-messages-badge-${userId}-${channelInstanceId}`)
       .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, () =>
         refreshUnreadCount()
       )

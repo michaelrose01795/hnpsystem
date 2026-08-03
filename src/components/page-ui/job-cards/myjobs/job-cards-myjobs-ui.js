@@ -3,7 +3,7 @@ import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 const getStatusBadgeClassName = (statusLabel) => {
-  if (statusLabel === "In Progress") return "app-badge--success";
+  if (statusLabel === "In Progress" || statusLabel === "Authorised") return "app-badge--success";
   if (statusLabel === "Waiting") return "app-badge--warning";
   return "app-badge--neutral";
 };

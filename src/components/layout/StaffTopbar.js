@@ -27,6 +27,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useRotatingViews } from "@/hooks/useRotatingViews";
 import { formatKpiTooltip } from "@/config/topbar/departmentKpis";
+import { STATUSES as CLOCKING_STATUSES } from "@/lib/status/catalog/clocking";
 
 // Single-line truncation so a long KPI label or insight never wraps and grows the
 // fixed-height bar. Ellipsis only triggers when the text would otherwise overflow.
@@ -278,15 +279,18 @@ export default function StaffTopbar({
             <div className="app-topbar-action-group" style={actionGroupStyle}>
               <DropdownField
                 className="app-topbar-dropdown app-topbar-dropdown--status"
-                value={presentationShell ? "Waiting for Job" : status}
+                value={presentationShell ? CLOCKING_STATUSES.WAITING_FOR_JOB : status}
                 onChange={(e) => {
                   if (presentationShell) return; // demo deck — don't mutate real session
                   onStatusChange(e.target.value);
                 }}
               >
-                <option>Waiting for Job</option>
-                <option>In Progress</option>
-                <option>Tea Break</option>
+                <option>{CLOCKING_STATUSES.WAITING_FOR_JOB}</option>
+                <option>{CLOCKING_STATUSES.IN_PROGRESS}</option>
+                <option>{CLOCKING_STATUSES.TEA_BREAK}</option>
+                <option>{CLOCKING_STATUSES.ROAD_TEST}</option>
+                <option>{CLOCKING_STATUSES.WORKSHOP_MAINTENANCE}</option>
+                <option>{CLOCKING_STATUSES.MEETING_TRAINING}</option>
               </DropdownField>
               {!presentationShell && currentJob?.jobNumber ? (
                 <Link

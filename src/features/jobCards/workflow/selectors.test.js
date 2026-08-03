@@ -82,4 +82,17 @@ describe("getWriteUpCompletionState", () => {
     expect(state.rowCount).toBe(1);
     expect(state.isCompleteInstant).toBe(true);
   });
+
+  it("keeps partial visible rows incomplete when the aggregate status is stale", () => {
+    const state = getWriteUpCompletionState({
+      completionStatus: "complete",
+      requestRows: [
+        { requestId: 1, status: "completed" },
+        { requestId: 2, status: "inprogress" },
+      ],
+    });
+
+    expect(state.isPartiallyComplete).toBe(true);
+    expect(state.isCompleteInstant).toBe(false);
+  });
 });

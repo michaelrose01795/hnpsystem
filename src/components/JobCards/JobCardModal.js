@@ -12,12 +12,11 @@ import {
   clockOutFromJob,
   getUserActiveJobs
 } from "@/lib/database/jobClocking"; // DB: job clocking
-import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
+import { getAllJobs, getJobRequestsForClocking } from "@/lib/database/jobs"; // DB: fetch jobs and their clocking requests
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
-import { supabase } from "@/lib/database/supabaseClient";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -30,6 +29,8 @@ const buildRequestOptions = (jobNumberValue, requestRows) => {
     },
   ];
 
+  let authorisedNumber = 0;
+
   (Array.isArray(requestRows) ? requestRows : []).forEach((request, index) => {
     const order =
       request?.sort_order !== null && request?.sort_order !== undefined
@@ -37,10 +38,17 @@ const buildRequestOptions = (jobNumberValue, requestRows) => {
         : index + 1;
     const requestId = request?.request_id ?? request?.id ?? null;
     if (!requestId) return;
+    const requestSource = String(
+      request?.request_source ?? request?.requestSource ?? ""
+    ).trim().toLowerCase();
+    const isAuthorised = ["vhc_authorised", "vhc_authorized"].includes(requestSource);
+    if (isAuthorised) authorisedNumber += 1;
     const description = request?.description || `Request ${order}`;
     options.push({
       value: `request:${requestId}`,
-      label: `Req ${order}: ${description}`,
+      label: isAuthorised
+        ? `Auth ${authorisedNumber}: ${description}`
+        : `Req ${order}: ${description}`,
       description: request?.hours ? `${request.hours}h allocated` : "",
     });
   });
@@ -114,12 +122,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           setRequestOptions(fallbackOptions);
           return;
         }
-        const { data, error } = await supabase
-          .from("job_requests")
-          .select("request_id, description, hours, sort_order")
-          .eq("job_id", Number(jobMatch.id))
-          .order("sort_order", { ascending: true });
-        if (error) throw error;
+        const data = await getJobRequestsForClocking(jobMatch.id);
         if (!isMounted) return;
         setRequestOptions(buildRequestOptions(trimmed, data || []));
       } catch (err) {
@@ -368,6 +371,15 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           <div className="app-popup-compact-header__actions">
             <Button
               type="button"
+              variant="primary"
+              onClick={handleClockIn}
+              disabled={loading || !jobNumber.trim() || dbUserId == null}
+              busy={loading}
+            >
+              {loading ? "Clocking In..." : "Clock In"}
+            </Button>
+            <Button
+              type="button"
               variant="secondary"
               onClick={onClose}
               disabled={loading}
@@ -451,52 +463,61 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           gap="var(--layout-card-gap)"
           style={{ marginBottom: "20px" }}
         > {/* Entry section */}
-          <label
-            style={{
-              display: "block", // Own line
-              marginBottom: "8px", // Gap below
-            }}
-          >
-            Enter Job Number: {/* Label text */}
-          </label>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "var(--layout-card-gap)",
+            alignItems: "end"
+          }}>
+            <div>
+              <label
+                htmlFor="start-job-number"
+                style={{
+                  display: "block",
+                  marginBottom: "8px"
+                }}
+              >
+                Enter Job Number:
+              </label>
 
-          <input
-            ref={inputRef} // For focus
-            type="text" // Text input
-            value={jobNumber} // Controlled value
-            onChange={(e) => {
-              setJobNumber(e.target.value); // Update input
-              setError(""); // Clear errors when typing
-            }}
-            onKeyDown={handleKeyDown} // Enter handler
-            placeholder="e.g., 00001" // Example format
-            disabled={loading} // Disable when loading
-            className="app-input"
-            style={{
-              width: "100%", // Full width
-              marginBottom: "12px", // Gap below
-            }}
-          />
+              <input
+                id="start-job-number"
+                ref={inputRef} // For focus
+                type="text" // Text input
+                value={jobNumber} // Controlled value
+                onChange={(e) => {
+                  setJobNumber(e.target.value); // Update input
+                  setError(""); // Clear errors when typing
+                }}
+                onKeyDown={handleKeyDown} // Enter handler
+                placeholder="e.g., 00001" // Example format
+                disabled={loading} // Disable when loading
+                className="app-input"
+                style={{ width: "100%" }}
+              />
+            </div>
 
-          {/* Work type selector */}
-          <DropdownField
-            value={selectedRequestValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSelectedRequestValue(value);
-              if (value.startsWith("request:")) {
-                const idValue = Number(value.replace("request:", ""));
-                setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
-              } else {
-                setSelectedRequestId(null);
-              }
-            }}
-            options={requestOptions}
-            placeholder={jobNumber.trim() ? `Job: ${jobNumber.trim()}` : "No job number"}
-            disabled={loading || !jobNumber.trim()}
-            className="start-job-request-dropdown"
-            style={{ marginBottom: "12px" }}
-          />
+            {/* Work type selector */}
+            <DropdownField
+              label="Work:"
+              value={selectedRequestValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedRequestValue(value);
+                if (value.startsWith("request:")) {
+                  const idValue = Number(value.replace("request:", ""));
+                  setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
+                } else {
+                  setSelectedRequestId(null);
+                }
+              }}
+              options={requestOptions}
+              placeholder={jobNumber.trim() ? `Job: ${jobNumber.trim()}` : "No job number"}
+              disabled={loading || !jobNumber.trim()}
+              className="start-job-request-dropdown"
+              style={{ width: "100%" }}
+            />
+          </div>
 
           {/* Error banner */}
           {error && (
@@ -514,18 +535,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             </p>
           )}
 
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleClockIn} // Start clocking
-            disabled={loading || !jobNumber.trim() || dbUserId == null} // Disable until ready
-            busy={loading}
-            style={{
-              width: "100%", // Full width
-            }}
-          >
-            {loading ? "Clocking In..." : "Clock In"} {/* Label */}
-          </Button>
         </LayerTheme>
       </div>
     </div>

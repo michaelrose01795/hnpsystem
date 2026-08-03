@@ -62,13 +62,12 @@ const getClosestDataValue = (node, attributeName) => {
 
 const normalizeContextText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
-const isVisibleRect = (rect, minWidth = DEFAULT_MIN_WIDTH, minHeight = DEFAULT_MIN_HEIGHT) =>
-  rect.width >= minWidth &&
-  rect.height >= minHeight &&
-  rect.bottom > 0 &&
-  rect.right > 0 &&
-  rect.top < window.innerHeight &&
-  rect.left < window.innerWidth;
+// Keep mounted sections in the hierarchy even when an inner page scroller has
+// moved them outside the browser viewport. Their boxes are clipped at render
+// time, but retaining them here means parent/child locators remain complete and
+// the section becomes clickable as soon as it scrolls into view.
+const isMeasurableRect = (rect, minWidth = DEFAULT_MIN_WIDTH, minHeight = DEFAULT_MIN_HEIGHT) =>
+  rect.width >= minWidth && rect.height >= minHeight;
 
 const getThresholdsForType = (type) => {
   const categoryId = getCategoryIdForSectionType(type);
@@ -119,24 +118,33 @@ const compareNodeOrder = (a, b) => {
 
 const getRectArea = (rect) => Math.max(0, rect.width) * Math.max(0, rect.height);
 
-const isRectWithinBounds = (rect, bounds) => {
+const isRectIntersectingBounds = (rect, bounds) => {
   if (!rect || !bounds) return false;
   return (
-    rect.left >= bounds.left - 1 &&
-    rect.top >= bounds.top - 1 &&
-    rect.right <= bounds.right + 1 &&
-    rect.bottom <= bounds.bottom + 1
+    rect.right > bounds.left &&
+    rect.bottom > bounds.top &&
+    rect.left < bounds.right &&
+    rect.top < bounds.bottom
   );
 };
 
-const toLocalRect = (rect, bounds) => ({
-  left: rect.left - bounds.left,
-  top: rect.top - bounds.top,
-  width: rect.width,
-  height: rect.height,
-  right: rect.right - bounds.left,
-  bottom: rect.bottom - bounds.top,
-});
+const toClippedLocalRect = (rect, bounds) => {
+  if (!bounds) return rect;
+
+  const left = Math.max(rect.left, bounds.left);
+  const top = Math.max(rect.top, bounds.top);
+  const right = Math.min(rect.right, bounds.right);
+  const bottom = Math.min(rect.bottom, bounds.bottom);
+
+  return {
+    left: left - bounds.left,
+    top: top - bounds.top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+    right: right - bounds.left,
+    bottom: bottom - bounds.top,
+  };
+};
 
 const getSectionTextPreview = (node) => {
   if (!node) return "";
@@ -347,7 +355,7 @@ const addScopedAutoCardSections = ({ sectionsByKey, route, activeCategoryIds }) 
       if (!isAutoCardCandidate(node)) return;
 
       const rect = node.getBoundingClientRect();
-      if (!isVisibleRect(rect, 96, 24)) return;
+      if (!isMeasurableRect(rect, 96, 24)) return;
 
       const explicitParent = node.parentElement?.closest?.("[data-dev-section-key]");
       const parentKey = sanitizeKey(explicitParent?.getAttribute?.("data-dev-section-key") || "");
@@ -561,7 +569,7 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
       const explicitParent = node.closest("[data-dev-section-key]");
       if (explicitParent === node) return;
       const rect = node.getBoundingClientRect();
-      if (!isVisibleRect(rect, minWidth, minHeight)) return;
+      if (!isMeasurableRect(rect, minWidth, minHeight)) return;
       fallbackIndex += 1;
       const key = sanitizeKey(`${route.replace(/\//g, "-")}-auto-${type}-${fallbackIndex}`);
       if (sectionsByKey.has(key)) return;
@@ -591,7 +599,7 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
 
   const sections = Array.from(sectionsByKey.values()).filter((section) => {
     const { minWidth, minHeight } = getThresholdsForType(section.type);
-    return isVisibleRect(section.rect, minWidth, minHeight);
+    return isMeasurableRect(section.rect, minWidth, minHeight);
   });
   sections.sort((a, b) => compareNodeOrder(a.node, b.node));
   sections.forEach((section, index) => {
@@ -867,7 +875,7 @@ export default function DevLayoutOverlay() {
   const scopedSections = useMemo(() => {
     const withinBounds = (section) => {
       if (!overlayBounds) return true;
-      if (!isRectWithinBounds(section.rect, overlayBounds)) return false;
+      if (!isRectIntersectingBounds(section.rect, overlayBounds)) return false;
       if (!fullScreen && (isSidebarSection(section) || isTopbarSection(section))) {
         return false;
       }
@@ -1219,7 +1227,7 @@ export default function DevLayoutOverlay() {
             : [section.number, previewSnippet ? `"${previewSnippet}"` : null, section.type, section.backgroundToken]
                 .filter(Boolean)
                 .join(" | ");
-        const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
+        const localRect = overlayBounds ? toClippedLocalRect(section.rect, overlayBounds) : section.rect;
         const labelStyle = isJobCardsCreateRoute
           ? {
               left: localRect.left + 8,
