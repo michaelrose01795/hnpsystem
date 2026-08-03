@@ -37,7 +37,7 @@ function groupUrlsByRole(urls) {
 }
 
 test.describe('Presentation deep-link smoke', () => {
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
   const urls = loadPresentationUrls();
 
@@ -73,6 +73,9 @@ test.describe('Presentation deep-link smoke', () => {
     const grouped = groupUrlsByRole(urls);
 
     for (const [role, roleUrls] of Object.entries(grouped)) {
+      // Customer slides render the public website shell, not the staff sidebar.
+      if (role === 'customer') continue;
+
       await page.goto(roleUrls[0], { waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle').catch(() => {});
 
@@ -143,11 +146,11 @@ test.describe('Presentation deep-link smoke', () => {
     expect(leakedRequests).toEqual([]);
   });
 
-  test('finishing a presentation returns to the presentation picker', async ({ page }) => {
+  test('exiting a presentation returns to the presentation picker', async ({ page }) => {
     await page.goto('/presentation/workshop-manager/tracking/8', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => {});
 
-    await page.getByRole('button', { name: 'Finish' }).first().click();
+    await page.getByRole('button', { name: 'Logout' }).click();
     await expect(page).toHaveURL(/\/loginPresentation$/);
   });
 

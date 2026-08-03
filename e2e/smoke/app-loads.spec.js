@@ -9,9 +9,10 @@ test.describe('Smoke — App loads', () => {
     await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test('dashboard loads', async ({ page }) => {
-    await page.goto('/dashboard');
+  test('newsfeed loads', async ({ page }) => {
+    const response = await page.goto('/newsfeed');
     await page.waitForLoadState('networkidle');
+    expect(response?.status()).toBeLessThan(400);
     await expect(page.locator('body')).not.toContainText('Application error');
   });
 

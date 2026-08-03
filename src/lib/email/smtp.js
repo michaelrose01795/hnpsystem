@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer from "nodemailer-v9";
 
 export const SMTP_HOST = process.env.SMTP_HOST;
 export const SMTP_PORT = Number(process.env.SMTP_PORT || 587);

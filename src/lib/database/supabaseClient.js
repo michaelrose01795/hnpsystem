@@ -44,9 +44,12 @@ function wrapWithPresentationProxy(realClient) {
 // rather than silently broken.
 const PLACEHOLDER_URL_RE = /^https?:\/\/(placeholder|example|stub)\.supabase\.co\/?$/i;
 const PLACEHOLDER_KEY_RE = /^(placeholder|stub|ci-).*/i;
+const isPlaywrightStubEnabled =
+  process.env.PLAYWRIGHT_TEST_AUTH === "1" ||
+  process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
 
 const isStubEnv = (() => {
-  if (process.env.PLAYWRIGHT_TEST_AUTH !== "1") return false;
+  if (!isPlaywrightStubEnabled) return false;
   if (process.env.CI_DISABLE_SUPABASE_STUB === "1") return false;
   if (!supabaseUrl || !supabaseAnonKey) return true;
   if (PLACEHOLDER_URL_RE.test(supabaseUrl)) return true;

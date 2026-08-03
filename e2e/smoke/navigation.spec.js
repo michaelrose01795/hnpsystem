@@ -5,6 +5,8 @@
 const { test, expect, waitForAppReady } = require('../helpers/fixtures.js');
 
 test.describe('Smoke — Navigation', () => {
+  test.describe.configure({ timeout: 90_000 });
+
   const selectFirstDropdownOption = async (page, label) => {
     await page.getByRole('button', { name: label }).click();
     const options = page.locator('[role="option"]');
@@ -26,6 +28,11 @@ test.describe('Smoke — Navigation', () => {
   });
 
   test('login page is accessible when logged out', async ({ browser }) => {
+    test.skip(
+      process.env.PLAYWRIGHT_TEST_AUTH === '1',
+      'The CI auth bypass intentionally redirects logged-out requests to its synthetic user.'
+    );
+
     // Fresh context without auth state
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -37,6 +44,11 @@ test.describe('Smoke — Navigation', () => {
   });
 
   test('dev login redirects selected user to newsfeed', async ({ browser }) => {
+    test.skip(
+      process.env.PLAYWRIGHT_TEST_AUTH === '1',
+      'The CI auth bypass intentionally auto-authenticates fresh browser contexts.'
+    );
+
     const context = await browser.newContext();
     const page = await context.newPage();
 

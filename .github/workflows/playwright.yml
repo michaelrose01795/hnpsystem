@@ -5,14 +5,54 @@ on:
   pull_request:
     branches: [ main, master ]
 jobs:
+  web-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: npm
+    - name: Install dependencies
+      run: npm ci
+    - name: Build web application
+      env:
+        NEXTAUTH_SECRET: ci-placeholder-secret-not-for-production
+        PLAYWRIGHT_TEST_AUTH: '1'
+        NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH: '1'
+      run: npm run build
+
+  desktop-build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: desktop/package-lock.json
+    - name: Install desktop dependencies
+      run: npm ci
+    - name: Build Windows installer
+      run: npm run build:win
+    - uses: actions/upload-artifact@v7
+      with:
+        name: desktop-windows-installer
+        path: desktop/dist/HNPSystem-Setup-*.exe
+        if-no-files-found: error
+
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
       with:
-        node-version: lts/*
+        node-version: '24'
+        cache: npm
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
@@ -51,6 +91,7 @@ jobs:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
         NEXTAUTH_URL: http://localhost:3000
         PLAYWRIGHT_TEST_AUTH: '1'
+        NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH: '1'
       run: npx playwright test --project=auth-setup --project=smoke
 
     # Visual tests — update snapshots on every CI run so baselines stay current
@@ -63,6 +104,7 @@ jobs:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
         NEXTAUTH_URL: http://localhost:3000
         PLAYWRIGHT_TEST_AUTH: '1'
+        NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH: '1'
       run: npx playwright test --project=auth-setup --project=visual --update-snapshots
 
     # Workflow / integration tests — only run when real Supabase secrets are present.
@@ -75,8 +117,9 @@ jobs:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
         NEXTAUTH_URL: http://localhost:3000
         PLAYWRIGHT_TEST_AUTH: '1'
+        NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH: '1'
       run: npx playwright test --project=auth-setup --project=workflows
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: ${{ !cancelled() }}
       with:
         name: playwright-report

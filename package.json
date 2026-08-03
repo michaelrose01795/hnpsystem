@@ -2,6 +2,9 @@
   "name": "hnpsystem",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0 <25"
+  },
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
     "predev": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && node tools/scripts/use-local-next-cache.js",
@@ -45,51 +48,52 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
-    "@supabase/supabase-js": "^2.81.1",
-    "autoprefixer": "^10.4.21",
+    "@supabase/supabase-js": "^2.111.0",
+    "autoprefixer": "^10.5.4",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "dotenv": "^17.2.3",
+    "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
     "gsap": "^3.15.0",
     "jspdf": "^4.2.1",
-    "jspdf-autotable": "^5.0.7",
+    "jspdf-autotable": "^5.0.8",
     "jwt-decode": "^4.0.0",
     "next": "^16.2.12",
-    "next-auth": "^4.24.14",
-    "nodemailer": "^8.0.10",
+    "next-auth": "^4.24.15",
+    "nodemailer-v9": "npm:nodemailer@^9.0.3",
     "pdfjs-dist": "^5.4.394",
-    "postcss": "^8.5.15",
-    "postprocessing": "^6.39.1",
-    "react": "^19.2.1",
+    "postcss": "^8.5.25",
+    "postprocessing": "^6.39.4",
+    "react": "^19.2.8",
     "react-big-calendar": "^1.20.0",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.1",
-    "react-pdf": "^10.2.0",
+    "react-dom": "^19.2.8",
+    "react-pdf": "^10.4.1",
     "stripe": "^17.5.0",
-    "swr": "^2.4.1",
-    "tailwindcss": "^4.1.17",
-    "three": "^0.184.0"
+    "swr": "^2.4.2",
+    "tailwindcss": "^4.3.3",
+    "three": "^0.185.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@playwright/test": "^1.58.2",
+    "@eslint/eslintrc": "^3.3.6",
+    "@playwright/test": "^1.62.1",
     "@types/node": "24.10.0",
-    "baseline-browser-mapping": "^2.9.17",
-    "eslint": "^9.38.0",
-    "eslint-config-next": "^16.1.6",
-    "playwright": "^1.58.2",
+    "baseline-browser-mapping": "^2.11.8",
+    "eslint": "9.39.3",
+    "eslint-config-next": "^16.2.12",
+    "playwright": "^1.62.1",
     "typescript": "5.9.3",
-    "vitest": "^4.1.5"
+    "vite": "8.1.5",
+    "vitest": "^4.1.10"
   },
   "overrides": {
-    "dompurify": "3.4.7",
+    "dompurify": "3.4.12",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "next": {
-      "postcss": "8.5.15"
+      "postcss": "8.5.25"
     },
     "next-auth": {
       "uuid": "11.1.1"
@@ -98,10 +102,10 @@
       "picomatch": "2.3.2"
     },
     "minimatch@3": {
-      "brace-expansion": "1.1.14"
+      "brace-expansion": "1.1.18"
     },
     "minimatch@10": {
-      "brace-expansion": "5.0.6"
+      "brace-expansion": "5.0.9"
     },
     "@supabase/realtime-js": {
       "ws": "8.21.0"

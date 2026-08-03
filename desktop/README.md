@@ -34,7 +34,7 @@ desktop/
 
 ## Prerequisites
 
-* Node.js 18+ (the same version used by the root project works fine)
+* Node.js 22.12 through 24 (the same version used by the root project works fine)
 * Windows 10/11 for building Windows installers
 * No global Electron install needed — everything is local to `desktop/`
 
