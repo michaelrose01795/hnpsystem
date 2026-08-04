@@ -61,7 +61,10 @@ describe("buildVhcQuoteLinesModel", () => {
           speed: "V",
           runFlat: false,
           tread: { outer: "4", middle: "5", inner: "4" },
-          concerns: [{ status: "Amber", text: "NSR tyre tread low" }],
+          concerns: [
+            { status: "Amber", text: "NSR tyre tread low" },
+            { status: "Amber", text: "NSR tyre has a nail in the tread" },
+          ],
         },
       },
     };
@@ -81,6 +84,7 @@ describe("buildVhcQuoteLinesModel", () => {
       tyreModel: "Primacy 4",
       tyreSize: "205/55 R16 / Load 91 / Speed V",
       tyreMeasurement: "Outer 4mm / Middle 5mm / Inner 4mm",
+      issueNotes: ["NSR tyre tread low", "NSR tyre has a nail in the tread"],
     });
     expect(nsrWheel.tyreDetailRows).toEqual([
       "Make: Michelin",
@@ -138,6 +142,8 @@ describe("buildVhcQuoteLinesModel", () => {
       parts_gbp: 113,
       labour_hours: 0.7,
       total_gbp: 172.5,
+      calculated_total_gbp: 172.5,
+      has_manual_total_override: false,
     });
   });
 
@@ -210,6 +216,8 @@ describe("buildVhcQuoteLinesModel", () => {
       parts_gbp: 113,
       labour_hours: 0.7,
       total_gbp: 308,
+      calculated_total_gbp: 172.5,
+      has_manual_total_override: true,
     });
     expect(model.totals.red).toBe(308);
   });

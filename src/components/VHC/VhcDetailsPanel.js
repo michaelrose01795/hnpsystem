@@ -55,9 +55,11 @@ import {
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
 import { isValidUuid } from "@/features/labourTimes/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
+import { DEFAULT_LABOUR_RATE_GBP, resolveVhcTotal } from "@/lib/vhc/shared";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
@@ -592,7 +594,7 @@ const RANK_TO_SEVERITY = {
 const LABOUR_VAT_RATE = 0.2;
 const LABOUR_RATE_GROSS_DEFAULT_GBP = 150;
 const LABOUR_RATE = LABOUR_RATE_GROSS_DEFAULT_GBP / (1 + LABOUR_VAT_RATE);
-const QUOTE_LABOUR_RATE = 85;
+const QUOTE_LABOUR_RATE = DEFAULT_LABOUR_RATE_GBP;
 const LABOUR_COST_DEFAULT_GBP = LABOUR_RATE;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "", accent: "var(--danger-dark)" },
@@ -1166,6 +1168,29 @@ const GreenCheckItemBlock = ({ useTheme = false, children, ...rest }) => {
   );
 };
 
+const buildReportedIssueBullets = (...values) => {
+  const bullets = [];
+  const seen = new Set();
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    String(value || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim().replace(/^[-*•]\s*/, ""))
+      .filter(Boolean)
+      .forEach((line) => {
+        const key = normalizeText(line).replace(/\s+/g, " ");
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        bullets.push(line);
+      });
+  };
+  values.forEach(visit);
+  return bullets;
+};
+
 const consolidateBrakeRowsByLocation = (items = []) => {
   const consolidated = [];
   const brakeGroups = new Map();
@@ -1198,17 +1223,16 @@ const consolidateBrakeRowsByLocation = (items = []) => {
       entry.items.find((item) => item.notes) ||
       entry.items.find((item) => item.vhcCheck) ||
       entry.items[0];
-    const noteKeys = new Set();
-    const issueNotes = [];
-    entry.items.forEach((item) => {
-      [item.customerDescription, item.concernText, item.notes].forEach((value) => {
-        const note = String(value || "").trim().replace(/^-\s*/, "");
-        const key = normalizeText(note).replace(/\s+/g, " ");
-        if (!note || noteKeys.has(key)) return;
-        noteKeys.add(key);
-        issueNotes.push(note);
-      });
-    });
+    const explicitIssueNotes = buildReportedIssueBullets(
+      entry.items.flatMap((item) => [
+        item.issueNotes,
+        item.customerDescription,
+        item.concernText,
+      ])
+    );
+    const issueNotes = explicitIssueNotes.length > 0
+      ? explicitIssueNotes
+      : buildReportedIssueBullets(entry.items.map((item) => item.notes));
 
     const {
       sourceVhcIds,
@@ -1219,10 +1243,11 @@ const consolidateBrakeRowsByLocation = (items = []) => {
     } = aggregateConsolidatedBrakeValues(entry.items);
     const labourRate = Number(primary?.labour_rate_gbp);
     const resolvedLabourRate = Number.isFinite(labourRate) ? labourRate : LABOUR_RATE;
-    const totalOverride = Number(primary?.vhcCheck?.total_override);
-    const total = Number.isFinite(totalOverride) && totalOverride > 0
-      ? totalOverride
-      : partsTotal + labourHours * resolvedLabourRate;
+    const totalResolution = resolveVhcTotal({
+      partsCost: partsTotal,
+      labourCost: labourHours * resolvedLabourRate,
+      totalOverride: primary?.vhcCheck?.total_override,
+    });
 
     return {
       ...primary,
@@ -1233,6 +1258,7 @@ const consolidateBrakeRowsByLocation = (items = []) => {
       measurement: "",
       rows: [],
       consolidatedBrakeRow: true,
+      issueNotes,
       sourceVhcIds,
       parts_gbp: partsTotal,
       partsCost: partsTotal,
@@ -1240,8 +1266,10 @@ const consolidateBrakeRowsByLocation = (items = []) => {
       labourHours,
       labour_rate_gbp: resolvedLabourRate,
       labour_gbp: labourHours * resolvedLabourRate,
-      total_gbp: total,
-      total,
+      total_gbp: totalResolution.total,
+      calculated_total_gbp: totalResolution.calculatedTotal,
+      has_manual_total_override: totalResolution.hasManualOverride,
+      total: totalResolution.total,
       partsComplete,
       labourComplete,
     };
@@ -1794,6 +1822,7 @@ export default function VhcDetailsPanel({
   const [selectedPartForJob, setSelectedPartForJob] = useState(null);
   const [addingPartToJob, setAddingPartToJob] = useState(false);
   const [expandedVhcItems, setExpandedVhcItems] = useState(new Set());
+  const [expandedOutcomeRows, setExpandedOutcomeRows] = useState(new Set());
   const [partDetails, setPartDetails] = useState({});
   const [vhcIdAliases, setVhcIdAliases] = useState({});
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
@@ -2835,6 +2864,7 @@ export default function VhcDetailsPanel({
           notes: item.notes || item.issue_description || "",
           measurement: formatMeasurement(item.measurement),
           concernText: primaryConcern?.text || "",
+          issueNotes: concerns.map((concern) => concern?.text).filter(Boolean),
           rows: Array.isArray(item.rows) ? item.rows : [],
           sectionName,
           category,
@@ -3712,7 +3742,7 @@ export default function VhcDetailsPanel({
     ]
   );
 
-  const updateEntryStatus = async (itemId, status) => {
+  const updateSingleEntryStatus = async (itemId, status) => {
     const previousEntry = getEntryForItem(itemId);
     const previousStatus = previousEntry?.status ?? null;
 
@@ -3833,6 +3863,27 @@ export default function VhcDetailsPanel({
       console.error(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);
       console.error(`❌ [VHC STATUS ERROR]`, error);
       console.error(`❌ [VHC STATUS ERROR] Stack:`, error.stack);
+    }
+  };
+
+  const updateEntryStatus = async (itemId, status, sourceVhcIds = []) => {
+    const candidateIds = [itemId, ...(Array.isArray(sourceVhcIds) ? sourceVhcIds : [])];
+    const seenCanonicalIds = new Set();
+    const targetIds = candidateIds.filter((candidateId) => {
+      if (candidateId === null || candidateId === undefined || String(candidateId).trim() === "") {
+        return false;
+      }
+      const canonicalId = resolveCanonicalVhcId(candidateId);
+      const canonicalKey = Number.isInteger(Number(canonicalId))
+        ? `vhc:${Number(canonicalId)}`
+        : `display:${String(candidateId)}`;
+      if (seenCanonicalIds.has(canonicalKey)) return false;
+      seenCanonicalIds.add(canonicalKey);
+      return true;
+    });
+
+    for (const targetId of targetIds) {
+      await updateSingleEntryStatus(targetId, status);
     }
   };
 
@@ -4275,15 +4326,13 @@ export default function VhcDetailsPanel({
   };
 
   const computeRowTotal = (entry, resolvedPartsCost, labourHoursValue) => {
-    if (entry.totalOverride !== "" && entry.totalOverride !== null) {
-      const override = parseNumericValue(entry.totalOverride);
-      if (override > 0) {
-        return override;
-      }
-    }
     const partsCost =
       resolvedPartsCost !== undefined ? resolvedPartsCost : parseNumericValue(entry.partsCost);
-    return partsCost + computeLabourCost(labourHoursValue);
+    return resolveVhcTotal({
+      partsCost,
+      labourCost: computeLabourCost(labourHoursValue),
+      totalOverride: entry.totalOverride,
+    }).total;
   };
 
   const resolveCustomerRowTotal = (itemId) => {
@@ -5167,15 +5216,24 @@ export default function VhcDetailsPanel({
                   Number.isFinite(resolvedLabourHoursNumber) && resolvedLabourHoursNumber >= 0
                     ? resolvedLabourHoursNumber * quoteLabourRate
                     : 0;
-                const persistedTotalOverride = Number(item?.vhcCheck?.total_override);
-                const totalCost =
-                  entry.totalOverride !== "" && entry.totalOverride !== null
-                    ? parseNumericValue(entry.totalOverride)
-                    : Number.isFinite(persistedTotalOverride) && persistedTotalOverride > 0
-                      ? persistedTotalOverride
-                      : Number(resolvedPartsCost || 0) + labourCost;
+                const hasLocalTotalOverride =
+                  entry.totalOverride !== "" &&
+                  entry.totalOverride !== null &&
+                  entry.totalOverride !== undefined;
+                const persistedTotalOverride = item?.vhcCheck?.total_override;
+                const effectiveTotalOverride = hasLocalTotalOverride
+                  ? entry.totalOverride
+                  : totalOverrideTouchedRef.current.has(String(item.id))
+                    ? null
+                    : persistedTotalOverride;
+                const totalResolution = resolveVhcTotal({
+                  partsCost: Number(resolvedPartsCost || 0),
+                  labourCost,
+                  totalOverride: effectiveTotalOverride,
+                });
+                const totalCost = totalResolution.total;
                 const totalDisplayValue = (() => {
-                  if (entry.totalOverride !== "" && entry.totalOverride !== null)
+                  if (hasLocalTotalOverride)
                     return entry.totalOverride;
                   const rounded = parseFloat(totalCost.toFixed(2));
                   // Show no decimals for whole numbers, 2 decimals otherwise (e.g. 400 not 400.00, but 400.50 not 400.5)
@@ -5281,7 +5339,7 @@ export default function VhcDetailsPanel({
                 const isTyreSummaryRow =
                   item.categoryId === "wheels_tyres" && supplementaryRows.length > 0;
                 let detailMeasurement = item.measurement || "";
-                let deferredIssueNote = "";
+                let deferredIssueNotes = [];
                 if (isBrakeSummaryRow) {
                   const brakeLocation = deriveBrakeLocationKey(item);
                   detailLabel = brakeLocation
@@ -5294,7 +5352,15 @@ export default function VhcDetailsPanel({
                   detailMeasurement = "";
                 }
                 if (isBrakeSummaryRow || isTyreSummaryRow) {
-                  deferredIssueNote = detailContent.trim().replace(/^-\s*/, "");
+                  const explicitIssueNotes = buildReportedIssueBullets(
+                    item.issueNotes,
+                    item.customerDescription,
+                    item.concernText,
+                    customerOverride
+                  );
+                  deferredIssueNotes = explicitIssueNotes.length > 0
+                    ? explicitIssueNotes
+                    : buildReportedIssueBullets(detailContent);
                   detailContent = "";
                 }
                 const isServiceIndicatorRow = item.categoryId === "service_indicator";
@@ -5336,7 +5402,7 @@ export default function VhcDetailsPanel({
                   (contentKey.includes(labelKey) || labelKey.includes(contentKey));
                 const labourSuggestionDescription = buildLabourSuggestionDescription({
                   detailLabel,
-                  detailContent: deferredIssueNote || detailContent,
+                  detailContent: deferredIssueNotes.join(" ") || detailContent,
                   detailRows,
                   measurement: detailMeasurement,
                   locationLabel: locationLabel ? `Location ${locationLabel}` : "",
@@ -5489,6 +5555,32 @@ export default function VhcDetailsPanel({
                           + Add customer description
                         </button>
                       )}
+                      {deferredIssueNotes.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to edit the customer description"
+                          style={{
+                            marginTop: "6px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            fontWeight: 500,
+                            color: "var(--text-1)",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            font: "inherit",
+                            width: "100%",
+                          }}
+                        >
+                          {deferredIssueNotes.map((issue, issueIndex) => (
+                            <span key={`${item.id}-reported-issue-${issueIndex}`}>- {issue}</span>
+                          ))}
+                        </button>
+                      ) : null}
                       {detailMeasurement ? (
                         <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>{detailMeasurement}</div>
                       ) : null}
@@ -5502,7 +5594,7 @@ export default function VhcDetailsPanel({
                         const categoryId = item.categoryId || "";
                         const labelLower = (item.label || "").toLowerCase();
                         const categoryLower = (item.categoryLabel || "").toLowerCase();
-                        const allText = [detailMeasurement, deferredIssueNote || detailContent, item.label || "", item.notes || ""].join(" ");
+                        const allText = [detailMeasurement, deferredIssueNotes.join(" ") || detailContent, item.label || "", item.notes || ""].join(" ");
 
                         // Check if this is a tyre item
                         const isTyreItem = categoryId === "wheels_tyres" ||
@@ -5637,32 +5729,6 @@ export default function VhcDetailsPanel({
                             );
                           })}
                         </SummarySupplementaryBlock>
-                      ) : null}
-                      {deferredIssueNote ? (
-                        <button
-                          type="button"
-                          onClick={handleDescriptionClick}
-                          title="Click to edit the customer description"
-                          style={{
-                            marginTop: "8px",
-                            fontWeight: 500,
-                            color: "var(--text-1)",
-                            background: "transparent",
-                            border: "none",
-                            padding: 0,
-                            textAlign: "left",
-                            cursor: "pointer",
-                            font: "inherit",
-                            width: "100%",
-                          }}
-                        >
-                          - {deferredIssueNote}
-                          {isCustomerOverride ? (
-                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-accent)", fontWeight: 700 }}>
-                              âœŽ customer
-                            </span>
-                          ) : null}
-                        </button>
                       ) : null}
                     </td>
                     <td style={{ padding: "12px 8px" }}>
@@ -5904,13 +5970,14 @@ export default function VhcDetailsPanel({
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={totalEditItemId === item.id ? totalEditValue : totalDisplayValue}
-                          onFocus={() => {
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", flexWrap: "nowrap" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", width: "70px", flex: "0 0 70px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={totalEditItemId === item.id ? totalEditValue : totalDisplayValue}
+                            onFocus={() => {
                             // When the user clicks in, seed the edit buffer with the current
                             // displayed value so they see the same number they were looking at.
                             setTotalEditItemId(item.id);
@@ -5919,21 +5986,23 @@ export default function VhcDetailsPanel({
                                 ? String(entry.totalOverride)
                                 : (() => { const r = parseFloat(totalCost.toFixed(2)); return Number.isInteger(r) ? String(r) : r.toFixed(2); })()
                             );
-                          }}
-                          onChange={(event) => {
+                            }}
+                            onChange={(event) => {
                             // Keep the edit buffer in sync so the input shows exactly what
                             // the user is typing (including empty string — no snap-back).
                             totalOverrideTouchedRef.current.add(String(item.id));
                             setTotalEditValue(event.target.value);
                             updateEntryValue(item.id, "totalOverride", event.target.value);
-                          }}
-                          onBlur={() => {
+                            }}
+                            onBlur={() => {
+                            const rawValue = totalEditItemId === item.id
+                              ? totalEditValue
+                              : entry.totalOverride;
                             // Stop showing the edit buffer — revert to totalDisplayValue.
                             setTotalEditItemId(null);
                             setTotalEditValue("");
-                            if (readOnly || severity === "authorized" || severity === "declined") return;
+                            if (readOnly) return;
                             totalOverrideTouchedRef.current.add(String(item.id));
-                            const rawValue = entry.totalOverride;
                             const isEmpty = rawValue === "" || rawValue === null || rawValue === undefined;
                             const parsedValue = isEmpty ? null : parseFloat(rawValue);
                             if (!isEmpty && (!Number.isFinite(parsedValue) || parsedValue < 0)) return;
@@ -5961,18 +6030,35 @@ export default function VhcDetailsPanel({
                                 );
                               })
                               .catch((error) => console.error("Failed to save total override", error));
-                          }}
-                          placeholder="0.00"
-                          className="vhc-total-input"
-                          style={{
-                            width: "70px",
-                            padding: "4px 6px",
-                            borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--input-ring)",
-                            fontSize: "13px",
-                          }}
-                          disabled={readOnly || severity === "authorized" || severity === "declined"}
-                        />
+                            }}
+                            placeholder="0.00"
+                            className="vhc-total-input"
+                            style={{
+                              width: "70px",
+                              boxSizing: "border-box",
+                              padding: "4px 6px",
+                              borderRadius: "var(--radius-xs)",
+                              border: "1px solid var(--input-ring)",
+                              fontSize: "13px",
+                              fontWeight: totalResolution.hasManualOverride ? 600 : 700,
+                              color: totalResolution.hasManualOverride ? "var(--text-accent)" : "var(--info-dark)",
+                            }}
+                            disabled={readOnly}
+                          />
+                          {totalResolution.hasManualOverride ? (
+                            <span
+                              style={{
+                                fontSize: "9px",
+                                lineHeight: 1.2,
+                                fontWeight: 600,
+                                color: "var(--warning)",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Manual override
+                            </span>
+                          ) : null}
+                        </div>
                         {isWarranty && (
                           <span
                             style={{
@@ -6221,7 +6307,13 @@ export default function VhcDetailsPanel({
                   <input
                     type="checkbox"
                     checked={isAuthorized}
-                    onChange={(event) => updateEntryStatus(item.id, event.target.checked ? "authorized" : null)}
+                    onChange={(event) =>
+                      updateEntryStatus(
+                        item.id,
+                        event.target.checked ? "authorized" : null,
+                        item.sourceVhcIds
+                      )
+                    }
                   />
                   Authorise
                 </label>
@@ -6229,7 +6321,13 @@ export default function VhcDetailsPanel({
                   <input
                     type="checkbox"
                     checked={isDeclined}
-                    onChange={(event) => updateEntryStatus(item.id, event.target.checked ? "declined" : null)}
+                    onChange={(event) =>
+                      updateEntryStatus(
+                        item.id,
+                        event.target.checked ? "declined" : null,
+                        item.sourceVhcIds
+                      )
+                    }
                   />
                   Decline
                 </label>
@@ -6252,7 +6350,7 @@ export default function VhcDetailsPanel({
                     onChange={(event) => {
                       if (!event.target.checked) {
                         // Uncheck resets status to pending
-                        updateEntryStatus(item.id, null);
+                        updateEntryStatus(item.id, null, item.sourceVhcIds);
                       }
                     }}
                   />
@@ -10211,73 +10309,100 @@ export default function VhcDetailsPanel({
                       },
                       { parts: 0, labour: 0 }
                     );
-                  const btnBase = {
-                    padding: "6px 10px",
-                    borderRadius: "var(--input-radius)",
-                    fontWeight: 600,
-                    fontSize: "12px",
-                    minHeight: "32px",
-                  };
                   const renderOutcomeRow = (item, kind) => {
                     const { partsCost, labourCost, totalCost } = computeItemCosts(item);
                     const label = item.label || item.sectionName || "Recorded item";
+                    const sourceVhcIds = Array.isArray(item.sourceVhcIds) && item.sourceVhcIds.length > 0
+                      ? item.sourceVhcIds
+                      : [item.id];
+                    const outcomeRowKey = `${kind}:${sourceVhcIds.map(String).sort().join(":")}`;
+                    const isExpanded = expandedOutcomeRows.has(outcomeRowKey);
                     const completeBlock =
-                      kind === "approved" ? getCompletionPartBlockReason(item.id) : "";
-                    // Reset target: completed rows step back to Approved; approved/declined
-                    // rows step back to their original Red/Amber state (pending).
-                    const resetStatus = kind === "completed" ? "authorized" : null;
+                      kind === "approved"
+                        ? sourceVhcIds.map((sourceId) => getCompletionPartBlockReason(sourceId)).find(Boolean) || ""
+                        : "";
+                    const toggleExpanded = () => {
+                      setExpandedOutcomeRows((previous) => {
+                        const next = new Set(previous);
+                        if (next.has(outcomeRowKey)) next.delete(outcomeRowKey);
+                        else next.add(outcomeRowKey);
+                        return next;
+                      });
+                    };
+                    const closeExpanded = () => {
+                      setExpandedOutcomeRows((previous) => {
+                        if (!previous.has(outcomeRowKey)) return previous;
+                        const next = new Set(previous);
+                        next.delete(outcomeRowKey);
+                        return next;
+                      });
+                    };
                     return (
                       <div
-                        key={item.id}
+                        key={outcomeRowKey}
                         style={{
                           // Approved / Complete / Declined rows always sit on the plain surface colour
                           background: "var(--surface)",
                           borderRadius: "var(--radius-sm)",
-                          padding: "10px 12px",
                           display: "flex",
                           flexDirection: "column",
-                          gap: "6px",
+                          overflow: "hidden",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "baseline" }}>
-                          <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--text-accent)" }}>{label}</span>
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "12px", color: "var(--text-1)" }}>
-                          <span>Parts {formatCurrency(partsCost)}</span>
-                          <span>Labour {formatCurrency(labourCost)}</span>
-                          <span style={{ fontWeight: 700, color: "var(--text-accent)" }}>Total {formatCurrency(totalCost)}</span>
-                        </div>
-                        {!readOnly ? (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                            <button
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
+                          onClick={toggleExpanded}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: "inherit",
+                            cursor: "pointer",
+                            minHeight: "44px",
+                            padding: "10px 12px",
+                            textAlign: "left",
+                            width: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                          }}
+                        >
+                          <span style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
+                            <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--text-accent)" }}>{label}</span>
+                          </span>
+                          <span style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "12px", color: "var(--text-1)" }}>
+                            <span>Parts {formatCurrency(partsCost)}</span>
+                            <span>Labour {formatCurrency(labourCost)}</span>
+                            <span style={{ fontWeight: 700, color: "var(--text-accent)" }}>Total {formatCurrency(totalCost)}</span>
+                          </span>
+                        </button>
+                        {!isCustomerView && isExpanded ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "0 12px 10px" }}>
+                            <Button
                               type="button"
-                              onClick={() => updateEntryStatus(item.id, resetStatus)}
-                              style={{
-                                ...btnBase,
-                                border: "1px solid var(--ghostbutton-ring)",
-                                background: "var(--surface)",
-                                color: "var(--text-accent)",
-                                cursor: "pointer",
+                              variant="primary"
+                              size="sm"
+                              onClick={() => {
+                                closeExpanded();
+                                updateEntryStatus(item.id, null, sourceVhcIds);
                               }}
                             >
                               Reset
-                            </button>
+                            </Button>
                             {kind === "approved" ? (
-                              <button
+                              <Button
                                 type="button"
-                                onClick={() => updateEntryStatus(item.id, "completed")}
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  closeExpanded();
+                                  updateEntryStatus(item.id, "completed", sourceVhcIds);
+                                }}
                                 disabled={Boolean(completeBlock)}
                                 title={completeBlock || undefined}
-                                style={{
-                                  ...btnBase,
-                                  border: "none",
-                                  background: completeBlock ? "var(--complete-surface)" : "var(--complete)",
-                                  color: completeBlock ? "var(--complete)" : "white",
-                                  cursor: completeBlock ? "not-allowed" : "pointer",
-                                }}
                               >
                                 Complete
-                              </button>
+                              </Button>
                             ) : null}
                           </div>
                         ) : null}

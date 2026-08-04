@@ -1,7 +1,13 @@
 // file location: src/lib/vhc/quoteLines.js
 import { parseVhcBuilderPayload, summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";
-import { normaliseColour, resolveCategoryForItem, toNumber } from "@/lib/vhc/shared";
+import {
+  DEFAULT_LABOUR_RATE_GBP,
+  normaliseColour,
+  resolveCategoryForItem,
+  resolveVhcTotal,
+  toNumber,
+} from "@/lib/vhc/shared";
 // Phase 6 follow-up: every VHC normalisation goes through the engine. Local
 // resolveDisplaySeverity / isWorkflowDisplayStatus / WORKFLOW_DISPLAY_STATUSES
 // were deleted earlier; the summaryStatus.js helpers used here now live inside
@@ -366,7 +372,7 @@ export const buildVhcQuoteLinesModel = ({
   partsJobItems = [],
   vhcIdAliases = {},
   authorizedViewRows = [],
-  labourRate = 85,
+  labourRate = DEFAULT_LABOUR_RATE_GBP,
   mode = "withPlaceholders",
 } = {}) => {
   let fallbackChecksheet = null;
@@ -502,6 +508,7 @@ export const buildVhcQuoteLinesModel = ({
           notes: customerOverride || item?.notes || item?.issue_description || "",
           concernText: customerOverride || primaryConcern?.text || "",
           customerDescription: customerOverride || "",
+          issueNotes: concerns.map((concern) => concern?.text).filter(Boolean),
           measurement: item?.measurement || "",
           rows: Array.isArray(item?.rows) ? item.rows : [],
           rawSeverity: severity,
@@ -547,6 +554,7 @@ export const buildVhcQuoteLinesModel = ({
       notes: customerOverride || check.issue_description || "",
       concernText: customerOverride || "",
       customerDescription: customerOverride || "",
+      issueNotes: customerOverride ? [customerOverride] : [],
       measurement: detachMeasurement ? "" : check.measurement || "",
       rows: [],
       rawSeverity: severity,
@@ -742,9 +750,12 @@ export const buildVhcQuoteLinesModel = ({
     const severity = severityFromColumn || severityFromDisplay || item.severityKey || item.rawSeverity || "grey";
     const parts = partsCostMap.get(itemId) ?? partsCostMap.get(canonicalId) ?? toNumber(check.parts_cost, 0);
     const labourHours = labourHoursMap.get(itemId) ?? labourHoursMap.get(canonicalId) ?? toNumber(check.labour_hours, 0);
-    const totalOverride = toNumber(check.total_override, 0);
     const labour = labourHours * labourRate;
-    const total = totalOverride > 0 ? totalOverride : parts + labour;
+    const totalResolution = resolveVhcTotal({
+      partsCost: parts,
+      labourCost: labour,
+      totalOverride: check.total_override,
+    });
 
     return {
       ...item,
@@ -759,12 +770,14 @@ export const buildVhcQuoteLinesModel = ({
       labour_hours: labourHours,
       labour_rate_gbp: labourRate,
       labour_gbp: labour,
-      total_gbp: total,
+      total_gbp: totalResolution.total,
+      calculated_total_gbp: totalResolution.calculatedTotal,
+      has_manual_total_override: totalResolution.hasManualOverride,
       // Legacy aliases retained for existing renderers that still read old keys.
       categoryId: item.category?.id || null,
       partsCost: parts,
       labourHours,
-      total,
+      total: totalResolution.total,
       partsComplete: Boolean(check.parts_complete),
       labourComplete: Boolean(check.labour_complete),
       displayStatus: check.display_status || null,

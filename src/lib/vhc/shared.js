@@ -15,6 +15,30 @@ export const toNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+export const parseVhcTotalOverrideInput = (value) => {
+  if (value === undefined) return { provided: false, valid: true, value: null };
+  if (value === null || String(value).trim() === "") {
+    return { provided: true, valid: true, value: null };
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { provided: true, valid: false, value: null };
+  }
+  return { provided: true, valid: true, value: parsed };
+};
+
+export const resolveVhcTotal = ({ partsCost = 0, labourCost = 0, totalOverride } = {}) => {
+  const calculatedTotal = toNumber(partsCost, 0) + toNumber(labourCost, 0);
+  const parsedOverride = parseVhcTotalOverrideInput(totalOverride);
+  const hasManualOverride = parsedOverride.provided && parsedOverride.valid && parsedOverride.value !== null;
+  return {
+    calculatedTotal,
+    hasManualOverride,
+    manualOverride: hasManualOverride ? parsedOverride.value : null,
+    total: hasManualOverride ? parsedOverride.value : calculatedTotal,
+  };
+};
+
 export const collapseWhitespace = (value = "") =>
   String(value || "").trim().replace(/\s+/g, " ");
 

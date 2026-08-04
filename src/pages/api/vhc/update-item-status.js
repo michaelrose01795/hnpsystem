@@ -9,6 +9,7 @@ import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
 import { logJobActivity } from "@/lib/database/jobActivity";
+import { parseVhcTotalOverrideInput } from "@/lib/vhc/shared";
 
 const JOB_ADDED_PART_STATUSES = new Set(["booked", "fitted"]);
 
@@ -223,8 +224,15 @@ async function handler(req, res, session) {
       updateData.parts_cost = parseFloat(partsCost) || 0;
     }
 
-    if (totalOverride !== undefined && totalOverride !== null) {
-      updateData.total_override = totalOverride === "" ? null : parseFloat(totalOverride);
+    const parsedTotalOverride = parseVhcTotalOverrideInput(totalOverride);
+    if (!parsedTotalOverride.valid) {
+      return res.status(400).json({
+        success: false,
+        message: "totalOverride must be blank or a non-negative number",
+      });
+    }
+    if (parsedTotalOverride.provided) {
+      updateData.total_override = parsedTotalOverride.value;
     }
 
     if (labourComplete !== undefined) {
@@ -310,7 +318,7 @@ async function handler(req, res, session) {
           payload: { partsCost: updateData.parts_cost },
         });
       }
-      if (totalOverride !== undefined && totalOverride !== null) {
+      if (parsedTotalOverride.provided) {
         events.push({
           action: "total_override_changed",
           summary:

@@ -1,85 +1,48 @@
 /**
- * Calculate VHC financial totals from vhc_checks and parts_job_items data
- * This allows totals to be displayed without loading the full VHC tab
- * Replicates the calculation logic from VhcDetailsPanel.js
+ * Calculate the authorised and declined VHC totals without rendering the VHC panel.
+ * The quote-line model is authoritative so row totals, header totals and persisted
+ * checksheet totals all apply the same parts + labour / manual override rules.
  */
 
-import { summariseTechnicianVhc } from './summary';
-// Phase 2 of the VHC refactor: route every normalisation through the canonical
-// engine. The local normaliseColour wrapper that also mapped workflow strings
-// onto the severity-list buckets is preserved here as a small private helper —
-// it is structurally specific to this file's bucketing strategy and not part of
-// the engine's normalised model.
-import { normalizeDecision, normalizeSeverity } from '@/features/vhc/vhcStatusEngine';
+import { summariseTechnicianVhc } from "@/lib/vhc/summary";
+import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
+import { DEFAULT_LABOUR_RATE_GBP } from "@/lib/vhc/shared";
 
-const LABOUR_RATE = 150; // £150 per hour
+const EMPTY_TOTALS = Object.freeze({ authorized: 0, declined: 0 });
 
-// Severity-list bucketing helper. Workflow strings ("authorized"/"completed"/
-// "declined") are mapped onto the severity-list keys this file uses; real
-// severity colours pass straight through. Kept private to this module because
-// the engine returns a richer projection that callers in other files use.
-function normaliseColour(value) {
-  if (!value || typeof value !== 'string') return null;
-  const severity = normalizeSeverity(value);
-  if (severity) return severity;
-  const decision = normalizeDecision(value);
-  if (decision === 'authorized' || decision === 'completed') return 'authorized';
-  if (decision === 'declined') return 'declined';
-  return null;
-}
-
-/**
- * Parse JSON safely
- */
-function safeJsonParse(value) {
+const safeJsonParse = (value) => {
   if (!value) return null;
-  if (typeof value === 'object') return value;
+  if (typeof value === "object") return value;
   try {
     return JSON.parse(value);
   } catch {
     return null;
   }
-}
+};
 
-/**
- * Calculate authorized and declined totals from vhc_checks and parts_job_items data
- * @param {Array} vhcChecks - Array of vhc_checks records from the database
- * @param {Array} partsJobItems - Array of parts_job_items records from the database
- * @returns {Object} - { authorized: number, declined: number }
- */
-export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], { forceRecalculate = false } = {}) {
-  const totals = {
-    authorized: 0,
-    declined: 0,
-  };
-
-  if (!Array.isArray(vhcChecks)) {
-    return totals;
-  }
+export function calculateVhcFinancialTotals(
+  vhcChecks = [],
+  partsJobItems = [],
+  { forceRecalculate = false } = {}
+) {
+  if (!Array.isArray(vhcChecks)) return { ...EMPTY_TOTALS };
 
   try {
-    // Step 1: Find and parse the VHC builder data
     const builderRecord = vhcChecks.find((check) => {
-      const section = (check?.section || "").toString().trim();
+      const section = String(check?.section || "").trim();
       return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
     });
-    if (!builderRecord) {
-      // No VHC builder data found, return zero totals
-      console.log('[VHC Totals] No VHC_CHECKSHEET record found');
-      return totals;
-    }
+    if (!builderRecord) return { ...EMPTY_TOTALS };
 
-    // Prefer persisted totals on the VHC_CHECKSHEET row when available.
-    // This keeps the job-card header in sync after refreshes without requiring
-    // the full VHC Summary model to be rebuilt client-side first.
     const storedAuthorized = Number(builderRecord.authorized_total_gbp);
     const storedDeclined = Number(builderRecord.declined_total_gbp);
     const hasStoredAuthorized = Number.isFinite(storedAuthorized) && storedAuthorized >= 0;
     const hasStoredDeclined = Number.isFinite(storedDeclined) && storedDeclined >= 0;
-    const shouldUseStoredTotals =
+    const hasStoredTotals =
       (hasStoredAuthorized && storedAuthorized > 0) ||
       (hasStoredDeclined && storedDeclined > 0);
-    if (shouldUseStoredTotals && !forceRecalculate) {
+
+    if (hasStoredTotals && !forceRecalculate) {
       return {
         authorized: hasStoredAuthorized ? storedAuthorized : 0,
         declined: hasStoredDeclined ? storedDeclined : 0,
@@ -87,154 +50,25 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], 
     }
 
     const parsedPayload = safeJsonParse(builderRecord.issue_description || builderRecord.data);
-    if (!parsedPayload) {
-      return totals;
-    }
+    if (!parsedPayload) return { ...EMPTY_TOTALS };
 
-    // Step 2: Summarize the VHC data to get sections
-    const builderSummary = summariseTechnicianVhc(parsedPayload);
-    const sections = builderSummary?.sections || [];
-
-    // Step 3: Build approval lookup from vhc_checks
-    const approvalLookup = new Map();
-    vhcChecks.forEach((check) => {
-      if (check.vhc_id) {
-        approvalLookup.set(String(check.vhc_id), {
-          approvalStatus: normalizeDecision(check.approval_status) || 'pending',
-          authorizationState: normalizeDecision(check.authorization_state) || null,
-          displayStatus: check.display_status || null,
-          labourHours: check.labour_hours,
-          partsCost: check.parts_cost,
-        });
-      }
+    const sections = summariseTechnicianVhc(parsedPayload)?.sections || [];
+    const quoteModel = buildVhcQuoteLinesModel({
+      sections,
+      vhcChecksData: vhcChecks,
+      partsJobItems: Array.isArray(partsJobItems) ? partsJobItems : [],
+      labourRate: DEFAULT_LABOUR_RATE_GBP,
+      mode: "withPlaceholders",
     });
 
-    // Step 4: Build parts cost map by VHC item ID
-    const partsCostByVhcItem = new Map();
-    if (Array.isArray(partsJobItems)) {
-      partsJobItems.forEach((part) => {
-        if (!part?.vhc_item_id) return;
-        const key = String(part.vhc_item_id);
-        const qtyValue = Number(part.quantity_requested);
-        const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
-        const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? part.parts_catalog?.unit_price ?? 0);
-        if (!Number.isFinite(unitPriceValue)) return;
-        const subtotal = resolvedQty * unitPriceValue;
-        partsCostByVhcItem.set(key, (partsCostByVhcItem.get(key) || 0) + subtotal);
-      });
-    }
-
-    // Step 5: Build labour hours map by VHC item ID
-    const labourHoursByVhcItem = new Map();
-    vhcChecks.forEach((check) => {
-      if (!check?.vhc_id) return;
-      const hours = Number(check.labour_hours);
-      if (!Number.isFinite(hours) || hours < 0) return;
-      labourHoursByVhcItem.set(String(check.vhc_id), hours);
-    });
-
-    if (Array.isArray(partsJobItems)) {
-      partsJobItems.forEach((part) => {
-        if (!part?.vhc_item_id) return;
-        const hours = Number(part.labour_hours);
-        if (!Number.isFinite(hours) || hours < 0) return;
-        const key = String(part.vhc_item_id);
-        const current = labourHoursByVhcItem.get(key) || 0;
-        labourHoursByVhcItem.set(key, Math.max(current, hours));
-      });
-    }
-
-    // Step 6: Extract summary items (red/amber items from VHC builder)
-    const summaryItems = [];
-    sections.forEach((section) => {
-      const sectionName = section.name || section.title || 'Vehicle Health Check';
-      (section.items || []).forEach((item, index) => {
-        const severity = normaliseColour(item.colour || item.status || section.colour);
-        if (!severity || (severity !== 'red' && severity !== 'amber')) {
-          return; // Only process red/amber items
-        }
-        const id = item.vhc_id || `${sectionName}-${index}`;
-        const approvalData = approvalLookup.get(String(id)) || {};
-
-        summaryItems.push({
-          id: String(id),
-          rawSeverity: severity,
-          displayStatus: approvalData.displayStatus,
-          approvalStatus: approvalData.approvalStatus || 'pending',
-          authorizationState: approvalData.authorizationState || null,
-        });
-      });
-    });
-
-    // Step 7: Build severity lists (mimics VhcDetailsPanel logic)
-    const severityLists = { red: [], amber: [], authorized: [], completed: [], declined: [] };
-    summaryItems.forEach((item) => {
-      // Use display_status if available, otherwise use original severity
-      const displaySeverity = item.displayStatus || item.rawSeverity;
-      if (severityLists[displaySeverity]) {
-        severityLists[displaySeverity].push(item);
-      }
-    });
-
-    // Step 8: Calculate totals by accumulating from severity lists
-    const calculateRowTotal = (itemId) => {
-      const vhcId = String(itemId);
-      const partsCost = partsCostByVhcItem.get(vhcId) || 0;
-      const labourHours = labourHoursByVhcItem.get(vhcId) || 0;
-      const labourCost = labourHours * LABOUR_RATE;
-      const total = partsCost + labourCost;
-      return total > 0 ? total : null;
+    return {
+      authorized:
+        Number(quoteModel?.totals?.authorized || 0) +
+        Number(quoteModel?.totals?.completed || 0),
+      declined: Number(quoteModel?.totals?.declined || 0),
     };
-
-    const accumulate = (items, severity) => {
-      items.forEach((item) => {
-        const rowTotal = calculateRowTotal(item.id);
-        if (!rowTotal) return;
-
-        // Add to severity total
-        if (severity === 'authorized') {
-          totals.authorized += rowTotal;
-        } else if (severity === 'declined') {
-          totals.declined += rowTotal;
-        }
-
-        // Also check approval status for red/amber items
-        const decision =
-          item.authorizationState ||
-          item.approvalStatus;
-        if ((severity === 'red' || severity === 'amber') && decision === 'authorized') {
-          totals.authorized += rowTotal;
-        } else if ((severity === 'red' || severity === 'amber') && decision === 'declined') {
-          totals.declined += rowTotal;
-        }
-      });
-    };
-
-    accumulate(severityLists.red, 'red');
-    accumulate(severityLists.amber, 'amber');
-    accumulate(severityLists.authorized, 'authorized');
-    // Completed work was authorised first — count it toward the authorised total.
-    accumulate(severityLists.completed, 'authorized');
-    accumulate(severityLists.declined, 'declined');
-
-    // Debug logging (can be removed in production)
-    if (totals.authorized > 0 || totals.declined > 0) {
-      console.log('[VHC Totals Calculation]', {
-        authorized: totals.authorized,
-        declined: totals.declined,
-        summaryItemsCount: summaryItems.length,
-        severityListCounts: {
-          red: severityLists.red.length,
-          amber: severityLists.amber.length,
-          authorized: severityLists.authorized.length,
-          declined: severityLists.declined.length,
-        }
-      });
-    }
-
-    return totals;
   } catch (error) {
-    console.error('[VHC Totals Calculation Error]', error);
-    return { authorized: 0, declined: 0 };
+    console.error("[VHC Totals Calculation Error]", error);
+    return { ...EMPTY_TOTALS };
   }
 }

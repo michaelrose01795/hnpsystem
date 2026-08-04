@@ -1,7 +1,6 @@
 // file location: src/pages/api/invoices/by-order/[orderNumber].js // identify API file path
 import { getInvoiceDetailPayload } from "@/lib/invoices/detailService"; // import shared invoice detail builder
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard wrapper
-import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles"; // import allowed role sets
 
 async function handler(req, res) { // handler for /api/invoices/by-order/[orderNumber]
   if (req.method !== "GET") { // allow only GET
@@ -34,4 +33,4 @@ async function handler(req, res) { // handler for /api/invoices/by-order/[orderN
   }
 } // end handler
 
-export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] }); // enforce manager-level access
+export default withRoleGuard(handler); // invoice view follows the authenticated order-page access contract
