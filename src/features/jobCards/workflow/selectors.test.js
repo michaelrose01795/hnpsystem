@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getWriteUpCompletionState } from "./selectors";
+import {
+  getVhcCompletionUpdatesFromWriteUpTasks,
+  getWriteUpCompletionState,
+} from "./selectors";
 
 describe("getWriteUpCompletionState", () => {
   it("keeps the default state when no request rows are complete", () => {
@@ -94,5 +97,26 @@ describe("getWriteUpCompletionState", () => {
 
     expect(state.isPartiallyComplete).toBe(true);
     expect(state.isCompleteInstant).toBe(false);
+  });
+});
+
+describe("getVhcCompletionUpdatesFromWriteUpTasks", () => {
+  it("maps authorised write-up tasks to their canonical VHC completion flags", () => {
+    const updates = getVhcCompletionUpdatesFromWriteUpTasks([
+      { source: "request", requestId: 10, checked: true },
+      { source: "vhc", vhcItemId: 1806, checked: true },
+      { source: "vhc", vhcItemId: 1810, status: "additional_work" },
+    ]);
+
+    expect(updates).toEqual([
+      { vhcItemId: 1806, complete: true },
+      { vhcItemId: 1810, complete: false },
+    ]);
+  });
+
+  it("ignores VHC tasks that do not have a persisted VHC item ID", () => {
+    expect(getVhcCompletionUpdatesFromWriteUpTasks([
+      { source: "vhc", sourceKey: "vhc-missing", checked: true },
+    ])).toEqual([]);
   });
 });

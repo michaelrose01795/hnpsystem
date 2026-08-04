@@ -63,6 +63,29 @@ export const getWriteUpCompletionState = ({
   };
 };
 
+// Build the cross-table completion writes required for authorised VHC rows in
+// the Write-up workspace. job_requests drives the table list, while vhc_checks
+// remains the canonical VHC workflow source, so both records must agree.
+export const getVhcCompletionUpdatesFromWriteUpTasks = (tasks = []) => {
+  const updatesByVhcId = new Map();
+
+  (Array.isArray(tasks) ? tasks : []).forEach((task) => {
+    if (normalizeText(task?.source) !== "vhc") return;
+
+    const vhcItemId = Number(task?.vhcItemId ?? task?.vhc_item_id ?? null);
+    if (!Number.isInteger(vhcItemId) || vhcItemId <= 0) return;
+
+    const complete =
+      typeof task?.checked === "boolean"
+        ? task.checked
+        : ["complete", "completed", "done"].includes(normalizeText(task?.status));
+
+    updatesByVhcId.set(vhcItemId, { vhcItemId, complete });
+  });
+
+  return Array.from(updatesByVhcId.values());
+};
+
 // Build invoice blockers and cross-tab readiness from shared inputs.
 export const getInvoiceWorkflowState = ({
   writeUpComplete,

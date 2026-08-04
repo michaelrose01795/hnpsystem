@@ -25,6 +25,7 @@ import {
   CLOCKING_WORK_TYPE,
   hasOutstandingAuthorisedVhcWork,
   getJobTechStatusFromVhcItems,
+  getTechnicianWorkspaceState,
   getClockingWorkTypeForJob,
   getPartAuthorisedDisplayStatus,
   AUTHORISED_PART_STATUS,
@@ -441,6 +442,53 @@ describe("getJobTechStatusFromVhcItems", () => {
     const items = projectVhcItems([baseCheck({ approval_status: "declined" })]);
     expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: true }))
       .toBe(TECH_JOB_STATUS.COMPLETED);
+  });
+});
+
+describe("getTechnicianWorkspaceState", () => {
+  it("reopens a completed technician workspace when authorised work is added later", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "late-work", approval_status: "authorized", Complete: false }),
+    ]);
+
+    expect(getTechnicianWorkspaceState(items, {
+      currentTechStatus: TECH_JOB_STATUS.COMPLETED,
+      technicianPreviouslyCompleted: true,
+    })).toEqual({
+      effectiveTechStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS,
+      technicianWorkDone: false,
+      shouldPersistReopen: true,
+    });
+  });
+
+  it("keeps a completed technician workspace locked when no authorised work is outstanding", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "done-work", approval_status: "authorized", Complete: true }),
+    ]);
+
+    expect(getTechnicianWorkspaceState(items, {
+      currentTechStatus: TECH_JOB_STATUS.COMPLETED,
+      technicianPreviouslyCompleted: true,
+    })).toEqual({
+      effectiveTechStatus: TECH_JOB_STATUS.COMPLETED,
+      technicianWorkDone: true,
+      shouldPersistReopen: false,
+    });
+  });
+
+  it("keeps an already reopened technician workspace editable until completion is pressed again", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "finished-late-work", approval_status: "authorized", Complete: true }),
+    ]);
+
+    expect(getTechnicianWorkspaceState(items, {
+      currentTechStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS,
+      technicianPreviouslyCompleted: false,
+    })).toEqual({
+      effectiveTechStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS,
+      technicianWorkDone: false,
+      shouldPersistReopen: false,
+    });
   });
 });
 

@@ -13,6 +13,7 @@ import {
 import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
 import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical VHC decision normalizer.
 import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized invoice paid check.
+import { getVhcCompletionUpdatesFromWriteUpTasks } from "@/features/jobCards/workflow/selectors";
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import {
   getVehicleRegistration,
@@ -2084,8 +2085,17 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
   authorisedItems.forEach((item) => {
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
+    const itemIsComplete = isCompleteRequestStatus(item?.status) || item?.checked === true;
     if (existing) {
-      merged.push({ ...existing, label: existing.label || item.label, checked: existing.checked === true });
+      const checked = existing.checked === true || itemIsComplete;
+      merged.push({
+        ...existing,
+        label: existing.label || item.label,
+        requestId: existing.requestId ?? item.requestId ?? null,
+        vhcItemId: existing.vhcItemId ?? item.vhcItemId ?? null,
+        checked,
+        status: checked ? "complete" : "additional_work",
+      });
       registry.delete(key);
     } else {
       merged.push({
@@ -2093,8 +2103,10 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
         source: item.source,
         sourceKey: item.sourceKey,
         label: item.label,
-        status: "additional_work",
-        checked: false,
+        requestId: item.requestId ?? null,
+        vhcItemId: item.vhcItemId ?? null,
+        status: itemIsComplete ? "complete" : "additional_work",
+        checked: itemIsComplete,
       });
     }
   });
@@ -2488,6 +2500,7 @@ const formatJobData = (data) => {
         sourceKey: `vhc-${data.id}-${vhcId}`,
         label: `Authorized Work: ${labelBase}`,
         vhcItemId: row?.vhc_id ?? null,
+        requestId: row?.request_id ?? null,
         status:
           normalizeAuthorizationDecision(row?.authorization_state) === "completed" ||
           normalizeAuthorizationDecision(row?.approval_status) === "completed" ||
@@ -3967,6 +3980,8 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         sourceKey: `vhc-${job.id}-${vhcId}`,
         label: `Authorized Work: ${labelBase}`,
         vhcItemId: item?.vhcItemId ?? null,
+        requestId: item?.requestId ?? null,
+        status: item?.complete === true || item?.status === "complete" ? "complete" : "additional_work",
       };
     });
 
@@ -4256,6 +4271,26 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           return {
             success: false,
             error: `Failed to save request completion: ${requestUpdateError.message}`,
+          };
+        }
+      }
+    }
+
+    const vhcCompletionUpdates = getVhcCompletionUpdatesFromWriteUpTasks(filteredTasks);
+    if (vhcCompletionUpdates.length > 0) {
+      const timestamp = new Date().toISOString();
+      for (const update of vhcCompletionUpdates) {
+        const { error: vhcCompletionError } = await supabase
+          .from("vhc_checks")
+          .update({ Complete: update.complete, updated_at: timestamp })
+          .eq("job_id", job.id)
+          .eq("vhc_id", update.vhcItemId);
+
+        if (vhcCompletionError) {
+          console.error("⚠️ Error updating authorised VHC completion:", vhcCompletionError);
+          return {
+            success: false,
+            error: `Failed to save authorised work completion: ${vhcCompletionError.message}`,
           };
         }
       }

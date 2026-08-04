@@ -57,6 +57,7 @@ import {
   normaliseDecisionStatus,
   projectVhcItems,
   getJobTechStatusFromVhcItems,
+  getTechnicianWorkspaceState,
   getClockingWorkTypeForJob,
   hasOutstandingAuthorisedVhcWork,
   TECH_JOB_STATUS,
@@ -2883,8 +2884,48 @@ export default function TechJobDetailPage() {
   username && motTestersList.includes(username) || hasMotRoleAccess;
   const canManageDocuments = isTech;
 
+  const projectedTechnicianVhcItems = useMemo(
+    () => projectVhcItems(vhcChecks || [], { job: jobData?.jobCard || {} }),
+    [jobData?.jobCard, vhcChecks]
+  );
+  const technicianPreviouslyCompleted = isTechTaskComplete(jobData?.jobCard || {});
+  const technicianWorkspaceState = useMemo(
+    () => getTechnicianWorkspaceState(projectedTechnicianVhcItems, {
+      currentTechStatus: jobData?.jobCard?.techCompletionStatus || null,
+      technicianPreviouslyCompleted,
+    }),
+    [
+      jobData?.jobCard?.techCompletionStatus,
+      projectedTechnicianVhcItems,
+      technicianPreviouslyCompleted,
+    ]
+  );
+
   useEffect(() => {
-    if (!jobCardId || !jobData?.jobCard?.status) return;
+    if (!jobCardId) return;
+
+    if (technicianWorkspaceState.shouldPersistReopen) {
+      updateJob(jobCardId, {
+        tech_completion_status: TECH_JOB_STATUS.AUTHORISED_ITEMS,
+      }).then((statusResult) => {
+        if (statusResult?.success && statusResult.data) {
+          setJobData((prev) => {
+            if (!prev?.jobCard) return prev;
+            return {
+              ...prev,
+              jobCard: {
+                ...prev.jobCard,
+                ...statusResult.data,
+                techCompletionStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS,
+              },
+            };
+          });
+          revalidateAllJobs();
+        }
+      });
+      return;
+    }
+
     const currentStatusId = normalizeStatusId(jobData.jobCard.status);
     const completionStatusId = normalizeStatusId(jobData.jobCard.techCompletionStatus || "");
     const isMarkedComplete =
@@ -2918,6 +2959,7 @@ export default function TechJobDetailPage() {
   jobData?.jobCard?.techCompletionStatus,
   jobData?.jobCard?.vhcRequired,
   isVhcCompleted,
+  technicianWorkspaceState.shouldPersistReopen,
   writeUpTechComplete]
   );
 
@@ -3034,7 +3076,7 @@ export default function TechJobDetailPage() {
   "";
 
   const isVhcCompleteForTech = !jobRequiresVhc || isVhcCompleted;
-  const technicianWorkDone = isTechTaskComplete(jobCard);
+  const technicianWorkDone = technicianWorkspaceState.technicianWorkDone;
   const pendingMotRequest = pendingMotTasks[0] || null;
   const motClockedByAnotherUser =
   Boolean(motWorkClaim) && Number(motWorkClaim?.user_id) !== Number(workshopUserId);

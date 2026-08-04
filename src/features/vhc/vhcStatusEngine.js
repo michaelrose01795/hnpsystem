@@ -665,6 +665,43 @@ export const getJobTechStatusFromVhcItems = (vhcItems = [], { techHasCompletedMa
 };
 
 /**
+ * Resolve whether the technician workspace should be editable from both the
+ * persisted tech marker and the live VHC rows. Live authorised work wins over
+ * a stale tech_complete marker so late customer approval cannot leave the
+ * Write-up tab permanently read-only.
+ *
+ * AUTHORISED_ITEMS deliberately remains editable after its rows are finished;
+ * the technician must press Complete Job again to confirm the new work is done.
+ */
+export const getTechnicianWorkspaceState = (
+  vhcItems = [],
+  { currentTechStatus = null, technicianPreviouslyCompleted = false } = {}
+) => {
+  const persistedTechStatus = normaliseTechStatus(currentTechStatus);
+  const hasOutstandingAuthorisedWork = hasOutstandingAuthorisedVhcWork(vhcItems);
+  const hasCompletionSignal =
+    Boolean(technicianPreviouslyCompleted) ||
+    persistedTechStatus === TECH_JOB_STATUS.COMPLETED;
+
+  let effectiveTechStatus = TECH_JOB_STATUS.IN_PROGRESS;
+  if (hasOutstandingAuthorisedWork && hasCompletionSignal) {
+    effectiveTechStatus = TECH_JOB_STATUS.AUTHORISED_ITEMS;
+  } else if (persistedTechStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS) {
+    effectiveTechStatus = TECH_JOB_STATUS.AUTHORISED_ITEMS;
+  } else if (hasCompletionSignal) {
+    effectiveTechStatus = TECH_JOB_STATUS.COMPLETED;
+  }
+
+  return {
+    effectiveTechStatus,
+    technicianWorkDone: effectiveTechStatus === TECH_JOB_STATUS.COMPLETED,
+    shouldPersistReopen:
+      effectiveTechStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS &&
+      persistedTechStatus !== TECH_JOB_STATUS.AUTHORISED_ITEMS,
+  };
+};
+
+/**
  * Decide which work type a clock-in should record against a job. When the
  * persisted tech-side status is AUTHORISED_ITEMS and there is still
  * outstanding authorised VHC work, the clock-in is "Additional Work";

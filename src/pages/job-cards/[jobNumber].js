@@ -5541,10 +5541,14 @@ export function CustomerRequestsTab({
   "inprogress";
 
   const getRequestStatusPresentation = useCallback((statusValue, fallbackStatus = "inprogress") => {
-    const normalizedStatus = String(statusValue || fallbackStatus || "inprogress").
+    const normalizedStatusValue = String(statusValue || fallbackStatus || "inprogress").
     trim().
     toLowerCase().
     replace(/\s+/g, "_");
+    const normalizedStatus =
+      normalizedStatusValue === "complete" || normalizedStatusValue === "done" ?
+      "completed" :
+      normalizedStatusValue;
 
     const UK_LABELS = {
       authorized: "Authorised",
@@ -6116,6 +6120,7 @@ export function CustomerRequestsTab({
         numberLabel: `A${index + 1}`,
         title: `Authorised ${index + 1}`,
         requestId,
+        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
         description: row.label || row.description || "Authorised item",
         detailLine: row.detail || "",
         noteText: (row.noteText || "").trim(),
@@ -7086,10 +7091,14 @@ export function WriteUpWorkspace({
   "inprogress";
 
   const getRequestStatusPresentation = useCallback((statusValue, fallbackStatus = "inprogress") => {
-    const normalizedStatus = String(statusValue || fallbackStatus || "inprogress").
+    const normalizedStatusValue = String(statusValue || fallbackStatus || "inprogress").
     trim().
     toLowerCase().
     replace(/\s+/g, "_");
+    const normalizedStatus =
+      normalizedStatusValue === "complete" || normalizedStatusValue === "done" ?
+      "completed" :
+      normalizedStatusValue;
 
     const UK_LABELS = {
       authorized: "Authorised",
@@ -7665,6 +7674,7 @@ export function WriteUpWorkspace({
         numberLabel: `A${index + 1}`,
         title: `Authorised ${index + 1}`,
         requestId,
+        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
         description: row.label || row.description || "Authorised item",
         detailLine: row.detail || "",
         noteText: (row.noteText || "").trim(),
@@ -7780,6 +7790,8 @@ export function WriteUpWorkspace({
             ? true
             : overrides.requestId != null && String(row.requestId) === String(overrides.requestId)
             ? Boolean(overrides.complete)
+            : overrides.vhcItemId != null && String(row.vhcItemId) === String(overrides.vhcItemId)
+            ? Boolean(overrides.complete)
             : row.normalizedStatus === "completed";
         return {
           source: row.kind === "authorised" ? "vhc" : "request",
@@ -7791,6 +7803,7 @@ export function WriteUpWorkspace({
           status: isComplete ? "complete" : "inprogress",
           checked: isComplete,
           requestId: row.requestId ?? null,
+          vhcItemId: row.vhcItemId ?? null,
           // Only customer rows get a sort-order fallback (their combined index
           // matches their DB sort_order). Authorised rows rely on requestId so
           // saveWriteUpToDatabase can't mis-match a row by a synthetic index.
@@ -7887,9 +7900,13 @@ export function WriteUpWorkspace({
 
   const handleToggleRequestComplete = useCallback(
     async (row) => {
-      if (!canEdit || !row?.requestId) return;
+      if (!canEdit || (!row?.requestId && !row?.vhcItemId)) return;
       await persistCompletion(
-        buildWriteUpTasks({ requestId: row.requestId, complete: true }),
+        buildWriteUpTasks({
+          requestId: row.requestId ?? null,
+          vhcItemId: row.vhcItemId ?? null,
+          complete: true,
+        }),
         row.key
       );
     },
@@ -8132,7 +8149,7 @@ export function WriteUpWorkspace({
                           className={`app-btn ${rowComplete ? "app-tone-success-strong" : "app-btn--ghost"} jc-req-tick`}
                           data-complete={rowComplete ? "1" : "0"}
                           data-saving={rowSaving ? "1" : "0"}
-                          disabled={!canEdit || !row.requestId || rowComplete || completionSavingKeys.size > 0}
+                          disabled={!canEdit || (!row.requestId && !row.vhcItemId) || rowComplete || completionSavingKeys.size > 0}
                           onClick={(e) => { e.stopPropagation(); void handleToggleRequestComplete(row); }}>
                           <span className="jc-req-tick-icon">
                             <RequestCompleteIcon />
