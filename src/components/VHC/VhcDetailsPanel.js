@@ -10,6 +10,7 @@ import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import {
   aggregateConsolidatedBrakeValues,
   consolidateBrakePartsDisplayRows,
+  expandSelectedConsolidatedRowIds,
 } from "@/lib/vhc/partsDisplayRows";
 import { saveChecksheet } from "@/lib/database/jobs";
 import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
@@ -4554,15 +4555,31 @@ export default function VhcDetailsPanel({
         return;
       }
 
-      // Get the items from the severity list to access their rawSeverity
-      const items = severityLists[severity] || [];
-      const itemsMap = new Map(items.map(item => [item.id, item]));
+      // The table presents pads/discs as one axle-level brake row. Bulk actions
+      // must use that same presentation model, then expand the selected row back
+      // to every persisted VHC check that contributed to it.
+      const rawItems = severityLists[severity] || [];
+      const items = consolidateBrakeRowsByLocation(rawItems);
+      const itemsMap = new Map(items.map((item) => [String(item.id), item]));
+      const rawItemsMap = new Map();
+      rawItems.forEach((item) => {
+        [item?.id, item?.canonicalId, item?.vhcCheck?.vhc_id].forEach((candidateId) => {
+          if (candidateId !== null && candidateId !== undefined && String(candidateId).trim() !== "") {
+            rawItemsMap.set(String(candidateId), item);
+          }
+        });
+      });
+      const selectedTargetIds = expandSelectedConsolidatedRowIds(
+        selectedIds,
+        items,
+        resolveCanonicalVhcId
+      );
 
       if (completeFlag) {
-        const blockedItems = selectedIds
+        const blockedItems = selectedTargetIds
           .map((itemId) => ({
             itemId,
-            item: itemsMap.get(itemId),
+            item: rawItemsMap.get(String(itemId)) || itemsMap.get(String(itemId)),
             reason: getCompletionPartBlockReason(itemId),
           }))
           .filter((entry) => entry.reason);
@@ -4578,7 +4595,7 @@ export default function VhcDetailsPanel({
       // Update local state immediately for all selected items
       setItemEntries((prev) => {
         const next = { ...prev };
-        selectedIds.forEach((id) => {
+        selectedTargetIds.forEach((id) => {
           const current = ensureEntryValue(next, id);
           next[id] = { ...current, status: dbStatus, completed: completeFlag };
         });
@@ -4586,7 +4603,7 @@ export default function VhcDetailsPanel({
       });
 
       // Persist each item to database
-      const updatePromises = selectedIds.map(async (itemId) => {
+      const updatePromises = selectedTargetIds.map(async (itemId) => {
         const canonicalId = resolveCanonicalVhcId(itemId);
         let parsedId = Number(canonicalId);
 
@@ -4602,7 +4619,7 @@ export default function VhcDetailsPanel({
           return null;
         }
 
-          const item = itemsMap.get(itemId);
+          const item = rawItemsMap.get(String(itemId)) || itemsMap.get(String(itemId));
 
         // Determine the display_status based on the action
         let displayStatus = null;
@@ -4916,12 +4933,14 @@ export default function VhcDetailsPanel({
     if (readOnly) return null;
     const itemsRaw = itemsOverride || severityLists[severity] || [];
     if (!itemsRaw || itemsRaw.length === 0) return null;
+    const items = consolidateBrakeRowsByLocation(itemsRaw);
     const isRedOrAmberTable = severity === "red" || severity === "amber";
     const isRowSelectionEligible = (item) => {
       if (!isRedOrAmberTable) return true;
       const entry = getEntryForItem(item.id);
       const effectiveEntry = {
         ...entry,
+        status: item.approvalStatus || entry.status,
         partsComplete:
           typeof item?.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
         labourComplete:
@@ -4940,10 +4959,10 @@ export default function VhcDetailsPanel({
       return rowStatus.dotStateKey === "awaiting";
     };
     // Completion blockers must not affect row selection: selected rows still need Reset/Uncomplete actions.
-    const selectableIds = new Set(itemsRaw.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
+    const selectableIds = new Set(items.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
     const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
     const selectedSet = new Set(selectedIds);
-    const selectedItems = itemsRaw.filter((item) => selectedSet.has(item.id));
+    const selectedItems = items.filter((item) => selectedSet.has(item.id));
     const selectedCompletedCount = selectedItems.filter((item) => {
       const entry = getEntryForItem(item.id);
       return Boolean(entry?.completed || vhcApprovalLookup.get(String(resolveCanonicalVhcId(item.id)))?.complete);

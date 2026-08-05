@@ -61,6 +61,32 @@ export const aggregateConsolidatedBrakeValues = (items = []) => {
   };
 };
 
+export const expandSelectedConsolidatedRowIds = (
+  selectedIds = [],
+  items = [],
+  resolveCanonicalId = (value) => value
+) => {
+  const itemsById = new Map((items || []).map((item) => [String(item?.id), item]));
+  const targetsByCanonicalId = new Map();
+
+  (selectedIds || []).forEach((selectedId) => {
+    const selectedItem = itemsById.get(String(selectedId));
+    const sourceIds = Array.isArray(selectedItem?.sourceVhcIds) && selectedItem.sourceVhcIds.length > 0
+      ? selectedItem.sourceVhcIds
+      : [selectedId];
+
+    sourceIds.forEach((sourceId) => {
+      const canonicalId = resolveCanonicalId(sourceId);
+      const canonicalKey = String(canonicalId);
+      if (!targetsByCanonicalId.has(canonicalKey)) {
+        targetsByCanonicalId.set(canonicalKey, sourceId);
+      }
+    });
+  });
+
+  return Array.from(targetsByCanonicalId.values());
+};
+
 const resolveBrakeComponent = (item) => {
   const categoryId = item?.vhcItem?.category?.id || item?.vhcItem?.categoryId || "";
   if (categoryId !== "brakes_hubs") return null;

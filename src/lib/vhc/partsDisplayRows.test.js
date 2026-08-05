@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateConsolidatedBrakeValues,
   consolidateBrakePartsDisplayRows,
+  expandSelectedConsolidatedRowIds,
 } from "@/lib/vhc/partsDisplayRows";
 
 const brakeItem = ({
@@ -55,6 +56,16 @@ describe("consolidateBrakePartsDisplayRows", () => {
       labourComplete: true,
     });
     expect(values.partsTotal).toBeCloseTo(109.98, 2);
+  });
+
+  it("expands a selected consolidated brake row to every persisted source check", () => {
+    const selectedIds = expandSelectedConsolidatedRowIds(
+      ["1810"],
+      [{ id: "1810", sourceVhcIds: ["1810", "1812", "rear-discs"] }],
+      (value) => value === "rear-discs" ? "1812" : value
+    );
+
+    expect(selectedIds).toEqual(["1810", "1812"]);
   });
 
   it("combines rear pad, disc and recommendation rows with all linked parts", () => {
