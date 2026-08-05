@@ -6,29 +6,55 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
+import StatusMessage from "@/components/ui/StatusMessage";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
   const [search, setSearch] = useState(""); // text input for name search
   const [customerList, setCustomerList] = useState([]); // customers from DB
   const [selectedCustomer, setSelectedCustomer] = useState(null); // chosen customer
+  const [searchStatus, setSearchStatus] = useState("idle");
 
   /* ============================================
      FETCH CUSTOMERS WHEN SEARCH CHANGES
      Uses shared searchCustomers() from database
   ============================================ */
   useEffect(() => {
-    const fetchCustomers = async () => {
-      if (!search.trim()) {
-        setCustomerList([]); // clear results if search empty
-        return;
+    const searchTerm = search.trim();
+    let cancelled = false;
+
+    setSelectedCustomer(null);
+
+    if (!searchTerm) {
+      setCustomerList([]);
+      setSearchStatus("idle");
+      return undefined;
+    }
+
+    setCustomerList([]);
+    setSearchStatus("loading");
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const data = await searchCustomers(searchTerm);
+        if (cancelled) return;
+        setCustomerList(data || []);
+        setSearchStatus("success");
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Existing customer search failed:", error);
+        setCustomerList([]);
+        setSearchStatus("error");
       }
+    }, SEARCH_DEBOUNCE_MS);
 
-      const data = await searchCustomers(search); // ✅ uses correct field names internally
-      setCustomerList(data || []);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
     };
-
-    fetchCustomers(); // run search
   }, [search]);
 
   /* ============================================
@@ -51,14 +77,13 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
   };
 
   const hasSearch = search.trim().length > 0;
-  const noResults = hasSearch && customerList.length === 0;
-  const primaryButtonLabel = noResults ? "New Customer" : "Add Customer";
-  const canUsePrimary = noResults || !!selectedCustomer;
+  const noResults = hasSearch && searchStatus === "success" && customerList.length === 0;
+  const canCreateNew = noResults && typeof onCreateNew === "function";
+  const primaryButtonLabel = canCreateNew ? "New Customer" : "Add Customer";
+  const canUsePrimary = canCreateNew || !!selectedCustomer;
   const handlePrimaryClick = () => {
-    if (noResults) {
-      if (typeof onCreateNew === "function") {
-        onCreateNew(parseName(search));
-      }
+    if (canCreateNew) {
+      onCreateNew(parseName(search));
       if (typeof onClose === "function") onClose();
       return;
     }
@@ -82,9 +107,25 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
           }}
         />
 
+        {searchStatus === "loading" && (
+          <div style={{ marginBottom: "16px" }}>
+            <InlineLoading label="Searching customers" width={150} />
+          </div>
+        )}
+
+        {searchStatus === "error" && (
+          <StatusMessage tone="danger" style={{ marginBottom: "16px" }}>
+            Unable to search customers. Please try again.
+          </StatusMessage>
+        )}
+
         {customerList.length > 0 && (
-          <div
-            className="dropdown-api__menu app-dropdown-menu"
+          <LayerTheme
+            role="listbox"
+            aria-label="Customer search results"
+            radius="var(--control-menu-radius)"
+            padding="8px"
+            gap="8px"
             style={{
               maxHeight: "220px",
               overflowY: "auto",
@@ -96,12 +137,27 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
                 type="button"
                 key={c.id}
                 onClick={() => setSelectedCustomer(c)}
+                role="option"
+                aria-selected={selectedCustomer?.id === c.id}
                 className={`dropdown-api__option${selectedCustomer?.id === c.id ? " is-selected" : ""}`}
               >
-                {c.firstname} {c.lastname}
+                <span className="dropdown-api__option-label">
+                  {c.firstname} {c.lastname}
+                </span>
+                {(c.email || c.mobile) && (
+                  <span className="dropdown-api__option-description">
+                    {[c.email, c.mobile].filter(Boolean).join(" · ")}
+                  </span>
+                )}
               </button>
             ))}
-          </div>
+          </LayerTheme>
+        )}
+
+        {noResults && (
+          <StatusMessage tone="info" style={{ marginBottom: "16px" }}>
+            No existing customers found.
+          </StatusMessage>
         )}
 
         {selectedCustomer && (
@@ -117,16 +173,16 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               {selectedCustomer.lastname}
             </p>
             <p>
-              <strong>Address:</strong> {selectedCustomer.address}
+              <strong>Address:</strong> {selectedCustomer.address || "Not provided"}
             </p>
             <p>
-              <strong>Email:</strong> {selectedCustomer.email}
+              <strong>Email:</strong> {selectedCustomer.email || "Not provided"}
             </p>
             <p>
-              <strong>Mobile:</strong> {selectedCustomer.mobile}
+              <strong>Mobile:</strong> {selectedCustomer.mobile || "Not provided"}
             </p>
             <p>
-              <strong>Telephone:</strong> {selectedCustomer.telephone}
+              <strong>Telephone:</strong> {selectedCustomer.telephone || "Not provided"}
             </p>
           </LayerTheme>
         )}

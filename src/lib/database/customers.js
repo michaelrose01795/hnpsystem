@@ -177,7 +177,7 @@ export const searchCustomers = async (searchTerm) => {
 
   if (error) {
     console.error("❌ searchCustomers error:", error.message);
-    return [];
+    throw error;
   }
 
   console.log("✅ Search results:", data?.length || 0, "customers"); // debug log
