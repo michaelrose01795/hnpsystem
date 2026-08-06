@@ -7732,9 +7732,6 @@ export function WriteUpWorkspace({
   }, [combinedRequestRows, selectedRequestKey]);
 
   // Plain (token-backed, borderless) surface styles for the new layout.
-  const statBoxStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "8px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: "8px", rowGap: "2px", minWidth: 0, minHeight: "44px" };
-  const statLabelStyle = { fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1, textTransform: "uppercase", color: "var(--grey-accent)", whiteSpace: "nowrap" };
-  const statValueStyle = { fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 };
   const detailPanelStyle = { backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
@@ -7989,12 +7986,12 @@ export function WriteUpWorkspace({
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Summary row — request KPIs + Mark All Complete action */}
         <div className="jc-req-summary">
-          <div className="jc-req-statgrid">
-            <div style={statBoxStyle}><span style={statLabelStyle}>Requests Complete</span><span style={statValueStyle}>{requestStats.complete}/{requestStats.totalRequests}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Hours Allocated</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.totalHours)}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Hours Clocked</span><span style={statValueStyle}>{formatHoursDisplay(requestStats.clockedHours)}</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>% Complete</span><span style={statValueStyle}>{requestStats.percentComplete}%</span></div>
-            <div style={statBoxStyle}><span style={statLabelStyle}>Outstanding Actions</span><span style={statValueStyle}>{requestStats.outstanding}</span></div>
+          <div className="app-summary-grid jc-req-statgrid">
+            <div className="app-summary-item"><span className="app-summary-label">Requests Complete</span><span className="app-summary-value">{requestStats.complete}/{requestStats.totalRequests}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Hours Allocated</span><span className="app-summary-value">{formatHoursDisplay(requestStats.totalHours)}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Hours Clocked</span><span className="app-summary-value">{formatHoursDisplay(requestStats.clockedHours)}</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">% Complete</span><span className="app-summary-value">{requestStats.percentComplete}%</span></div>
+            <div className="app-summary-item"><span className="app-summary-label">Outstanding Actions</span><span className="app-summary-value">{requestStats.outstanding}</span></div>
           </div>
           {canEdit &&
           <button

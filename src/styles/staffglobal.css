@@ -220,6 +220,7 @@ html.staff-scope .app-summary-grid {
 html.staff-scope .app-summary-item {
   min-width: 0;
   min-height: 44px;
+  max-height: 44px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -7142,8 +7143,23 @@ html.staff-scope .app-toast-stack .app-alert {
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-sm);
+  /* Tone tokens are intentionally translucent in dark themes. Layer them over
+     the canonical surface so floating toasts remain readable over page content. */
+  background: linear-gradient(var(--theme), var(--theme)), var(--surface);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   animation: app-toast-in 0.22s ease;
+}
+
+html.staff-scope .app-toast-stack .app-alert--success {
+  background: linear-gradient(var(--success-surface), var(--success-surface)), var(--surface);
+}
+
+html.staff-scope .app-toast-stack .app-alert--warning {
+  background: linear-gradient(var(--warning-surface), var(--warning-surface)), var(--surface);
+}
+
+html.staff-scope .app-toast-stack .app-alert--danger {
+  background: linear-gradient(var(--danger-surface), var(--danger-surface)), var(--surface);
 }
 
 html.staff-scope .app-toast-stack .app-alert:focus-visible {

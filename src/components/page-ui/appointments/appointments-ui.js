@@ -777,6 +777,15 @@ function SchedulerBoard({
           width: 100%;
           min-width: 0;
         }
+
+        html.staff-scope .appointments-day-jobs-row--highlighted {
+          background-color: var(--theme) !important;
+        }
+
+        html.staff-scope .appointments-day-jobs-row--highlighted > td {
+          box-shadow: inset 0 0 0 9999px var(--theme) !important;
+        }
+
         .appt-sched-date-cell {
           position: sticky;
           left: 0;
@@ -1340,7 +1349,7 @@ export default function AppointmentsUi(props) {
                   {slot}
                 </option>)}
             </DropdownField>
-            <Button onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
+            <Button variant="secondary" onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
               {isLoading ? "Booking..." : "Book Appointment"}
             </Button>
           </LayerSurface>
@@ -1495,9 +1504,9 @@ export default function AppointmentsUi(props) {
                       const isCurrentlyCheckingIn = checkingInJobId === job.id;
                       const isHighlighted = String(highlightJob) === String(job.jobNumber || job.id);
                       const cellBorder = "var(--separating-line)";
-                      const rowBackground = idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
-                      const cellBackground = isHighlighted ? "var(--theme)" : "transparent";
-                      return <tr key={idx} data-job-number={String(job.jobNumber || job.id)} style={{
+                      const rowBackground = isHighlighted ? "var(--theme)" : idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
+                      const cellBackground = "transparent";
+                      return <tr key={idx} data-job-number={String(job.jobNumber || job.id)} className={`appointments-day-jobs-row${isHighlighted ? " appointments-day-jobs-row--highlighted" : ""}`} style={{
                         backgroundColor: rowBackground,
                         transition: "background-color 0.2s ease"
                       }} onMouseEnter={(e) => {
@@ -1514,7 +1523,7 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           fontWeight: "700",
                           whiteSpace: "nowrap",
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {job.appointment?.time || "-"}
                           </td>
@@ -1523,7 +1532,7 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           color: "var(--primary)",
                           fontWeight: "700",
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobRowClick(job.jobNumber || job.id)} onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)} style={{ gap: "6px" }}>
                               <span>{job.jobNumber || job.id || "-"}</span>
@@ -1549,28 +1558,28 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           fontWeight: "600",
                           whiteSpace: "nowrap",
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {job.reg || "-"}
                           </td>
                           <td style={{
                           padding: "12px 14px",
                           borderBottom: cellBorder,
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {getVehicleDisplay(job)}
                           </td>
                           <td style={{
                           padding: "12px 14px",
                           borderBottom: cellBorder,
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {job.customer || "-"}
                           </td>
                           <td style={{
                           padding: "12px 14px",
                           borderBottom: cellBorder,
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             <div style={{
                             display: "flex",
@@ -1595,7 +1604,7 @@ export default function AppointmentsUi(props) {
                           <td style={{
                           padding: "12px 14px",
                           borderBottom: cellBorder,
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             <span style={{
                             display: "inline-flex",
@@ -1615,7 +1624,7 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           fontWeight: "700",
                           whiteSpace: "nowrap",
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {getEstimatedFinishTime(job)}
                           </td>
@@ -1623,7 +1632,7 @@ export default function AppointmentsUi(props) {
                           padding: "12px 14px",
                           borderBottom: cellBorder,
                           textAlign: "center",
-                          backgroundColor: cellBackground
+                          background: cellBackground
                         }}>
                             {isCheckedIn ? <span className="app-badge app-badge--success" style={{
                             minWidth: isCompactMobile ? "90px" : "110px",

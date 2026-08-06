@@ -53,38 +53,6 @@ const fieldLabelStyle = {
   fontWeight: 700,
 };
 
-const statLabelStyle = {
-  fontSize: "10px",
-  letterSpacing: "0.04em",
-  lineHeight: 1,
-  textTransform: "uppercase",
-  color: "var(--grey-accent)",
-  fontWeight: 700,
-  whiteSpace: "nowrap",
-};
-
-const statValueStyle = {
-  fontSize: "18px",
-  fontWeight: 700,
-  color: "var(--accentText)",
-  lineHeight: 1,
-  wordBreak: "break-word",
-};
-
-const statTileStyle = {
-  backgroundColor: "var(--surface)",
-  borderRadius: "var(--radius-sm)",
-  padding: "8px 10px",
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  justifyContent: "space-between",
-  columnGap: "8px",
-  rowGap: "2px",
-  minWidth: 0,
-  minHeight: "44px",
-};
-
 const toIntegerOrNull = (value) => {
   const numericValue = Number(value);
   return Number.isInteger(numericValue) ? numericValue : null;
@@ -774,18 +742,15 @@ export default function NotesTabNew({
         }}
       >
         <div
+          className="app-summary-grid"
           style={{
-            display: "grid",
-            gap: "8px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             flex: "1 1 320px",
-            minWidth: 0,
           }}
         >
           {statTiles.map((tile) => (
-            <div key={tile.label} style={statTileStyle}>
-              <span style={statLabelStyle}>{tile.label}</span>
-              <span style={statValueStyle}>{tile.value}</span>
+            <div key={tile.label} className="app-summary-item">
+              <span className="app-summary-label">{tile.label}</span>
+              <span className="app-summary-value">{tile.value}</span>
             </div>
           ))}
         </div>

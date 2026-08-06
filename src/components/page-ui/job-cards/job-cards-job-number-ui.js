@@ -277,19 +277,7 @@ export default function JobCardDetailPageUi(props) {
               <span className={`app-badge app-badge--control app-badge--uppercase ${jobHeaderStatusToneClass}`}>
                 {overallStatusLabel}
               </span>
-              {jobData.jobSource === "Warranty" && <span style={{
-              height: "44px",
-              padding: "0 16px",
-              display: "inline-flex",
-              alignItems: "center",
-              backgroundColor: "var(--warning-surface)",
-              color: "var(--danger)",
-              borderRadius: "var(--control-radius-xs)",
-              fontWeight: "600",
-              fontSize: "13px",
-              border: "none",
-              letterSpacing: "0.3px"
-            }}>
+              {jobData.jobSource === "Warranty" && <span className="app-badge app-badge--control app-badge--uppercase app-badge--warning">
                   {jobData.jobSource}
                 </span>}
               {jobDivisionLabel && <span className={`app-badge app-badge--control app-badge--uppercase ${jobDivisionToneClass}`}>
@@ -404,6 +392,7 @@ export default function JobCardDetailPageUi(props) {
           }}>
               <div style={{
               ...summaryPrimaryTextStyle,
+              color: "var(--accentText)",
               marginBottom: 0
             }}>
                 {jobData.reg || "N/A"}
@@ -416,7 +405,7 @@ export default function JobCardDetailPageUi(props) {
             }}>
                 <span style={{
                 fontSize: "13px",
-                color: "var(--text-1)",
+                color: "var(--accentText)",
                 fontWeight: "600"
               }}>Mileage</span>
                 <input type="text" inputMode="numeric" maxLength={7} value={vehicleMileageInput} onChange={event => {
@@ -436,6 +425,8 @@ export default function JobCardDetailPageUi(props) {
                 lineHeight: "30px",
                 textAlign: "right",
                 fontFamily: "inherit",
+                color: "var(--accentText)",
+                backgroundColor: "var(--theme)",
                 opacity: 1,
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -443,7 +434,10 @@ export default function JobCardDetailPageUi(props) {
               }} />
               </div>
             </div>
-            <div style={summarySecondaryTextStyle}>
+            <div style={{
+            ...summarySecondaryTextStyle,
+            color: "var(--accentText)"
+          }}>
               {String(jobData.make || jobData.makeModel || `${jobData.make} ${jobData.model}` || "N/A")}
             </div>
           </LayerTheme>
@@ -704,7 +698,7 @@ export default function JobCardDetailPageUi(props) {
             display: none;
           }
           .vehicle-mileage-input::placeholder {
-            color: var(--grey-accent);
+            color: var(--accentText);
             font-size: 14px;
             font-weight: 600;
           }
@@ -723,8 +717,8 @@ export default function JobCardDetailPageUi(props) {
           }
           .vehicle-mileage-input:disabled {
             opacity: 1;
-            -webkit-text-fill-color: var(--text-1);
-            color: var(--text-1);
+            -webkit-text-fill-color: var(--accentText);
+            color: var(--accentText);
           }
           .vehicle-mileage-input:focus,
           .vehicle-mileage-input:active {
@@ -824,7 +818,8 @@ export default function JobCardDetailPageUi(props) {
           {/* Write-up tab now renders the per-request WriteUpWorkspace (replaced
               the legacy WriteUpForm). The outer stack flips visibility. */}
           <div className="app-page-stack" style={{
-          display: activeTab === "write-up" ? undefined : "none"
+          display: activeTab === "write-up" ? undefined : "none",
+          gap: "10px" // Auto content card ↔ write-up KPI gap is intentionally tighter than the shared page-stack gap.
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-writeup" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-page="Job card detail" data-dev-tab="Write-up" data-dev-card-section="write-up tab" data-dev-text-preview="Write-up tab" data-dev-auto-outline="cards">
             {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked</strong>
@@ -834,7 +829,8 @@ export default function JobCardDetailPageUi(props) {
           </div>
 
           <div className="app-page-stack" style={{
-          display: activeTab === "vhc" ? undefined : "none"
+          display: activeTab === "vhc" ? undefined : "none",
+          gap: "10px" // Auto content card ↔ VHC panel gap is intentionally tighter than the shared page-stack gap.
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-vhc" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-page="Job card detail" data-dev-tab="VHC" data-dev-card-section="VHC tab" data-dev-text-preview="VHC tab">
             {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: VHC</strong>

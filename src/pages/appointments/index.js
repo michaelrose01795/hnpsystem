@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -23,6 +23,7 @@ import { invalidateCache } from "@/lib/database/queryCache"; // clear stale cach
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with auto-refresh
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
+import { getJobRequests } from "@/lib/canonical/fields";
 import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -87,6 +88,24 @@ const parseHoursValue = (value) => {
   const numeric = typeof value === "number" ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 };
+
+const getCustomerRequestHours = (job) =>
+  getJobRequests(job).reduce((sum, request) => {
+    const source = String(request?.requestSource ?? request?.request_source ?? "")
+      .trim()
+      .toLowerCase();
+    if (request?.vhcItemId || request?.vhc_item_id || source.includes("vhc")) return sum;
+    return sum + Math.max(0, parseHoursValue(request?.hours ?? request?.time) || 0);
+  }, 0);
+
+const getAuthorisedVhcHours = (job) =>
+  (Array.isArray(job?.vhcChecks) ? job.vhcChecks : []).reduce((sum, row) => {
+    const status = String(row?.authorization_state || row?.approval_status || "")
+      .trim()
+      .toLowerCase();
+    if (!["authorized", "authorised", "completed"].includes(status)) return sum;
+    return sum + Math.max(0, parseHoursValue(row?.labour_hours ?? row?.labourHours) || 0);
+  }, 0);
 
 const getDailyHoursFromWeeklyContracted = (value) => {
   const weeklyHours = parseHoursValue(value);
@@ -416,6 +435,7 @@ export default function Appointments() {
   const [jobNumber, setJobNumber] = useState("");
   const [time, setTime] = useState("");
   const [highlightJob, setHighlightJob] = useState("");
+  const highlightJobTimerRef = useRef(null);
   const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -465,7 +485,7 @@ export default function Appointments() {
     try {
       const { data, error } = await supabase.
       from("job_requests").
-      select("job_id, hours").
+      select("job_id, hours, request_source, vhc_item_id").
       in("job_id", uniqueJobIds);
 
       if (error) throw error;
@@ -473,6 +493,8 @@ export default function Appointments() {
       const aggregated = {};
       (data || []).forEach((row) => {
         if (!row?.job_id) return;
+        const source = String(row.request_source || "").trim().toLowerCase();
+        if (row.vhc_item_id || source.includes("vhc")) return;
         const hours = parseHoursValue(row.hours) ?? 0;
         const key = row.job_id;
         aggregated[key] = (aggregated[key] || 0) + hours;
@@ -786,8 +808,27 @@ export default function Appointments() {
   }, []);
 
   const showJobHighlight = useCallback((jobNumberValue) => {
-    if (!jobNumberValue) return;
+    if (highlightJobTimerRef.current) {
+      window.clearTimeout(highlightJobTimerRef.current);
+      highlightJobTimerRef.current = null;
+    }
+
+    if (!jobNumberValue) {
+      setHighlightJob("");
+      return;
+    }
+
     setHighlightJob(String(jobNumberValue));
+    highlightJobTimerRef.current = window.setTimeout(() => {
+      setHighlightJob("");
+      highlightJobTimerRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(() => () => {
+    if (highlightJobTimerRef.current) {
+      window.clearTimeout(highlightJobTimerRef.current);
+    }
   }, []);
 
   // Clicking a scheduler day's time column selects that day and opens the
@@ -800,10 +841,8 @@ export default function Appointments() {
     }
     if (jobNumberValue) {
       setSearchQuery("");
-      showJobHighlight(jobNumberValue);
-    } else {
-      setHighlightJob("");
     }
+    showJobHighlight(jobNumberValue);
     setShowDayJobsPopup(true);
   }, [showJobHighlight]);
 
@@ -1173,10 +1212,32 @@ export default function Appointments() {
     return earliest;
   };
 
+  const getRecordedHoursForJob = (job) => {
+    if (!job?.id) return { requestHours: 0, vhcHours: 0 };
+
+    const requestHours = Math.max(
+      getCustomerRequestHours(job),
+      parseHoursValue(jobRequestHours[job.id]) || 0
+    );
+    const vhcHours = Math.max(
+      getAuthorisedVhcHours(job),
+      parseHoursValue(jobVhcLabourHours[job.id]) || 0
+    );
+
+    return { requestHours, vhcHours };
+  };
+
+  const getScheduledDurationHours = (job) => {
+    const { requestHours, vhcHours } = getRecordedHoursForJob(job);
+    const totalHours = requestHours + vhcHours;
+    return totalHours > 0 ? totalHours : 1;
+  };
+
   const calculateFinishTimeForDate = (date, jobHours, vhcHours) => {
     const start = getEarliestTechStartForDate(date);
     if (!start) return "-";
-    const totalHours = (parseHoursValue(jobHours) || 0) + (parseHoursValue(vhcHours) || 0) + 0.5;
+    const totalHours = (parseHoursValue(jobHours) || 0) + (parseHoursValue(vhcHours) || 0);
+    if (totalHours <= 0) return "-";
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
@@ -1242,8 +1303,8 @@ export default function Appointments() {
       if (detectedLabels.has("diagnosis")) totals.diagnosis += 1;
       if (detectedLabels.has("other")) totals.other += 1;
 
-      const currentJobHours = parseHoursValue(jobRequestHours[job.id]) || 0;
-      const currentVhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
+      const { requestHours: currentJobHours, vhcHours: currentVhcHours } =
+        getRecordedHoursForJob(job);
       jobHours += currentJobHours;
       vhcHours += currentVhcHours;
     });
@@ -1252,7 +1313,7 @@ export default function Appointments() {
 
     return {
       ...totals,
-      totalHours: jobHours.toFixed(1),
+      totalHours: (jobHours + vhcHours).toFixed(1),
       finishTime
     };
   };
@@ -1343,18 +1404,14 @@ export default function Appointments() {
     const start = new Date(`${appointment.date}T${appointment.time}:00`);
     if (Number.isNaN(start.getTime())) return "-";
 
-    const requestHours = parseHoursValue(jobRequestHours[job.id]) || 0;
-    const vhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
-    const totalHours = requestHours + vhcHours + 0.5;
+    const totalHours = getScheduledDurationHours(job);
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
   const getSchedulerBookingHours = (job) => {
     if (!job?.id) return 0;
-    const requestHours = parseHoursValue(jobRequestHours[job.id]) || 0;
-    const vhcHours = parseHoursValue(jobVhcLabourHours[job.id]) || 0;
-    return requestHours + vhcHours + 0.5;
+    return getScheduledDurationHours(job);
   };
 
   // ---------------- Filtered Jobs for Selected Day ----------------

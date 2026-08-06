@@ -298,6 +298,7 @@ export default function CreateJobCardPage() {
   const [userSignature, setUserSignature] = useState(null); // store current user's signature metadata
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
   const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
+  const currentVehicleRegistrationRef = useRef(""); // reject stale lookups after registration changes
   const vehicleSectionRef = useRef(null); // ref for measuring vehicle section height
   const [topRowHeight, setTopRowHeight] = useState(null); // sync top row card heights
 
@@ -789,6 +790,7 @@ export default function CreateJobCardPage() {
 
   useEffect(() => {// auto-fetch vehicle details from Supabase when registration changes
     const regTrimmed = (vehicle.reg || "").trim().toUpperCase(); // normalized registration input
+    currentVehicleRegistrationRef.current = regTrimmed;
     if (!regTrimmed || regTrimmed.length < 3) {// skip when not enough characters
       return;
     }
@@ -817,6 +819,23 @@ export default function CreateJobCardPage() {
       cancelled = true; // prevent state updates after unmount or reg change
     };
   }, [vehicle.reg, hydrateVehicleFromRecord]);
+
+  useEffect(() => {
+    if ((vehicle.reg || "").trim()) return;
+
+    currentVehicleRegistrationRef.current = "";
+    lastVehicleLookupRef.current = "";
+    setVehicle((currentVehicle) => {
+      const clearedVehicle = createInitialVehicleState();
+      const isAlreadyClear = Object.keys(clearedVehicle).
+      every((key) => currentVehicle[key] === clearedVehicle[key]);
+      return isAlreadyClear ? currentVehicle : clearedVehicle;
+    });
+    setError("");
+    setVehicleNotification(null);
+    setIsLoadingVehicle(false);
+    setIsMobileMechanic(false);
+  }, [vehicle.reg]);
 
   // update the editable customer form when any field changes
   const handleCustomerFieldChange = (field, value) => {
@@ -1220,11 +1239,17 @@ export default function CreateJobCardPage() {
     setIsLoadingVehicle(true); // show loading state
     setError(""); // clear any previous errors
     setVehicleNotification(null); // clear any previous notifications
+    const requestedRegistration = vehicle.reg.trim().toUpperCase();
+    currentVehicleRegistrationRef.current = requestedRegistration;
 
     try {
-      const regUpper = vehicle.reg.trim().toUpperCase(); // normalize registration to uppercase
+      const regUpper = requestedRegistration; // keep this request tied to the registration that initiated it
 
       const storedVehicle = await getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
+
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) {
+        return;
+      }
 
       if (storedVehicle) {// if the vehicle already lives in our database
         console.log("Vehicle found in Supabase, hydrating from DB:", storedVehicle.vehicle_id);
@@ -1242,6 +1267,11 @@ export default function CreateJobCardPage() {
       });
 
       const responseText = await response.text();
+
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) {
+        return;
+      }
+
       console.log("DVLA API raw response:", responseText);
 
       if (!response.ok) {
@@ -1306,6 +1336,9 @@ export default function CreateJobCardPage() {
       setVehicle(vehicleData); // update vehicle state with DVLA data
 
     } catch (err) {
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) {
+        return;
+      }
       console.error("Error fetching vehicle data from DVLA:", err); // log error
       setError(`Error: ${err.message}`); // store error message
     } finally {

@@ -23,6 +23,8 @@ export function formatKpiValue(value, unit = "count", format = "0,0") {
       return n.toLocaleString("en-GB", { maximumFractionDigits: 1 }) + "%";
     case "hours":
       return n.toLocaleString("en-GB", { maximumFractionDigits: 1 }) + "h";
+    case "miles":
+      return Math.round(n).toLocaleString("en-GB") + " mi";
     case "duration":
       return n.toLocaleString("en-GB", { maximumFractionDigits: 1 });
     case "count":

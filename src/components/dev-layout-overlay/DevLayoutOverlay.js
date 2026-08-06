@@ -941,7 +941,8 @@ export default function DevLayoutOverlay() {
 
   const handleSectionCopy = async (section) => {
     setSelectedSectionKey(section.key);
-    const copied = await copyText(buildSectionLocatorText(section, currentRoute));
+    const locatorText = buildSectionLocatorText(section, currentRoute);
+    const copied = await copyText(`"${locatorText}"`);
     if (copied) {
       setCopiedSectionKey(section.key);
     }

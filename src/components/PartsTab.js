@@ -2001,63 +2001,37 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       `}</style>
       {/* ===== Parts Metrics ===== */}
-      <ul
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: "8px",
-        }}
-      >
-        {[
-          { label: "Allocated", value: partsSummary.allocated },
-          { label: "On Order", value: partsSummary.onOrder },
-          { label: "Back Order", value: partsSummary.backOrder },
-          { label: "Return", value: partsSummary.returned },
-          { label: "Removed", value: partsSummary.removed },
-          { label: "Total Parts", value: partsSummary.total },
-        ].map((item) => (
-          <li
-            key={item.label}
-            data-dev-section="1"
-            data-dev-section-key={`jobcard-parts-metric-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-            data-dev-section-type="stat-card"
-            data-dev-section-parent="jobcard-tab-parts"
-            style={{
-              backgroundColor: "var(--surface)",
-              borderRadius: "var(--radius-sm)",
-              padding: "8px 10px",
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              columnGap: "8px",
-              rowGap: "2px",
-              minWidth: 0,
-              minHeight: "44px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "10px",
-                fontWeight: 700,
-                letterSpacing: "0.04em",
-                lineHeight: 1,
-                textTransform: "uppercase",
-                color: "var(--grey-accent)",
-                whiteSpace: "nowrap",
-              }}
+      <div className="app-summary-section">
+        <ul
+          className="app-summary-grid"
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          {[
+            { label: "Allocated", value: partsSummary.allocated },
+            { label: "On Order", value: partsSummary.onOrder },
+            { label: "Back Order", value: partsSummary.backOrder },
+            { label: "Return", value: partsSummary.returned },
+            { label: "Removed", value: partsSummary.removed },
+            { label: "Total Parts", value: partsSummary.total },
+          ].map((item) => (
+            <li
+              key={item.label}
+              data-dev-section="1"
+              data-dev-section-key={`jobcard-parts-metric-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+              data-dev-section-type="stat-card"
+              data-dev-section-parent="jobcard-tab-parts"
+              className="app-summary-item"
             >
-              {item.label}
-            </span>
-            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--accentText)", lineHeight: 1 }}>
-              {item.value}
-            </span>
-          </li>
-        ))}
-      </ul>
+              <span className="app-summary-label">{item.label}</span>
+              <span className="app-summary-value">{item.value}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {/* ===== Parts Table Section ===== */}
       <LayerSurface

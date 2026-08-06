@@ -11,20 +11,10 @@
 // Shared pure formatters live in ./historyFormat (also used by the Warranty tab).
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Tooltip,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
 import useVehicleHistoryAnalytics from "@/hooks/useVehicleHistoryAnalytics";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import KpiTrendChart from "@/components/reporting/KpiTrendChart";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { exportToCsv } from "@/utils/exportUtils";
@@ -37,8 +27,6 @@ import {
   joinRequests,
   statusBadgeClass,
 } from "./historyFormat";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 // ---- shared style/util primitives (identical across the former section files) ----
 const eyebrowStyle = {
@@ -63,38 +51,6 @@ const jobKey = (job) => job?.id ?? job?.jobNumber;
    SummaryStatsRow — compact KPI strip for the vehicle's full job history,
    derived by useVehicleHistoryAnalytics.
    ════════════════════════════════════════════════════════════════════════ */
-const summaryLabelStyle = {
-  fontSize: "10px",
-  letterSpacing: "0.04em",
-  lineHeight: 1,
-  textTransform: "uppercase",
-  color: "var(--grey-accent)",
-  fontWeight: 700,
-  whiteSpace: "nowrap",
-};
-
-const summaryValueStyle = {
-  fontSize: "18px",
-  fontWeight: 700,
-  color: "var(--accentText)",
-  lineHeight: 1,
-  wordBreak: "break-word",
-};
-
-const summaryTileStyle = {
-  backgroundColor: "var(--surface)",
-  borderRadius: "var(--radius-sm)",
-  padding: "8px 10px",
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  justifyContent: "space-between",
-  columnGap: "8px",
-  rowGap: "2px",
-  minWidth: 0,
-  minHeight: "44px",
-};
-
 function SummaryStatsRow({ analytics }) {
   const tiles = [
     { label: "Total Jobs", value: formatNumber(analytics.totalJobs) },
@@ -107,18 +63,15 @@ function SummaryStatsRow({ analytics }) {
 
   return (
     <div
+      className="app-summary-grid"
       style={{
-        display: "grid",
-        gap: "8px",
-        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
         flex: "1 1 640px",
-        minWidth: 0,
       }}
     >
       {tiles.map((tile) => (
-        <div key={tile.label} style={summaryTileStyle}>
-          <span style={summaryLabelStyle}>{tile.label}</span>
-          <span style={summaryValueStyle}>{tile.value ?? DASH}</span>
+        <div key={tile.label} className="app-summary-item">
+          <span className="app-summary-label">{tile.label}</span>
+          <span className="app-summary-value">{tile.value ?? DASH}</span>
         </div>
       ))}
     </div>
@@ -405,75 +358,18 @@ function SelectedJobDetail({ job }) {
    MileageTrendChart — a line chart of recorded mileage (y) against each
    appointment date (x). Chart colours resolve from CSS design tokens at render.
    ════════════════════════════════════════════════════════════════════════ */
-// Read a CSS custom property off the document root, with a hard fallback so the
-// chart still renders before styles resolve / during SSR hydration.
-const cssVar = (name, fallback) => {
-  if (typeof window === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value || fallback;
-};
-
 function MileageTrendChart({ points = [] }) {
-  // chart.js needs the canvas/DOM, so only render after mount.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const hasData = Array.isArray(points) && points.length >= 2;
-
-  const { data, options } = useMemo(() => {
-    // Canvas can't parse color-mix() reliably, so resolve the RGB tokens the app
-    // already exposes and build concrete rgb()/rgba() strings.
-    const accentRgb = cssVar("--accentMainRgb", "185, 28, 28");
-    const textRgb = cssVar("--text-1-rgb", "15, 15, 15");
-    const accent = `rgb(${accentRgb})`;
-    const grid = `rgba(${accentRgb}, 0.12)`;
-    const muted = `rgba(${textRgb}, 0.6)`;
-
-    return {
-      data: {
-        labels: points.map((p) => p.dateFormatted),
-        datasets: [
-          {
-            label: "Mileage",
-            data: points.map((p) => p.mileage),
-            borderColor: accent,
-            backgroundColor: `rgba(${accentRgb}, 0.14)`,
-            pointBackgroundColor: accent,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            borderWidth: 2,
-            tension: 0.25,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.parsed.y.toLocaleString("en-GB")} mi`,
-            },
-          },
-        },
-        scales: {
-          x: {
-            ticks: { color: muted, maxRotation: 0, autoSkip: true },
-            grid: { color: grid, drawBorder: false },
-          },
-          y: {
-            ticks: {
-              color: muted,
-              callback: (value) => Number(value).toLocaleString("en-GB"),
-            },
-            grid: { color: grid, drawBorder: false },
-          },
-        },
-      },
-    };
-  }, [points]);
+  const series = useMemo(
+    () => {
+      const mileagePoints = Array.isArray(points) ? points : [];
+      if (mileagePoints.length < 2) return [];
+      return mileagePoints.map((point) => ({
+        key: point.date?.toISOString?.() || point.dateFormatted,
+        value: point.mileage,
+      }));
+    },
+    [points]
+  );
 
   return (
     <LayerSurface
@@ -482,15 +378,14 @@ function MileageTrendChart({ points = [] }) {
       gap="var(--space-4)"
     >
       <p style={eyebrowStyle}>Mileage trend</p>
-      {hasData && mounted ? (
-        <div style={{ height: "260px", width: "100%" }}>
-          <Line data={data} options={options} />
-        </div>
-      ) : (
-        <p style={{ color: "color-mix(in srgb, var(--text-1) 60%, transparent)", margin: 0 }}>
-          Not enough recorded mileage to plot a trend yet.
-        </p>
-      )}
+      <KpiTrendChart
+        series={series}
+        unit="miles"
+        format="0,0"
+        height={180}
+        sectionKey="jobcard-service-history-trend-chart"
+        parentKey="jobcard-service-history-trend"
+      />
     </LayerSurface>
   );
 }

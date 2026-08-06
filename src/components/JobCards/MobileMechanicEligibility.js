@@ -15,8 +15,14 @@ function RuleIcon({ ok }) {
         : "app-badge app-badge--neutral";
 
   return (
-    <span aria-hidden="true" className={className}>
-      {ok === true ? "✓" : ok === false ? "×" : "…"}
+    <span aria-hidden="true" className={`${className} job-cards-create-mobile-eligibility-grid__rule-icon`}>
+      {ok === true ? "✓" : ok === false ? "×" : (
+        <span className="job-cards-create-mobile-eligibility-grid__pending-dots">
+          <span />
+          <span />
+          <span />
+        </span>
+      )}
     </span>
   );
 }
@@ -58,10 +64,6 @@ export default function MobileMechanicEligibility({
       className="job-cards-create-mobile-eligibility-grid"
       shell
     >
-      <label className="job-cards-create-mobile-eligibility-grid__heading">
-        Mobile Mechanic Eligibility
-      </label>
-
       <ul
         className="job-cards-create-mobile-eligibility-grid__rules"
         style={{
@@ -77,16 +79,17 @@ export default function MobileMechanicEligibility({
             key={rule.id}
             className="job-cards-create-mobile-eligibility-grid__rule"
             style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
+              display: "grid",
+              gap: 0,
             }}
           >
-            <RuleIcon ok={rule.ok} />
-            <span style={{ flex: 1 }}>
-              <strong>{rule.label}</strong>
-              {rule.detail ? <span> — {rule.detail}</span> : null}
-            </span>
+            <label className="job-cards-create-mobile-eligibility-grid__rule-label">
+              {rule.label}
+            </label>
+            <div className="app-input job-cards-create-mobile-eligibility-grid__rule-detail">
+              <RuleIcon ok={rule.ok} />
+              <span>{rule.detail || "Not available"}</span>
+            </div>
           </li>
         ))}
       </ul>

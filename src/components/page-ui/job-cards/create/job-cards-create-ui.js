@@ -556,6 +556,7 @@ export default function CreateJobCardPageUi(props) {
               display: "flex",
               gap: "10px",
               justifyContent: "center",
+              alignItems: "flex-start",
               flexWrap: "nowrap"
             }}>
                     {isCustomerEditing ? <>
@@ -595,7 +596,7 @@ export default function CreateJobCardPageUi(props) {
                 </div> : <div className="job-cards-create-customer-actions job-cards-create-customer-actions--empty" style={{
             display: "flex",
             gap: "10px",
-            alignItems: "stretch"
+            alignItems: "flex-start"
           }}>
                   <Button type="button" data-presentation="create-customer-lookup" variant="primary" onClick={() => setShowExistingCustomer(true)} style={{
               flex: "1 1 0",
@@ -923,6 +924,38 @@ export default function CreateJobCardPageUi(props) {
       </DevLayoutSection>
       {/* Local subgrid keeps corresponding fields aligned across the three independent cards without changing global layout primitives. */}
       <style jsx global>{`
+        html.staff-scope .job-cards-create-customer-actions > .app-btn {
+          height: var(--control-height);
+          min-height: var(--control-height);
+          align-self: flex-start;
+        }
+
+        html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-icon {
+          width: 24px;
+          min-width: 24px;
+          height: 24px;
+          min-height: 24px;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        html.staff-scope .job-cards-create-mobile-eligibility-grid__pending-dots {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+        }
+
+        html.staff-scope .job-cards-create-mobile-eligibility-grid__pending-dots > span {
+          width: 3px;
+          height: 3px;
+          flex: 0 0 3px;
+          border-radius: var(--radius-pill);
+          background: currentColor;
+        }
+
         @media (min-width: 1280px) {
           @supports (grid-template-rows: subgrid) {
             html.staff-scope .job-cards-create-aligned-top-row {
@@ -1041,13 +1074,9 @@ export default function CreateJobCardPageUi(props) {
             html.staff-scope .job-cards-create-mobile-eligibility-grid {
               display: grid !important;
               grid-template-rows: subgrid;
-              grid-row: 4 / span 7;
+              grid-row: 4 / span 6;
               row-gap: 12px;
               min-width: 0;
-            }
-
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__heading {
-              grid-row: 1;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__rules {
@@ -1061,12 +1090,35 @@ export default function CreateJobCardPageUi(props) {
               min-width: 0;
             }
 
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(1) {
+              grid-row: 1;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(2) {
+              grid-row: 2;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(3) {
+              grid-row: 3;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(4) {
+              grid-row: 4;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-detail {
+              display: flex;
+              align-items: center;
+              gap: var(--space-sm);
+              box-sizing: border-box;
+            }
+
             html.staff-scope .job-cards-create-mobile-eligibility-grid__choice {
-              grid-row: 6;
+              grid-row: 5;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__message {
-              grid-row: 7;
+              grid-row: 6;
               margin-top: 0 !important;
             }
           }

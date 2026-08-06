@@ -1,0 +1,38 @@
+[
+  {
+    "id": "task-task-mshv6dih",
+    "key": "task-mshv6dih",
+    "content": "Task completed: task-mshv6dih",
+    "namespace": "tasks",
+    "type": "task-outcome",
+    "metadata": {
+      "success": true,
+      "quality": 0.85
+    },
+    "createdAt": 1786042494215
+  },
+  {
+    "id": "task-task-mshv6dih",
+    "key": "task-mshv6dih",
+    "content": "Task completed: task-mshv6dih",
+    "namespace": "tasks",
+    "type": "task-outcome",
+    "metadata": {
+      "success": true,
+      "quality": 0.85
+    },
+    "createdAt": 1786042549165
+  },
+  {
+    "id": "task-task-mshvn307",
+    "key": "task-mshvn307",
+    "content": "Task completed: task-mshvn307",
+    "namespace": "tasks",
+    "type": "task-outcome",
+    "metadata": {
+      "success": true,
+      "quality": 0.85
+    },
+    "createdAt": 1786043199991
+  }
+]

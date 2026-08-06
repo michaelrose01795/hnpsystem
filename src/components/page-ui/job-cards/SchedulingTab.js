@@ -284,7 +284,8 @@ export function JobProgressSection({ jobData }) {
       sectionKey="jobcard-scheduling-progress"
       sectionType="content-card"
       parentKey="jobcard-tab-scheduling"
-      style={{ gap: "16px" }}
+      padding="10px"
+      gap="10px"
     >
       <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-1)" }}>
         Job Progress
@@ -292,16 +293,25 @@ export function JobProgressSection({ jobData }) {
 
       <div
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "20px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+          gap: "10px",
           alignItems: "center",
-          justifyContent: "center",
+          width: "100%",
+          minWidth: 0,
         }}
       >
         {/* Ring */}
-        <div style={{ position: "relative", width: PROGRESS_SIZE, height: PROGRESS_SIZE, flexShrink: 0 }}>
-          <svg width={PROGRESS_SIZE} height={PROGRESS_SIZE} viewBox={`0 0 ${PROGRESS_SIZE} ${PROGRESS_SIZE}`} role="img"
+        <div
+          style={{
+            position: "relative",
+            width: "min(100%, 300px)",
+            aspectRatio: "1",
+            justifySelf: "center",
+            containerType: "inline-size",
+          }}
+        >
+          <svg width="100%" height="100%" viewBox={`0 0 ${PROGRESS_SIZE} ${PROGRESS_SIZE}`} role="img"
             aria-label={`${complete} of ${total} requests complete`}>
             <g transform={`rotate(-90 ${PROGRESS_CENTER} ${PROGRESS_CENTER})`}>
               {/* Base track */}
@@ -341,35 +351,44 @@ export function JobProgressSection({ jobData }) {
               textAlign: "center",
             }}
           >
-            <span style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-1)", lineHeight: 1 }}>
+            <span style={{ fontSize: "clamp(26px, 18cqi, 42px)", fontWeight: 800, color: "var(--text-1)", lineHeight: 1 }}>
               {complete}/{total}
             </span>
-            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-1)", opacity: 0.6, marginTop: "2px" }}>
+            <span style={{ fontSize: "clamp(11px, 6cqi, 15px)", fontWeight: 600, color: "var(--text-1)", opacity: 0.6, marginTop: "4px" }}>
               requests complete
             </span>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--success)", marginTop: "2px" }}>
+            <span style={{ fontSize: "clamp(11px, 6cqi, 15px)", fontWeight: 700, color: "var(--success)", marginTop: "3px" }}>
               {percentComplete}%
             </span>
           </div>
         </div>
 
         {/* Legend */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: "150px", flex: "1 1 150px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "10px",
+            alignContent: "center",
+            width: "100%",
+            minWidth: 0,
+          }}
+        >
           {segments.map((seg) => (
-            <div key={seg.key} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div key={seg.key} style={{ display: "grid", gridTemplateColumns: "16px minmax(22px, auto) minmax(0, 1fr)", alignItems: "center", gap: "10px", minWidth: 0 }}>
               <span
                 style={{
-                  width: "12px",
-                  height: "12px",
+                  width: "16px",
+                  height: "16px",
                   borderRadius: "var(--radius-pill)",
                   background: seg.token,
                   flexShrink: 0,
                 }}
               />
-              <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)", minWidth: "18px" }}>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)", minWidth: "22px" }}>
                 {seg.count}
               </span>
-              <span style={{ fontSize: "13px", color: "var(--text-1)", opacity: 0.75 }}>
+              <span style={{ fontSize: "15px", color: "var(--text-1)", opacity: 0.75, overflowWrap: "anywhere" }}>
                 {seg.label}
               </span>
             </div>
