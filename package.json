@@ -81,7 +81,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@playwright/test": "^1.62.1",
-    "@types/node": "24.10.0",
+    "@types/node": "26.1.2",
     "baseline-browser-mapping": "^2.11.8",
     "eslint": "9.39.3",
     "eslint-config-next": "^16.2.12",
