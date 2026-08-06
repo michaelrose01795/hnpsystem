@@ -57,6 +57,7 @@ import { useUser } from "@/context/UserContext";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { Analytics } from '@vercel/analytics/next'; // Vercel Web Analytics
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
 // need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
@@ -554,6 +555,7 @@ export default function MyApp({ Component, pageProps }) {
       <style dangerouslySetInnerHTML={{ __html: FONT_VARIABLE_STYLE }} />
       <span className={interFont.className} style={{ display: "none" }} aria-hidden="true" />
     <SessionProvider session={pageProps.session}>
+      <Analytics />
       <ActivityTracker />
       <AlertProvider>
         <ConfirmationProvider>
