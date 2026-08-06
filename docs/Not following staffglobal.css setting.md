@@ -1,4 +1,4 @@
-#   
+# Not following `staffglobal.css` setting
 
 Repository-wide static audit of staff-facing UI that recreates or overrides a shared `staffglobal.css` family. The audit covers badges, buttons, inputs/forms, modal and popup shells, tables, tabs, dropdowns, toggles, toolbars, empty states, and toasts.
 

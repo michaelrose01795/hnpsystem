@@ -777,7 +777,6 @@ CREATE TABLE public.workshop_consumables (
   part_number text,
   supplier text,
   unit_cost numeric NOT NULL DEFAULT 0,
-  stock_quantity integer NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
   estimated_quantity integer NOT NULL DEFAULT 0,
   last_order_date date,
   next_estimated_order_date date,
@@ -808,14 +807,11 @@ CREATE TABLE public.workshop_consumable_requests (
   quantity integer NOT NULL DEFAULT 0,
   requested_by integer,
   requested_by_name text,
-  consumable_id uuid,
   requested_at timestamp with time zone NOT NULL DEFAULT now(),
   status text NOT NULL DEFAULT 'pending'::text,
-  arrived_at timestamp with time zone,
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumable_requests_pkey PRIMARY KEY (id),
-  CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id),
-  CONSTRAINT workshop_consumable_requests_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id)
+  CONSTRAINT workshop_consumable_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.parts_delivery_runs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1692,4 +1688,61 @@ CREATE TABLE public.user_personal_widgets (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT user_personal_widgets_pkey PRIMARY KEY (id),
   CONSTRAINT user_personal_widgets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.staff_style_review_findings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  audit_id text NOT NULL,
+  original_audit_id integer CHECK (original_audit_id IS NULL OR original_audit_id BETWEEN 1 AND 128),
+  source_key text NOT NULL,
+  finding_type text NOT NULL CHECK (finding_type = ANY (ARRAY['Badge'::text, 'Button'::text, 'Input'::text, 'Popup'::text, 'Specialised'::text])),
+  audit_group text NOT NULL,
+  category text NOT NULL CHECK (category = ANY (ARRAY['badge'::text, 'button'::text, 'input'::text, 'popup'::text, 'specialised'::text])),
+  feature_area text NOT NULL,
+  subsection text,
+  route text NOT NULL,
+  section_name text NOT NULL,
+  visibility_instructions text NOT NULL,
+  issue_summary text NOT NULL,
+  source_reference text NOT NULL,
+  source_files text[] NOT NULL DEFAULT '{}'::text[],
+  line_references text[] NOT NULL DEFAULT '{}'::text[],
+  recommendation text NOT NULL,
+  partial_adoption boolean NOT NULL DEFAULT false,
+  partial_adoption_notes text,
+  specialist_exception_notes text,
+  review_status text NOT NULL DEFAULT 'Pending'::text CHECK (review_status = ANY (ARRAY['Pending'::text, 'Keep'::text, 'Change'::text, 'Unable to Locate'::text, 'Needs Manual Review'::text, 'Final Check'::text])),
+  review_notes text NOT NULL DEFAULT ''::text,
+  import_metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  first_imported_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_synced_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT staff_style_review_findings_pkey PRIMARY KEY (id),
+  CONSTRAINT staff_style_review_findings_audit_source_unique UNIQUE (audit_id, source_key)
+);
+CREATE TABLE public.staff_style_review_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  finding_id uuid NOT NULL,
+  audit_id text NOT NULL,
+  source_key text NOT NULL,
+  previous_status text,
+  new_status text NOT NULL,
+  previous_notes text,
+  new_notes text,
+  changed_by text NOT NULL,
+  changed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT staff_style_review_history_pkey PRIMARY KEY (id),
+  CONSTRAINT staff_style_review_history_finding_fkey FOREIGN KEY (finding_id) REFERENCES public.staff_style_review_findings(id) ON DELETE CASCADE
+);
+CREATE TABLE public.staff_style_review_imports (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  source_path text NOT NULL,
+  source_hash text NOT NULL,
+  trigger text NOT NULL CHECK (trigger = ANY (ARRAY['initial'::text, 'manual'::text])),
+  imported_by text NOT NULL,
+  parsed_total integer NOT NULL,
+  expected_total integer NOT NULL,
+  category_totals jsonb NOT NULL DEFAULT '{}'::jsonb,
+  warnings jsonb NOT NULL DEFAULT '[]'::jsonb,
+  imported_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT staff_style_review_imports_pkey PRIMARY KEY (id)
 );

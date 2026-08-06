@@ -2,8 +2,8 @@
 //
 // Phase 8 → Phase 11.1 — Developer Platform home. No longer a redirect/tile grid:
 // it is a live statistics dashboard over the incoming support reports
-// (DevOverviewStats), rendered inside the normal staff <Layout> with the platform
-// tab group on top. Strictly gated to the `dev` role.
+// (DevOverviewStats), rendered inside the normal staff <Layout> and reached from
+// the Developer sidebar module. Strictly gated to the `dev` role.
 
 import Head from "next/head";
 import ProtectedRoute from "@/components/ProtectedRoute";

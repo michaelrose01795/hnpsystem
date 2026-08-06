@@ -261,7 +261,27 @@ function buildGoldenSidebarSections() {
     {
       label: "Developer",
       category: "departments",
-      items: [{ label: "Developer Platform", href: "/dev", roles: ["dev"] }],
+      items: [
+        { label: "Developer Platform", href: "/dev", roles: ["dev"] },
+        { label: "Live Operations", href: "/dev/live-ops", roles: ["dev"] },
+        { label: "Application Health", href: "/dev/health", roles: ["dev"] },
+        { label: "Feedback & Errors", href: "/dev/feedback-diagnostics", roles: ["dev"] },
+        { label: "Intelligence", href: "/dev/intelligence", roles: ["dev"] },
+        { label: "Releases", href: "/dev/releases", roles: ["dev"] },
+        { label: "Code Ownership", href: "/dev/ownership", roles: ["dev"] },
+        { label: "Performance", href: "/dev/performance", roles: ["dev"] },
+        { label: "Deployment Readiness", href: "/dev/readiness", roles: ["dev"] },
+        { label: "Productivity", href: "/dev/productivity", roles: ["dev"] },
+        { label: "Support", href: "/dev/support", roles: ["dev"] },
+        { label: "Saved Views", href: "/dev/saved-views", roles: ["dev"] },
+        { label: "Knowledge Centre", href: "/dev/knowledge", roles: ["dev"] },
+        { label: "Activity & Audit", href: "/dev/activity", roles: ["dev"] },
+        { label: "Plugins", href: "/dev/plugins", roles: ["dev"] },
+        { label: "Notifications", href: "/dev/notifications", roles: ["dev"] },
+        { label: "Preferences", href: "/dev/preferences", roles: ["dev"] },
+        { label: "Sidebar Access", href: "/dev/sidebar-access", roles: ["dev"] },
+        { label: "Staff Global Style Review", href: "/dev/staff-style-review", roles: ["dev"] },
+      ],
     },
     {
       label: "Account",
@@ -811,27 +831,58 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
     expect(item).toEqual({ label: "Developer Platform", href: "/dev", roles: ["dev"] });
   });
 
-  it("the dev role ALWAYS sees the Developer group + button, and it stays landable", () => {
+  it("the dev role ALWAYS sees every Developer page in the Developer module", () => {
+    const expectedHrefs = [
+      "/dev",
+      "/dev/live-ops",
+      "/dev/health",
+      "/dev/feedback-diagnostics",
+      "/dev/intelligence",
+      "/dev/releases",
+      "/dev/ownership",
+      "/dev/performance",
+      "/dev/readiness",
+      "/dev/productivity",
+      "/dev/support",
+      "/dev/saved-views",
+      "/dev/knowledge",
+      "/dev/activity",
+      "/dev/plugins",
+      "/dev/notifications",
+      "/dev/preferences",
+      "/dev/sidebar-access",
+      "/dev/staff-style-review",
+    ];
     expect(getWorkspaceGroups(["dev"]).map((g) => g.key)).toContain("developer");
     const nav = getDepartmentWorkspaceNav("developer", ["dev"]);
-    expect(nav.items.map((i) => i.href)).toContain("/dev");
+    expect(nav.items.map((i) => i.href)).toEqual(expectedHrefs);
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
-    expect(
-      getRoleWorkspaceModules(["dev"]).flatMap((module) =>
-        module.items.map((item) => item.href)
-      )
-    ).toContain("/dev");
+    const developerModule = getRoleWorkspaceModules(["dev"]).find((module) => module.key === "developer-platform");
+    expect(developerModule?.label).toBe("Developer");
+    expect(developerModule?.items.map((item) => item.href)).toEqual(expectedHrefs);
     // Upper-case role convention (ProtectedRoute / client) must resolve too.
     expect(getWorkspaceGroups(["DEV"]).map((g) => g.key)).toContain("developer");
   });
 
-  it("keeps /dev in the role-first sidebar even under an empty customised layout", () => {
+  it("keeps every Developer page in the role-first sidebar even under an empty customised layout", () => {
+    const expectedHrefs = WORKSPACE_NAV_SECTIONS
+      .find((section) => section.department === "developer")
+      .items.map((item) => item.href);
     const modules = getRoleWorkspaceModules(["DEV"], {
       items: [],
       groups: [],
       modules: [],
     });
-    expect(modules.flatMap((module) => module.items.map((item) => item.href))).toContain("/dev");
+    const developerModule = modules.find((module) => module.key === "developer-platform");
+    expect(developerModule?.label).toBe("Developer");
+    expect(developerModule?.items.map((item) => item.href)).toEqual(expectedHrefs);
+
+    const groupNav = getDepartmentWorkspaceNav("developer", ["DEV"], {
+      items: [],
+      groups: [],
+      modules: [],
+    });
+    expect(groupNav.items.map((item) => item.href)).toEqual(expectedHrefs);
   });
 
   it("the lock never leaks the Developer group/button to non-dev roles", () => {

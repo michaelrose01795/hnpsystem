@@ -104,6 +104,32 @@ export const DEVELOPER_GROUP_LOCK = Object.freeze({
   navItem: Object.freeze({ label: "Developer Platform", href: "/dev", roles: Object.freeze(["dev"]) }),
 });
 
+// Every Developer Platform area is a standalone, dev-only page in the shared
+// Developer sidebar module. Keep this ordered list aligned with
+// src/components/dev-platform/devPlatformNav.js, which supplies the same labels
+// and destinations to Developer Platform page-level features.
+const DEVELOPER_PLATFORM_PAGES = Object.freeze([
+  { label: "Developer Platform", href: "/dev", roles: ["dev"] },
+  { label: "Live Operations", href: "/dev/live-ops", roles: ["dev"] },
+  { label: "Application Health", href: "/dev/health", roles: ["dev"] },
+  { label: "Feedback & Errors", href: "/dev/feedback-diagnostics", roles: ["dev"] },
+  { label: "Intelligence", href: "/dev/intelligence", roles: ["dev"] },
+  { label: "Releases", href: "/dev/releases", roles: ["dev"] },
+  { label: "Code Ownership", href: "/dev/ownership", roles: ["dev"] },
+  { label: "Performance", href: "/dev/performance", roles: ["dev"] },
+  { label: "Deployment Readiness", href: "/dev/readiness", roles: ["dev"] },
+  { label: "Productivity", href: "/dev/productivity", roles: ["dev"] },
+  { label: "Support", href: "/dev/support", roles: ["dev"] },
+  { label: "Saved Views", href: "/dev/saved-views", roles: ["dev"] },
+  { label: "Knowledge Centre", href: "/dev/knowledge", roles: ["dev"] },
+  { label: "Activity & Audit", href: "/dev/activity", roles: ["dev"] },
+  { label: "Plugins", href: "/dev/plugins", roles: ["dev"] },
+  { label: "Notifications", href: "/dev/notifications", roles: ["dev"] },
+  { label: "Preferences", href: "/dev/preferences", roles: ["dev"] },
+  { label: "Sidebar Access", href: "/dev/sidebar-access", roles: ["dev"] },
+  { label: "Staff Global Style Review", href: "/dev/staff-style-review", roles: ["dev"] },
+]);
+
 export const WORKSPACE_DEPARTMENTS = Object.freeze([
   {
     key: "general",
@@ -708,8 +734,8 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     // Developer Platform entry — visible ONLY to the synthetic `dev` role
     // (Dev-Login mint). It never appears for staff: `dev` is not in
     // roleCategories and is excluded from DEV_FULL_ACCESS_ROLES, so no staff
-    // session carries it. Routes to the platform home; /dev is already in the
-    // route allow-list for dev sessions.
+    // session carries it. Each platform area is a standalone page in the
+    // Developer sidebar module.
     // 🔒 LOCKED — see DEVELOPER_GROUP_LOCK above. The Developer Platform button
     // is guaranteed for the dev role and can never be removed or re-gated.
     department: "developer",
@@ -717,9 +743,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     label: "Developer",
     category: "departments",
     flag: null,
-    items: [
-      { label: "Developer Platform", href: "/dev", roles: ["dev"] },
-    ],
+    items: DEVELOPER_PLATFORM_PAGES,
   },
   {
     // Phase 6/7: the Reports section is gated by the `reporting_nav_enabled`
@@ -896,7 +920,7 @@ export const WORKSPACE_MODULES = Object.freeze({
   valeting: [{ key: "work-queue", label: "Work Queue", hrefs: ["/valet"] }],
   accounts: [{ key: "accounts", label: "Accounts", hrefs: ["/accounts", "/company-accounts"] }, { key: "billing", label: "Billing", hrefs: ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"] }],
   reports: [{ key: "operational", label: "Operational Reports", hrefs: ["/reports/workshop", "/reports/service", "/reports/parts", "/reports/mot", "/reports/paint", "/reports/valeting"] }, { key: "business", label: "Business Reports", hrefs: ["/reports/accounts", "/reports/admin", "/reports/overview"] }],
-  developer: [{ key: "home", label: "Home", hrefs: ["/dev"] }],
+  developer: [{ key: "platform", label: "Developer", hrefs: DEVELOPER_PLATFORM_PAGES.map((item) => item.href) }],
 });
 
 export default WORKSPACE_NAV_SECTIONS;

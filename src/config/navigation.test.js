@@ -24,6 +24,8 @@ const findDevItem = () => {
   return null;
 };
 
+const getDeveloperSection = () => sidebarSections.find((section) => section.label === "Developer") || null;
+
 describe("navigation — Developer Platform sidebar entry", () => {
   it("exists, routes to /dev, and is gated to the dev role", () => {
     const found = findDevItem();
@@ -44,6 +46,37 @@ describe("navigation — Developer Platform sidebar entry", () => {
   it("never appears for a session with no roles", () => {
     const { item } = findDevItem();
     expect(canSee(item, [])).toBe(false);
+  });
+
+  it("shows every Developer area as a dev-only sidebar page, including Staff Global Style Review", () => {
+    const section = getDeveloperSection();
+    expect(section).not.toBeNull();
+    expect(section.items.map((item) => item.href)).toEqual([
+      "/dev",
+      "/dev/live-ops",
+      "/dev/health",
+      "/dev/feedback-diagnostics",
+      "/dev/intelligence",
+      "/dev/releases",
+      "/dev/ownership",
+      "/dev/performance",
+      "/dev/readiness",
+      "/dev/productivity",
+      "/dev/support",
+      "/dev/saved-views",
+      "/dev/knowledge",
+      "/dev/activity",
+      "/dev/plugins",
+      "/dev/notifications",
+      "/dev/preferences",
+      "/dev/sidebar-access",
+      "/dev/staff-style-review",
+    ]);
+    for (const item of section.items) {
+      expect(item.roles).toEqual(["dev"]);
+      expect(canSee(item, ["dev"])).toBe(true);
+      expect(canSee(item, ["admin", "service", "workshop manager"])).toBe(false);
+    }
   });
 });
 

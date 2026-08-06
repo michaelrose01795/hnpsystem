@@ -1,23 +1,15 @@
-CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
-
-
-have it so "**Customer Status** " "**Registration Number**
-""**First Name ""Last Name" seciton are all on the same row, atm they arent on the same row. fix this but keep them within each of there sections just line them up so its neat, and the same with "Job Source**
-" **Colour** " "**Email** " seciton to all be on the same row, and then the same with "**Mobile Mechanic Eligibility** ""**Make & Model** " "**Mobile""Telephone" to all be on the same row, make sure the spacing between all of these are equal. make it so "Within 40 min drive of West Malling" "Chassis Number**
-""**Address** " are all on one row, and "**Vehicle is 3 years old or newer" "Engine Number** " and the "**Edit Customer**
-**Clear Customer" button etc are all on the same row. and then "Vehicle make is Suzuk""Current Mileage**
-" to all be on the same row etc for example. deep dive to make this possible 
-
-
-03969 continue within service,  just added parts more to add. add to nextjob for tech 1, check tech 1 has access, get tech 1 to complete there side and then pass back to controller, then controller do last checks etc and invoice
+"adc6fa3" deployment. Check for data. 
 
 TODO
-"Request an Individual Part" only visible if the job doesnt require a VHC, and even if
+"Review 7: KPI trend, mock-data, pressure, status, stage, and concept badges" popup not following the staffglobal.css setting. have it so the buttons are always in the top right corner/on the top row with the hearing. change the heading to just "Review 7" for these popups. always make sure staffglobal.css setting has the Close button in Secondary style button in the right corner and then any other button as primary button to the left of the close button on the same row etc. 
+
+	
+03970
 
 
-CHECK Drag and drop wihtin next job 
+CHECK Drag and drop wihtin next job
 
-CHECK topdbar dropdown for tech with going on road test etc. 
+cust profile add new job buttonm to uato fill  
 
 CHAT GPT TODO
 look into the users not having to click clock on manaully, but this doing it automatically, liek the app knowing when the user is on the job and then finished the job and then on road test etc find out how this can be as automated as possible etc. 

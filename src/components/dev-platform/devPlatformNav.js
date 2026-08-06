@@ -118,6 +118,12 @@ export const DEV_PLATFORM_NAV = [
     description:
       "Full sidebar group reference, each user's available groups, and a multi-select live preview of any group's sidebar.",
   },
+  {
+    key: "staff-style-review",
+    label: "Staff Style Review",
+    href: "/dev/staff-style-review",
+    description: "Review the fixed Phase 1 staffglobal.css audit evidence and record Developer decisions.",
+  },
 ];
 
 export function getDevPlatformNavItem(key) {
@@ -139,7 +145,7 @@ export const DEV_PLATFORM_GROUPS = [
   { key: "releases", label: "Releases", children: ["releases", "readiness", "productivity"] },
   { key: "support", label: "Support", children: ["support", "saved-views", "activity"] },
   { key: "settings", label: "Settings", children: ["plugins", "notifications", "preferences"] },
-  { key: "access", label: "Access", children: ["sidebar-access"] },
+  { key: "access", label: "Access", children: ["sidebar-access", "staff-style-review"] },
 ];
 
 // Resolve the nav items (in order) for a category group.

@@ -570,16 +570,20 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
   }
 
   // 🔒 DEVELOPER SIDEBAR LOCK — role-first navigation is the live StaffSidebar
-  // path. A stored layout may omit every module/item, but it must never remove
-  // the synthetic developer role's only route into its platform.
+  // path. Developer pages are not assignable in saved staff layouts, so an old
+  // snapshot must never remove a newly added dev-only page from this module.
   const hasDeveloperRole = DEVELOPER_GROUP_LOCK.roles.some((role) => roleSet.has(role));
-  const developerHref = DEVELOPER_GROUP_LOCK.navItem.href;
-  if (
-    hasDeveloperRole &&
-    !modules.some((navigationModule) =>
-      navigationModule.items.some((item) => item.href === developerHref)
-    )
-  ) {
+  if (hasDeveloperRole) {
+    const developerItems = [
+      byHref.get(DEVELOPER_GROUP_LOCK.navItem.href) || {
+        ...DEVELOPER_GROUP_LOCK.navItem,
+        kind: "page",
+        department: DEVELOPER_GROUP_LOCK.key,
+      },
+      ...catalog.filter((item) => item.department === DEVELOPER_GROUP_LOCK.key),
+    ].filter((item, index, list) =>
+      item?.href && list.findIndex((candidate) => candidate?.href === item.href) === index
+    );
     const moduleKey = `${DEVELOPER_GROUP_LOCK.key}-platform`;
     let developerModule = moduleByKey.get(moduleKey);
     if (!developerModule) {
@@ -591,13 +595,13 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
       modules.push(developerModule);
       moduleByKey.set(moduleKey, developerModule);
     }
-    const catalogItem = byHref.get(developerHref) || {
-      ...DEVELOPER_GROUP_LOCK.navItem,
-      kind: "page",
-      department: DEVELOPER_GROUP_LOCK.key,
-    };
-    developerModule.items.push(toRoleModuleItem(catalogItem));
-    used.add(developerHref);
+    const developerHrefs = new Set(developerItems.map((item) => item.href));
+    for (const navigationModule of modules) {
+      if (navigationModule.key === moduleKey) continue;
+      navigationModule.items = navigationModule.items.filter((item) => !developerHrefs.has(item.href));
+    }
+    developerModule.items = developerItems.map(toRoleModuleItem);
+    for (const item of developerItems) used.add(item.href);
   }
 
   const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
@@ -837,13 +841,17 @@ export function getDepartmentWorkspaceNav(departmentKey, roles, sidebarAccess = 
   }
 
   // 🔒 DEVELOPER SIDEBAR LOCK — self-heal. Inside the Developer group the dev
-  // role must ALWAYS get the Developer Platform button; re-inject it from
-  // DEVELOPER_GROUP_LOCK if a manifest edit ever removed the developer nav item.
+  // role must ALWAYS get every canonical Developer page, even when an older
+  // saved snapshot predates that page. The locked platform home is the fallback.
   if (departmentKey === DEVELOPER_GROUP_LOCK.key && roleSet.has("dev")) {
-    const { navItem } = DEVELOPER_GROUP_LOCK;
-    if (!seen.has(navItem.href)) {
-      seen.add(navItem.href);
-      items.push({ label: navItem.label, href: navItem.href });
+    const requiredItems = [
+      DEVELOPER_GROUP_LOCK.navItem,
+      ...workspaceSectionsForDepartment(DEVELOPER_GROUP_LOCK.key).flatMap((section) => section.items || []),
+    ];
+    for (const item of requiredItems) {
+      if (!item?.href || seen.has(item.href) || !itemVisibleTo(item, roleSet, DEVELOPER_GROUP_LOCK.key)) continue;
+      seen.add(item.href);
+      items.push({ label: item.label, href: item.href });
     }
   }
 
