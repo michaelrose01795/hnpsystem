@@ -51,16 +51,21 @@ export default function QuestionPromptsPopup({
                 : `${totalQuestions} suggested ${totalQuestions === 1 ? "question" : "questions"} to ask the customer.`}
             </span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            className="app-btn--icon"
-            onClick={onClose}
-            aria-label="Close question prompts popup"
-          >
-            ×
-          </Button>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Done
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="app-btn--icon"
+              onClick={onClose}
+              aria-label="Close question prompts popup"
+            >
+              ×
+            </Button>
+          </div>
         </div>
 
         {requestText ? (
@@ -124,12 +129,6 @@ export default function QuestionPromptsPopup({
               </ul>
             </LayerTheme>
           ))}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Done
-          </Button>
         </div>
       </div>
     </PopupModal>

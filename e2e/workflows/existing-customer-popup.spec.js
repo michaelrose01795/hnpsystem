@@ -50,7 +50,7 @@ const openExistingCustomerPopup = async (page) => {
 
   await page.goto('/new-job');
   await waitForAppReady(page);
-  await page.getByRole('button', { name: 'Search Existing Customer', exact: true }).click();
+  await page.getByRole('button', { name: 'Existing Customer', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Existing customer' });
   await expect(dialog).toBeVisible();
   return dialog;

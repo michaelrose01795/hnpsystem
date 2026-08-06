@@ -1,7 +1,7 @@
 // file location: src/components/JobCards/MobileMechanicEligibility.js
 
 import React, { useEffect, useMemo } from "react";
-import LayerSurface from "@/components/ui/LayerSurface";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import StatusMessage from "@/components/ui/StatusMessage";
 import { evaluateMobileMechanicEligibility } from "@/lib/mobileMechanic/eligibility";
 import useDriveTimeToHNP from "@/hooks/useDriveTimeToHNP";
@@ -50,33 +50,20 @@ export default function MobileMechanicEligibility({
     }
   }, [verdict.eligible, isMobileMechanic, onSelectionChange]);
 
-  const statusMeta =
-    verdict.status === "eligible"
-      ? { label: "Eligible", className: "app-badge app-badge--success" }
-      : verdict.status === "pending"
-        ? { label: "Checking…", className: "app-badge app-badge--neutral" }
-        : { label: "Not eligible", className: "app-badge app-badge--danger" };
-
   return (
-    <div>
-      <label>Mobile Mechanic Eligibility</label>
-
-      <LayerSurface
-        radius="var(--radius-sm)"
-        padding="10px 12px"
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          marginBottom: "10px",
-        }}
-      >
-        <span className={statusMeta.className}>{statusMeta.label}</span>
-        <span>Rules: service · Suzuki · ≤ 3 yrs · ≤ 40 min drive</span>
-      </LayerSurface>
+    <DevLayoutSection
+      sectionKey="job-cards-create-mobile-mechanic-eligibility"
+      sectionType="section-shell"
+      parentKey="job-cards-create-job-information"
+      className="job-cards-create-mobile-eligibility-grid"
+      shell
+    >
+      <label className="job-cards-create-mobile-eligibility-grid__heading">
+        Mobile Mechanic Eligibility
+      </label>
 
       <ul
+        className="job-cards-create-mobile-eligibility-grid__rules"
         style={{
           listStyle: "none",
           margin: "0 0 12px",
@@ -88,6 +75,7 @@ export default function MobileMechanicEligibility({
         {verdict.rules.map((rule) => (
           <li
             key={rule.id}
+            className="job-cards-create-mobile-eligibility-grid__rule"
             style={{
               display: "flex",
               alignItems: "flex-start",
@@ -104,6 +92,7 @@ export default function MobileMechanicEligibility({
       </ul>
 
       <div
+        className="job-cards-create-mobile-eligibility-grid__choice"
         style={{
           display: "flex",
           alignItems: "center",
@@ -142,11 +131,15 @@ export default function MobileMechanicEligibility({
       </div>
 
       {isMobileMechanic && verdict.eligible ? (
-        <StatusMessage tone="success" style={{ marginTop: "10px" }}>
+        <StatusMessage
+          className="job-cards-create-mobile-eligibility-grid__message"
+          tone="success"
+          style={{ marginTop: "10px" }}
+        >
           This job will be saved as a Mobile Mechanic booking. The customer&apos;s
           address and mobile number will be used as the on-site contact.
         </StatusMessage>
       ) : null}
-    </div>
+    </DevLayoutSection>
   );
 }

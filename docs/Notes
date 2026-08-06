@@ -1,5 +1,14 @@
 CONTINUE WITH DEV PAGE ETC AND SIDEBAR NOT LOADING PAGES CORRECTLY
 
+
+have it so "**Customer Status** " "**Registration Number**
+""**First Name ""Last Name" seciton are all on the same row, atm they arent on the same row. fix this but keep them within each of there sections just line them up so its neat, and the same with "Job Source**
+" **Colour** " "**Email** " seciton to all be on the same row, and then the same with "**Mobile Mechanic Eligibility** ""**Make & Model** " "**Mobile""Telephone" to all be on the same row, make sure the spacing between all of these are equal. make it so "Within 40 min drive of West Malling" "Chassis Number**
+""**Address** " are all on one row, and "**Vehicle is 3 years old or newer" "Engine Number** " and the "**Edit Customer**
+**Clear Customer" button etc are all on the same row. and then "Vehicle make is Suzuk""Current Mileage**
+" to all be on the same row etc for example. deep dive to make this possible 
+
+
 03969 continue within service,  just added parts more to add. add to nextjob for tech 1, check tech 1 has access, get tech 1 to complete there side and then pass back to controller, then controller do last checks etc and invoice
 
 TODO

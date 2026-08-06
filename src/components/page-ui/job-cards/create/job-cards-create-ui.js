@@ -6,6 +6,29 @@ import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
 import PopupModal from "@/components/popups/popupStyleApi";
 
+const normalizeUkRegistrationInput = (value) =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 7);
+
+const formatUkRegistration = (value) => {
+  const registration = normalizeUkRegistrationInput(value);
+  const patterns = [
+    [/^(\d{3})([DX])(\d{1,3})$/, "$1 $2 $3"], // Diplomatic registrations: 123 D 456.
+    [/^([A-Z]{2}\d{2})([A-Z]{1,3})$/, "$1 $2"], // Current registrations: AB12 CDE.
+    [/^([A-Z]\d{1,3})([A-Z]{1,3})$/, "$1 $2"], // Prefix registrations: A123 BCD.
+    [/^([A-Z]{1,3})(\d{1,3}[A-Z])$/, "$1 $2"], // Suffix registrations: ABC 123A.
+    [/^([A-Z]{1,3})(\d{1,4})$/, "$1 $2"], // Northern Irish and dateless registrations: ABC 1234.
+    [/^(\d{1,4})([A-Z]{1,3})$/, "$1 $2"], // Reverse dateless registrations: 123 ABC.
+  ];
+
+  const matchingPattern = patterns.find(([pattern]) => pattern.test(registration));
+  return matchingPattern
+    ? registration.replace(matchingPattern[0], matchingPattern[1])
+    : registration;
+};
+
 export default function CreateJobCardPageUi(props) {
   const {
     DevLayoutSection,
@@ -300,21 +323,21 @@ export default function CreateJobCardPageUi(props) {
       gap: "16px"
     }}>
           {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
-          <DevLayoutSection sectionKey="job-cards-create-top-row" sectionType="section-shell" parentKey="job-cards-create-content" shell style={{
+          <DevLayoutSection sectionKey="job-cards-create-top-row" sectionType="section-shell" parentKey="job-cards-create-content" shell className="job-cards-create-aligned-top-row" style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px",
         width: "100%"
       }}>
             {/* Job Information Section - responsive, min 260px */}
-            <LayerTheme sectionKey="job-cards-create-job-information" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
+            <LayerTheme sectionKey="job-cards-create-job-information" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--job" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 260px",
           minWidth: 0,
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
         }}>
-              <div style={{
+              <div className="job-cards-create-aligned-card__header" style={{
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "flex-start",
@@ -330,11 +353,11 @@ export default function CreateJobCardPageUi(props) {
                 </div>
               </div>
 
-              <div style={{
+              <div className="job-cards-create-job-fields" style={{
             display: "grid",
             gap: "12px"
           }}>
-                <div>
+                <div className="job-cards-create-aligned-row job-cards-create-job-row--customer-status">
                   <label>
                     Customer Status
                   </label>
@@ -345,7 +368,7 @@ export default function CreateJobCardPageUi(props) {
                   </div>
                 </div>
 
-                <div>
+                <div className="job-cards-create-aligned-row job-cards-create-job-row--source">
                   <label>
                     Job Source
                   </label>
@@ -366,22 +389,23 @@ export default function CreateJobCardPageUi(props) {
             </LayerTheme>
 
             {/* Vehicle Details Section - responsive, min 260px. Outer ref div hosts the ResizeObserver target; inner LayerTheme paints the surface. */}
-            <div ref={vehicleSectionRef} style={{ flex: "1 1 260px", minWidth: 0, display: "flex" }}>
-            <LayerTheme sectionKey="job-cards-create-vehicle-details" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
+            <div ref={vehicleSectionRef} className="job-cards-create-aligned-card-wrap job-cards-create-aligned-card-wrap--vehicle" style={{ flex: "1 1 260px", minWidth: 0, display: "flex" }}>
+            <LayerTheme sectionKey="job-cards-create-vehicle-details" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--vehicle" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 auto",
           minWidth: 0,
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
         }}>
-              <h3>
-                Vehicle Details
-                {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
-                    Inherited
-                  </span>}
-              </h3>
+              <div className="job-cards-create-aligned-card__header">
+                <h3>
+                  Vehicle Details
+                  {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
+                      Inherited
+                    </span>}
+                </h3>
 
-              {vehicleNotification && <StatusMessage tone={vehicleNotification.type === "success" ? "success" : "danger"} style={{
+                {vehicleNotification && <StatusMessage tone={vehicleNotification.type === "success" ? "success" : "danger"} style={{
             display: "flex",
             alignItems: "center",
             gap: "8px"
@@ -391,10 +415,11 @@ export default function CreateJobCardPageUi(props) {
               marginLeft: "auto"
             }} aria-label="Dismiss vehicle notification">
                     ×
-                  </Button>
-                </StatusMessage>}
+                    </Button>
+                  </StatusMessage>}
+              </div>
 
-              <div style={{
+              <div className="job-cards-create-aligned-row job-cards-create-vehicle-row--registration" style={{
             marginBottom: "16px"
           }}>
                 <label htmlFor="vehicle-registration">
@@ -405,21 +430,20 @@ export default function CreateJobCardPageUi(props) {
               gap: "12px",
               alignItems: "center"
             }}>
-                  <input id="vehicle-registration" type="text" value={vehicle.reg} onChange={e => setVehicle({
-                ...vehicle,
-                reg: e.target.value
-              })} placeholder="e.g. AB12 CDE" className="app-input" style={{ flex: 1 }} />
+                  <input id="vehicle-registration" type="text" value={formatUkRegistration(vehicle.reg)} onChange={e => setVehicle(currentVehicle => ({
+                ...currentVehicle,
+                reg: normalizeUkRegistrationInput(e.target.value)
+              }))} placeholder="e.g. AB12 CDE" className="app-input" style={{ flex: 1 }} maxLength={9} autoCapitalize="characters" spellCheck={false} />
                   <Button type="button" data-presentation="create-reg-lookup" onClick={handleFetchVehicleData} busy={isLoadingVehicle}>
                     {isLoadingVehicle ? "Loading..." : "Search"}
                   </Button>
                 </div>
+                {error && <StatusMessage tone="danger">
+                    {error}
+                  </StatusMessage>}
               </div>
 
-              {error && <StatusMessage tone="danger">
-                  {error}
-                </StatusMessage>}
-
-              <div style={{
+              <div className="job-cards-create-vehicle-fields" style={{
             display: "flex",
             flexDirection: "column",
             gap: "12px"
@@ -431,7 +455,7 @@ export default function CreateJobCardPageUi(props) {
                 chassis: "Chassis Number",
                 engine: "Engine Number"
               };
-              return <div key={`${key}-${idx}`}>
+              return <div key={`${key}-${idx}`} className={`job-cards-create-aligned-row job-cards-create-vehicle-row--${key}`}>
                       <label htmlFor={`vehicle-${key}`}>
                         {labelMap[key]}
                       </label>
@@ -439,7 +463,7 @@ export default function CreateJobCardPageUi(props) {
                     </div>;
             })}
 
-                <div>
+                <div className="job-cards-create-aligned-row job-cards-create-vehicle-row--mileage">
                   <label htmlFor="vehicle-mileage">
                     Current Mileage
                   </label>
@@ -453,21 +477,22 @@ export default function CreateJobCardPageUi(props) {
             </div>
 
             {/* Customer Details Section - responsive, min 260px */}
-            <LayerTheme sectionKey="job-cards-create-customer-details" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
+            <LayerTheme sectionKey="job-cards-create-customer-details" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--customer" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 260px",
           minWidth: 0,
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
         }}>
-              <h3>
-                Customer Details
-                {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
-                    Inherited
-                  </span>}
-              </h3>
+              <div className="job-cards-create-aligned-card__header">
+                <h3>
+                  Customer Details
+                  {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
+                      Inherited
+                    </span>}
+                </h3>
 
-              {customerNotification && <StatusMessage tone={customerNotification.type === "success" ? "success" : "danger"} style={{
+                {customerNotification && <StatusMessage tone={customerNotification.type === "success" ? "success" : "danger"} style={{
             display: "flex",
             alignItems: "center",
             gap: "8px"
@@ -477,20 +502,21 @@ export default function CreateJobCardPageUi(props) {
               marginLeft: "auto"
             }} aria-label="Dismiss customer notification">
                     ×
-                  </Button>
-                </StatusMessage>}
+                    </Button>
+                  </StatusMessage>}
+              </div>
 
-              {customer ? <div style={{
+              {customer ? <div className="job-cards-create-customer-content" style={{
             display: "flex",
             flexDirection: "column",
             gap: "10px"
           }}>
-                  {isCustomerEditing ? <div style={{
+                  {isCustomerEditing ? <div className="job-cards-create-customer-fields job-cards-create-customer-fields--editing" style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
               gap: "12px"
             }}>
-                      {customerFieldDefinitions.map(input => <div key={input.field} style={{
+                      {customerFieldDefinitions.map(input => <div key={input.field} className={`job-cards-create-customer-field job-cards-create-customer-field--${input.field}`} style={{
                 gridColumn: input.field === "email" || input.field === "address" || input.field === "contactPreference" ? "1 / -1" : "auto"
               }}>
                           <label htmlFor={input.type === "multi-select" ? undefined : `customer-${input.field}`}>
@@ -510,12 +536,12 @@ export default function CreateJobCardPageUi(props) {
                   })}
                             </div> : <input id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
                         </div>)}
-                    </div> : <div style={{
+                    </div> : <div className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: "8px"
             }}>
-                      {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} style={{
+                      {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} className={`job-cards-create-customer-field job-cards-create-customer-field--${input.field}`} style={{
                 gridColumn: input.field === "firstName" || input.field === "lastName" || input.field === "mobile" || input.field === "telephone" ? "auto" : "1 / -1",
                 minWidth: 0
               }}>
@@ -526,11 +552,11 @@ export default function CreateJobCardPageUi(props) {
                           </div>)}
                     </div>}
 
-                  <div style={{
+                  <div className={`job-cards-create-customer-actions${isCustomerEditing ? " job-cards-create-customer-actions--editing" : ""}`} style={{
               display: "flex",
               gap: "10px",
               justifyContent: "center",
-              flexWrap: "wrap"
+              flexWrap: "nowrap"
             }}>
                     {isCustomerEditing ? <>
                         <Button type="button" onClick={handleSaveCustomerEdits} busy={isSavingCustomer} style={{
@@ -544,47 +570,44 @@ export default function CreateJobCardPageUi(props) {
                           Cancel
                         </Button>
                       </> : <>
-                        <Button type="button" variant="secondary" onClick={handleStartCustomerEdit} style={{
-                  width: "100%",
-                  maxWidth: "320px",
-                  alignSelf: "center"
+                        <Button type="button" variant="primary" onClick={handleStartCustomerEdit} style={{
+                  flex: "1 1 0",
+                  minWidth: 0
                 }}>
                           Edit Customer
                         </Button>
-                        <Button type="button" variant="ghost" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
-                  width: "100%",
-                  maxWidth: "320px",
-                  alignSelf: "center"
+                        <Button type="button" variant="secondary" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
+                  flex: "1 1 0",
+                  minWidth: 0
                 }}>
                           Clear Customer
                         </Button>
                       </>}
                   </div>
 
-                  {isCustomerEditing && <Button type="button" variant="ghost" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
+                  {isCustomerEditing && <Button type="button" variant="ghost" className="job-cards-create-customer-clear-editing" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
               width: "100%",
               maxWidth: "320px",
               alignSelf: "center"
             }}>
                       Clear Customer
                     </Button>}
-                </div> : <div style={{
+                </div> : <div className="job-cards-create-customer-actions job-cards-create-customer-actions--empty" style={{
             display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            alignItems: "center"
+            gap: "10px",
+            alignItems: "stretch"
           }}>
-                  <Button type="button" onClick={() => setShowNewCustomer(true)} style={{
-              width: "100%",
-              maxWidth: "320px"
+                  <Button type="button" data-presentation="create-customer-lookup" variant="primary" onClick={() => setShowExistingCustomer(true)} style={{
+              flex: "1 1 0",
+              minWidth: 0
+            }}>
+                    Existing Customer
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => setShowNewCustomer(true)} style={{
+              flex: "1 1 0",
+              minWidth: 0
             }}>
                     New Customer
-                  </Button>
-                  <Button type="button" data-presentation="create-customer-lookup" variant="secondary" onClick={() => setShowExistingCustomer(true)} style={{
-              width: "100%",
-              maxWidth: "320px"
-            }}>
-                    Search Existing Customer
                   </Button>
                 </div>}
             </LayerTheme>
@@ -592,14 +615,24 @@ export default function CreateJobCardPageUi(props) {
 
           {/* ✅ Job Requests Section - Full Width */}
           <LayerTheme sectionKey="job-cards-create-job-requests" sectionType="section-shell" parentKey="job-cards-create-content" radius="var(--radius-md)">
-            <h3>
-              Job Requests
-            </h3>
+            <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap"
+        }}>
+              <h3>
+                Job Requests
+              </h3>
+              <Button type="button" variant="secondary" onClick={handleAddRequest}>
+                + Add Request
+              </Button>
+            </div>
             <div style={{
           maxHeight: "360px",
           overflowY: "auto",
-          paddingRight: "4px",
-          marginBottom: "12px"
+          paddingRight: "4px"
         }}>
               {requests.map((req, i) => <LayerSurface key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" radius="var(--radius-sm)" padding="10px" style={{
             marginBottom: "10px"
@@ -636,11 +669,11 @@ export default function CreateJobCardPageUi(props) {
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
-                width: "72px",
+                width: "84px", // Allow the hours input to show one additional digit beside the fixed suffix.
                 flexShrink: 0
               }}>
                       <input type="number" min="0.00" step="0.01" value={req.time || ""} onChange={e => handleTimeChange(i, e.target.value)} placeholder="" className="app-input" style={{
-                  width: "52px"
+                  width: "64px" // Fits an additional hours digit while preserving the compact request row.
                 }} onBlur={() => {
                   const updated = [...requests];
                   updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
@@ -669,9 +702,6 @@ export default function CreateJobCardPageUi(props) {
                   </div>
                 </LayerSurface>)}
             </div>
-            <Button type="button" variant="secondary" onClick={handleAddRequest}>
-              + Add Request
-            </Button>
           </LayerTheme>
 
           {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
@@ -851,7 +881,7 @@ export default function CreateJobCardPageUi(props) {
                   </Button>
                 </div>
 
-                <div style={{
+              <div style={{
             display: "grid",
             gap: "10px"
           }}>
@@ -891,6 +921,157 @@ export default function CreateJobCardPageUi(props) {
               </div>
           </PopupModal>}
       </DevLayoutSection>
+      {/* Local subgrid keeps corresponding fields aligned across the three independent cards without changing global layout primitives. */}
+      <style jsx global>{`
+        @media (min-width: 1280px) {
+          @supports (grid-template-rows: subgrid) {
+            html.staff-scope .job-cards-create-aligned-top-row {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(260px, 1fr));
+              grid-template-rows: repeat(10, auto);
+              column-gap: 16px !important;
+              row-gap: 0 !important;
+              align-items: stretch;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card,
+            html.staff-scope .job-cards-create-aligned-card-wrap--vehicle {
+              grid-row: 1 / span 10;
+              min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card {
+              display: grid !important;
+              grid-template-rows: subgrid;
+              row-gap: 12px !important;
+              overflow: visible !important;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card--job {
+              grid-column: 1;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card-wrap--vehicle {
+              display: grid !important;
+              grid-column: 2;
+              grid-template-rows: subgrid;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card--vehicle {
+              grid-row: 1 / span 10;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card--customer {
+              grid-column: 3;
+            }
+
+            html.staff-scope .job-cards-create-aligned-card__header {
+              grid-row: 1;
+              min-width: 0;
+              padding-bottom: 0 !important;
+            }
+
+            html.staff-scope .job-cards-create-job-fields,
+            html.staff-scope .job-cards-create-customer-content,
+            html.staff-scope .job-cards-create-vehicle-fields {
+              display: contents !important;
+            }
+
+            html.staff-scope .job-cards-create-job-row--customer-status,
+            html.staff-scope .job-cards-create-vehicle-row--registration {
+              grid-row: 2;
+            }
+
+            html.staff-scope .job-cards-create-job-row--source,
+            html.staff-scope .job-cards-create-vehicle-row--colour {
+              grid-row: 3;
+            }
+
+            html.staff-scope .job-cards-create-vehicle-row--makeModel {
+              grid-row: 4;
+            }
+
+            html.staff-scope .job-cards-create-vehicle-row--chassis {
+              grid-row: 5;
+            }
+
+            html.staff-scope .job-cards-create-vehicle-row--engine {
+              grid-row: 6;
+            }
+
+            html.staff-scope .job-cards-create-vehicle-row--mileage {
+              grid-row: 7;
+            }
+
+            html.staff-scope .job-cards-create-vehicle-row--registration {
+              margin-bottom: 0 !important;
+            }
+
+            html.staff-scope .job-cards-create-customer-fields {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              grid-template-rows: subgrid;
+              grid-row: 2 / span 4;
+              column-gap: 8px !important;
+              row-gap: 12px !important;
+              min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-customer-fields--editing {
+              grid-row: 2 / span 5;
+            }
+
+            html.staff-scope .job-cards-create-customer-actions {
+              grid-row: 6;
+              min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-customer-actions--editing {
+              grid-row: 7;
+            }
+
+            html.staff-scope .job-cards-create-customer-actions--empty {
+              grid-row: 2;
+            }
+
+            html.staff-scope .job-cards-create-customer-clear-editing {
+              grid-row: 8;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid {
+              display: grid !important;
+              grid-template-rows: subgrid;
+              grid-row: 4 / span 7;
+              row-gap: 12px;
+              min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__heading {
+              grid-row: 1;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rules {
+              display: contents !important;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule,
+            html.staff-scope .job-cards-create-aligned-row,
+            html.staff-scope .job-cards-create-customer-field {
+              align-self: start;
+              min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__choice {
+              grid-row: 6;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__message {
+              grid-row: 7;
+              margin-top: 0 !important;
+            }
+          }
+        }
+      `}</style>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

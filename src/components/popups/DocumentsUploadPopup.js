@@ -334,13 +334,34 @@ export default function DocumentsUploadPopup({
             transition: "width 0.3s ease",
           }}
         >
-        <div>
-          <h3>
-            Upload Documents
-          </h3>
-          <p>
-            {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
-          </p>
+        <div className="app-popup-compact-header" style={{ flexWrap: "nowrap" }}>
+          <div style={{ minWidth: 0 }}>
+            <h3>
+              Upload Documents
+            </h3>
+            <p>
+              {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
+            </p>
+          </div>
+          <div className="app-popup-compact-header__actions" style={{ width: "auto", flexWrap: "nowrap" }}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleUploadClick}
+              busy={isUploading}
+            >
+              {isUploading ? "Uploading..." : "Upload"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleClose}
+            >
+              Close
+            </Button>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: "20px", flexWrap: hasRightPanel ? "nowrap" : "wrap" }}>
@@ -447,24 +468,6 @@ export default function DocumentsUploadPopup({
               </LayerTheme>
             )}
 
-            <div style={{ display: "flex", gap: "12px" }}>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleClose}
-                style={{ flex: 1 }}
-              >
-                Close
-              </Button>
-              <Button
-                type="button"
-                onClick={handleUploadClick}
-                busy={isUploading}
-                style={{ flex: 1 }}
-              >
-                {isUploading ? "Uploading..." : "Upload"}
-              </Button>
-            </div>
           </div>
 
           {hasRightPanel && (
