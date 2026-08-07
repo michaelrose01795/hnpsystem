@@ -58,6 +58,7 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { useUser } from "@/context/UserContext";
 import { canAccessPath } from "@/lib/auth/pageAccess";
+import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
@@ -541,6 +542,10 @@ function PageAccessGuard({ pathname }) {
   useEffect(() => {
     if (loading) return; // wait for user context to resolve
     if (!user) return; // unauthenticated → existing auth guards handle redirect
+    // Developer Platform login only: it must be able to land on every page so
+    // audits (Staff Style Review, layout overlay) can run against the real
+    // screens. It gains no roles, so its own sidebar/nav is unchanged.
+    if (hasDevPlatformPageAccess(user)) return;
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
     if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) return;

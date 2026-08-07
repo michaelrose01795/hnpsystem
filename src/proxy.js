@@ -15,6 +15,7 @@ import {
   isProtectedPath,
   isPublicPath,
 } from "@/config/routeAccess";
+import { isSyntheticDevPlatformToken } from "@/lib/auth/devSession";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
@@ -91,6 +92,14 @@ export async function proxy(req) {
   }
 
   if (!isHrRoute && !isAdminRoute) {
+    return NextResponse.next();
+  }
+
+  // Developer Platform login only: the diagnostic account opens every page so
+  // audits can be run against the real screens. It never gains staff roles, so
+  // nothing role-driven (sidebar, quick actions, feature checks) changes.
+  if (isSyntheticDevPlatformToken(token)) {
+    logProxyCheck("Developer Platform full page access", { pathname });
     return NextResponse.next();
   }
 

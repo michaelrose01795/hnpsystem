@@ -1,8 +1,14 @@
+// "/" is not a landing page — it server-redirects to /login, which then forwards
+// an authenticated user to their post-login route. Any finding that resolved to
+// "/" therefore dumped the reviewer on the newsfeed with no highlight. Findings
+// that genuinely apply to "any staff route" get a real staff page instead.
+export const ANY_STAFF_ROUTE_DESTINATION = "/newsfeed";
+
 const DESCRIPTIVE_ROUTE_DESTINATIONS = Object.freeze([
-  [/^any staff route/i, "/"],
+  [/^any staff route/i, ANY_STAFF_ROUTE_DESTINATION],
   [/^developer platform routes$/i, "/dev"],
   [/^workshop clocking-card consumers$/i, "/workshop"],
-  [/^shared topbar and confirmation flows$/i, "/"],
+  [/^shared topbar and confirmation flows$/i, ANY_STAFF_ROUTE_DESTINATION],
   [/^invoice builder and global next-action prompt$/i, "/new-order"],
   [/^report utility tabs and topbar tools$/i, "/reports/overview"],
   [/^invoice consumers$/i, "/accounts/invoices"],
@@ -21,7 +27,7 @@ function nearestNavigableRoute(auditedPath) {
   if (DYNAMIC_ROUTE_DESTINATIONS[auditedPath]) return DYNAMIC_ROUTE_DESTINATIONS[auditedPath];
 
   const destination = auditedPath.replace(/\/\[[^/]+\]/g, "");
-  return destination || "/";
+  return destination || ANY_STAFF_ROUTE_DESTINATION;
 }
 
 export function resolveStaffStyleReviewRoute(routeDescription) {

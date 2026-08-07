@@ -17,7 +17,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 
-const BUBBLE_SIZE = 56;
+const BUBBLE_SIZE = 44;
 const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
 const PANEL_CLOSE_ANIMATION_MS = 150;
 const SAVE_DEBOUNCE_MS = 520;
@@ -1071,7 +1071,26 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         onPointerDown={startBubbleDrag}
         aria-label="Open Notes"
       >
-        <span className={styles.bubbleLabel}>N</span>
+        <span className={styles.bubbleLabel} aria-hidden="true">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            focusable="false"
+          >
+            {/* Notepad body */}
+            <rect x="5" y="4" width="14" height="17" rx="2" />
+            {/* Spiral binding tabs */}
+            <path d="M9 2v4M15 2v4" />
+            {/* Ruled lines */}
+            <path d="M9 11h6M9 15h4" />
+          </svg>
+        </span>
       </button>
 
       {isPanelMounted && (

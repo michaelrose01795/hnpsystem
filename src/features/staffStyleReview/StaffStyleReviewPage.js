@@ -12,6 +12,8 @@ import {
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { STAFF_STYLE_REVIEW_STATUSES } from "@/lib/staff-style-review/auditParser";
+import { buildCodexPrompt } from "@/lib/staff-style-review/codexPrompt";
+import { buildReviewContext, storeReviewContext } from "@/lib/staff-style-review/reviewContext";
 import { buildStaffStyleReviewItemLink, resolveStaffStyleReviewRoute } from "@/lib/staff-style-review/routeNavigation";
 
 const PAGE_SIZE = 20;
@@ -110,41 +112,6 @@ const FIELD_LABEL_STYLE = Object.freeze({ display: "block", fontWeight: 700, col
 const FIELD_VALUE_STYLE = Object.freeze({ margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", minWidth: 0, overflowWrap: "anywhere" });
 const SOURCE_CODE_STYLE = Object.freeze({ display: "block", margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-sm)" });
 
-// The shared staffglobal.css family each audit category should be adopting, named the way the
-// prompt reader (Codex) needs to see it so it looks for the existing shared implementation.
-const STAFF_FAMILY_BY_CATEGORY = Object.freeze({
-  badge: "badge (`.app-badge`)",
-  button: "button (the shared `<Button>` / `.app-btn`)",
-  input: "input (`.app-input`)",
-  popup: "modal/popup shell (`.app-modal` / the shared `PopupModal`)",
-  specialised: "staff styling",
-});
-
-function condense(value, limit) {
-  const text = String(value ?? "").replace(/`/g, "").replace(/\s+/g, " ").trim();
-  if (!text) return "";
-  return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
-}
-
-// One sentence, built only from the current finding plus the reviewer's own notes, so the prompt
-// stays copy-and-run and never drifts from what is on screen.
-function buildCodexPrompt(finding, reviewNotes) {
-  if (!finding) return "";
-  const family = STAFF_FAMILY_BY_CATEGORY[finding.category] || STAFF_FAMILY_BY_CATEGORY.specialised;
-  const note = condense(reviewNotes, 200);
-  return [
-    `In HNPSystem, inspect the existing implementation of "${condense(finding.sectionName, 120) || "the audited item"}"`,
-    ` on route ${condense(finding.route, 120) || "the audited route"}`,
-    ` (staff style audit ID ${finding.auditId}; source ${condense(finding.sourceReference, 220) || "not recorded"};`,
-    ` audit rationale: ${condense(finding.issueSummary, 240) || "not recorded"})`,
-    `, then replace only its local recreation or override of the shared staffglobal.css ${family} family`,
-    " with the correct existing shared staff styling/component",
-    ", preserving layout, behaviour, permissions, data logic, responsive behaviour and any deliberate feature-specific design",
-    note ? `, taking the reviewer note "${note}" into account` : "",
-    ", and make no unrelated visual changes.",
-  ].join("");
-}
-
 // Audit metadata is only kept in the normal popup when it can actually change the decision.
 // Group, subsection, the boilerplate per-category recommendation and the parsed line references
 // are constant or already implied by the badges and source reference, so they move into the
@@ -225,9 +192,12 @@ function FindingSummary({ finding, itemLink, onViewItem }) {
   );
 }
 
-function FindingEvidence({ finding }) {
-  const [copiedSource, copySource] = useCopyAction();
+function FindingEvidence({ finding, notes }) {
+  const [copiedPrompt, copyPrompt] = useCopyAction();
   const auditNotes = materialAuditNotes(finding);
+  // Copy hands over a ready-to-run Codex prompt built from this finding, not the bare source
+  // reference — the reference alone gave Codex no instruction to act on.
+  const prompt = useMemo(() => buildCodexPrompt(finding, notes), [finding, notes]);
 
   return (
     <LayerTheme>
@@ -236,8 +206,8 @@ function FindingEvidence({ finding }) {
       <Field label="Source reference">
         <code style={SOURCE_CODE_STYLE}>{String(finding.sourceReference || "").replace(/`/g, "") || "—"}</code>
         <div className="app-layout-toolbar-row app-toolbar--action">
-          <Button type="button" size="sm" variant="secondary" onClick={() => copySource(String(finding.sourceReference || "").replace(/`/g, ""))}>
-            {copiedSource ? "Source reference copied" : "Copy source reference"}
+          <Button type="button" size="sm" variant="secondary" onClick={() => copyPrompt(prompt)}>
+            {copiedPrompt ? "Codex prompt copied" : "Copy Codex prompt"}
           </Button>
         </div>
       </Field>
@@ -376,7 +346,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
         </>
       }
     >
-      <FindingSummary finding={finding} itemLink={itemLink} onViewItem={() => onViewItem(finding)} />
+      <FindingSummary finding={finding} itemLink={itemLink} onViewItem={() => onViewItem(finding, notes)} />
       {error && <StaffAlert tone="danger" title="Review action failed">{error}</StaffAlert>}
       {confirmingDelete && (
         <StaffAlert tone="danger" title="Permanently delete this finding?">
@@ -387,7 +357,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
           </div>
         </StaffAlert>
       )}
-      <FindingEvidence finding={finding} />
+      <FindingEvidence finding={finding} notes={notes} />
       <LayerTheme>
         <DropdownField
           label="Review status"
@@ -438,11 +408,15 @@ export default function StaffStyleReviewPage() {
   const [page, setPage] = useState(1);
   const [reviewFinding, setReviewFinding] = useState(null);
 
-  // Carries the audit ID / item / source hints so the future developer element-finding system can
-  // take the reviewer straight to the component rather than only to the route.
-  const navigateToFinding = (finding) => {
+  // Carries the audit ID / item / source hints so the developer element-finding system can take
+  // the reviewer straight to the component rather than only to the route. The finding itself is
+  // parked in sessionStorage first, so the floating review command panel on the audited page can
+  // show the full record without the reviewer coming back here and reloading.
+  const navigateToFinding = (finding, reviewNotes = null) => {
     const destination = buildStaffStyleReviewItemLink(finding);
-    if (destination) router.push(destination);
+    if (!destination) return;
+    storeReviewContext(buildReviewContext(finding, { destination, reviewNotes }));
+    router.push(destination);
   };
 
   const load = async () => {

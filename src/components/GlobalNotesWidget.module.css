@@ -14,15 +14,26 @@
 /* ========================================================= */
 /* === Floating bubble                                     === */
 /* ========================================================= */
-.bubble {
+/* Specificity note: `html.staff-scope .app-btn--primary` (buttons.css) sets a
+   near-transparent tinted background with !important, so the bubble rules are
+   written as `.wrapper .bubble.bubble` to out-specify it without touching the
+   shared button family. */
+.wrapper .bubble.bubble {
   position: fixed;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-pill);
-  background: var(--primary) !important;
+  /* Perfect 44px circle — the minimum touch target, no padding to grow it. */
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  /* Frosted accent glass: heavier tint than the shared control token so the
+     icon stays legible, with the blur doing the see-through work. */
+  background: rgba(var(--accentMainRgb), 0.55) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
   color: var(--onAccentText) !important;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
-  font-weight: 700;
   cursor: grab;
   pointer-events: auto;
   user-select: none;
@@ -35,26 +46,31 @@
   z-index: 1;
 }
 
-.bubble:hover {
+.wrapper .bubble.bubble:hover,
+.wrapper .bubble.bubble:focus-visible {
+  background: rgba(var(--accentMainRgb), 0.7) !important;
   transform: translateY(-2px);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.3);
 }
 
-.bubble:active {
+.wrapper .bubble.bubble:active {
   cursor: grabbing;
   transform: scale(0.96);
 }
 
 .bubbleLabel {
-  font-size: 19px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  letter-spacing: 0.02em;
   color: currentColor;
 }
 
-.bubbleOpen {
+/* Open state drops the glass for the solid accent fill. */
+.wrapper .bubble.bubbleOpen {
   background: var(--primary) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   color: var(--onAccentText) !important;
 }
 

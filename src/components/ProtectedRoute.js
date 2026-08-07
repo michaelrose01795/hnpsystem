@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
+import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
@@ -19,6 +20,7 @@ function resolveAccess({ loading, status, user, session, allowedRoles }) {
   const roleHolder = user || (status === "authenticated" ? session?.user : null);
   if (roleHolder) {
     if (!allowedRoles) return "granted";
+    if (hasDevPlatformPageAccess(roleHolder)) return "granted"; // dev-platform diagnostic account only
     const hasRole = (roleHolder.roles || []).some((r) =>
       allowedRoles.includes(String(r).toUpperCase())
     );
@@ -40,6 +42,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   useEffect(() => {
     if (isPresentationMode()) return;
     if (loading) return;
+    // Dev-platform diagnostic account: granted above, so never redirect it.
+    if (hasDevPlatformPageAccess(user) || hasDevPlatformPageAccess(session?.user)) return;
 
     if (user) {
       if (allowedRoles) {

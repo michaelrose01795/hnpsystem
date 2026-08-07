@@ -1,14 +1,21 @@
 /* file location: src/components/dev-platform/StaffStyleReviewHighlighter.module.css
- * Floating chrome for the Staff Style Review "Search" highlight. Nothing here
- * touches the audited element — the ring is a separate fixed-position box drawn
- * over its rect, so the page under review renders exactly as it normally does.
- * Outline/box-shadow only: no `border`, per CLAUDE.md §3.0a.
+ * Floating chrome for the Staff Style Review highlight + command panel.
+ * Nothing here touches the audited element — the ring is a separate
+ * fixed-position box drawn over its rect, so the page under review renders
+ * exactly as it normally does.
+ *
+ * Surfaces come from <LayerSurface> / <LayerTheme>; this file only carries
+ * positioning, sizing and small detail styling, and every colour / spacing /
+ * radius value is a theme.css token. Outline/box-shadow only: no `border`,
+ * per CLAUDE.md §3.0a.
  */
 
 .root {
   position: fixed;
   inset: 0;
-  z-index: 2750;
+  /* Above modals: popup/modal findings have to stay reviewable while the
+     audited dialog is open. Developer Platform login only. */
+  z-index: 2147483100;
   pointer-events: none;
 }
 
@@ -36,41 +43,159 @@
   .ring { animation: none; }
 }
 
+/* ========================================================= */
+/* === Floating command button                            === */
+/* ========================================================= */
+/* Same shape and drag behaviour as the floating Notes bubble, offset to the
+   opposite edge by default so the two never sit on top of each other. */
+.bubble {
+  position: fixed;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+  cursor: grab;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.bubble:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.3);
+}
+
+.bubble:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+.bubbleOpen {
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+}
+
+.bubbleIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  pointer-events: none;
+}
+
+/* ========================================================= */
+/* === Command panel                                      === */
+/* ========================================================= */
 .panel {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 2760;
-  max-width: min(420px, calc(100vw - 32px));
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs, 6px);
-  padding: var(--space-md, 12px);
-  border-radius: var(--radius-md, 10px);
-  background: var(--surface);
-  color: var(--text-1);
-  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.32));
   pointer-events: auto;
+  width: min(400px, calc(100vw - 24px));
+  max-height: min(72vh, 640px);
+  overflow-y: auto;
+  box-shadow:
+    0 30px 64px -22px rgba(0, 0, 0, 0.38),
+    0 18px 34px -18px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+}
+
+/* The panel opens away from the edge the bubble is parked on. */
+.panelLeft { left: calc(52px + var(--space-sm, 8px)); }
+.panelRight { right: calc(52px + var(--space-sm, 8px)); }
+
+@media (max-width: 640px) {
+  .panelLeft,
+  .panelRight {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 62vh;
+  }
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+  min-width: 0;
 }
 
 .title {
-  margin: 0;
   color: var(--accentText);
   font-size: var(--text-h4, 0.95rem);
-  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.meta {
+/* Drag-to-move grip — a bare affordance, not a button family member, matching
+   the drag handle on the floating Notes panel. The panel is closed from the
+   command bubble, so this grip only repositions. */
+.moveHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44x44 touch target (CLAUDE.md §3.6) without inflating the header row. */
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(var(--space-xs, 6px) * -1);
+  color: var(--text-1);
+  opacity: 0.55;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex: 0 0 auto;
+  transition: opacity 0.14s ease;
+}
+
+.moveHandle:hover { opacity: 1; }
+
+.moveHandle:active { cursor: grabbing; opacity: 1; }
+
+.moveIcon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs, 6px);
+  min-width: 0;
+}
+
+.statusLine {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-body-sm, 0.8rem);
   opacity: 0.85;
   overflow-wrap: anywhere;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-sm, 8px);
-  margin-top: var(--space-xs, 6px);
+.field { min-width: 0; }
+
+.fieldLabel {
+  display: block;
+  font-weight: 700;
+  color: var(--accentText);
+  font-size: var(--text-body-sm, 0.8rem);
+}
+
+.fieldValue {
+  margin: var(--space-xs, 6px) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  font-size: var(--text-body-sm, 0.8rem);
+}
+
+.fieldValueMono {
+  font-family: var(--font-mono, monospace);
 }

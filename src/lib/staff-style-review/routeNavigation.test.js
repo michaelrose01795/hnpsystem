@@ -13,7 +13,8 @@ describe("resolveStaffStyleReviewRoute", () => {
   });
 
   it("maps descriptive audit scopes to valid staff routes", () => {
-    expect(resolveStaffStyleReviewRoute("Any staff route with the AI guide")).toBe("/");
+    expect(resolveStaffStyleReviewRoute("Any staff route with the AI guide")).toBe("/newsfeed");
+    expect(resolveStaffStyleReviewRoute("Shared topbar and confirmation flows")).toBe("/newsfeed");
     expect(resolveStaffStyleReviewRoute("Developer platform routes")).toBe("/dev");
     expect(resolveStaffStyleReviewRoute("Invoice consumers")).toBe("/accounts/invoices");
   });
