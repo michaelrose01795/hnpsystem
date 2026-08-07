@@ -73,13 +73,14 @@ export function StaffModal({
               {description && <p className="app-modal__description">{description}</p>}
             </div>
             {(onClose || headerActions) && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+              /* Canonical action order: every other action is primary and sits to the LEFT of the secondary Close, which is always last / top-right. */
+              <div className="app-modal__actions">
+                {headerActions}
                 {onClose && (
-                  <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+                  <Button type="button" size="sm" variant="secondary" onClick={onClose}>
                     Close
                   </Button>
                 )}
-                {headerActions}
               </div>
             )}
           </header>
@@ -97,6 +98,7 @@ export function StaffDrawer({
   description,
   children,
   footer,
+  headerActions,
   onClose,
   ariaLabel,
   side = "right",
@@ -117,10 +119,16 @@ export function StaffDrawer({
               {title && <h2 className="app-drawer__title">{title}</h2>}
               {description && <p className="app-drawer__description">{description}</p>}
             </div>
-            {onClose && (
-              <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-                Close
-              </Button>
+            {(onClose || headerActions) && (
+              /* Same canonical order as StaffModal: primary actions left, secondary Close last / top-right. */
+              <div className="app-drawer__actions">
+                {headerActions}
+                {onClose && (
+                  <Button type="button" size="sm" variant="secondary" onClick={onClose}>
+                    Close
+                  </Button>
+                )}
+              </div>
             )}
           </header>
           <div className="app-drawer__body">{children}</div>

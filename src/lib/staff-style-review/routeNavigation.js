@@ -33,3 +33,23 @@ export function resolveStaffStyleReviewRoute(routeDescription) {
   return mapped?.[1] || null;
 }
 
+const SOURCE_REFERENCE_PATTERN = /^src\/[A-Za-z0-9_\-./[\]]+\.(?:jsx?|tsx?):\d+$/i;
+
+/**
+ * "Search" link for the review popup: the audited route plus the handshake that
+ * StaffStyleReviewHighlighter (mounted in _app.js) reads to ring the offending
+ * element — the audit ID, the item name for the label, and the `file:line`
+ * source reference it resolves into locator hints.
+ */
+export function buildStaffStyleReviewItemLink(finding) {
+  const pathname = resolveStaffStyleReviewRoute(finding?.route);
+  if (!pathname) return null;
+
+  const query = { styleReviewHighlight: String(finding.auditId ?? "") };
+  if (finding.sectionName) query.styleReviewItem = finding.sectionName;
+  const reference = (finding.lineReferences || []).find((entry) => SOURCE_REFERENCE_PATTERN.test(String(entry)));
+  if (reference) query.styleReviewSource = reference;
+
+  return { pathname, query };
+}
+

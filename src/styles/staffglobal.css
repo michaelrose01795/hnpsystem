@@ -6990,6 +6990,19 @@ html.staff-scope .app-drawer__footer {
   flex-wrap: wrap;
 }
 
+/* Modal/drawer actions live on the heading row, pinned to the top-right corner.
+   Order is fixed by markup: primary actions first, secondary Close last. */
+html.staff-scope .app-modal__actions,
+html.staff-scope .app-drawer__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 html.staff-scope .app-modal__heading,
 html.staff-scope .app-drawer__heading,
 html.staff-scope .app-alert__copy,

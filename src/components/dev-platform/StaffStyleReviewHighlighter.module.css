@@ -1,0 +1,76 @@
+/* file location: src/components/dev-platform/StaffStyleReviewHighlighter.module.css
+ * Floating chrome for the Staff Style Review "Search" highlight. Nothing here
+ * touches the audited element — the ring is a separate fixed-position box drawn
+ * over its rect, so the page under review renders exactly as it normally does.
+ * Outline/box-shadow only: no `border`, per CLAUDE.md §3.0a.
+ */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 2750;
+  pointer-events: none;
+}
+
+.ring {
+  position: fixed;
+  border-radius: 10px;
+  outline: 3px solid rgba(var(--accent-base-rgb), 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
+  background: transparent;
+  pointer-events: none;
+  animation: styleReviewPulse 1.6s ease-in-out 3;
+}
+
+.ringSection {
+  outline-color: rgba(var(--warning-rgb), 0.95);
+}
+
+@keyframes styleReviewPulse {
+  0%, 100% { outline-offset: 2px; }
+  50% { outline-offset: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring { animation: none; }
+}
+
+.panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2760;
+  max-width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 6px);
+  padding: var(--space-md, 12px);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.32));
+  pointer-events: auto;
+}
+
+.title {
+  margin: 0;
+  color: var(--accentText);
+  font-size: var(--text-h4, 0.95rem);
+  font-weight: 700;
+}
+
+.meta {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-xs, 6px);
+}

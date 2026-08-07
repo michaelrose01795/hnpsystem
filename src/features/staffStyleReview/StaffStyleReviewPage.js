@@ -12,7 +12,7 @@ import {
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { STAFF_STYLE_REVIEW_STATUSES } from "@/lib/staff-style-review/auditParser";
-import { resolveStaffStyleReviewRoute } from "@/lib/staff-style-review/routeNavigation";
+import { buildStaffStyleReviewItemLink, resolveStaffStyleReviewRoute } from "@/lib/staff-style-review/routeNavigation";
 
 const PAGE_SIZE = 20;
 const API_PATH = "/api/dev/staff-style-review";
@@ -101,36 +101,198 @@ function SortButton({ column, label, sort, onSort }) {
   );
 }
 
-function DetailList({ finding }) {
-  const rows = [
-    ["Original audit ID", finding.originalAuditId ?? "Unnumbered specialised decision"],
-    ["Main audit group", finding.auditGroup],
-    ["Audit subsection", finding.subsection],
-    ["Route", finding.route],
-    ["Section / item", finding.sectionName],
-    ["How to see it", finding.visibilityInstructions],
-    ["Audit rationale", finding.issueSummary],
-    ["Source reference", finding.sourceReference],
-    ["Parsed line references", finding.lineReferences.join(", ")],
-    ["Current recommendation", finding.recommendation],
-    ["Partial-adoption note", finding.partialAdoptionNotes || "None recorded"],
-    ["Specialist-exception note", finding.specialistExceptionNotes || "None recorded"],
-    ["Review status", finding.reviewStatus],
-    ["Review notes", finding.reviewNotes || "No review notes yet"],
-  ];
+// Layout-only inline styles for the review popup. Colour, background, radius and spacing all come
+// from staffglobal.css tokens; nothing here restyles a surface, button, badge or input.
+const SUMMARY_ROW_STYLE = Object.freeze({ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", minWidth: 0 });
+const SUMMARY_BADGES_STYLE = Object.freeze({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--space-sm)", minWidth: 0 });
+const SUMMARY_GRID_STYLE = Object.freeze({ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "var(--space-sm) var(--layout-card-gap)", margin: 0, minWidth: 0 });
+const FIELD_LABEL_STYLE = Object.freeze({ display: "block", fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" });
+const FIELD_VALUE_STYLE = Object.freeze({ margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", minWidth: 0, overflowWrap: "anywhere" });
+const SOURCE_CODE_STYLE = Object.freeze({ display: "block", margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-sm)" });
+
+// The shared staffglobal.css family each audit category should be adopting, named the way the
+// prompt reader (Codex) needs to see it so it looks for the existing shared implementation.
+const STAFF_FAMILY_BY_CATEGORY = Object.freeze({
+  badge: "badge (`.app-badge`)",
+  button: "button (the shared `<Button>` / `.app-btn`)",
+  input: "input (`.app-input`)",
+  popup: "modal/popup shell (`.app-modal` / the shared `PopupModal`)",
+  specialised: "staff styling",
+});
+
+function condense(value, limit) {
+  const text = String(value ?? "").replace(/`/g, "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
+}
+
+// One sentence, built only from the current finding plus the reviewer's own notes, so the prompt
+// stays copy-and-run and never drifts from what is on screen.
+function buildCodexPrompt(finding, reviewNotes) {
+  if (!finding) return "";
+  const family = STAFF_FAMILY_BY_CATEGORY[finding.category] || STAFF_FAMILY_BY_CATEGORY.specialised;
+  const note = condense(reviewNotes, 200);
+  return [
+    `In HNPSystem, inspect the existing implementation of "${condense(finding.sectionName, 120) || "the audited item"}"`,
+    ` on route ${condense(finding.route, 120) || "the audited route"}`,
+    ` (staff style audit ID ${finding.auditId}; source ${condense(finding.sourceReference, 220) || "not recorded"};`,
+    ` audit rationale: ${condense(finding.issueSummary, 240) || "not recorded"})`,
+    `, then replace only its local recreation or override of the shared staffglobal.css ${family} family`,
+    " with the correct existing shared staff styling/component",
+    ", preserving layout, behaviour, permissions, data logic, responsive behaviour and any deliberate feature-specific design",
+    note ? `, taking the reviewer note "${note}" into account` : "",
+    ", and make no unrelated visual changes.",
+  ].join("");
+}
+
+// Audit metadata is only kept in the normal popup when it can actually change the decision.
+// Group, subsection, the boilerplate per-category recommendation and the parsed line references
+// are constant or already implied by the badges and source reference, so they move into the
+// collapsed "Full audit record" disclosure instead of competing for attention.
+function materialAuditNotes(finding) {
+  const rows = [];
+  const rationale = String(finding.issueSummary || "").trim();
+  if (finding.category === "specialised" && finding.recommendation) {
+    rows.push(["Current recommendation", finding.recommendation]);
+  }
+  if (finding.partialAdoptionNotes && finding.partialAdoptionNotes.trim() !== rationale) {
+    rows.push(["Partial-adoption note", finding.partialAdoptionNotes]);
+  }
+  if (finding.specialistExceptionNotes && finding.specialistExceptionNotes.trim() !== rationale) {
+    rows.push(["Specialist-exception note", finding.specialistExceptionNotes]);
+  }
+  if (!(finding.sourceFiles || []).length && (finding.lineReferences || []).length) {
+    rows.push(["Parsed line references", finding.lineReferences.join(", ")]);
+  }
+  return rows;
+}
+
+function Field({ label, value, children }) {
   return (
-    <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "var(--layout-card-gap)", margin: 0 }}>
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt style={{ fontWeight: 700, color: "var(--accentText)" }}>{label}</dt>
-          <dd style={{ margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap" }}>{value || "—"}</dd>
-        </div>
-      ))}
-    </dl>
+    <div style={{ minWidth: 0 }}>
+      <span style={FIELD_LABEL_STYLE}>{label}</span>
+      {children || <p style={FIELD_VALUE_STYLE}>{value || "—"}</p>}
+    </div>
   );
 }
 
-function ReviewModal({ finding, onClose, onSaved, onDeleted }) {
+function useCopyAction() {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text || ""));
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return [copied, copy];
+}
+
+function FindingSummary({ finding, itemLink, onViewItem }) {
+  return (
+    <LayerTheme>
+      <div style={SUMMARY_ROW_STYLE}>
+        <div style={SUMMARY_BADGES_STYLE}>
+          <Badge tone="accent-strong">Finding {finding.auditId}</Badge>
+          <Badge tone={CATEGORY_TONES[finding.category]}>{finding.type}</Badge>
+          <Badge tone={STATUS_TONES[finding.reviewStatus]}>{finding.reviewStatus}</Badge>
+          {finding.partialAdoption && <Badge tone="warning">Partial adoption</Badge>}
+        </div>
+        <Button
+          type="button"
+          onClick={onViewItem}
+          disabled={!itemLink}
+          title={itemLink ? `Open ${itemLink.pathname} and locate this item` : "No navigable route could be resolved for this finding"}
+        >
+          Search / View Item
+        </Button>
+      </div>
+      <dl style={SUMMARY_GRID_STYLE}>
+        <Field label="Audit ID" value={finding.originalAuditId ?? "Unnumbered specialised decision"} />
+        <Field label="Route" value={finding.route} />
+        <Field label="Section / item" value={finding.sectionName} />
+      </dl>
+    </LayerTheme>
+  );
+}
+
+function FindingEvidence({ finding }) {
+  const [copiedSource, copySource] = useCopyAction();
+  const auditNotes = materialAuditNotes(finding);
+
+  return (
+    <LayerTheme>
+      <Field label="How to see it" value={finding.visibilityInstructions} />
+      <Field label="Audit rationale" value={finding.issueSummary} />
+      <Field label="Source reference">
+        <code style={SOURCE_CODE_STYLE}>{String(finding.sourceReference || "").replace(/`/g, "") || "—"}</code>
+        <div className="app-layout-toolbar-row app-toolbar--action">
+          <Button type="button" size="sm" variant="secondary" onClick={() => copySource(String(finding.sourceReference || "").replace(/`/g, ""))}>
+            {copiedSource ? "Source reference copied" : "Copy source reference"}
+          </Button>
+        </div>
+      </Field>
+      {auditNotes.map(([label, value]) => (
+        <Field key={label} label={label} value={value} />
+      ))}
+      <details>
+        <summary>Full audit record</summary>
+        <dl style={SUMMARY_GRID_STYLE}>
+          <Field label="Main audit group" value={finding.auditGroup} />
+          <Field label="Audit subsection" value={finding.subsection} />
+          <Field label="Parsed line references" value={(finding.lineReferences || []).join(", ")} />
+          <Field label="Current recommendation" value={finding.recommendation} />
+          <Field label="Partial-adoption note" value={finding.partialAdoptionNotes || "None recorded"} />
+          <Field label="Specialist-exception note" value={finding.specialistExceptionNotes || "None recorded"} />
+        </dl>
+      </details>
+    </LayerTheme>
+  );
+}
+
+function CreatePromptPanel({ finding, notes }) {
+  const [copiedPrompt, copyPrompt] = useCopyAction();
+  const [regenerationCount, setRegenerationCount] = useState(0);
+  const generated = useMemo(() => buildCodexPrompt(finding, notes), [finding, notes]);
+  const [prompt, setPrompt] = useState(generated);
+
+  // The prompt always tracks the finding and the reviewer's notes; editing it by hand is allowed
+  // but the next detail or note change (or Regenerate) restores the generated wording.
+  useEffect(() => { setPrompt(generated); }, [generated, regenerationCount]);
+
+  return (
+    <LayerTheme>
+      <div style={SUMMARY_ROW_STYLE}>
+        <strong>Create Prompt</strong>
+        <div className="app-layout-toolbar-row app-toolbar--action">
+          <Button type="button" size="sm" onClick={() => copyPrompt(prompt)}>{copiedPrompt ? "Prompt copied" : "Copy Prompt"}</Button>
+          <Button type="button" size="sm" variant="secondary" onClick={() => setRegenerationCount((count) => count + 1)}>Regenerate Prompt</Button>
+        </div>
+      </div>
+      <label>
+        <span>Generated Codex prompt</span>
+        <textarea
+          className="app-input app-input--textarea"
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          rows={5}
+          aria-label={`Generated Codex prompt for finding ${finding.auditId}`}
+        />
+      </label>
+    </LayerTheme>
+  );
+}
+
+function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
   const [status, setStatus] = useState(finding?.reviewStatus || "Pending");
   const [notes, setNotes] = useState(finding?.reviewNotes || "");
   const [history, setHistory] = useState([]);
@@ -196,25 +358,25 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted }) {
     }
   };
 
+  const itemLink = buildStaffStyleReviewItemLink(finding);
+
   return (
     <StaffModal
       open
       size="lg"
-      title={`Review ${finding.auditId}: ${finding.sectionName}`}
+      title={`Review ${finding.auditId}`}
+      ariaLabel={`Review ${finding.auditId}: ${finding.sectionName}`}
       description="The audit entry is evidence for a decision, not an automatic verdict that the current implementation is wrong."
       onClose={onClose}
-      footer={
-        <div className="app-layout-toolbar-row app-toolbar--action">
-          <Button type="button" onClick={() => save("Keep")} disabled={saving || deleting}>{saving ? "Saving…" : "Keep"}</Button>
-          <Button type="button" variant="secondary" onClick={() => save()} disabled={saving || deleting}>Save selected status</Button>
-          <Button type="button" variant="danger" onClick={() => setConfirmingDelete(true)} disabled={saving || deleting}>Delete finding</Button>
-          <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
-        </div>
+      headerActions={
+        <>
+          <Button type="button" size="sm" onClick={() => save("Keep")} disabled={saving || deleting}>{saving ? "Saving…" : "Keep"}</Button>
+          <Button type="button" size="sm" onClick={() => save()} disabled={saving || deleting}>Save selected status</Button>
+          <Button type="button" size="sm" variant="danger" onClick={() => setConfirmingDelete(true)} disabled={saving || deleting}>Delete finding</Button>
+        </>
       }
     >
-      <LayerTheme>
-        <DetailList finding={finding} />
-      </LayerTheme>
+      <FindingSummary finding={finding} itemLink={itemLink} onViewItem={() => onViewItem(finding)} />
       {error && <StaffAlert tone="danger" title="Review action failed">{error}</StaffAlert>}
       {confirmingDelete && (
         <StaffAlert tone="danger" title="Permanently delete this finding?">
@@ -225,23 +387,26 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted }) {
           </div>
         </StaffAlert>
       )}
-      <DropdownField
-        label="Review status"
-        value={status}
-        onChange={(event) => setStatus(event.target.value)}
-        options={STAFF_STYLE_REVIEW_STATUSES}
-      />
-      <label>
-        <span>Developer review notes</span>
-        <textarea
-          className="app-input app-input--textarea"
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          rows={6}
-          maxLength={10000}
-          placeholder="Record what was checked, evidence found, and the reason for the decision."
+      <FindingEvidence finding={finding} />
+      <LayerTheme>
+        <DropdownField
+          label="Review status"
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+          options={STAFF_STYLE_REVIEW_STATUSES}
         />
-      </label>
+        <label>
+          <span>Developer review notes</span>
+          <textarea
+            className="app-input app-input--textarea"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            rows={5}
+            maxLength={10000}
+            placeholder="Record what was checked, evidence found, and the reason for the decision."
+          />
+        </label>
+      </LayerTheme>
       <LayerTheme>
         <strong>Decision history</strong>
         {history.length === 0 ? (
@@ -256,6 +421,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted }) {
           </ol>
         )}
       </LayerTheme>
+      <CreatePromptPanel finding={finding} notes={notes} />
     </StaffModal>
   );
 }
@@ -272,8 +438,10 @@ export default function StaffStyleReviewPage() {
   const [page, setPage] = useState(1);
   const [reviewFinding, setReviewFinding] = useState(null);
 
+  // Carries the audit ID / item / source hints so the future developer element-finding system can
+  // take the reviewer straight to the component rather than only to the route.
   const navigateToFinding = (finding) => {
-    const destination = resolveStaffStyleReviewRoute(finding.route);
+    const destination = buildStaffStyleReviewItemLink(finding);
     if (destination) router.push(destination);
   };
 
@@ -458,6 +626,7 @@ export default function StaffStyleReviewPage() {
         onClose={() => setReviewFinding(null)}
         onSaved={onSaved}
         onDeleted={onDeleted}
+        onViewItem={navigateToFinding}
       />
       {/* Local specificity correction: app-table-shell's later 12px cell padding otherwise makes a tokenised 32px control produce a 56px row. */}
       <style jsx global>{`

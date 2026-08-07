@@ -47,6 +47,7 @@ import CookieBanner from "@/components/CookieBanner";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import GlobalTableShells from "@/components/App/GlobalTableShells";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
+import StaffStyleReviewHighlighter from "@/components/dev-platform/StaffStyleReviewHighlighter";
 import GlobalTooltip from "@/components/ui/GlobalTooltip";
 import ActivityTracker from "@/components/activity/ActivityTracker";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
@@ -523,6 +524,9 @@ function AppWrapper({ Component, pageProps }) {
       <CookieBanner />
       <GlobalTooltip />
       <DevLayoutOverlayRoot />
+      {/* Renders nothing unless a Staff Style Review "Search" link put
+          ?styleReviewHighlight= on the URL. */}
+      <StaffStyleReviewHighlighter />
     </>
   ); // render the requested page inside its (persistent) layout shell
 }
