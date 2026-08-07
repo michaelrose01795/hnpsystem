@@ -42,7 +42,9 @@
     "test:workflows": "npx playwright test --project=auth-setup --project=workflows",
     "test:visual": "npx playwright test --project=auth-setup --project=visual",
     "test:report": "npx playwright show-report",
-    "verify": "node tools/scripts/verify.js"
+    "verify": "node tools/scripts/verify.js",
+    "git:sync": "node tools/scripts/branch-flow.js sync",
+    "git:release": "node tools/scripts/branch-flow.js release"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
