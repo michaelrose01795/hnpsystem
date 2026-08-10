@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  canShowDevOverlay,
+  canShowDevPages,
   canShowDeveloperOnlyControls,
   isDevelopmentBranch,
 } from "@/lib/dev-tools/config";
@@ -10,6 +12,8 @@ describe("developer-only branch controls", () => {
 
     expect(isDevelopmentBranch(env)).toBe(true);
     expect(canShowDeveloperOnlyControls(env)).toBe(true);
+    expect(canShowDevPages(env)).toBe(true);
+    expect(canShowDevOverlay({ id: 1 }, env)).toBe(true);
   });
 
   it("accepts a fully qualified development branch ref", () => {
@@ -23,6 +27,8 @@ describe("developer-only branch controls", () => {
 
     expect(isDevelopmentBranch(env)).toBe(false);
     expect(canShowDeveloperOnlyControls(env)).toBe(false);
+    expect(canShowDevPages(env)).toBe(false);
+    expect(canShowDevOverlay({ id: 1 }, env)).toBe(false);
   });
 
   it("fails closed when branch metadata is unavailable", () => {
@@ -31,6 +37,16 @@ describe("developer-only branch controls", () => {
   });
 
   it("falls back to Vercel branch metadata", () => {
-    expect(isDevelopmentBranch({ VERCEL_GIT_COMMIT_REF: "development" })).toBe(true);
+    const env = { VERCEL_GIT_COMMIT_REF: "development" };
+
+    expect(isDevelopmentBranch(env)).toBe(true);
+    expect(canShowDevPages(env)).toBe(true);
+    expect(canShowDevOverlay({ id: 1 }, env)).toBe(true);
+  });
+
+  it("requires an authenticated user before showing the overlay control", () => {
+    const env = { NEXT_PUBLIC_COMMIT_REF: "development" };
+
+    expect(canShowDevOverlay(null, env)).toBe(false);
   });
 });

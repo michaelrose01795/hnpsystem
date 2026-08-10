@@ -1,8 +1,7 @@
 
 Manager update 2
 
-TODO
-Make the developer-only UI branch-aware so the additional button within the Dev Login "Select Area" section and all sidebar "Dev Overlay" buttons remain visible when running from the development branch but are hidden, not deleted, when running from the main Production branch, keep the existing functionality intact and use one reusable central check so future developer-only controls can follow the same behaviour.
+
 
 CHECKKKK
 One thing to fix on your side
