@@ -12,7 +12,7 @@ import themeConfig, {
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 import {

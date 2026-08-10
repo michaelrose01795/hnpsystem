@@ -1,6 +1,7 @@
 // file location: /src/components/LoginDropdown.js
 import React, { useEffect, useMemo } from "react";
 import { Dropdown } from "@/components/ui/dropdownAPI";
+import { canShowDeveloperOnlyControls } from "@/lib/dev-tools/config";
 
 const ROLE_ALIASES = {
   "valet service": ["valet"],
@@ -278,6 +279,7 @@ export default function LoginDropdown({
   ]);
 
   const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
+  const showDeveloperOnlyControls = canShowDeveloperOnlyControls();
 
   // The Customers area only ever has a single department ("Customer"), so the
   // intermediate department dropdown is busywork — we auto-select it and hide
@@ -294,25 +296,29 @@ export default function LoginDropdown({
         value: category,
         label: category,
       })),
-      {
-        key: OTHER_CATEGORY_VALUE,
-        value: OTHER_CATEGORY_VALUE,
-        label: "Other",
-      },
+      ...(showDeveloperOnlyControls
+        ? [{
+            key: OTHER_CATEGORY_VALUE,
+            value: OTHER_CATEGORY_VALUE,
+            label: "Other",
+          }]
+        : []),
     ],
-    [roleCategories]
+    [roleCategories, showDeveloperOnlyControls]
   );
 
   const departmentOptions = useMemo(() => {
     if (!selectedCategory) return [];
-    if (selectedCategory === OTHER_CATEGORY_VALUE) return OTHER_DEPARTMENT_OPTIONS;
+    if (selectedCategory === OTHER_CATEGORY_VALUE) {
+      return showDeveloperOnlyControls ? OTHER_DEPARTMENT_OPTIONS : [];
+    }
     return departmentGroups.map((department) => ({
       key: department.key,
       value: department.label,
       label: department.label,
       description: `${department.isManagerRole ? "Manager role - " : ""}${department.users.length} user${department.users.length === 1 ? "" : "s"}`,
     }));
-  }, [departmentGroups, selectedCategory]);
+  }, [departmentGroups, selectedCategory, showDeveloperOnlyControls]);
 
   const userDropdownOptions = useMemo(
     () =>

@@ -26,7 +26,7 @@ vi.mock("@/lib/database/users", () => ({
   getUserById: mocks.getUserById,
 }));
 
-import { manageClockingHandler } from "./manage";
+import { manageClockingHandler } from "@/pages/api/clocking/manage";
 
 const createResponse = () => {
   const response = {
