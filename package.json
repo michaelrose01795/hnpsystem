@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.12.0 <25"
+    "node": "22.x"
   },
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",

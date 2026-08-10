@@ -12,7 +12,7 @@ import themeConfig, {
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
 import {
   issueReportEyebrowStyle,

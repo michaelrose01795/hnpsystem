@@ -10,7 +10,7 @@ import {
   popupCardStyles,
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
-import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import {
   palette,
   STATUS_OPTIONS,

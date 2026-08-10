@@ -16,12 +16,12 @@ import { DEV_LAYOUT_SECTION_SOURCE_MAP } from "@/lib/dev-layout/sectionSourceMap
 const SOURCE_PATH_PATTERN = /^src\/[A-Za-z0-9_\-./[\]]+\.(?:js|jsx|ts|tsx)$/;
 const MAX_SECTION_KEYS = 4;
 
-function isSafeSourcePath(candidate) {
-  if (!SOURCE_PATH_PATTERN.test(candidate)) return false;
-  if (candidate.includes("..")) return false;
+function resolveSourcePath(candidate) {
+  if (!SOURCE_PATH_PATTERN.test(candidate)) return null;
+  if (candidate.includes("..")) return null;
   const root = path.join(process.cwd(), "src");
-  const resolved = path.resolve(process.cwd(), candidate);
-  return resolved.startsWith(root + path.sep);
+  const resolved = path.resolve(process.cwd(), "src", candidate.slice("src/".length));
+  return resolved.startsWith(root + path.sep) ? resolved : null;
 }
 
 // The audited line rarely coincides with a section registration, so take the
@@ -42,8 +42,9 @@ function nearestSectionKeys(file, lineNumber) {
 async function handleGet(req, res) {
   const file = String(req.query.file || "").trim().replace(/\\/g, "/");
   const line = Number.parseInt(String(req.query.line || ""), 10);
+  const sourcePath = resolveSourcePath(file);
 
-  if (!isSafeSourcePath(file)) {
+  if (!sourcePath) {
     return res.status(400).json({ success: false, message: "A repository source path under src/ is required." });
   }
   if (!Number.isInteger(line) || line < 1) {
@@ -52,7 +53,10 @@ async function handleGet(req, res) {
 
   let contents;
   try {
-    contents = fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
+    contents = fs.readFileSync(
+      path.join(process.cwd(), "src", file.slice("src/".length)),
+      "utf8"
+    );
   } catch {
     return res.status(404).json({ success: false, message: `Source file ${file} could not be read on the server.` });
   }

@@ -1,4 +1,4 @@
-// file location: src/components/vhc/IssueAutocomplete.js
+// file location: src/components/VHC/IssueAutocomplete.js
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getIssueSectionHint, getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
