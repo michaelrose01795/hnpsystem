@@ -174,6 +174,7 @@ export default function Sidebar({
   onToggle,
   onNavigate,
   isCondensed = false,
+  isVerticalPhone = false,
   isCollapsed = false,
   extraSections = [],
   visibleRoles = null,
@@ -635,14 +636,14 @@ export default function Sidebar({
       sectionType="section-shell"
       shell
       backgroundToken="app-sidebar-shell"
-      className={`app-sidebar${isCollapsed ? " app-sidebar--collapsed" : ""}`}
+      className={`app-sidebar${isCollapsed ? " app-sidebar--collapsed" : ""}${isVerticalPhone ? " app-sidebar--vertical-phone" : ""}`}
       style={{
         padding: "0",
         width: isCollapsed ? "48px" : isCondensed ? "100%" : "260px",
         minWidth: isCollapsed ? "48px" : isCondensed ? "auto" : "220px",
-        height: isCondensed ? "auto" : "100%",
-        minHeight: isCondensed ? "auto" : "100%",
-        maxHeight: isCondensed ? "100%" : "100%",
+        height: isVerticalPhone ? "100dvh" : isCondensed ? "auto" : "100%",
+        minHeight: isVerticalPhone ? "100dvh" : isCondensed ? "auto" : "100%",
+        maxHeight: isVerticalPhone ? "100dvh" : "100%",
         display: "flex",
         flexDirection: "column",
         borderRadius: "var(--page-card-radius)",
@@ -650,7 +651,7 @@ export default function Sidebar({
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "0",
         overflowX: "hidden",
-        overflowY: isCondensed ? "visible" : "auto",
+        overflowY: isVerticalPhone ? "auto" : isCondensed ? "visible" : "auto",
         flexShrink: 0,
         // Smooth the 260px ↔ 44px width change so collapsing/expanding glides
         // rather than snapping. Uses the same direction-aware MOTION as the nav
@@ -719,19 +720,21 @@ export default function Sidebar({
         </div>
       </DevLayoutSection>
 
-      <div
-        aria-hidden="true"
-        style={{
-          // Stick the hairline directly beneath the pinned logo header so the
-          // separator stays with the logo as the nav list scrolls behind it.
-          position: "sticky",
-          top: isCondensed ? "60px" : "75px",
-          zIndex: 3,
-          height: "1px",
-          background: "var(--theme)",
-          flexShrink: 0,
-        }}
-      />
+      {!isVerticalPhone && (
+        <div
+          aria-hidden="true"
+          style={{
+            // Stick the hairline directly beneath the pinned logo header so the
+            // separator stays with the logo as the nav list scrolls behind it.
+            position: "sticky",
+            top: isCondensed ? "60px" : "75px",
+            zIndex: 3,
+            height: "1px",
+            background: "var(--theme)",
+            flexShrink: 0,
+          }}
+        />
+      )}
 
       {/* Navigation Content */}
       <DevLayoutSection
@@ -796,8 +799,21 @@ export default function Sidebar({
             {isCollapsed ? (
               renderSectionDivider("divider-workspace", { marginBottom: "10px" })
             ) : (
-              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-                Workspace
+              <div
+                className="app-sidebar__section-title app-sidebar__workspace-heading"
+                style={{ marginBottom: "10px" }}
+              >
+                <span>Workspace</span>
+                {isVerticalPhone && onToggle && (
+                  <button
+                    className="app-btn app-btn--secondary app-btn--xs app-sidebar__phone-close"
+                    type="button"
+                    onClick={onToggle}
+                    aria-label="Close sidebar"
+                  >
+                    Close
+                  </button>
+                )}
               </div>
             )}
             <ContextSidebar
