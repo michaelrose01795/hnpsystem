@@ -66,7 +66,7 @@
     "next-auth": "^4.24.15",
     "nodemailer-v9": "npm:nodemailer@^9.0.3",
     "pdfjs-dist": "^5.4.394",
-    "postcss": "^8.5.25",
+    "postcss": "^8.5.26",
     "postprocessing": "^6.39.4",
     "react": "^19.2.8",
     "react-big-calendar": "^1.20.0",
