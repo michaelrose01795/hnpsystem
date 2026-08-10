@@ -857,7 +857,11 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
     const nav = getDepartmentWorkspaceNav("developer", ["dev"]);
     expect(nav.items.map((i) => i.href)).toEqual(expectedHrefs);
     expect(getAccessibleNavPaths(["dev"]).has("/dev")).toBe(true);
-    const developerModule = getRoleWorkspaceModules(["dev"]).find((module) => module.key === "developer-platform");
+    const developerModules = getRoleWorkspaceModules(["dev"]);
+    expect(developerModules.map((module) => module.key)).toEqual(["developer-platform"]);
+    expect(developerModules.map((module) => module.label)).not.toContain("Communication");
+    expect(developerModules.map((module) => module.label)).not.toContain("Records");
+    const developerModule = developerModules.find((module) => module.key === "developer-platform");
     expect(developerModule?.label).toBe("Developer");
     expect(developerModule?.items.map((item) => item.href)).toEqual(expectedHrefs);
     // Upper-case role convention (ProtectedRoute / client) must resolve too.
@@ -873,6 +877,7 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
       groups: [],
       modules: [],
     });
+    expect(modules.map((module) => module.key)).toEqual(["developer-platform"]);
     const developerModule = modules.find((module) => module.key === "developer-platform");
     expect(developerModule?.label).toBe("Developer");
     expect(developerModule?.items.map((item) => item.href)).toEqual(expectedHrefs);

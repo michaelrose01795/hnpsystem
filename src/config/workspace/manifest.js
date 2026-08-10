@@ -606,6 +606,15 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
 
   const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
 
+  // The synthetic developer login is intentionally isolated from the staff
+  // workspace. Its rail contains the locked Developer module only; shared
+  // defaults such as Communication and Records must never leak into it.
+  if (hasDeveloperRole) {
+    return visibleModules.filter(
+      (navigationModule) => navigationModule.key === `${DEVELOPER_GROUP_LOCK.key}-platform`
+    );
+  }
+
   // A saved per-user module layout is authoritative. Communication is promoted
   // only for role defaults; custom layouts may remove it or place its pages in
   // another module (for example, the standard General bundle).
