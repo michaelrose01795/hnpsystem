@@ -676,6 +676,19 @@ html.staff-scope .app-sidebar__section-title {
   text-transform: uppercase;
 }
 
+/* Portrait-phone sidebar heading: the close action overlays the existing
+   Workspace title row so it does not alter the navigation's vertical rhythm. */
+html.staff-scope .app-sidebar__workspace-heading {
+  position: relative;
+}
+
+html.staff-scope .app-sidebar__phone-close {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 /* Workspace module geometry.
    This class is intentionally scoped beneath .app-sidebar so the module
    shape cannot affect buttons anywhere else. Modules remain 44px high:

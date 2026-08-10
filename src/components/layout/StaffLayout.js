@@ -1375,17 +1375,18 @@ export default function Layout({
                     background: colors.mainBg,
                     borderRadius: 0,
                     boxShadow: "none",
-                    padding: "24px 20px",
+                    padding: isVerticalPhone ? "0" : "24px 20px",
                     display: "flex",
                     flexDirection: "column",
                     gap: "18px",
-                    overflowY: "auto",
+                    overflowY: isVerticalPhone ? "hidden" : "auto",
                   }}
                 >
                   <Sidebar
                     onToggle={closeSidebar}
                     onNavigate={isVerticalPhone ? closeSidebar : undefined}
                     isCondensed
+                    isVerticalPhone={isVerticalPhone}
                     extraSections={sidebarExtraSections}
                     visibleRoles={userRoles}
                     allowedRoutes={presentationAllowedRoutes}
