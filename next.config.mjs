@@ -4,11 +4,23 @@
 // stamped with the exact commit it was captured against. These values are
 // NON-SECRET deploy metadata only — never tokens, keys, or cookies. They are
 // read once here at build time and inlined into the client bundle via `env`.
+import { execFileSync } from "node:child_process";
+
 const gitEnv = process.env; // Build-time environment (Vercel injects VERCEL_GIT_* here)
+const LOCAL_GIT_REF = (() => {
+  try {
+    return execFileSync("git", ["branch", "--show-current"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+})();
 const COMMIT_SHA =
   gitEnv.NEXT_PUBLIC_COMMIT_SHA || gitEnv.VERCEL_GIT_COMMIT_SHA || ""; // Full deployed commit SHA
 const COMMIT_REF =
-  gitEnv.NEXT_PUBLIC_COMMIT_REF || gitEnv.VERCEL_GIT_COMMIT_REF || ""; // Branch / tag deployed
+  gitEnv.NEXT_PUBLIC_COMMIT_REF || gitEnv.VERCEL_GIT_COMMIT_REF || LOCAL_GIT_REF || ""; // Branch / tag deployed
 const APP_VERSION =
   gitEnv.NEXT_PUBLIC_APP_VERSION ||
   gitEnv.npm_package_version ||

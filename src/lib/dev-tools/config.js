@@ -9,6 +9,22 @@ export const devToolsConfig = {
   showPages: true,
 };
 
+export const DEVELOPMENT_BRANCH = "development";
+
+export function isDevelopmentBranch(env = process.env) {
+  const branch = String(
+    env?.NEXT_PUBLIC_COMMIT_REF || env?.VERCEL_GIT_COMMIT_REF || ""
+  )
+    .trim()
+    .replace(/^refs\/heads\//, "");
+
+  return branch === DEVELOPMENT_BRANCH;
+}
+
+export function canShowDeveloperOnlyControls(env = process.env) {
+  return devToolsConfig.enabled && isDevelopmentBranch(env);
+}
+
 export function canUseDevToolsInCurrentEnv() {
   return devToolsConfig.enabled && (devToolsConfig.allowInProduction || process.env.NODE_ENV !== "production");
 }
@@ -18,7 +34,7 @@ export function canShowDevLogin() {
 }
 
 export function canShowDevOverlay(user) {
-  return canUseDevToolsInCurrentEnv() && devToolsConfig.showOverlay && Boolean(user);
+  return canShowDeveloperOnlyControls() && devToolsConfig.showOverlay && Boolean(user);
 }
 
 export function canShowDevSidebarItems(user) {

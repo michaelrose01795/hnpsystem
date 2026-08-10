@@ -1,6 +1,7 @@
 // file location: /src/components/LoginDropdown.js
 import React, { useEffect, useMemo } from "react";
 import { Dropdown } from "@/components/ui/dropdownAPI";
+import { canShowDeveloperOnlyControls } from "@/lib/dev-tools/config";
 
 const ROLE_ALIASES = {
   "valet service": ["valet"],
@@ -305,7 +306,12 @@ export default function LoginDropdown({
 
   const departmentOptions = useMemo(() => {
     if (!selectedCategory) return [];
-    if (selectedCategory === OTHER_CATEGORY_VALUE) return OTHER_DEPARTMENT_OPTIONS;
+    if (selectedCategory === OTHER_CATEGORY_VALUE) {
+      return OTHER_DEPARTMENT_OPTIONS.filter(
+        (option) =>
+          option.value !== DEV_PLATFORM_CATEGORY_VALUE || canShowDeveloperOnlyControls()
+      );
+    }
     return departmentGroups.map((department) => ({
       key: department.key,
       value: department.label,
