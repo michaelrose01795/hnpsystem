@@ -82,12 +82,12 @@
     "@eslint/eslintrc": "^3.3.6",
     "@playwright/test": "^1.62.1",
     "@types/node": "24.10.0",
-    "baseline-browser-mapping": "^2.11.8",
+    "baseline-browser-mapping": "^2.11.12",
     "eslint": "9.39.3",
     "eslint-config-next": "^16.2.12",
     "playwright": "^1.62.1",
     "typescript": "5.9.3",
-    "vite": "8.1.5",
+    "vite": "8.2.1",
     "vitest": "^4.1.10"
   },
   "overrides": {
