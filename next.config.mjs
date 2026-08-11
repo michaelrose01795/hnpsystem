@@ -26,7 +26,9 @@ const APP_VERSION =
   gitEnv.npm_package_version ||
   (COMMIT_SHA ? COMMIT_SHA.slice(0, 7) : "dev"); // Human-facing version label
 const DEPLOY_ENV =
-  gitEnv.NEXT_PUBLIC_DEPLOY_ENV || gitEnv.VERCEL_ENV || "development"; // production | preview | development
+  gitEnv.VERCEL_ENV ||
+  gitEnv.NEXT_PUBLIC_DEPLOY_ENV ||
+  (gitEnv.NODE_ENV === "development" ? "development" : ""); // production | preview | development
 const DEPLOY_URL =
   gitEnv.NEXT_PUBLIC_DEPLOY_URL || gitEnv.VERCEL_URL || ""; // Deployment host (no scheme)
 // Build id is deterministic from the commit when available so the same commit

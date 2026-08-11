@@ -1,5 +1,45 @@
+Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
 
-Manager update 2
+
+Manager update give url link
+
+
+TODO
+atm the customer request section within the "Jobs Auto Content Card 10 | 1.2.2.1.1.3.1.1.1 | key jobs-auto-content-card-10 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:194 (dynamic pattern) | route /jobs | where Appointment 15:30 Tue 11 Aug Overdue -1h 21m Job 03805 59MGC272 Toyota Yaris Service Customer Zoe Evans 07295645721 zoe.evans.272@example-customer.hnp Status Booked Waiting 483h 32 | parent job-cards-view-job-row-03805 1.2.2.1.1.3.1.1" rows have it so there is a seperation line between the "Appointment
+15:30
+Tue 11 Aug
+Overdue -1h 23m
+Job
+03805
+59MGC272
+Toyota Yaris
+Service
+Customer
+Zoe Evans
+07295645721
+zoe.evans.272@example-customer.hnp
+Status
+Booked
+Waiting
+483h 34m in status
+Technician
+Tech 3
+138 active jobs · 302.6h booked
+VHC
+VHC pending
+Parts
+Promised
+Actions
+Open job" seciton and the "1
+Customer requests
+1
+Air conditioning performance service
+Inprogress
+483h 34m
+1.2h" for example. have it so that line is still there however its being blocked by the "
+
+
+
 
 TODO
 "within "**Status** **Booked** **Waiting** 480h 18m in status" section why it is saying "480h 18m in status"
