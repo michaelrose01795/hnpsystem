@@ -151,10 +151,71 @@ export default function Layout({
   const lockViewport = !hideSidebar && !isTablet && !isMessagesRoute;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
+  const mobileStatusButtonRef = useRef(null);
+  const [portraitStatusTop, setPortraitStatusTop] = useState(10);
+  const [isPortraitStatusClosing, setIsPortraitStatusClosing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const mobileMenuButtonRef = useRef(null);
+  const [portraitSidebarTop, setPortraitSidebarTop] = useState(10);
+  const [isPortraitSidebarClosing, setIsPortraitSidebarClosing] = useState(false);
   const [navToggleHover, setNavToggleHover] = useState(false);
   const workspaceNavEnabled = !presentationShell && isWorkspaceNavEnabled();
-  const closeSidebar = () => setIsSidebarOpen(false);
+  const closeSidebar = useCallback(() => {
+    const shouldAnimateClose =
+      isVerticalPhone &&
+      isSidebarOpen &&
+      typeof window !== "undefined" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (shouldAnimateClose) {
+      setIsPortraitSidebarClosing(true);
+      setIsSidebarOpen(false);
+      return;
+    }
+
+    setIsPortraitSidebarClosing(false);
+    setIsSidebarOpen(false);
+  }, [isSidebarOpen, isVerticalPhone]);
+  const openSidebar = () => {
+    if (isVerticalPhone && mobileMenuButtonRef.current) {
+      const buttonRect = mobileMenuButtonRef.current.getBoundingClientRect();
+      setPortraitSidebarTop(Math.round(buttonRect.top));
+    }
+    setIsPortraitStatusClosing(false);
+    setIsStatusSidebarOpen(false);
+    setIsPortraitSidebarClosing(false);
+    setIsSidebarOpen(true);
+  };
+  const isMobileSidebarVisible =
+    isSidebarOpen || (isVerticalPhone && isPortraitSidebarClosing);
+  const closeStatusSidebar = useCallback(() => {
+    const shouldAnimateClose =
+      isVerticalPhone &&
+      isStatusSidebarOpen &&
+      typeof window !== "undefined" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (shouldAnimateClose) {
+      setIsPortraitStatusClosing(true);
+      setIsStatusSidebarOpen(false);
+      return;
+    }
+
+    setIsPortraitStatusClosing(false);
+    setIsStatusSidebarOpen(false);
+  }, [isStatusSidebarOpen, isVerticalPhone]);
+  const openStatusSidebar = useCallback(() => {
+    if (isVerticalPhone && mobileStatusButtonRef.current) {
+      const buttonRect = mobileStatusButtonRef.current.getBoundingClientRect();
+      setPortraitStatusTop(Math.round(buttonRect.top));
+    }
+    setIsPortraitSidebarClosing(false);
+    setIsSidebarOpen(false);
+    setIsPortraitStatusClosing(false);
+    setIsStatusSidebarOpen(true);
+  }, [isVerticalPhone]);
+  const isMobileStatusVisible =
+    isStatusSidebarOpen || (isVerticalPhone && isPortraitStatusClosing);
   // Fixed-card scroll model (desktop staff pages): the page card is a constant-
   // size rounded frosted frame; its content scrolls inside an inner scroller
   // (pageScrollRef) that runs up behind the always-visible topbar at the top and
@@ -547,6 +608,7 @@ export default function Layout({
 
   useEffect(() => {
     if (presentationShell) return;
+    setIsPortraitStatusClosing(false);
     setIsStatusSidebarOpen(false);
   }, [isTablet, presentationShell]);
 
@@ -579,12 +641,12 @@ export default function Layout({
         setIsAutoJobCleared(false);
       }
 
-      setIsStatusSidebarOpen(true);
+      openStatusSidebar();
     };
 
     window.addEventListener("openStatusFlow", handleOpenStatusFlow);
     return () => window.removeEventListener("openStatusFlow", handleOpenStatusFlow);
-  }, [canViewStatusSidebar, activeJobId]);
+  }, [canViewStatusSidebar, activeJobId, openStatusSidebar]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -611,15 +673,23 @@ export default function Layout({
   }, [activeJobId, timelineJobNumber, canViewStatusSidebar, fetchCurrentJobStatus]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isTablet || !isSidebarOpen) return;
+    if (
+      typeof window === "undefined" ||
+      !isTablet ||
+      (!isMobileSidebarVisible && !isMobileStatusVisible)
+    ) return;
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setIsSidebarOpen(false);
+        if (isMobileStatusVisible) {
+          closeStatusSidebar();
+        } else {
+          closeSidebar();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSidebarOpen, isTablet]);
+  }, [closeSidebar, closeStatusSidebar, isMobileSidebarVisible, isMobileStatusVisible, isTablet]);
 
   useEffect(() => {
     if (presentationShell) return;
@@ -1146,7 +1216,10 @@ export default function Layout({
     justifyContent: hideSidebar ? "center" : "flex-start",
     alignItems: hideSidebar ? "center" : "stretch",
     gap: hideSidebar ? "0" : "12px",
-    padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
+    // Portrait phones take their single horizontal inset from
+    // --page-gutter-x-mobile on .app-layout-main-column. Keeping this outer
+    // shell flush prevents the menu/search/topbar/page gutters from doubling.
+    padding: hideSidebar ? "0" : isVerticalPhone ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
     overflow: hideSidebar || lockViewport ? "hidden" : "visible",
     position: "relative",
@@ -1154,7 +1227,8 @@ export default function Layout({
   const showDesktopSidebar = !hideSidebar && !isTablet;
   const showMobileSidebar = !hideSidebar && isTablet;
   const showDesktopStatusControls = !hideSidebar && canViewStatusSidebar && !isTablet;
-  const showMobileStatusSidebar = !hideSidebar && canViewStatusSidebar && isTablet && isStatusSidebarOpen;
+  const showMobileStatusSidebar =
+    !hideSidebar && canViewStatusSidebar && isTablet && isMobileStatusVisible;
   const mobileDrawerWidth = Math.min(420, viewportWidth);
   const navDrawerTargetWidth = isTablet ? mobileDrawerWidth : NAV_DRAWER_WIDTH;
   // +16 compensates for the chrome's 16px left padding so the open-state toggle
@@ -1307,23 +1381,29 @@ export default function Layout({
             <div
               style={{
                 display: "flex",
-                width: "100%",
+                width: isVerticalPhone ? "auto" : "100%",
                 gap: "8px",
               }}
             >
               <button
+                ref={mobileMenuButtonRef}
                 type="button"
-                onClick={() => setIsSidebarOpen(true)}
-                className={`app-btn ${isSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
+                onClick={openSidebar}
+                className={`app-btn ${isMobileSidebarVisible ? "app-btn--primary" : "app-btn--secondary"}`}
+                aria-expanded={isMobileSidebarVisible}
+                aria-controls={isVerticalPhone ? "portrait-navigation-sidebar" : undefined}
                 style={{ flex: 1 }}
               >
                 Menu
               </button>
               {canViewStatusSidebar && (
                 <button
+                  ref={mobileStatusButtonRef}
                   type="button"
-                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
-                  className={`app-btn ${isStatusSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
+                  onClick={isVerticalPhone ? openStatusSidebar : () => setIsStatusSidebarOpen((prev) => !prev)}
+                  className={`app-btn ${isMobileStatusVisible ? "app-btn--primary" : "app-btn--secondary"}`}
+                  aria-expanded={isMobileStatusVisible}
+                  aria-controls={isVerticalPhone ? "portrait-status-sidebar" : undefined}
                   style={{ flex: 1 }}
                 >
                   Status
@@ -1332,7 +1412,7 @@ export default function Layout({
             </div>
 
             {/* Full-width search bar below tab buttons for tablet/mobile - hidden when sidebar/status is open */}
-            {!isSidebarOpen && !isStatusSidebarOpen && (
+            {!isMobileSidebarVisible && !isMobileStatusVisible && (
               <div
                 {...lockChromeInteraction}
                 style={{
@@ -1343,59 +1423,89 @@ export default function Layout({
               </div>
             )}
 
-            {isSidebarOpen && (
+            {isMobileSidebarVisible && (
               <div
+                className={`app-mobile-sidebar-overlay${isPortraitSidebarClosing ? " is-closing" : ""}`}
                 {...lockChromeInteraction}
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  zIndex: 3500,
-                  display: "flex",
-                  justifyContent: "flex-start",
-                  alignItems: "stretch",
-                }}
               >
                 <div
+                  className="app-mobile-sidebar-backdrop"
                   onClick={presentationShell ? undefined : closeSidebar}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(var(--text-1-rgb), 0.65)",
-                  }}
                 />
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  style={{
-                    position: "relative",
-                    zIndex: 1,
-                    width: "100%",
-                    maxWidth: "100%",
-                    height: "100%",
-                    background: colors.mainBg,
-                    borderRadius: 0,
-                    boxShadow: "none",
-                    padding: isVerticalPhone ? "0" : "24px 20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "18px",
-                    overflowY: isVerticalPhone ? "hidden" : "auto",
-                  }}
-                >
-                  <Sidebar
-                    onToggle={closeSidebar}
-                    onNavigate={isVerticalPhone ? closeSidebar : undefined}
-                    isCondensed
-                    isVerticalPhone={isVerticalPhone}
-                    extraSections={sidebarExtraSections}
-                    visibleRoles={userRoles}
-                    allowedRoutes={presentationAllowedRoutes}
-                    presentationRoleKey={activePresentationRole?.key || null}
-                    inPresentationMode={presentationShell}
-                    pendingHref={pendingHref}
-                    isAuthLoading={isPreAuthLoading}
-                  />
-                </div>
+                {isVerticalPhone ? (
+                  <div
+                    id="portrait-navigation-sidebar"
+                    className={`app-portrait-sidebar-assembly${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Navigation sidebar"
+                    onAnimationEnd={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (isPortraitSidebarClosing) {
+                        setIsPortraitSidebarClosing(false);
+                      }
+                    }}
+                    style={{
+                      "--portrait-sidebar-top": `${portraitSidebarTop}px`,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="app-btn app-portrait-sidebar__close-tab"
+                      onClick={closeSidebar}
+                      aria-label="Close navigation sidebar"
+                    >
+                      Close
+                    </button>
+                    <div className="app-portrait-sidebar__panel">
+                      <Sidebar
+                        onToggle={closeSidebar}
+                        onNavigate={closeSidebar}
+                        isCondensed
+                        isVerticalPhone
+                        extraSections={sidebarExtraSections}
+                        visibleRoles={userRoles}
+                        allowedRoutes={presentationAllowedRoutes}
+                        presentationRoleKey={activePresentationRole?.key || null}
+                        inPresentationMode={presentationShell}
+                        pendingHref={pendingHref}
+                        isAuthLoading={isPreAuthLoading}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    role="dialog"
+                    aria-modal="true"
+                    style={{
+                      position: "relative",
+                      zIndex: 1,
+                      width: "100%",
+                      maxWidth: "100%",
+                      height: "100%",
+                      background: colors.mainBg,
+                      borderRadius: 0,
+                      boxShadow: "none",
+                      padding: "24px 20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "18px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    <Sidebar
+                      onToggle={closeSidebar}
+                      isCondensed
+                      extraSections={sidebarExtraSections}
+                      visibleRoles={userRoles}
+                      allowedRoutes={presentationAllowedRoutes}
+                      presentationRoleKey={activePresentationRole?.key || null}
+                      inPresentationMode={presentationShell}
+                      pendingHref={pendingHref}
+                      isAuthLoading={isPreAuthLoading}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -1716,27 +1826,85 @@ export default function Layout({
 
       {/* Status sidebar overlay for tablets/phones */}
       {showMobileStatusSidebar && (
-        <div {...lockChromeInteraction}>
-          <StatusSidebar
-            jobId={activeJobId}
-            currentStatus={currentJobStatus}
-            isOpen={isStatusSidebarOpen}
-            onToggle={presentationShell ? () => {} : () => setIsStatusSidebarOpen(false)}
-            onJobSearch={presentationShell ? () => {} : handleJobSearch}
-            onJobClear={presentationShell ? () => {} : handleJobClear}
-            hasUrlJobId={hasActiveAutoJob}
-            viewportWidth={viewportWidth}
-            isCompact={isTablet && !isMobile}
-            timelineContent={
-              timelineJobNumber ? (
-                <JobTimeline jobNumber={String(timelineJobNumber)} />
-              ) : null
-            }
-            showToggleButton={false}
-            refreshKey={statusSidebarRefreshKey}
-            isVerticalPhone={isVerticalPhone}
-          />
-        </div>
+        isVerticalPhone ? (
+          <div
+            className={`app-mobile-sidebar-overlay${isPortraitStatusClosing ? " is-closing" : ""}`}
+            {...lockChromeInteraction}
+          >
+            <div
+              className="app-mobile-sidebar-backdrop"
+              onClick={presentationShell ? undefined : closeStatusSidebar}
+            />
+            <div
+              id="portrait-status-sidebar"
+              className={`app-portrait-sidebar-assembly app-portrait-sidebar-assembly--status${isPortraitStatusClosing ? " is-closing" : " is-opening"}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Status sidebar"
+              onAnimationEnd={(event) => {
+                if (event.target !== event.currentTarget) return;
+                if (isPortraitStatusClosing) {
+                  setIsPortraitStatusClosing(false);
+                }
+              }}
+              style={{
+                "--portrait-sidebar-top": `${portraitStatusTop}px`,
+              }}
+            >
+              <button
+                type="button"
+                className="app-btn app-portrait-sidebar__close-tab"
+                onClick={closeStatusSidebar}
+                aria-label="Close status sidebar"
+              >
+                Close
+              </button>
+              <div className="app-portrait-sidebar__panel">
+                <StatusSidebar
+                  jobId={activeJobId}
+                  currentStatus={currentJobStatus}
+                  isOpen={isMobileStatusVisible}
+                  onToggle={closeStatusSidebar}
+                  onJobSearch={presentationShell ? () => {} : handleJobSearch}
+                  onJobClear={presentationShell ? () => {} : handleJobClear}
+                  hasUrlJobId={hasActiveAutoJob}
+                  viewportWidth={viewportWidth}
+                  isCompact={false}
+                  timelineContent={
+                    timelineJobNumber ? (
+                      <JobTimeline jobNumber={String(timelineJobNumber)} />
+                    ) : null
+                  }
+                  showToggleButton={false}
+                  canClose={false}
+                  refreshKey={statusSidebarRefreshKey}
+                  isVerticalPhone
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div {...lockChromeInteraction}>
+            <StatusSidebar
+              jobId={activeJobId}
+              currentStatus={currentJobStatus}
+              isOpen={isStatusSidebarOpen}
+              onToggle={presentationShell ? () => {} : closeStatusSidebar}
+              onJobSearch={presentationShell ? () => {} : handleJobSearch}
+              onJobClear={presentationShell ? () => {} : handleJobClear}
+              hasUrlJobId={hasActiveAutoJob}
+              viewportWidth={viewportWidth}
+              isCompact={isTablet && !isMobile}
+              timelineContent={
+                timelineJobNumber ? (
+                  <JobTimeline jobNumber={String(timelineJobNumber)} />
+                ) : null
+              }
+              showToggleButton={false}
+              refreshKey={statusSidebarRefreshKey}
+            />
+          </div>
+        )
       )}
 
       {isTech && (

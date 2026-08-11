@@ -641,12 +641,11 @@ export default function Sidebar({
         padding: "0",
         width: isCollapsed ? "48px" : isCondensed ? "100%" : "260px",
         minWidth: isCollapsed ? "48px" : isCondensed ? "auto" : "220px",
-        height: isVerticalPhone ? "100dvh" : isCondensed ? "auto" : "100%",
-        minHeight: isVerticalPhone ? "100dvh" : isCondensed ? "auto" : "100%",
-        maxHeight: isVerticalPhone ? "100dvh" : "100%",
+        height: isVerticalPhone ? "100%" : isCondensed ? "auto" : "100%",
+        minHeight: isVerticalPhone ? 0 : isCondensed ? "auto" : "100%",
+        maxHeight: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRadius: "var(--page-card-radius)",
         boxShadow: "none",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "0",
@@ -804,16 +803,6 @@ export default function Sidebar({
                 style={{ marginBottom: "10px" }}
               >
                 <span>Workspace</span>
-                {isVerticalPhone && onToggle && (
-                  <button
-                    className="app-btn app-btn--secondary app-btn--xs app-sidebar__phone-close"
-                    type="button"
-                    onClick={onToggle}
-                    aria-label="Close sidebar"
-                  >
-                    Close
-                  </button>
-                )}
               </div>
             )}
             <ContextSidebar
@@ -860,7 +849,7 @@ export default function Sidebar({
                 <div className="app-sidebar__section-title">
                   Dashboard
                 </div>
-                {onToggle && (
+                {onToggle && !isVerticalPhone && (
                   <button
                     className="app-btn app-btn--secondary app-btn--xs"
                     type="button"

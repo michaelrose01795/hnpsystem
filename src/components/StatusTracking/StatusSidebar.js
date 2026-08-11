@@ -399,20 +399,29 @@ export default function StatusSidebar({
       };
 
   const panelStyle = compactMode
-    ? {
+    ? isVerticalPhone
+      ? {
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          minHeight: 0,
+          maxHeight: '100%',
+          padding: 0,
+          boxShadow: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }
+      : {
         position: 'fixed',
         left: 0,
         right: 0,
         bottom: 0,
         top: 0,
-        height: isVerticalPhone ? '100dvh' : '100%',
-        minHeight: isVerticalPhone ? '100dvh' : undefined,
-        maxHeight: isVerticalPhone ? '100dvh' : undefined,
+        height: '100%',
         width: '100%',
-        maxWidth: isVerticalPhone ? '100%' : undefined,
         padding: 0,
-        borderRadius: isVerticalPhone ? 'var(--page-card-radius)' : 0,
-        boxShadow: isVerticalPhone ? 'none' : undefined,
+        borderRadius: 0,
         transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 0.3s ease-in-out',
         zIndex: 150,
@@ -470,7 +479,10 @@ export default function StatusSidebar({
       )}
 
       {/* Sidebar panel - FLOATING */}
-      <div className="app-page-card app-page-card--no-hover" style={panelStyle}>
+      <div
+        className={`app-page-card app-page-card--no-hover${isVerticalPhone ? ' status-sidebar--vertical-phone' : ''}`}
+        style={panelStyle}
+      >
         {/* Header */}
         <div className="app-section-card" style={{
           color: 'var(--text-1)',
@@ -517,18 +529,20 @@ export default function StatusSidebar({
                 : canClose && onToggle ? (compactMode ? '76px' : '86px') : 0,
             }}
           >
-            <h2
-              style={{
-                fontSize: compactMode ? '18px' : '20px',
-                fontWeight: 800,
-                margin: 0,
-                color: 'var(--text-1)',
-                lineHeight: 1.15,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Job Tracker
-            </h2>
+            {!isVerticalPhone && (
+              <h2
+                style={{
+                  fontSize: compactMode ? '18px' : '20px',
+                  fontWeight: 800,
+                  margin: 0,
+                  color: 'var(--text-1)',
+                  lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Job Tracker
+              </h2>
+            )}
 
             {/* Show search bar if no job ID from URL */}
             {!hasUrlJobId && !jobId && (
@@ -746,7 +760,7 @@ export default function StatusSidebar({
               {isVerticalPhone && canClose && onToggle && (
                 <button
                   type="button"
-                  aria-label="Close job tracker"
+                  aria-label="Close status sidebar"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggle();
@@ -754,7 +768,7 @@ export default function StatusSidebar({
                   className="app-btn app-btn--secondary"
                   style={{ width: '100%', minHeight: '44px' }}
                 >
-                  Close Job Tracker
+                  Close
                 </button>
               )}
             </div>

@@ -289,12 +289,35 @@ html.staff-scope .app-topbar-shell {
 }
 
 @media (max-width: 640px) and (orientation: portrait) {
-  html.staff-scope .app-topbar-action-scroll {
+  html.staff-scope {
+    /* One shared inset for all portrait-phone staff chrome and page content. */
+    --page-gutter-x-mobile: 10px;
+  }
+
+  html.staff-scope .app-topbar-content-scroll {
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
-    padding-bottom: 2px;
+    touch-action: pan-x pan-y;
+  }
+
+  html.staff-scope .app-topbar-content-scroll > * {
+    flex-shrink: 0 !important;
+    scroll-snap-align: start;
+  }
+
+  html.staff-scope .app-topbar-content-scroll .app-topbar-action-group {
+    flex: 0 0 auto !important;
+    min-width: max-content;
+  }
+
+  html.staff-scope .app-topbar-content-scroll .app-btn,
+  html.staff-scope .app-topbar-content-scroll .dropdown-api {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max-content;
+    white-space: nowrap;
   }
 
   html.staff-scope .app-topbar-action-scroll .app-topbar-action-group {
@@ -308,7 +331,6 @@ html.staff-scope .app-topbar-shell {
     width: max-content;
     min-width: max-content;
     white-space: nowrap;
-    scroll-snap-align: start;
   }
 }
 
@@ -676,19 +698,6 @@ html.staff-scope .app-sidebar__section-title {
   text-transform: uppercase;
 }
 
-/* Portrait-phone sidebar heading: the close action overlays the existing
-   Workspace title row so it does not alter the navigation's vertical rhythm. */
-html.staff-scope .app-sidebar__workspace-heading {
-  position: relative;
-}
-
-html.staff-scope .app-sidebar__phone-close {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
 /* Workspace module geometry.
    This class is intentionally scoped beneath .app-sidebar so the module
    shape cannot affect buttons anywhere else. Modules remain 44px high:
@@ -746,6 +755,20 @@ html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button
    Why: .app-topbar-shell defaults to z-index:3300 to layer above page
    content on desktop; on a portrait phone that ordering is inverted —
    the page card and its scoped stacking context need to win. */
+html.staff-scope .app-mobile-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+html.staff-scope .app-mobile-sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
 @media (max-width: 640px) and (orientation: portrait) {
   html.staff-scope .app-topbar-shell {
     z-index: 0;
@@ -755,6 +778,156 @@ html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button
   html.staff-scope .app-page-card {
     position: relative;
     z-index: 1;
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly {
+    position: absolute;
+    z-index: 1;
+    top: var(--portrait-sidebar-top);
+    right: var(--space-2);
+    bottom: var(--space-2);
+    left: var(--space-2);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: var(--control-height) minmax(0, 1fr);
+    column-gap: var(--space-sm);
+    transform-origin: top center;
+    pointer-events: auto;
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly.is-opening {
+    animation: app-portrait-sidebar-drop-in 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: clip-path, transform, opacity;
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly.is-closing {
+    animation: app-portrait-sidebar-drop-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+    pointer-events: none;
+    will-change: clip-path, transform, opacity;
+  }
+
+  html.staff-scope .app-portrait-sidebar__close-tab.app-btn {
+    position: relative;
+    z-index: 2;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    background: var(--surface);
+    color: var(--text-1);
+    border-radius: var(--control-radius) var(--control-radius) 0 0;
+    box-shadow: none;
+  }
+
+  html.staff-scope .app-portrait-sidebar__close-tab.app-btn:hover,
+  html.staff-scope .app-portrait-sidebar__close-tab.app-btn:focus-visible {
+    background: var(--surface);
+    color: var(--accentText);
+  }
+
+  html.staff-scope .app-portrait-sidebar__close-tab::after {
+    content: "";
+    position: absolute;
+    top: calc(100% - 1px);
+    right: 0;
+    left: 0;
+    height: calc(var(--space-sm) + 1px);
+    background: inherit;
+    pointer-events: none;
+  }
+
+  html.staff-scope .app-portrait-sidebar__panel {
+    z-index: 1;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0 var(--page-card-radius) var(--page-card-radius) var(--page-card-radius);
+  }
+
+  html.staff-scope .app-portrait-sidebar__panel .app-sidebar--vertical-phone {
+    border-radius: 0 var(--page-card-radius) var(--page-card-radius) var(--page-card-radius);
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__close-tab {
+    grid-column: 2;
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__panel,
+  html.staff-scope .app-portrait-sidebar-assembly--status .status-sidebar--vertical-phone {
+    border-radius: var(--page-card-radius) 0 var(--page-card-radius) var(--page-card-radius);
+  }
+
+  html.staff-scope .app-mobile-sidebar-overlay:not(.is-closing) .app-mobile-sidebar-backdrop {
+    animation: app-portrait-sidebar-backdrop-in 0.28s ease-out both;
+  }
+
+  html.staff-scope .app-mobile-sidebar-overlay.is-closing .app-mobile-sidebar-backdrop {
+    animation: app-portrait-sidebar-backdrop-out 0.24s ease-in both;
+    pointer-events: none;
+  }
+}
+
+@keyframes app-portrait-sidebar-drop-in {
+  from {
+    clip-path: inset(0 0 100% 0 round var(--page-card-radius));
+    opacity: 0.55;
+    transform: translate3d(0, -8px, 0) scale(0.995);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0 round var(--page-card-radius));
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes app-portrait-sidebar-drop-out {
+  from {
+    clip-path: inset(0 0 0 0 round var(--page-card-radius));
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    clip-path: inset(0 0 100% 0 round var(--page-card-radius));
+    opacity: 0.4;
+    transform: translate3d(0, -6px, 0) scale(0.995);
+  }
+}
+
+@keyframes app-portrait-sidebar-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-portrait-sidebar-backdrop-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) and (orientation: portrait) and (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-portrait-sidebar-assembly,
+  html.staff-scope .app-mobile-sidebar-backdrop {
+    animation: none;
+    will-change: auto;
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -5722,6 +5895,17 @@ html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-head
 /* ========================================================= */
 /* === Popup Dialog Styles === */
 /* ========================================================= */
+html.staff-scope .popup-backdrop,
+html.staff-scope .app-mobile-sidebar-backdrop {
+  background-color: rgba(0, 0, 0, 0.62) !important;
+  background-image: linear-gradient(
+    rgba(var(--accentMainRgb), 0.14),
+    rgba(var(--accentMainRgb), 0.14)
+  ) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 html.staff-scope .popup-backdrop {
   --popup-viewport-gap: clamp(10px, 2.5vw, 20px);
   position: fixed;
@@ -5732,13 +5916,6 @@ html.staff-scope .popup-backdrop {
   width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
-  background-color: rgba(0, 0, 0, 0.62) !important;
-  background-image: linear-gradient(
-    rgba(var(--accentMainRgb), 0.14),
-    rgba(var(--accentMainRgb), 0.14)
-  ) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5788,7 +5965,8 @@ html.staff-scope .popup-backdrop > * {
   html.staff-scope .popup-backdrop,
   html.staff-scope [aria-modal="true"].popup-backdrop,
   html.staff-scope [data-modal-portal="true"] > .popup-backdrop {
-    --popup-viewport-gap: max(8px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+    /* Keep every shared popup card at least 10px from a portrait viewport edge. */
+    --popup-viewport-gap: max(10px, env(safe-area-inset-top), env(safe-area-inset-bottom));
     width: 100vw !important;
     height: 100dvh !important;
     max-height: 100dvh !important;
