@@ -29,15 +29,6 @@ import { useRotatingViews } from "@/hooks/useRotatingViews";
 import { formatKpiTooltip } from "@/config/topbar/departmentKpis";
 import { STATUSES as CLOCKING_STATUSES } from "@/lib/status/catalog/clocking";
 
-// Single-line truncation so a long KPI label or insight never wraps and grows the
-// fixed-height bar. Ellipsis only triggers when the text would otherwise overflow.
-const TEXT_TRUNCATE = {
-  maxWidth: "100%",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
 // Splits a live prompt like "225 VHCs awaiting approval" or "3 jobs overdue —
 // needs chasing" into a leading count + trailing label so the Smart Insight can
 // use the same stacked count widget as the KPIs. No leading number → whole string
@@ -58,45 +49,20 @@ function splitCountLabel(text) {
 // names) shown by GlobalTooltip. It's set on the widget root so hovering anywhere
 // on the widget shows it; the label's own title= is suppressed when present so it
 // doesn't shadow the richer tooltip (closest() would otherwise match the label).
-function StatWidget({ label, count, colors, truncate = false, tooltip = null }) {
+function StatWidget({ label, count, truncate = false, tooltip = null }) {
   return (
     <div
+      className={`app-summary-item app-topbar-summary-item${tooltip ? " has-tooltip" : ""}`}
       title={tooltip || undefined}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "1px",
-        minWidth: 0,
-        maxWidth: "100%",
-        cursor: tooltip ? "help" : undefined,
-      }}
     >
       <span
+        className={`app-summary-label${truncate ? " app-topbar-summary-label--truncate" : ""}`}
         title={tooltip ? undefined : label}
-        style={{
-          fontSize: "0.6rem",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          color: colors.mutedText,
-          lineHeight: 1.15,
-          textAlign: "center",
-          ...(truncate ? TEXT_TRUNCATE : { whiteSpace: "nowrap" }),
-        }}
       >
         {label}
       </span>
       {count != null && count !== "" && (
-        <span
-          style={{
-            fontSize: "1.05rem",
-            fontWeight: 700,
-            lineHeight: 1,
-            color: colors.accent,
-          }}
-        >
+        <span className="app-summary-value">
           {count}
         </span>
       )}
@@ -243,7 +209,7 @@ export default function StaffTopbar({
             }}
           >
             {resolvedKpis.map((kpi) => (
-              <StatWidget key={kpi.key} label={kpi.label} count={kpi.value} colors={colors} tooltip={formatKpiTooltip(kpi)} />
+              <StatWidget key={kpi.key} label={kpi.label} count={kpi.value} tooltip={formatKpiTooltip(kpi)} />
             ))}
           </div>
         )}
@@ -343,7 +309,6 @@ export default function StaffTopbar({
             <StatWidget
               label={insight.label}
               count={insight.count}
-              colors={colors}
               truncate
               tooltip={rotating.current || null}
             />

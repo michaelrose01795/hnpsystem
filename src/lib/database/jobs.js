@@ -13,7 +13,11 @@ import {
 import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
 import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical VHC decision normalizer.
 import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized invoice paid check.
-import { getVhcCompletionUpdatesFromWriteUpTasks } from "@/features/jobCards/workflow/selectors";
+import {
+  getClockingAwareJobStatus,
+  getVhcCompletionUpdatesFromWriteUpTasks,
+} from "@/features/jobCards/workflow/selectors";
+import { selectCurrentAppointment } from "@/lib/jobCards/utils";
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import {
   getVehicleRegistration,
@@ -322,8 +326,8 @@ const normaliseCauseEntries = (entries = []) => {
    Gets all jobs along with linked vehicles, customers,
    technicians, appointments, VHC checks, parts, notes, write-ups, and files
 ============================================ */
-export const getAllJobs = () =>
-  cachedQuery("jobs:all", _getAllJobsUncached);
+export const getAllJobs = ({ throwOnError = false, cacheKey = "jobs:all" } = {}) =>
+  cachedQuery(cacheKey, () => _getAllJobsUncached({ throwOnError }));
 
 export const getJobRequestsForClocking = async (jobId) => {
   const numericJobId = Number(jobId);
@@ -360,7 +364,45 @@ export const subscribeToJobChanges = (channelKey, onChange) => {
   };
 };
 
-const _getAllJobsUncached = async () => {
+const JOBS_OVERVIEW_REALTIME_TABLES = [
+  "jobs",
+  "appointments",
+  "job_requests",
+  "job_writeups",
+  "parts_job_items",
+  "parts_requests",
+  "vhc_checks",
+  "job_clocking",
+  "job_booking_requests",
+  "job_notes",
+  "customers",
+  "vehicles",
+  "users",
+];
+
+export const subscribeToJobsOverviewChanges = (channelKey, onChange) => {
+  if (typeof onChange !== "function") return () => {};
+  const safeChannelKey = String(channelKey || "overview").replace(/[^a-zA-Z0-9_-]/g, "-");
+  const channel = supabase.channel(`jobs-overview-${safeChannelKey}`);
+
+  JOBS_OVERVIEW_REALTIME_TABLES.forEach((table) => {
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table },
+      (payload) => onChange(payload, table)
+    );
+  });
+  channel.subscribe();
+
+  return () => {
+    void channel.unsubscribe();
+    if (typeof supabase.removeChannel === "function") {
+      void supabase.removeChannel(channel);
+    }
+  };
+};
+
+const _getAllJobsUncached = async ({ throwOnError = false } = {}) => {
   console.log("🔍 getAllJobs: Starting fetch..."); // Debug log
 
   const { data, error } = await supabase
@@ -537,6 +579,7 @@ const _getAllJobsUncached = async () => {
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
       job_writeups(writeup_id, fault, rectification, technician_id, completion_status, created_at, updated_at, task_checklist),
+      job_clocking(id, clock_in, clock_out),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
       booking_request:job_booking_requests(
         request_id,
@@ -566,6 +609,7 @@ const _getAllJobsUncached = async () => {
       hint: error?.hint,
       code: error?.code,
     });
+    if (throwOnError) throw error;
     return [];
   }
 
@@ -2320,6 +2364,30 @@ const formatJobData = (data) => {
   const statusMeta = getMainStatusMetadata(data.status);
   const normalizedStatus = statusMeta?.label || data.status || null;
   const rawStatus = data.status || null;
+  const clockingEntries = Array.isArray(data.job_clocking) ? data.job_clocking : [];
+  const hasClockingActivity = clockingEntries.some((entry) => {
+    if (!entry?.clock_in) return false;
+    if (!entry.clock_out) return true;
+    const clockIn = new Date(entry.clock_in).getTime();
+    const clockOut = new Date(entry.clock_out).getTime();
+    return Number.isFinite(clockIn) && Number.isFinite(clockOut) && clockOut > clockIn;
+  });
+  const clockingAwareStatus = getClockingAwareJobStatus({
+    jobStatus: normalizedStatus,
+    statusLabel: normalizedStatus,
+    hasClockingActivity,
+  });
+  const clockingStartedAt = clockingEntries
+    .map((entry) => entry?.clock_in)
+    .filter(Boolean)
+    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())[0] || null;
+  const storedStatusUpdatedAt = data.status_updated_at || null;
+  const effectiveStatusUpdatedAt = hasClockingActivity && clockingAwareStatus.statusId === "in_progress"
+    ? [storedStatusUpdatedAt, clockingStartedAt]
+        .filter(Boolean)
+        .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] || null
+    : storedStatusUpdatedAt;
+  const primaryAppointment = selectCurrentAppointment(data.appointments);
 
   // Normalise technician information so UI layers can rely on assignedTech
   const assignedTech = (() => {
@@ -2547,8 +2615,10 @@ const formatJobData = (data) => {
     jobNumber: data.job_number,
     description: data.description,
     type: data.type,
-    status: normalizedStatus,
+    status: clockingAwareStatus.statusLabel || normalizedStatus,
     rawStatus,
+    hasClockingActivity,
+    clockingStartedAt,
     
     // ✅ Vehicle info from both direct fields and joined table
     vehicleId: data.vehicle_id || data.vehicle?.vehicle_id || null,
@@ -2584,7 +2654,7 @@ const formatJobData = (data) => {
     maintenanceInfo: data.maintenance_info || {},
     checkedInAt: data.checked_in_at || null,
     workshopStartedAt: data.workshop_started_at || null,
-    statusUpdatedAt: data.status_updated_at || null,
+    statusUpdatedAt: effectiveStatusUpdatedAt,
     position: data.queue_position ?? null,
     serviceMode: data.service_mode || "workshop",
     
@@ -2620,15 +2690,15 @@ const formatJobData = (data) => {
     customerWorkPostcode: data.vehicle?.customer?.work_postcode || "",
     
     // ✅ Appointment info
-    appointment: data.appointments?.[0]
+    appointment: primaryAppointment
       ? {
-          appointmentId: data.appointments[0].appointment_id,
-          date: dayjs(data.appointments[0].scheduled_time).format("YYYY-MM-DD"),
-          time: dayjs(data.appointments[0].scheduled_time).format("HH:mm"),
-          status: data.appointments[0].status,
-          notes: data.appointments[0].notes || "",
-          createdAt: data.appointments[0].created_at,
-          updatedAt: data.appointments[0].updated_at,
+          appointmentId: primaryAppointment.appointment_id,
+          date: dayjs(primaryAppointment.scheduled_time).format("YYYY-MM-DD"),
+          time: dayjs(primaryAppointment.scheduled_time).format("HH:mm"),
+          status: primaryAppointment.status,
+          notes: primaryAppointment.notes || "",
+          createdAt: primaryAppointment.created_at,
+          updatedAt: primaryAppointment.updated_at,
         }
       : null,
     
@@ -3459,10 +3529,12 @@ export const updateJobStatus = async (
   statusUpdatedBy = null,
   statusChangeReason = null
 ) => {
-  const updates = { status: newStatus };
+  const updates = {
+    status: newStatus,
+    status_updated_at: new Date().toISOString(),
+  };
   if (statusUpdatedBy !== null && statusUpdatedBy !== undefined && statusUpdatedBy !== "") {
     updates.status_updated_by = statusUpdatedBy;
-    updates.status_updated_at = new Date().toISOString();
   }
   if (statusChangeReason) {
     updates.status_change_reason = statusChangeReason;

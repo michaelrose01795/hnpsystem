@@ -3,6 +3,20 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
+import PopupModal from "@/components/popups/popupStyleApi";
+
+const formatQuickNoteDate = (value) => {
+  if (!value) return "Unknown date";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Unknown date";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const OPERATIONAL_STATUS_ITEMS = [
   { key: "arrived", label: "Arrived" },
@@ -30,6 +44,7 @@ export default function ViewJobCardsUi(props) {
     activeTab,
     baseJobs,
     combinedStatusOptions,
+    closeQuickNote,
     divisionFilter,
     emptyStateMessage,
     formatDetectedJobTypeLabel,
@@ -39,11 +54,12 @@ export default function ViewJobCardsUi(props) {
     handleSearchValueChange,
     handleStatusChange,
     handleStatusFilterChange,
-    isCompactView,
     isOrdersTab,
     operationalNow,
     operationalStatusCounts,
     ordersLoading,
+    nextJobsTechnicians,
+    onOpenQuickNote,
     popupCardStyles,
     popupJob,
     popupOverlayStyles,
@@ -52,17 +68,26 @@ export default function ViewJobCardsUi(props) {
     popupSecondaryActionButtonStyle,
     popupStatusLabel,
     prefetchJob,
+    quickNoteError,
+    quickNoteHidden,
+    quickNoteJob,
+    quickNoteLoading,
+    quickNoteNotes,
+    quickNoteSaving,
+    quickNoteText,
     router,
+    saveQuickNote,
     searchPlaceholder,
     searchValues,
     setActiveTab,
     setPopupJob,
+    setQuickNoteHidden,
+    setQuickNoteText,
     sortedJobs,
     statusCounts,
     statusTabs,
     tabOptions,
     technicianLoads,
-    toggleJobViewDensity,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -105,12 +130,6 @@ export default function ViewJobCardsUi(props) {
                       </DevLayoutSection>
                     </DevLayoutSection>
                   </DevLayoutSection>}
-                <Button type="button" variant={isCompactView ? "primary" : "secondary"} className="app-btn--icon app-hover-tooltip job-cards-view-density-toggle" onClick={toggleJobViewDensity} aria-label={isCompactView ? "Use detailed job rows" : "Use compact job rows"} aria-pressed={isCompactView} data-tooltip={isCompactView ? "Detailed job rows" : "Compact job rows"}>
-                  <svg className="job-cards-view-density-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" focusable="false">
-                    <path d="M8 6h11M8 12h11M8 18h11" />
-                    <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth="3" />
-                  </svg>
-                </Button>
               </div>
             </div>
           </SectionShell>
@@ -144,7 +163,7 @@ export default function ViewJobCardsUi(props) {
                   Loading orders...
                 </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
-                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" compactView={isCompactView} job={job} index={index} now={operationalNow} technicianLoad={technicianLoads?.[job.assignedTech?.id || job.assignedTo] || null} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenTab={(tab) => router.push(`/job-cards/${job.jobNumber}?tab=${tab}`)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
+                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} nextJobsTechnicians={nextJobsTechnicians} now={operationalNow} technicianLoads={technicianLoads} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenQuickNote={onOpenQuickNote} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 
@@ -502,6 +521,74 @@ export default function ViewJobCardsUi(props) {
             </>}
       </div>
       </PageShell>
+      <PopupModal
+        isOpen={Boolean(quickNoteJob)}
+        onClose={closeQuickNote}
+        closeOnBackdrop={!quickNoteSaving}
+        ariaLabel={`Add note to job ${quickNoteJob?.jobNumber || ""}`}
+        cardClassName="app-job-quick-note"
+        cardStyle={{ width: "min(100%, 760px)" }}>
+        {quickNoteJob && <div className="app-job-quick-note__content">
+          <header className="app-popup-compact-header">
+            <h2>Add note to job {quickNoteJob.jobNumber}</h2>
+            <div className="app-popup-compact-header__actions">
+              <Button type="button" variant="secondary" size="sm" onClick={() => router.push(`/job-cards/${quickNoteJob.jobNumber}?tab=notes`)}>Open full notes</Button>
+              <Button type="button" variant="primary" size="sm" busy={quickNoteSaving} onClick={saveQuickNote} disabled={!quickNoteText.trim()}>
+                Save note
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={closeQuickNote} disabled={quickNoteSaving}>
+                Close
+              </Button>
+            </div>
+          </header>
+
+          <LayerTheme as="section" className="app-job-quick-note__summary" radius="var(--radius-sm)" padding="var(--space-sm)" aria-label="Job summary">
+            <div className="app-summary-grid">
+              <div className="app-summary-item"><span className="app-summary-label">Registration</span><strong className="app-summary-value">{quickNoteJob.reg || "Not set"}</strong></div>
+              <div className="app-summary-item"><span className="app-summary-label">Customer</span><strong className="app-summary-value">{quickNoteJob.customer || "Not set"}</strong></div>
+              <div className="app-summary-item"><span className="app-summary-label">Status</span><strong className="app-summary-value">{quickNoteJob.status || "Not set"}</strong></div>
+              <div className="app-summary-item"><span className="app-summary-label">Technician</span><strong className="app-summary-value">{quickNoteJob.assignedTech?.fullName || quickNoteJob.assignedTech?.name || quickNoteJob.technician || "Unassigned"}</strong></div>
+              <div className="app-summary-item"><span className="app-summary-label">Requests</span><strong className="app-summary-value">{Array.isArray(quickNoteJob.jobRequests) ? quickNoteJob.jobRequests.length : 0}</strong></div>
+              <div className="app-summary-item"><span className="app-summary-label">Notes</span><strong className="app-summary-value">{quickNoteNotes.length}</strong></div>
+            </div>
+          </LayerTheme>
+
+          <label className="app-job-quick-note__field">
+            <span>Note</span>
+            <textarea
+              className="app-input app-input--textarea"
+              value={quickNoteText}
+              onChange={(event) => setQuickNoteText(event.target.value)}
+              placeholder="Add workshop, customer-contact or handover details..."
+              rows={5}
+              autoFocus />
+          </label>
+
+          <label className="app-job-quick-note__visibility">
+            <input type="checkbox" className="app-toggle app-toggle--checkbox" checked={quickNoteHidden} onChange={(event) => setQuickNoteHidden(event.target.checked)} />
+            <span><strong>Internal note</strong><small>{quickNoteHidden ? "Hidden from the customer" : "Visible to the customer"}</small></span>
+          </label>
+
+          {quickNoteError && <div className="app-status-message app-status-message--danger" role="alert">{quickNoteError}</div>}
+
+          <LayerTheme as="section" className="app-job-quick-note__recent" radius="var(--radius-sm)" padding="var(--section-card-padding)" aria-label="Recent notes">
+            <div className="app-job-quick-note__section-heading">
+              <h3>Recent notes</h3>
+            </div>
+            {quickNoteLoading ? <p className="app-job-quick-note__empty">Loading notes...</p> : quickNoteNotes.length === 0 ? <p className="app-job-quick-note__empty">No notes have been added to this job.</p> : <ol>
+              {quickNoteNotes.slice(0, 4).map((note) => <li key={note.noteId}>
+                <div className="app-job-quick-note__note-meta">
+                  <strong>{note.createdBy || "Unknown"}</strong>
+                  <span>{formatQuickNoteDate(note.createdAt)}</span>
+                  <span className={`app-badge ${note.hiddenFromCustomer ? "app-badge--warning" : "app-badge--success"}`}>{note.hiddenFromCustomer ? "Internal" : "Customer visible"}</span>
+                </div>
+                <p>{note.noteText}</p>
+              </li>)}
+            </ol>}
+          </LayerTheme>
+
+        </div>}
+      </PopupModal>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

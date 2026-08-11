@@ -1,11 +1,75 @@
 // file location: src/features/jobCards/workflow/selectors.js
-import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
+import {
+  DISPLAY as JOB_STATUS_DISPLAY,
+  NORMALIZE as NORMALIZE_JOB,
+  STATUSES as JOB_STATUSES,
+} from "@/lib/status/catalog/job";
 
 // Small helper used across workflow summaries.
 const normalizeText = (value = "") =>
   String(value || "")
     .trim()
     .toLowerCase();
+
+export const getWriteUpChecklistTasks = (rawChecklist) => {
+  if (Array.isArray(rawChecklist)) return rawChecklist;
+  if (rawChecklist && typeof rawChecklist === "object") {
+    return Array.isArray(rawChecklist.tasks) ? rawChecklist.tasks : [];
+  }
+  if (typeof rawChecklist !== "string") return [];
+
+  try {
+    const parsed = JSON.parse(rawChecklist);
+    if (Array.isArray(parsed)) return parsed;
+    return parsed && typeof parsed === "object" && Array.isArray(parsed.tasks)
+      ? parsed.tasks
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const isCheckedWriteUpTask = (task) => {
+  if (typeof task?.checked === "boolean") return task.checked;
+  return ["complete", "completed", "done"].includes(normalizeText(task?.status));
+};
+
+// Match a customer request to its own write-up task. VHC rows can share a
+// sort_order with customer requests, so source and request_id take precedence
+// before the legacy positional fallback is considered.
+export const isCustomerRequestCompleteInWriteUp = ({
+  request,
+  requestIndex = -1,
+  checklistTasks = [],
+} = {}) => {
+  if (!request) return false;
+
+  const requestId = Number(request?.requestId ?? request?.request_id ?? null);
+  const sortOrder = Number(request?.sortOrder ?? request?.sort_order ?? null);
+
+  return (Array.isArray(checklistTasks) ? checklistTasks : []).some((task) => {
+    if (!task || typeof task !== "object" || !isCheckedWriteUpTask(task)) return false;
+    const taskSource = normalizeText(task?.source);
+    if (taskSource && taskSource !== "request") return false;
+
+    const taskRequestId = Number(task?.requestId ?? task?.request_id ?? null);
+    const hasRequestId = Number.isInteger(requestId) && requestId > 0;
+    const hasTaskRequestId = Number.isInteger(taskRequestId) && taskRequestId > 0;
+    if (hasRequestId && hasTaskRequestId) return taskRequestId === requestId;
+
+    const taskSortOrder = Number(task?.sortOrder ?? task?.sort_order ?? null);
+    if (Number.isInteger(sortOrder) && sortOrder > 0 && Number.isInteger(taskSortOrder)) {
+      return taskSortOrder === sortOrder;
+    }
+
+    return (
+      !hasTaskRequestId &&
+      Number.isInteger(requestIndex) &&
+      requestIndex >= 0 &&
+      taskSortOrder === requestIndex + 1
+    );
+  });
+};
 
 // Normalize write-up completion status into a stable shape.
 export const getWriteUpCompletionState = ({
@@ -60,6 +124,53 @@ export const getWriteUpCompletionState = ({
       hasRequestRows || hasChecklistTasks
         ? allRowsChecked
         : statusMarkedComplete,
+  };
+};
+
+// Customer-request rows follow the parent job workflow until a specific row
+// (or the whole write-up) is complete. The persisted job_requests.status
+// default is legacy data and must not make a booked request look started.
+export const getCustomerRequestWorkflowStatus = ({
+  jobStatus = "",
+  writeUpComplete = false,
+} = {}) => {
+  if (writeUpComplete) return "completed";
+
+  const mainJobStatus = NORMALIZE_JOB(jobStatus);
+  return mainJobStatus === JOB_STATUSES.BOOKED || mainJobStatus === JOB_STATUSES.CHECKED_IN
+    ? "not_started"
+    : "inprogress";
+};
+
+export const getCustomerRequestEffectiveStatus = ({
+  requestStatus = "",
+  completedInWriteUp = false,
+  workflowStatus = "inprogress",
+} = {}) => {
+  const normalizedRequestStatus = normalizeText(requestStatus);
+  return completedInWriteUp || normalizedRequestStatus === "complete" || normalizedRequestStatus === "completed"
+    ? "completed"
+    : workflowStatus;
+};
+
+// A technician clocking is authoritative evidence that workshop work started,
+// even when the persisted jobs.status row has not yet advanced from Checked In.
+export const getClockingAwareJobStatus = ({
+  jobStatus = "",
+  statusLabel = "",
+  hasClockingActivity = false,
+} = {}) => {
+  const storedStatusId = NORMALIZE_JOB(jobStatus);
+  const wasPromoted = storedStatusId === JOB_STATUSES.CHECKED_IN && hasClockingActivity;
+  const statusId = wasPromoted
+    ? JOB_STATUSES.IN_PROGRESS
+    : storedStatusId;
+
+  return {
+    statusId,
+    statusLabel: wasPromoted
+      ? JOB_STATUS_DISPLAY[JOB_STATUSES.IN_PROGRESS]
+      : String(statusLabel || JOB_STATUS_DISPLAY[statusId] || jobStatus || "").trim(),
   };
 };
 

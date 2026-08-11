@@ -9,6 +9,7 @@
 .rootInspect {
   pointer-events: auto;
   cursor: crosshair;
+  touch-action: none;
 }
 
 .rootCreate {
@@ -59,40 +60,11 @@
   box-shadow: none;
 }
 
-.copyTarget {
-  /* !important is required throughout because the global reset
-     `html.staff-scope button:not(.app-btn) { … position: relative; z-index: 0;
-     background: var(--accent-strong) }` in staffglobal.css has higher
-     specificity than this CSS-module class. Without `position: absolute`
-     winning, every click target falls back to `position: relative` and stacks
-     in normal flow inside the overlay root — landing far from its section, so
-     clicks resolve to whichever target happens to overlap (usually the
-     full-page page-shell target) instead of the section actually clicked. */
-  position: absolute !important;
-  z-index: 1 !important;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-  min-height: 0;
-  border: none !important;
-  border-radius: 10px;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: inherit;
-  cursor: copy;
-  font: inherit;
-  pointer-events: auto;
-}
-
-.copyTarget:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-
 .boxSelected {
   border-width: 3px;
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px rgba(var(--accent-base-rgb), 0.2);
+  border-color: var(--accent-strong);
+  background: rgba(var(--accent-base-rgb), 0.08);
+  box-shadow: var(--focus-ring), 0 0 0 3px rgba(var(--accent-base-rgb), 0.22);
 }
 
 .label {

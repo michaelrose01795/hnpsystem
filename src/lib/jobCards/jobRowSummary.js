@@ -1,6 +1,14 @@
 import { getJobRequests } from "@/lib/canonical/fields";
 import { getVhcSummary } from "@/features/vhc/vhcStatusEngine";
-import { ITEM_STATUSES, NORMALIZE_ITEM } from "@/lib/status/catalog/parts";
+import {
+  getCustomerRequestEffectiveStatus,
+  getCustomerRequestWorkflowStatus,
+  getWriteUpChecklistTasks,
+  getWriteUpCompletionState,
+  isCustomerRequestCompleteInWriteUp,
+} from "@/features/jobCards/workflow/selectors";
+import { summarizePartsPipeline } from "@/lib/parts/pipeline";
+import { isNextJobsTechnicianPanelJob } from "@/lib/jobCards/utils";
 
 const TERMINAL_STATUS_WORDS = ["complete", "completed", "collected", "released", "invoiced", "cancelled"];
 const HOUR_MS = 60 * 60 * 1000;
@@ -30,15 +38,56 @@ export const formatOperationalDuration = (from, to = new Date()) => {
   return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
 };
 
+export const formatOperationalAge = (from, to = new Date()) => {
+  const start = asDate(from);
+  const end = asDate(to);
+  if (!start || !end || end < start) return "";
+
+  const totalMinutes = Math.floor((end.getTime() - start.getTime()) / 60000);
+  if (totalMinutes < 1) return "Just now";
+
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  return [
+    days ? `${days}d` : "",
+    hours ? `${hours}h` : "",
+    minutes ? `${minutes}m` : "",
+  ].filter(Boolean).join(" ");
+};
+
 export const getJobBookedHours = (job) => getJobRequests(job).reduce((total, request) => {
   const hours = Number(request?.hours ?? request?.time);
   return total + (Number.isFinite(hours) && hours > 0 ? hours : 0);
 }, 0);
 
-export const buildTechnicianWorkloadMap = (jobs = []) => {
+const normalizeTechnicianName = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+export const findNextJobsTechnician = (job, technicians = []) => {
+  if (!isNextJobsTechnicianPanelJob(job)) return null;
+  const assignedId = job?.assignedTech?.id ?? job?.assignedTo;
+  const assignedName = normalizeTechnicianName(
+    job?.assignedTech?.name || job?.assignedTech?.fullName || job?.technician
+  );
+
+  return (Array.isArray(technicians) ? technicians : []).find((technician) => {
+    const technicianId = technician?.id ?? technician?.user_id;
+    if (assignedId !== null && assignedId !== undefined && technicianId !== null && technicianId !== undefined) {
+      if (String(assignedId) === String(technicianId)) return true;
+    }
+    const technicianName = normalizeTechnicianName(
+      technician?.name || technician?.displayName || technician?.fullName
+    );
+    return Boolean(assignedName && technicianName && assignedName === technicianName);
+  }) || null;
+};
+
+export const buildTechnicianWorkloadMap = (jobs = [], technicians = []) => {
   return (Array.isArray(jobs) ? jobs : []).reduce((workloads, job) => {
-    const technicianId = job?.assignedTech?.id || job?.assignedTo;
-    if (!technicianId || isTerminalJob(job)) return workloads;
+    if (!isNextJobsTechnicianPanelJob(job)) return workloads;
+    const technician = findNextJobsTechnician(job, technicians);
+    const technicianId = technician?.id ?? technician?.user_id;
+    if (technicianId === null || technicianId === undefined) return workloads;
     const key = String(technicianId);
     const workload = workloads[key] || { activeJobs: 0, bookedHours: 0 };
     workload.activeJobs += 1;
@@ -69,7 +118,7 @@ export const buildJobOperationalStatusCounts = (jobs = [], { now = new Date() } 
   (Array.isArray(jobs) ? jobs : []).forEach((job) => {
     if (isTerminalJob(job)) return;
     const checkedIn = Boolean(job?.checkedInAt) || includesStatusPhrase(job, ["checked in", "customer arrived"]);
-    const inWorkshop = Boolean(job?.workshopStartedAt) || includesStatusPhrase(job, ["in progress", "technician started", "additional work being carried out"]);
+    const inWorkshop = Boolean(job?.workshopStartedAt || job?.clockingStartedAt || job?.hasClockingActivity) || includesStatusPhrase(job, ["in progress", "technician started", "additional work being carried out"]);
     const waiting = checkedIn && !inWorkshop;
     const parts = getPartsOperationalStatus(job);
     const vhc = getVhcOperationalStatus(job);
@@ -113,10 +162,13 @@ const formatDateTime = (value, now = new Date()) => {
   }).format(date);
 };
 
-const formatStoredStatus = (value) => String(value || "")
-  .trim()
-  .replace(/[_-]+/g, " ")
-  .replace(/\b\w/g, (character) => character.toUpperCase());
+const formatStoredStatus = (value) => {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "_");
+  if (normalized === "inprogress") return "In Progress";
+  return normalized
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+};
 
 const getAppointmentDate = (job) => {
   const date = job?.appointment?.date;
@@ -132,8 +184,9 @@ const getBookedWorkDueDate = (job) => {
 };
 
 const getPresenceLabel = (job, now) => {
-  if (job?.workshopStartedAt && !isTerminalJob(job)) {
-    const duration = formatOperationalDuration(job.workshopStartedAt, now);
+  const workshopStartedAt = job?.workshopStartedAt || job?.clockingStartedAt;
+  if (workshopStartedAt && !isTerminalJob(job)) {
+    const duration = formatOperationalDuration(workshopStartedAt, now);
     return duration ? `In workshop ${duration}` : "";
   }
   if (job?.checkedInAt && !isTerminalJob(job)) {
@@ -202,30 +255,39 @@ const getVhcOperationalStatus = (job) => {
 };
 
 const getPartsOperationalStatus = (job) => {
-  const source = Array.isArray(job?.partsAllocations) && job.partsAllocations.length > 0
-    ? job.partsAllocations
-    : Array.isArray(job?.partsRequests)
-      ? job.partsRequests
-      : [];
-  if (source.length === 0) return null;
+  const source = [
+    ...(Array.isArray(job?.partsAllocations) ? job.partsAllocations : []),
+    ...(Array.isArray(job?.partsRequests) ? job.partsRequests : []),
+  ];
+  if (source.length === 0) return { label: "No parts status", tone: "neutral", detail: "" };
 
   const activeParts = source.filter((part) => !["cancelled", "canceled", "removed"].includes(String(part?.status || "").trim().toLowerCase()));
-  if (activeParts.length === 0) return null;
-  const statuses = activeParts.map((part) => {
+  if (activeParts.length === 0) return { label: "No parts status", tone: "neutral", detail: "" };
+  const pipelineParts = activeParts.map((part) => {
     const rawStatus = String(part?.status || "").trim().toLowerCase();
-    return rawStatus === "fulfilled" ? ITEM_STATUSES.STOCK : NORMALIZE_ITEM(rawStatus);
+    const status = ({
+      fulfilled: "stock",
+      reserved: "pre_picked",
+      loaded: "picked",
+      booked: "pending",
+      priced: "pending",
+      unavailable: "awaiting_stock",
+    })[rawStatus] || rawStatus;
+    return { ...part, status };
   });
+  const pipeline = summarizePartsPipeline(pipelineParts);
+  const stageCounts = pipeline.stageMap;
   const detail = `${activeParts.length} item${activeParts.length === 1 ? "" : "s"}`;
-  if (statuses.includes(ITEM_STATUSES.ON_ORDER)) {
+  if (stageCounts.on_order?.count > 0) {
     return { label: "Parts on order", tone: "warning", detail };
   }
-  if (statuses.some((status) => [ITEM_STATUSES.PENDING, ITEM_STATUSES.PRICED].includes(status))) {
+  if ((stageCounts.waiting_authorisation?.count || 0) + (stageCounts.waiting_to_order?.count || 0) > 0) {
     return { label: "Parts pending", tone: "warning", detail };
   }
-  if (statuses.some((status) => [ITEM_STATUSES.PRE_PICK, ITEM_STATUSES.RESERVED].includes(status))) {
+  if (stageCounts.pre_picked?.count > 0) {
     return { label: "Parts preparing", tone: "accent", detail };
   }
-  return { label: "Parts ready", tone: "success", detail };
+  return { label: "Parts available", tone: "success", detail };
 };
 
 const getAttentionSignals = (job, now) => {
@@ -254,24 +316,42 @@ const getAttentionSignals = (job, now) => {
 };
 
 export const buildJobRowSummary = (job, { now = new Date(), technicianLoad = null } = {}) => {
-  const requests = getJobRequests(job)
-    .map((request) => ({
+  const checklistTasks = getWriteUpChecklistTasks(job?.writeUp?.task_checklist ?? job?.writeUp?.taskChecklist);
+  const customerRequests = getJobRequests(job)
+    .filter((request) => String(request?.requestSource ?? request?.request_source ?? "customer_request").trim().toLowerCase() === "customer_request");
+  const writeUpCompletion = getWriteUpCompletionState({
+    completionStatus: job?.writeUp?.completion_status ?? job?.writeUp?.completionStatus ?? job?.completionStatus,
+    checklistTasks,
+    requestRows: customerRequests,
+  });
+  const requestWorkflowStatus = getCustomerRequestWorkflowStatus({
+    jobStatus: job?.status,
+    writeUpComplete: writeUpCompletion.isCompleteInstant,
+  });
+  const requests = customerRequests
+    .map((request, index) => ({
       text: String(request?.description || request?.text || request || "").trim(),
       hours: Number(request?.hours ?? request?.time),
-      status: formatStoredStatus(request?.status),
-      statusDuration: request?.status
-        ? formatOperationalDuration(request?.updatedAt || request?.updated_at, now)
-        : "",
+      status: formatStoredStatus(getCustomerRequestEffectiveStatus({
+        requestStatus: request?.status,
+        completedInWriteUp: isCustomerRequestCompleteInWriteUp({
+          request,
+          requestIndex: index,
+          checklistTasks,
+        }),
+        workflowStatus: requestWorkflowStatus,
+      })),
     }))
     .filter((request) => request.text);
   const appointmentAt = getAppointmentDate(job);
-  const statusDuration = formatOperationalDuration(job?.statusUpdatedAt, now);
+  const statusDuration = formatOperationalAge(job?.statusUpdatedAt, now);
   const promisedAt = job?.bookingRequest?.estimatedCompletion;
   const signals = getAttentionSignals(job, now);
   const promisedSignal = signals.find((signal) => signal.label === "Collection overdue" || signal.label === "Collection at risk");
   const scheduleTiming = getScheduleTiming(job, now);
 
   return {
+    statusLabel: job?.status || "",
     appointmentTime: appointmentAt ? formatClock(appointmentAt) : "",
     appointmentDate: appointmentAt
       ? new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "2-digit", month: "short" }).format(appointmentAt)
@@ -279,7 +359,7 @@ export const buildJobRowSummary = (job, { now = new Date(), technicianLoad = nul
     scheduleLabel: scheduleTiming.label,
     scheduleState: scheduleTiming.state,
     presenceLabel: getPresenceLabel(job, now),
-    statusDuration: statusDuration ? `${statusDuration} in status` : "",
+    statusDuration: statusDuration ? `${statusDuration} since last update` : "",
     promisedLabel: promisedAt ? formatDateTime(promisedAt, now) : "",
     promisedState: promisedAt && !isTerminalJob(job)
       ? promisedSignal

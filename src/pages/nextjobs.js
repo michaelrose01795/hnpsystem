@@ -19,7 +19,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
-import { normalizeRequests, compareJobsForBoard } from "@/lib/jobCards/utils";
+import { normalizeRequests, compareJobsForBoard, isNextJobsTechnicianPanelJob } from "@/lib/jobCards/utils";
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
@@ -589,17 +589,7 @@ export default function NextJobsPage() {
 
   const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
 
-  const isTechPanelJob = useCallback(
-    (job) => {
-      if (!job) return false;
-      // Live-workshop view: only "In Progress" jobs appear on the board. Checked-in
-      // jobs have their own section; every other status is hidden from this page.
-      return toStatusKey(job.status) === "IN PROGRESS";
-    },
-    []
-  );
-
-  const techPanelJobs = useMemo(() => jobs.filter(isTechPanelJob), [jobs, isTechPanelJob]);
+  const techPanelJobs = useMemo(() => jobs.filter(isNextJobsTechnicianPanelJob), [jobs]);
 
   const jobsByNumber = useMemo(() => {
     const map = new Map();
@@ -1391,7 +1381,7 @@ export default function NextJobsPage() {
         type: "error",
         text: `Failed to unassign technician from ${jobNumber}: ${err?.message || "Unknown error"}`
       });
-      return;
+      return false;
     }
 
     if (!updatedJob?.success) {
@@ -1402,7 +1392,7 @@ export default function NextJobsPage() {
         updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""}`
 
       });
-      return;
+      return false;
     }
 
     console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
@@ -1416,6 +1406,7 @@ export default function NextJobsPage() {
       type: "success",
       text: `Technician unassigned from job ${jobNumber}`
     });
+    return true;
   };
 
   const resolveDropIndicator = useCallback((clientX, clientY, job) => {

@@ -3,11 +3,11 @@
 // Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // import React and hooks
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"; // import React and hooks
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
-import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
+import { getAllJobs, subscribeToJobsOverviewChanges, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -22,12 +22,18 @@ import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-u
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerSurface from "@/components/ui/LayerSurface";
 import { reportError } from "@/lib/notifications/report"; // Phase 3 reporting helper (Phase 10 migration).
-import { buildJobOperationalStatusCounts, buildJobRowSummary, buildTechnicianWorkloadMap } from "@/lib/jobCards/jobRowSummary";
-import useJobViewDensity from "@/hooks/useJobViewDensity";
+import { buildJobOperationalStatusCounts, buildJobRowSummary, buildTechnicianWorkloadMap, findNextJobsTechnician } from "@/lib/jobCards/jobRowSummary";
+import { createJobNote, getNotesByJob } from "@/lib/database/notes";
+import { getMotTesterUsers, getTechnicianUsers } from "@/lib/database/users";
+import { invalidateCache } from "@/lib/database/queryCache";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
 const CARRY_OVER_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
+const JOBS_PAGE_CACHE_KEY = "jobs:all:jobs-page";
+const JOBS_FETCH_RETRY_DELAYS = [250, 750];
+
+const waitForRetry = (delayMs) => new Promise((resolve) => window.setTimeout(resolve, delayMs));
 
 /* ================================
    Utility function: today's date
@@ -146,6 +152,14 @@ export default function ViewJobCards() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [popupJob, setPopupJob] = useState(null); // store selected job for popup
   const [popupSnapshot, setPopupSnapshot] = useState(null);
+  const [quickNoteJob, setQuickNoteJob] = useState(null);
+  const [quickNoteText, setQuickNoteText] = useState("");
+  const [quickNoteHidden, setQuickNoteHidden] = useState(true);
+  const [quickNoteNotes, setQuickNoteNotes] = useState([]);
+  const [quickNoteLoading, setQuickNoteLoading] = useState(false);
+  const [quickNoteSaving, setQuickNoteSaving] = useState(false);
+  const [quickNoteError, setQuickNoteError] = useState("");
+  const [nextJobsTechnicians, setNextJobsTechnicians] = useState([]);
   const [searchValues, setSearchValues] = useState({
     today: "",
     carryOver: "",
@@ -158,8 +172,9 @@ export default function ViewJobCards() {
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
+  const [jobsLoadError, setJobsLoadError] = useState("");
   const [operationalNow, setOperationalNow] = useState(() => new Date());
-  const { isCompact: isCompactView, toggleDensity: toggleJobViewDensity } = useJobViewDensity();
+  const jobsRealtimeRefreshRef = useRef(null);
   const router = useRouter(); // router for navigation
   const divisionParam = router.query?.division;
   useEffect(() => {
@@ -198,7 +213,7 @@ export default function ViewJobCards() {
   }, [popupJob?.id]);
   const [divisionFilter, setDivisionFilter] = useState("All"); // Retail vs Sales filter
   const { triggerNextAction } = useNextAction(); // next action dispatcher
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
   const today = getTodayDate(); // get today's date
 
   const userRoles = useMemo(() => {
@@ -217,17 +232,167 @@ export default function ViewJobCards() {
   /* ----------------------------
      Fetch jobs from Supabase
   ---------------------------- */
-  const fetchJobs = async () => {
-    setLoading(true); // show loading state
-    const jobsFromSupabase = await getAllJobs(); // get all jobs from database with full data
-    console.log("Fetched jobs:", jobsFromSupabase); // debug log
-    setJobs(jobsFromSupabase); // update state
-    setLoading(false); // hide loading state
-  };
+  const fetchJobs = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) setLoading(true); // show loading state
+    setJobsLoadError("");
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= JOBS_FETCH_RETRY_DELAYS.length; attempt += 1) {
+      try {
+        const jobsFromSupabase = await getAllJobs({
+          throwOnError: true,
+          cacheKey: JOBS_PAGE_CACHE_KEY,
+        });
+
+        // A successful empty result can briefly occur while the browser session
+        // is settling after a hard reload. Confirm it before rendering an empty state.
+        if (jobsFromSupabase.length === 0 && attempt < JOBS_FETCH_RETRY_DELAYS.length) {
+          invalidateCache(JOBS_PAGE_CACHE_KEY);
+          await waitForRetry(JOBS_FETCH_RETRY_DELAYS[attempt]);
+          continue;
+        }
+
+        console.log("Fetched jobs:", jobsFromSupabase); // debug log
+        setJobs(jobsFromSupabase); // update state
+        setPopupJob((currentJob) => currentJob
+          ? jobsFromSupabase.find((job) => job.id === currentJob.id) || currentJob
+          : null);
+        setQuickNoteJob((currentJob) => currentJob
+          ? jobsFromSupabase.find((job) => job.id === currentJob.id) || currentJob
+          : null);
+        setLoading(false); // hide loading state
+        return;
+      } catch (fetchError) {
+        lastError = fetchError;
+        invalidateCache(JOBS_PAGE_CACHE_KEY);
+        if (attempt < JOBS_FETCH_RETRY_DELAYS.length) {
+          await waitForRetry(JOBS_FETCH_RETRY_DELAYS[attempt]);
+        }
+      }
+    }
+
+    console.error("Failed to load jobs after retrying", lastError);
+    setJobsLoadError("Jobs could not be loaded. Please refresh and try again.");
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchJobs(); // fetch jobs on component mount
+    void fetchJobs(); // fetch jobs on component mount
+  }, [fetchJobs]);
+
+  const fetchNextJobsRoster = useCallback(async () => {
+    try {
+      const [technicians, motTesters] = await Promise.all([
+        getTechnicianUsers(),
+        getMotTesterUsers(),
+      ]);
+      setNextJobsTechnicians([
+        ...(Array.isArray(technicians) ? technicians : []),
+        ...(Array.isArray(motTesters) ? motTesters : []),
+      ]);
+    } catch (technicianError) {
+      console.error("Failed to load the Next Jobs technician roster", technicianError);
+      setNextJobsTechnicians([]);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchNextJobsRoster();
+  }, [fetchNextJobsRoster]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToJobsOverviewChanges("jobs-page", (_payload, table) => {
+      if (table === "users") void fetchNextJobsRoster();
+      if (table === "job_notes" && quickNoteJob?.id) {
+        void getNotesByJob(quickNoteJob.id).then((notes) => {
+          setQuickNoteNotes(Array.isArray(notes) ? notes : []);
+        });
+      }
+      if (jobsRealtimeRefreshRef.current) window.clearTimeout(jobsRealtimeRefreshRef.current);
+      jobsRealtimeRefreshRef.current = window.setTimeout(() => {
+        invalidateCache(JOBS_PAGE_CACHE_KEY);
+        void fetchJobs({ showLoading: false });
+      }, 150);
+    });
+
+    return () => {
+      unsubscribe();
+      if (jobsRealtimeRefreshRef.current) window.clearTimeout(jobsRealtimeRefreshRef.current);
+    };
+  }, [fetchJobs, fetchNextJobsRoster, quickNoteJob?.id]);
+
+  useEffect(() => {
+    if (!quickNoteJob?.id) {
+      setQuickNoteNotes([]);
+      return;
+    }
+
+    let isActive = true;
+    setQuickNoteLoading(true);
+    setQuickNoteError("");
+    getNotesByJob(quickNoteJob.id)
+      .then((notes) => {
+        if (isActive) setQuickNoteNotes(Array.isArray(notes) ? notes : []);
+      })
+      .catch((noteError) => {
+        if (!isActive) return;
+        console.error("Failed to load quick-note context", noteError);
+        setQuickNoteError("Existing notes could not be loaded.");
+      })
+      .finally(() => {
+        if (isActive) setQuickNoteLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [quickNoteJob?.id]);
+
+  const openQuickNote = useCallback((job) => {
+    setQuickNoteJob(job);
+    setQuickNoteText("");
+    setQuickNoteHidden(true);
+    setQuickNoteError("");
+  }, []);
+
+  const closeQuickNote = useCallback(() => {
+    if (quickNoteSaving) return;
+    setQuickNoteJob(null);
+    setQuickNoteText("");
+    setQuickNoteError("");
+  }, [quickNoteSaving]);
+
+  const saveQuickNote = useCallback(async () => {
+    const noteText = quickNoteText.trim();
+    if (!quickNoteJob?.id || !noteText || quickNoteSaving) return;
+
+    setQuickNoteSaving(true);
+    setQuickNoteError("");
+    try {
+      const result = await createJobNote({
+        job_id: quickNoteJob.id,
+        user_id: dbUserId || null,
+        note_text: noteText,
+        hidden_from_customer: quickNoteHidden,
+      });
+      if (!result?.success) throw new Error(result?.error?.message || "Failed to save note");
+
+      setJobs((currentJobs) => currentJobs.map((job) => (
+        job.id === quickNoteJob.id
+          ? { ...job, notes: [...(Array.isArray(job.notes) ? job.notes : []), result.data] }
+          : job
+      )));
+      await revalidateAllJobs();
+      setQuickNoteJob(null);
+      setQuickNoteText("");
+      setQuickNoteHidden(true);
+    } catch (noteError) {
+      console.error("Failed to save quick note", noteError);
+      setQuickNoteError(noteError?.message || "Failed to save note.");
+    } finally {
+      setQuickNoteSaving(false);
+    }
+  }, [dbUserId, quickNoteHidden, quickNoteJob, quickNoteSaving, quickNoteText]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setOperationalNow(new Date()), 60000);
@@ -279,7 +444,7 @@ export default function ViewJobCards() {
   };
 
   const handleStatusChange = async (jobId, newStatus) => {
-    const result = await updateJobStatus(jobId, newStatus); // update status in database
+    const result = await updateJobStatus(jobId, newStatus, dbUserId || null); // update status in database
     if (result?.success && result.data) {
       fetchJobs(); // refresh jobs list after update
       revalidateAllJobs(); // sync status change to other pages via SWR
@@ -321,8 +486,8 @@ export default function ViewJobCards() {
   );
 
   const technicianLoads = useMemo(
-    () => buildTechnicianWorkloadMap(divisionFilteredJobs),
-    [divisionFilteredJobs]
+    () => buildTechnicianWorkloadMap(jobs, nextJobsTechnicians),
+    [jobs, nextJobsTechnicians]
   );
 
   const handleDivisionFilterChange = useCallback(
@@ -459,7 +624,9 @@ export default function ViewJobCards() {
   const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
   const searchPlaceholder = isOrdersTab ? "Search orders..." : "Search jobs...";
-  const emptyStateMessage = searchValue ?
+  const emptyStateMessage = jobsLoadError && jobs.length === 0 ?
+  jobsLoadError :
+  searchValue ?
   isOrdersTab ?
   "No orders match your search." :
   "No jobs match your search." :
@@ -545,7 +712,7 @@ export default function ViewJobCards() {
   /* ================================
      Page Layout
   ================================ */
-  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isCompactView={isCompactView} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} operationalNow={operationalNow} operationalStatusCounts={operationalStatusCounts} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} technicianLoads={technicianLoads} toggleJobViewDensity={toggleJobViewDensity} />;
+  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} closeQuickNote={closeQuickNote} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isOrdersTab={isOrdersTab} JobListCard={JobListCard} nextJobsTechnicians={nextJobsTechnicians} onOpenQuickNote={openQuickNote} OrderListCard={OrderListCard} operationalNow={operationalNow} operationalStatusCounts={operationalStatusCounts} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} quickNoteError={quickNoteError} quickNoteHidden={quickNoteHidden} quickNoteJob={quickNoteJob} quickNoteLoading={quickNoteLoading} quickNoteNotes={quickNoteNotes} quickNoteSaving={quickNoteSaving} quickNoteText={quickNoteText} router={router} saveQuickNote={saveQuickNote} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} setQuickNoteHidden={setQuickNoteHidden} setQuickNoteText={setQuickNoteText} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} technicianLoads={technicianLoads} />;
 
 
 
@@ -1258,13 +1425,16 @@ const operationalBadgeTone = (tone) => ({
   warning: "app-badge--warning",
 }[tone] || "app-badge--neutral");
 
-const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, sectionKey, parentKey, now, technicianLoad }) => {
+const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKey, parentKey, now, technicianLoads, nextJobsTechnicians }) => {
   const jobType = deriveJobType(job);
   const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
-  const assignedTechName = job.assignedTech?.fullName || job.assignedTech?.name || job.technician || "";
+  const nextJobsTechnician = findNextJobsTechnician(job, nextJobsTechnicians);
+  const nextJobsTechnicianId = nextJobsTechnician?.id ?? nextJobsTechnician?.user_id;
+  const technicianLoad = nextJobsTechnicianId !== null && nextJobsTechnicianId !== undefined
+    ? technicianLoads?.[String(nextJobsTechnicianId)] || null
+    : null;
+  const assignedTechName = nextJobsTechnician?.name || nextJobsTechnician?.displayName || nextJobsTechnician?.fullName || "";
   const summary = buildJobRowSummary(job, { now, technicianLoad });
-  const contactDetails = [job.customerPhone, job.customerEmail].filter(Boolean);
-  const notesCount = Array.isArray(job.notes) ? job.notes.length : 0;
   const runAction = (event, action) => {
     event.stopPropagation();
     action();
@@ -1279,9 +1449,22 @@ const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, se
       className="app-job-operations-row-shell"
       onMouseEnter={onMouseEnter}>
 
-      <LayerSurface className={`app-job-operations-row${compactView ? " is-compact" : ""}${summary.signals.some((signal) => signal.tone === "danger") ? " is-overdue" : summary.signals.length ? " needs-attention" : ""}`} radius="var(--radius-sm)" padding="0">
+      <LayerSurface
+        className={`app-job-operations-row${summary.signals.some((signal) => signal.tone === "danger") ? " is-overdue" : summary.signals.length ? " needs-attention" : ""}`}
+        radius="var(--radius-sm)"
+        padding="0"
+        gap="0"
+        data-dev-disable-fallback="1">
 
-      <div className="app-job-operations-row__board" role="group" aria-label={`Job ${job.jobNumber || "workshop row"}`}>
+      <DevLayoutSection
+        sectionKey={`${sectionKey}-summary`}
+        parentKey={sectionKey}
+        sectionType="section-shell"
+        backgroundToken="transparent"
+        className="app-job-operations-row__board"
+        role="group"
+        aria-label={`Job ${job.jobNumber || "workshop row"} summary`}
+        data-dev-text-preview={`Job ${job.jobNumber || "workshop row"} appointment customer status technician VHC parts actions`}>
         <section className="app-job-operations-row__column app-job-operations-row__column--appointment">
           <span className="app-job-operations-row__label">Appointment</span>
           {summary.appointmentTime && <time className="app-job-operations-row__time-value">{summary.appointmentTime}</time>}
@@ -1306,7 +1489,9 @@ const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, se
         <section className="app-job-operations-row__column app-job-operations-row__column--customer">
           <span className="app-job-operations-row__label">Customer</span>
           {job.customer && <strong className="app-job-operations-row__value">{job.customer}</strong>}
-          {contactDetails.map((detail) => <span key={detail} className="app-job-operations-row__muted">{detail}</span>)}
+          {job.customerPhone && <span className="app-job-operations-row__muted">{job.customerPhone}</span>}
+          {job.customerEmail && <span className="app-job-operations-row__muted app-job-operations-row__customer-email" title={job.customerEmail}>{job.customerEmail}</span>}
+          {job.customerPostcode && <span className="app-job-operations-row__muted">{job.customerPostcode}</span>}
         </section>
 
         <section className="app-job-operations-row__column app-job-operations-row__column--status">
@@ -1323,7 +1508,7 @@ const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, se
 
         <section className="app-job-operations-row__column app-job-operations-row__column--technician">
           <span className="app-job-operations-row__label">Technician</span>
-          {assignedTechName && <strong className="app-job-operations-row__value">{assignedTechName}</strong>}
+          {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--neutral">No tech</span>}
           {summary.technicianLoad && <span className="app-job-operations-row__muted">{summary.technicianLoad}</span>}
         </section>
 
@@ -1335,26 +1520,37 @@ const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, se
 
         <section className="app-job-operations-row__column app-job-operations-row__column--parts">
           <span className="app-job-operations-row__label">Parts</span>
-          {summary.parts && <span className={`app-badge ${operationalBadgeTone(summary.parts.tone)}`}>{summary.parts.label}</span>}
+          {summary.parts && <span className={`app-badge app-job-operations-row__parts-status ${operationalBadgeTone(summary.parts.tone)}`}>{summary.parts.label}</span>}
           {summary.parts?.detail && <span className="app-job-operations-row__muted">{summary.parts.detail}</span>}
-        </section>
-
-        <section className="app-job-operations-row__column app-job-operations-row__column--promised">
-          <span className="app-job-operations-row__label">Promised</span>
-          {summary.promisedLabel && <strong className="app-job-operations-row__value app-job-operations-row__promised-time">{summary.promisedLabel}</strong>}
-          {summary.promisedState && <span className={`app-badge ${operationalBadgeTone(summary.promisedState.tone)}`}>{summary.promisedState.label}</span>}
         </section>
 
         <section className="app-job-operations-row__column app-job-operations-row__column--actions">
           <span className="app-job-operations-row__label">Actions</span>
-          <button type="button" className="app-btn app-btn--primary app-btn--sm" onClick={(event) => runAction(event, onNavigate)}>
-            Open job
-          </button>
+          <div className="app-job-operations-row__action-stack">
+            <button type="button" className="app-btn app-btn--primary app-btn--sm" onClick={(event) => runAction(event, onNavigate)}>
+              Open job
+            </button>
+            <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={(event) => runAction(event, () => onOpenQuickNote(job))}>
+              Quick note
+            </button>
+          </div>
         </section>
-      </div>
+      </DevLayoutSection>
 
-      {(summary.requests.length > 0 || notesCount > 0) && <div className="app-job-operations-row__lower">
-        {summary.requests.length > 0 && <section className="app-job-operations-row__requests">
+      {summary.requests.length > 0 && <DevLayoutSection
+        sectionKey={`${sectionKey}-customer-requests`}
+        parentKey={sectionKey}
+        sectionType="section-shell"
+        backgroundToken="transparent"
+        className="app-job-operations-row__lower"
+        data-dev-text-preview={`${summary.requests.length} customer requests for job ${job.jobNumber || "workshop row"}`}>
+        <DevLayoutSection
+          sectionKey={`${sectionKey}-customer-requests-content`}
+          parentKey={`${sectionKey}-customer-requests`}
+          sectionType="list-row"
+          backgroundToken="transparent"
+          className="app-job-operations-row__requests"
+          data-dev-text-preview={`Customer request content for job ${job.jobNumber || "workshop row"}`}>
           <div className="app-job-operations-row__requests-heading">
             <span className="app-job-operations-row__requests-total" aria-label={`${summary.requests.length} customer requests`}>
               {summary.requests.length}
@@ -1366,21 +1562,15 @@ const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, se
               {summary.requests.map((request, index) => <li key={`${request.text}-${index}`}>
                 <span className="app-job-operations-row__request-number" aria-hidden="true">{index + 1}</span>
                 <span className="app-job-operations-row__request-text">{request.text}</span>
+                {Number.isFinite(request.hours) && request.hours > 0 && <small className="app-job-operations-row__request-hours">{request.hours}h</small>}
                 <span className="app-job-operations-row__request-meta">
-                  {request.status && <span className="app-badge app-badge--neutral">{request.status}</span>}
-                  {request.statusDuration && <small>{request.statusDuration}</small>}
-                  {Number.isFinite(request.hours) && request.hours > 0 && <small>{request.hours}h</small>}
+                  {request.status && <span className={`app-badge ${getJobStatusBadgeTone(request.status)}`}>{request.status}</span>}
                 </span>
               </li>)}
             </ol>
           </div>
-        </section>}
-        {notesCount > 0 && <div className="app-job-operations-row__lower-actions">
-          <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={(event) => runAction(event, () => onOpenTab("notes"))}>
-            Notes <span className="app-badge app-badge--neutral">{notesCount}</span>
-          </button>
-        </div>}
-      </div>}
+        </DevLayoutSection>
+      </DevLayoutSection>}
       </LayerSurface>
     </DevLayoutSection>);
 };

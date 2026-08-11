@@ -222,10 +222,41 @@ const compareJobsForBoard = (left, right) => {
   return getComparableTimestamp(right?.createdAt) - getComparableTimestamp(left?.createdAt);
 };
 
-export { normalizeRequests, mapCustomerJobsToHistory, compareJobsForBoard };
+// Shared eligibility rule for the technician panels on /nextjobs and any
+// summary that claims to represent those panels.
+const isNextJobsTechnicianPanelJob = (job) =>
+  String(job?.status || "").trim().toUpperCase() === "IN PROGRESS";
+
+const selectCurrentAppointment = (appointments = []) => {
+  const rows = Array.isArray(appointments) ? appointments.filter(Boolean) : [];
+  if (rows.length === 0) return null;
+
+  const activeRows = rows.filter((row) => !["cancelled", "canceled"].includes(
+    String(row?.status || "").trim().toLowerCase()
+  ));
+  const candidates = activeRows.length > 0 ? activeRows : rows;
+  return [...candidates].sort((left, right) => {
+    const scheduledDifference =
+      getComparableTimestamp(right?.scheduled_time ?? right?.scheduledTime) -
+      getComparableTimestamp(left?.scheduled_time ?? left?.scheduledTime);
+    if (scheduledDifference !== 0) return scheduledDifference;
+
+    const updatedDifference =
+      getComparableTimestamp(right?.updated_at ?? right?.updatedAt) -
+      getComparableTimestamp(left?.updated_at ?? left?.updatedAt);
+    if (updatedDifference !== 0) return updatedDifference;
+
+    return Number(right?.appointment_id ?? right?.appointmentId ?? 0) -
+      Number(left?.appointment_id ?? left?.appointmentId ?? 0);
+  })[0];
+};
+
+export { normalizeRequests, mapCustomerJobsToHistory, compareJobsForBoard, isNextJobsTechnicianPanelJob, selectCurrentAppointment };
 
 export default {
   normalizeRequests,
   mapCustomerJobsToHistory,
   compareJobsForBoard,
+  isNextJobsTechnicianPanelJob,
+  selectCurrentAppointment,
 };

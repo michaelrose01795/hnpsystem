@@ -5,50 +5,8 @@ Manager update give url link
 
 
 TODO
-atm the customer request section within the "Jobs Auto Content Card 10 | 1.2.2.1.1.3.1.1.1 | key jobs-auto-content-card-10 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:194 (dynamic pattern) | route /jobs | where Appointment 15:30 Tue 11 Aug Overdue -1h 21m Job 03805 59MGC272 Toyota Yaris Service Customer Zoe Evans 07295645721 zoe.evans.272@example-customer.hnp Status Booked Waiting 483h 32 | parent job-cards-view-job-row-03805 1.2.2.1.1.3.1.1" rows have it so there is a seperation line between the "Appointment
-15:30
-Tue 11 Aug
-Overdue -1h 23m
-Job
-03805
-59MGC272
-Toyota Yaris
-Service
-Customer
-Zoe Evans
-07295645721
-zoe.evans.272@example-customer.hnp
-Status
-Booked
-Waiting
-483h 34m in status
-Technician
-Tech 3
-138 active jobs · 302.6h booked
-VHC
-VHC pending
-Parts
-Promised
-Actions
-Open job" seciton and the "1
-Customer requests
-1
-Air conditioning performance service
-Inprogress
-483h 34m
-1.2h" for example. have it so that line is still there however its being blocked by the "
+Within the "Technician Tech 3 138 active jobs · 302.6h booked" section why does it say "138 active jobs · 302.6h booked. is the technician column linked to the next job section for each tech to see if that job number apears wtihin their row etc.
 
-
-
-
-TODO
-"within "**Status** **Booked** **Waiting** 480h 18m in status" section why it is saying "480h 18m in status"
-
-TODO 
-wihtin the "Customer request" section why does it say "Inprogress 480h 23m 1.2h" i dont get the hour section for example i understand the inprogress but not the rest. 
-
-TODO
-Within the "Technician Tech 3 138 active jobs · 302.6h booked" section why does it say "138 active jobs · 302.6h booked. 
 
 
 CHECKKKK

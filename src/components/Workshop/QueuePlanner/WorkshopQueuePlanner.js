@@ -496,7 +496,7 @@ const Field = ({ label, value, wide }) => (
   </LayerTheme>
 );
 
-function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, onAssign, estimateJobHours, getJobClockedTimeText, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
+function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, estimateJobHours, getJobClockedTimeText, deriveJobTypeLabel, formatAppointmentTime, getJobRequestItems }) {
   if (!job) return null;
 
   const statusMeta = getStatusMeta(job.status);
@@ -597,18 +597,15 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onUnassign, o
             </LayerTheme>
           </div>
 
-          {job.assignedTech && (
-            <div className="wqp-job-modal-footer">
-              <button type="button" className="app-btn app-btn--danger" onClick={onUnassign}>Unassign</button>
-            </div>
-          )}
         </LayerSurface>
       </div>
     </div>
   );
 }
 
-function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
+const UNASSIGN_TECHNICIAN_VALUE = "__unassign__";
+
+function TechnicianAssignmentModal({ job, technicians, onClose, onAssign, onUnassign }) {
   const [technicianId, setTechnicianId] = React.useState("");
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState("");
@@ -626,10 +623,22 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
     setIsAssigning(true);
     setErrorMessage("");
     try {
-      await onAssign?.(technicianId);
+      if (technicianId === UNASSIGN_TECHNICIAN_VALUE) {
+        const didUnassign = await onUnassign?.();
+        if (didUnassign === false) {
+          throw new Error("Failed to unassign technician.");
+        }
+      } else {
+        await onAssign?.(technicianId);
+      }
       onClose?.();
     } catch (error) {
-      setErrorMessage(error?.message || "Failed to assign technician.");
+      setErrorMessage(
+        error?.message ||
+        (technicianId === UNASSIGN_TECHNICIAN_VALUE
+          ? "Failed to unassign technician."
+          : "Failed to assign technician.")
+      );
     } finally {
       setIsAssigning(false);
     }
@@ -652,10 +661,15 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
           id="workshop-technician-assignment"
           label="Technician"
           placeholder="Select a technician"
-          options={technicians.map((technician) => ({
-            value: String(technician.id),
-            label: technician.name,
-          }))}
+          options={[
+            ...(job?.assignedTech
+              ? [{ value: UNASSIGN_TECHNICIAN_VALUE, label: "Unassign" }]
+              : []),
+            ...technicians.map((technician) => ({
+              value: String(technician.id),
+              label: technician.name,
+            })),
+          ]}
           value={technicianId}
           onChange={(event) => setTechnicianId(event.target.value)}
           disabled={isAssigning}
@@ -670,7 +684,13 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign }) {
 
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px" }}>
           <button type="submit" className="app-btn app-btn--primary" disabled={!technicianId || isAssigning}>
-            {isAssigning ? "Assigning…" : "Assign Technician"}
+            {isAssigning
+              ? technicianId === UNASSIGN_TECHNICIAN_VALUE
+                ? "Unassigning…"
+                : "Assigning…"
+              : technicianId === UNASSIGN_TECHNICIAN_VALUE
+              ? "Unassign"
+              : "Assign Technician"}
           </button>
           <button type="button" className="app-btn app-btn--secondary" onClick={onClose} disabled={isAssigning}>
             Close
@@ -1096,7 +1116,6 @@ export default function WorkshopQueuePlanner({
           feedback={feedbackMessage}
           onClose={handleCloseJobDetails}
           onOpenJobCard={handleViewSelectedJobCard}
-          onUnassign={unassignTechFromJob}
           onAssign={() => setShowTechnicianAssignment(true)}
           estimateJobHours={estimateJobHours}
           getJobClockedTimeText={getJobClockedTimeText}
@@ -1112,6 +1131,7 @@ export default function WorkshopQueuePlanner({
           technicians={assignableStaffList || []}
           onClose={() => setShowTechnicianAssignment(false)}
           onAssign={assignSelectedJobToTechnician}
+          onUnassign={unassignTechFromJob}
         />
       )}
 
@@ -1142,10 +1162,6 @@ export default function WorkshopQueuePlanner({
         }
         .wqp-job-modal-header__actions {
           flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-        .wqp-job-modal-footer {
-          display: flex;
           justify-content: flex-end;
         }
         .wqp-capacity-trigger:focus-visible {

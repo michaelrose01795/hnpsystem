@@ -1,5 +1,5 @@
 ﻿// file location: src/components/dev-layout-overlay/DevLayoutOverlay.js
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
@@ -497,6 +497,17 @@ const getCreateSectionLabel = (section, mode) => {
 const isOverlayInternalNode = (node) =>
   Boolean(node?.closest?.("[data-dev-overlay-internal='1']"));
 
+const isDevOverlayToggleControl = (node) => {
+  const control = node?.closest?.("button[role='switch']");
+  if (!control) return false;
+
+  const accessibleName = normalizeContextText(
+    control.getAttribute("aria-label") || control.getAttribute("title") || control.textContent
+  ).toLowerCase();
+
+  return accessibleName === "overlay" || accessibleName === "toggle dev layout overlay";
+};
+
 const scanSections = ({ route, registry, activeCategoryIds }) => {
   const sectionsByKey = new Map();
   const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]")).filter(
@@ -715,9 +726,36 @@ const getViewportBounds = () => {
 
 const copyText = async (text) => {
   if (!text) return false;
-  if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
-  await navigator.clipboard.writeText(text);
-  return true;
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Clipboard permission can be denied on local/non-secure dev origins.
+      // Fall through to the selection-based browser copy path below.
+    }
+  }
+
+  if (typeof document === "undefined" || typeof document.execCommand !== "function") return false;
+
+  const copyField = document.createElement("textarea");
+  copyField.value = text;
+  copyField.readOnly = true;
+  copyField.setAttribute("aria-hidden", "true");
+  copyField.setAttribute("data-dev-overlay-internal", "1");
+  copyField.style.position = "fixed";
+  copyField.style.left = "-9999px";
+  copyField.style.opacity = "0";
+  document.body.appendChild(copyField);
+  copyField.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    copyField.remove();
+  }
 };
 
 const formatSourceEntry = (entry) => {
@@ -920,8 +958,6 @@ export default function DevLayoutOverlay() {
     return () => window.clearTimeout(timer);
   }, [copiedSectionKey]);
 
-  if (!canAccess || !hydrated) return null;
-
   const currentRoute = router.asPath || router.pathname || "/";
   const isJobCardsCreateRoute = currentRoute.startsWith("/new-job");
 
@@ -939,16 +975,17 @@ export default function DevLayoutOverlay() {
     0
   );
 
-  const handleSectionCopy = async (section) => {
+  const handleSectionCopy = useCallback(async (section) => {
+    if (!section?.key) return;
     setSelectedSectionKey(section.key);
     const locatorText = buildSectionLocatorText(section, currentRoute);
     const copied = await copyText(`"${locatorText}"`);
     if (copied) {
       setCopiedSectionKey(section.key);
     }
-  };
+  }, [currentRoute]);
 
-  const resolveSectionAtPoint = (clientX, clientY) => {
+  const resolveSectionAtPoint = useCallback((clientX, clientY) => {
     const matches = scopedSections.filter((section) => {
       const rect = section.rect;
       return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
@@ -967,10 +1004,51 @@ export default function DevLayoutOverlay() {
     });
 
     return matches[0] || null;
-  };
+  }, [scopedSections]);
 
-  const handleInspectOverlayClick = (event) => {
-    if (mode !== "inspect") return;
+  useEffect(() => {
+    if (!canAccess || !hydrated || !enabled || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const getTargetSection = (event) => {
+      if (event.button != null && event.button !== 0) return null;
+      if (panelRef.current?.contains(event.target)) return null;
+      if (event.target?.closest?.("[data-dev-overlay-label='1']")) return null;
+      if (isDevOverlayToggleControl(event.target)) return null;
+      return resolveSectionAtPoint(event.clientX, event.clientY);
+    };
+
+    const stopInspectEvent = (event) => {
+      const targetSection = getTargetSection(event);
+      if (!targetSection) return null;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      return targetSection;
+    };
+
+    const handlePointerDown = (event) => {
+      const targetSection = stopInspectEvent(event);
+      if (targetSection) handleSectionCopy(targetSection);
+    };
+
+    const blockUnderlyingAction = (event) => {
+      stopInspectEvent(event);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("pointerup", blockUnderlyingAction, true);
+    document.addEventListener("click", blockUnderlyingAction, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("pointerup", blockUnderlyingAction, true);
+      document.removeEventListener("click", blockUnderlyingAction, true);
+    };
+  }, [canAccess, hydrated, enabled, resolveSectionAtPoint, handleSectionCopy]);
+
+  const handleOverlayClick = (event) => {
     const targetSection = resolveSectionAtPoint(event.clientX, event.clientY);
     if (!targetSection) return;
     event.preventDefault();
@@ -1046,7 +1124,7 @@ export default function DevLayoutOverlay() {
             <div className={styles.controlRow}>
               <span className={styles.controlLabel}>
                 <span>Overlay mode</span>
-                <span className={styles.controlHint}>Inspect mode selects a section; other modes let page clicks pass through</span>
+                <span className={styles.controlHint}>Every mode selects sections and blocks page controls underneath</span>
               </span>
               <div className={styles.modeRow}>
                 {["labels", "details", "inspect", "trace"].map((value) => (
@@ -1099,10 +1177,10 @@ export default function DevLayoutOverlay() {
             <div className={styles.selectionBlock} data-dev-section-key="dev-overlay-selection" data-dev-section-type="section-card">
               <div className={styles.selectionText}>
                 <span className={styles.selectionTitle}>Selected section</span>
-                <span className={styles.selectionValue}>
+                <span className={styles.selectionValue} aria-live="polite">
                   {selectedSection
-                    ? `${selectedSection.number || "?"} ${selectedSection.key}`
-                    : "Switch to inspect mode, then select a section"}
+                    ? `${selectedSection.number || "?"} ${humanizeKey(selectedSection.key)}`
+                    : "Select a highlighted section on the page"}
                 </span>
               </div>
               <button
@@ -1199,6 +1277,8 @@ export default function DevLayoutOverlay() {
     );
   };
 
+  if (!canAccess || !hydrated) return null;
+
   if (!enabled) {
     return renderUnifiedPanel();
   }
@@ -1206,11 +1286,11 @@ export default function DevLayoutOverlay() {
   return (
     <>
       <div
-        className={`${styles.root} ${mode === "inspect" ? styles.rootInspect : ""} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()}
+        className={`${styles.root} ${styles.rootInspect} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()}
         data-dev-overlay-internal="1"
         aria-hidden="false"
         style={overlayStyle}
-        onClick={handleInspectOverlayClick}
+        onClick={handleOverlayClick}
       >
         {scopedSections.map((section) => {
         const sidebarSection = fullScreen && isSidebarSection(section);
@@ -1259,23 +1339,6 @@ export default function DevLayoutOverlay() {
             };
         return (
           <React.Fragment key={section.key}>
-            <button
-              type="button"
-              aria-label={`Copy locator for section ${section.number || "unknown"} ${section.key}`}
-              className={styles.copyTarget}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                handleSectionCopy(section);
-              }}
-              style={{
-                left: localRect.left,
-                top: localRect.top,
-                width: localRect.width,
-                height: localRect.height,
-              }}
-              title={`Copy locator: ${section.key}`}
-            />
             <div
               className={`${styles.box} ${isSelected ? styles.boxSelected : ""} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""}`.trim()}
               style={{
@@ -1288,6 +1351,7 @@ export default function DevLayoutOverlay() {
             <div
               role="button"
               tabIndex={0}
+              data-dev-overlay-label="1"
               aria-label={`Copy locator for section ${section.number || "unknown"} ${section.key}`}
               title={`Copy locator: ${section.key}`}
               className={`${styles.label} ${styles.labelButton} ${isSelected ? styles.labelSelected : ""} ${isJobCardsCreateRoute ? styles.labelCreate : ""} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" && !isJobCardsCreateRoute ? styles.labelDetails : ""}`}

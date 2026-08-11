@@ -94,7 +94,15 @@ import {
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
-import { getWriteUpCompletionState, getInvoiceWorkflowState } from "@/features/jobCards/workflow/selectors";
+import {
+  getClockingAwareJobStatus,
+  getCustomerRequestEffectiveStatus,
+  getCustomerRequestWorkflowStatus,
+  getWriteUpChecklistTasks,
+  getWriteUpCompletionState,
+  getInvoiceWorkflowState,
+  isCustomerRequestCompleteInWriteUp,
+} from "@/features/jobCards/workflow/selectors";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // Dynamic import loading state renders a structured skeleton that mirrors the
@@ -1122,14 +1130,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     typeof clockingSummary.completedSeconds === "number" && clockingSummary.completedSeconds > 0)
 
   );
-  const shouldPromoteCheckedInToInProgress =
-  rawOverallStatusId === JOB_STATUSES.CHECKED_IN && techHasClockedOnThisJob;
-  const overallStatusId = shouldPromoteCheckedInToInProgress ?
-  JOB_STATUSES.IN_PROGRESS :
-  rawOverallStatusId;
-  const overallStatusLabel = shouldPromoteCheckedInToInProgress ?
-  "In Progress" :
-  rawOverallStatusLabel;
+  const clockingAwareJobStatus = getClockingAwareJobStatus({
+    jobStatus: rawOverallStatusId || jobData?.status,
+    statusLabel: rawOverallStatusLabel,
+    hasClockingActivity: techHasClockedOnThisJob
+  });
+  const overallStatusId = clockingAwareJobStatus.statusId;
+  const overallStatusLabel = clockingAwareJobStatus.statusLabel;
   const isBookedStatus = overallStatusId ?
   overallStatusId === JOB_STATUSES.BOOKED :
   typeof jobData?.status === "string" &&
@@ -3321,6 +3328,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       if (!result?.success) {
         throw result?.error || new Error("Failed to update request status");
       }
+      await revalidateAllJobs();
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
     } catch (error) {
@@ -3355,6 +3363,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       if (!result?.success) {
         throw result?.error || new Error("Failed to mark all requests complete");
       }
+      await revalidateAllJobs();
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
     } catch (error) {
@@ -3377,6 +3386,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       if (!result?.success) {
         throw result?.error || new Error("Failed to save write-up");
       }
+      // The /jobs page uses its own jobs-list cache. Clear it immediately so
+      // navigating back shows the exact request status just persisted here.
+      await revalidateAllJobs();
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
       return result;
@@ -5455,25 +5467,10 @@ export function CustomerRequestsTab({
   // through to this tab. Tasks are stored either as an array directly, an
   // object with a .tasks array, or a JSON string of either shape.
   const writeUpChecklistTasksRaw = jobData?.writeUp?.task_checklist;
-  let writeUpChecklistTasks = [];
-  if (Array.isArray(writeUpChecklistTasksRaw)) {
-    writeUpChecklistTasks = writeUpChecklistTasksRaw;
-  } else if (writeUpChecklistTasksRaw && typeof writeUpChecklistTasksRaw === "object") {
-    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks) ?
-    writeUpChecklistTasksRaw.tasks :
-    [];
-  } else if (typeof writeUpChecklistTasksRaw === "string") {
-    try {
-      const parsed = JSON.parse(writeUpChecklistTasksRaw);
-      if (Array.isArray(parsed)) {
-        writeUpChecklistTasks = parsed;
-      } else if (parsed && typeof parsed === "object") {
-        writeUpChecklistTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-      }
-    } catch (_error) {
-      writeUpChecklistTasks = [];
-    }
-  }
+  const writeUpChecklistTasks = useMemo(
+    () => getWriteUpChecklistTasks(writeUpChecklistTasksRaw),
+    [writeUpChecklistTasksRaw]
+  );
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
@@ -5482,63 +5479,25 @@ export function CustomerRequestsTab({
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
     completionStatus: writeUpCompletionStatus,
-    checklistTasks: writeUpChecklistTasks
+    checklistTasks: writeUpChecklistTasks,
+    requestRows: customerRequestRows
   });
   const writeUpMarkedComplete = writeUpStateForRequests.isCompleteInstant;
 
-  // Build a quick lookup of which individual write-up rows have been ticked,
-  // keyed by both requestId and sortOrder. Customer request rows with a
-  // matching tick are shown as Completed even if siblings are still open.
-  const completedWriteUpRequestIds = new Set();
-  const completedWriteUpSortOrders = new Set();
-  if (Array.isArray(writeUpChecklistTasks)) {
-    writeUpChecklistTasks.forEach((task) => {
-      if (!task || typeof task !== "object") return;
-      const isCheckedTask =
-      typeof task.checked === "boolean" ?
-      task.checked :
-      ["complete", "completed", "done"].includes(
-        String(task.status || "").trim().toLowerCase()
-      );
-      if (!isCheckedTask) return;
-      const requestIdNum = Number(task.requestId ?? task.request_id ?? null);
-      if (Number.isInteger(requestIdNum) && requestIdNum > 0) {
-        completedWriteUpRequestIds.add(requestIdNum);
-      }
-      const sortOrderNum = Number(task.sortOrder ?? task.sort_order ?? null);
-      if (Number.isInteger(sortOrderNum) && sortOrderNum > 0) {
-        completedWriteUpSortOrders.add(sortOrderNum);
-      }
-    });
-  }
-
-  const isRequestRowCompleteFromWriteUp = useCallback((req, indexInList = -1) => {
-    if (!req) return false;
-    const requestIdNum = Number(req.requestId ?? req.request_id ?? null);
-    if (Number.isInteger(requestIdNum) && requestIdNum > 0 &&
-    completedWriteUpRequestIds.has(requestIdNum)) {
-      return true;
-    }
-    const sortOrderNum = Number(req.sortOrder ?? req.sort_order ?? null);
-    if (Number.isInteger(sortOrderNum) && sortOrderNum > 0 &&
-    completedWriteUpSortOrders.has(sortOrderNum)) {
-      return true;
-    }
-    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
-    // a fresh checklist when no requestId/sortOrder is present.
-    if (Number.isInteger(indexInList) && indexInList >= 0 &&
-    completedWriteUpSortOrders.has(indexInList + 1)) {
-      return true;
-    }
-    return false;
-  }, [completedWriteUpRequestIds, completedWriteUpSortOrders]);
+  const isRequestRowCompleteFromWriteUp = useCallback(
+    (request, requestIndex = -1) => isCustomerRequestCompleteInWriteUp({
+      request,
+      requestIndex,
+      checklistTasks: writeUpChecklistTasks,
+    }),
+    [writeUpChecklistTasks]
+  );
 
   const mainJobStatusId = overallStatusId || resolveMainStatusId(jobData?.status);
-  const customerRequestStatusByWorkflow = writeUpMarkedComplete ?
-  "completed" :
-  mainJobStatusId === JOB_STATUSES.BOOKED || mainJobStatusId === JOB_STATUSES.CHECKED_IN ?
-  "not_started" :
-  "inprogress";
+  const customerRequestStatusByWorkflow = getCustomerRequestWorkflowStatus({
+    jobStatus: mainJobStatusId,
+    writeUpComplete: writeUpMarkedComplete
+  });
 
   const getRequestStatusPresentation = useCallback((statusValue, fallbackStatus = "inprogress") => {
     const normalizedStatusValue = String(statusValue || fallbackStatus || "inprogress").
@@ -6070,9 +6029,11 @@ export function CustomerRequestsTab({
       // Honour an explicit job_requests.status of completed (set by the
       // "Mark Complete" action) so the DB write is reflected in the read view;
       // otherwise fall back to the write-up / workflow-derived status.
-      const rawRowStatus = String(req.status || "").trim().toLowerCase();
-      const explicitlyComplete = rawRowStatus === "completed" || rawRowStatus === "complete";
-      const effectiveRowStatus = rowCompletedInWriteUp || explicitlyComplete ? "completed" : customerRequestStatusByWorkflow;
+      const effectiveRowStatus = getCustomerRequestEffectiveStatus({
+        requestStatus: req.status,
+        completedInWriteUp: rowCompletedInWriteUp,
+        workflowStatus: customerRequestStatusByWorkflow
+      });
       const { normalizedStatus, statusLabel, statusBadgeStyle } = getRequestStatusPresentation(effectiveRowStatus, "inprogress");
       const requestId = req.requestId ?? req.request_id ?? null;
       rows.push({
@@ -6358,7 +6319,12 @@ export function CustomerRequestsTab({
 
         (combinedRequestRows.length > 0 ?
         <div className="jc-req-split">
-          <div className="jc-req-table-wrap">
+          <DevLayoutSection
+            sectionKey={`job-cards-${jobNumber}-customer-requests-table`}
+            sectionType="data-table"
+            parentKey="jobcard-tab-customer-requests"
+            className="jc-req-table-wrap"
+            disableFallback>
             <table className="app-data-table app-data-table--rounded">
               <thead>
                 <tr>
@@ -6389,7 +6355,7 @@ export function CustomerRequestsTab({
                 })}
               </tbody>
             </table>
-          </div>
+          </DevLayoutSection>
 
           {/* RIGHT: selected request detail */}
           <div style={detailPanelStyle}>
@@ -7005,25 +6971,10 @@ export function WriteUpWorkspace({
   // through to this tab. Tasks are stored either as an array directly, an
   // object with a .tasks array, or a JSON string of either shape.
   const writeUpChecklistTasksRaw = jobData?.writeUp?.task_checklist;
-  let writeUpChecklistTasks = [];
-  if (Array.isArray(writeUpChecklistTasksRaw)) {
-    writeUpChecklistTasks = writeUpChecklistTasksRaw;
-  } else if (writeUpChecklistTasksRaw && typeof writeUpChecklistTasksRaw === "object") {
-    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks) ?
-    writeUpChecklistTasksRaw.tasks :
-    [];
-  } else if (typeof writeUpChecklistTasksRaw === "string") {
-    try {
-      const parsed = JSON.parse(writeUpChecklistTasksRaw);
-      if (Array.isArray(parsed)) {
-        writeUpChecklistTasks = parsed;
-      } else if (parsed && typeof parsed === "object") {
-        writeUpChecklistTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-      }
-    } catch (_error) {
-      writeUpChecklistTasks = [];
-    }
-  }
+  const writeUpChecklistTasks = useMemo(
+    () => getWriteUpChecklistTasks(writeUpChecklistTasksRaw),
+    [writeUpChecklistTasksRaw]
+  );
 
   // Reuse the canonical write-up completion selector. isCompleteInstant is
   // true when EITHER the completion_status is set to a complete-like value
@@ -7032,63 +6983,25 @@ export function WriteUpWorkspace({
   // button.
   const writeUpStateForRequests = getWriteUpCompletionState({
     completionStatus: writeUpCompletionStatus,
-    checklistTasks: writeUpChecklistTasks
+    checklistTasks: writeUpChecklistTasks,
+    requestRows: customerRequestRows
   });
   const writeUpMarkedComplete = writeUpStateForRequests.isCompleteInstant;
 
-  // Build a quick lookup of which individual write-up rows have been ticked,
-  // keyed by both requestId and sortOrder. Customer request rows with a
-  // matching tick are shown as Completed even if siblings are still open.
-  const completedWriteUpRequestIds = new Set();
-  const completedWriteUpSortOrders = new Set();
-  if (Array.isArray(writeUpChecklistTasks)) {
-    writeUpChecklistTasks.forEach((task) => {
-      if (!task || typeof task !== "object") return;
-      const isCheckedTask =
-      typeof task.checked === "boolean" ?
-      task.checked :
-      ["complete", "completed", "done"].includes(
-        String(task.status || "").trim().toLowerCase()
-      );
-      if (!isCheckedTask) return;
-      const requestIdNum = Number(task.requestId ?? task.request_id ?? null);
-      if (Number.isInteger(requestIdNum) && requestIdNum > 0) {
-        completedWriteUpRequestIds.add(requestIdNum);
-      }
-      const sortOrderNum = Number(task.sortOrder ?? task.sort_order ?? null);
-      if (Number.isInteger(sortOrderNum) && sortOrderNum > 0) {
-        completedWriteUpSortOrders.add(sortOrderNum);
-      }
-    });
-  }
-
-  const isRequestRowCompleteFromWriteUp = useCallback((req, indexInList = -1) => {
-    if (!req) return false;
-    const requestIdNum = Number(req.requestId ?? req.request_id ?? null);
-    if (Number.isInteger(requestIdNum) && requestIdNum > 0 &&
-    completedWriteUpRequestIds.has(requestIdNum)) {
-      return true;
-    }
-    const sortOrderNum = Number(req.sortOrder ?? req.sort_order ?? null);
-    if (Number.isInteger(sortOrderNum) && sortOrderNum > 0 &&
-    completedWriteUpSortOrders.has(sortOrderNum)) {
-      return true;
-    }
-    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
-    // a fresh checklist when no requestId/sortOrder is present.
-    if (Number.isInteger(indexInList) && indexInList >= 0 &&
-    completedWriteUpSortOrders.has(indexInList + 1)) {
-      return true;
-    }
-    return false;
-  }, [completedWriteUpRequestIds, completedWriteUpSortOrders]);
+  const isRequestRowCompleteFromWriteUp = useCallback(
+    (request, requestIndex = -1) => isCustomerRequestCompleteInWriteUp({
+      request,
+      requestIndex,
+      checklistTasks: writeUpChecklistTasks,
+    }),
+    [writeUpChecklistTasks]
+  );
 
   const mainJobStatusId = overallStatusId || resolveMainStatusId(jobData?.status);
-  const customerRequestStatusByWorkflow = writeUpMarkedComplete ?
-  "completed" :
-  mainJobStatusId === JOB_STATUSES.BOOKED || mainJobStatusId === JOB_STATUSES.CHECKED_IN ?
-  "not_started" :
-  "inprogress";
+  const customerRequestStatusByWorkflow = getCustomerRequestWorkflowStatus({
+    jobStatus: mainJobStatusId,
+    writeUpComplete: writeUpMarkedComplete
+  });
 
   const getRequestStatusPresentation = useCallback((statusValue, fallbackStatus = "inprogress") => {
     const normalizedStatusValue = String(statusValue || fallbackStatus || "inprogress").
@@ -7620,9 +7533,11 @@ export function WriteUpWorkspace({
       // Honour an explicit job_requests.status of completed (set by the
       // "Mark Complete" action) so the DB write is reflected in the read view;
       // otherwise fall back to the write-up / workflow-derived status.
-      const rawRowStatus = String(req.status || "").trim().toLowerCase();
-      const explicitlyComplete = rawRowStatus === "completed" || rawRowStatus === "complete";
-      const effectiveRowStatus = rowCompletedInWriteUp || explicitlyComplete ? "completed" : customerRequestStatusByWorkflow;
+      const effectiveRowStatus = getCustomerRequestEffectiveStatus({
+        requestStatus: req.status,
+        completedInWriteUp: rowCompletedInWriteUp,
+        workflowStatus: customerRequestStatusByWorkflow
+      });
       const { normalizedStatus, statusLabel, statusBadgeStyle } = getRequestStatusPresentation(effectiveRowStatus, "inprogress");
       const requestId = req.requestId ?? req.request_id ?? null;
       rows.push({
