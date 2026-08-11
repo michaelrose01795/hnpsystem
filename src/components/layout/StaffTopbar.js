@@ -210,20 +210,22 @@ export default function StaffTopbar({
       }}
     >
       <div
+        className="app-topbar-content-scroll"
         style={{
           display: "flex",
           alignItems: "center",
           // Uniform 10px spacing between every section in the bar (symmetry).
           gap: "10px",
           width: "100%",
-          flexWrap: isTablet ? "wrap" : "nowrap",
-          overflow: "visible",
+          flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+          overflowX: isVerticalPhone ? "auto" : "visible",
+          overflowY: isVerticalPhone ? "hidden" : "visible",
         }}
       >
         {/* 1 — Live KPI Widgets (Phase 2.2), from real operational metrics.
             Desktop-only, like the identity line it replaces. Each KPI is a stacked
             count widget (label over count) so the full text always fits. */}
-        {!isTablet && resolvedKpis.length > 0 && (
+        {(!isTablet || isVerticalPhone) && resolvedKpis.length > 0 && (
           <div
             aria-label="Live operational KPIs"
             style={{
@@ -234,9 +236,9 @@ export default function StaffTopbar({
               // Content-sized (was flex: 1 1 0) so the KPIs and the Smart Insight
               // sit together as one "stats" block at the left instead of the two
               // stretching to opposite ends of the bar.
-              flex: "0 1 auto",
-              minWidth: 0,
-              overflow: "hidden",
+              flex: isVerticalPhone ? "0 0 auto" : "0 1 auto",
+              minWidth: isVerticalPhone ? "max-content" : 0,
+              overflow: isVerticalPhone ? "visible" : "hidden",
               flexWrap: "nowrap",
             }}
           >
@@ -264,16 +266,14 @@ export default function StaffTopbar({
               // Sized to its content on desktop but allowed to shrink so the
               // flexible KPI/insight sections keep filling the bar; full-row on
               // tablet.
-              flex: isTablet ? "1 1 100%" : "0 1 auto",
-              width: isTablet ? "100%" : undefined,
+              flex: isVerticalPhone ? "0 0 auto" : isTablet ? "1 1 100%" : "0 1 auto",
+              width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
               minWidth: 0,
               maxWidth: "100%",
               zIndex: 2,
-              // Desktop/tablet controls need visible overflow so their
-              // dropdowns/menus are not shaved off. Vertical phone keeps its
-              // horizontal scroll behaviour.
-              overflowX: isVerticalPhone ? "auto" : "visible",
-              overflowY: isVerticalPhone ? "hidden" : "visible",
+              // The portrait-phone outer row owns the single horizontal scroll
+              // track, avoiding a nested scroller around technician controls.
+              overflow: "visible",
             }}
           >
             <div className="app-topbar-action-group" style={actionGroupStyle}>
@@ -322,7 +322,7 @@ export default function StaffTopbar({
         {/* 3 — Smart Insight (Phase 2.6), from real operational metrics. Desktop-
             only; rotates through the applicable prompts and renders in the same
             stacked count widget as the KPIs (label over count). */}
-        {!isTablet && insight.label && (
+        {(!isTablet || isVerticalPhone) && insight.label && (
           <div
             onMouseEnter={rotating.pause}
             onMouseLeave={rotating.resume}
@@ -335,9 +335,9 @@ export default function StaffTopbar({
               // Left-aligned + content-sized (was centred, flex: 1 1 0) so it sits
               // directly beside the KPIs as part of the same left "stats" block.
               justifyContent: "flex-start",
-              flex: "0 1 auto",
-              minWidth: 0,
-              overflow: "hidden",
+              flex: isVerticalPhone ? "0 0 auto" : "0 1 auto",
+              minWidth: isVerticalPhone ? "max-content" : 0,
+              overflow: isVerticalPhone ? "visible" : "hidden",
             }}
           >
             <StatWidget
@@ -357,8 +357,8 @@ export default function StaffTopbar({
             className="app-topbar-action-group"
             style={{
               ...actionGroupStyle,
-              flex: isTablet ? "1 1 100%" : "0 1 auto",
-              minWidth: 0,
+              flex: isVerticalPhone ? "0 0 auto" : isTablet ? "1 1 100%" : "0 1 auto",
+              minWidth: isVerticalPhone ? "max-content" : 0,
             }}
           >
             <Link
@@ -377,7 +377,7 @@ export default function StaffTopbar({
             pushed hard-right via marginLeft:auto — the "stats" sections no longer
             grow, so this replaces the previous grow-to-fill behaviour and keeps
             the bar right-aligned even before any pages are learned. */}
-        {!isTablet && (
+        {(!isTablet || isVerticalPhone) && (
           <div
             style={{
               display: "flex",
@@ -389,8 +389,8 @@ export default function StaffTopbar({
               // Pins the cluster to the right edge. The KPI/insight/resume sections
               // are content-sized (no longer flex-grow), so an explicit auto margin
               // — not a growing neighbour — is what holds this to the far right.
-              marginLeft: "auto",
-              flex: "0 1 auto",
+              marginLeft: isVerticalPhone ? 0 : "auto",
+              flex: isVerticalPhone ? "0 0 auto" : "0 1 auto",
             }}
           >
             {/* Most-used pages (behaviour model): up to two quick-access buttons,
@@ -428,24 +428,26 @@ export default function StaffTopbar({
               </div>
             )}
 
-            <div
-              style={{
-                // Search field flexes with the bar: a comfortable basis that
-                // grows on wide screens and shrinks (never below usable) as the
-                // bar narrows.
-                flex: "1 1 auto",
-                minWidth: 0,
-                width: "clamp(15rem, 20vw, 26rem)",
-                maxWidth: "26rem",
-                position: "relative",
-              }}
-            >
-              <GlobalSearch
-                accentColor={colors.accent}
-                navigationItems={navigationItems}
-                onActiveChange={onSearchActiveChange}
-              />
-            </div>
+            {!isVerticalPhone && (
+              <div
+                style={{
+                  // Search field flexes with the bar: a comfortable basis that
+                  // grows on wide screens and shrinks (never below usable) as the
+                  // bar narrows.
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  width: "clamp(15rem, 20vw, 26rem)",
+                  maxWidth: "26rem",
+                  position: "relative",
+                }}
+              >
+                <GlobalSearch
+                  accentColor={colors.accent}
+                  navigationItems={navigationItems}
+                  onActiveChange={onSearchActiveChange}
+                />
+              </div>
+            )}
 
             <div
               style={{
