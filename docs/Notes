@@ -1,12 +1,23 @@
 Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
 
+TODO
+Cancel appointment button to be added within the jobcard scheduling tab button etc. 
+
 
 Manager update give url link
 
 
-TODO
-Within the "Technician Tech 3 138 active jobs · 302.6h booked" section why does it say "138 active jobs · 302.6h booked. is the technician column linked to the next job section for each tech to see if that job number apears wtihin their row etc.
 
+Create within chatgpt etc
+/Clocking
+
+/consumables-tracker 
+
+/tech/efficiency
+
+/stock-catalogue
+
+/goods-in
 
 
 CHECKKKK
