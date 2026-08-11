@@ -103,10 +103,10 @@ export default function ViewAccountPageUi(props) {
                 fontSize: "clamp(1.3rem, 2.4vw, 1.75rem)",
                 color: "var(--text-1)"
               }}>{account.billing_name || account.account_id}</h1>
-                  <span className="app-badge app-badge--neutral app-badge--control">ID: {account.account_id}</span>
-                  <span className="app-badge app-badge--neutral app-badge--control">Customer: {account.customer_id || "—"}</span>
-                  <span className="app-badge app-badge--neutral app-badge--control">Type: {account.account_type}</span>
-                  <span className={`app-badge app-badge--control ${statusToneClass(account.status)}`}>{account.status}</span>
+                  <span className="app-badge app-badge--neutral">ID: {account.account_id}</span>
+                  <span className="app-badge app-badge--neutral">Customer: {account.customer_id || "—"}</span>
+                  <span className="app-badge app-badge--neutral">Type: {account.account_type}</span>
+                  <span className={`app-badge ${statusToneClass(account.status)}`}>{account.status}</span>
                   <div style={{
                 display: "flex",
                 gap: "10px",

@@ -1,6 +1,19 @@
 // file location: src/components/page-ui/job-cards/view/job-cards-view-ui.js
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
+import Button from "@/components/ui/Button";
+
+const OPERATIONAL_STATUS_ITEMS = [
+  { key: "arrived", label: "Arrived" },
+  { key: "waiting", label: "Waiting" },
+  { key: "inWorkshop", label: "In workshop" },
+  { key: "awaitingParts", label: "Awaiting parts" },
+  { key: "awaitingAuthorisation", label: "Awaiting auth" },
+  { key: "ready", label: "Ready" },
+  { key: "overdue", label: "Overdue" },
+  { key: "carryOvers", label: "Carry overs" },
+];
 
 export default function ViewJobCardsUi(props) {
   const {
@@ -26,7 +39,10 @@ export default function ViewJobCardsUi(props) {
     handleSearchValueChange,
     handleStatusChange,
     handleStatusFilterChange,
+    isCompactView,
     isOrdersTab,
+    operationalNow,
+    operationalStatusCounts,
     ordersLoading,
     popupCardStyles,
     popupJob,
@@ -45,6 +61,8 @@ export default function ViewJobCardsUi(props) {
     statusCounts,
     statusTabs,
     tabOptions,
+    technicianLoads,
+    toggleJobViewDensity,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -53,142 +71,15 @@ export default function ViewJobCardsUi(props) {
 
     case "section2":
       return <>
-      <style>{`
-        .job-cards-filter.dropdown-api {
-          width: 100%;
-        }
-
-        .job-cards-view-toolbar {
-          display: flex;
-          flex-wrap: nowrap;
-          align-items: center;
-          gap: 0.75rem;
-          min-width: 0;
-          justify-content: flex-start;
-        }
-
-        .job-cards-view-tabs {
-          flex: 0 1 auto;
-          width: fit-content;
-          max-width: max-content;
-          min-width: auto;
-          overflow: visible;
-        }
-
-        .job-cards-view-search-shell {
-          flex: 1 1 auto;
-          width: auto;
-          max-width: none;
-          min-height: calc(var(--control-height-sm) + 0.7rem);
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(7.2rem, 8.4rem) minmax(7.2rem, 8.4rem);
-          align-items: center;
-          justify-content: stretch;
-          gap: 0.45rem;
-          padding: 0;
-          min-width: 0;
-        }
-
-        .job-cards-view-searchbar.searchbar-api {
-          width: 100%;
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.7rem;
-          min-width: 0;
-          max-width: none;
-        }
-
-        .job-cards-view-searchbar .searchbar-api__input {
-          font-size: 0.85rem;
-        }
-
-        .job-cards-view-filter-controls {
-          display: contents;
-        }
-
-        .job-cards-view-filter-slot {
-          display: flex;
-          align-items: center;
-          min-width: 0;
-        }
-
-        .job-cards-view-filter-control {
-          width: 100%;
-          min-width: 0;
-          flex: 0 0 auto;
-          display: flex;
-          align-items: center;
-        }
-
-        .job-cards-view-filter-control .dropdown-api {
-          width: 100%;
-        }
-
-        .job-cards-view-filter-control .dropdown-api__control {
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.65rem;
-        }
-
-        .job-cards-view-filter-control .dropdown-api__value {
-          font-size: 0.8rem;
-        }
-
-        @media (max-width: 900px) {
-          .job-cards-view-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-          }
-
-          .job-cards-view-tabs,
-          .job-cards-view-search-shell {
-            flex: 1 1 100%;
-            display: flex;
-            flex-wrap: wrap;
-          }
-
-          .job-cards-view-searchbar.searchbar-api {
-            flex: 1 1 100%;
-            max-width: none;
-          }
-
-          .job-cards-view-filter-slot {
-            width: 100%;
-          }
-
-          .job-cards-view-filter-controls,
-          .job-cards-view-filter-slot {
-            flex-wrap: wrap;
-            justify-content: stretch;
-          }
-
-          .job-cards-view-filter-control {
-            width: 100%;
-            min-width: 0;
-            flex: 1 1 100%;
-          }
-        }
-      `}</style>
       <PageShell sectionKey="job-cards-view-shell">
-      <div className="app-page-stack" style={{
-          gap: "10px",
-          width: "100%",
-          minHeight: "0"
-        }}>
-          <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-shell" style={{
-          display: "flex",
-          flexDirection: "column",
-          padding: "10px",
-          gap: "10px"
-        }}>
-            <div className="job-cards-view-toolbar" style={{
-            gap: "10px"
-          }}>
+      <div className="app-page-stack job-cards-view-page-stack">
+          <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-shell" className="job-cards-view-filter-shell">
+            <div className="job-cards-view-toolbar">
               <div className="job-cards-view-tabs">
                 <TabGroup items={tabOptions} value={activeTab} onChange={setActiveTab} ariaLabel="Job card tabs" className="tab-api--wrap" />
               </div>
               <div className="job-cards-view-search-shell">
-                <SearchBar data-presentation="job-cards-search" className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} style={{
-                width: "100%"
-              }} />
+                <SearchBar data-presentation="job-cards-search" className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} />
                 {!isOrdersTab && <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
                     <DevLayoutSection data-presentation="job-cards-division-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
                       <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-division-filter" parentKey="job-cards-view-filter-controls-division-slot" sectionType="filter-control">
@@ -214,9 +105,24 @@ export default function ViewJobCardsUi(props) {
                       </DevLayoutSection>
                     </DevLayoutSection>
                   </DevLayoutSection>}
+                <Button type="button" variant={isCompactView ? "primary" : "secondary"} className="app-btn--icon app-hover-tooltip job-cards-view-density-toggle" onClick={toggleJobViewDensity} aria-label={isCompactView ? "Use detailed job rows" : "Use compact job rows"} aria-pressed={isCompactView} data-tooltip={isCompactView ? "Detailed job rows" : "Compact job rows"}>
+                  <svg className="job-cards-view-density-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" focusable="false">
+                    <path d="M8 6h11M8 12h11M8 18h11" />
+                    <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth="3" />
+                  </svg>
+                </Button>
               </div>
             </div>
           </SectionShell>
+
+          {!isOrdersTab && <LayerTheme sectionKey="job-cards-view-operational-statuses" parentKey="job-cards-view-shell" sectionType="content-card" className="app-summary-section app-job-operational-summary" radius="var(--radius-sm)">
+            <div className="app-summary-grid" role="list" aria-label="Operational job status counts">
+              {OPERATIONAL_STATUS_ITEMS.map((item) => <LayerSurface key={item.key} as="div" className="app-summary-item" radius="var(--radius-sm)" role="listitem">
+                <span className="app-summary-label">{item.label}</span>
+                <strong className="app-summary-value">{operationalStatusCounts?.[item.key] || 0}</strong>
+              </LayerSurface>)}
+            </div>
+          </LayerTheme>}
 
           <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-shell" style={{
           flex: 1,
@@ -238,7 +144,7 @@ export default function ViewJobCardsUi(props) {
                   Loading orders...
                 </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
-                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
+                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" compactView={isCompactView} job={job} index={index} now={operationalNow} technicianLoad={technicianLoads?.[job.assignedTech?.id || job.assignedTo] || null} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenTab={(tab) => router.push(`/job-cards/${job.jobNumber}?tab=${tab}`)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 

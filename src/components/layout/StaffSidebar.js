@@ -513,7 +513,7 @@ export default function Sidebar({
         {labelSpan}
         {isMessagesItem && unreadCount > 0 && (
           <span
-            className="app-badge app-badge--danger-strong app-badge--round-count"
+            className="app-badge app-badge--danger-strong"
           >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>

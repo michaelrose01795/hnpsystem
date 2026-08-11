@@ -29,7 +29,7 @@ const SEVERITY_TONE_CLASS = {
 
 export const SeverityBadge = ({ severity, label, style = {}, className = "" }) => {
   const tone = SEVERITY_TONE_CLASS[severity] || SEVERITY_TONE_CLASS.green;
-  const classes = ["app-badge", "app-badge--control", "app-badge--uppercase", tone, className]
+  const classes = ["app-badge", "app-badge--uppercase", tone, className]
     .filter(Boolean)
     .join(" ");
   return (

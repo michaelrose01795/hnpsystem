@@ -274,13 +274,13 @@ export default function JobCardDetailPageUi(props) {
             }}>
                 Job Card #{jobData.jobNumber}
               </h1>
-              <span className={`app-badge app-badge--control app-badge--uppercase ${jobHeaderStatusToneClass}`}>
+              <span className={`app-badge app-badge--uppercase ${jobHeaderStatusToneClass}`}>
                 {overallStatusLabel}
               </span>
-              {jobData.jobSource === "Warranty" && <span className="app-badge app-badge--control app-badge--uppercase app-badge--warning">
+              {jobData.jobSource === "Warranty" && <span className="app-badge app-badge--uppercase app-badge--warning">
                   {jobData.jobSource}
                 </span>}
-              {jobDivisionLabel && <span className={`app-badge app-badge--control app-badge--uppercase ${jobDivisionToneClass}`}>
+              {jobDivisionLabel && <span className={`app-badge app-badge--uppercase ${jobDivisionToneClass}`}>
                   {jobDivisionLabel}
                 </span>}
             </div>
@@ -473,7 +473,7 @@ export default function JobCardDetailPageUi(props) {
             {vhcCustomerStatusMeta ? (
             <span
               title={vhcCustomerStatusMeta.detail}
-              className={`app-badge app-badge--control app-badge--uppercase ${
+              className={`app-badge app-badge--uppercase ${
                 vhcCustomerStatusMeta.label === "Viewed" ? "app-badge--success" : vhcCustomerStatusMeta.label === "Sent" ? "app-badge--accent-soft" : "app-badge--warning"
               }`}
             >
@@ -685,7 +685,7 @@ export default function JobCardDetailPageUi(props) {
                   {/* "Lock" text removed from tab buttons per design — the
                       lock state is communicated by the in-tab "Locked: ..."
                       alert (see lockAlertStyle blocks below) instead. */}
-                  {tab.badge && <span className={`app-badge app-badge--control ${tab.id === "notes" ? "app-badge--danger-strong app-badge--round-count jobcard-tab-notes-badge" : "app-badge--accent-strong"}`}>
+                  {tab.badge && <span className={`app-badge ${tab.id === "notes" ? "app-badge--danger-strong" : "app-badge--accent-strong"}`}>
                       {tab.badge}
                     </span>}
                 </button>;

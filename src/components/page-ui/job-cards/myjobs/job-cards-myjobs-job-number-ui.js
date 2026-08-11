@@ -943,7 +943,7 @@ export default function TechJobDetailPageUi(props) {
               </div>
               <span
                 title={vhcCustomerStatusMeta.detail}
-                className={`app-badge app-badge--control app-badge--uppercase ${customerStatusToneClass}`}
+                className={`app-badge app-badge--uppercase ${customerStatusToneClass}`}
               >
                 VHC: {vhcCustomerStatusMeta.label}
               </span>
@@ -1506,7 +1506,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Wheels & Tyres</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
+                      <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
                         {sectionStatus.wheelsTyres}
                       </span>
                     </div>
@@ -1517,7 +1517,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Brakes & Hubs</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
+                      <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
                         {sectionStatus.brakesHubs}
                       </span>
                     </div>
@@ -1528,7 +1528,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Service Indicator & Under Bonnet</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
+                      <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
                         {sectionStatus.serviceIndicator}
                       </span>
                     </div>
@@ -1556,7 +1556,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("externalInspection")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>External</h4>
-                      {getOptionalCount("externalInspection") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
+                      {getOptionalCount("externalInspection") > 0 && <span className="app-badge app-badge--uppercase" style={{
                         backgroundColor: "var(--primary-hover)",
                         color: "var(--text-2)"
                       }}>
@@ -1570,7 +1570,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("internalElectrics")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Internal & Electrics</h4>
-                      {getOptionalCount("internalElectrics") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
+                      {getOptionalCount("internalElectrics") > 0 && <span className="app-badge app-badge--uppercase" style={{
                         backgroundColor: "var(--primary-hover)",
                         color: "var(--text-2)"
                       }}>
@@ -1584,7 +1584,7 @@ export default function TechJobDetailPageUi(props) {
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("underside")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Underside</h4>
-                      {getOptionalCount("underside") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
+                      {getOptionalCount("underside") > 0 && <span className="app-badge app-badge--uppercase" style={{
                         backgroundColor: "var(--primary-hover)",
                         color: "var(--text-2)"
                       }}>

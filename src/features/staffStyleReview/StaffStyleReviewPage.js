@@ -602,26 +602,19 @@ export default function StaffStyleReviewPage() {
         onDeleted={onDeleted}
         onViewItem={navigateToFinding}
       />
-      {/* Local specificity correction: app-table-shell's later 12px cell padding otherwise makes a tokenised 32px control produce a 56px row. */}
+      {/* Local specificity correction: keep the review table aligned to the shared 44px control height. */}
       <style jsx global>{`
         html.staff-scope table[data-staff-style-review-table] th,
         html.staff-scope table[data-staff-style-review-table] td {
           min-width: 0;
           max-width: 0;
           overflow: hidden;
-          padding: calc((var(--table-row-height) - var(--table-action-btn-height)) / 2) var(--space-1) !important;
+          padding: calc((var(--table-row-height) - var(--control-height)) / 2) var(--space-1) !important;
         }
 
         html.staff-scope table[data-staff-style-review-table] tbody tr {
           height: var(--table-row-height) !important;
           max-height: var(--table-row-height);
-        }
-
-        html.staff-scope table[data-staff-style-review-table] .app-badge {
-          height: var(--table-action-btn-height);
-          min-height: var(--table-action-btn-height);
-          max-height: var(--table-action-btn-height);
-          box-sizing: border-box;
         }
 
         html.staff-scope table[data-staff-style-review-table] tbody .app-table-action-btn {

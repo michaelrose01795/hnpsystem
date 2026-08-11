@@ -96,7 +96,7 @@ export default function CompanyAccountDetailPageUi(props) {
                       color: "var(--surfaceTextMuted)",
                       overflowWrap: "anywhere"
                     }}>{account.trading_name}</span>}
-                  <span className="app-badge app-badge--accent-soft app-badge--control">
+                  <span className="app-badge app-badge--accent-soft">
                     #{account.account_number}
                   </span>
                 </div>

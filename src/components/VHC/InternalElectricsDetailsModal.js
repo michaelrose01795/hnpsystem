@@ -255,7 +255,7 @@ export default function InternalElectricsDetailsModal({
                   Tap to log cabin electrics observations and review open issues.
                 </span>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <div className="app-badge app-badge--control app-badge--accent-soft">{loggedCount} logged</div>
+                  <div className="app-badge app-badge--accent-soft">{loggedCount} logged</div>
                 </div>
               </button>
             );

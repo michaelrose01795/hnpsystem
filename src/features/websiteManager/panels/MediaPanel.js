@@ -50,7 +50,7 @@ function Thumbnail({ asset }) {
       }}
     >
       <span
-        className="app-badge app-badge--accent-soft app-badge--control app-badge--uppercase"
+        className="app-badge app-badge--accent-soft app-badge--uppercase"
       >
         {asset.type === "image" ? `${ext} image` : ext}
       </span>

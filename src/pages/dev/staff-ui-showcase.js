@@ -77,7 +77,7 @@ const vhcRows = [
 ];
 
 function AuditBadge({ children, tone = "neutral" }) {
-  return <span className={`app-badge app-badge--control app-badge--${tone}`}>{children}</span>;
+  return <span className={`app-badge app-badge--${tone}`}>{children}</span>;
 }
 
 function Grid({ children, min = "240px" }) {

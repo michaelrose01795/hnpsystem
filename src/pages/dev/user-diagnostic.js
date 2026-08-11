@@ -3050,20 +3050,20 @@ function GlobalUiShowcase() {
       {isSectionVisible("app-badge") &&
       <ShowcaseSection title="Labels & Bubbles (.app-badge)" itemKey="app-badge" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
-          <span className="app-badge app-badge--control app-badge--neutral">neutral</span>
-          <span className="app-badge app-badge--control app-badge--accent-strong">accent-strong</span>
-          <span className="app-badge app-badge--control app-badge--accent-soft">accent-soft</span>
-          <span className="app-badge app-badge--control app-badge--accent-hover">accent-hover</span>
-          <span className="app-badge app-badge--control app-badge--success">success</span>
-          <span className="app-badge app-badge--control app-badge--success-strong">success-strong</span>
-          <span className="app-badge app-badge--control app-badge--warning">warning</span>
-          <span className="app-badge app-badge--control app-badge--warning-strong">warning-strong</span>
-          <span className="app-badge app-badge--control app-badge--danger">danger</span>
-          <span className="app-badge app-badge--control app-badge--danger-strong">danger-strong</span>
-          <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">uppercase</span>
+          <span className="app-badge app-badge--neutral">neutral</span>
+          <span className="app-badge app-badge--accent-strong">accent-strong</span>
+          <span className="app-badge app-badge--accent-soft">accent-soft</span>
+          <span className="app-badge app-badge--accent-hover">accent-hover</span>
+          <span className="app-badge app-badge--success">success</span>
+          <span className="app-badge app-badge--success-strong">success-strong</span>
+          <span className="app-badge app-badge--warning">warning</span>
+          <span className="app-badge app-badge--warning-strong">warning-strong</span>
+          <span className="app-badge app-badge--danger">danger</span>
+          <span className="app-badge app-badge--danger-strong">danger-strong</span>
+          <span className="app-badge app-badge--uppercase app-badge--success">uppercase</span>
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic", marginTop: "10px" }}>
-          Shape comes from .app-badge + .app-badge--control; colour from one tone modifier. Replaces the per-module rules that previously lived in vhc-badge, hr-employees-row-pill, jobcard-tab-badge, multiselect-dropdown-api__tag, SeverityBadge inline styles, and vhcModalContentStyles.badge.
+          Shape comes from .app-badge; colour comes from one semantic tone modifier. Replaces the per-module rules that previously lived in vhc-badge, hr-employees-row-pill, jobcard-tab-badge, multiselect-dropdown-api__tag, SeverityBadge inline styles, and vhcModalContentStyles.badge.
         </div>
       </ShowcaseSection>
       }
@@ -3200,9 +3200,9 @@ function GlobalUiShowcase() {
               <tr><th>Status</th><th>Job</th><th>Reg</th><th>Customer</th><th>Make/Model</th><th>Type</th></tr>
             </thead>
             <tbody>
-              <tr><td><span className="app-badge app-badge--control app-badge--success" style={{ height: "var(--table-action-btn-height, 32px)" }}>In Progress</span></td><td style={{ fontWeight: 700 }}>00076</td><td>AB12 CDE</td><td>Alice Smith</td><td>BMW 320d</td><td>Service</td></tr>
-              <tr><td><span className="app-badge app-badge--control app-badge--warning" style={{ height: "var(--table-action-btn-height, 32px)" }}>Waiting</span></td><td style={{ fontWeight: 700 }}>00077</td><td>FG34 HJK</td><td>Bob Jones</td><td>Ford Transit</td><td>Repair</td></tr>
-              <tr><td><span className="app-badge app-badge--control app-badge--neutral" style={{ height: "var(--table-action-btn-height, 32px)" }}>Complete</span></td><td style={{ fontWeight: 700 }}>00078</td><td>LM56 NOP</td><td>Carol Lee</td><td>Toyota Yaris</td><td>MOT</td></tr>
+              <tr><td><span className="app-badge app-badge--success">In Progress</span></td><td style={{ fontWeight: 700 }}>00076</td><td>AB12 CDE</td><td>Alice Smith</td><td>BMW 320d</td><td>Service</td></tr>
+              <tr><td><span className="app-badge app-badge--warning">Waiting</span></td><td style={{ fontWeight: 700 }}>00077</td><td>FG34 HJK</td><td>Bob Jones</td><td>Ford Transit</td><td>Repair</td></tr>
+              <tr><td><span className="app-badge app-badge--neutral">Complete</span></td><td style={{ fontWeight: 700 }}>00078</td><td>LM56 NOP</td><td>Carol Lee</td><td>Toyota Yaris</td><td>MOT</td></tr>
             </tbody>
           </table>
         </div>

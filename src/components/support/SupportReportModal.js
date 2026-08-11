@@ -248,7 +248,7 @@ export default function SupportReportModal() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
             <strong style={{ fontWeight: 600 }}>Diagnostic assistant</strong>
             <span
-              className="app-badge app-badge--control"
+              className="app-badge app-badge--neutral"
               style={{ fontSize: "0.7rem" }}
             >
               {Math.round(analysis.probableCause.confidence * 100)}% confidence

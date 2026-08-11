@@ -217,7 +217,7 @@ export default function MyJobsPageUi(props) {
           }}>
                     {/* Status Badge */}
                     <td title={statusTooltip}>
-                      <span className={`app-badge app-badge--control ${getStatusBadgeClassName(displayStatusLabel)}`}>
+                      <span className={`app-badge ${getStatusBadgeClassName(displayStatusLabel)}`}>
                       {displayStatusLabel}
                       </span>
                     </td>

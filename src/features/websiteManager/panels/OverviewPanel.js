@@ -159,7 +159,7 @@ export default function OverviewPanel({
               {stock.lowStock.map((p) => (
                 <span
                   key={p.id}
-                  className="app-badge app-badge--warning app-badge--control"
+                  className="app-badge app-badge--warning"
                   title={`SKU ${p.sku || p.id}`}
                 >
                   {p.name} — {p.stock_qty} left
@@ -178,7 +178,7 @@ export default function OverviewPanel({
               {draftPages.map((p) => (
                 <span
                   key={p.key}
-                  className="app-badge app-badge--warning app-badge--control"
+                  className="app-badge app-badge--warning"
                 >
                   {p.name} — draft
                 </span>

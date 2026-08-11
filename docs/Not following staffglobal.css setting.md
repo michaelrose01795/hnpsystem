@@ -25,12 +25,12 @@ Canonical contracts used by this audit:
 The preferred pattern is:
 
 ```jsx
-<span className="app-badge app-badge--control app-badge--uppercase app-badge--warning">
+<span className="app-badge app-badge--uppercase app-badge--warning">
   Waiting
 </span>
 ```
 
-Use the base class, add `app-badge--control` only where control-height sizing is intended, add `app-badge--uppercase` only where uppercase presentation is intended, and select exactly one appropriate tone class.
+Use the base class, add `app-badge--uppercase` only where uppercase presentation is intended, and select exactly one appropriate tone class. Every status badge inherits the shared 44px control height directly from `.app-badge`.
 
 The report also includes partial adoption: elements carrying a canonical class while inline styles still override its core visuals, and manual card/popup shells that borrow one global class but continue to own their surface appearance locally.
 
@@ -118,7 +118,7 @@ The highest-value migrations are the shared families because one change fixes ma
 | 44 | `/job-cards/[jobNumber]` → Scheduling | Booking approval status | Requires a linked booking request. Open Scheduling; the Customer & Vehicle section shows Approved or Awaiting Approval. | Plain inline `headerBadgeStyle`. | `src/pages/job-cards/[jobNumber].js:8953`, `:9241` |
 | 45 | `/job-cards/[jobNumber]` → Parts and `/tech/[jobNumber]` → Parts | Part/request pipeline statuses and authorised-part status labels | Requires ordered/allocated/authorised parts. Open Parts; the technician view exposes additional cards when parts exist. | Multiple plain spans recreate status badges. | `src/pages/job-cards/[jobNumber].js:10140`, `:10251`; `src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:1762`, `:1814`, `:1844`, `:1870` |
 | 46 | `/job-cards/[jobNumber]` → Messages | Participant-role chips and message-audience labels | Requires a job conversation. Participant chips appear when staff/customer participants are linked; each message displays Internal only or Shared with customer. | Plain inline pills. | `src/pages/job-cards/[jobNumber].js:11055`, `:11069`, `:11147` |
-| 47 | `/job-cards/[jobNumber]` → Notes | Note metadata category/title/request-status badges and history-notes job-card count | Select notes carrying structured metadata to expose the category, title, and linked request status. Open the history-notes area for a vehicle with previous notes to expose the count. | Several `app-badge app-badge--control` labels omit a tone modifier, while the history count is a plain inline badge. | `src/components/NotesTab.js:1149`, `:1188`, `:1213`, `:1447` |
+| 47 | `/job-cards/[jobNumber]` → Notes | Note metadata category/title/request-status badges and history-notes job-card count | Select notes carrying structured metadata to expose the category, title, and linked request status. Open the history-notes area for a vehicle with previous notes to expose the count. | Several `app-badge` labels omit a tone modifier, while the history count is a plain inline badge. | `src/components/NotesTab.js:1149`, `:1188`, `:1213`, `:1447` |
 | 48 | `/tech/[jobNumber]` | Technician job-header status | Open a technician job. | A non-interactive status is rendered with `app-btn` and inline status tone. | `src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js:812` |
 | 49 | `/tech/dashboard` | Assigned-jobs status | Requires assigned jobs in the dashboard table. | Status is rendered as `app-table-action-btn tech-dashboard-status-bubble` with inline tone. | `src/components/page-ui/tech/tech-dashboard-ui.js:286` |
 | 50 | `/messages` | Unread exclamation count and Leader role | An unread thread exposes `!`; open the members popup and use a conversation with a leader to expose **Leader**. Small dot-only unread indicators are excluded separately below. | Both text-bearing statuses are custom inline badges. | `src/components/page-ui/messages/messages-ui.js:457`, `:1658` |
@@ -134,7 +134,7 @@ The highest-value migrations are the shared families because one change fixes ma
 
 | ID | Page URL | Section / item | How to see it | Why it does not follow `staffglobal.css` | Source |
 |---|---|---|---|---|---|
-| 53 | Any staff route with the support/report launcher | Diagnostic assistant confidence badge | Open **Report a problem** after the diagnostic assistant has produced a probable-cause analysis. | `app-badge app-badge--control` is present, but the required tone modifier is missing and font size is overridden inline. | `src/components/support/SupportReportModal.js:251` |
+| 53 | Any staff route with the support/report launcher | Diagnostic assistant confidence badge | Open **Report a problem** after the diagnostic assistant has produced a probable-cause analysis. | `app-badge` is present, but the required tone modifier is missing and font size is overridden inline. | `src/components/support/SupportReportModal.js:251` |
 | 54 | Any staff route with Status Sidebar enabled | Smart Summary stage badge | Open the Status Sidebar on a job/state that produces a Smart Summary. | **Partial adoption:** `app-badge--accent-soft` supplies the background, but the core foreground colour is replaced inline from `summary.stageColor`. | `src/components/StatusTracking/SmartSummaryBlock.js:153` |
 
 ## Button and action findings

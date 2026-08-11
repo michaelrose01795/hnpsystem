@@ -184,7 +184,7 @@ export function StaffVhcItemRow({ area, note, result, tone = "neutral", meta, ac
         {meta && <span className="app-vhc-row__meta">{meta}</span>}
       </div>
       <div className="app-vhc-row__status">
-        {result && <span className={`app-badge app-badge--control app-badge--${tone}`}>{result}</span>}
+        {result && <span className={`app-badge app-badge--${tone}`}>{result}</span>}
         {action}
       </div>
     </div>
@@ -202,7 +202,7 @@ export function StaffPartsRequestRow({ part, quantity, status, tone = "neutral",
         </span>
       </div>
       <div className="app-parts-request-row__status">
-        {status && <span className={`app-badge app-badge--control app-badge--${tone}`}>{status}</span>}
+        {status && <span className={`app-badge app-badge--${tone}`}>{status}</span>}
         {action}
       </div>
     </div>

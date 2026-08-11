@@ -200,7 +200,7 @@ export default function PayslipsAdminPageUi(uiProps) {
                           {formatCurrency(slip.netPay)}
                         </td>
                         <td>
-                          <span className={`app-badge app-badge--control app-badge--uppercase ${statusToneClass(slip.status)}`}>
+                          <span className={`app-badge app-badge--uppercase ${statusToneClass(slip.status)}`}>
                             {formatStatusLabel(slip.status)}
                           </span>
                         </td>

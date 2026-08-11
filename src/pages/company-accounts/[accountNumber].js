@@ -251,7 +251,7 @@ export default function CompanyAccountDetailPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                         <strong style={{ fontSize: "1rem" }}>Job #{job.job_number}</strong>
                         {job.status &&
-                    <span className="app-badge app-badge--neutral app-badge--control">{job.status}</span>
+                    <span className="app-badge app-badge--neutral">{job.status}</span>
                     }
                       </div>
                       {job.customer && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{job.customer}</p>}
@@ -323,7 +323,7 @@ export default function CompanyAccountDetailPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                         <strong style={{ fontSize: "1rem" }}>Invoice #{invoice.invoice_number}</strong>
                         {status &&
-                    <span className={`app-badge app-badge--control ${statusTone}`}>{status}</span>
+                    <span className={`app-badge ${statusTone}`}>{status}</span>
                     }
                       </div>
                       {invoice.invoice_to && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{invoice.invoice_to}</p>}

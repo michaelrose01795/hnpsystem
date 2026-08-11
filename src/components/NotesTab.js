@@ -1146,7 +1146,7 @@ export default function NotesTabNew({
                     >
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                         <span style={fieldLabelStyle}>Category</span>
-                        <span className="app-badge app-badge--control">{meta.category}</span>
+                        <span className="app-badge app-badge--neutral">{meta.category}</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                         <span style={fieldLabelStyle}>Created by</span>
@@ -1185,7 +1185,7 @@ export default function NotesTabNew({
                     <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", flexWrap: "wrap" }}>
                         <span style={fieldLabelStyle}>Linked request</span>
-                        <span className="app-badge app-badge--control">{meta.title}</span>
+                        <span className="app-badge app-badge--neutral">{meta.title}</span>
                       </div>
                       {meta.request ? (
                         <>
@@ -1210,7 +1210,7 @@ export default function NotesTabNew({
                           >
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                               <span style={fieldLabelStyle}>Status</span>
-                              <span className="app-badge app-badge--control">{formatRequestStatusLabel(meta.request.status)}</span>
+                              <span className="app-badge app-badge--neutral">{formatRequestStatusLabel(meta.request.status)}</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                               <span style={fieldLabelStyle}>Type</span>
@@ -1304,8 +1304,8 @@ export default function NotesTabNew({
                       <span className="app-badge app-badge--success">
                         {ROLE_GROUP_LABELS[authorGroup] || "Staff"}
                       </span>
-                      <span className="app-badge app-badge--control">All staff</span>
-                      <span className={`app-badge ${selectedNote.hiddenFromCustomer ? "app-badge--control" : "app-badge--success"}`} style={selectedNote.hiddenFromCustomer ? { opacity: 0.5 } : undefined}>
+                      <span className="app-badge app-badge--neutral">All staff</span>
+                      <span className={`app-badge ${selectedNote.hiddenFromCustomer ? "app-badge--neutral" : "app-badge--success"}`} style={selectedNote.hiddenFromCustomer ? { opacity: 0.5 } : undefined}>
                         Customer {selectedNote.hiddenFromCustomer ? "(hidden)" : "(visible)"}
                       </span>
 

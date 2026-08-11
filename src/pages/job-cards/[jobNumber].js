@@ -1,4 +1,4 @@
-﻿// file location: src/pages/job-cards/[jobNumber].js
+// file location: src/pages/job-cards/[jobNumber].js
 // Imports converted to use absolute alias "@/"
 "use client";
 
@@ -6272,7 +6272,7 @@ export function CustomerRequestsTab({
                     <tr key={index} className="jc-req-row" style={{ cursor: "pointer", ...(selectedEditIndex === index ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedEditIndex(index)}>
                       <td style={{ fontWeight: 600 }}>{index + 1}</td>
                       <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{req.text || <span style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>New request...</span>}</div></td>
-                      <td>{req.paymentType ? <span className="app-badge app-badge--control" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
+                      <td>{req.paymentType ? <span className="app-badge" style={getPaymentTypePillStyle(req.paymentType)}>{req.paymentType}</span> : "—"}</td>
                       <td>{hasHours ? `${Number(req.time).toFixed(1)}h` : "—"}</td>
                       <td><button type="button" className="app-btn app-btn--danger app-btn--sm" onClick={(e) => { e.stopPropagation(); handleRemoveRequest(index); setSelectedEditIndex(0); }}>Remove</button></td>
                     </tr>
@@ -6376,14 +6376,14 @@ export function CustomerRequestsTab({
                     <tr key={row.key} className="jc-req-row" style={{ cursor: "pointer", ...(isSel ? { backgroundColor: "var(--secondary-pressed)" } : null) }} onClick={() => setSelectedRequestKey(row.key)}>
                       <td style={{ fontWeight: 600 }}>{row.numberLabel}</td>
                       <td className="jc-req-desc-cell" style={{ color: "var(--text-1)" }}><div className="jc-req-desc-clip">{row.description || "—"}</div></td>
-                      <td>{row.jobType ? <span className="app-badge app-badge--control" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
+                      <td>{row.jobType ? <span className="app-badge" style={getPaymentTypePillStyle(row.jobType)}>{row.jobType}</span> : "—"}</td>
                       <td>{formatHoursDisplay(row.hours)}</td>
                       {/* Authorised (additional work) rows display only "Authorised"
                           in this section — not the derived workflow status. Declined/
                           reported VHC items never reach here (see authorisedRows). */}
                       <td>{row.kind === "authorised"
-                        ? <span className="app-badge app-badge--control app-badge--success">Authorised</span>
-                        : <span className="app-badge app-badge--control" style={row.statusBadgeStyle}>{row.statusLabel}</span>}</td>
+                        ? <span className="app-badge app-badge--success">Authorised</span>
+                        : <span className="app-badge" style={row.statusBadgeStyle}>{row.statusLabel}</span>}</td>
                     </tr>
                   );
                 })}
@@ -6401,8 +6401,8 @@ export function CustomerRequestsTab({
                     "Authorised" status chip — never the small workflow status
                     pill. Customer-request rows keep their normal status pill. */}
                 {selectedRow.kind === "authorised"
-                  ? <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">Authorised</span>
-                  : <span className="app-badge app-badge--control" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
+                  ? <span className="app-badge app-badge--uppercase app-badge--success">Authorised</span>
+                  : <span className="app-badge" style={selectedRow.statusBadgeStyle}>{selectedRow.statusLabel}</span>}
               </div>
 
               {/* Meta line */}
@@ -12161,7 +12161,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             <button
               type="button"
               onClick={() => setShowTechsPopup(true)}
-              className="app-badge app-badge--control app-badge--uppercase app-badge--accent-soft"
+              className="app-badge app-badge--uppercase app-badge--accent-soft"
               style={{ border: "none", cursor: "pointer" }}>
               {techniciansLoading ? "Loading technicians..." : `${technicianOptions.length} techs`}
               {techAbsences.length > 0 &&
@@ -12171,7 +12171,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               }
             </button>
             {normalizedJobNumber ?
-            <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">
+            <span className="app-badge app-badge--uppercase app-badge--success">
                 Job #{normalizedJobNumber}
               </span> :
             null}
@@ -12286,7 +12286,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   toneClass = "app-badge--warning";
                 }
 
-                const pillBaseClass = "app-badge app-badge--control app-badge--uppercase";
+                const pillBaseClass = "app-badge app-badge--uppercase";
                 const pillStyle = { minWidth: "120px", justifyContent: "center" };
 
                 // Row background follows the same tone as the right-side pill,

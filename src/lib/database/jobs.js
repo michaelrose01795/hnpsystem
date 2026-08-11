@@ -374,6 +374,7 @@ const _getAllJobsUncached = async () => {
       completion_status,
       tech_completion_status,
       assigned_to,
+      customer,
       customer_id,
       vehicle_id,
       vehicle_reg,
@@ -387,8 +388,11 @@ const _getAllJobsUncached = async () => {
       cosmetic_notes,
       vhc_required,
       checked_in_at,
+      workshop_started_at,
+      status_updated_at,
       queue_position,
       vhc_completed_at,
+      vhc_sent_at,
       maintenance_info,
       service_mode,
       warranty_linked_job_id,
@@ -2576,8 +2580,11 @@ const formatJobData = (data) => {
     techCompletionStatus: data.tech_completion_status || null,
     vhcRequired: normalizeBooleanField(data.vhc_required),
     vhcCompletedAt: data.vhc_completed_at || null,
+    vhcSentAt: data.vhc_sent_at || null,
     maintenanceInfo: data.maintenance_info || {},
     checkedInAt: data.checked_in_at || null,
+    workshopStartedAt: data.workshop_started_at || null,
+    statusUpdatedAt: data.status_updated_at || null,
     position: data.queue_position ?? null,
     serviceMode: data.service_mode || "workshop",
     
@@ -2593,7 +2600,7 @@ const formatJobData = (data) => {
     // ✅ Customer info
     customer: data.vehicle?.customer
       ? `${data.vehicle.customer.firstname} ${data.vehicle.customer.lastname}`
-      : "",
+      : data.customer || "",
     customerId: data.customer_id || data.vehicle?.customer?.id || null,
     customerFirstName: data.vehicle?.customer?.firstname || "",
     customerLastName: data.vehicle?.customer?.lastname || "",

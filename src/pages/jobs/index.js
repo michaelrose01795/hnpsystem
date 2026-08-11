@@ -20,7 +20,10 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-ui"; // Extracted presentation layer.
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface";
 import { reportError } from "@/lib/notifications/report"; // Phase 3 reporting helper (Phase 10 migration).
+import { buildJobOperationalStatusCounts, buildJobRowSummary, buildTechnicianWorkloadMap } from "@/lib/jobCards/jobRowSummary";
+import useJobViewDensity from "@/hooks/useJobViewDensity";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -102,16 +105,6 @@ const matchesSearchTerm = (job, value) => {
   map((entry) => entry.toLowerCase());
   return haystack.some((entry) => entry.includes(value));
 };
-const getAppointmentDisplay = (job) => {
-  if (job?.appointment?.date && job?.appointment?.time) {
-    return `${job.appointment.date} · ${job.appointment.time}`;
-  }
-  if (job?.appointment?.date) {
-    return job.appointment.date;
-  }
-  return "Not scheduled";
-};
-
 const popupPrimaryActionButtonStyle = {
   flex: 1,
   padding: "12px 20px",
@@ -144,23 +137,6 @@ const popupQuietActionButtonStyle = {
   transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
 };
 
-const renderVhcBadge = (job) => {
-  if (!job.vhcRequired) {
-    return (
-      <span className="app-badge app-badge--control app-badge--uppercase app-badge--neutral">
-        Not required
-      </span>);
-
-  }
-  const completed = Boolean(job.vhcCompletedAt);
-  return (
-    <span className={`app-badge app-badge--control app-badge--uppercase ${completed ? "app-badge--success" : "app-badge--warning"}`}>
-      {completed ? "VHC complete" : "VHC pending"}
-    </span>);
-
-};
-
-
 /* ================================
    Main component: ViewJobCards
 ================================ */
@@ -182,6 +158,8 @@ export default function ViewJobCards() {
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
+  const [operationalNow, setOperationalNow] = useState(() => new Date());
+  const { isCompact: isCompactView, toggleDensity: toggleJobViewDensity } = useJobViewDensity();
   const router = useRouter(); // router for navigation
   const divisionParam = router.query?.division;
   useEffect(() => {
@@ -249,6 +227,11 @@ export default function ViewJobCards() {
 
   useEffect(() => {
     fetchJobs(); // fetch jobs on component mount
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setOperationalNow(new Date()), 60000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const fetchOrders = useCallback(async () => {
@@ -335,6 +318,11 @@ export default function ViewJobCards() {
     ) :
     jobs,
     [jobs, normalizedDivisionFilter]
+  );
+
+  const technicianLoads = useMemo(
+    () => buildTechnicianWorkloadMap(divisionFilteredJobs),
+    [divisionFilteredJobs]
   );
 
   const handleDivisionFilterChange = useCallback(
@@ -448,6 +436,10 @@ export default function ViewJobCards() {
   activeTab === "carryOver" ?
   carryOverJobs :
   orderJobs;
+  const operationalStatusCounts = useMemo(
+    () => buildJobOperationalStatusCounts(isOrdersTab ? [] : baseJobs, { now: operationalNow }),
+    [baseJobs, isOrdersTab, operationalNow]
+  );
   const statusOptionsMap = useMemo(
     () => ({
       today: buildStatusOptions(todayJobs, BASE_STATUS_OPTIONS.today),
@@ -553,7 +545,7 @@ export default function ViewJobCards() {
   /* ================================
      Page Layout
   ================================ */
-  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} />;
+  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isCompactView={isCompactView} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} operationalNow={operationalNow} operationalStatusCounts={operationalStatusCounts} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} technicianLoads={technicianLoads} toggleJobViewDensity={toggleJobViewDensity} />;
 
 
 
@@ -1259,175 +1251,138 @@ export default function ViewJobCards() {
 
 }
 
-const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) => {
-  // top-layer
-  const rowBackground = "var(--surface)";
-  const jobType = deriveJobType(job);
-  const appointmentLabel = getAppointmentDisplay(job);
-  const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
-  const assignedTechName =
-  job.assignedTech?.fullName ||
-  job.assignedTech?.name ||
-  job.technician ||
-  "Unassigned";
-  const jobStatus = job.status || "Status pending";
-  const jobDivisionLabel = job.jobDivision || "Retail";
-  const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
-  const divisionBadgeTone = isSalesDivision ? "app-badge--accent-soft" : "app-badge--success";
-  const statusBadgeTone = getJobStatusBadgeTone(jobStatus);
+const operationalBadgeTone = (tone) => ({
+  accent: "app-badge--accent-soft",
+  danger: "app-badge--danger",
+  success: "app-badge--success",
+  warning: "app-badge--warning",
+}[tone] || "app-badge--neutral");
 
-  // Extract customer requests text
-  const customerRequests = job.requests && Array.isArray(job.requests) ?
-  job.requests.map((req) => typeof req === "string" ? req : req?.text || req?.description || "").filter(Boolean) :
-  [];
+const JobListCard = ({ job, compactView, onNavigate, onMouseEnter, onOpenTab, sectionKey, parentKey, now, technicianLoad }) => {
+  const jobType = deriveJobType(job);
+  const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
+  const assignedTechName = job.assignedTech?.fullName || job.assignedTech?.name || job.technician || "";
+  const summary = buildJobRowSummary(job, { now, technicianLoad });
+  const contactDetails = [job.customerPhone, job.customerEmail].filter(Boolean);
+  const notesCount = Array.isArray(job.notes) ? job.notes.length : 0;
+  const runAction = (event, action) => {
+    event.stopPropagation();
+    action();
+  };
 
   return (
-    // List-row container hosts onClick + hover handlers; LayerSurface paints the row surface inside.
-    // Background colour is data-derived (rowBackground from prop logic) so we keep it inline as a per-row state indicator.
     <DevLayoutSection
+      as="article"
       sectionKey={sectionKey}
       parentKey={parentKey}
       sectionType="list-row"
-      onClick={onNavigate}
-      style={{
-        padding: "0.75rem 0.9rem",
-        borderRadius: "var(--radius-sm)",
-        overflow: "hidden",
-        backgroundColor: rowBackground,
-        color: "var(--text-2)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.65rem",
-        cursor: "pointer",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
-      }}
-      onMouseEnter={(event) => {
-        if (onMouseEnter) onMouseEnter(); // prefetch job data on hover
-        event.currentTarget.style.position = "relative";
-        event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "none";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.zIndex = "0";
-      }}>
+      className="app-job-operations-row-shell"
+      onMouseEnter={onMouseEnter}>
 
-      {/* Header Row - Job Number, Reg, Status */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "stretch",
-          flexWrap: "wrap",
-          gap: "12px"
-        }}>
-        
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", flex: "1 1 18rem", minWidth: "min(100%, 18rem)" }}>
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>{job.jobNumber}</span>
-          {/* ✅ Prime/Sub-job badge */}
-          {job.primeJobNumber &&
-          <span
-            style={{
-              fontSize: "11px",
-              padding: "2px 8px",
-              borderRadius: "var(--radius-xs)",
-              backgroundColor: "var(--primary-surface)",
-              color: "var(--text-accent)",
-              fontWeight: "600"
-            }}
-            title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}>
-            
-              {job.isPrimeJob ? "🔗 Prime" : `↳ ${job.primeJobNumber}`}
-            </span>
-          }
-          <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-accent)" }}>{job.reg || "—"}</span>
-          <span style={{ fontSize: "15px", color: "var(--text-1)" }}>{job.makeModel || "Vehicle pending"}</span>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(7rem, 1fr))",
-            gap: "0.55rem",
-            fontSize: "0.92rem",
-            flex: "999 1 34rem",
-            minWidth: "min(100%, 26rem)",
-            alignItems: "center"
-          }}>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Customer</span>
-            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{job.customer || "Unknown"}</span>
+      <LayerSurface className={`app-job-operations-row${compactView ? " is-compact" : ""}${summary.signals.some((signal) => signal.tone === "danger") ? " is-overdue" : summary.signals.length ? " needs-attention" : ""}`} radius="var(--radius-sm)" padding="0">
+
+      <div className="app-job-operations-row__board" role="group" aria-label={`Job ${job.jobNumber || "workshop row"}`}>
+        <section className="app-job-operations-row__column app-job-operations-row__column--appointment">
+          <span className="app-job-operations-row__label">Appointment</span>
+          {summary.appointmentTime && <time className="app-job-operations-row__time-value">{summary.appointmentTime}</time>}
+          {summary.appointmentDate && <span className="app-job-operations-row__time-date">{summary.appointmentDate}</span>}
+          {summary.scheduleLabel && <strong className={`app-job-operations-row__elapsed${summary.scheduleState === "overdue" ? " is-overdue" : ""}`}>{summary.scheduleLabel}</strong>}
+          {summary.presenceLabel && <strong className="app-job-operations-row__elapsed">{summary.presenceLabel}</strong>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--job">
+          <span className="app-job-operations-row__label">Job</span>
+          <div className="app-job-operations-row__job-number">
+            {job.jobNumber && <span>{job.jobNumber}</span>}
+            {job.primeJobNumber && <span className="app-badge app-badge--neutral" title={job.isPrimeJob ? "Prime job" : `Sub-job of ${job.primeJobNumber}`}>
+              {job.isPrimeJob ? "Prime" : `Sub-job · ${job.primeJobNumber}`}
+            </span>}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Technician</span>
-            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{assignedTechName}</span>
+          {job.reg && <strong className="app-job-operations-row__registration">{job.reg}</strong>}
+          {job.makeModel && <span className="app-job-operations-row__vehicle-model">{job.makeModel}</span>}
+          {jobType && <span className="app-job-operations-row__muted">{jobType}</span>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--customer">
+          <span className="app-job-operations-row__label">Customer</span>
+          {job.customer && <strong className="app-job-operations-row__value">{job.customer}</strong>}
+          {contactDetails.map((detail) => <span key={detail} className="app-job-operations-row__muted">{detail}</span>)}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--status">
+          <span className="app-job-operations-row__label">Status</span>
+          <div className="app-job-operations-row__badge-line">
+            {job.status && <span className={`app-badge ${getJobStatusBadgeTone(job.status)}`}>{job.status}</span>}
+            {waitingLabel && waitingLabel !== "Neither" && <span className="app-badge app-badge--accent-soft">{waitingLabel}</span>}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Job Type</span>
-            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{jobType}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Appointment</span>
-            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{appointmentLabel}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Customer Status</span>
-            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{waitingLabel}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>VHC</span>
-            <span>{renderVhcBadge(job)}</span>
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-            flex: "0 1 auto",
-            minWidth: "fit-content",
-            alignSelf: "flex-end"
-          }}>
-          
-          <span
-            className={`app-badge app-badge--control app-badge--uppercase ${divisionBadgeTone}`}>
-            
-            {jobDivisionLabel}
-          </span>
-          <span
-            className={`app-badge app-badge--control app-badge--uppercase ${statusBadgeTone}`}>
-            
-            {jobStatus}
-          </span>
-        </div>
+          {summary.statusDuration && <span className="app-job-operations-row__muted">{summary.statusDuration}</span>}
+          {summary.signals.length > 0 && <div className="app-job-operations-row__signals" aria-label="Job attention indicators">
+            {summary.signals.map((signal) => <span key={signal.label} className={`app-badge ${operationalBadgeTone(signal.tone)}`}>{signal.label}</span>)}
+          </div>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--technician">
+          <span className="app-job-operations-row__label">Technician</span>
+          {assignedTechName && <strong className="app-job-operations-row__value">{assignedTechName}</strong>}
+          {summary.technicianLoad && <span className="app-job-operations-row__muted">{summary.technicianLoad}</span>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--vhc">
+          <span className="app-job-operations-row__label">VHC</span>
+          {summary.vhc && <span className={`app-badge ${operationalBadgeTone(summary.vhc.tone)}`}>{summary.vhc.label}</span>}
+          {summary.vhc?.detail && <span className="app-job-operations-row__muted">{summary.vhc.detail}</span>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--parts">
+          <span className="app-job-operations-row__label">Parts</span>
+          {summary.parts && <span className={`app-badge ${operationalBadgeTone(summary.parts.tone)}`}>{summary.parts.label}</span>}
+          {summary.parts?.detail && <span className="app-job-operations-row__muted">{summary.parts.detail}</span>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--promised">
+          <span className="app-job-operations-row__label">Promised</span>
+          {summary.promisedLabel && <strong className="app-job-operations-row__value app-job-operations-row__promised-time">{summary.promisedLabel}</strong>}
+          {summary.promisedState && <span className={`app-badge ${operationalBadgeTone(summary.promisedState.tone)}`}>{summary.promisedState.label}</span>}
+        </section>
+
+        <section className="app-job-operations-row__column app-job-operations-row__column--actions">
+          <span className="app-job-operations-row__label">Actions</span>
+          <button type="button" className="app-btn app-btn--primary app-btn--sm" onClick={(event) => runAction(event, onNavigate)}>
+            Open job
+          </button>
+        </section>
       </div>
 
-      {/* Customer Requests Section */}
-      {customerRequests.length > 0 &&
-      <LayerTheme radius="var(--radius-xs)" padding="10px 12px" gap={undefined} style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(8.5rem, auto) minmax(0, 1fr)",
-        alignItems: "start",
-        gap: "8px 12px"
-      }}>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", minWidth: 0 }}>
-            <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 700 }}>
-              Customer Requests
+      {(summary.requests.length > 0 || notesCount > 0) && <div className="app-job-operations-row__lower">
+        {summary.requests.length > 0 && <section className="app-job-operations-row__requests">
+          <div className="app-job-operations-row__requests-heading">
+            <span className="app-job-operations-row__requests-total" aria-label={`${summary.requests.length} customer requests`}>
+              {summary.requests.length}
             </span>
-            <span className="app-badge app-badge--neutral">{customerRequests.length}</span>
+            <span>Customer requests</span>
           </div>
-          <div style={{ color: "var(--text-1)", fontSize: "14px", fontWeight: 500, lineHeight: "1.45", minWidth: 0, overflowWrap: "anywhere" }}>
-            {customerRequests.join(" • ")}
+          <div className="app-job-operations-row__requests-scroll" role="region" aria-label="Customer request details" tabIndex={0}>
+            <ol>
+              {summary.requests.map((request, index) => <li key={`${request.text}-${index}`}>
+                <span className="app-job-operations-row__request-number" aria-hidden="true">{index + 1}</span>
+                <span className="app-job-operations-row__request-text">{request.text}</span>
+                <span className="app-job-operations-row__request-meta">
+                  {request.status && <span className="app-badge app-badge--neutral">{request.status}</span>}
+                  {request.statusDuration && <small>{request.statusDuration}</small>}
+                  {Number.isFinite(request.hours) && request.hours > 0 && <small>{request.hours}h</small>}
+                </span>
+              </li>)}
+            </ol>
           </div>
-        </LayerTheme>
-      }
+        </section>}
+        {notesCount > 0 && <div className="app-job-operations-row__lower-actions">
+          <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={(event) => runAction(event, () => onOpenTab("notes"))}>
+            Notes <span className="app-badge app-badge--neutral">{notesCount}</span>
+          </button>
+        </div>}
+      </div>}
+      </LayerSurface>
     </DevLayoutSection>);
-
 };
 
 const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
@@ -1540,7 +1495,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         </div>
         <span
           style={{ flex: "0 1 auto", minWidth: "fit-content", alignSelf: "flex-start" }}
-          className={`app-badge app-badge--control app-badge--uppercase ${primaryStatusTone}`}>
+          className={`app-badge app-badge--uppercase ${primaryStatusTone}`}>
           
           {primaryStatus}
         </span>

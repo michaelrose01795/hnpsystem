@@ -150,7 +150,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
       {/* Header row: label + stage badge */}
       <div style={STYLES.header}>
         <span style={STYLES.headerLabel}>Smart Summary</span>
-        <span className="app-badge app-badge--control app-badge--accent-soft" style={STYLES.stageBadge(summary.stageColor)}>
+        <span className="app-badge app-badge--accent-soft" style={STYLES.stageBadge(summary.stageColor)}>
           <span style={STYLES.stageDot(summary.stageColor)} />
           {summary.stage}
         </span>

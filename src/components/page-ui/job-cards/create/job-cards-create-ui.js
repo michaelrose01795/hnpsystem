@@ -279,7 +279,7 @@ export default function CreateJobCardPageUi(props) {
         flexWrap: "wrap"
       }}>
             {/* Job Source Badge */}
-            <span className={`app-badge app-badge--control ${jobSource === "Warranty" ? "app-badge--warning" : "app-badge--success"}`}>
+            <span className={`app-badge ${jobSource === "Warranty" ? "app-badge--warning" : "app-badge--success"}`}>
               {jobSource}
             </span>
             <Button type="button" data-presentation="create-submit" onClick={handleSaveJob}>

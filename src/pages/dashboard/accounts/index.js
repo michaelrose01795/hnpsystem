@@ -103,7 +103,7 @@ const TransactionTable = ({ transactions }) => {
                   {tx.payment_method || "—"}
                 </td>
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  <span className={`app-badge app-badge--control ${credit ? "app-badge--success" : "app-badge--danger"}`}>
+                  <span className={`app-badge ${credit ? "app-badge--success" : "app-badge--danger"}`}>
                     {credit ? "+" : "−"}{formatCurrency(tx.amount)}
                   </span>
                 </td>
