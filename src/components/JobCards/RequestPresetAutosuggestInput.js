@@ -4,6 +4,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useJobRequestPresetSuggestions from "@/hooks/useJobRequestPresetSuggestions";
 
+const formatBaselineHours = (value) => {
+  const hours = Number(value || 0);
+  return Number.isInteger(hours) ? `${hours}h` : `${Number(hours.toFixed(2))}h`;
+};
+
 export default function RequestPresetAutosuggestInput({
   value = "",
   onChange = () => {},
@@ -27,6 +32,7 @@ export default function RequestPresetAutosuggestInput({
   // Local state keeps the input responsive — parent is notified via debounced onChange
   const [localValue, setLocalValue] = useState(value);
   const debounceRef = useRef(null);
+  const pendingValueRef = useRef(null);
   const prevExternalValueRef = useRef(value);
 
   // Sync local state when the external value changes (e.g. preset selection or clear)
@@ -39,9 +45,11 @@ export default function RequestPresetAutosuggestInput({
 
   const handleLocalChange = (newValue) => {
     setLocalValue(newValue);
+    pendingValueRef.current = newValue;
     prevExternalValueRef.current = newValue; // prevent sync loop
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      pendingValueRef.current = null;
       onChange(newValue);
     }, 250);
   };
@@ -112,6 +120,8 @@ export default function RequestPresetAutosuggestInput({
 
   const selectSuggestion = (suggestion) => {
     if (!suggestion) return;
+    clearTimeout(debounceRef.current);
+    pendingValueRef.current = null;
     onPresetSelect(suggestion);
     setIsFocused(false);
   };
@@ -146,7 +156,6 @@ export default function RequestPresetAutosuggestInput({
   };
 
   const showMenu = isFocused && (loading || hasSuggestions) && typeof document !== "undefined";
-
   return (
     <div ref={wrapperRef} style={{ position: "relative", ...containerStyle }}>
       <input
@@ -156,6 +165,14 @@ export default function RequestPresetAutosuggestInput({
         onChange={(event) => handleLocalChange(event.target.value)}
         onFocus={() => {
           setIsFocused(true);
+        }}
+        onBlur={() => {
+          if (pendingValueRef.current !== null) {
+            clearTimeout(debounceRef.current);
+            const pendingValue = pendingValueRef.current;
+            pendingValueRef.current = null;
+            onChange(pendingValue);
+          }
         }}
         onKeyDown={(event) => {
           if (!isFocused || !hasSuggestions) return;
@@ -210,7 +227,7 @@ export default function RequestPresetAutosuggestInput({
               const active = index === activeIndex || index === hoveredIndex;
               return (
                 <button
-                  key={`${suggestion.id}-${index}`}
+                  key={suggestion.id || suggestion.catalogKey || `${suggestion.label}-${index}`}
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => selectSuggestion(suggestion)}
@@ -224,8 +241,11 @@ export default function RequestPresetAutosuggestInput({
                     </span>
                   </div>
                   {showHours ? (
-                    <span className={`app-badge ${active ? "app-badge--accent-strong" : "app-badge--accent-soft"}`}>
-                      {Number(suggestion.defaultHours || 0).toFixed(2)}h
+                    <span
+                      className={`app-badge ${active ? "app-badge--accent-strong" : "app-badge--accent-soft"}`}
+                      title="Approximate workshop-planning baseline; use vehicle-specific manufacturer time when available"
+                    >
+                      ~{formatBaselineHours(suggestion.defaultHours)}
                     </span>
                   ) : null}
                 </button>

@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const { createClient } = require("@supabase/supabase-js");
 const dotenv = require("dotenv");
+const catalog = require("../../src/lib/jobRequestPresets/catalog.json");
 
 dotenv.config();
 
@@ -36,7 +37,7 @@ const uniqueNormalizedList = (values = []) =>
     )
   );
 
-const PRESETS = [
+/* Previous seed catalogue retained in source history; the live seed now reads catalog.json.
   { label: "MOT", category: "mot", hours: 0.01, aliases: ["mot test", "m.o.t", "ministry test", "mot booking"] },
   { label: "1st Service", category: "service", hours: 1.0, aliases: ["first service", "service 1", "1st"] },
   { label: "2nd Service", category: "service", hours: 1.5, aliases: ["second service", "service 2", "2nd"] },
@@ -110,7 +111,14 @@ const PRESETS = [
   { label: "CV Boot Replacement", category: "drivetrain", hours: 1.5, aliases: ["cv boot", "driveshaft boot"] },
   { label: "MOT Retest", category: "mot", hours: 0.25, aliases: ["mot re test", "retest mot"] },
   { label: "Road Test", category: "inspection", hours: 0.5, aliases: ["test drive", "road test and inspect"] },
-];
+*/
+
+const PRESETS = catalog.map((preset) => ({
+  label: preset.label,
+  category: preset.category,
+  hours: preset.hours,
+  aliases: preset.aliases,
+}));
 
 const buildRows = () =>
   PRESETS.map((preset) => {

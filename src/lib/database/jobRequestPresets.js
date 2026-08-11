@@ -10,6 +10,7 @@ const toPresetResponse = (row = {}) => ({
   id: row.id,
   label: row.label || "",
   aliases: Array.isArray(row.aliases) ? row.aliases : [],
+  category: row.category || "general",
   defaultHours: Number(row.default_hours ?? row.defaultHours ?? 0),
   isActive: row.is_active !== false,
   usageCount: Number(row.usage_count || 0),
@@ -40,7 +41,7 @@ export const searchJobRequestPresets = async ({ query = "", limit = 8 } = {}) =>
 
   let dbQuery = supabase
     .from("job_request_presets")
-    .select("id, label, aliases, default_hours, is_active, usage_count, created_at, updated_at")
+    .select("id, label, aliases, category, default_hours, is_active, usage_count, created_at, updated_at")
     .eq("is_active", true)
     .limit(normalizedQuery ? 80 : 40);
 
@@ -57,6 +58,18 @@ export const searchJobRequestPresets = async ({ query = "", limit = 8 } = {}) =>
   const ranked = rankJobRequestPresets({ query: normalizedQuery, presets: candidates, limit: resolvedLimit });
 
   return ranked;
+};
+
+export const listJobRequestPresets = async () => {
+  const { data, error } = await supabase
+    .from("job_request_presets")
+    .select("id, label, aliases, category, default_hours, is_active, usage_count, created_at, updated_at")
+    .eq("is_active", true)
+    .order("usage_count", { ascending: false })
+    .limit(500);
+
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []).map(toPresetResponse);
 };
 
 export const getJobRequestPresetById = async (presetId) => {
