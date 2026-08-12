@@ -11,6 +11,7 @@ import ArchivedJobsPageUi from "@/components/page-ui/job-cards/archive/job-cards
 const STATUS_BADGES = {
   Complete: { bg: "var(--success-surface)", color: "var(--success-text)" },
   Released: { bg: "var(--success-surface)", color: "var(--success-dark)" },
+  Cancelled: { bg: "var(--danger-surface)", color: "var(--danger-dark)" },
   Invoiced: { bg: "var(--theme)", color: "var(--accentText)" },
   Delivered: { bg: "var(--warning-surface)", color: "var(--warning-text)" },
   Archived: { bg: "var(--theme)", color: "var(--accentText)" }

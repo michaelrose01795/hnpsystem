@@ -9,6 +9,7 @@ export const STATUSES = {
   IN_PROGRESS: "in_progress",
   INVOICED: "invoiced",
   RELEASED: "released",
+  CANCELLED: "cancelled",
 };
 
 export const DISPLAY = {
@@ -17,6 +18,7 @@ export const DISPLAY = {
   [STATUSES.IN_PROGRESS]: "In Progress",
   [STATUSES.INVOICED]: "Invoiced",
   [STATUSES.RELEASED]: "Released",
+  [STATUSES.CANCELLED]: "Cancelled",
 };
 
 const LEGACY_TO_MAIN = {
@@ -52,7 +54,7 @@ const LEGACY_TO_MAIN = {
   completed: STATUSES.RELEASED,
   complete: STATUSES.RELEASED,
   collected: STATUSES.RELEASED,
-  cancelled: STATUSES.RELEASED,
+  cancelled: STATUSES.CANCELLED,
   workshop_mot: STATUSES.IN_PROGRESS,
   vhc_sent: STATUSES.IN_PROGRESS,
   additional_work_required: STATUSES.IN_PROGRESS,

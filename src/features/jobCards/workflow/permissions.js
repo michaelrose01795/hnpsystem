@@ -52,6 +52,7 @@ export const resolveJobCardPermissions = ({
   const isInvoiceOrBeyondReadOnly =
     mainStatusForEditLock === JOB_STATUSES.INVOICED ||
     mainStatusForEditLock === JOB_STATUSES.RELEASED ||
+    mainStatusForEditLock === JOB_STATUSES.CANCELLED ||
     statusLower === "archived";
 
   const canEdit = !isArchiveMode && !isInvoiceOrBeyondReadOnly && canEditBase;
@@ -71,13 +72,15 @@ export const resolveJobCardPermissions = ({
   const isPartsWriteUpVhcLockedByStatus =
     mainStatusForEditLock === JOB_STATUSES.BOOKED ||
     mainStatusForEditLock === JOB_STATUSES.INVOICED ||
-    mainStatusForEditLock === JOB_STATUSES.RELEASED;
+    mainStatusForEditLock === JOB_STATUSES.RELEASED ||
+    mainStatusForEditLock === JOB_STATUSES.CANCELLED;
 
   const canEditPartsWriteUpVhc = canEdit && !isPartsWriteUpVhcLockedByStatus;
 
   const isClockingLockedByStatus =
     mainStatusForEditLock === JOB_STATUSES.INVOICED ||
-    mainStatusForEditLock === JOB_STATUSES.RELEASED;
+    mainStatusForEditLock === JOB_STATUSES.RELEASED ||
+    mainStatusForEditLock === JOB_STATUSES.CANCELLED;
 
   // Existing explanatory copy kept centralized so tabs stay consistent.
   const clockingLockDescription =
