@@ -39,7 +39,7 @@ const parseEntryMetaFromNotes = (storedNotes) => {
         typeof parsed?.jobDescription === "string" ? parsed.jobDescription : "",
       allocatedHours: parseOptionalNumber(parsed?.allocatedHours),
     };
-  } catch (_error) {
+  } catch {
     return { notes: storedNotes, jobDescription: "", allocatedHours: null };
   }
 };
@@ -221,19 +221,6 @@ export async function deleteEfficiencyEntry(entryId) {
 }
 
 /**
- * Delete a job clocking entry (removes auto-logged entry from efficiency view).
- */
-export async function deleteJobClockingEntry(entryId) {
-  const realId = entryId.startsWith("jc_") ? Number(entryId.slice(3)) : Number(entryId);
-  const { error } = await db
-    .from("job_clocking")
-    .delete()
-    .eq("id", realId);
-
-  if (error) throw error;
-}
-
-/**
  * Fetch targets for a specific technician.
  * Falls back to defaults if no row exists.
  */
@@ -355,7 +342,7 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
 
   const { data, error } = await db
     .from("job_clocking")
-    .select("id, user_id, job_number, clock_in, clock_out, work_type, created_at")
+    .select("id, user_id, job_id, job_number, request_id, clock_in, clock_out, work_type, created_at")
     .in("user_id", userIds)
     .not("clock_out", "is", null)
     .gte("clock_in", startISO)
@@ -367,7 +354,40 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
     return [];
   }
 
-  return (data || []).map((row) => {
+  const clockingRows = data || [];
+  const jobIds = [...new Set(clockingRows.map((row) => Number(row.job_id)).filter(Number.isFinite))];
+  const [{ data: jobsData, error: jobsError }, { data: requestsData, error: requestsError }] =
+    await Promise.all([
+      jobIds.length
+        ? db
+            .from("jobs")
+            .select("id, job_number, description, job_categories")
+            .in("id", jobIds)
+        : Promise.resolve({ data: [], error: null }),
+      jobIds.length
+        ? db
+            .from("job_requests")
+            .select("request_id, job_id, description, hours, job_type, request_source, sort_order")
+            .in("job_id", jobIds)
+            .order("sort_order", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+  if (jobsError) console.warn("Failed to enrich efficiency jobs:", jobsError.message);
+  if (requestsError) console.warn("Failed to enrich efficiency requests:", requestsError.message);
+
+  const jobsById = new Map((jobsData || []).map((job) => [Number(job.id), job]));
+  const requestsById = new Map(
+    (requestsData || []).map((request) => [Number(request.request_id), request])
+  );
+  const requestsByJob = new Map();
+  (requestsData || []).forEach((request) => {
+    const jobId = Number(request.job_id);
+    if (!requestsByJob.has(jobId)) requestsByJob.set(jobId, []);
+    requestsByJob.get(jobId).push(request);
+  });
+
+  return clockingRows.map((row) => {
     const clockIn = new Date(row.clock_in);
     const clockOut = new Date(row.clock_out);
     const diffMs = clockOut - clockIn;
@@ -375,22 +395,86 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
     const dayOfWeek = clockIn.getDay();
     const dayType = dayOfWeek === 6 ? "saturday" : "weekday";
     const dateStr = clockIn.toISOString().split("T")[0];
+    const job = jobsById.get(Number(row.job_id));
+    const request = requestsById.get(Number(row.request_id));
+    const jobRequests = requestsByJob.get(Number(row.job_id)) || [];
+    const jobAllocation = jobRequests.reduce(
+      (sum, item) => sum + Number(item.hours || 0),
+      0
+    );
+    const allocatedHours = request?.hours ?? (jobAllocation > 0 ? jobAllocation : null);
+    const allocationKey = request?.request_id
+      ? `request:${request.request_id}`
+      : `job:${row.job_id}`;
 
     return {
       id: `jc_${row.id}`,
       user_id: row.user_id,
       date: dateStr,
       job_number: row.job_number || "",
-      job_description: "",
-      allocated_hours: null,
+      job_description: request?.description || job?.description || "",
+      allocated_hours: normalizeHourValue(allocatedHours, { allowNull: true }),
       hours_spent: hours,
       notes: "Auto-logged from job clocking",
       day_type: dayType,
       created_at: row.created_at,
       updated_at: row.clock_out,
       _source: "job_clocking",
+      _allocation_key: allocationKey,
+      _clock_in: row.clock_in,
+      _clock_out: row.clock_out,
+      _job_id: row.job_id,
+      _request_id: row.request_id,
+      _category: request?.job_type || request?.request_source || row.work_type,
+      _categories: Array.isArray(job?.job_categories) ? job.job_categories : [],
     };
   });
+}
+
+/**
+ * Fetch raw job clockings for non-destructive quality checks. Open records are
+ * intentionally included here but excluded from productive-hour totals.
+ */
+export async function getJobClockingQualityRecords(userIds, year, month) {
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01T00:00:00.000Z`;
+  const endMonth = month === 12 ? 1 : month + 1;
+  const endYear = month === 12 ? year + 1 : year;
+  const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01T00:00:00.000Z`;
+
+  const { data, error } = await db
+    .from("job_clocking")
+    .select("id, user_id, job_id, job_number, request_id, clock_in, clock_out, work_type, created_at, updated_at")
+    .in("user_id", userIds)
+    .gte("clock_in", startDate)
+    .lt("clock_in", endDate)
+    .order("clock_in", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/** Reuse the existing jobs and job_requests sources for the manual-entry lookup. */
+export async function lookupEfficiencyJob(jobNumber) {
+  const trimmed = String(jobNumber || "").trim();
+  if (!trimmed) return null;
+
+  const { data: job, error: jobError } = await db
+    .from("jobs")
+    .select("id, job_number, description")
+    .ilike("job_number", trimmed)
+    .maybeSingle();
+
+  if (jobError) throw jobError;
+  if (!job?.id) return null;
+
+  const { data: requests, error: requestsError } = await db
+    .from("job_requests")
+    .select("request_id, description, hours, sort_order")
+    .eq("job_id", Number(job.id))
+    .order("sort_order", { ascending: true });
+
+  if (requestsError) throw requestsError;
+  return { job, requests: requests || [] };
 }
 
 export async function getOvertimeAsEfficiency(userIds, year, month) {
@@ -516,8 +600,20 @@ const getTargetHoursForWindow = (monthlyTargetHours, options = {}) => {
 };
 
 export function calculateTechTotals(entries, target, options = {}) {
-  const actualHours = entries.reduce((sum, e) => sum + Number(e.hours_spent || 0), 0);
-  const allocatedHours = entries.reduce((sum, e) => sum + Number(e.allocated_hours || 0), 0);
+  const countableEntries = (Array.isArray(entries) ? entries : []).filter(
+    (entry) => entry?._source !== "overtime_sessions" && !entry?._excludedFromTotals
+  );
+  const actualHours = countableEntries.reduce(
+    (sum, entry) => sum + Number(entry.hours_spent || 0),
+    0
+  );
+  const seenAllocations = new Set();
+  const allocatedHours = countableEntries.reduce((sum, entry) => {
+    const allocationKey = entry?._allocation_key || `entry:${entry?.id}`;
+    if (seenAllocations.has(allocationKey)) return sum;
+    seenAllocations.add(allocationKey);
+    return sum + Number(entry.allocated_hours || 0);
+  }, 0);
   const targetHours = getTargetHoursForWindow(target.monthlyTargetHours, options);
   const difference = actualHours - targetHours;
   const efficiencyPct = actualHours > 0 ? (allocatedHours / actualHours) * 100 : 0;
