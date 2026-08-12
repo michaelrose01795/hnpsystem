@@ -69,6 +69,7 @@ async function handler(req, res, session) {
     const [
       { data: catalog, error: catalogError },
       totalParts,
+      inactiveParts,
       partsOnOrder,
       pendingDeliveries,
       activeJobParts,
@@ -76,11 +77,12 @@ async function handler(req, res, session) {
       supabase
         .from("parts_catalog")
         .select(
-          "id, part_number, name, supplier, storage_location, qty_in_stock, qty_on_order, reorder_level, unit_cost, unit_price, is_active",
+          "id, part_number, name, category, supplier, storage_location, qty_in_stock, qty_reserved, qty_on_order, reorder_level, unit_cost, unit_price, is_active",
           { count: "exact" }
         )
         .eq("is_active", true),
       fetchCount(supabase.from("parts_catalog").eq("is_active", true)),
+      fetchCount(supabase.from("parts_catalog").eq("is_active", false)),
       fetchCount(supabase.from("parts_catalog").eq("is_active", true).gt("qty_on_order", 0)),
       fetchCount(
         supabase
@@ -142,13 +144,65 @@ async function handler(req, res, session) {
       0
     );
 
+    const stockTotals = (catalog || []).reduce(
+      (totals, part) => {
+        const onHand = Number(part.qty_in_stock) || 0;
+        const reserved = Number(part.qty_reserved) || 0;
+        const onOrder = Number(part.qty_on_order) || 0;
+        const reorderLevel = Number(part.reorder_level) || 0;
+        const unitCost = Number(part.unit_cost) || 0;
+        const unitPrice = Number(part.unit_price) || 0;
+        const available = onHand - reserved;
+
+        totals.inStockCount += onHand > 0 ? 1 : 0;
+        totals.outOfStockCount += onHand <= 0 ? 1 : 0;
+        totals.lowStockCount += onHand <= reorderLevel ? 1 : 0;
+        totals.quantityOnOrder += onOrder;
+        totals.reservedQuantity += reserved;
+        totals.availableQuantity += available;
+        totals.retailValue += onHand * unitPrice;
+
+        const category = part.category || "Uncategorised";
+        totals.categoryValues[category] =
+          (totals.categoryValues[category] || 0) + onHand * unitCost;
+        return totals;
+      },
+      {
+        inStockCount: 0,
+        outOfStockCount: 0,
+        lowStockCount: 0,
+        quantityOnOrder: 0,
+        reservedQuantity: 0,
+        availableQuantity: 0,
+        retailValue: 0,
+        categoryValues: {},
+      }
+    );
+
+    const topCategoriesByValue = Object.entries(stockTotals.categoryValues)
+      .map(([category, value]) => ({
+        category,
+        value: Math.round(value * 100) / 100,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
     return res.status(200).json({
       success: true,
       summary: {
         totalParts,
-        lowStockCount: stockAlerts.length,
+        inactiveParts,
+        inStockCount: stockTotals.inStockCount,
+        lowStockCount: stockTotals.lowStockCount,
+        outOfStockCount: stockTotals.outOfStockCount,
+        quantityOnOrder: stockTotals.quantityOnOrder,
+        reservedQuantity: stockTotals.reservedQuantity,
+        availableQuantity: stockTotals.availableQuantity,
         lowStockParts: stockAlerts,
         totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+        totalRetailValue: Math.round(stockTotals.retailValue * 100) / 100,
+        potentialMargin: Math.round((stockTotals.retailValue - totalInventoryValue) * 100) / 100,
+        topCategoriesByValue,
         partsOnOrder,
         pendingDeliveries,
         activeJobParts,

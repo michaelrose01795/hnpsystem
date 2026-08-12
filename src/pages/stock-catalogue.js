@@ -375,7 +375,6 @@ function StockCataloguePage() {
       setInventoryLoading(false);
     }
   }, []);
-
   const fetchCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase.
@@ -538,7 +537,13 @@ function StockCataloguePage() {
         throw new Error(data.message || "Failed to add part to job");
       }
 
-      await refreshSelectedPartFromDb();
+      await Promise.all([
+        refreshSelectedPartFromDb(),
+        jobData?.id === jobId && jobData?.jobNumber
+          ? searchJob(jobData.jobNumber)
+          : Promise.resolve(),
+        fetchInventory(inventorySearch),
+      ]);
 
       setShowAddToJobModal(false);
       resetAddToJobModal();
@@ -552,8 +557,13 @@ function StockCataloguePage() {
   addToJobResult?.id,
   actingUserId,
   actingUserNumericId,
+  fetchInventory,
+  inventorySearch,
+  jobData?.id,
+  jobData?.jobNumber,
   refreshSelectedPartFromDb,
   resetAddToJobModal,
+  searchJob,
   selectedPart?.id]
   );
 
@@ -983,6 +993,11 @@ function StockCataloguePage() {
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
             <div style={{ color: "var(--text-1)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px", fontSize: "var(--text-body-sm)" }}>
+              <span>Available <strong>{Number(selectedPart.qty_in_stock || 0) - Number(selectedPart.qty_reserved || 0)}</strong></span>
+              <span>On order <strong>{Number(selectedPart.qty_on_order || 0)}</strong></span>
+              <span>Open-job demand <strong>{Number(selectedPart.open_job_count || 0)}</strong></span>
             </div>
           </div>
 
