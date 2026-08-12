@@ -1,5 +1,8 @@
 Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
 
+CHECK
+Cancel appointment button to be added within the jobcard scheduling tab button etc.
+
 
 Manager update give url link
 

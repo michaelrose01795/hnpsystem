@@ -10,7 +10,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/database/supabaseClient";
-import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, updateJobRequestStatus, updateJobRequestWorkDetails, markAllJobRequestsComplete, saveWriteUpToDatabase, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, cancelJobAppointment, addJobFile, deleteJobFile, upsertJobRequestsForJob, updateJobRequestStatus, updateJobRequestWorkDetails, markAllJobRequestsComplete, saveWriteUpToDatabase, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
 import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
@@ -2236,6 +2236,65 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     async (appointmentDetails) => {
       if (!canEdit || !jobData?.id) return { success: false };
 
+      if (appointmentDetails?.cancelJob) {
+        if (!jobData.appointment) {
+          return { success: false, error: "Appointment not found" };
+        }
+
+        const confirmed = await confirm({
+          title: null,
+          message: "Cancel this appointment?",
+          description: "The job will be marked as Cancelled and moved to the archived jobs section.",
+          details: [
+            { label: "Job", value: jobData.jobNumber || jobNumber, tone: "info" },
+            { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
+            { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
+            {
+              label: "Appointment",
+              value: [jobData.appointment.date, jobData.appointment.time].filter(Boolean).join(" at ") || "N/A",
+              tone: "accent"
+            }
+          ],
+          confirmLabel: "Confirm cancellation",
+          cancelLabel: "Keep appointment"
+        });
+
+        if (!confirmed) return { success: false, cancelled: true };
+
+        setAppointmentSaving(true);
+        try {
+          const cancelResult = await cancelJobAppointment(
+            jobData.id,
+            jobData.appointment.appointmentId,
+            dbUserId || user?.user_id || user?.id || null
+          );
+          if (!cancelResult?.success) {
+            throw new Error(cancelResult?.error?.message || "Failed to cancel appointment");
+          }
+
+          const archiveResponse = await fetch("/api/jobcards/archive/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jobNumber: jobData.jobNumber || jobNumber })
+          });
+          const archivePayload = await archiveResponse.json();
+          if (!archiveResponse.ok || !archivePayload?.success) {
+            throw new Error(archivePayload?.error || "Appointment cancelled, but the job could not be moved to archived jobs");
+          }
+
+          revalidateAllJobs();
+          await router.push("/archive");
+          return { success: true };
+        } catch (cancelError) {
+          console.error("Failed to cancel appointment:", cancelError);
+          alert(cancelError?.message || "Failed to cancel appointment");
+          await fetchJobData({ silent: true, force: true });
+          return { success: false, error: cancelError };
+        } finally {
+          setAppointmentSaving(false);
+        }
+      }
+
       if (!appointmentDetails.date || !appointmentDetails.time) {
         alert("Please provide both date and time.");
         return { success: false };
@@ -2358,7 +2417,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         setAppointmentSaving(false);
       }
     },
-    [canEdit, jobData, fetchJobData]
+    [canEdit, confirm, dbUserId, fetchJobData, jobData, jobNumber, router, user?.id, user?.user_id]
   );
 
   const handleAppointmentRebook = useCallback(
@@ -3911,6 +3970,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     invoicePaymentStatus.toLowerCase() === "paid";
     const jobReleased =
     overallStatusId === JOB_STATUSES.RELEASED ||
+    overallStatusId === JOB_STATUSES.CANCELLED ||
+    String(overallStatusLabel || "").trim().toLowerCase() === "cancelled" ||
     String(overallStatusLabel || "").trim().toLowerCase() === "released";
     const showCreateInvoiceButton =
     canEdit &&
@@ -6320,7 +6381,7 @@ export function CustomerRequestsTab({
         (combinedRequestRows.length > 0 ?
         <div className="jc-req-split">
           <DevLayoutSection
-            sectionKey={`job-cards-${jobNumber}-customer-requests-table`}
+            sectionKey={`job-cards-${jobData?.jobNumber || "unknown"}-customer-requests-table`}
             sectionType="data-table"
             parentKey="jobcard-tab-customer-requests"
             className="jc-req-table-wrap"
@@ -8737,6 +8798,11 @@ function SchedulingTab({
     }
   };
 
+  const handleAppointmentCancel = async () => {
+    if (!canEdit || appointmentSaving || !jobData.appointment) return;
+    await onAppointmentSave({ cancelJob: true });
+  };
+
   const handleBookingDescriptionChange = (value) => {
     setBookingDescription(
       value ? formatBookingDescriptionInput(value) : ""
@@ -9086,6 +9152,21 @@ function SchedulingTab({
 
             Appointment created: <strong style={{ color: "var(--text-1)" }}>{appointmentCreatedAt}</strong>
           </div>
+
+          {canEdit &&
+          jobData.appointment &&
+          String(jobData.appointment.status || "").toLowerCase() !== "cancelled" &&
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--layout-card-gap)" }}>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleAppointmentCancel}
+              disabled={appointmentSaving}>
+
+              Cancel appointment
+            </Button>
+          </div>
+          }
         </DevLayoutSection>
       </div>
 

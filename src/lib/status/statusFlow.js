@@ -73,6 +73,17 @@ export const SERVICE_STATUS_FLOW = {
     pausesTime: true,
     isFinalStatus: true,
   },
+
+  CANCELLED: {
+    id: JOB_STATUSES.CANCELLED,
+    label: JOB_DISPLAY[JOB_STATUSES.CANCELLED],
+    color: "var(--danger)",
+    next: null,
+    department: "Service Reception",
+    canClockOn: false,
+    pausesTime: true,
+    isFinalStatus: true,
+  },
 };
 
 export const JOB_SUB_STATUS_FLOW = {

@@ -3543,6 +3543,55 @@ export const updateJobStatus = async (
 };
 
 /* ============================================
+   CANCEL JOB APPOINTMENT
+   Keeps the appointment and main job status in sync before archival.
+============================================ */
+export const cancelJobAppointment = async (
+  jobId,
+  appointmentId = null,
+  statusUpdatedBy = null
+) => {
+  if (!jobId) {
+    return { success: false, error: { message: "Job ID is required" } };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  try {
+    let appointmentQuery = supabase
+      .from("appointments")
+      .update({ status: "cancelled", updated_at: nowIso });
+
+    appointmentQuery = appointmentId
+      ? appointmentQuery.eq("appointment_id", appointmentId)
+      : appointmentQuery.eq("job_id", jobId);
+
+    const { error: appointmentError } = await appointmentQuery;
+    if (appointmentError) throw appointmentError;
+
+    const statusResult = await updateJobStatus(
+      jobId,
+      "Cancelled",
+      statusUpdatedBy,
+      "Appointment cancelled from the Scheduling tab"
+    );
+
+    if (!statusResult?.success) {
+      throw statusResult?.error || new Error("Failed to mark job as cancelled");
+    }
+
+    invalidateCache("jobs:");
+    return { success: true, data: statusResult.data };
+  } catch (error) {
+    console.error("❌ cancelJobAppointment error:", error);
+    return {
+      success: false,
+      error: { message: error?.message || "Failed to cancel appointment" },
+    };
+  }
+};
+
+/* ============================================
    ASSIGN TECHNICIAN TO JOB
    Assigns a technician and updates status to "Assigned"
 ============================================ */
