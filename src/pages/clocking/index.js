@@ -2,28 +2,71 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { supabase } from "@/lib/database/supabaseClient";
-import { generateTechnicianSlug } from "@/utils/technicianSlug";
-import ModalPortal from "@/components/popups/ModalPortal";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import Button from "@/components/ui/Button";
+import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
+import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui";
+import PopupModal from "@/components/popups/popupStyleApi";
 import { ContentWidth, PageShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui"; // Extracted presentation layer.
-import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { hasAnyRole, WORKSHOP_CAPACITY_MANAGER_ROLES } from "@/lib/auth/roles";
+import {
+  buildCapacitySummary,
+  buildWorkshopAttention,
+  buildWorkshopBoard,
+  CLOCKING_STATUSES,
+  DEFAULT_WAITING_THRESHOLD_MINUTES,
+} from "@/lib/clocking/workshopBoard";
+import { getWorkshopClockingSnapshot } from "@/lib/database/workshopClocking";
+import { supabase } from "@/lib/database/supabaseClient";
 
-const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
-const MOT_ROLES = ["MOT Tester", "Tester"];
-const TARGET_ROLES = [...new Set([...TECH_ROLES, ...MOT_ROLES])];
-const TARGET_ROLE_SET = new Set(TARGET_ROLES.map((role) => role.toLowerCase()));
-const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  ...Object.values(CLOCKING_STATUSES).map((status) => ({ value: status, label: status })),
+];
+
+const SORT_OPTIONS = [
+  { value: "workshop", label: "Workshop order" },
+  { value: "name", label: "Technician name" },
+  { value: "waiting", label: "Longest waiting" },
+  { value: "active", label: "Longest active job" },
+];
+
+const WAITING_THRESHOLD_OPTIONS = [15, 30, 45, 60].map((minutes) => ({
+  value: String(minutes),
+  label: `${minutes} minute threshold`,
+}));
+
+const STATUS_META = {
+  [CLOCKING_STATUSES.IN_PROGRESS]: { tone: "success", short: "In progress" },
+  [CLOCKING_STATUSES.ON_MOT]: { tone: "success", short: "On MOT" },
+  [CLOCKING_STATUSES.TEA_BREAK]: { tone: "warning", short: "Tea break" },
+  [CLOCKING_STATUSES.WAITING]: { tone: "warning", short: "Waiting" },
+  [CLOCKING_STATUSES.NOT_CLOCKED]: { tone: "danger", short: "Not clocked" },
+};
+
+const pad = (value) => String(value).padStart(2, "0");
+const toDateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const toDayStartIso = (date) => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  return start.toISOString();
+};
+
+const formatHours = (value) => `${Number(value || 0).toFixed(2)}h`;
+const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
+const formatClockTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+};
+const formatPlannedTime = (value) => value ? formatClockTime(value) : "Queue order";
 
 const submitManagedClockingAction = async (payload) => {
   const response = await fetch("/api/clocking/manage", {
@@ -38,1288 +81,594 @@ const submitManagedClockingAction = async (payload) => {
   return result;
 };
 
-const SUMMARY_CARD_STYLES = {
-  total: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  },
-  inProgress: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  },
-  onMot: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  },
-  teaBreak: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  },
-  waiting: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  },
-  notClocked: {
-    background: "var(--surface)",
-    border: "none",
-    valueColor: "var(--text-accent)"
-  }
-};
+function StatusBadge({ status }) {
+  const meta = STATUS_META[status] || STATUS_META[CLOCKING_STATUSES.NOT_CLOCKED];
+  return <span className={`clocking-board__status app-tone-${meta.tone}`}>{meta.short}</span>;
+}
 
-const TECH_STATUS_STYLES = {
-  "Not Clocked In": {
-    background: "var(--danger-surface)",
-    border: "none",
-    color: "var(--text-accent)"
-  },
-  "Waiting for Job": {
-    background: "var(--warning-surface)",
-    border: "none",
-    color: "var(--text-accent)"
-  },
-  "Tea Break": {
-    background: "var(--warning-surface)",
-    border: "none",
-    color: "var(--text-accent)"
-  },
-  "In Progress": {
-    background: "var(--success-surface)",
-    border: "none",
-    color: "var(--text-accent)"
-  },
-  "On MOT": {
-    background: "var(--success-surface)",
-    border: "none",
-    color: "var(--text-accent)"
-  }
-};
-
-const TECHNICIAN_STATUS_FILTER_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "Not Clocked In", label: "Not clocked in" },
-  { value: "Waiting for Job", label: "Waiting for job" },
-  { value: "Tea Break", label: "Tea break" },
-  { value: "In Progress", label: "Clocked on" },
-  { value: "On MOT", label: "On MOT" }
-];
-
-const formatTime = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-};
-
-const getDurationMs = (startValue, endValue) => {
-  if (!startValue) return 0;
-  const startMs = new Date(startValue).getTime();
-  if (Number.isNaN(startMs)) return 0;
-  const endMs = endValue ? new Date(endValue).getTime() : Date.now();
-  if (Number.isNaN(endMs)) return 0;
-  return Math.max(0, endMs - startMs);
-};
-
-const formatDuration = (durationMs) => {
-  if (!durationMs || durationMs < 1000) {
-    return "0.00h";
-  }
-  const hours = durationMs / 3600000;
-  return `${hours.toFixed(2)}h`;
-};
-
-const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) => {
-  if (jobEntry) {
-    const jobStatus = (jobEntry.job?.status || "").toString().toLowerCase();
-    const categories = Array.isArray(jobEntry.job?.job_categories) ?
-    jobEntry.job.job_categories.map((item) => (item || "").toString().toLowerCase()) :
-    [];
-    const isMotJob = jobStatus.includes("mot") || categories.some((cat) => cat.includes("mot"));
-    const clockInMs = jobEntry.clock_in ? new Date(jobEntry.clock_in).getTime() : null;
-    const duration = clockInMs ? Math.max(0, referenceTime - clockInMs) : 0;
-    return {
-      status: isMotJob ? "On MOT" : "In Progress",
-      duration,
-      jobNumber: jobEntry.job_number || jobEntry.job?.job_number || null,
-      jobId: jobEntry.job_id || jobEntry.job?.id || null,
-      clockingId: jobEntry.id || null,
-      clockIn: jobEntry.clock_in || null
-    };
-  }
-
-  if (timeRecord) {
-    const noteText = (timeRecord.notes || "").toString().toLowerCase();
-    const isTea = noteText.includes("tea") || noteText.includes("break");
-    const clockInMs = timeRecord.clock_in ? new Date(timeRecord.clock_in).getTime() : null;
-    const duration = clockInMs ? Math.max(0, referenceTime - clockInMs) : 0;
-    return {
-      status: isTea ? "Tea Break" : "Waiting for Job",
-      duration,
-      jobNumber: null,
-      jobId: null,
-      clockingId: null,
-      clockIn: timeRecord.clock_in || null
-    };
-  }
-
-  return {
-    status: hasClocked ? "Waiting for Job" : "Not Clocked In",
-    duration: 0,
-    jobNumber: null,
-    jobId: null,
-    clockingId: null,
-    clockIn: null
-  };
-};
-
-function ClockingOverviewTab({ onSummaryChange }) {
-  const { data: session } = useSession();
-  const { user } = useUser();
-  const [teamStatus, setTeamStatus] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
-  const [selectedTechnician, setSelectedTechnician] = useState(null);
-  const [modalJobNumber, setModalJobNumber] = useState("");
-  const [modalError, setModalError] = useState("");
-  const [modalSubmitting, setModalSubmitting] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [capacitySettingsOpen, setCapacitySettingsOpen] = useState(false);
-  const sessionRoles = Array.isArray(session?.user?.roles)
-    ? session.user.roles
-    : session?.user?.role
-      ? [session.user.role]
-      : [];
-  const contextRoles = Array.isArray(user?.roles) ? user.roles : user?.role ? [user.role] : [];
-  const canManageCapacity = hasAnyRole(
-    [...sessionRoles, ...contextRoles],
-    WORKSHOP_CAPACITY_MANAGER_ROLES
+function Metric({ label, value, detail, tone = "" }) {
+  return (
+    <div className={`app-summary-item clocking-board__metric${tone ? ` app-tone-${tone}` : ""}`}>
+      <span className="app-summary-label">{label}</span>
+      <strong className="app-summary-value">{value}</strong>
+      {detail ? <small>{detail}</small> : null}
+    </div>
   );
+}
 
-  const fetchClocking = useCallback(async () => {
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
+function AllocationIndicator({ technician }) {
+  if (!technician.currentJobId) return null;
+  if (!technician.allocationAvailable) {
+    return <div className="app-status-message app-status-message--warning">Allocation details are temporarily unavailable.</div>;
+  }
+  const overBy = Math.max(0, technician.differenceHours);
+  return (
+    <div className="clocking-board__allocation">
+      <div className="clocking-board__allocation-copy">
+        <span>Allocated {formatHours(technician.allocatedHours)}</span>
+        <strong className={technician.isOverAllocated ? "clocking-board__danger-text" : ""}>
+          Actual {formatHours(technician.actualHours)}
+        </strong>
+      </div>
+      <div className="clocking-board__progress" aria-label={`${technician.allocationProgress.toFixed(0)} percent of allocated time used`}>
+        <span
+          className={technician.isOverAllocated ? "is-over" : ""}
+          style={{ width: `${Math.min(100, technician.allocationProgress)}%` }}
+        />
+      </div>
+      <small className={technician.isOverAllocated ? "clocking-board__danger-text" : ""}>
+        {technician.isOverAllocated
+          ? `${formatHours(overBy)} over allocation`
+          : `${formatHours(Math.max(0, -technician.differenceHours))} remaining`}
+      </small>
+    </div>
+  );
+}
 
-      const { data: users, error: usersError } = await supabase.
-      from("users").
-      select("user_id, first_name, last_name, role").
-      in("role", TARGET_ROLES).
-      order("first_name", { ascending: true });
+const TechnicianCard = memo(function TechnicianCard({ technician, canManage, onManage }) {
+  const active = technician.status === CLOCKING_STATUSES.IN_PROGRESS || technician.status === CLOCKING_STATUSES.ON_MOT;
+  return (
+    <LayerSurface
+      as="article"
+      padding="var(--section-card-padding)"
+      gap="var(--space-3)"
+      className={`clocking-board__technician clocking-board__technician--${STATUS_META[technician.status]?.tone || "danger"}`}
+      data-status={technician.status}
+    >
+      <header className="clocking-board__technician-header">
+        <div>
+          <h3>{technician.name}</h3>
+          <p>{technician.role}</p>
+        </div>
+        <StatusBadge status={technician.status} />
+      </header>
 
-      if (usersError) throw usersError;
+      <LayerTheme padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__current-work">
+        <div className="clocking-board__work-heading">
+          <span>{active ? "Current job" : technician.status === CLOCKING_STATUSES.WAITING ? "Idle time" : "Current activity"}</span>
+          <strong>{active ? technician.currentJobNumber || "—" : formatHours(active ? technician.activityHours : technician.idleHours || technician.activityHours)}</strong>
+        </div>
+        <p>
+          {active
+            ? technician.currentDescription
+            : technician.status === CLOCKING_STATUSES.WAITING
+              ? `Waiting since ${formatClockTime(technician.waitingSince)}`
+              : technician.status === CLOCKING_STATUSES.TEA_BREAK
+                ? `${technician.breakNotes} · since ${formatClockTime(technician.activityStartedAt)}`
+                : "No attendance record today"}
+        </p>
+        {active ? (
+          <div className="clocking-board__live-duration">
+            <span>Live activity</span>
+            <strong>{formatHours(technician.activityHours)}</strong>
+          </div>
+        ) : null}
+        <AllocationIndicator technician={technician} />
+      </LayerTheme>
 
-      const { data: timeRecords, error: timeError } = await supabase.
-      from("time_records").
-      select("user_id, clock_in, notes").
-      eq("date", today).
-      is("clock_out", null);
+      <div className="clocking-board__next-job">
+        <span>Next queued job</span>
+        {technician.nextJob ? (
+          <div>
+            <strong>{technician.nextJob.jobNumber}</strong>
+            <p>{technician.nextJob.description}</p>
+            <small>{technician.nextJob.type} · {formatHours(technician.nextJob.plannedHours)} · {formatPlannedTime(technician.nextJob.scheduledTime)}</small>
+          </div>
+        ) : <p>No queued job</p>}
+      </div>
 
-      if (timeError) throw timeError;
+      <footer className="clocking-board__card-actions">
+        {canManage ? (
+          <Button type="button" variant={active ? "secondary" : "primary"} size="xs" onClick={() => onManage(technician)}>
+            {active ? "Clock off" : "Clock onto job"}
+          </Button>
+        ) : null}
+        {active && technician.currentJobNumber ? (
+          <Link className="app-btn app-btn--secondary app-btn--xs" href={`/job-cards/${encodeURIComponent(technician.currentJobNumber)}`}>
+            Open job card
+          </Link>
+        ) : null}
+        <Link className="app-btn app-btn--secondary app-btn--xs" href={`/clocking/${technician.slug}`}>
+          View details
+        </Link>
+      </footer>
+    </LayerSurface>
+  );
+});
 
-      const { data: jobClocking, error: jobError } = await supabase.
-      from("job_clocking").
-      select(
-        `
-            id,
-            user_id,
-            job_id,
-            job_number,
-            clock_in,
-            job:job_id (
-              id,
-              job_number,
-              status,
-              job_categories
-            )
-          `
-      ).
-      is("clock_out", null);
+function BoardSkeleton() {
+  return (
+    <div className="clocking-board__technician-grid" aria-label="Loading live technician board">
+      <SkeletonKeyframes />
+      {Array.from({ length: 6 }).map((_, index) => (
+        <LayerSurface key={index} padding="var(--section-card-padding)" gap="var(--space-3)">
+          <SkeletonBlock width="52%" height="18px" />
+          <SkeletonBlock width="30%" height="12px" />
+          <SkeletonBlock width="100%" height="112px" />
+          <SkeletonBlock width="100%" height="44px" />
+        </LayerSurface>
+      ))}
+    </div>
+  );
+}
 
-      if (jobError) throw jobError;
-
-      const userIds = (users || []).map((user) => user.user_id).filter(Boolean);
-      let clockedUserIds = new Set();
-      if (userIds.length > 0) {
-        const { data: historyRecords, error: historyError } = await supabase.
-        from("time_records").
-        select("user_id").
-        in("user_id", userIds).
-        eq("date", today);
-
-        if (historyError) {
-          throw historyError;
-        }
-
-        clockedUserIds = new Set((historyRecords || []).map((record) => record.user_id));
-      }
-
-      const timeMap = new Map(
-        (timeRecords || []).map((record) => [record.user_id, record])
-      );
-      const jobMap = new Map();
-      (jobClocking || []).forEach((entry) => {
-        if (!jobMap.has(entry.user_id)) {
-          jobMap.set(entry.user_id, entry);
-        }
-      });
-
-      const referenceTime = Date.now();
-
-      const prepared = (users || []).map((user) => {
-        const jobEntry = jobMap.get(user.user_id);
-        const timeRecord = timeMap.get(user.user_id);
-        const derived = deriveStatus(
-          jobEntry,
-          timeRecord,
-          referenceTime,
-          clockedUserIds.has(user.user_id)
-        );
-        const roleLabel = user.role || "Tech";
-        const isMotRole = MOT_ROLE_SET.has((roleLabel || "").toLowerCase());
-        const isActiveJob = derived.status === "In Progress" || derived.status === "On MOT";
-
-        const slug = generateTechnicianSlug(user.first_name, user.last_name, user.user_id);
-
-        return {
-          userId: user.user_id,
-          name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unnamed",
-          role: roleLabel,
-          isMotRole,
-          slug: slug || `${user.user_id}`,
-          status: derived.status,
-          jobNumber: derived.jobNumber,
-          jobId: derived.jobId,
-          clockEntryId: derived.clockingId,
-          clockIn: derived.clockIn,
-          timeOnActivity: isActiveJob && derived.duration > 0 ? formatDuration(derived.duration) : "—"
-        };
-      });
-
-      prepared.sort((a, b) => {
-        if (a.isMotRole !== b.isMotRole) {
-          return a.isMotRole ? 1 : -1;
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-      const summaryPayload = {
-        total: prepared.length,
-        inProgress: prepared.filter((tech) => tech.status === "In Progress").length,
-        onMot: prepared.filter((tech) => tech.status === "On MOT").length,
-        teaBreak: prepared.filter((tech) => tech.status === "Tea Break").length,
-        waiting: prepared.filter((tech) => tech.status === "Waiting for Job").length,
-        notClocked: prepared.filter((tech) => tech.status === "Not Clocked In").length,
-        lastUpdated: new Date().toISOString()
-      };
-
-      setTeamStatus(prepared);
-      setError("");
-      setLastUpdated(summaryPayload.lastUpdated);
-
-      if (onSummaryChange) {
-        onSummaryChange(summaryPayload);
-      }
-    } catch (err) {
-      console.error("Failed to load clocking dashboard", err);
-      setError(err?.message || "Unable to load clocking data.");
-    } finally {
-      setLoading(false);
-    }
-  }, [onSummaryChange]);
+function ClockingControlModal({ technician, onClose, onCompleted }) {
+  const active = technician && (technician.status === CLOCKING_STATUSES.IN_PROGRESS || technician.status === CLOCKING_STATUSES.ON_MOT);
+  const [jobNumber, setJobNumber] = useState(technician?.currentJobNumber || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchClocking();
-  }, [fetchClocking]);
+    setJobNumber(technician?.currentJobNumber || "");
+    setError("");
+  }, [technician]);
 
-  useEffect(() => {
-    const channel = supabase.channel("clocking-dashboard");
-    const refresh = () => {
-      fetchClocking();
-    };
-
-    channel.
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "time_records" },
-      refresh
-    ).
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "job_clocking" },
-      refresh
-    ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchClocking]);
-
-  useEffect(() => {
-    if (!selectedTechnician) {
+  const submit = async () => {
+    if (!technician) return;
+    const trimmedJobNumber = jobNumber.trim();
+    if (!active && !trimmedJobNumber) {
+      setError("Enter a job number before clocking on.");
       return;
     }
-    const updated = teamStatus.find((tech) => tech.userId === selectedTechnician.userId);
-    if (!updated) {
-      return;
-    }
-    setSelectedTechnician((prev) => {
-      if (!prev) {
-        return prev;
-      }
-      const unchanged =
-      prev.status === updated.status &&
-      prev.jobNumber === updated.jobNumber &&
-      prev.timeOnActivity === updated.timeOnActivity &&
-      prev.clockEntryId === updated.clockEntryId &&
-      prev.jobId === updated.jobId;
-      if (unchanged) {
-        return prev;
-      }
-      return { ...prev, ...updated };
-    });
-  }, [teamStatus, selectedTechnician]);
-
-  const closeClockModal = useCallback(() => {
-    setSelectedTechnician(null);
-    setModalJobNumber("");
-    setModalError("");
-    setModalSubmitting(false);
-  }, []);
-
-  const openClockModal = useCallback((tech) => {
-    setSelectedTechnician(tech);
-    setModalJobNumber(tech.jobNumber || "");
-    setModalError("");
-    setModalSubmitting(false);
-  }, []);
-
-  const handleClockInSubmit = useCallback(async () => {
-    if (!selectedTechnician) {
-      return;
-    }
-    const trimmedNumber = (modalJobNumber || "").trim();
-    if (!trimmedNumber) {
-      setModalError("Please enter a job number.");
-      return;
-    }
-
-    setModalSubmitting(true);
+    setSubmitting(true);
+    setError("");
     try {
-      await submitManagedClockingAction({
-        action: "clock-in",
-        userId: selectedTechnician.userId,
-        jobNumber: trimmedNumber,
-      });
-
-      setTeamStatus((current) =>
-        current.map((technician) =>
-          technician.userId === selectedTechnician.userId
-            ? { ...technician, status: "In Progress", jobNumber: trimmedNumber, timeOnActivity: "0.00h" }
-            : technician
-        )
-      );
-      closeClockModal();
-      await fetchClocking();
-    } catch (err) {
-      setModalError(err?.message || "Unable to clock onto the job.");
+      await submitManagedClockingAction(active
+        ? { action: "clock-out", userId: technician.userId, clockingId: technician.clockingId }
+        : { action: "clock-in", userId: technician.userId, jobNumber: trimmedJobNumber });
+      onClose();
+      void onCompleted();
+    } catch (actionError) {
+      setError(actionError?.message || "Unable to update technician clocking.");
     } finally {
-      setModalSubmitting(false);
+      setSubmitting(false);
     }
-  }, [selectedTechnician, modalJobNumber, fetchClocking, closeClockModal]);
-
-  const handleClockOutSubmit = useCallback(async () => {
-    if (!selectedTechnician?.clockEntryId) {
-      setModalError("No active clocking entry found for this user.");
-      return;
-    }
-    setModalSubmitting(true);
-    try {
-      await submitManagedClockingAction({
-        action: "clock-out",
-        userId: selectedTechnician.userId,
-        clockingId: selectedTechnician.clockEntryId
-      });
-
-      setTeamStatus((current) =>
-        current.map((technician) =>
-          technician.userId === selectedTechnician.userId
-            ? {
-                ...technician,
-                status: "Waiting for Job",
-                jobNumber: null,
-                jobId: null,
-                clockEntryId: null,
-                timeOnActivity: "—"
-              }
-            : technician
-        )
-      );
-      closeClockModal();
-      await fetchClocking();
-    } catch (err) {
-      setModalError(err?.message || "Unable to clock the user off.");
-    } finally {
-      setModalSubmitting(false);
-    }
-  }, [selectedTechnician, fetchClocking, closeClockModal]);
-
-  const summaryStats = useMemo(() => {
-    const summary = {
-      total: teamStatus.length,
-      inProgress: 0,
-      onMot: 0,
-      teaBreak: 0,
-      waiting: 0,
-      notClocked: 0
-    };
-
-    teamStatus.forEach((tech) => {
-      if (tech.status === "In Progress") summary.inProgress += 1;else
-      if (tech.status === "On MOT") summary.onMot += 1;else
-      if (tech.status === "Tea Break") summary.teaBreak += 1;else
-      if (tech.status === "Waiting for Job") summary.waiting += 1;else
-      if (tech.status === "Not Clocked In") summary.notClocked += 1;
-    });
-
-    return summary;
-  }, [teamStatus]);
-  const filteredTeamStatus = useMemo(() => {
-    if (statusFilter === "all") return teamStatus;
-    return teamStatus.filter((tech) => tech.status === statusFilter);
-  }, [statusFilter, teamStatus]);
-  const selectedStatusFilterLabel =
-  TECHNICIAN_STATUS_FILTER_OPTIONS.find((option) => option.value === statusFilter)?.label ||
-  "selected status";
-
-  const formattedLastUpdated = lastUpdated ?
-  new Date(lastUpdated).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }) :
-  "—";
-  const modalOpen = Boolean(selectedTechnician);
-  const modalTechClockedIn =
-  selectedTechnician && (
-  selectedTechnician.status === "In Progress" || selectedTechnician.status === "On MOT");
-  const trimmedModalJobNumber = (modalJobNumber || "").trim();
-  const modalActionDisabled = modalSubmitting || !modalTechClockedIn && !trimmedModalJobNumber;
-  const modalActionLabel = modalTechClockedIn ? "Clock off" : "Clock in";
-  const jobNumberInputId = "clocking-job-number-input";
-  const technicianCardActionStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    minWidth: 0,
-    height: "44px",
-    padding: "0 14px",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    fontSize: "var(--control-font-size)",
-    fontWeight: 600,
-    textDecoration: "none",
-    whiteSpace: "nowrap"
   };
 
   return (
-    <DevLayoutSection
-      as="div"
-      sectionKey="clocking-overview-shell"
-      parentKey="clocking-page-content"
-      sectionType="section-shell"
-      shell
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px"
-      }}>
-
-      {/* Summary Stats Section */}
-      <DevLayoutSection
-        as="section"
-        sectionKey="clocking-overview-stats"
-        parentKey="clocking-overview-shell"
-        sectionType="section-shell"
-        shell
-        backgroundToken="accent"
-        style={{
-          background: "var(--theme)",
-          borderRadius: "var(--radius-md)",
-          padding: "10px",
-          border: "none",
-          boxShadow: "none",
-          color: "var(--text-2)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px"
-        }}>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            flexWrap: "wrap"
-          }}>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: "10px",
-              flexWrap: "wrap",
-              minWidth: 0
-            }}>
-
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>
-              Summary Statistics
-            </h2>
-            <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.85rem" }}>
-              Last updated {formattedLastUpdated}
-            </p>
+    <PopupModal
+      isOpen={Boolean(technician)}
+      onClose={submitting ? undefined : onClose}
+      closeOnBackdrop={!submitting}
+      ariaLabel="Clocking control"
+      cardClassName="clocking-control-modal"
+      cardStyle={{ width: "min(460px, 100%)", padding: "var(--page-card-padding)" }}
+    >
+      <div className="clocking-control-modal__content">
+        <header className="app-popup-compact-header">
+          <h2>Clocking control</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="primary" size="sm" busy={submitting} disabled={!active && !jobNumber.trim()} onClick={submit}>
+              {active ? "Clock off" : "Clock on"}
+            </Button>
+            <Button type="button" variant="secondary" size="sm" disabled={submitting} onClick={onClose}>Close</Button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
-            <DropdownField
-              ariaLabel="Filter technician status"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              options={TECHNICIAN_STATUS_FILTER_OPTIONS}
-              style={{ width: "min(220px, 52vw)" }} />
-            {canManageCapacity ? (
-              <Button type="button" variant="primary" onClick={() => setCapacitySettingsOpen(true)}>
-                Settings
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        </header>
+        <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
+          <span className="clocking-board__label">Technician</span>
+          <strong>{technician?.name} · {technician?.role}</strong>
+        </LayerTheme>
+        {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
+        {active ? (
+          <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
+            <span className="clocking-board__label">Active job</span>
+            <strong>{technician?.currentJobNumber || "—"} · {formatHours(technician?.activityHours)}</strong>
+            <span>{technician?.currentDescription}</span>
+          </LayerTheme>
+        ) : (
+          <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
+            <label htmlFor="clocking-control-job-number">Job number</label>
+            <input
+              id="clocking-control-job-number"
+              className="app-input"
+              value={jobNumber}
+              onChange={(event) => setJobNumber(event.target.value)}
+              placeholder="Enter job number"
+              autoComplete="off"
+            />
+          </LayerTheme>
+        )}
+      </div>
+    </PopupModal>
+  );
+}
 
-        {loading && teamStatus.length === 0 ?
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "14px"
-          }}>
+function ClockingOverviewTab() {
+  const { data: session } = useSession();
+  const { user } = useUser();
+  const [snapshot, setSnapshot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [realtimeState, setRealtimeState] = useState("connecting");
+  const [now, setNow] = useState(() => new Date());
+  const [capacityDay, setCapacityDay] = useState(null);
+  const [capacityLoading, setCapacityLoading] = useState(true);
+  const [capacityError, setCapacityError] = useState("");
+  const [capacitySettingsOpen, setCapacitySettingsOpen] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("workshop");
+  const [waitingThreshold, setWaitingThreshold] = useState(DEFAULT_WAITING_THRESHOLD_MINUTES);
+  const refreshTimerRef = useRef(null);
+  const fetchSequenceRef = useRef(0);
 
-            <SkeletonKeyframes />
-            {Array.from({ length: 4 }).map((_, i) =>
-          <div
-            key={i}
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: "var(--section-card-bg, var(--surface))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px"
-            }}>
+  const sessionRoles = Array.isArray(session?.user?.roles) ? session.user.roles : session?.user?.role ? [session.user.role] : [];
+  const contextRoles = Array.isArray(user?.roles) ? user.roles : user?.role ? [user.role] : [];
+  const canManageCapacity = hasAnyRole([...sessionRoles, ...contextRoles], WORKSHOP_CAPACITY_MANAGER_ROLES);
 
-                <SkeletonBlock width="60%" height="10px" />
-                <SkeletonBlock width="40%" height="28px" />
-                <SkeletonBlock width="80%" height="10px" />
-              </div>
-          )}
-          </div> :
-
-        <DevLayoutSection
-          sectionKey="clocking-overview-stats-grid"
-          parentKey="clocking-overview-stats"
-          sectionType="grid-card"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "14px"
-          }}>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-total"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.total.background,
-              border: SUMMARY_CARD_STYLES.total.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                Technicians Total
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.total.valueColor }}>
-                {summaryStats.total}
-              </strong>
-            </DevLayoutSection>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-in-progress"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.inProgress.background,
-              border: SUMMARY_CARD_STYLES.inProgress.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                In Progress
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.inProgress.valueColor }}>
-                {summaryStats.inProgress}
-              </strong>
-            </DevLayoutSection>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-on-mot"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.onMot.background,
-              border: SUMMARY_CARD_STYLES.onMot.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                MOT Count
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.onMot.valueColor }}>
-                {summaryStats.onMot}
-              </strong>
-            </DevLayoutSection>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-tea-break"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.teaBreak.background,
-              border: SUMMARY_CARD_STYLES.teaBreak.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                Tea Break
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.teaBreak.valueColor }}>
-                {summaryStats.teaBreak}
-              </strong>
-            </DevLayoutSection>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-waiting"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.waiting.background,
-              border: SUMMARY_CARD_STYLES.waiting.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                Waiting
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.waiting.valueColor }}>
-                {summaryStats.waiting}
-              </strong>
-            </DevLayoutSection>
-
-            <DevLayoutSection
-            sectionKey="clocking-stat-offline"
-            parentKey="clocking-overview-stats-grid"
-            sectionType="stat-card"
-            backgroundToken="layer-section-level-2"
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: SUMMARY_CARD_STYLES.notClocked.background,
-              border: SUMMARY_CARD_STYLES.notClocked.border,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px"
-            }}>
-
-              <span
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.78rem",
-                color: "var(--text-1)"
-              }}>
-
-                Offline
-              </span>
-              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.notClocked.valueColor }}>
-                {summaryStats.notClocked}
-              </strong>
-            </DevLayoutSection>
-          </DevLayoutSection>
-        }
-      </DevLayoutSection>
-
-      {/* Error Display */}
-      {error &&
-      <div
-        style={{
-          borderRadius: "var(--radius-md)",
-          padding: "14px 18px",
-          background: "var(--danger-surface)",
-          border: "none",
-          color: "var(--danger)",
-          fontSize: "0.9rem"
-        }}>
-
-          {error}
-        </div>
+  const fetchBoard = useCallback(async ({ background = false } = {}) => {
+    const sequence = fetchSequenceRef.current + 1;
+    fetchSequenceRef.current = sequence;
+    if (background) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const referenceDate = new Date();
+      const data = await getWorkshopClockingSnapshot({
+        dateKey: toDateKey(referenceDate),
+        dayStartIso: toDayStartIso(referenceDate),
+      });
+      if (sequence !== fetchSequenceRef.current) return;
+      setSnapshot(data);
+      setError("");
+      setLastUpdated(new Date());
+      setNow(new Date());
+    } catch (fetchError) {
+      if (sequence === fetchSequenceRef.current) {
+        setError(fetchError?.message || "Unable to load the live workshop board.");
       }
+    } finally {
+      if (sequence === fetchSequenceRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, []);
 
-      {/* Technician Grid Section */}
-      <DevLayoutSection
-        as="section"
-        sectionKey="clocking-overview-technician-status"
-        parentKey="clocking-overview-shell"
-        sectionType="section-shell"
-        shell
-        backgroundToken="accent"
-        style={{
-          background: "var(--theme)",
-          borderRadius: "var(--radius-md)",
-          padding: "10px",
-          border: "none",
-          boxShadow: "none",
-          color: "var(--text-2)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px"
-        }}>
+  const fetchCapacity = useCallback(async () => {
+    const date = toDateKey(new Date());
+    setCapacityLoading(true);
+    setCapacityError("");
+    try {
+      const response = await fetch(`/api/technician-capacity?start=${date}&end=${date}`);
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to load workshop capacity.");
+      setCapacityDay(payload.data?.[0] || null);
+    } catch (fetchError) {
+      setCapacityError(fetchError?.message || "Unable to load workshop capacity.");
+    } finally {
+      setCapacityLoading(false);
+    }
+  }, []);
 
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>
-            Technician Status
-          </h2>
+  useEffect(() => {
+    fetchBoard();
+    fetchCapacity();
+  }, [fetchBoard, fetchCapacity]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const queueRefresh = () => {
+      if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = window.setTimeout(() => fetchBoard({ background: true }), 250);
+    };
+    const channel = supabase
+      .channel("clocking-dashboard")
+      .on("postgres_changes", { event: "*", schema: "public", table: "time_records" }, queueRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_clocking" }, queueRefresh)
+      .subscribe((state) => {
+        if (state === "SUBSCRIBED") setRealtimeState("live");
+        else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT" || state === "CLOSED") setRealtimeState("offline");
+      });
+    return () => {
+      if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchBoard]);
+
+  const board = useMemo(() => buildWorkshopBoard(snapshot || {}, now), [snapshot, now]);
+  const capacity = useMemo(() => buildCapacitySummary(board, capacityDay), [board, capacityDay]);
+  const attention = useMemo(
+    () => buildWorkshopAttention(board.technicians, capacityDay, waitingThreshold),
+    [board.technicians, capacityDay, waitingThreshold]
+  );
+  const longJobs = useMemo(
+    () => board.technicians.filter((technician) => technician.isOverAllocated).sort((a, b) => b.differenceHours - a.differenceHours),
+    [board.technicians]
+  );
+  const visibleTechnicians = useMemo(() => {
+    const filtered = statusFilter === "all"
+      ? [...board.technicians]
+      : board.technicians.filter((technician) => technician.status === statusFilter);
+    return filtered.sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "waiting") return b.idleHours - a.idleHours || a.name.localeCompare(b.name);
+      if (sortBy === "active") return b.activityHours - a.activityHours || a.name.localeCompare(b.name);
+      if (a.isMotRole !== b.isMotRole) return a.isMotRole ? 1 : -1;
+      return a.workshopOrder - b.workshopOrder || a.name.localeCompare(b.name);
+    });
+  }, [board.technicians, sortBy, statusFilter]);
+
+  const selectedTechnician = board.technicians.find((technician) => technician.userId === selectedTechnicianId) || null;
+  const stale = lastUpdated ? now.getTime() - lastUpdated.getTime() > 120000 : false;
+  const liveLabel = realtimeState === "live" && !stale ? "Live" : realtimeState === "offline" ? "Connection interrupted" : stale ? "Data may be stale" : "Connecting";
+
+  return (
+    <div className="clocking-board">
+      <LayerTheme as="section" sectionKey="clocking-capacity-summary" padding="var(--section-card-padding)" gap="var(--space-3)">
+        <header className="clocking-board__section-header">
+          <div>
+            <h1>Workshop control board</h1>
+            <p>Live workshop capacity and technician activity</p>
+          </div>
+          <div className="clocking-board__live-state" aria-live="polite">
+            <span className={realtimeState === "live" && !stale ? "is-live" : "is-stale"} />
+            <strong>{refreshing ? "Updating" : liveLabel}</strong>
+            <small>Refreshed {formatClockTime(lastUpdated)}</small>
+          </div>
+        </header>
+        {capacityError ? <div className="app-status-message app-status-message--warning" role="status">Capacity summary unavailable: {capacityError}</div> : null}
+        <div className="app-summary-grid clocking-board__capacity-grid">
+          <Metric label="Working technicians" value={`${capacity.working} / ${capacity.total}`} detail="Clocked today" />
+          <Metric label="Productive today" value={formatHours(capacity.productiveHours)} detail="Job clocking" />
+          <Metric label="Hours remaining" value={capacityLoading ? "—" : formatHours(capacity.remainingHours)} detail={capacityLoading ? "Loading capacity" : `${formatHours(capacity.capacityHours)} available`} />
+          <Metric label="Utilisation" value={capacityLoading ? "—" : formatPercent(capacity.utilisationPct)} detail="Productive ÷ available" tone={capacity.utilisationPct > 100 ? "danger" : ""} />
         </div>
+      </LayerTheme>
 
-        {loading && teamStatus.length === 0 ?
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "14px"
-          }}>
+      <LayerTheme as="section" sectionKey="clocking-live-status" padding="var(--space-3)" gap="var(--space-3)">
+        <div className="clocking-board__toolbar">
+          <div className="app-summary-grid clocking-board__status-grid">
+            <Metric label="Technicians" value={board.summary.total} />
+            <Metric label="In progress" value={board.summary.inProgress} />
+            <Metric label="On MOT" value={board.summary.onMot} />
+            <Metric label="Tea break" value={board.summary.teaBreak} />
+            <Metric label="Waiting" value={board.summary.waiting} />
+            <Metric label="Not clocked" value={board.summary.notClocked} />
+          </div>
+          <div className="clocking-board__filters">
+            <DropdownField ariaLabel="Filter technician status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_FILTER_OPTIONS} />
+            <DropdownField ariaLabel="Sort technicians" value={sortBy} onChange={(event) => setSortBy(event.target.value)} options={SORT_OPTIONS} />
+            {canManageCapacity ? <Button type="button" variant="primary" size="sm" onClick={() => setCapacitySettingsOpen(true)}>Capacity settings</Button> : null}
+          </div>
+        </div>
+      </LayerTheme>
 
-            <SkeletonKeyframes />
-            {Array.from({ length: 6 }).map((_, i) =>
-          <div
-            key={i}
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "16px",
-              background: "var(--section-card-bg, var(--surface))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              minHeight: "110px"
-            }}>
+      {error ? (
+        <div className={`app-status-message ${snapshot ? "app-status-message--warning" : "app-status-message--danger"}`} role="alert">
+          {snapshot ? `Live refresh failed; showing the last successful data. ${error}` : error}
+          <Button type="button" variant="secondary" size="xs" onClick={() => fetchBoard()}>Retry</Button>
+        </div>
+      ) : null}
+      {snapshot?.sectionErrors?.jobs ? (
+        <div className="app-status-message app-status-message--warning" role="status">
+          Job descriptions, allocations and queued work are temporarily unavailable. The live technician board is still updating.
+        </div>
+      ) : null}
 
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
-                  <SkeletonBlock width="60%" height="14px" />
-                </div>
-                <SkeletonBlock width="70%" height="12px" />
-                <SkeletonBlock width="45%" height="10px" />
-              </div>
-          )}
-          </div> :
-        filteredTeamStatus.length === 0 ?
-        <div
-          style={{
-            borderRadius: "var(--radius-md)",
-            padding: "32px",
-            background: "rgba(var(--grey-accent-rgb), 0.16)",
-            border: "none",
-            textAlign: "center",
-            color: "var(--text-1)"
-          }}>
-
-            {statusFilter === "all" ?
-            "No technicians or MOT testers are currently clocked in." :
-            `No technicians match ${selectedStatusFilterLabel}.`}
-          </div> :
-
-        <DevLayoutSection
-          sectionKey="clocking-overview-technician-grid"
-          parentKey="clocking-overview-technician-status"
-          sectionType="grid-card"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "16px"
-          }}>
-
-            {filteredTeamStatus.map((tech) => {
-            const isClockedOnJob = tech.status === "In Progress" || tech.status === "On MOT";
-            const showClockButton = canManageCapacity;
-            const statusActionLabel = isClockedOnJob ? "Clocked on" : tech.status;
-            const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
-
-            const handleClockButtonClick = (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              openClockModal(tech);
-            };
-
-            return (
-              <article
-                key={tech.userId}
-                data-dev-section="1"
-                data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
-                data-dev-section-type="content-card"
-                data-dev-section-parent="clocking-overview-technician-grid"
-                  style={{
-                    borderRadius: "var(--radius-md)",
-                    padding: "20px",
-                    background: "var(--surface)",
-                    border: "none",
-                    boxShadow: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "14px",
-                    height: "100%",
-                    transition: "all 0.2s ease",
-                    cursor: "default"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.zIndex = "0";
-                  }}>
-
-                    <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: "12px"
-                    }}>
-
-                      <div style={{ flex: 1 }}>
-                        <h3
-                        style={{
-                          margin: 0,
-                          fontSize: "1.1rem",
-                          fontWeight: 600,
-                          color: "var(--text-accent)"
-                        }}>
-
-                          {tech.name}
-                        </h3>
-                      </div>
-                    </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "12px"
-                    }}>
-
-                    <div
-                      style={{
-                        borderRadius: "var(--radius-sm)",
-                        padding: "12px",
-                        background: "var(--theme)",
-                        border: "none"
-                      }}>
-
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "0.7rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          color: "var(--text-1)"
-                        }}>
-
-                        Current Job
-                      </p>
-                      <p
-                        style={{
-                          margin: "6px 0 0",
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                          color: "var(--text-accent)"
-                        }}>
-
-                        {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
-                        tech.jobNumber :
-                        "—"}
-                      </p>
-                    </div>
-
-                    <div
-                      style={{
-                        borderRadius: "var(--radius-sm)",
-                        padding: "12px",
-                        background: "var(--theme)",
-                        border: "none"
-                      }}>
-
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "0.7rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          color: "var(--text-1)"
-                        }}>
-
-                        Time
-                      </p>
-                      <p
-                        style={{
-                          margin: "6px 0 0",
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                          color: "var(--text-accent)"
-                        }}>
-
-                        {tech.timeOnActivity}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-                      alignItems: "stretch",
-                      gap: "12px",
-                      marginTop: "auto",
-                      paddingTop: "8px"
-                    }}>
-
-                    {showClockButton ?
-                    <button
-                      type="button"
-                      className="clocking-status-pill"
-                      onClick={handleClockButtonClick}
-                      style={{
-                        ...technicianCardActionStyle,
-                        background: statusStyle.background,
-                        border: statusStyle.border,
-                        color: statusStyle.color,
-                        cursor: "pointer"
-                      }}>
-
-                      {statusActionLabel}
-                    </button> :
-
-                    <span
-                      style={{
-                        ...technicianCardActionStyle,
-                        background: statusStyle.background,
-                        border: statusStyle.border,
-                        color: statusStyle.color
-                      }}>
-
-                      {statusActionLabel}
-                    </span>
-                    }
-                    <Link
-                      href={`/clocking/${tech.slug}`}
-                      style={{
-                        ...technicianCardActionStyle,
-                        background: "var(--primary)",
-                        color: "var(--text-2)",
-                        cursor: "pointer"
-                      }}>
-
-                      View Details
-                    </Link>
-                  </div>
-                </article>
-              );
-
-          })}
-          </DevLayoutSection>
-        }
-      </DevLayoutSection>
-
-      {modalOpen && selectedTechnician &&
-      <ModalPortal>
-          <div
-          className="clocking-modal-overlay"
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            zIndex: "var(--z-modal)"
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="clocking-modal-title">
-
-            <LayerSurface
-              className="popup-card"
-              sectionKey="clocking-control-modal"
-              sectionType="content-card"
-              backgroundToken="surface"
-              radius="var(--radius-lg)"
-              padding="24px"
-              gap="var(--layout-card-gap)"
-              style={{ width: "min(460px, 100%)", boxShadow: "var(--shadow-xl)" }}
-            >
-
-            <header className="app-popup-compact-header clocking-control-modal-header">
-              <h3 id="clocking-modal-title" style={{ fontSize: "1.3rem", color: "var(--primary-selected)" }}>
-                Clocking control
-              </h3>
-              <div className="app-popup-compact-header__actions clocking-control-modal-actions">
-                <button
-                  type="button"
-                  className="app-btn app-btn--secondary"
-                  onClick={closeClockModal}
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="app-btn app-btn--primary"
-                  onClick={modalTechClockedIn ? handleClockOutSubmit : handleClockInSubmit}
-                  disabled={modalActionDisabled}
-                >
-                  {modalActionLabel}
-                </button>
-              </div>
-            </header>
-
-            <LayerTheme
-              radius="var(--radius-md)"
-              padding="12px 14px"
-              gap="4px"
-            >
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>
-                Technician
-              </span>
-              <strong style={{ fontSize: "0.95rem", color: "var(--text-1)" }}>
-                {selectedTechnician.name} · {selectedTechnician.role}
-              </strong>
-            </LayerTheme>
-
-            {modalError &&
-            <div
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "10px 14px",
-                border: "none",
-                background: "var(--danger-surface)",
-                color: "var(--danger-dark)",
-                fontSize: "0.85rem"
-              }}>
-
-                {modalError}
-              </div>
-            }
-
-            {modalTechClockedIn ?
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                gap: "var(--layout-card-gap)"
-              }}>
-
-                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Job number</span>
-                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.jobNumber || "—"}</strong>
-                </LayerTheme>
-                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Time on job</span>
-                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.timeOnActivity}</strong>
-                </LayerTheme>
-                <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="4px">
-                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--surfaceTextMuted)" }}>Status</span>
-                  <strong style={{ fontSize: "0.95rem", color: "var(--text-1)", wordBreak: "break-word" }}>{selectedTechnician.status}</strong>
-                </LayerTheme>
-              </div> :
-
-            <LayerTheme radius="var(--radius-md)" padding="12px 14px" gap="8px">
-                <label htmlFor={jobNumberInputId} style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
-                  Job number
-                </label>
-                <input
-                id={jobNumberInputId}
-                type="text"
-                value={modalJobNumber}
-                onChange={(event) => setModalJobNumber(event.target.value)}
-                placeholder="job number"
-                style={{
-                  width: "100%",
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  background: "var(--control-bg)",
-                  padding: "var(--control-padding)",
-                  fontSize: "var(--control-font-size)",
-                  color: "var(--text-1)",
-                  minHeight: "var(--control-height)"
-                }} />
-
-              </LayerTheme>
-            }
-
+      <div className="clocking-board__primary-layout">
+        <LayerTheme as="section" sectionKey="clocking-technician-board" padding="var(--section-card-padding)" gap="var(--space-3)">
+          <header className="clocking-board__section-header clocking-board__section-header--compact">
+            <div><h2>Technicians</h2><p>{visibleTechnicians.length} shown</p></div>
+          </header>
+          {loading && !snapshot ? <BoardSkeleton /> : visibleTechnicians.length ? (
+            <div className="clocking-board__technician-grid">
+              {visibleTechnicians.map((technician) => (
+                <TechnicianCard key={technician.userId} technician={technician} canManage={canManageCapacity} onManage={(selected) => setSelectedTechnicianId(selected.userId)} />
+              ))}
+            </div>
+          ) : (
+            <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
+              <strong>No technicians match this view</strong>
+              <span>Change the status filter to show the rest of the workshop.</span>
             </LayerSurface>
-          </div>
-        </ModalPortal>
-      }
+          )}
+        </LayerTheme>
+
+        <aside className="clocking-board__operations-rail">
+          <LayerTheme as="section" sectionKey="clocking-workshop-attention" padding="var(--section-card-padding)" gap="var(--space-3)">
+            <header className="clocking-board__section-header clocking-board__section-header--compact clocking-board__section-header--rail">
+              <div><h2>Workshop attention</h2><p>{attention.length} actionable {attention.length === 1 ? "exception" : "exceptions"}</p></div>
+              <DropdownField ariaLabel="Waiting alert threshold" value={String(waitingThreshold)} onChange={(event) => setWaitingThreshold(Number(event.target.value))} options={WAITING_THRESHOLD_OPTIONS} />
+            </header>
+            {capacityLoading && !capacityDay ? <div className="app-status-message app-status-message--info">Checking expected attendance and capacity…</div> : null}
+            <div className="clocking-board__attention-list">
+              {attention.length ? attention.map((item) => (
+                <LayerSurface key={item.id} padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__attention-item">
+                  <span className={`clocking-board__attention-tone app-tone-${item.tone}`}>{item.tone === "danger" ? "Needs action" : "Check"}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                  <Link href={`/clocking/${item.technician.slug}`}>View technician</Link>
+                </LayerSurface>
+              )) : !loading ? (
+                <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
+                  <strong>No workshop exceptions</strong>
+                  <span>Current waiting, attendance and allocation checks are clear.</span>
+                </LayerSurface>
+              ) : null}
+            </div>
+          </LayerTheme>
+
+          <LayerTheme as="section" sectionKey="clocking-workshop-activity" padding="var(--section-card-padding)" gap="var(--space-3)">
+            <header className="clocking-board__section-header clocking-board__section-header--compact">
+              <div><h2>Workshop activity</h2><p>Recent meaningful clocking changes</p></div>
+            </header>
+            <div className="clocking-board__activity-list">
+              {board.activity.length ? board.activity.map((event) => (
+                <div className="clocking-board__activity-row" key={event.id}>
+                  <span>{formatClockTime(event.at)}</span>
+                  <strong>{event.message}</strong>
+                </div>
+              )) : <p className="clocking-board__empty-copy">No clocking changes recorded today.</p>}
+            </div>
+          </LayerTheme>
+
+          <LayerTheme as="section" sectionKey="clocking-long-jobs" padding="var(--section-card-padding)" gap="var(--space-3)">
+            <header className="clocking-board__section-header clocking-board__section-header--compact">
+              <div><h2>Long jobs vs allocated</h2><p>Active work currently above allocation</p></div>
+            </header>
+            <div className="clocking-board__long-list">
+              {longJobs.length ? longJobs.map((technician) => (
+                <LayerSurface key={`${technician.userId}-${technician.currentJobId}`} padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__long-row">
+                  <div><strong>{technician.currentJobNumber}</strong><span>{technician.name}</span></div>
+                  <div><strong className="clocking-board__danger-text">+{formatHours(technician.differenceHours)}</strong><span>{formatHours(technician.actualHours)} / {formatHours(technician.allocatedHours)}</span></div>
+                </LayerSurface>
+              )) : <p className="clocking-board__empty-copy">No active jobs are above their existing allocation.</p>}
+            </div>
+          </LayerTheme>
+        </aside>
+      </div>
+
+      <LayerTheme as="section" sectionKey="clocking-today-summary" padding="var(--section-card-padding)" gap="var(--space-3)">
+        <header className="clocking-board__section-header clocking-board__section-header--compact">
+          <div><h2>Today&apos;s summary</h2><p>Live capacity distribution; technician efficiency calculations are unchanged</p></div>
+          <Link className="app-btn app-btn--secondary app-btn--xs" href="/tech/efficiency">Open technician efficiency</Link>
+        </header>
+        <div className="app-summary-grid clocking-board__performance-grid">
+          <Metric label="Productive hours" value={formatHours(board.performance.productiveHours)} detail="Job clocking" />
+          <Metric label="Available hours" value={capacityLoading ? "—" : formatHours(capacity.capacityHours)} detail="Capacity settings" />
+          <Metric label="Remaining hours" value={capacityLoading ? "—" : formatHours(capacity.remainingHours)} detail="Available less productive" />
+          <Metric label="Idle time" value={formatHours(board.performance.idleHours)} detail="Attendance less job and break" />
+          <Metric label="Break time" value={formatHours(board.performance.breakHours)} detail="Recorded today" />
+          <Metric label="Capacity used" value={capacityLoading ? "—" : formatPercent(capacity.utilisationPct)} detail="Live distribution" tone={capacity.utilisationPct > 100 ? "danger" : ""} />
+        </div>
+      </LayerTheme>
+
+      <ClockingControlModal technician={selectedTechnician} onClose={() => setSelectedTechnicianId(null)} onCompleted={() => fetchBoard({ background: true })} />
       <CapacitySettingsPopup
         isOpen={capacitySettingsOpen}
         onClose={() => setCapacitySettingsOpen(false)}
+        onSaved={fetchCapacity}
       />
+
       <style jsx>{`
-        #${jobNumberInputId}::placeholder {
-          color: var(--grey-accent);
-          opacity: 1;
+        .clocking-board { container: clocking-board / inline-size; display: flex; flex-direction: column; gap: var(--page-stack-gap); width: 100%; min-width: 0; color: var(--text-1); }
+        .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__technician-header, .clocking-board__work-heading, .clocking-board__live-duration, .clocking-board__allocation-copy, .clocking-board__card-actions, .clocking-board__activity-row, .clocking-board__long-row, .clocking-board__filters { display: flex; align-items: center; gap: var(--space-3); }
+        .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__technician-header, .clocking-board__work-heading, .clocking-board__live-duration, .clocking-board__allocation-copy, .clocking-board__long-row { justify-content: space-between; }
+        .clocking-board__section-header > div:first-child, .clocking-board__technician-header > div:first-child { min-width: 0; }
+        .clocking-board__section-header h1 { margin: 0; color: var(--accentText); font-size: clamp(1.35rem, 2.4vw, 1.9rem); letter-spacing: -0.025em; line-height: 1.1; }
+        .clocking-board__section-header h2 { margin: 0; color: var(--accentText); font-size: 1.05rem; line-height: 1.15; }
+        .clocking-board__section-header p, .clocking-board__technician-header p, .clocking-board__current-work p, .clocking-board__next-job p, .clocking-board__attention-item p, .clocking-board__empty-copy { margin: 2px 0 0; color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__section-header--compact { min-height: 44px; }
+        .clocking-board__section-header--rail { align-items: stretch; flex-direction: column; }
+        .clocking-board__section-header--rail :global(.dropdown-api) { width: 100%; }
+        .clocking-board__live-state { display: grid; grid-template-columns: 8px auto; align-items: center; column-gap: var(--space-sm); flex: 0 0 auto; }
+        .clocking-board__live-state > span { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); grid-row: 1 / span 2; }
+        .clocking-board__live-state > span.is-live { background: var(--success); }
+        .clocking-board__live-state strong { font-size: var(--text-label); }
+        .clocking-board__live-state small { color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__capacity-grid { flex: 0 0 auto; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .clocking-board__status-grid { grid-template-columns: repeat(6, minmax(104px, 1fr)); flex: 1 1 620px; }
+        .clocking-board__metric { max-height: none; height: auto; min-height: 52px; font-variant-numeric: tabular-nums; }
+        .clocking-board__metric small { flex-basis: 100%; color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__toolbar { align-items: stretch; flex-wrap: wrap; }
+        .clocking-board__filters { justify-content: flex-end; flex-wrap: wrap; flex: 0 1 auto; }
+        .clocking-board__filters :global(.dropdown-api) { width: min(190px, 100%); }
+        .clocking-board__primary-layout { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(18rem, 0.85fr); gap: var(--page-stack-gap); align-items: start; }
+        .clocking-board__operations-rail { display: flex; flex-direction: column; gap: var(--page-stack-gap); align-self: start; min-width: 0; }
+        .clocking-board__technician-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); grid-auto-rows: max-content; gap: var(--layout-card-gap); align-items: start; align-content: start; }
+        .clocking-board__technician { min-height: 0; height: auto; align-self: start; transition: transform 180ms ease, box-shadow 180ms ease; }
+        .clocking-board__technician:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .clocking-board__technician-header { align-items: flex-start; }
+        .clocking-board__technician-header h3 { margin: 0; color: var(--text-1); font-size: 1rem; line-height: 1.15; }
+        .clocking-board__status, .clocking-board__attention-tone { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 5px 9px; border-radius: var(--radius-xs); font-size: var(--text-caption); font-weight: 700; white-space: nowrap; }
+        .clocking-board__current-work { min-height: 0; }
+        .clocking-board__work-heading > span, .clocking-board__live-duration > span, .clocking-board__next-job > span, .clocking-board__label { color: var(--grey-accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+        .clocking-board__work-heading strong, .clocking-board__live-duration strong { color: var(--accentText); font-variant-numeric: tabular-nums; }
+        .clocking-board__current-work p, .clocking-board__next-job p { overflow-wrap: anywhere; }
+        .clocking-board__allocation { display: flex; flex-direction: column; gap: var(--space-2); margin-top: auto; }
+        .clocking-board__allocation-copy, .clocking-board__allocation small { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+        .clocking-board__progress { width: 100%; height: 7px; border-radius: var(--radius-xs); background: var(--surface); overflow: hidden; }
+        .clocking-board__progress > span { display: block; height: 100%; background: var(--success); border-radius: inherit; transition: width 240ms ease; }
+        .clocking-board__progress > span.is-over { background: var(--danger); }
+        .clocking-board__danger-text { color: var(--danger-dark) !important; }
+        .clocking-board__next-job { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
+        .clocking-board__next-job > div { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-sm); }
+        .clocking-board__next-job > div p, .clocking-board__next-job > div small { grid-column: 2; }
+        .clocking-board__next-job small { color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__card-actions { align-items: stretch; flex-wrap: wrap; margin-top: auto; padding-top: var(--space-2); }
+        .clocking-board__card-actions > :global(*) { flex: 1 1 112px; }
+        .clocking-board__attention-list, .clocking-board__long-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .clocking-board__attention-item strong { font-size: var(--text-label); line-height: 1.25; }
+        .clocking-board__attention-item a { font-size: var(--text-caption); font-weight: 700; }
+        .clocking-board__activity-list { display: flex; flex-direction: column; max-height: min(18rem, 34dvh); overflow-y: auto; }
+        .clocking-board__activity-row { align-items: baseline; padding: var(--space-2) 0; border-bottom: var(--separating-line); font-size: var(--text-label); }
+        .clocking-board__activity-row:last-child { border-bottom: none; }
+        .clocking-board__activity-row span { flex: 0 0 48px; color: var(--grey-accent); font-variant-numeric: tabular-nums; }
+        .clocking-board__long-row { flex-direction: row; }
+        .clocking-board__long-row > div { display: flex; flex-direction: column; gap: 2px; }
+        .clocking-board__long-row > div:last-child { align-items: flex-end; text-align: right; }
+        .clocking-board__long-row span { color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__performance-grid { flex: 0 0 auto; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .clocking-board__empty { align-items: flex-start; }
+        .clocking-board__empty span { color: var(--text-1); font-size: var(--text-label); }
+        .clocking-control-modal__content { display: flex; flex-direction: column; gap: var(--layout-card-gap); }
+        .clocking-control-modal__content h2 { color: var(--accentText); font-size: 1.2rem; }
+        :global(.clocking-control-modal) { overflow: visible; }
+        :global(.clocking-board > .app-status-message) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+        @container clocking-board (max-width: 60rem) {
+          .clocking-board__primary-layout { grid-template-columns: 1fr; }
+          .clocking-board__operations-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+          .clocking-board__operations-rail > :first-child { grid-column: 1 / -1; }
+          .clocking-board__capacity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .clocking-board__performance-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .clocking-board__status-grid { grid-template-columns: repeat(3, minmax(104px, 1fr)); }
         }
-        :global([data-theme="dark"]) .clocking-modal-overlay {
-          background: rgba(10, 10, 10, 0.8);
+        @container clocking-board (max-width: 45rem) {
+          .clocking-board__operations-rail { grid-template-columns: 1fr; }
+          .clocking-board__operations-rail > :first-child { grid-column: auto; }
+          .clocking-board__performance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        :global(:not([data-theme="dark"])) .clocking-modal-overlay {
-          background: rgba(50, 50, 50, 0.45);
+        @media (max-width: 768px) {
+          .clocking-board__section-header { align-items: flex-start; flex-wrap: wrap; }
+          .clocking-board__live-state { width: 100%; }
+          .clocking-board__filters { width: 100%; justify-content: stretch; }
+          .clocking-board__filters :global(.dropdown-api), .clocking-board__filters :global(.app-btn) { flex: 1 1 180px; width: 100%; }
         }
         @media (max-width: 520px) {
-          .clocking-control-modal-header {
-            flex-wrap: wrap;
-          }
-          .clocking-control-modal-actions {
-            width: 100%;
-            justify-content: flex-end;
-          }
+          .clocking-board__capacity-grid, .clocking-board__performance-grid { grid-template-columns: 1fr 1fr; }
+          .clocking-board__status-grid { display: flex; flex-flow: row nowrap; overflow-x: auto; }
+          .clocking-board__status-grid > :global(*) { flex: 0 0 118px; }
+          .clocking-board__technician-grid { grid-template-columns: 1fr; }
+          .clocking-board__card-actions { display: grid; grid-template-columns: 1fr; }
+          .clocking-board__card-actions > :global(*) { width: 100%; }
+          .clocking-board__section-header--compact :global(.dropdown-api) { width: 100%; }
+          :global(.clocking-board > .app-status-message) { align-items: stretch; flex-direction: column; }
         }
-        :global(.clocking-status-pill),
-        :global(.clocking-status-pill:hover),
-        :global(.clocking-status-pill:active) {
-          transform: none !important;
-          box-shadow: none !important;
+        @media (prefers-reduced-motion: reduce) {
+          .clocking-board__technician, .clocking-board__progress > span { transition: none; }
+          .clocking-board__technician:hover { transform: none; }
         }
       `}</style>
-    </DevLayoutSection>);
-
+    </div>
+  );
 }
 
 export default function ClockingPage() {
   return <ClockingPageUi view="section1" ClockingOverviewTab={ClockingOverviewTab} ContentWidth={ContentWidth} PageShell={PageShell} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

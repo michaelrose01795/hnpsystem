@@ -62,7 +62,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/admin/compliance/dpias.js", 4],
   ["src/pages/admin/compliance/ropa.js", 2],
   ["src/pages/admin/compliance/sars.js", 1],
-  ["src/pages/clocking/index.js", 2],
   ["src/pages/customers/[customerSlug].js", 3],
   ["src/pages/deliveries/index.js", 1],
   ["src/pages/delivery-planner.js", 16],
