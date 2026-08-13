@@ -10,6 +10,7 @@ import { execSync } from 'child_process';
 const steps = [
   { name: 'Staff dropdown guard', cmd: 'npm run check:dropdowns', required: true },
   { name: 'Staff control guard', cmd: 'npm run check:staff-controls', required: true },
+  { name: 'Text contrast token guard', cmd: 'npm run check:text-contrast', required: true },
   { name: 'Lint', cmd: 'npm run lint', required: false },
   { name: 'Smoke tests', cmd: 'npx playwright test --project=auth-setup --project=smoke', required: true },
   { name: 'Workflow tests', cmd: 'npx playwright test --project=auth-setup --project=workflows', required: true },

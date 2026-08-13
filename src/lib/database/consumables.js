@@ -21,7 +21,89 @@ const parseDate = (value) => {
 
 const normalizeName = (value) => (value || "").trim().toLowerCase();
 
+const isMissingStockQuantityColumn = (error) =>
+  String(error?.code || "").toUpperCase() === "42703" &&
+  /workshop_consumables\.stock_quantity|stock_quantity/i.test(error?.message || "");
+
+const consumablesTrackerSelect = (includeStockQuantity = true) => `
+  id,
+  item_name,
+  supplier,
+  unit_cost,
+  ${includeStockQuantity ? "stock_quantity," : ""}
+  estimated_quantity,
+  last_order_date,
+  next_estimated_order_date,
+  last_order_quantity,
+  last_order_total_value,
+  reorder_frequency_days,
+  is_required,
+  notes,
+  workshop_consumable_orders (
+    order_date,
+    quantity,
+    unit_cost,
+    total_value,
+    supplier
+  )
+`;
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const getMonthKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+export async function listConsumableFinancialTrend(year, month, months = 6) {
+  const end = new Date(Number(year), Number(month), 1);
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - Math.max(1, months));
+  const startDate = start.toISOString().split("T")[0];
+  const endDate = end.toISOString().split("T")[0];
+
+  const [{ data: orders, error: ordersError }, { data: budgets, error: budgetsError }] =
+    await Promise.all([
+      supabase
+        .from("workshop_consumable_orders")
+        .select("order_date, quantity, unit_cost, total_value")
+        .gte("order_date", startDate)
+        .lt("order_date", endDate),
+      supabase
+        .from("workshop_consumable_budgets")
+        .select("year, month, monthly_budget")
+        .gte("year", start.getFullYear())
+        .lte("year", end.getFullYear()),
+    ]);
+
+  if (ordersError) throw ordersError;
+  if (budgetsError) throw budgetsError;
+
+  const spendByMonth = new Map();
+  (orders || []).forEach((order) => {
+    const parsed = parseDate(order.order_date);
+    if (!parsed) return;
+    const key = getMonthKey(parsed);
+    const total = toNumber(order.total_value) || toNumber(order.quantity) * toNumber(order.unit_cost);
+    spendByMonth.set(key, (spendByMonth.get(key) || 0) + total);
+  });
+
+  const budgetByMonth = new Map(
+    (budgets || []).map((budget) => [
+      `${budget.year}-${String(budget.month).padStart(2, "0")}`,
+      toNumber(budget.monthly_budget),
+    ])
+  );
+
+  return Array.from({ length: Math.max(1, months) }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
+    const key = getMonthKey(date);
+    return {
+      key,
+      label: date.toLocaleDateString("en-GB", { month: "short" }),
+      spend: spendByMonth.get(key) || 0,
+      budget: budgetByMonth.get(key) || 0,
+    };
+  });
+}
 
 function computeForecastFromHistory(history = []) {
   const sanitized = history
@@ -92,32 +174,19 @@ function computeForecastFromHistory(history = []) {
 }
 
 export async function listConsumablesForTracker() {
-  const { data, error } = await supabase
+  let result = await supabase
     .from("workshop_consumables")
-    .select(
-      `
-      id,
-      item_name,
-      supplier,
-      unit_cost,
-      stock_quantity,
-      estimated_quantity,
-      last_order_date,
-      next_estimated_order_date,
-      last_order_quantity,
-      last_order_total_value,
-      reorder_frequency_days,
-      is_required,
-      notes,
-      workshop_consumable_orders (
-        order_date,
-        quantity,
-        unit_cost,
-        total_value,
-        supplier
-      )
-    `
-    );
+    .select(consumablesTrackerSelect());
+
+  // Keep the tracker available while an environment catches up with the
+  // stock-quantity migration. Stock defaults to zero until the repair lands.
+  if (isMissingStockQuantityColumn(result.error)) {
+    result = await supabase
+      .from("workshop_consumables")
+      .select(consumablesTrackerSelect(false));
+  }
+
+  const { data, error } = result;
 
   if (error) {
     throw error;
@@ -245,12 +314,19 @@ export async function listConsumablesForTracker() {
       : null;
     const lastOrderQuantity = entry.latestOrder ? entry.latestOrder.quantity : null;
     const lastOrderTotalValue = entry.latestOrder ? entry.latestOrder.totalValue : null;
+    const seenOrders = new Set();
     const orderHistory = entry.orderHistory
       .slice()
       .sort(
         (a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      )
+      .filter((order) => {
+        const key = [order.date, order.quantity, order.unitCost, order.totalCost, order.supplier || ""].join("|");
+        if (seenOrders.has(key)) return false;
+        seenOrders.add(key);
+        return true;
+      });
     const historyForecast = computeForecastFromHistory(orderHistory);
     const storedNextDate = entry.nextEstimatedOrderDate
       ? entry.nextEstimatedOrderDate.toISOString().split("T")[0]

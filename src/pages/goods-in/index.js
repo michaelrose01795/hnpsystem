@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
-import { sanitizeNumericId } from "@/lib/utils/ids";
+import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { ScrollArea } from "@/components/ui/scrollAPI";
@@ -255,6 +255,7 @@ function GoodsInPage() {
   const [goodsInItems, setGoodsInItems] = useState([]);
   const [showBinSuggestions, setShowBinSuggestions] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [partForm, setPartForm] = useState(() => createDefaultPartForm());
   const [activeTab, setActiveTab] = useState("global");
@@ -269,6 +270,39 @@ function GoodsInPage() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [partError, setPartError] = useState("");
   const fileInputRef = useRef(null);
+  const partNumberInputRef = useRef(null);
+  const [selectedCatalogPart, setSelectedCatalogPart] = useState(null);
+  const [duplicateCandidate, setDuplicateCandidate] = useState(null);
+  const [recentGoodsIn, setRecentGoodsIn] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentError, setRecentError] = useState("");
+  const [completionSummary, setCompletionSummary] = useState(null);
+
+  const fetchRecentGoodsIn = useCallback(async () => {
+    const controller = new AbortController();
+    setRecentLoading(true);
+    setRecentError("");
+    try {
+      const params = new URLSearchParams({ limit: "10", includeItems: "true" });
+      const response = await fetch(`/api/parts/goods-in?${params.toString()}`, {
+        signal: controller.signal
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to load recent goods in");
+      }
+      setRecentGoodsIn(payload.goodsIn || []);
+    } catch (error) {
+      if (error.name !== "AbortError") setRecentError(error.message);
+    } finally {
+      if (!controller.signal.aborted) setRecentLoading(false);
+    }
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    fetchRecentGoodsIn();
+  }, [fetchRecentGoodsIn]);
 
   const filteredBinLocations = useMemo(() => {
     const query = String(partForm.binLocation || "").trim().toLowerCase();
@@ -344,6 +378,7 @@ function GoodsInPage() {
           supplierAccountNumber: prev.supplierAccountNumber || "",
           supplierName: payload.goodsIn?.supplier_name || "",
           supplierAddress: payload.goodsIn?.supplier_address || "",
+          supplierContact: payload.goodsIn?.supplier_contact || "",
           invoiceNumber: payload.goodsIn?.invoice_number || "",
           deliveryNoteNumber: payload.goodsIn?.delivery_note_number || "",
           invoiceDate: payload.goodsIn?.invoice_date || todayIso,
@@ -371,6 +406,12 @@ function GoodsInPage() {
 
   const handlePartChange = (field, value) => {
     setPartError("");
+    if (field === "partNumber" && selectedCatalogPart) {
+      const nextNumber = String(value || "").trim().toLowerCase();
+      if (nextNumber !== String(selectedCatalogPart.part_number || "").trim().toLowerCase()) {
+        setSelectedCatalogPart(null);
+      }
+    }
     setPartForm((prev) => {
       const next = { ...prev, [field]: value };
       const isTyreFranchise = (next.franchise || "").toLowerCase() === "tyre" || (next.franchise || "").toLowerCase() === "tyres";
@@ -486,6 +527,46 @@ function GoodsInPage() {
     }
   }, [actingUserNumeric, actingUserUuid, ensureInvoiceReady, goodsInRecord, invoiceForm, invoiceScanPayload]);
 
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true);
+      const response = await fetch("/api/parts/goods-in", {
+        method: goodsInRecord?.id ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goodsInId: goodsInRecord?.id,
+          supplierAccountId: invoiceForm.supplierAccountId,
+          supplierName: invoiceForm.supplierName,
+          supplierAddress: invoiceForm.supplierAddress,
+          supplierContact: invoiceForm.supplierContact,
+          invoiceNumber: invoiceForm.invoiceNumber,
+          deliveryNoteNumber: invoiceForm.deliveryNoteNumber,
+          invoiceDate: invoiceForm.invoiceDate,
+          priceLevel: invoiceForm.priceLevel,
+          notes: invoiceForm.notes,
+          scanPayload: invoiceScanPayload,
+          userId: actingUserUuid,
+          userNumericId: actingUserNumeric,
+          saveDraft: true,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to save goods-in draft");
+      }
+      setGoodsInRecord(payload.goodsIn);
+      setToast({ type: "success", message: `${payload.goodsIn.goods_in_number} saved as draft` });
+      await fetchRecentGoodsIn();
+      return true;
+    } catch (error) {
+      console.error(error);
+      setToast({ type: "error", message: error.message });
+      return false;
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const buildPartPayload = () => ({
     partId: partForm.partId,
     partNumber: partForm.partNumber,
@@ -522,7 +603,7 @@ function GoodsInPage() {
     notes: partForm.notes
   });
 
-  const handleAddPart = async () => {
+  const handleAddPart = async ({ allowDuplicate = false } = {}) => {
     setPartError("");
     if (!partForm.partNumber.trim()) {
       setPartError("Part number is required");
@@ -530,6 +611,16 @@ function GoodsInPage() {
     }
     if (!partForm.quantity || Number(partForm.quantity) <= 0) {
       setPartError("Quantity must be above zero");
+      return;
+    }
+
+    const normalizedPartNumber = partForm.partNumber.trim().toLowerCase();
+    const matchingLine = goodsInItems.find((item) =>
+      (partForm.partId && item.part_catalog_id === partForm.partId) ||
+      String(item.part_number || "").trim().toLowerCase() === normalizedPartNumber
+    );
+    if (matchingLine && !allowDuplicate) {
+      setDuplicateCandidate(matchingLine);
       return;
     }
 
@@ -555,13 +646,44 @@ function GoodsInPage() {
       }
       setGoodsInItems((prev) => [...prev, payload.item]);
       setPartForm(createDefaultPartForm());
+      setSelectedCatalogPart(null);
+      setDuplicateCandidate(null);
       setActiveTab("global");
       setIsAdvancedPanelOpen(false);
       setToast({ type: "success", message: "Part added to invoice" });
       setPartError("");
+      fetchRecentGoodsIn();
+      requestAnimationFrame(() => partNumberInputRef.current?.focus());
     } catch (error) {
       console.error(error);
       setToast({ type: "error", message: error.message });
+      setPartError(error.message);
+    } finally {
+      setSavingPart(false);
+    }
+  };
+
+  const handleIncreaseExistingLine = async () => {
+    if (!duplicateCandidate?.id) return;
+    const nextQuantity = Number(duplicateCandidate.quantity || 0) + Number(partForm.quantity || 0);
+    try {
+      setSavingPart(true);
+      const response = await fetch(`/api/parts/goods-in/items/${duplicateCandidate.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: nextQuantity })
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to increase invoice line quantity");
+      }
+      setGoodsInItems((prev) => prev.map((item) => item.id === payload.item.id ? payload.item : item));
+      setPartForm(createDefaultPartForm());
+      setSelectedCatalogPart(null);
+      setDuplicateCandidate(null);
+      setToast({ type: "success", message: `Line quantity increased to ${nextQuantity}` });
+      requestAnimationFrame(() => partNumberInputRef.current?.focus());
+    } catch (error) {
       setPartError(error.message);
     } finally {
       setSavingPart(false);
@@ -624,8 +746,21 @@ function GoodsInPage() {
       }
       setGoodsInRecord(payload.goodsIn);
       setGoodsInItems(payload.goodsIn?.items || goodsInItems);
+      const successful = payload.catalogUpdates?.successful || [];
+      const failed = payload.catalogUpdates?.failed || [];
+      setCompletionSummary({
+        lines: (payload.goodsIn?.items || goodsInItems).length,
+        units: (payload.goodsIn?.items || goodsInItems).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+        updated: successful.filter((item) => item.action === "updated" || item.action === "linked").length,
+        created: successful.filter((item) => item.action === "created").length,
+        failed,
+        totalCost: (payload.goodsIn?.items || goodsInItems).reduce(
+          (sum, item) => sum + Number(item.cost_price || 0) * Number(item.quantity || 0), 0
+        )
+      });
       setCompletionPromptOpen(true);
       setToast({ type: "success", message: `${payload.goodsIn.goods_in_number} marked complete` });
+      fetchRecentGoodsIn();
     } catch (error) {
       console.error(error);
       setToast({ type: "error", message: error.message });
@@ -701,7 +836,7 @@ function GoodsInPage() {
     setSupplierModalOpen(false);
   };
 
-  const handlePartSelected = (part) => {
+  const handlePartSelected = useCallback((part) => {
     setPartError("");
     setPartForm((prev) => ({
       ...prev,
@@ -713,8 +848,43 @@ function GoodsInPage() {
       retailPrice: part.unit_price ? String(part.unit_price) : prev.retailPrice,
       costPrice: part.unit_cost ? String(part.unit_cost) : prev.costPrice
     }));
+    setSelectedCatalogPart(part);
     setPartSearchOpen(false);
-  };
+    requestAnimationFrame(() => partNumberInputRef.current?.focus());
+  }, []);
+
+  const preselectedPartId = Array.isArray(router.query?.part)
+    ? router.query.part[0]
+    : router.query?.part;
+  useEffect(() => {
+    if (!router.isReady || !preselectedPartId) return;
+    if (!isValidUuid(preselectedPartId)) {
+      setPartError("The linked catalogue part is invalid.");
+      return;
+    }
+    if (selectedCatalogPart?.id === preselectedPartId) return;
+
+    const controller = new AbortController();
+    const loadLinkedPart = async () => {
+      try {
+        const response = await fetch(`/api/parts/inventory/${encodeURIComponent(preselectedPartId)}`, {
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success || !payload.part) {
+          throw new Error(payload?.message || "Unable to load the linked catalogue part");
+        }
+        handlePartSelected(payload.part);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        setPartError(error.message);
+        setToast({ type: "error", message: error.message });
+      }
+    };
+
+    loadLinkedPart();
+    return () => controller.abort();
+  }, [handlePartSelected, preselectedPartId, router.isReady, selectedCatalogPart?.id]);
 
   const resetGoodsInState = useCallback(() => {
     setGoodsInRecord(null);
@@ -727,6 +897,9 @@ function GoodsInPage() {
     setCompletionPromptOpen(false);
     setJobModalOpen(false);
     setPartError("");
+    setSelectedCatalogPart(null);
+    setDuplicateCandidate(null);
+    setCompletionSummary(null);
   }, [todayIso]);
 
   const handleCompletionDismiss = useCallback(() => {
@@ -766,7 +939,7 @@ function GoodsInPage() {
 
   }
 
-  return <GoodsInPageUi view="section2" actingUserNumeric={actingUserNumeric} actingUserUuid={actingUserUuid} activeTab={activeTab} addPartFieldStyle={addPartFieldStyle} addPartInputStyle={addPartInputStyle} addressFieldStyle={addressFieldStyle} ADVANCED_TABS={ADVANCED_TABS} CalendarField={CalendarField} completing={completing} CompletionPrompt={CompletionPrompt} completionPromptOpen={completionPromptOpen} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} createDefaultPartForm={createDefaultPartForm} currencyFormatter={currencyFormatter} dangerButtonStyle={dangerButtonStyle} DropdownField={DropdownField} fetchGoodsIn={fetchGoodsIn} fieldGridStyle={fieldGridStyle} fileInputRef={fileInputRef} filteredBinLocations={filteredBinLocations} FRANCHISE_OPTIONS={FRANCHISE_OPTIONS} goodsInItems={goodsInItems} GoodsInPartSearchModal={GoodsInPartSearchModal} goodsInRecord={goodsInRecord} handleAddPart={handleAddPart} handleCompleteGoodsIn={handleCompleteGoodsIn} handleCompletionDismiss={handleCompletionDismiss} handleFinishGoodsIn={handleFinishGoodsIn} handleInvoiceChange={handleInvoiceChange} handleJobItemsAssigned={handleJobItemsAssigned} handleNestedPartChange={handleNestedPartChange} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemoveItem={handleRemoveItem} handleSalePriceChange={handleSalePriceChange} handleScanDocChange={handleScanDocChange} handleScanDocClick={handleScanDocClick} handleSupplierSelected={handleSupplierSelected} inputStyle={inputStyle} invoiceCellStyle={invoiceCellStyle} invoiceForm={invoiceForm} invoiceHeaderCellStyle={invoiceHeaderCellStyle} invoiceRowStyle={invoiceRowStyle} invoiceScanPayload={invoiceScanPayload} invoiceTableStyles={invoiceTableStyles} isAdvancedPanelOpen={isAdvancedPanelOpen} JobAssignmentModal={JobAssignmentModal} jobModalOpen={jobModalOpen} labelStyle={labelStyle} notesTextareaStyle={notesTextareaStyle} partError={partError} partForm={partForm} partSearchOpen={partSearchOpen} PRICE_LEVEL_OPTIONS={PRICE_LEVEL_OPTIONS} primaryButtonStyle={primaryButtonStyle} removingItemId={removingItemId} savingPart={savingPart} scanBusy={scanBusy} ScrollArea={ScrollArea} secondaryButtonStyle={secondaryButtonStyle} sectionCardStyle={sectionCardStyle} setActiveTab={setActiveTab} setCompletionPromptOpen={setCompletionPromptOpen} setConfirmDialog={setConfirmDialog} setIsAdvancedPanelOpen={setIsAdvancedPanelOpen} setJobModalOpen={setJobModalOpen} setPartForm={setPartForm} setPartSearchOpen={setPartSearchOpen} setShowBinSuggestions={setShowBinSuggestions} setSupplierModalOpen={setSupplierModalOpen} setTimeout={setTimeout} showBinSuggestions={showBinSuggestions} splitFieldRowStyle={splitFieldRowStyle} supplierModalOpen={supplierModalOpen} SupplierSearchModal={SupplierSearchModal} TabGroup={TabGroup} textareaStyle={textareaStyle} toast={toast} VAT_RATE_OPTIONS={VAT_RATE_OPTIONS} />;
+  return <GoodsInPageUi view="section2" actingUserNumeric={actingUserNumeric} actingUserUuid={actingUserUuid} activeTab={activeTab} addPartFieldStyle={addPartFieldStyle} addPartInputStyle={addPartInputStyle} addressFieldStyle={addressFieldStyle} ADVANCED_TABS={ADVANCED_TABS} CalendarField={CalendarField} completing={completing} completionSummary={completionSummary} CompletionPrompt={CompletionPrompt} completionPromptOpen={completionPromptOpen} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} createDefaultPartForm={createDefaultPartForm} currencyFormatter={currencyFormatter} dangerButtonStyle={dangerButtonStyle} DropdownField={DropdownField} duplicateCandidate={duplicateCandidate} fetchGoodsIn={fetchGoodsIn} fetchRecentGoodsIn={fetchRecentGoodsIn} fieldGridStyle={fieldGridStyle} fileInputRef={fileInputRef} filteredBinLocations={filteredBinLocations} FRANCHISE_OPTIONS={FRANCHISE_OPTIONS} goodsInItems={goodsInItems} GoodsInPartSearchModal={GoodsInPartSearchModal} goodsInRecord={goodsInRecord} handleAddPart={handleAddPart} handleCompleteGoodsIn={handleCompleteGoodsIn} handleCompletionDismiss={handleCompletionDismiss} handleFinishGoodsIn={handleFinishGoodsIn} handleIncreaseExistingLine={handleIncreaseExistingLine} handleInvoiceChange={handleInvoiceChange} handleJobItemsAssigned={handleJobItemsAssigned} handleNestedPartChange={handleNestedPartChange} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemoveItem={handleRemoveItem} handleSalePriceChange={handleSalePriceChange} handleSaveDraft={handleSaveDraft} handleScanDocChange={handleScanDocChange} handleScanDocClick={handleScanDocClick} handleSupplierSelected={handleSupplierSelected} inputStyle={inputStyle} invoiceCellStyle={invoiceCellStyle} invoiceForm={invoiceForm} invoiceHeaderCellStyle={invoiceHeaderCellStyle} invoiceRowStyle={invoiceRowStyle} invoiceScanPayload={invoiceScanPayload} invoiceTableStyles={invoiceTableStyles} isAdvancedPanelOpen={isAdvancedPanelOpen} JobAssignmentModal={JobAssignmentModal} jobModalOpen={jobModalOpen} labelStyle={labelStyle} notesTextareaStyle={notesTextareaStyle} partError={partError} partForm={partForm} partNumberInputRef={partNumberInputRef} partSearchOpen={partSearchOpen} PRICE_LEVEL_OPTIONS={PRICE_LEVEL_OPTIONS} primaryButtonStyle={primaryButtonStyle} recentError={recentError} recentGoodsIn={recentGoodsIn} recentLoading={recentLoading} removingItemId={removingItemId} savingDraft={savingDraft} savingPart={savingPart} scanBusy={scanBusy} ScrollArea={ScrollArea} secondaryButtonStyle={secondaryButtonStyle} sectionCardStyle={sectionCardStyle} selectedCatalogPart={selectedCatalogPart} setActiveTab={setActiveTab} setCompletionPromptOpen={setCompletionPromptOpen} setConfirmDialog={setConfirmDialog} setDuplicateCandidate={setDuplicateCandidate} setIsAdvancedPanelOpen={setIsAdvancedPanelOpen} setJobModalOpen={setJobModalOpen} setPartForm={setPartForm} setPartSearchOpen={setPartSearchOpen} setShowBinSuggestions={setShowBinSuggestions} setSupplierModalOpen={setSupplierModalOpen} setTimeout={setTimeout} showBinSuggestions={showBinSuggestions} splitFieldRowStyle={splitFieldRowStyle} supplierModalOpen={supplierModalOpen} SupplierSearchModal={SupplierSearchModal} TabGroup={TabGroup} textareaStyle={textareaStyle} toast={toast} VAT_RATE_OPTIONS={VAT_RATE_OPTIONS} />;
 
 
 
@@ -1902,7 +2075,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
     try {
       setLoading(true);
       const params = new URLSearchParams({ search: trimmed, limit: "30" });
-      const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+      const response = await fetch(`/api/parts/inventory?${params.toString()}`);
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
         throw new Error(payload?.message || "Unable to search parts");
@@ -1910,7 +2083,20 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
       if (requestId !== searchRequestRef.current) {
         return;
       }
-      setResults(payload.parts || []);
+      const normalized = trimmed.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const scorePart = (part) => {
+        const partNumber = String(part.part_number || "").toLowerCase();
+        const oem = String(part.oem_reference || "").toLowerCase();
+        const compactNumber = partNumber.replace(/[^a-z0-9]/g, "");
+        const compactOem = oem.replace(/[^a-z0-9]/g, "");
+        if (compactNumber === normalized) return 0;
+        if (compactOem === normalized) return 1;
+        if (partNumber.startsWith(trimmed.toLowerCase())) return 2;
+        if (oem.startsWith(trimmed.toLowerCase())) return 3;
+        if (partNumber.includes(trimmed.toLowerCase()) || oem.includes(trimmed.toLowerCase())) return 4;
+        return 5;
+      };
+      setResults([...(payload.parts || [])].sort((a, b) => scorePart(a) - scorePart(b) || String(a.part_number).localeCompare(String(b.part_number))));
       setError(payload.parts?.length ? "" : "No parts match this search");
     } catch (err) {
       console.error(err);
@@ -2569,7 +2755,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 
 }
 
-function CompletionPrompt({ goodsInNumber, onAddToJob, onClose }) {
+function CompletionPrompt({ goodsInNumber, summary, currencyFormatter: formatCurrency, onAddToJob, onClose }) {
   useBodyModalLock(true);
 
   return (
@@ -2580,6 +2766,17 @@ function CompletionPrompt({ goodsInNumber, onAddToJob, onClose }) {
           {goodsInNumber || "This receipt"} has been marked as complete. Would you like to attach the new
           parts to a job now?
         </p>
+        {summary && <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "10px", margin: "14px 0" }}>
+          <div><small>Lines / units</small><strong style={{ display: "block" }}>{summary.lines} / {summary.units}</strong></div>
+          <div><small>Updated / new</small><strong style={{ display: "block" }}>{summary.updated} / {summary.created}</strong></div>
+          <div><small>Received cost</small><strong style={{ display: "block" }}>{formatCurrency.format(summary.totalCost)}</strong></div>
+          <div style={{ gridColumn: "1 / -1", color: summary.failed.length ? "var(--danger)" : "var(--success-dark)", fontWeight: 600 }}>
+            {summary.failed.length ? `${summary.failed.length} catalogue update${summary.failed.length === 1 ? "" : "s"} failed` : "All catalogue updates succeeded"}
+          </div>
+          {summary.failed.map(item => <div key={`${item.partNumber}-${item.error}`} style={{ gridColumn: "1 / -1", color: "var(--danger)", fontSize: ".86rem" }}>
+            {item.partNumber || "Unknown part"}: {item.error}
+          </div>)}
+        </div>}
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
           <button style={secondaryButtonStyle} onClick={onClose}>
             Not now

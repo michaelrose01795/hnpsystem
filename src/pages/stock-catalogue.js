@@ -21,10 +21,10 @@ const PRE_PICK_OPTIONS = [
 { value: "service_rack_2", label: "Service Rack 2" },
 { value: "service_rack_3", label: "Service Rack 3" },
 { value: "service_rack_4", label: "Service Rack 4" },
-{ value: "sales_rack_1", label: "Sales Rack 1 (TODO)" },
-{ value: "sales_rack_2", label: "Sales Rack 2 (TODO)" },
-{ value: "sales_rack_3", label: "Sales Rack 3 (TODO)" },
-{ value: "sales_rack_4", label: "Sales Rack 4 (TODO)" },
+{ value: "sales_rack_1", label: "Sales Rack 1" },
+{ value: "sales_rack_2", label: "Sales Rack 2" },
+{ value: "sales_rack_3", label: "Sales Rack 3" },
+{ value: "sales_rack_4", label: "Sales Rack 4" },
 { value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
 { value: "no_pick", label: "No Pick" },
 { value: "on_order", label: "On Order" }];
@@ -342,32 +342,18 @@ function StockCataloguePage() {
     setInventoryError("");
     try {
       const trimmed = (term || "").trim();
-      if (trimmed.length >= 2) {
-        const searchParams = new URLSearchParams({
-          search: trimmed,
-          limit: "100"
-        });
-        const response = await fetch(`/api/parts/catalog?${searchParams.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Failed to load inventory");
-        }
-        setInventory(payload.parts || []);
-        return payload.parts || [];
-      } else {
-        const query = new URLSearchParams({
-          search: trimmed,
-          includeInactive: "false",
-          limit: "100"
-        });
-        const response = await fetch(`/api/parts/inventory?${query}`);
-        const data = await response.json();
-        if (!response.ok || !data?.success) {
-          throw new Error(data?.message || "Failed to load inventory");
-        }
-        setInventory(data.parts || []);
-        return data.parts || [];
+      const query = new URLSearchParams({
+        search: trimmed,
+        includeInactive: "false",
+        limit: "100"
+      });
+      const response = await fetch(`/api/parts/inventory?${query}`);
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to load inventory");
       }
+      setInventory(data.parts || []);
+      return data.parts || [];
     } catch (err) {
       setInventoryError(err.message || "Unable to load inventory");
       return [];
@@ -375,7 +361,6 @@ function StockCataloguePage() {
       setInventoryLoading(false);
     }
   }, []);
-
   const fetchCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase.
@@ -538,7 +523,13 @@ function StockCataloguePage() {
         throw new Error(data.message || "Failed to add part to job");
       }
 
-      await refreshSelectedPartFromDb();
+      await Promise.all([
+        refreshSelectedPartFromDb(),
+        jobData?.id === jobId && jobData?.jobNumber
+          ? searchJob(jobData.jobNumber)
+          : Promise.resolve(),
+        fetchInventory(inventorySearch),
+      ]);
 
       setShowAddToJobModal(false);
       resetAddToJobModal();
@@ -552,8 +543,13 @@ function StockCataloguePage() {
   addToJobResult?.id,
   actingUserId,
   actingUserNumericId,
+  fetchInventory,
+  inventorySearch,
+  jobData?.id,
+  jobData?.jobNumber,
   refreshSelectedPartFromDb,
   resetAddToJobModal,
+  searchJob,
   selectedPart?.id]
   );
 
@@ -983,6 +979,11 @@ function StockCataloguePage() {
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
             <div style={{ color: "var(--text-1)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px", fontSize: "var(--text-body-sm)" }}>
+              <span>Available <strong>{Number(selectedPart.qty_in_stock || 0) - Number(selectedPart.qty_reserved || 0)}</strong></span>
+              <span>On order <strong>{Number(selectedPart.qty_on_order || 0)}</strong></span>
+              <span>Open-job demand <strong>{Number(selectedPart.open_job_count || 0)}</strong></span>
             </div>
           </div>
 

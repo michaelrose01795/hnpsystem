@@ -2,17 +2,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   getEfficiencyTechnicians,
   getAllEfficiencyEntries,
   getJobClockingAsEfficiency,
+  getJobClockingQualityRecords,
   getOvertimeAsEfficiency,
   getAllTechTargets,
   addEfficiencyEntry,
   updateEfficiencyEntry,
   deleteEfficiencyEntry,
-  deleteJobClockingEntry,
   upsertTechTarget,
+  lookupEfficiencyJob,
   calculateTechTotals,
   calculateOverallTotals,
 } from "@/lib/database/efficiency";
@@ -28,6 +30,16 @@ import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
+import EfficiencyInsights from "@/components/Clocking/EfficiencyInsights";
+import {
+  buildCategoryAnalysis,
+  buildClockingQualityAlerts,
+  buildComparableMetrics,
+  buildJobAnalysis,
+  buildPeriodMetrics,
+  buildTrend,
+  reconcileEfficiencyEntries,
+} from "@/lib/efficiency/analytics";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -64,26 +76,6 @@ const getAutoDayTypeFromDate = (value) => {
   if (!date) return "weekday";
   const day = date.getDay();
   return day === 0 || day === 6 ? "saturday" : "weekday";
-};
-
-const countWeekdaysInRange = (startDate, endDate) => {
-  if (!(startDate instanceof Date) || !(endDate instanceof Date)) return 0;
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
-  if (endDate < startDate) return 0;
-
-  let count = 0;
-  const cursor = new Date(startDate);
-  cursor.setHours(0, 0, 0, 0);
-  const finish = new Date(endDate);
-  finish.setHours(0, 0, 0, 0);
-
-  while (cursor <= finish) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) count += 1;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  return count;
 };
 
 const roundHours = (value) => {
@@ -168,11 +160,17 @@ export default function EfficiencyTab({
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [technicians, setTechnicians] = useState([]);
-  const [activeTab, setActiveTab] = useState("overall");
+  const [activeTab, setActiveTab] = useState(
+    filterUserId ? String(filterUserId) : "overall"
+  );
   const [entries, setEntries] = useState([]);
   const [targets, setTargets] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [analysisEntries, setAnalysisEntries] = useState([]);
+  const [qualityClockings, setQualityClockings] = useState([]);
+  const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [analysisError, setAnalysisError] = useState("");
   const [periodFilter, setPeriodFilter] = useState("month");
   const [filterDate, setFilterDate] = useState(toYmd(now));
   const [overviewTechFilter, setOverviewTechFilter] = useState("all");
@@ -252,7 +250,11 @@ export default function EfficiencyTab({
         getAllTechTargets(allUserIds),
       ]);
       // Merge tracked sources into a single timeline.
-      const merged = [...clockingEntries, ...overtimeEntries, ...manualEntries];
+      const merged = reconcileEfficiencyEntries([
+        ...clockingEntries,
+        ...overtimeEntries,
+        ...manualEntries,
+      ]);
       // Sort by date ascending
       merged.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
       setEntries(merged);
@@ -264,9 +266,43 @@ export default function EfficiencyTab({
     }
   }, [allUserIds, selectedYear, selectedMonth]);
 
+  const fetchAnalysisData = useCallback(async () => {
+    if (allUserIds.length === 0) return;
+    setAnalysisLoading(true);
+    setAnalysisError("");
+    const previousMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const previousYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+    try {
+      const results = await Promise.allSettled([
+        getAllEfficiencyEntries(allUserIds, previousYear, previousMonth),
+        getJobClockingAsEfficiency(allUserIds, previousYear, previousMonth),
+        getOvertimeAsEfficiency(allUserIds, previousYear, previousMonth),
+        getJobClockingQualityRecords(allUserIds, selectedYear, selectedMonth),
+      ]);
+      const [manualResult, clockingResult, overtimeResult, qualityResult] = results;
+      const previousEntries = [manualResult, clockingResult, overtimeResult].flatMap((result) =>
+        result.status === "fulfilled" ? result.value : []
+      );
+      setAnalysisEntries(reconcileEfficiencyEntries([...previousEntries, ...entries]));
+      setQualityClockings(qualityResult.status === "fulfilled" ? qualityResult.value : []);
+      const failed = results.filter((result) => result.status === "rejected");
+      if (failed.length) {
+        setAnalysisError("Some comparison or clocking-quality data could not be loaded.");
+      }
+    } catch (err) {
+      setAnalysisError(err?.message || "Analysis data could not be loaded.");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [allUserIds, entries, selectedMonth, selectedYear]);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!loading) fetchAnalysisData();
+  }, [fetchAnalysisData, loading]);
 
   // Real-time subscription: refresh when efficiency data or job clocking changes
   useEffect(() => {
@@ -275,6 +311,11 @@ export default function EfficiencyTab({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tech_efficiency_entries" },
+        () => { fetchData(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "overtime_sessions" },
         () => { fetchData(); }
       )
       .on(
@@ -429,14 +470,136 @@ export default function EfficiencyTab({
     ? techSummaries.find((s) => s.tech.user_id === activeTechId)
     : null;
 
+  const activeAnalysisEntries = useMemo(
+    () =>
+      activeTechId
+        ? analysisEntries.filter((entry) => Number(entry.user_id) === activeTechId)
+        : [],
+    [activeTechId, analysisEntries]
+  );
+  const activeTargetOptions = useMemo(
+    () => ({
+      year: selectedYear,
+      month: selectedMonth,
+      period: periodFilter,
+      anchorDate: filterDateValue,
+      weeklyContractedHours:
+        activeSummary?.target?.weeklyContractedHours ?? activeSummary?.tech?.contracted_hours ?? 40,
+    }),
+    [activeSummary, filterDateValue, periodFilter, selectedMonth, selectedYear]
+  );
+  const activeMetrics = useMemo(
+    () =>
+      activeSummary
+        ? buildPeriodMetrics(activeSummary.entries, activeSummary.target, activeTargetOptions)
+        : null,
+    [activeSummary, activeTargetOptions]
+  );
+  const activeComparable = useMemo(
+    () =>
+      activeSummary
+        ? buildComparableMetrics(
+            activeAnalysisEntries,
+            activeSummary.target,
+            periodFilter,
+            filterDateValue
+          )
+        : null,
+    [activeAnalysisEntries, activeSummary, filterDateValue, periodFilter]
+  );
+  const activeComparisons = useMemo(
+    () =>
+      activeSummary
+        ? [
+            ["day", "Today"],
+            ["week", "Week"],
+            ["month", "Month"],
+          ].map(([key, label]) => ({
+            key,
+            label,
+            ...buildComparableMetrics(
+              activeAnalysisEntries,
+              activeSummary.target,
+              key,
+              filterDateValue
+            ),
+          }))
+        : [],
+    [activeAnalysisEntries, activeSummary, filterDateValue]
+  );
+  const activeTrend = useMemo(
+    () =>
+      activeSummary
+        ? buildTrend(activeAnalysisEntries, activeSummary.target, periodFilter, filterDateValue)
+        : [],
+    [activeAnalysisEntries, activeSummary, filterDateValue, periodFilter]
+  );
+  const activeJobs = useMemo(
+    () => buildJobAnalysis(activeSummary?.entries || []),
+    [activeSummary?.entries]
+  );
+  const activeCategories = useMemo(
+    () => buildCategoryAnalysis(activeSummary?.entries || []),
+    [activeSummary?.entries]
+  );
+  const activeAlerts = useMemo(
+    () =>
+      buildClockingQualityAlerts(
+        activeSummary?.entries || [],
+        qualityClockings.filter((clocking) => Number(clocking.user_id) === activeTechId)
+      ),
+    [activeSummary?.entries, activeTechId, qualityClockings]
+  );
+  const previousEfficiencyByTech = useMemo(() => {
+    const map = new Map();
+    techSummaries.forEach((summary) => {
+      const techEntries = analysisEntries.filter(
+        (entry) => Number(entry.user_id) === Number(summary.tech.user_id)
+      );
+      const comparable = buildComparableMetrics(
+        techEntries,
+        summary.target,
+        periodFilter,
+        filterDateValue
+      );
+      map.set(summary.tech.user_id, comparable.previous.efficiencyPct);
+    });
+    return map;
+  }, [analysisEntries, filterDateValue, periodFilter, techSummaries]);
+  const previousOverallTotals = useMemo(
+    () =>
+      calculateOverallTotals(
+        overviewTechSummaries.map((summary) => ({
+          ...summary,
+          totals: {
+            ...summary.totals,
+            ...buildComparableMetrics(
+              analysisEntries.filter(
+                (entry) => Number(entry.user_id) === Number(summary.tech.user_id)
+              ),
+              summary.target,
+              periodFilter,
+              filterDateValue
+            ).previous,
+          },
+        }))
+      ),
+    [analysisEntries, filterDateValue, overviewTechSummaries, periodFilter]
+  );
+
   const totalsForFilteredSet = useMemo(() => {
-    const sourceEntries = activeTab === "overall" ? overviewEntries : activeSummary?.entries || [];
+    const sourceEntries = (activeTab === "overall" ? overviewEntries : activeSummary?.entries || [])
+      .filter((entry) => entry?._source !== "overtime_sessions" && !entry?._excludedFromTotals);
+    const allocations = new Set();
     return sourceEntries.reduce(
       (acc, entry) => {
         const logged = Number(entry.hours_spent || 0);
-        const allocated = Number(entry.allocated_hours || 0);
         acc.logged += logged;
-        acc.allocated += allocated;
+        const allocationKey = entry?._allocation_key || `entry:${entry?.id}`;
+        if (!allocations.has(allocationKey)) {
+          allocations.add(allocationKey);
+          acc.allocated += Number(entry.allocated_hours || 0);
+        }
         return acc;
       },
       { logged: 0, allocated: 0 }
@@ -448,7 +611,6 @@ export default function EfficiencyTab({
   );
   const totalDifferenceColor = (value) =>
     Number(value) < -0.01 ? "var(--success)" : "var(--danger)";
-  const filteredSetStatusColor = totalDifferenceColor(filteredSetDifference);
   const overallSectionStatusColor = totalDifferenceColor(overallTotals?.difference ?? 0);
   const statusTone = (color) =>
     color === "var(--success)"
@@ -636,14 +798,8 @@ export default function EfficiencyTab({
 
     const loadRequests = async () => {
       try {
-        // Look up the job by job_number
-        const { data: jobData, error: jobError } = await supabase
-          .from("jobs")
-          .select("id, job_number, description")
-          .ilike("job_number", trimmed)
-          .maybeSingle();
-
-        if (jobError || !jobData?.id) {
+        const lookup = await lookupEfficiencyJob(trimmed);
+        if (!lookup?.job?.id) {
           if (!isMounted) return;
           setJobLookupState("unmatched");
           setRequestOptions(fallbackOptions);
@@ -652,18 +808,10 @@ export default function EfficiencyTab({
 
         if (!isMounted) return;
         setJobLookupState("matched");
-        if (!formDescription.trim() && jobData.description) {
-          setFormDescription(jobData.description);
+        if (!formDescription.trim() && lookup.job.description) {
+          setFormDescription(lookup.job.description);
         }
-
-        const { data, error } = await supabase
-          .from("job_requests")
-          .select("request_id, description, hours, sort_order")
-          .eq("job_id", Number(jobData.id))
-          .order("sort_order", { ascending: true });
-        if (error) throw error;
-        if (!isMounted) return;
-        const nextOptions = buildRequestOptions(trimmed, data || []);
+        const nextOptions = buildRequestOptions(trimmed, lookup.requests);
         setRequestOptions(nextOptions);
       } catch (err) {
         console.warn("Failed to load job requests:", err);
@@ -773,14 +921,10 @@ export default function EfficiencyTab({
     }
   };
 
-  const handleDelete = async (entryId, source) => {
+  const handleDelete = async (entryId) => {
     setDeleteSubmitting(true);
     try {
-      if (source === "job_clocking") {
-        await deleteJobClockingEntry(entryId);
-      } else {
-        await deleteEfficiencyEntry(entryId);
-      }
+      await deleteEfficiencyEntry(entryId);
       await fetchData();
     } catch (err) {
       setError(err?.message || "Failed to delete entry.");
@@ -791,15 +935,12 @@ export default function EfficiencyTab({
 
   const handleDeleteFromEditModal = () => {
     if (!editingEntry?.id) return;
-    const isClocking = editingEntry._source === "job_clocking";
-    const confirmMsg = isClocking
-      ? "Remove this auto-logged job clocking entry?"
-      : "Delete this job entry?";
+    if (editingEntry._source) return;
     setConfirmDialog({
-      message: confirmMsg,
+      message: "Delete this job entry?",
       onConfirm: async () => {
         setConfirmDialog(null);
-        await handleDelete(editingEntry.id, editingEntry._source);
+        await handleDelete(editingEntry.id);
         closeModal();
       },
     });
@@ -889,21 +1030,6 @@ export default function EfficiencyTab({
     fontSize: "1.6rem",
     color: statusTone(color).text,
   });
-  const currentMonthTargetHours = useMemo(() => {
-    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-    const monthEnd = new Date(selectedYear, selectedMonth, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (monthStart > today) return 0;
-    const currentRangeEnd = monthEnd < today ? monthEnd : today;
-    return countWeekdaysInRange(monthStart, currentRangeEnd) * 8;
-  }, [selectedMonth, selectedYear]);
-  const fullMonthTargetHours = useMemo(() => {
-    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-    const monthEnd = new Date(selectedYear, selectedMonth, 0);
-    return countWeekdaysInRange(monthStart, monthEnd) * 8;
-  }, [selectedMonth, selectedYear]);
   const detailStatusLabelStyle = (color) => ({
     fontSize: "0.7rem",
     textTransform: "uppercase",
@@ -922,10 +1048,10 @@ export default function EfficiencyTab({
         autoTableModule.applyPlugin(jsPDF);
       }
 
-      const techName = activeSummary ? activeSummary.tech.first_name : "Overall";
+      const techName = activeSummary ? getDisplayName(activeSummary.tech) : "Overall";
       const title = activeTab === "overall"
-        ? `Overall Efficiency - ${MONTHS[selectedMonth - 1]} ${selectedYear}`
-        : `${techName} - ${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+        ? `Overall Efficiency - ${activeFilterHeading}`
+        : `${techName} - ${activeFilterHeading}`;
       const fileName = activeTab === "overall"
         ? `efficiency-overall-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`
         : `efficiency-${techName.toLowerCase()}-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`;
@@ -953,14 +1079,16 @@ export default function EfficiencyTab({
               ? `${formatHours(entry.allocated_hours)}h`
               : "",
             `${formatHours(entry.hours_spent || 0)}h`,
+            entry._source === "job_clocking" ? "Automatic" : entry._source === "overtime_sessions" ? "Overtime" : "Manual",
             entry.notes || "",
             entry.day_type || "",
           ];
         })
-        : [["", "", "", "", "", "", ""]];
+        : [["", "", "", "", "", "", "", ""]];
 
-      const summaryTotals = activeSummary?.totals || {
+      const summaryTotals = activeMetrics || activeSummary?.totals || {
         actualHours: 0,
+        allocatedHours: 0,
         targetHours: 0,
         difference: 0,
         efficiencyPct: 0,
@@ -981,7 +1109,7 @@ export default function EfficiencyTab({
       // Export each filtered entry as its own row so repeated dates stay repeated.
       doc.autoTable({
         startY: 25,
-        head: [["Date", "Job Number", "Description", "Allocated", "Total Clocked", "Notes", "Day Type"]],
+        head: [["Date", "Job Number", "Description", "Allocated", "Total Clocked", "Source", "Notes", "Day Type"]],
         body: rows,
         theme: "grid",
         styles: {
@@ -1000,11 +1128,12 @@ export default function EfficiencyTab({
         columnStyles: {
           0: { cellWidth: 26 },
           1: { cellWidth: 38 },
-          2: { cellWidth: 64 },
+          2: { cellWidth: 52 },
           3: { cellWidth: 22 },
           4: { cellWidth: 24 },
-          5: { cellWidth: "auto" },
-          6: { cellWidth: 24 },
+          5: { cellWidth: 22 },
+          6: { cellWidth: "auto" },
+          7: { cellWidth: 22 },
         },
         margin: { left: 10, right: 10 },
       });
@@ -1013,20 +1142,22 @@ export default function EfficiencyTab({
       const finalY = (doc.lastAutoTable?.finalY ?? 280) + 6;
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Actual Hours:", 10, finalY);
-      doc.text("Target Hours:", 60, finalY);
-      doc.text("Total Difference:", 110, finalY);
-      doc.text("Efficiency:", 155, finalY);
+      doc.text("Productive / Logged:", 10, finalY);
+      doc.text("Target / Available:", 68, finalY);
+      doc.text("Allocated:", 126, finalY);
+      doc.text("Target Difference:", 168, finalY);
+      doc.text("Efficiency:", 228, finalY);
       doc.setFont("helvetica", "normal");
-      doc.text(`${formatHours(summaryTotals.actualHours)}h`, 34, finalY);
-      doc.text(`${formatHours(summaryTotals.targetHours)}h`, 85, finalY);
-      doc.text(formatSignedHours(summaryTotals.difference), 130, finalY);
-      doc.text(`${Number(summaryTotals.efficiencyPct || 0).toFixed(1)}%`, 175, finalY);
+      doc.text(`${formatHours(summaryTotals.actualHours)}h`, 44, finalY);
+      doc.text(`${formatHours(summaryTotals.targetHours)}h`, 103, finalY);
+      doc.text(`${formatHours(summaryTotals.allocatedHours)}h`, 145, finalY);
+      doc.text(formatSignedHours(summaryTotals.difference), 201, finalY);
+      doc.text(`${Number(summaryTotals.efficiencyPct || 0).toFixed(1)}%`, 248, finalY);
 
       doc.save(fileName);
     } catch (err) {
       console.error("PDF download failed:", err);
-      alert("Failed to generate PDF. Please try again.");
+      setError("Failed to generate the PDF. Please try again.");
     }
   };
 
@@ -1095,43 +1226,24 @@ export default function EfficiencyTab({
             style={{ display: "flex", gap: "8px", flexShrink: 0 }}
           >
             {activeTab !== "overall" && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleDownload}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--surface)",
-                  color: "var(--primary-selected)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
               >
                 &#8595; Download
-              </button>
+              </Button>
             )}
             {isTabEditable && activeTab !== "overall" && (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={openAddModal}
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "var(--surface)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                }}
               >
                 + Add Job Entry
-              </button>
+              </Button>
             )}
           </DevLayoutSection>
 
@@ -1339,6 +1451,12 @@ export default function EfficiencyTab({
                   {overallTotals.efficiencyPct}%
                 </strong>
               </div>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-previous" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
+                <span style={statusLabelStyle(overallSectionStatusColor)}>Previous / Change</span>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
+                  {previousOverallTotals.efficiencyPct}% · {overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct > 0 ? "+" : ""}{(overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct).toFixed(1)}%
+                </strong>
+              </div>
             </div>
           </DevLayoutSection>
 
@@ -1370,12 +1488,13 @@ export default function EfficiencyTab({
                     <th style={themedTableHeadingStyle}>Target Hours</th>
                     <th style={themedTableHeadingStyle}>Difference</th>
                     <th style={themedTableHeadingStyle}>Efficiency %</th>
+                    <th style={themedTableHeadingStyle}>Previous / Change</th>
                   </tr>
                 </thead>
                 <tbody style={{ background: "var(--surface)" }}>
                   {overviewTechSummaries.length === 0 ? (
                     <tr style={themedTableRowStyle}>
-                      <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
+                      <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
                         No technicians configured.
                       </td>
                     </tr>
@@ -1402,6 +1521,14 @@ export default function EfficiencyTab({
                         <td style={{ ...tdStyle, fontWeight: 700, color: effColor(totals.efficiencyPct) }}>
                           {totals.efficiencyPct}%
                         </td>
+                        <td style={tdStyle}>
+                          {Number(previousEfficiencyByTech.get(tech.user_id) || 0).toFixed(1)}%
+                          {" · "}
+                          <span style={{ color: totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
+                            {totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) > 0 ? "+" : ""}
+                            {(totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0)).toFixed(1)}%
+                          </span>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1416,71 +1543,19 @@ export default function EfficiencyTab({
       {/* Individual technician tab */}
       {!loading && activeTab !== "overall" && activeSummary && (
         <>
-          {/* Tech stats */}
-          <DevLayoutSection
-            sectionKey="tech-efficiency-tech-summary"
-            sectionType="content-card"
-            parentKey="tech-efficiency-page"
-            backgroundToken="surface-summary-card"
-            style={themedSectionStyle}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
-              {activeSummary.tech.first_name} - {activeFilterHeading}
-            </h3>
-            <div
-              className="efficiency-summary-grid"
-              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
-              data-dev-section="1"
-              data-dev-section-key="tech-efficiency-tech-summary-grid"
-              data-dev-section-type="content-card"
-              data-dev-section-parent="tech-efficiency-tech-summary"
-            >
-              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-logged" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>
-                  Logged Total
-                </span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {formatHours(totalsForFilteredSet.logged)}h
-                </strong>
-              </div>
-              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-allocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>
-                  Allocated Total
-                </span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {formatHours(totalsForFilteredSet.allocated)}h
-                </strong>
-              </div>
-              <div style={statusCardStyle(filteredSetStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-total-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>
-                  Total Difference
-                </span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {formatSignedHours(filteredSetDifference)}
-                </strong>
-              </div>
-              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-current" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {formatHours(currentMonthTargetHours)}h
-                </strong>
-              </div>
-              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-full-month" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {formatHours(fullMonthTargetHours)}h
-                </strong>
-              </div>
-              <div style={statusCardStyle(filteredSetStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-efficiency" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <span style={statusLabelStyle(filteredSetStatusColor)}>
-                  Efficiency
-                </span>
-                <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                  {activeSummary.totals.efficiencyPct}%
-                </strong>
-              </div>
-            </div>
-          </DevLayoutSection>
+          <EfficiencyInsights
+            technicianName={getDisplayName(activeSummary.tech)}
+            periodLabel={activeFilterHeading}
+            metrics={activeMetrics}
+            previousMetrics={activeComparable?.previous}
+            comparisons={activeComparisons}
+            trend={activeTrend}
+            jobs={activeJobs}
+            categories={activeCategories}
+            alerts={activeAlerts}
+            analysisLoading={analysisLoading}
+            analysisError={analysisError}
+          />
 
           {/* Entries table */}
           <DevLayoutSection
@@ -1511,6 +1586,7 @@ export default function EfficiencyTab({
                       <th style={themedTableHeadingStyle}>Allocated Total</th>
                       <th style={themedTableHeadingStyle}>Logged Total</th>
                       <th style={themedTableHeadingStyle}>Difference</th>
+                      <th style={themedTableHeadingStyle}>Source</th>
                       <th style={themedTableHeadingStyle}>Notes</th>
                       <th style={themedTableHeadingStyle}>Day Type</th>
                     </tr>
@@ -1518,15 +1594,15 @@ export default function EfficiencyTab({
                   <tbody style={{ background: "var(--surface)" }}>
                     {activeSummary.entries.length === 0 ? (
                       <tr style={themedTableRowStyle}>
-                        <td colSpan={8} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
+                        <td colSpan={9} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
                           No entries for {MONTHS[selectedMonth - 1]} {selectedYear}. {isTabEditable ? "Click \"+ Add Job Entry\" to get started." : ""}
                         </td>
                       </tr>
                     ) : (
                       activeSummary.entries.map((entry) => {
-                        const isFromClocking = entry._source === "job_clocking";
-                        const canOpenEditModal = isTabEditable && !isFromClocking;
-                        const canOpenViewModal = isTabEditable && isFromClocking;
+                        const isAutomatic = Boolean(entry._source);
+                        const canOpenEditModal = isTabEditable && !isAutomatic;
+                        const canOpenViewModal = isTabEditable && isAutomatic;
                         const isClickable = canOpenEditModal || canOpenViewModal;
                         const logged = Number(entry.hours_spent || 0);
                         const allocated = Number(entry.allocated_hours || 0);
@@ -1560,7 +1636,16 @@ export default function EfficiencyTab({
                           <td style={tdStyle}>
                             {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                           </td>
-                          <td style={{ ...tdStyle, fontWeight: 600 }}>{entry.job_number}</td>
+                          <td style={{ ...tdStyle, fontWeight: 600 }}>
+                            {entry.job_number && entry.job_number !== "OVERTIME" ? (
+                              <Link
+                                href={`/job-cards/${encodeURIComponent(String(entry.job_number).split(" - Req ")[0])}`}
+                                style={{ color: "var(--primary-selected)", textDecoration: "none" }}
+                              >
+                                {entry.job_number}
+                              </Link>
+                            ) : entry.job_number}
+                          </td>
                           <td style={{ ...tdStyle, maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {entry.job_description || "—"}
                           </td>
@@ -1572,9 +1657,30 @@ export default function EfficiencyTab({
                           <td style={tdStyle}>{formatHours(logged)}h</td>
                           <td style={{ ...tdStyle, color: totalDifferenceColor(rowDifference), fontWeight: 600 }}>
                             {formatSignedHours(rowDifference)}
+                            {allocated > 0 ? (
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  display: "block",
+                                  width: "72px",
+                                  height: "4px",
+                                  marginTop: "5px",
+                                  borderRadius: "var(--radius-pill)",
+                                  background: "var(--theme)",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <span style={{ display: "block", height: "100%", width: `${Math.min((logged / allocated) * 100, 100)}%`, background: rowDifference <= 0 ? "var(--success)" : "var(--danger)" }} />
+                              </span>
+                            ) : null}
+                          </td>
+                          <td style={tdStyle}>
+                            <span className={`app-badge ${entry._source === "job_clocking" ? "app-badge--accent-soft" : entry._source === "overtime_sessions" ? "app-badge--warning" : "app-badge--neutral"}`}>
+                              {entry._source === "job_clocking" ? "Automatic" : entry._source === "overtime_sessions" ? "Overtime" : "Manual"}
+                            </span>
                           </td>
                           <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {entry.notes || "—"}
+                            {entry._qualityIssue || entry.notes || "—"}
                           </td>
                           <td style={tdStyle}>
                             <span style={{
@@ -1856,9 +1962,9 @@ export default function EfficiencyTab({
                         </tr>
                       ) : (
                         detailPopupSummary.entries.map((entry) => {
-                          const isFromClocking = entry._source === "job_clocking";
-                          const canOpenEditModal = isDetailPopupEditable && !isFromClocking;
-                          const canOpenViewModal = isDetailPopupEditable && isFromClocking;
+                          const isAutomatic = Boolean(entry._source);
+                          const canOpenEditModal = isDetailPopupEditable && !isAutomatic;
+                          const canOpenViewModal = isDetailPopupEditable && isAutomatic;
                           const isClickable = canOpenEditModal || canOpenViewModal;
                           return (
                           <tr
@@ -1958,7 +2064,7 @@ export default function EfficiencyTab({
                     Job Entry
                   </p>
                   <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
-                    {editingEntry ? (editingEntry._source === "job_clocking" ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
+                    {editingEntry ? (editingEntry._source ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
                   </h3>
                 </div>
                 <Button
@@ -1986,7 +2092,7 @@ export default function EfficiencyTab({
               )}
 
               <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                {editingEntry?._source === "job_clocking" && (
+                {editingEntry?._source && (
                   <div style={{
                     borderRadius: "var(--radius-md)",
                     padding: "10px 14px",
@@ -1996,7 +2102,7 @@ export default function EfficiencyTab({
                     fontWeight: 500,
                     border: "none",
                   }}>
-                    Auto-logged from job clocking — this entry can be removed but not edited.
+                    This automatically generated source record is read-only here.
                   </div>
                 )}
                 {/* Row 1: Date + Day Type */}
@@ -2007,7 +2113,7 @@ export default function EfficiencyTab({
                     value={formDate}
                     onChange={(event) => setFormDate(event.target.value)}
                     required
-                    disabled={editingEntry?._source === "job_clocking"}
+                    disabled={Boolean(editingEntry?._source)}
                   />
                   <DropdownField
                     id="efficiencyDayType"
@@ -2020,7 +2126,7 @@ export default function EfficiencyTab({
                     value={formDayType}
                     onChange={(event) => setFormDayType(event.target.value)}
                     required
-                    disabled={editingEntry?._source === "job_clocking"}
+                    disabled={Boolean(editingEntry?._source)}
                   />
                 </div>
 
@@ -2037,7 +2143,7 @@ export default function EfficiencyTab({
                         setFormError("");
                       }}
                       placeholder="Job no. optional"
-                      disabled={editingEntry?._source === "job_clocking"}
+                      disabled={Boolean(editingEntry?._source)}
                     />
                     <span
                       style={{
@@ -2068,7 +2174,7 @@ export default function EfficiencyTab({
                     label="Job Clocking On"
                     options={requestOptions}
                     placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "Select clocking"}
-                    disabled={editingEntry?._source === "job_clocking" || !formJobNumber.trim()}
+                    disabled={Boolean(editingEntry?._source) || !formJobNumber.trim()}
                     className="efficiency-request-dropdown"
                   />
                 </div>
@@ -2100,7 +2206,7 @@ export default function EfficiencyTab({
                         setFormError("");
                       }}
                       placeholder="Allocated hours"
-                      disabled={editingEntry?._source === "job_clocking"}
+                      disabled={Boolean(editingEntry?._source)}
                       style={formError.toLowerCase().includes("allocated hours") ? { boxShadow: "0 0 0 2px var(--danger)" } : undefined}
                     />
                   </div>
@@ -2130,7 +2236,7 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Clocked hours"
                       required
-                      disabled={editingEntry?._source === "job_clocking"}
+                      disabled={Boolean(editingEntry?._source)}
                       style={formError.toLowerCase().includes("total clocked") ? { boxShadow: "0 0 0 2px var(--danger)" } : undefined}
                     />
                   </div>
@@ -2158,7 +2264,7 @@ export default function EfficiencyTab({
                       onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Job description"
                       rows={2}
-                      disabled={editingEntry?._source === "job_clocking"}
+                      disabled={Boolean(editingEntry?._source)}
                       style={{ resize: "vertical", minHeight: "64px" }}
                     />
                   </div>
@@ -2182,7 +2288,7 @@ export default function EfficiencyTab({
                       onChange={(e) => setFormNotes(e.target.value)}
                       placeholder="Notes"
                       rows={2}
-                      disabled={editingEntry?._source === "job_clocking"}
+                      disabled={Boolean(editingEntry?._source)}
                       style={{ resize: "vertical", minHeight: "64px" }}
                     />
                   </div>
@@ -2191,14 +2297,14 @@ export default function EfficiencyTab({
                 {/* Actions */}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", paddingTop: "4px" }}>
                   <div>
-                    {editingEntry && (
+                    {editingEntry && !editingEntry._source && (
                       <Button
                         type="button"
                         variant="danger"
                         onClick={handleDeleteFromEditModal}
                         disabled={deleteSubmitting}
                       >
-                        {deleteSubmitting ? "Deleting..." : editingEntry._source === "job_clocking" ? "Remove Entry" : "Delete Entry"}
+                        {deleteSubmitting ? "Deleting..." : "Delete Entry"}
                       </Button>
                     )}
                   </div>
@@ -2206,7 +2312,7 @@ export default function EfficiencyTab({
                     <Button type="button" variant="ghost" onClick={closeModal}>
                       Cancel
                     </Button>
-                    {editingEntry?._source !== "job_clocking" && (
+                    {!editingEntry?._source && (
                       <Button type="submit" variant="primary" disabled={formSubmitting}>
                         {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
                       </Button>

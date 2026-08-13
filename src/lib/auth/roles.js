@@ -5,6 +5,7 @@ import { roleCategories } from "@/config/users";
 export const HR_CORE_ROLES = ["hr manager", "admin manager", "admin"];
 export const HR_MANAGER_ROLES = ["admin manager", "admin"];
 export const MANAGER_SCOPED_ROLES = ["manager", "service manager", "workshop manager", "general manager"];
+export const WORKSHOP_MANAGER_ROLES = ["workshop manager"];
 export const HR_MANAGER_DASHBOARD_ROLES = ["admin manager"];
 export const MOBILE_TECH_ROLES = ["mobile technician"];
 export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];

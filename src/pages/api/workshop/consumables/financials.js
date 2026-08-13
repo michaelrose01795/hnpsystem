@@ -1,6 +1,7 @@
 // file location: src/pages/api/workshop/consumables/financials.js
 import { supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { listConsumableFinancialTrend } from "@/lib/database/consumables";
 
 const toNumber = (value) => {
   if (value === null || value === undefined) {
@@ -74,15 +75,18 @@ const calculateFinancialSummary = async (year, month) => {
     throw budgetError;
   }
 
+  const trend = await listConsumableFinancialTrend(year, month, 6);
+
   return {
     monthSpend,
     projectedSpend,
     monthlyBudget: toNumber(budgetRow?.monthly_budget),
     budgetUpdatedAt: budgetRow?.updated_at ?? null,
+    trend,
   };
 };
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   try {
     const { year: rawYear, month: rawMonth } =
       req.method === "GET" ? req.query : req.body;

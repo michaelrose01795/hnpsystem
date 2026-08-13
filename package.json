@@ -7,8 +7,8 @@
   },
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
-    "predev": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && node tools/scripts/use-local-next-cache.js",
-    "prebuild": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls",
+    "predev": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && node tools/scripts/use-local-next-cache.js",
+    "prebuild": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast",
     "dev": "next dev --webpack",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
@@ -16,6 +16,7 @@
     "uk:check:all": "node tools/scripts/enforce-uk-english.js --all",
     "uk:fix": "node tools/scripts/enforce-uk-english.js --fix",
     "check:encoding": "node tools/scripts/check-encoding.js",
+    "check:text-contrast": "node tools/scripts/check-text-contrast-tokens.js",
     "check:layers": "node tools/scripts/check-layers.js",
     "check:borders": "node tools/scripts/check-borders.js",
     "check:dropdowns": "node tools/scripts/check-dropdowns.js",

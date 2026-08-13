@@ -1,4 +1,58 @@
 // file location: src/components/page-ui/stock-catalogue-ui.js
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+
+const QUICK_FILTERS = [
+  { id: "all", label: "All parts" },
+  { id: "attention", label: "Needs attention" },
+  { id: "low", label: "Low stock" },
+  { id: "out", label: "Out of stock" },
+  { id: "on_order", label: "On order" },
+  { id: "reserved", label: "Reserved" },
+  { id: "recent", label: "Recently added" },
+];
+
+const numberValue = (value) => Number(value) || 0;
+const availableStock = (part) =>
+  numberValue(part?.qty_in_stock) - numberValue(part?.qty_reserved);
+
+const matchesQuickFilter = (part, filter) => {
+  const onHand = numberValue(part.qty_in_stock);
+  const reserved = numberValue(part.qty_reserved);
+  const onOrder = numberValue(part.qty_on_order);
+  const reorder = numberValue(part.reorder_level);
+  if (filter === "attention") return availableStock(part) <= reorder || onOrder > 0;
+  if (filter === "low") return onHand > 0 && availableStock(part) <= reorder;
+  if (filter === "out") return onHand <= 0;
+  if (filter === "on_order") return onOrder > 0;
+  if (filter === "reserved") return reserved > 0;
+  if (filter === "recent") {
+    const created = new Date(part.created_at || 0).getTime();
+    return created > Date.now() - 30 * 24 * 60 * 60 * 1000;
+  }
+  return true;
+};
+
+const searchRank = (part, rawTerm) => {
+  const term = String(rawTerm || "").trim().toLowerCase();
+  if (!term) return 0;
+  const partNumber = String(part.part_number || "").toLowerCase();
+  const oem = String(part.oem_reference || "").toLowerCase();
+  const description = `${part.name || ""} ${part.description || ""}`.toLowerCase();
+  if (partNumber === term) return 0;
+  if (partNumber.startsWith(term)) return 1;
+  if (oem === term) return 2;
+  if (oem.startsWith(term)) return 3;
+  if (partNumber.includes(term)) return 4;
+  if (oem.includes(term)) return 5;
+  if (description.startsWith(term)) return 6;
+  if (description.includes(term)) return 7;
+  return 8;
+};
 
 export default function StockCataloguePageUi(props) {
   const {
@@ -52,7 +106,6 @@ export default function StockCataloguePageUi(props) {
     resolveSourceMeta,
     resolveStatusStyles,
     searchJob,
-    secondaryButtonStyle,
     sectionTitleStyle,
     selectedPart,
     selectedPipelineStage,
@@ -75,13 +128,193 @@ export default function StockCataloguePageUi(props) {
     tableStyle,
   } = props; // receive page logic props.
 
+  const [quickFilter, setQuickFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [supplierFilter, setSupplierFilter] = useState("all");
+  const [stockSummary, setStockSummary] = useState(null);
+  const [stockSummaryLoading, setStockSummaryLoading] = useState(true);
+  const [stockSummaryError, setStockSummaryError] = useState("");
+  const [recentReceipts, setRecentReceipts] = useState([]);
+  const [recentReceiptsError, setRecentReceiptsError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadSummary = async () => {
+      setStockSummaryLoading(true);
+      setStockSummaryError("");
+      try {
+        const response = await fetch("/api/parts/summary", { signal: controller.signal });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Unable to load stock summary");
+        }
+        setStockSummary(payload.summary || null);
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          setStockSummaryError(error.message || "Unable to load stock summary");
+        }
+      } finally {
+        if (!controller.signal.aborted) setStockSummaryLoading(false);
+      }
+    };
+    loadSummary();
+    return () => controller.abort();
+  }, [selectedPart?.updated_at]);
+
+  useEffect(() => {
+    if (!isPartModalOpen || !selectedPart?.id) return undefined;
+    const controller = new AbortController();
+    const loadReceipts = async () => {
+      setRecentReceiptsError("");
+      try {
+        const query = new URLSearchParams({ partId: selectedPart.id, limit: "8" });
+        const response = await fetch(`/api/parts/delivery-logs?${query.toString()}`, { signal: controller.signal });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to load receipts");
+        setRecentReceipts(payload.deliveryLogs || []);
+      } catch (error) {
+        if (error?.name !== "AbortError") setRecentReceiptsError(error.message || "Unable to load receipts");
+      }
+    };
+    loadReceipts();
+    return () => controller.abort();
+  }, [isPartModalOpen, selectedPart?.id]);
+
+  const categories = useMemo(
+    () => [...new Set(inventory.map((part) => part.category).filter(Boolean))].sort(),
+    [inventory]
+  );
+  const suppliers = useMemo(
+    () => [...new Set(inventory.map((part) => part.supplier).filter(Boolean))].sort(),
+    [inventory]
+  );
+  const filteredInventory = useMemo(() => {
+    return inventory
+      .filter((part) => matchesQuickFilter(part, quickFilter))
+      .filter((part) => statusFilter === "all" || part.stock_status === statusFilter)
+      .filter((part) => locationFilter === "all" || part.storage_location === locationFilter)
+      .filter((part) => categoryFilter === "all" || part.category === categoryFilter)
+      .filter((part) => supplierFilter === "all" || part.supplier === supplierFilter)
+      .sort((a, b) => searchRank(a, inventorySearch) - searchRank(b, inventorySearch));
+  }, [categoryFilter, inventory, inventorySearch, locationFilter, quickFilter, statusFilter, supplierFilter]);
+
+  const loadedStock = useMemo(() => inventory.reduce((totals, part) => {
+    totals.onHand += numberValue(part.qty_in_stock);
+    totals.reserved += numberValue(part.qty_reserved);
+    totals.onOrder += numberValue(part.qty_on_order);
+    totals.available += availableStock(part);
+    totals.openJobs += numberValue(part.open_job_count);
+    return totals;
+  }, { onHand: 0, reserved: 0, onOrder: 0, available: 0, openJobs: 0 }), [inventory]);
+
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
-      return <>
+      return <div className="app-page-stack" style={{ gap: "var(--layout-card-gap)" }}>
+        <LayerTheme
+          as="section"
+          sectionKey="stock-catalogue-overview"
+          parentKey="stock-catalogue-page"
+        >
+          <div className="app-layout-header-row">
+            <div>
+              <h1 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h2)", letterSpacing: "-0.02em" }}>
+                Parts inventory
+              </h1>
+              <p style={{ margin: "var(--space-1) 0 0", color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
+                Stock, incoming supply and open-job demand in one workspace.
+              </p>
+            </div>
+            <span className="app-badge app-badge--accent-soft">
+              Available = on hand − reserved
+            </span>
+          </div>
+
+          {stockSummaryError ? <div className="app-status-message app-status-message--warning">
+            Summary unavailable. Catalogue search and stock actions are still available.
+          </div> : null}
+
+          <div className="app-summary-grid" role="list" aria-label="Stock catalogue summary">
+            {[
+              ["Active parts", stockSummary?.totalParts],
+              ["In stock", stockSummary?.inStockCount],
+              ["Low stock", stockSummary?.lowStockCount],
+              ["Out of stock", stockSummary?.outOfStockCount],
+              ["On order", stockSummary?.quantityOnOrder],
+              ["Reserved", stockSummary?.reservedQuantity],
+              ["Stock value", stockSummary ? formatCurrency(stockSummary.totalInventoryValue) : null],
+              ["Retail value", stockSummary ? formatCurrency(stockSummary.totalRetailValue) : null],
+              ["Potential margin", stockSummary ? formatCurrency(stockSummary.potentialMargin) : null],
+            ].map(([label, value]) => <LayerSurface
+              key={label}
+              className="app-summary-item"
+              padding="8px 10px"
+              radius="var(--radius-sm)"
+              gap="2px var(--space-sm)"
+              sectionType="stat-card"
+              role="listitem"
+              style={{ flexDirection: "row" }}
+            >
+              <span className="app-summary-label">{label}</span>
+              <strong className="app-summary-value">
+                {stockSummaryLoading ? "…" : value ?? 0}
+              </strong>
+            </LayerSurface>)}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" }}>
+            <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
+              <strong style={{ color: "var(--accentText)" }}>Stock status breakdown</strong>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "var(--space-2)" }}>
+                {[
+                  ["On hand", loadedStock.onHand],
+                  ["Reserved", loadedStock.reserved],
+                  ["Available", loadedStock.available],
+                  ["On order", loadedStock.onOrder],
+                  ["Back order", inventory.filter((part) => part.stock_status === "back_order").length],
+                  ["Expected soon", loadedStock.onOrder],
+                  ["Inactive", stockSummary?.inactiveParts ?? 0],
+                ].map(([label, value]) => <div key={label}>
+                  <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{label}</div>
+                  <strong style={{ fontVariantNumeric: "tabular-nums" }}>{value}</strong>
+                </div>)}
+              </div>
+              <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
+                Quantities reflect the currently loaded catalogue result. Expected soon excludes received stock.
+              </span>
+            </LayerSurface>
+
+            <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
+              <strong style={{ color: "var(--accentText)" }}>Demand overview</strong>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-2)" }}>
+                <div>
+                  <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>Open job requirements</div>
+                  <strong style={{ fontSize: "var(--text-h3)", fontVariantNumeric: "tabular-nums" }}>{stockSummary?.activeJobParts ?? loadedStock.openJobs}</strong>
+                </div>
+                <div>
+                  <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>Parts linked to open jobs</div>
+                  <strong style={{ fontSize: "var(--text-h3)", fontVariantNumeric: "tabular-nums" }}>{loadedStock.openJobs}</strong>
+                </div>
+              </div>
+              <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
+                Appointment and VHC impact is shown only where it is present in linked job requirements.
+              </span>
+            </LayerSurface>
+
+            <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
+              <strong style={{ color: "var(--accentText)" }}>Top categories by cost value</strong>
+              {(stockSummary?.topCategoriesByValue || []).length > 0 ?
+                stockSummary.topCategoriesByValue.slice(0, 4).map((item) => <div key={item.category} style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-2)" }}>
+                  <span style={{ color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.category}</span>
+                  <strong style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(item.value)}</strong>
+                </div>) :
+                <span style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>No category value data available.</span>}
+            </LayerSurface>
+          </div>
+        </LayerTheme>
+
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" style={{
       ...cardStyle,
-      backgroundColor: "var(--theme)",
-      marginBottom: "20px"
+      backgroundColor: "var(--theme)"
     }}>
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-header" data-dev-section-type="toolbar" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job Card header" style={{
         display: "flex",
@@ -101,15 +334,19 @@ export default function StockCataloguePageUi(props) {
           flex: "1 1 320px",
           maxWidth: "640px"
         }}>
-              <input type="text" placeholder="Job number or registration" value={jobSearch} onChange={event => setJobSearch(event.target.value)} style={{
-          flex: 1,
-          padding: "12px",
-          borderRadius: "var(--radius-xs)",
-          border: "none"
-        }} />
-              <button type="submit" style={buttonStyle} disabled={jobLoading}>
-                {jobLoading ? "Searching..." : "Search"}
-              </button>
+              <SearchBar
+                type="search"
+                placeholder="Job number or registration"
+                ariaLabel="Job number or registration"
+                value={jobSearch}
+                onChange={event => setJobSearch(event.target.value)}
+                onClear={() => setJobSearch("")}
+                disabled={jobLoading}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <Button type="submit" variant="primary" busy={jobLoading}>
+                Search
+              </Button>
             </form>
           </div>
 
@@ -311,13 +548,10 @@ export default function StockCataloguePageUi(props) {
                                     Fitted <strong style={{ marginLeft: "4px" }}>{part.quantity_fitted}</strong>
                                   </span>
                                 </div>
-                                <button className="app-table-action-btn" onClick={() => handleJobPartUpdate(part.id, {
+                                <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobPartUpdate(part.id, {
                         quantityFitted: part.quantity_allocated,
                         status: "fitted"
-                      })} style={{
-                        background: "var(--primary)",
-                        color: "var(--text-2)"
-                      }}>
+                      })}>
                                   Mark fitted
                                 </button>
                               </td>
@@ -484,17 +718,32 @@ export default function StockCataloguePageUi(props) {
 
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" style={{
       ...cardStyle,
-      backgroundColor: "var(--theme)",
-      marginTop: "20px"
+      backgroundColor: "var(--theme)"
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
+
+          <div className="tab-api" style={{ height: "auto", minHeight: "44px", flexWrap: "wrap", marginBottom: "var(--layout-card-gap)" }}>
+            {QUICK_FILTERS.map((filter) => <button
+              key={filter.id}
+              type="button"
+              className={`tab-api__item${quickFilter === filter.id ? " is-active" : ""}`}
+              aria-pressed={quickFilter === filter.id}
+              onClick={() => {
+                setQuickFilter(filter.id);
+                setDisplayLimit(20);
+              }}
+            >
+              {filter.label}
+            </button>)}
+          </div>
 
           {/* Search and Filter Controls */}
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-filters" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory search and filters" style={{
         display: "flex",
         gap: "12px",
         marginBottom: "12px",
-        alignItems: "center"
+        alignItems: "flex-end",
+        flexWrap: "wrap"
       }}>
             <SearchBar placeholder="Search part number, description, OEM code" value={inventorySearch} onChange={event => setInventorySearch(event.target.value)} onClear={() => setInventorySearch("")} style={{
           flex: 1
@@ -512,6 +761,8 @@ export default function StockCataloguePageUi(props) {
           }} style={{ minWidth: "140px", width: "auto" }}>
                 <option value="status">Filter by Status</option>
                 <option value="location">Filter by Location</option>
+                <option value="category">Filter by Category</option>
+                <option value="supplier">Filter by Supplier</option>
               </select>
 
               {filterType === "status" && <select className="app-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ minWidth: "140px", width: "auto" }}>
@@ -578,6 +829,24 @@ export default function StockCataloguePageUi(props) {
                         </div>)}
                   </div>
                 </div>}
+              {filterType === "category" && <DropdownField
+                ariaLabel="Filter catalogue by category"
+                value={categoryFilter}
+                options={[{ value: "all", label: "All categories" }, ...categories.map(category => ({ value: category, label: category }))]}
+                onChange={event => {
+                  setCategoryFilter(event.target.value);
+                  setDisplayLimit(20);
+                }}
+              />}
+              {filterType === "supplier" && <DropdownField
+                ariaLabel="Filter catalogue by supplier"
+                value={supplierFilter}
+                options={[{ value: "all", label: "All suppliers" }, ...suppliers.map(supplier => ({ value: supplier, label: supplier }))]}
+                onChange={event => {
+                  setSupplierFilter(event.target.value);
+                  setDisplayLimit(20);
+                }}
+              />}
             </div>
           </div>
 
@@ -590,17 +859,18 @@ export default function StockCataloguePageUi(props) {
             </div>}
 
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
-        maxHeight: "290px", // ~5 rows (≈42px each) + sticky header — scrolls beyond row 5
-        overflowY: "auto"
+        maxHeight: "min(58dvh, 620px)",
+        overflow: "auto"
       }}>
             {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
           color: "var(--grey-accent-light)"
         }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory empty state" style={{
           color: "var(--grey-accent-light)"
         }}>No parts found. Refine your search.</div> : <>
-                <table data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
+                <table className="app-data-table app-data-table--rounded" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
             ...tableStyle,
-            fontSize: "var(--text-body)"
+            fontSize: "var(--text-body)",
+            minWidth: "1120px"
           }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{
@@ -611,36 +881,18 @@ export default function StockCataloguePageUi(props) {
                   textAlign: "left",
                   padding: "10px"
                 }}>Part Number</th>
-                      <th style={{
-                  textAlign: "left",
-                  padding: "10px"
-                }}>Part Description</th>
-                      <th style={{
-                  textAlign: "left",
-                  padding: "10px"
-                }}>Stock Location</th>
-                      <th style={{
-                  textAlign: "right",
-                  padding: "10px"
-                }}>In Stock</th>
-                      <th style={{
-                  textAlign: "left",
-                  padding: "10px"
-                }}>Status</th>
+                      <th>Part details</th>
+                      <th>Category / supplier</th>
+                      <th>Bin</th>
+                      <th>Stock</th>
+                      <th>Unit cost</th>
+                      <th>Reorder</th>
+                      <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {inventory.filter(part => {
-                // Apply status filter
-                if (filterType === "status" && statusFilter !== "all") {
-                  if (part.stock_status !== statusFilter) return false;
-                }
-                // Apply location filter
-                if (filterType === "location" && locationFilter !== "all") {
-                  if (part.storage_location !== locationFilter) return false;
-                }
-                return true;
-              }).slice(0, displayLimit).map(part => <tr key={part.id} onClick={() => {
+                    {filteredInventory.slice(0, displayLimit).map(part => <tr key={part.id} onClick={() => {
                 setSelectedPart(part);
                 setIsPartModalOpen(true);
               }} style={{
@@ -659,25 +911,38 @@ export default function StockCataloguePageUi(props) {
                 }}>
                             {part.part_number}
                           </td>
-                          <td style={{
-                  padding: "10px"
-                }}>{part.name}</td>
-                          <td style={{
-                  padding: "10px",
-                  color: "var(--text-1)"
-                }}>
-                            {part.storage_location || "—"}
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{part.name}</div>
+                            <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
+                              OEM {part.oem_reference || "—"}
+                            </div>
                           </td>
-                          <td style={{
-                  padding: "10px",
-                  textAlign: "right",
-                  fontWeight: 600
-                }}>
-                            {part.qty_in_stock}
+                          <td>
+                            <div>{part.category || "Uncategorised"}</div>
+                            <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{part.supplier || "No supplier"}</div>
                           </td>
-                          <td style={{
-                  padding: "10px"
-                }}>
+                          <td style={{ fontWeight: 600 }}>{part.storage_location || "—"}</td>
+                          <td>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: "var(--space-2)", fontVariantNumeric: "tabular-nums" }}>
+                              <span><small style={{ display: "block", color: "var(--text-1)" }}>Hand</small><strong>{numberValue(part.qty_in_stock)}</strong></span>
+                              <span><small style={{ display: "block", color: "var(--text-1)" }}>Reserved</small><strong>{numberValue(part.qty_reserved)}</strong></span>
+                              <span><small style={{ display: "block", color: "var(--text-1)" }}>Available</small><strong style={{ color: availableStock(part) <= numberValue(part.reorder_level) ? "var(--danger)" : "var(--success-dark)" }}>{availableStock(part)}</strong></span>
+                            </div>
+                            {numberValue(part.open_job_count) > 0 ? <div style={{ marginTop: "var(--space-1)", color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
+                              Required by open jobs: {numberValue(part.open_job_count)}
+                            </div> : null}
+                          </td>
+                          <td style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
+                          <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                            <strong>{numberValue(part.reorder_level)}</strong>
+                            {availableStock(part) < numberValue(part.reorder_level) ? <div style={{ color: "var(--danger)", fontSize: "var(--text-caption)" }}>
+                              {numberValue(part.reorder_level) - availableStock(part)} below
+                            </div> : null}
+                            {numberValue(part.qty_on_order) > 0 ? <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
+                              {numberValue(part.qty_on_order)} expected soon
+                            </div> : null}
+                          </td>
+                          <td>
                             <span style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -691,21 +956,21 @@ export default function StockCataloguePageUi(props) {
                               {(part.stock_status || "in_stock").replace(/_/g, " ")}
                             </span>
                           </td>
+                          <td>
+                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={event => {
+                              event.stopPropagation();
+                              setSelectedPart(part);
+                              setIsPartModalOpen(true);
+                            }}>
+                              View
+                            </button>
+                          </td>
                         </tr>)}
                   </tbody>
                 </table>
 
                 {/* Load More Button */}
                 {(() => {
-            const filteredInventory = inventory.filter(part => {
-              if (filterType === "status" && statusFilter !== "all") {
-                if (part.stock_status !== statusFilter) return false;
-              }
-              if (filterType === "location" && locationFilter !== "all") {
-                if (part.storage_location !== locationFilter) return false;
-              }
-              return true;
-            });
             return filteredInventory.length > displayLimit && <div style={{
               textAlign: "center",
               marginTop: "16px"
@@ -840,7 +1105,7 @@ export default function StockCataloguePageUi(props) {
                 {/* Two Column Layout */}
                 <div style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: "20px",
             marginBottom: "20px"
           }}>
@@ -866,7 +1131,7 @@ export default function StockCataloguePageUi(props) {
                       </h3>
                       <div style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                   gap: "10px"
                 }}>
                         <div>
@@ -875,19 +1140,10 @@ export default function StockCataloguePageUi(props) {
                       color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>On Hand</div>
-                          {isEditMode ? <input type="number" value={editedPart?.qty_in_stock ?? selectedPart.qty_in_stock} onChange={e => setEditedPart(prev => ({
+                          {isEditMode ? <input className="app-input" type="number" value={editedPart?.qty_in_stock ?? selectedPart.qty_in_stock} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       qty_in_stock: parseInt(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
+                    }))} /> : <div style={{
                       fontSize: "var(--text-h2)",
                       fontWeight: 700,
                       color: "var(--primary)"
@@ -961,6 +1217,22 @@ export default function StockCataloguePageUi(props) {
                       fontSize: "var(--text-h2)",
                       fontWeight: 700
                     }}>{selectedPart.reorder_level || 0}</div>}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px" }}>Available</div>
+                          <div style={{
+                            fontSize: "var(--text-h2)",
+                            fontWeight: 700,
+                            color: availableStock(isEditMode ? { ...selectedPart, ...editedPart } : selectedPart) <= numberValue(isEditMode ? editedPart?.reorder_level ?? selectedPart.reorder_level : selectedPart.reorder_level) ? "var(--danger)" : "var(--success-dark)"
+                          }}>
+                            {availableStock(isEditMode ? { ...selectedPart, ...editedPart } : selectedPart)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px" }}>Back order</div>
+                          <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>
+                            {selectedPart.stock_status === "back_order" ? numberValue(selectedPart.qty_on_order) : 0}
+                          </div>
                         </div>
                       </div>
                       <div style={{
@@ -1121,7 +1393,7 @@ export default function StockCataloguePageUi(props) {
                       color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
-                    }}>DESCRIPTION</div>
+                    }}>NAME</div>
                           {isEditMode ? <input type="text" value={editedPart?.name ?? selectedPart.name ?? ""} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       name: e.target.value
@@ -1137,6 +1409,14 @@ export default function StockCataloguePageUi(props) {
                     }} /> : <div style={{
                       color: "var(--text-1)"
                     }}>{selectedPart.name || "—"}</div>}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>DESCRIPTION</div>
+                          {isEditMode ? <textarea className="app-input" rows={2} value={editedPart?.description ?? selectedPart.description ?? ""} onChange={event => setEditedPart(prev => ({ ...prev, description: event.target.value }))} /> : <div style={{ color: "var(--text-1)" }}>{selectedPart.description || "—"}</div>}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>OEM CODE</div>
+                          <div style={{ color: "var(--text-1)", fontWeight: 600 }}>{selectedPart.oem_reference || "—"}</div>
                         </div>
                         <div>
                           <div style={{
@@ -1216,26 +1496,48 @@ export default function StockCataloguePageUi(props) {
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>CATEGORY</div>
-                          {isEditMode ? <input type="text" value={editedPart?.category ?? selectedPart.category ?? ""} onChange={e => setEditedPart(prev => ({
-                      ...prev,
-                      category: e.target.value
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
-                      color: "var(--text-1)"
-                    }}>{selectedPart.category || "Uncategorised"}</div>}
+                          {isEditMode ? (
+                            <input className="app-input" type="text" value={editedPart?.category ?? selectedPart.category ?? ""} onChange={e => setEditedPart(prev => ({
+                              ...prev,
+                              category: e.target.value
+                            }))} />
+                          ) : (
+                            <div style={{ color: "var(--text-1)" }}>{selectedPart.category || "Uncategorised"}</div>
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>NOTES</div>
+                          {isEditMode ? (
+                            <textarea className="app-input" rows={3} value={editedPart?.notes ?? selectedPart.notes ?? ""} onChange={event => setEditedPart(prev => ({ ...prev, notes: event.target.value }))} />
+                          ) : (
+                            <div style={{ color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{selectedPart.notes || "—"}</div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <section style={{ marginBottom: "var(--layout-card-gap)" }}>
+                  <div className="app-layout-header-row" style={{ marginBottom: "var(--space-2)" }}>
+                    <h3 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-body)" }}>Recent receipts</h3>
+                    {numberValue(selectedPart.qty_on_order) > 0 ? <Link className="app-btn app-btn--secondary" href={`/goods-in?part=${encodeURIComponent(selectedPart.id)}`}>
+                      Inspect Goods In
+                    </Link> : null}
+                  </div>
+                  {recentReceiptsError ? <div className="app-status-message app-status-message--warning">Receipt history is currently unavailable.</div> : recentReceipts.length > 0 ? <div style={{ overflowX: "auto" }}>
+                    <table className="app-data-table app-data-table--rounded" style={{ minWidth: "680px" }}>
+                      <thead><tr><th>Date</th><th>Movement</th><th>Supplier</th><th>Reference</th><th>Unit cost</th></tr></thead>
+                      <tbody>{recentReceipts.map(receipt => <tr key={receipt.id}>
+                        <td>{formatDateTime(receipt.delivery_date || receipt.created_at)}</td>
+                        <td style={{ color: "var(--success-dark)", fontWeight: 700 }}>Goods In +{numberValue(receipt.qty_received)}</td>
+                        <td>{receipt.supplier || "—"}</td>
+                        <td>{receipt.order_reference || "—"}</td>
+                        <td>{receipt.unit_cost === null || receipt.unit_cost === undefined ? "—" : formatCurrency(receipt.unit_cost)}</td>
+                      </tr>)}</tbody>
+                    </table>
+                  </div> : <div style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>No completed delivery log is recorded for this part.</div>}
+                </section>
 
                 {/* Linked Jobs Table */}
                 <div style={{
@@ -1261,15 +1563,9 @@ export default function StockCataloguePageUi(props) {
               }}>
                       Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length > 0 && `(${selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length})`}
                     </h3>
-                    <button type="button" onClick={() => {
+                    <button className="app-btn app-btn--secondary" type="button" onClick={() => {
                 setShowAddToJobModal(true);
                 resetAddToJobModal();
-              }} style={{
-                ...secondaryButtonStyle,
-                padding: "6px 12px",
-                fontSize: "var(--text-caption)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em"
               }}>
                       Add part to job
                     </button>
@@ -1378,7 +1674,7 @@ export default function StockCataloguePageUi(props) {
         {renderAddToJobModal()}
         {renderDeliveryModal()}
       <ConfirmationDialog isOpen={!!confirmDialog} message={confirmDialog?.message} cancelLabel="Cancel" confirmLabel="Yes" onCancel={() => setConfirmDialog(null)} onConfirm={confirmDialog?.onConfirm} />
-    </>; // render extracted page section.
+    </div>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
   }

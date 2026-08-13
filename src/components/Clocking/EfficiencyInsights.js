@@ -1,0 +1,384 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+
+const roundHours = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
+};
+
+const formatHours = (value) => `${roundHours(value).toFixed(2)}h`;
+
+const formatChange = (value, suffix = "h") => {
+  const parsed = roundHours(value);
+  return `${parsed > 0 ? "+" : ""}${parsed.toFixed(suffix === "%" ? 1 : 2)}${suffix}`;
+};
+
+const getTargetState = (efficiency) => {
+  const value = Number(efficiency || 0);
+  if (value >= 110) return { label: "Above target", className: "app-badge--success-strong" };
+  if (value >= 100) return { label: "On target", className: "app-badge--success" };
+  if (value >= 80) return { label: "Near target", className: "app-badge--warning" };
+  return { label: "Below target", className: "app-badge--danger" };
+};
+
+function PanelHeader({ eyebrow, title, aside }) {
+  return (
+    <header className="efficiency-insight-header">
+      <div>
+        {eyebrow ? <p className="efficiency-insight-eyebrow">{eyebrow}</p> : null}
+        <h3>{title}</h3>
+      </div>
+      {aside}
+    </header>
+  );
+}
+
+function EmptyMessage({ children }) {
+  return <p className="efficiency-insight-empty">{children}</p>;
+}
+
+function TrendChart({ points }) {
+  const chart = useMemo(() => {
+    if (!points?.length) return null;
+    const width = 640;
+    const height = 180;
+    const inset = 18;
+    const max = Math.max(120, ...points.map((point) => Number(point.efficiencyPct || 0)));
+    const divisor = Math.max(points.length - 1, 1);
+    const coordinates = points.map((point, index) => ({
+      ...point,
+      x: inset + (index / divisor) * (width - inset * 2),
+      y: height - inset - (Number(point.efficiencyPct || 0) / max) * (height - inset * 2),
+    }));
+    return {
+      width,
+      height,
+      points: coordinates,
+      polyline: coordinates.map((point) => `${point.x},${point.y}`).join(" "),
+    };
+  }, [points]);
+
+  if (!chart) return <EmptyMessage>No efficiency points are available for this period.</EmptyMessage>;
+
+  return (
+    <div className="efficiency-trend-chart">
+      <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Efficiency trend">
+        <line className="efficiency-trend-target" x1="18" x2="622" y1="54" y2="54" />
+        <polyline className="efficiency-trend-line" points={chart.polyline} />
+        {chart.points.map((point) => (
+          <circle key={point.date} className="efficiency-trend-point" cx={point.x} cy={point.y} r="4">
+            <title>{`${point.label}: ${point.efficiencyPct.toFixed(1)}%`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="efficiency-trend-labels" aria-hidden="true">
+        <span>{chart.points[0]?.label}</span>
+        <span>{chart.points.at(-1)?.label}</span>
+      </div>
+    </div>
+  );
+}
+
+function JobsTable({ jobs }) {
+  if (!jobs.length) return <EmptyMessage>No jobs match this view in the selected period.</EmptyMessage>;
+  return (
+    <div className="app-table-shell-scroll efficiency-analysis-table" data-app-table-shell-scroll>
+      <table className="app-table-shell app-table-shell--with-headings">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Description</th>
+            <th>Allocated</th>
+            <th>Actual</th>
+            <th>Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          {jobs.slice(0, 8).map((job) => (
+            <tr key={job.key}>
+              <td>
+                <Link className="efficiency-job-link" href={`/job-cards/${encodeURIComponent(job.jobNumber)}`}>
+                  {job.jobNumber}
+                </Link>
+              </td>
+              <td>{job.description}</td>
+              <td>{formatHours(job.allocatedHours)}</td>
+              <td>{formatHours(job.actualHours)}</td>
+              <td className={job.difference > 0 ? "is-negative" : "is-positive"}>
+                {formatChange(job.difference)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function EfficiencyInsights({
+  technicianName,
+  periodLabel,
+  metrics,
+  previousMetrics,
+  comparisons,
+  trend,
+  jobs,
+  categories,
+  alerts,
+  analysisLoading = false,
+  analysisError = "",
+}) {
+  const [jobView, setJobView] = useState("over");
+  const targetState = getTargetState(metrics?.efficiencyPct);
+  const previousChange = roundHours(
+    Number(metrics?.efficiencyPct || 0) - Number(previousMetrics?.efficiencyPct || 0)
+  );
+  const dayComparison = comparisons?.find((item) => item.key === "day");
+  const timeBreakdown = [
+    { label: "Productive job time", value: metrics?.productiveHours || 0, tone: "productive" },
+    { label: "Overtime", value: metrics?.overtimeHours || 0, tone: "overtime" },
+    { label: "Unallocated", value: metrics?.unallocatedHours || 0, tone: "unallocated" },
+  ];
+  const maxTime = Math.max(1, ...timeBreakdown.map((item) => item.value));
+  const overAllocatedHours = (jobs?.over || []).reduce(
+    (sum, job) => sum + Math.max(Number(job.difference || 0), 0),
+    0
+  );
+
+  return (
+    <div className="efficiency-insights-stack">
+      <LayerTheme className="efficiency-headline" as="section">
+        <div className="efficiency-headline-main">
+          <div>
+            <p className="efficiency-insight-eyebrow">{technicianName} · {periodLabel}</p>
+            <div className="efficiency-headline-value-row">
+              <strong>{Number(metrics?.efficiencyPct || 0).toFixed(1)}%</strong>
+              <span className={`app-badge ${targetState.className}`}>{targetState.label}</span>
+            </div>
+            <p className="efficiency-headline-caption">Allocated time divided by productive logged time</p>
+          </div>
+          <div className="efficiency-headline-comparison">
+            <span>Previous equivalent period</span>
+            <strong className={previousChange >= 0 ? "is-positive" : "is-negative"}>
+              {formatChange(previousChange, "%")}
+            </strong>
+            <small>{Number(previousMetrics?.efficiencyPct || 0).toFixed(1)}% previously</small>
+          </div>
+        </div>
+        <div className="efficiency-kpi-grid">
+          {[
+            ["Productive", formatHours(metrics?.productiveHours)],
+            ["Target / available", formatHours(metrics?.targetHours)],
+            ["Allocated", formatHours(metrics?.allocatedHours)],
+            ["Overtime", formatHours(metrics?.overtimeHours)],
+            ["Unallocated", formatHours(metrics?.unallocatedHours)],
+            ["Target variance", formatChange((metrics?.productiveHours || 0) - (metrics?.targetHours || 0))],
+          ].map(([label, value]) => (
+            <LayerSurface key={label} className="efficiency-kpi-card" padding="var(--space-sm)" gap="4px">
+              <span>{label}</span>
+              <strong>{value}</strong>
+            </LayerSurface>
+          ))}
+        </div>
+      </LayerTheme>
+
+      <div className="efficiency-primary-analysis-grid">
+        <LayerTheme as="section" className="efficiency-analysis-panel efficiency-comparison-panel">
+          <PanelHeader eyebrow="Comparable periods" title="Today / week / month" />
+          <div className="efficiency-comparison-list">
+            {(comparisons || []).map((comparison) => (
+              <LayerSurface key={comparison.key} className="efficiency-comparison-row" padding="var(--space-sm)">
+                <div>
+                  <strong>{comparison.label}</strong>
+                  <span>{formatHours(comparison.current.productiveHours)} productive</span>
+                </div>
+                <div>
+                  <strong>{comparison.current.efficiencyPct.toFixed(1)}%</strong>
+                  <span>{formatHours(comparison.current.targetHours)} target</span>
+                </div>
+                <span className={comparison.efficiencyChange >= 0 ? "is-positive" : "is-negative"}>
+                  {formatChange(comparison.efficiencyChange, "%")}
+                </span>
+              </LayerSurface>
+            ))}
+          </div>
+        </LayerTheme>
+
+        <LayerTheme as="section" className="efficiency-analysis-panel efficiency-trend-panel">
+          <PanelHeader eyebrow="Selected period" title="Efficiency trend" />
+          {analysisLoading ? <EmptyMessage>Loading trend data...</EmptyMessage> : null}
+          {!analysisLoading && analysisError ? <EmptyMessage>{analysisError}</EmptyMessage> : null}
+          {!analysisLoading && !analysisError ? <TrendChart points={trend} /> : null}
+        </LayerTheme>
+
+        <LayerTheme as="section" className="efficiency-analysis-panel">
+          <PanelHeader eyebrow="Recorded sources" title="Time breakdown" />
+          <div className="efficiency-breakdown-list">
+            {timeBreakdown.map((item) => (
+              <div key={item.label} className="efficiency-breakdown-row">
+                <div><span>{item.label}</span><strong>{formatHours(item.value)}</strong></div>
+                <div className="efficiency-breakdown-track">
+                  <span className={`is-${item.tone}`} style={{ width: `${Math.max(3, (item.value / maxTime) * 100)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="efficiency-panel-note">Waiting, idle and break time are not classified because current efficiency and job-clocking records do not identify them reliably.</p>
+        </LayerTheme>
+
+        <LayerTheme as="section" className="efficiency-analysis-panel">
+          <PanelHeader eyebrow="Working day" title="Daily target progress" />
+          <div className="efficiency-target-progress-copy">
+            <strong>{formatHours(dayComparison?.current?.productiveHours || 0)}</strong>
+            <span>of {formatHours(dayComparison?.current?.targetHours || 0)}</span>
+          </div>
+          <div className="efficiency-target-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.min(dayComparison?.current?.targetProgressPct || 0, 100)}>
+            <span style={{ width: `${Math.min(dayComparison?.current?.targetProgressPct || 0, 100)}%` }} />
+          </div>
+          <div className="efficiency-target-progress-meta">
+            <span>{Number(dayComparison?.current?.targetProgressPct || 0).toFixed(1)}% complete</span>
+            <span>{formatHours(dayComparison?.current?.remainingTargetHours || 0)} remaining</span>
+          </div>
+        </LayerTheme>
+      </div>
+
+      <div className="efficiency-secondary-analysis-grid">
+        <LayerTheme as="section" className="efficiency-analysis-panel">
+          <PanelHeader eyebrow="Derivable causes" title="Lost time analysis" />
+          <div className="efficiency-lost-time-grid">
+            <LayerSurface padding="var(--space-sm)"><span>Jobs over allocation</span><strong>{formatHours(overAllocatedHours)}</strong></LayerSurface>
+            <LayerSurface padding="var(--space-sm)"><span>Unallocated job time</span><strong>{formatHours(metrics?.unallocatedHours)}</strong></LayerSurface>
+            <LayerSurface padding="var(--space-sm)"><span>Clocking issues</span><strong>{alerts?.length || 0}</strong></LayerSurface>
+          </div>
+          <p className="efficiency-panel-note">Parts delays, customer authorisation and technical-support delays are excluded because these records are not linked consistently enough for a reliable total.</p>
+        </LayerTheme>
+
+        <LayerTheme as="section" className="efficiency-analysis-panel">
+          <PanelHeader eyebrow="Data quality" title="Clocking alerts" aside={<span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
+          {!alerts?.length ? <EmptyMessage>No clocking-quality issues found for this period.</EmptyMessage> : (
+            <ul className="efficiency-alert-list">
+              {alerts.slice(0, 6).map((alert) => (
+                <li key={alert.key}>
+                  <span className={`app-badge app-badge--${alert.severity === "neutral" ? "neutral" : alert.severity}`}>{alert.severity}</span>
+                  <div><strong>{alert.title}</strong><span>{alert.detail}</span></div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </LayerTheme>
+      </div>
+
+      <LayerTheme as="section" className="efficiency-analysis-panel">
+        <PanelHeader
+          eyebrow="Allocation impact"
+          title="Jobs affecting efficiency"
+          aside={(
+            <TabGroup
+              value={jobView}
+              onChange={setJobView}
+              ariaLabel="Job allocation result"
+              items={[
+                { value: "over", label: `Over allocation (${jobs?.over?.length || 0})` },
+                { value: "under", label: `Under allocation (${jobs?.under?.length || 0})` },
+              ]}
+            />
+          )}
+        />
+        <JobsTable jobs={jobs?.[jobView] || []} />
+      </LayerTheme>
+
+      <LayerTheme as="section" className="efficiency-analysis-panel">
+        <PanelHeader eyebrow="Existing job data" title="Job category analysis" />
+        {!categories?.length ? <EmptyMessage>No reliable job categories are available for this period.</EmptyMessage> : (
+          <div className="efficiency-category-grid">
+            {categories.map((category) => {
+              const state = getTargetState(category.efficiencyPct);
+              return (
+                <LayerSurface key={category.category} padding="var(--space-sm)" className="efficiency-category-card">
+                  <div><strong>{category.category}</strong><span className={`app-badge ${state.className}`}>{category.efficiencyPct.toFixed(1)}%</span></div>
+                  <span>{formatHours(category.actualHours)} logged · {formatHours(category.allocatedHours)} allocated</span>
+                </LayerSurface>
+              );
+            })}
+          </div>
+        )}
+      </LayerTheme>
+
+      {/* These classes are feature-local because the panel packing and SVG sizing are unique to this workspace. */}
+      <style jsx>{`
+        .efficiency-insights-stack { display: flex; flex-direction: column; gap: var(--page-stack-gap); min-width: 0; }
+        :global(.efficiency-headline) { gap: var(--space-md); }
+        .efficiency-headline-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-lg); align-items: end; }
+        .efficiency-headline-value-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+        .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
+        .efficiency-headline-caption, .efficiency-panel-note { color: var(--text-2); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
+        .efficiency-headline-comparison { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+        .efficiency-headline-comparison span, .efficiency-headline-comparison small { color: var(--text-2); }
+        .efficiency-headline-comparison strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+        .efficiency-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: var(--space-sm); }
+        :global(.efficiency-kpi-card span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-kpi-card strong) { color: var(--surfaceText); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+        .efficiency-primary-analysis-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.4fr); gap: var(--page-stack-gap); align-items: stretch; }
+        .efficiency-secondary-analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--page-stack-gap); }
+        :global(.efficiency-analysis-panel) { min-height: 0; }
+        .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
+        .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
+        .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--text-2); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+        .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }
+        :global(.efficiency-comparison-row) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
+        :global(.efficiency-comparison-row > div) { display: flex; flex-direction: column; gap: 2px; }
+        :global(.efficiency-comparison-row span) { color: var(--text-2); font-size: var(--text-caption); }
+        .is-positive { color: var(--success) !important; font-weight: 700; }
+        .is-negative { color: var(--danger) !important; font-weight: 700; }
+        .efficiency-trend-chart { min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end; }
+        .efficiency-trend-chart svg { width: 100%; min-height: 150px; overflow: visible; }
+        .efficiency-trend-target { stroke: var(--separating-line); stroke-width: 2; stroke-dasharray: 6 6; }
+        .efficiency-trend-line { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+        .efficiency-trend-point { fill: var(--surface); stroke: var(--primary); stroke-width: 3; }
+        .efficiency-trend-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: .68rem; }
+        .efficiency-breakdown-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .efficiency-breakdown-row > div:first-child { display: flex; justify-content: space-between; gap: var(--space-sm); font-size: var(--text-caption); }
+        .efficiency-breakdown-track, .efficiency-target-progress { height: 8px; margin-top: 5px; background: var(--surface); border-radius: var(--radius-pill); overflow: hidden; }
+        .efficiency-breakdown-track span, .efficiency-target-progress span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+        .efficiency-breakdown-track .is-overtime { background: var(--info); }
+        .efficiency-breakdown-track .is-unallocated { background: var(--warning); }
+        .efficiency-target-progress-copy { display: flex; align-items: baseline; gap: var(--space-xs); }
+        .efficiency-target-progress-copy strong { color: var(--primary-selected); font-size: 2rem; }
+        .efficiency-target-progress-copy span, .efficiency-target-progress-meta { color: var(--text-2); }
+        .efficiency-target-progress-meta { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-caption); }
+        .efficiency-lost-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); }
+        :global(.efficiency-lost-time-grid > div span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-lost-time-grid > div strong) { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+        .efficiency-alert-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); padding: 0; margin: 0; }
+        .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line); }
+        .efficiency-alert-list li:last-child { border-bottom: 0; }
+        .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
+        .efficiency-alert-list li div span { color: var(--text-2); font-size: var(--text-caption); }
+        .efficiency-insight-empty { color: var(--text-2); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
+        .efficiency-analysis-table { max-height: 330px; overflow: auto; }
+        .efficiency-analysis-table table { min-width: 700px; }
+        .efficiency-job-link { color: var(--primary-selected); font-weight: 700; text-decoration: none; }
+        .efficiency-job-link:hover { text-decoration: underline; }
+        .efficiency-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-sm); }
+        :global(.efficiency-category-card > div) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+        :global(.efficiency-category-card > span) { color: var(--text-2); font-size: var(--text-caption); }
+        @media (max-width: 980px) {
+          .efficiency-primary-analysis-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 620px) {
+          .efficiency-headline-main { grid-template-columns: 1fr; align-items: start; }
+          .efficiency-headline-comparison { align-items: flex-start; text-align: left; }
+          .efficiency-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          :global(.efficiency-comparison-row) { grid-template-columns: minmax(0, 1fr) auto; }
+          :global(.efficiency-comparison-row > span) { grid-column: 1 / -1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+

@@ -1,8 +1,15 @@
 // file location: src/components/page-ui/parts/parts-goods-in-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import Button from "@/components/ui/Button";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function GoodsInPageUi(props) {
+  const [historySearch, setHistorySearch] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const {
     ADVANCED_TABS,
     CalendarField,
@@ -24,12 +31,15 @@ export default function GoodsInPageUi(props) {
     addPartInputStyle,
     addressFieldStyle,
     completing,
+    completionSummary,
     completionPromptOpen,
     confirmDialog,
     createDefaultPartForm,
     currencyFormatter,
     dangerButtonStyle,
+    duplicateCandidate,
     fetchGoodsIn,
+    fetchRecentGoodsIn,
     fieldGridStyle,
     fileInputRef,
     filteredBinLocations,
@@ -39,6 +49,7 @@ export default function GoodsInPageUi(props) {
     handleCompleteGoodsIn,
     handleCompletionDismiss,
     handleFinishGoodsIn,
+    handleIncreaseExistingLine,
     handleInvoiceChange,
     handleJobItemsAssigned,
     handleNestedPartChange,
@@ -46,6 +57,7 @@ export default function GoodsInPageUi(props) {
     handlePartSelected,
     handleRemoveItem,
     handleSalePriceChange,
+    handleSaveDraft,
     handleScanDocChange,
     handleScanDocClick,
     handleSupplierSelected,
@@ -62,16 +74,23 @@ export default function GoodsInPageUi(props) {
     notesTextareaStyle,
     partError,
     partForm,
+    partNumberInputRef,
     partSearchOpen,
     primaryButtonStyle,
+    recentError,
+    recentGoodsIn,
+    recentLoading,
     removingItemId,
     savingPart,
+    savingDraft,
     scanBusy,
     secondaryButtonStyle,
     sectionCardStyle,
+    selectedCatalogPart,
     setActiveTab,
     setCompletionPromptOpen,
     setConfirmDialog,
+    setDuplicateCandidate,
     setIsAdvancedPanelOpen,
     setJobModalOpen,
     setPartForm,
@@ -199,6 +218,24 @@ export default function GoodsInPageUi(props) {
           min-width: 0;
           width: 100%;
         }
+        .goods-in-context-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+          gap: 10px;
+        }
+        .goods-in-context-block {
+          min-width: 0;
+        }
+        .goods-in-summary-strip {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+          font-size: 0.86rem;
+          font-variant-numeric: tabular-nums;
+        }
+        .goods-in-table-scroll {
+          overflow-x: auto;
+        }
         @media (max-width: 900px) {
           .add-part-section {
             padding: 16px;
@@ -213,6 +250,12 @@ export default function GoodsInPageUi(props) {
           .add-part-actions {
             flex-direction: column;
             align-items: stretch;
+          }
+        }
+        @media (max-width: 560px) {
+          .add-part-fields-grid,
+          .add-part-fields-row-span-3 {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -233,14 +276,6 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
-        <TabGroup className="tab-api--wrap" devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
-      value: tab.id,
-      label: tab.label
-    }))} value={activeTab} onChange={value => {
-      setActiveTab(value);
-      setIsAdvancedPanelOpen(true);
-    }} ariaLabel="Part detail tabs" />
-
         <LayerTheme
           as="section"
           data-presentation="goods-in-invoice"
@@ -255,14 +290,21 @@ export default function GoodsInPageUi(props) {
         }}>Invoice details</h2>
             <div style={{
           display: "flex",
-          gap: "10px"
+          gap: "10px",
+          flexWrap: "wrap"
         }}>
-              <button style={primaryButtonStyle(false)} onClick={() => setSupplierModalOpen(true)}>
+              <Button type="button" variant="secondary" onClick={() => {
+                setSettingsOpen(true);
+                fetchRecentGoodsIn();
+              }}>
+                Settings
+              </Button>
+              <Button type="button" variant="primary" onClick={() => setSupplierModalOpen(true)}>
                 Supplier search
-              </button>
-              <button style={secondaryButtonStyle} onClick={handleScanDocClick} disabled={scanBusy}>
-                {scanBusy ? "Scanning..." : "Scan doc"}
-              </button>
+              </Button>
+              <Button type="button" variant="secondary" busy={scanBusy} onClick={handleScanDocClick}>
+                Scan doc
+              </Button>
               <input ref={fileInputRef} type="file" accept=".txt,.pdf,.csv,.json,.doc,.docx,.jpg,.png" style={{
             display: "none"
           }} onChange={handleScanDocChange} />
@@ -322,6 +364,10 @@ export default function GoodsInPageUi(props) {
                   </DropdownField>
                 </div>
               </div>
+              <div className="invoice-details-field">
+                <label style={labelStyle}>Supplier contact</label>
+                <input style={inputStyle} value={invoiceForm.supplierContact} onChange={event => handleInvoiceChange("supplierContact", event.target.value)} placeholder="Phone or email" />
+              </div>
             </div>
             <div style={splitFieldRowStyle}>
               <div>
@@ -370,11 +416,19 @@ export default function GoodsInPageUi(props) {
       }}>
               {partError}
             </div>}
+          {duplicateCandidate && <div className="app-status-message app-status-message--warning" role="status">
+              <div><strong>This part is already on line {duplicateCandidate.line_number || "—"}.</strong> Increase that line by {partForm.quantity || 1}, or keep a separate invoice line.</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button type="button" style={primaryButtonStyle(savingPart)} onClick={handleIncreaseExistingLine} disabled={savingPart}>Increase existing line</button>
+                <button type="button" style={secondaryButtonStyle} onClick={() => handleAddPart({ allowDuplicate: true })} disabled={savingPart}>Add separate line</button>
+                <button type="button" style={secondaryButtonStyle} onClick={() => setDuplicateCandidate(null)} disabled={savingPart}>Review entry</button>
+              </div>
+            </div>}
           <div className="add-part-fields-shell">
             <div className="add-part-fields-grid">
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Part number</label>
-                <input style={addPartInputStyle} value={partForm.partNumber} onKeyDown={event => {
+                <input ref={partNumberInputRef} autoComplete="off" style={addPartInputStyle} value={partForm.partNumber} onKeyDown={event => {
               if (event.key === "Enter") {
                 event.preventDefault();
                 setPartSearchOpen(true);
@@ -453,9 +507,60 @@ export default function GoodsInPageUi(props) {
             </div>
           </div>
 
+          <div className="goods-in-context-grid" aria-live="polite">
+            {selectedCatalogPart ? <>
+              <LayerSurface as="section" className="goods-in-context-block" padding="12px">
+                <div style={{ fontWeight: 700 }}>Live stock preview</div>
+                <div className="goods-in-summary-strip" style={{ marginTop: 8 }}>
+                  <span>On hand <strong>{Number(selectedCatalogPart.qty_in_stock || 0)}</strong></span>
+                  <span>Reserved <strong>{Number(selectedCatalogPart.qty_reserved || 0)}</strong></span>
+                  <span>Available <strong>{Number(selectedCatalogPart.qty_in_stock || 0) - Number(selectedCatalogPart.qty_reserved || 0)}</strong></span>
+                  <span>On order <strong>{Number(selectedCatalogPart.qty_on_order || 0)}</strong></span>
+                  <span>After receipt <strong>{Number(selectedCatalogPart.qty_in_stock || 0) + Number(partForm.quantity || 0)}</strong></span>
+                </div>
+              </LayerSurface>
+              <LayerSurface as="section" className="goods-in-context-block" padding="12px">
+                <div style={{ fontWeight: 700 }}>
+                  Job demand · {Number(selectedCatalogPart.open_job_quantity || 0)} units
+                </div>
+                <small style={{ color: "var(--text-1)" }}>
+                  {Number(selectedCatalogPart.open_requirement_count || 0)} open requirements across {Number(selectedCatalogPart.open_job_count || 0)} jobs
+                </small>
+                {(selectedCatalogPart.linked_jobs || []).length ? <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                  {selectedCatalogPart.linked_jobs.slice(0, 4).map((job, index) => <div key={`${job.type}-${job.job_id}-${index}`} style={{ fontSize: "0.86rem" }}>
+                    <Link className="app-btn app-btn--secondary app-btn--xs" href={`/job-cards/${encodeURIComponent(job.job_number)}`}>
+                      {job.job_number}
+                    </Link>{" "}· qty {job.quantity || 1} · {job.status || job.job_waiting_status || "open"}
+                  </div>)}
+                </div> : <div style={{ color: "var(--text-1)", marginTop: 8 }}>No open job requirement is linked to this catalogue part.</div>}
+              </LayerSurface>
+              <LayerSurface as="section" className="goods-in-context-block" padding="12px">
+                <div style={{ fontWeight: 700 }}>Price and margin check</div>
+                {(() => {
+                  const oldCost = Number(selectedCatalogPart.unit_cost || 0);
+                  const newCost = Number(partForm.costPrice || 0);
+                  const retail = Number(partForm.retailPrice || selectedCatalogPart.unit_price || 0);
+                  const costChange = newCost - oldCost;
+                  const costPercent = oldCost ? costChange / oldCost * 100 : 0;
+                  const margin = retail ? (retail - newCost) / retail * 100 : 0;
+                  const warning = margin < 15 || costChange > 0;
+                  return <div style={{ marginTop: 8, color: warning ? "var(--warning-dark)" : "var(--text-1)" }}>
+                    Cost {costChange >= 0 ? "+" : ""}{currencyFormatter.format(costChange)} ({costPercent >= 0 ? "+" : ""}{costPercent.toFixed(1)}%) · margin {margin.toFixed(1)}%
+                    {margin < 15 ? " · Low margin—check pricing before completion." : ""}
+                  </div>;
+                })()}
+              </LayerSurface>
+            </> : partForm.partNumber.trim() ? <LayerSurface as="section" className="goods-in-context-block" padding="12px" style={{ color: "var(--warning-dark)" }}>
+              <strong>Unknown catalogue part.</strong> Completion will create a new active catalogue record after validation.
+            </LayerSurface> : <LayerSurface as="section" className="goods-in-context-block" padding="12px" style={{ color: "var(--text-1)" }}>
+              Select a catalogue part to preview stock, open job demand and price variance.
+            </LayerSurface>}
+          </div>
+
           {isAdvancedPanelOpen && <div style={{
         marginTop: "12px"
       }}>
+              <TabGroup className="tab-api--wrap" devSectionKey="goods-in-advanced-tabs" devSectionParent="goods-in-add-part" items={ADVANCED_TABS.map(tab => ({ value: tab.id, label: tab.label }))} value={activeTab} onChange={setActiveTab} ariaLabel="Advanced part detail tabs" />
               <div style={{
           marginTop: "14px"
         }}>
@@ -509,6 +614,20 @@ export default function GoodsInPageUi(props) {
                           <input style={inputStyle} placeholder="VOR cost" value={partForm.purchaseDetails.vorCost} onChange={event => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)} />
                           <input style={inputStyle} placeholder="Local cost" value={partForm.purchaseDetails.localCost} onChange={event => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)} />
                         </div>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Receiving discrepancy</label>
+                        <DropdownField value={partForm.customAttributes.receivingDiscrepancy || ""} onChange={event => handleNestedPartChange("customAttributes", "receivingDiscrepancy", event.target.value)} style={{ width: "100%" }} placeholder="No discrepancy">
+                          <option value="">No discrepancy</option>
+                          <option value="short_supplied">Short supplied</option>
+                          <option value="over_supplied">Over supplied</option>
+                          <option value="damaged">Damaged</option>
+                          <option value="wrong_item">Wrong item</option>
+                        </DropdownField>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Line notes</label>
+                        <textarea className="app-notes-input" value={partForm.notes} onChange={event => handlePartChange("notes", event.target.value)} placeholder="Record discrepancy or receiving notes" />
                       </div>
                     </div>
                   </LayerSurface>}
@@ -611,16 +730,15 @@ export default function GoodsInPageUi(props) {
           alignItems: "center",
           flexWrap: "nowrap"
         }}>
-              <button onClick={() => setPartForm(createDefaultPartForm())} style={{
-            ...secondaryButtonStyle,
-            padding: "8px 14px"
-          }} disabled={savingPart}>
+              <button className="app-btn app-btn--secondary" onClick={() => {
+                setPartForm(createDefaultPartForm());
+                handlePartChange("partNumber", "");
+                setDuplicateCandidate(null);
+                requestAnimationFrame(() => partNumberInputRef.current?.focus());
+              }} disabled={savingPart}>
                 Clear
               </button>
-              <button style={{
-            ...primaryButtonStyle(savingPart),
-            padding: "10px 16px"
-          }} onClick={handleAddPart} disabled={savingPart}>
+              <button type="button" className="app-btn app-btn--primary" onClick={handleAddPart} disabled={savingPart}>
                 {savingPart ? "Adding..." : "Add part"}
               </button>
             </div>
@@ -657,18 +775,20 @@ export default function GoodsInPageUi(props) {
               const qty = Number(item.quantity || 0);
               return sum + retail * qty;
             }, 0);
+            const totalUnits = goodsInItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            const surchargeTotal = goodsInItems.reduce((sum, item) => sum + Number(item.surcharge || 0) * Number(item.quantity || 0), 0);
             return <div style={{
               display: "flex",
               gap: "16px",
               fontSize: "0.9rem",
               color: "var(--text-1)"
             }}>
-                    <span>Total Cost: <strong style={{
-                  color: "var(--text-1)"
-                }}>{currencyFormatter.format(totalCost)}</strong></span>
-                    <span>Total Retail: <strong style={{
-                  color: "var(--text-1)"
-                }}>{currencyFormatter.format(totalRetail)}</strong></span>
+                    <span>Lines <strong>{goodsInItems.length}</strong></span>
+                    <span>Units <strong>{totalUnits}</strong></span>
+                    <span>Cost <strong>{currencyFormatter.format(totalCost)}</strong></span>
+                    <span>Retail <strong>{currencyFormatter.format(totalRetail)}</strong></span>
+                    <span>Potential margin <strong>{currencyFormatter.format(totalRetail - totalCost)}</strong></span>
+                    <span>Surcharge <strong>{currencyFormatter.format(surchargeTotal)}</strong></span>
                   </div>;
           })()}
             </div>
@@ -676,10 +796,10 @@ export default function GoodsInPageUi(props) {
           display: "flex",
           gap: "10px"
         }}>
-              <button style={secondaryButtonStyle} onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)} disabled={!goodsInRecord}>
+              <button className="app-btn app-btn--secondary" style={secondaryButtonStyle} onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)} disabled={!goodsInRecord}>
                 Refresh
               </button>
-              <button style={primaryButtonStyle(completing)} onClick={handleCompleteGoodsIn} disabled={completing}>
+              <button className="app-btn app-btn--primary" style={primaryButtonStyle(completing || !goodsInRecord || goodsInItems.length === 0)} onClick={handleCompleteGoodsIn} disabled={completing || !goodsInRecord || goodsInItems.length === 0}>
                 {completing ? "Completing..." : "Complete"}
               </button>
             </div>
@@ -690,64 +810,112 @@ export default function GoodsInPageUi(props) {
         color: "var(--text-1)"
       }}>
               No lines yet. Add a part to populate this invoice.
-            </div> : <ScrollArea maxHeight="420px" style={{
-        overflowX: "hidden"
-      }}>
-              <table style={invoiceTableStyles}>
-                <thead>
-                  <tr style={{
-              textAlign: "left"
-            }}>
-                    <th style={invoiceHeaderCellStyle}>Part number</th>
-                    <th style={invoiceHeaderCellStyle}>Description</th>
-                    <th style={invoiceHeaderCellStyle}>Retail</th>
-                    <th style={invoiceHeaderCellStyle}>Cost</th>
-                    <th style={invoiceHeaderCellStyle}>Surcharge</th>
-                    <th style={invoiceHeaderCellStyle}>Qty</th>
-                    <th style={invoiceHeaderCellStyle}>Cost total</th>
-                    <th style={invoiceHeaderCellStyle}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {goodsInItems.map(item => {
-              const cost = Number(item.cost_price || 0);
-              const qty = Number(item.quantity || 0);
-              return <tr key={item.id} style={invoiceRowStyle}>
-                        <td style={{
-                  ...invoiceCellStyle,
-                  fontWeight: 600
-                }}>{item.part_number}</td>
-                        <td style={{
-                  ...invoiceCellStyle,
-                  color: "var(--text-1)"
-                }}>{item.description}</td>
-                        <td style={invoiceCellStyle}>
-                          {item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}
-                        </td>
-                        <td style={invoiceCellStyle}>
-                          {item.cost_price ? currencyFormatter.format(item.cost_price) : "--"}
-                        </td>
-                        <td style={invoiceCellStyle}>{item.surcharge || "--"}</td>
-                        <td style={invoiceCellStyle}>{item.quantity}</td>
-                        <td style={invoiceCellStyle}>{currencyFormatter.format(cost * qty || 0)}</td>
-                        <td style={{
-                  ...invoiceCellStyle,
-                  textAlign: "right"
-                }}>
-                          <button style={{
-                    ...dangerButtonStyle,
-                    opacity: removingItemId === item.id ? 0.6 : 1
-                  }} onClick={() => handleRemoveItem(item.id)} disabled={removingItemId === item.id}>
-                            {removingItemId === item.id ? "Removing" : "Remove"}
-                          </button>
-                        </td>
-                      </tr>;
-            })}
-                </tbody>
+            </div> : <div className="goods-in-table-scroll"><ScrollArea maxHeight="420px" style={{ overflowX: "visible" }}>
+              <table style={{ ...invoiceTableStyles, minWidth: "980px" }}>
+                <thead><tr style={{ textAlign: "left" }}>
+                  <th style={invoiceHeaderCellStyle}>Part / state</th><th style={invoiceHeaderCellStyle}>Description / bin</th><th style={invoiceHeaderCellStyle}>Retail</th><th style={invoiceHeaderCellStyle}>Cost</th><th style={invoiceHeaderCellStyle}>Surcharge</th><th style={invoiceHeaderCellStyle}>Received</th><th style={invoiceHeaderCellStyle}>Assigned / remaining</th><th style={invoiceHeaderCellStyle}>Cost total</th><th style={invoiceHeaderCellStyle}>Remove</th>
+                </tr></thead>
+                <tbody>{goodsInItems.map(item => {
+                  const cost = Number(item.cost_price || 0); const qty = Number(item.quantity || 0); const assigned = item.added_to_job ? qty : 0;
+                  return <tr key={item.id} style={invoiceRowStyle}>
+                    <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}<small style={{ display: "block", color: "var(--text-1)" }}>{item.part_catalog_id ? "Catalogue" : "New part"}</small></td>
+                    <td style={invoiceCellStyle}>{item.description || "—"}<small style={{ display: "block", color: "var(--text-1)" }}>Bin {item.bin_location || "not set"}</small></td>
+                    <td style={invoiceCellStyle}>{item.retail_price ? currencyFormatter.format(item.retail_price) : "—"}</td><td style={invoiceCellStyle}>{item.cost_price ? currencyFormatter.format(item.cost_price) : "—"}</td><td style={invoiceCellStyle}>{item.surcharge || "—"}</td><td style={invoiceCellStyle}>{qty}</td><td style={invoiceCellStyle}>{assigned} / {Math.max(0, qty - assigned)}{item.job_number ? <small style={{ display: "block", color: "var(--text-1)" }}>{item.job_number}</small> : null}</td><td style={invoiceCellStyle}>{currencyFormatter.format(cost * qty || 0)}</td>
+                    <td style={{ ...invoiceCellStyle, textAlign: "right" }}><button className="app-btn app-btn--secondary" style={{ ...dangerButtonStyle, opacity: removingItemId === item.id ? 0.6 : 1 }} onClick={() => handleRemoveItem(item.id)} disabled={removingItemId === item.id}>{removingItemId === item.id ? "Removing" : "Remove"}</button></td>
+                  </tr>;
+                })}</tbody>
               </table>
-            </ScrollArea>}
+            </ScrollArea></div>}
         </LayerTheme>
+
+        {completionSummary && <LayerTheme as="section" sectionKey="goods-in-completion-summary" parentKey="app-layout-page-card" style={sectionCardStyle}>
+          <h2 style={{ margin: 0 }}>Completion result</h2><div className="goods-in-summary-strip"><span>Lines <strong>{completionSummary.lines}</strong></span><span>Units <strong>{completionSummary.units}</strong></span><span>Updated <strong>{completionSummary.updated}</strong></span><span>Created <strong>{completionSummary.created}</strong></span><span>Failed <strong>{completionSummary.failed.length}</strong></span><span>Cost received <strong>{currencyFormatter.format(completionSummary.totalCost)}</strong></span></div>
+          {completionSummary.failed.length > 0 && <div className="app-status-message app-status-message--warning">{completionSummary.failed.map(item => <div key={`${item.partNumber}-${item.error}`}><strong>{item.partNumber || "Unknown part"}:</strong> {item.error}</div>)}</div>}
+        </LayerTheme>}
       </div>
+
+      <PopupModal
+        isOpen={settingsOpen}
+        onClose={savingDraft ? undefined : () => setSettingsOpen(false)}
+        closeOnBackdrop={!savingDraft}
+        ariaLabel="Goods in settings"
+        cardClassName="app-settings-popup-card"
+        cardStyle={{ width: "min(900px, 100%)", padding: "var(--page-card-padding)", overflow: "hidden" }}
+      >
+        <div className="app-settings-popup" style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)", overflow: "hidden" }}>
+          <header className="app-popup-compact-header">
+            <h2>Goods in settings</h2>
+            <div className="app-popup-compact-header__actions">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                busy={savingDraft}
+                disabled={goodsInRecord?.status && goodsInRecord.status !== "draft"}
+                onClick={handleSaveDraft}
+              >
+                Save draft
+              </Button>
+              <Button type="button" variant="secondary" size="sm" disabled={savingDraft} onClick={() => setSettingsOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </header>
+
+          <LayerTheme
+            as="section"
+            sectionKey="goods-in-recent"
+            parentKey="shared-popup-card"
+            style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+          >
+            <div className="invoice-details-toolbar">
+              <div>
+                <h3 style={{ margin: 0 }}>Recent goods in and drafts</h3>
+                <div style={{ color: "var(--text-1)", fontSize: ".86rem", marginTop: 3 }}>
+                  Search recent GIN, supplier, invoice, delivery note, part or date.
+                </div>
+              </div>
+              <Button type="button" variant="secondary" size="sm" onClick={fetchRecentGoodsIn}>
+                Refresh
+              </Button>
+            </div>
+            <SearchBar
+              value={historySearch}
+              onChange={event => setHistorySearch(event.target.value)}
+              onClear={() => setHistorySearch("")}
+              placeholder="Search recent receiving history"
+              ariaLabel="Search recent goods in and drafts"
+            />
+            {recentLoading ? <div style={{ color: "var(--text-1)" }}>Loading recent records…</div> : recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8, overflowY: "auto" }}>
+              {recentGoodsIn.filter(record => {
+                const query = historySearch.trim().toLowerCase();
+                if (!query) return true;
+                return [record.goods_in_number, record.supplier_name, record.invoice_number, record.delivery_note_number, record.invoice_date, ...(record.items || []).flatMap(item => [item.part_number, item.description])].some(value => String(value || "").toLowerCase().includes(query));
+              }).slice(0, 6).map(record => {
+                const units = (record.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const cost = (record.items || []).reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.cost_price || 0), 0);
+                return <Button
+                  key={record.id}
+                  type="button"
+                  variant="secondary"
+                  style={{ width: "100%", textAlign: "left", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: 10, alignItems: "center" }}
+                  onClick={async () => {
+                    if (record.status !== "draft") return;
+                    await fetchGoodsIn(record.id);
+                    setSettingsOpen(false);
+                  }}
+                  disabled={record.status !== "draft"}
+                  title={record.status === "draft" ? "Resume this draft" : "Completed record"}
+                >
+                  <strong>{record.goods_in_number}</strong>
+                  <span>{record.supplier_name || "Unknown supplier"} · {record.invoice_number || "No invoice"}</span>
+                  <span>{record.status} · {record.items?.length || 0} lines / {units} units · {currencyFormatter.format(cost)}</span>
+                </Button>;
+              })}
+            </div>}
+          </LayerTheme>
+        </div>
+      </PopupModal>
 
       {supplierModalOpen && <SupplierSearchModal onClose={() => setSupplierModalOpen(false)} onSelect={handleSupplierSelected} initialQuery={invoiceForm.supplierName} />}
       {partSearchOpen && <GoodsInPartSearchModal onClose={() => setPartSearchOpen(false)} onSelect={handlePartSelected} initialQuery={partForm.partNumber} />}
@@ -755,7 +923,7 @@ export default function GoodsInPageUi(props) {
     setJobModalOpen(false);
     setCompletionPromptOpen(true);
   }} onAssigned={handleJobItemsAssigned} onFinish={handleFinishGoodsIn} />}
-      {completionPromptOpen && <CompletionPrompt goodsInNumber={goodsInRecord?.goods_in_number} onClose={handleCompletionDismiss} onAddToJob={() => {
+      {completionPromptOpen && <CompletionPrompt goodsInNumber={goodsInRecord?.goods_in_number} summary={completionSummary} currencyFormatter={currencyFormatter} onClose={handleCompletionDismiss} onAddToJob={() => {
     setCompletionPromptOpen(false);
     setJobModalOpen(true);
   }} />}

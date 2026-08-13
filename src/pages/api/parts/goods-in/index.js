@@ -2,7 +2,8 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
-import { resolveAuditIds } from "@/lib/utils/ids";
+import { updatePartsGoodsInDraft } from "@/lib/database/partsGoodsIn";
+import { isValidUuid, resolveAuditIds } from "@/lib/utils/ids";
 
 const GOODS_IN_ROLES = [
   "parts",
@@ -76,7 +77,7 @@ const normalizeInvoiceNumber = (value) => {
   return cleaned.replace(/\s+/g, " ");
 };
 
-const findExistingSupplierInvoice = async ({ supplierAccountId, invoiceNumber }) => {
+const findExistingSupplierInvoice = async ({ supplierAccountId, invoiceNumber, excludeGoodsInId }) => {
   const supplierId = sanitizeText(supplierAccountId);
   const invoice = normalizeInvoiceNumber(invoiceNumber);
   if (!supplierId || !invoice) return null;
@@ -86,6 +87,7 @@ const findExistingSupplierInvoice = async ({ supplierAccountId, invoiceNumber })
     .select("id, goods_in_number, invoice_number")
     .eq("supplier_account_id", supplierId)
     .ilike("invoice_number", invoice)
+    .neq("id", excludeGoodsInId || "00000000-0000-0000-0000-000000000000")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -273,20 +275,21 @@ async function handler(req, res) {
       scanPayload,
       userId,
       userNumericId,
+      saveDraft = false,
     } = req.body || {};
 
-    if (!supplierName) {
+    if (!saveDraft && !supplierName) {
       return res.status(400).json({ success: false, message: "Supplier name is required" });
     }
 
-    if (!supplierAccountId) {
+    if (!saveDraft && !supplierAccountId) {
       return res.status(400).json({
         success: false,
         message: "Supplier account is missing a linked ledger account. Open the supplier and set a linked account.",
       });
     }
 
-    if (!invoiceNumber) {
+    if (!saveDraft && !invoiceNumber) {
       return res.status(400).json({ success: false, message: "Invoice number is required" });
     }
 
@@ -308,7 +311,7 @@ async function handler(req, res) {
 
       const created = await createGoodsInRecord({
         supplier_account_id: sanitizeText(supplierAccountId),
-        supplier_name: supplierName.trim(),
+        supplier_name: sanitizeText(supplierName),
         supplier_address: sanitizeText(supplierAddress),
         supplier_contact: sanitizeText(supplierContact),
         invoice_number: normalizedInvoiceNumber,
@@ -344,7 +347,68 @@ async function handler(req, res) {
     }
   }
 
-  res.setHeader("Allow", "GET,POST");
+  if (req.method === "PATCH") {
+    const {
+      goodsInId,
+      supplierAccountId,
+      supplierName,
+      supplierAddress,
+      supplierContact,
+      invoiceNumber,
+      deliveryNoteNumber,
+      invoiceDate,
+      priceLevel,
+      notes,
+      scanPayload,
+    } = req.body || {};
+
+    if (!goodsInId || !isValidUuid(goodsInId)) {
+      return res.status(400).json({ success: false, message: "Valid goods-in ID is required" });
+    }
+
+    const normalizedInvoiceNumber = normalizeInvoiceNumber(invoiceNumber);
+
+    try {
+      const existing = await findExistingSupplierInvoice({
+        supplierAccountId,
+        invoiceNumber: normalizedInvoiceNumber,
+        excludeGoodsInId: goodsInId,
+      });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: `Invoice number ${normalizedInvoiceNumber} already exists for this supplier (Goods In ${existing.goods_in_number}).`,
+        });
+      }
+
+      const updated = await updatePartsGoodsInDraft(goodsInId, {
+        supplier_account_id: sanitizeText(supplierAccountId),
+        supplier_name: sanitizeText(supplierName),
+        supplier_address: sanitizeText(supplierAddress),
+        supplier_contact: sanitizeText(supplierContact),
+        invoice_number: normalizedInvoiceNumber,
+        delivery_note_number: sanitizeText(deliveryNoteNumber),
+        invoice_date: parseDateOnly(invoiceDate),
+        price_level: parsePriceLevel(priceLevel),
+        notes: sanitizeText(notes),
+        scan_payload: parseScanPayload(scanPayload),
+      }, GOODS_IN_SELECT);
+
+      if (!updated) {
+        return res.status(409).json({ success: false, message: "Only active drafts can be updated" });
+      }
+
+      return res.status(200).json({ success: true, goodsIn: updated });
+    } catch (error) {
+      console.error("Failed to update goods-in draft:", error);
+      return res.status(500).json({
+        success: false,
+        message: error?.message || "Unable to update goods-in draft",
+      });
+    }
+  }
+
+  res.setHeader("Allow", "GET,POST,PATCH");
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
 

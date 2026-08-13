@@ -777,6 +777,7 @@ CREATE TABLE public.workshop_consumables (
   part_number text,
   supplier text,
   unit_cost numeric NOT NULL DEFAULT 0,
+  stock_quantity integer NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
   estimated_quantity integer NOT NULL DEFAULT 0,
   last_order_date date,
   next_estimated_order_date date,

@@ -171,7 +171,9 @@ export default function UserClockingHistoryUi(props) {
                             <td style={{
                         ...tableCellStyle,
                         fontWeight: 600
-                      }}>{record.job_number || "—"}</td>
+                      }}>{record.job_number ? <Link className="app-btn app-btn--secondary app-btn--xs" href={`/job-cards/${encodeURIComponent(record.job_number)}`}>
+                                {record.job_number}
+                              </Link> : "—"}</td>
                             <td style={tableCellStyle}>{formatTime(record.clock_in)}</td>
                             <td style={tableCellStyle}>{formatTime(record.clock_out)}</td>
                             <td style={tableCellStyle}>{formatDuration(record.clock_in, record.clock_out)}</td>

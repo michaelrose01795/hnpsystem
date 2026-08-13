@@ -7,14 +7,13 @@ import Link from "next/link";
 import { supabase } from "@/lib/database/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
-import { CalendarField } from "@/components/ui/calendarAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
-import { PageShell, ContentWidth, SectionShell } from "@/components/ui";
+import { PageShell, ContentWidth } from "@/components/ui";
 import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-consumables-tracker-ui"; // Extracted presentation layer.
+import { hasAnyRole, WORKSHOP_MANAGER_ROLES } from "@/lib/auth/roles";
 
 // Page layout follows the canonical page shell and layer surface structure.
 // hierarchy from staffglobal.css (via @/components/ui), so no local layout shells.
@@ -24,61 +23,6 @@ import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-con
 const cardStyle = {
   padding: "var(--section-card-padding)"
 };
-
-const sectionTitleStyle = {
-  fontSize: "1.1rem",
-  fontWeight: 700,
-  color: "var(--text-1)",
-  marginBottom: "12px"
-};
-
-const badgeBaseStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "4px 10px",
-  borderRadius: "var(--radius-pill)",
-  fontSize: "var(--text-caption)",
-  fontWeight: 600
-};
-
-const budgetInputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  fontSize: "0.95rem"
-};
-
-const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
-
-const orderHistoryContainerStyle = {
-  marginTop: "12px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--surface)",
-  padding: "12px",
-  maxHeight: "190px",
-  overflowY: "auto"
-};
-
-const scheduledTableBodyStyle = {
-  maxHeight: "calc(5 * 62px)",
-  overflowY: "auto"
-};
-
-const orderHistoryHeaderStyle = {
-  display: "grid",
-  gridTemplateColumns: orderHistoryGridTemplate,
-  gap: "12px",
-  fontSize: "0.7rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.1em",
-  color: "var(--text-1)",
-  marginBottom: "8px"
-};
-
-const orderHistoryRowBorder = "none";
 
 const orderModalOverlayStyle = {
   ...popupOverlayStyles,
@@ -102,57 +46,6 @@ const historyModalStyle = {
   position: "relative"
 };
 
-const orderModalCloseButtonStyle = {
-  position: "absolute",
-  top: "12px",
-  right: "12px",
-  background: "transparent",
-  border: "none",
-  fontSize: "1rem",
-  color: "var(--text-1)",
-  cursor: "pointer"
-};
-
-const orderModalButtonStyle = {
-  padding: "10px 20px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: 600,
-  boxShadow: "none"
-};
-
-const orderModalSecondaryButtonStyle = {
-  ...orderModalButtonStyle,
-  background: "var(--surface)",
-  border: "none",
-  color: "var(--text-1)",
-  boxShadow: "none"
-};
-
-const orderModalFormGroupStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "6px",
-  marginBottom: "12px"
-};
-
-const orderModalInputStyle = {
-  padding: "10px 14px",
-  borderRadius: "var(--radius-xs)",
-  border: "none"
-};
-
-const orderButtonStyle = {
-  padding: "8px 16px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--primary)",
-  color: "var(--surface)",
-  fontWeight: 600,
-  cursor: "pointer",
-  boxShadow: "none"
-};
 
 function normalizeConsumableName(value) {
   return (value || "").trim().toLowerCase();
@@ -234,30 +127,57 @@ function getConsumableStatus({ nextEstimatedOrderDate, isRequired }) {
   return { label: "Not Required", tone: "safe" };
 }
 
-function toneToStyles(tone) {
-  if (tone === "danger") {
-    return {
-      ...badgeBaseStyle,
-      backgroundColor: "rgba(var(--primary-rgb),0.12)",
-      color: "var(--text-1)",
-      border: "none"
-    };
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+function getStockInsight(item) {
+  const stock = Math.max(0, Number(item?.stockQuantity) || 0);
+  const history = (item?.orderHistory || [])
+    .map((order) => ({ ...order, parsedDate: new Date(order.date), quantity: Number(order.quantity) || 0 }))
+    .filter((order) => order.quantity > 0 && !Number.isNaN(order.parsedDate.getTime()))
+    .sort((a, b) => b.parsedDate - a.parsedDate)
+    .slice(0, 4);
+  const dailyRates = [];
+
+  for (let index = 0; index < history.length - 1; index += 1) {
+    const days = Math.round((history[index].parsedDate - history[index + 1].parsedDate) / DAY_MS);
+    if (days > 0) dailyRates.push(history[index + 1].quantity / days);
   }
-  if (tone === "warning") {
-    return {
-      ...badgeBaseStyle,
-      backgroundColor: "rgba(var(--warning-rgb), 0.16)",
-      color: "var(--warning-dark)",
-      border: "none"
-    };
+
+  const dailyUsage = dailyRates.length
+    ? dailyRates.reduce((sum, rate) => sum + rate, 0) / dailyRates.length
+    : null;
+  const daysRemaining = dailyUsage && dailyUsage > 0 ? Math.max(0, Math.round(stock / dailyUsage)) : null;
+  const preferredStock = Number(item?.estimatedQuantity) > 0 ? Number(item.estimatedQuantity) : null;
+  const suggestedOrderQuantity = preferredStock === null ? null : Math.max(0, Math.ceil(preferredStock - stock));
+  let stockStatus = "Available";
+  let stockTone = "safe";
+
+  if (stock <= 0) {
+    stockStatus = "Out";
+    stockTone = "danger";
+  } else if ((daysRemaining !== null && daysRemaining <= 14) || (preferredStock && stock <= preferredStock * 0.25)) {
+    stockStatus = "Low";
+    stockTone = "warning";
   }
 
   return {
-    ...badgeBaseStyle,
-    backgroundColor: "rgba(var(--success-rgb), 0.12)",
-    color: "var(--success-dark)",
-    border: "none"
+    dailyUsage,
+    daysRemaining,
+    minimumStock: null,
+    preferredStock,
+    suggestedOrderQuantity,
+    stockStatus,
+    stockTone,
   };
+}
+
+function getPriceChange(item) {
+  const history = item?.orderHistory || [];
+  if (history.length < 2) return null;
+  const latest = Number(history[0]?.unitCost);
+  const previous = Number(history[1]?.unitCost);
+  if (!Number.isFinite(latest) || !Number.isFinite(previous) || previous <= 0) return null;
+  return ((latest - previous) / previous) * 100;
 }
 
 const duplicateOverlayStyle = {
@@ -273,39 +193,9 @@ const duplicateModalStyle = {
   width: "100%"
 };
 
-const statusBadgeStyles = {
-  pending: {
-    backgroundColor: "rgba(var(--warning-rgb), 0.16)",
-    color: "var(--warning-dark)",
-    border: "none"
-  },
-  urgent: {
-    backgroundColor: "rgba(var(--primary-rgb),0.12)",
-    color: "var(--text-1)",
-    border: "none"
-  },
-  ordered: {
-    backgroundColor: "rgba(var(--success-rgb), 0.12)",
-    color: "var(--success-dark)",
-    border: "none"
-  },
-  arrived: {
-    backgroundColor: "var(--success-surface)",
-    color: "var(--success-dark)",
-    border: "none"
-  },
-  rejected: {
-    backgroundColor: "rgba(var(--danger-rgb), 0.12)",
-    color: "var(--danger)",
-    border: "none"
-  }
-};
-
 function ConsumablesTrackerPage() {
   const { user, dbUserId } = useUser();
-  const { isDark } = useTheme();
-  const userRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
-  const isWorkshopManager = userRoles.includes("workshop manager");
+  const isWorkshopManager = hasAnyRole(user?.roles || [], WORKSHOP_MANAGER_ROLES);
   const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(
@@ -316,7 +206,8 @@ function ConsumablesTrackerPage() {
     monthSpend: 0,
     projectedSpend: 0,
     monthlyBudget: 0,
-    budgetUpdatedAt: null
+    budgetUpdatedAt: null,
+    trend: []
   });
   const [financialLoading, setFinancialLoading] = useState(false);
   const [financialError, setFinancialError] = useState("");
@@ -350,52 +241,19 @@ function ConsumablesTrackerPage() {
   const [orderModalConsumable, setOrderModalConsumable] = useState(null);
   const [orderModalError, setOrderModalError] = useState("");
   const [orderModalLoading, setOrderModalLoading] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [, setShowEditForm] = useState(false);
   const [orderForm, setOrderForm] = useState({
     quantity: "",
     unitCost: "",
     supplier: "",
     orderDate: todayIso
   });
+  const [selectedConsumableIds, setSelectedConsumableIds] = useState(() => new Set());
+  const [bulkOrderItems, setBulkOrderItems] = useState([]);
+  const [bulkOrderLoading, setBulkOrderLoading] = useState(false);
+  const [bulkOrderError, setBulkOrderError] = useState("");
   const statusNotificationCacheRef = useRef(new Map());
 
-  const mutedTextColor = "var(--text-1)";
-  const quietLabelColor = "var(--text-1)";
-  const highlightRowBackground = isDark ? "rgba(var(--accent-purple-rgb),0.22)" : "var(--danger-surface)";
-  const tableHeaderColor = "var(--text-1)";
-  const accentDashedBorder = isDark ?
-  "1px dashed rgba(var(--accent-purple-rgb),0.35)" :
-  "1px dashed var(--surface)";
-  const themedBudgetInputStyle = useMemo(
-    () => ({
-      ...budgetInputStyle,
-      border: "var(--input-ring)",
-      background: isDark ? "var(--surface)" : "var(--surface)",
-      color: "var(--text-1)"
-    }),
-    [isDark]
-  );
-  const themedOrderHistoryContainerStyle = useMemo(
-    () => ({
-      ...orderHistoryContainerStyle,
-      background: isDark ? "var(--surface)" : orderHistoryContainerStyle.background
-    }),
-    [isDark]
-  );
-  const themedOrderHistoryRowStyle = useMemo(
-    () => ({
-      display: "grid",
-      gridTemplateColumns: orderHistoryGridTemplate,
-      gap: "12px",
-      alignItems: "center",
-      fontSize: "0.9rem",
-      color: mutedTextColor,
-      padding: "8px 0",
-      borderBottom: orderHistoryRowBorder
-    }),
-    [mutedTextColor]
-  );
-  const themedOrderHistoryRowBorder = orderHistoryRowBorder;
   const statusNotificationPendingRef = useRef(new Map());
 
   const closeOrderModal = useCallback(() => {
@@ -413,7 +271,7 @@ function ConsumablesTrackerPage() {
       }
       const lastLog = item.orderHistory?.[0];
       const baseQuantity =
-      lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
+      item.suggestedOrderQuantity || (lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "");
       const baseUnitCost =
       lastLog?.unitCost ?? (
       item.unitCost !== undefined && item.unitCost !== null ? item.unitCost : "");
@@ -690,13 +548,14 @@ function ConsumablesTrackerPage() {
         throw new Error(payload.message || "Unable to load financial summary.");
       }
 
-      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
+      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt, trend } =
       payload.data || {};
       setFinancialSummary({
         monthSpend: Number(monthSpend) || 0,
         projectedSpend: Number(projectedSpend) || 0,
         monthlyBudget: Number(monthlyBudget) || 0,
-        budgetUpdatedAt: budgetUpdatedAt || null
+        budgetUpdatedAt: budgetUpdatedAt || null,
+        trend: Array.isArray(trend) ? trend : []
       });
     } catch (error) {
       console.error("❌ Failed to load financial summary", error);
@@ -757,11 +616,18 @@ function ConsumablesTrackerPage() {
     "workshop_consumable_requests",
     "workshop_consumable_budgets"];
 
-    const handleRealtime = () => {
+    const handleRealtime = (payload) => {
+      if (payload.table === "workshop_consumable_requests") {
+        fetchTechRequests();
+        return;
+      }
+      if (payload.table === "workshop_consumable_budgets") {
+        fetchFinancialSummary();
+        return;
+      }
       refreshConsumables();
-      fetchTechRequests();
       fetchFinancialSummary();
-      fetchMonthlyLogs();
+      if (payload.table === "workshop_consumable_orders") fetchMonthlyLogs();
     };
 
     tables.forEach((table) => {
@@ -846,13 +712,14 @@ function ConsumablesTrackerPage() {
         throw new Error(payload.message || "Unable to save budget.");
       }
 
-      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
+      const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt, trend } =
       payload.data || {};
       setFinancialSummary({
         monthSpend: Number(monthSpend) || 0,
         projectedSpend: Number(projectedSpend) || 0,
         monthlyBudget: Number(monthlyBudget) || 0,
-        budgetUpdatedAt: budgetUpdatedAt || null
+        budgetUpdatedAt: budgetUpdatedAt || null,
+        trend: Array.isArray(trend) ? trend : []
       });
       setBudgetSaveMessage("Budget saved.");
     } catch (error) {
@@ -928,16 +795,28 @@ function ConsumablesTrackerPage() {
       monthSpend,
       projectedSpend,
       monthlyBudget,
-      budgetRemaining: monthlyBudget - monthSpend
+      budgetRemaining: monthlyBudget - monthSpend,
+      expectedRemaining: monthlyBudget - projectedSpend,
+      percentageUsed: monthlyBudget > 0 ? monthSpend / monthlyBudget * 100 : 0
     };
   }, [financialSummary]);
+
+  const consumablesWithInsights = useMemo(
+    () => consumables.map((item) => ({
+      ...item,
+      ...getStockInsight(item),
+      priceChange: getPriceChange(item),
+      scheduleStatus: getConsumableStatus(item),
+    })),
+    [consumables]
+  );
 
   const filteredConsumables = useMemo(() => {
     const term = (searchQuery || "").trim().toLowerCase();
     if (!term) {
-      return consumables;
+      return consumablesWithInsights;
     }
-    return consumables.filter((item) => {
+    return consumablesWithInsights.filter((item) => {
       const candidateValues = [
       item.name,
       item.stockQuantity,
@@ -952,62 +831,176 @@ function ConsumablesTrackerPage() {
 
       return candidateValues.some((value) => value.includes(term));
     });
-  }, [consumables, searchQuery]);
+  }, [consumablesWithInsights, searchQuery]);
+
+  const groupedRequests = useMemo(() => {
+    const groups = new Map();
+    techRequests.forEach((request) => {
+      const key = compactConsumableKey(request.itemName || request.item_name);
+      if (!key) return;
+      const existing = groups.get(key) || {
+        key,
+        itemName: request.itemName || request.item_name,
+        totalQuantity: 0,
+        activeQuantity: 0,
+        fulfilledQuantity: 0,
+        requests: [],
+        latestRequestAt: null,
+      };
+      const quantity = Number(request.quantity) || 0;
+      existing.totalQuantity += quantity;
+      if (["pending", "urgent", "ordered"].includes(request.status)) existing.activeQuantity += quantity;
+      if (["arrived", "completed"].includes(request.status)) existing.fulfilledQuantity += quantity;
+      existing.requests.push(request);
+      if (!existing.latestRequestAt || new Date(request.requestedAt) > new Date(existing.latestRequestAt)) {
+        existing.latestRequestAt = request.requestedAt;
+      }
+      groups.set(key, existing);
+    });
+    return Array.from(groups.values()).sort((a, b) => b.activeQuantity - a.activeQuantity || b.totalQuantity - a.totalQuantity);
+  }, [techRequests]);
+
+  const supplierSpend = useMemo(() => {
+    const grouped = new Map();
+    monthlyLogs.forEach((order) => {
+      const supplier = (order.supplier || "Unassigned").trim() || "Unassigned";
+      const spend = Number(order.totalValue) || Number(order.quantity) * Number(order.unitCost) || 0;
+      grouped.set(supplier, (grouped.get(supplier) || 0) + spend);
+    });
+    return Array.from(grouped, ([supplier, spend]) => ({ supplier, spend }))
+      .sort((a, b) => b.spend - a.spend);
+  }, [monthlyLogs]);
+
+  const dashboardSummary = useMemo(() => {
+    const active = consumablesWithInsights.filter((item) => item.isRequired !== false);
+    const scheduled = active.filter((item) => item.scheduleStatus.label !== "Not Required");
+    return {
+      active: active.length,
+      low: active.filter((item) => item.stockStatus === "Low").length,
+      out: active.filter((item) => item.stockStatus === "Out").length,
+      requestsNeedingAttention: techRequests.filter((request) => ["pending", "urgent"].includes(request.status)).length,
+      scheduledValue: scheduled.reduce((sum, item) => {
+        const quantity = item.suggestedOrderQuantity ?? item.estimatedQuantity ?? 0;
+        return sum + quantity * (Number(item.unitCost) || 0);
+      }, 0),
+    };
+  }, [consumablesWithInsights, techRequests]);
+
+  const criticalItems = useMemo(() => consumablesWithInsights
+    .filter((item) => item.isRequired !== false && (item.stockStatus !== "Available" || item.scheduleStatus.label !== "Not Required"))
+    .sort((a, b) => {
+      const stockRank = { Out: 0, Low: 1, Available: 2 };
+      const scheduleRank = { Overdue: 0, "Coming Up": 1, "Not Required": 2 };
+      return (stockRank[a.stockStatus] - stockRank[b.stockStatus]) ||
+        (scheduleRank[a.scheduleStatus.label] - scheduleRank[b.scheduleStatus.label]) ||
+        ((a.daysRemaining ?? Infinity) - (b.daysRemaining ?? Infinity));
+    })
+    .slice(0, 6), [consumablesWithInsights]);
+
+  const alerts = useMemo(() => {
+    const items = [];
+    if (dashboardSummary.out) items.push({ tone: "danger", label: `${dashboardSummary.out} item${dashboardSummary.out === 1 ? " is" : "s are"} out of stock` });
+    if (dashboardSummary.low) items.push({ tone: "warning", label: `${dashboardSummary.low} item${dashboardSummary.low === 1 ? " is" : "s are"} running low` });
+    const overdue = consumablesWithInsights.filter((item) => item.scheduleStatus.label === "Overdue").length;
+    if (overdue) items.push({ tone: "danger", label: `${overdue} scheduled order${overdue === 1 ? " is" : "s are"} overdue` });
+    const comingUp = consumablesWithInsights.filter((item) => item.scheduleStatus.label === "Coming Up").length;
+    if (comingUp) items.push({ tone: "warning", label: `${comingUp} scheduled order${comingUp === 1 ? " is" : "s are"} coming up` });
+    if (dashboardSummary.requestsNeedingAttention) items.push({ tone: "warning", label: `${dashboardSummary.requestsNeedingAttention} request${dashboardSummary.requestsNeedingAttention === 1 ? " needs" : "s need"} attention` });
+    if (totals.monthlyBudget > 0 && totals.percentageUsed >= 100) items.push({ tone: "danger", label: `Budget exceeded by ${formatCurrency(Math.abs(totals.budgetRemaining))}` });
+    else if (totals.monthlyBudget > 0 && totals.percentageUsed >= 80) items.push({ tone: "warning", label: `${Math.round(totals.percentageUsed)}% of the monthly budget has been used` });
+    return items;
+  }, [consumablesWithInsights, dashboardSummary, totals]);
+
+  const recentActivity = useMemo(() => [
+    ...monthlyLogs.map((order) => ({
+      id: `order-${order.id}`,
+      date: order.date,
+      label: `Order placed · ${order.itemName || "Consumable"}`,
+      detail: `${Number(order.quantity) || 0} units · ${formatCurrency(order.totalValue || Number(order.quantity) * Number(order.unitCost))}`,
+    })),
+    ...techRequests.map((request) => ({
+      id: `request-${request.id}`,
+      date: request.updatedAt || request.requestedAt,
+      label: `Request ${request.status || "pending"} · ${request.itemName || "Consumable"}`,
+      detail: `${Number(request.quantity) || 0} units · ${request.requestedByName || "Technician"}`,
+    })),
+  ].filter((activity) => activity.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 8), [monthlyLogs, techRequests]);
 
   const handleOrderFormChange = useCallback((field) => (event) => {
     setOrderForm((previous) => ({ ...previous, [field]: event.target.value }));
   }, []);
 
-  const handleSameDetails = useCallback(async () => {
-    if (!orderModalConsumable) {
+  const toggleConsumableSelection = useCallback((itemId) => {
+    setSelectedConsumableIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }, []);
+
+  const openBulkOrder = useCallback(() => {
+    const selected = consumablesWithInsights.filter((item) => selectedConsumableIds.has(item.id));
+    if (!selected.length) return;
+    setBulkOrderItems(selected.map((item) => ({
+      id: item.id,
+      name: item.name,
+      supplier: item.orderHistory?.[0]?.supplier || item.supplier || "",
+      quantity: String(item.suggestedOrderQuantity || item.estimatedQuantity || item.lastOrderQuantity || 1),
+      unitCost: String(item.orderHistory?.[0]?.unitCost ?? item.unitCost ?? 0),
+      orderDate: todayIso,
+      priceChange: item.priceChange,
+    })));
+    setBulkOrderError("");
+  }, [consumablesWithInsights, selectedConsumableIds, todayIso]);
+
+  const closeBulkOrder = useCallback(() => {
+    setBulkOrderItems([]);
+    setBulkOrderError("");
+  }, []);
+
+  const handleBulkOrderChange = useCallback((itemId, field, value) => {
+    setBulkOrderItems((previous) => previous.map((item) =>
+      item.id === itemId ? { ...item, [field]: value } : item
+    ));
+    setBulkOrderError("");
+  }, []);
+
+  const handleBulkOrderSubmit = useCallback(async (event) => {
+    event.preventDefault();
+    const suppliers = new Set(bulkOrderItems.map((item) => item.supplier.trim().toLowerCase()).filter(Boolean));
+    if (suppliers.size !== 1 || bulkOrderItems.some((item) => !item.supplier.trim())) {
+      setBulkOrderError("Grouped orders must use one shared supplier for every line.");
+      return;
+    }
+    if (bulkOrderItems.some((item) => Number(item.quantity) <= 0 || Number(item.unitCost) < 0)) {
+      setBulkOrderError("Enter a valid quantity and unit cost for every line.");
       return;
     }
 
-    setOrderModalLoading(true);
-    setOrderModalError("");
-
-    const lastLog = orderModalConsumable.orderHistory?.[0];
-    const payload = {
-      quantity:
-      lastLog?.quantity ??
-      orderModalConsumable.lastOrderQuantity ??
-      orderModalConsumable.estimatedQuantity ??
-      0,
-      unitCost: lastLog?.unitCost ?? orderModalConsumable.unitCost ?? 0,
-      supplier: lastLog?.supplier ?? orderModalConsumable.supplier ?? "",
-      orderDate: todayIso
-    };
-
+    setBulkOrderLoading(true);
+    setBulkOrderError("");
     try {
-      await addConsumableOrder(orderModalConsumable.id, payload);
-      if (pendingRequestOrderId) {
-        await handleRequestOrdered(
-          pendingRequestOrderId,
-          orderModalConsumable.id,
-          payload.quantity,
-          pendingRequestCreatesNewLine
-        );
-        setPendingRequestOrderId(null);
-        setPendingRequestCreatesNewLine(false);
+      for (const item of bulkOrderItems) {
+        await addConsumableOrder(item.id, {
+          quantity: Number(item.quantity),
+          unitCost: Number(item.unitCost),
+          supplier: item.supplier.trim(),
+          orderDate: item.orderDate || todayIso,
+          estimatedQuantityOverride: Number(item.quantity),
+        });
       }
-      await refreshConsumables();
-      await fetchMonthlyLogs();
-      closeOrderModal();
+      setSelectedConsumableIds(new Set());
+      closeBulkOrder();
+      await Promise.all([refreshConsumables(), fetchMonthlyLogs(), fetchFinancialSummary()]);
     } catch (error) {
-      setOrderModalError(error?.message || "Failed to place order.");
+      setBulkOrderError(error?.message || "Unable to place the grouped order.");
     } finally {
-      setOrderModalLoading(false);
+      setBulkOrderLoading(false);
     }
-  }, [
-  closeOrderModal,
-  fetchMonthlyLogs,
-  handleRequestOrdered,
-  orderModalConsumable,
-  pendingRequestCreatesNewLine,
-  pendingRequestOrderId,
-  refreshConsumables,
-  todayIso]
-  );
+  }, [bulkOrderItems, closeBulkOrder, fetchFinancialSummary, fetchMonthlyLogs, refreshConsumables, todayIso]);
 
   const handleEditedOrder = useCallback(
     async (event) => {
@@ -1066,7 +1059,7 @@ function ConsumablesTrackerPage() {
   const previewLogs = orderModalConsumable?.orderHistory?.slice(0, 3) ?? [];
 
   if (!isWorkshopManager) {
-    return <ConsumablesTrackerPageUi view="section1" cardStyle={cardStyle} Link={Link} mutedTextColor={mutedTextColor} />;
+    return <ConsumablesTrackerPageUi view="section1" cardStyle={cardStyle} Link={Link} />;
 
 
 
@@ -1098,7 +1091,89 @@ function ConsumablesTrackerPage() {
 
   }
 
-  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthValueChange={handleMonthValueChange} handleOrderFormChange={handleOrderFormChange} handleRequestArrived={handleRequestArrived} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} maxMonthValue={maxMonthValue} monthLabel={monthLabel} monthlyLogs={monthlyLogs} MonthPickerField={MonthPickerField} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} selectedMonthValue={selectedMonthValue} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
+  return <ConsumablesTrackerPageUi
+    view="section2"
+    PageShell={PageShell}
+    ContentWidth={ContentWidth}
+    InlineLoading={InlineLoading}
+    Link={Link}
+    SearchBar={SearchBar}
+    StockCheckPopup={StockCheckPopup}
+    alerts={alerts}
+    budgetInput={budgetInput}
+    budgetSaveError={budgetSaveError}
+    budgetSaveMessage={budgetSaveMessage}
+    budgetSaving={budgetSaving}
+    bulkOrderError={bulkOrderError}
+    bulkOrderItems={bulkOrderItems}
+    bulkOrderLoading={bulkOrderLoading}
+    cardStyle={cardStyle}
+    closeBulkOrder={closeBulkOrder}
+    closeHistoryModal={closeHistoryModal}
+    closeOrderModal={closeOrderModal}
+    consumablesError={consumablesError}
+    criticalItems={criticalItems}
+    dashboardSummary={dashboardSummary}
+    dbUserId={dbUserId}
+    duplicateModalStyle={duplicateModalStyle}
+    duplicateOverlayStyle={duplicateOverlayStyle}
+    fetchTechRequests={fetchTechRequests}
+    filteredConsumables={filteredConsumables}
+    financialError={financialError}
+    financialLoading={financialLoading}
+    financialSummary={financialSummary}
+    formatCurrency={formatCurrency}
+    formatDate={formatDate}
+    formattedBudgetUpdatedAt={formattedBudgetUpdatedAt}
+    groupedRequests={groupedRequests}
+    handleBudgetInputChange={handleBudgetInputChange}
+    handleBudgetSave={handleBudgetSave}
+    handleBulkOrderChange={handleBulkOrderChange}
+    handleBulkOrderSubmit={handleBulkOrderSubmit}
+    handleEditedOrder={handleEditedOrder}
+    handleMonthValueChange={handleMonthValueChange}
+    handleOrderFormChange={handleOrderFormChange}
+    handleRequestArrived={handleRequestArrived}
+    handleRequestOrder={handleRequestOrder}
+    historyModalConsumable={historyModalConsumable}
+    historyModalStyle={historyModalStyle}
+    isWorkshopManager={isWorkshopManager}
+    loadingConsumables={loadingConsumables}
+    logsError={logsError}
+    logsLoading={logsLoading}
+    logsSummary={logsSummary}
+    maxMonthValue={maxMonthValue}
+    monthLabel={monthLabel}
+    monthlyLogs={monthlyLogs}
+    MonthPickerField={MonthPickerField}
+    openBulkOrder={openBulkOrder}
+    openHistoryModal={openHistoryModal}
+    openOrderModal={openOrderModal}
+    orderForm={orderForm}
+    orderModalConsumable={orderModalConsumable}
+    orderModalError={orderModalError}
+    orderModalLoading={orderModalLoading}
+    orderModalOverlayStyle={orderModalOverlayStyle}
+    orderModalStyle={orderModalStyle}
+    orderingRequestId={orderingRequestId}
+    potentialDuplicates={potentialDuplicates}
+    previewLogs={previewLogs}
+    recentActivity={recentActivity}
+    requestsError={requestsError}
+    requestsLoading={requestsLoading}
+    searchQuery={searchQuery}
+    selectedConsumableIds={selectedConsumableIds}
+    selectedMonthValue={selectedMonthValue}
+    setSearchQuery={setSearchQuery}
+    setShowDuplicateModal={setShowDuplicateModal}
+    setShowStockCheck={setShowStockCheck}
+    showDuplicateModal={showDuplicateModal}
+    showStockCheck={showStockCheck}
+    supplierSpend={supplierSpend}
+    techRequests={techRequests}
+    toggleConsumableSelection={toggleConsumableSelection}
+    totals={totals}
+  />;
 
 
 

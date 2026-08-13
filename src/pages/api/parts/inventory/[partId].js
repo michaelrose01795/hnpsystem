@@ -2,6 +2,7 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
+import { getPartDemandMaps } from "@/lib/database/partsInventory";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseNumeric = (value, fallback = 0) => {
@@ -12,30 +13,17 @@ const parseNumeric = (value, fallback = 0) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
-const OPEN_JOB_STATUSES = [
-  "waiting_authorisation",
-  "pending",
-  "awaiting_stock",
-  "on_order",
-  "pre_picked",
-  "stock",
-  "allocated",
-  "picked",
-];
-
 const withJobCount = async (part) => {
   if (!part?.id) return part;
-  const { data: jobRows, error } = await supabase
-    .from("parts_job_items")
-    .select("part_id")
-    .eq("part_id", part.id)
-    .in("status", OPEN_JOB_STATUSES);
-
-  if (error) throw error;
+  const { linkedJobs, jobCounts, requirementCounts, demandQuantities } =
+    await getPartDemandMaps([part.id]);
 
   return {
     ...part,
-    open_job_count: (jobRows || []).length,
+    open_job_count: jobCounts[part.id] || 0,
+    open_requirement_count: requirementCounts[part.id] || 0,
+    open_job_quantity: demandQuantities[part.id] || 0,
+    linked_jobs: linkedJobs[part.id] || [],
   };
 };
 
