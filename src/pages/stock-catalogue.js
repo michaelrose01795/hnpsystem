@@ -21,10 +21,10 @@ const PRE_PICK_OPTIONS = [
 { value: "service_rack_2", label: "Service Rack 2" },
 { value: "service_rack_3", label: "Service Rack 3" },
 { value: "service_rack_4", label: "Service Rack 4" },
-{ value: "sales_rack_1", label: "Sales Rack 1 (TODO)" },
-{ value: "sales_rack_2", label: "Sales Rack 2 (TODO)" },
-{ value: "sales_rack_3", label: "Sales Rack 3 (TODO)" },
-{ value: "sales_rack_4", label: "Sales Rack 4 (TODO)" },
+{ value: "sales_rack_1", label: "Sales Rack 1" },
+{ value: "sales_rack_2", label: "Sales Rack 2" },
+{ value: "sales_rack_3", label: "Sales Rack 3" },
+{ value: "sales_rack_4", label: "Sales Rack 4" },
 { value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
 { value: "no_pick", label: "No Pick" },
 { value: "on_order", label: "On Order" }];
@@ -342,32 +342,18 @@ function StockCataloguePage() {
     setInventoryError("");
     try {
       const trimmed = (term || "").trim();
-      if (trimmed.length >= 2) {
-        const searchParams = new URLSearchParams({
-          search: trimmed,
-          limit: "100"
-        });
-        const response = await fetch(`/api/parts/catalog?${searchParams.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Failed to load inventory");
-        }
-        setInventory(payload.parts || []);
-        return payload.parts || [];
-      } else {
-        const query = new URLSearchParams({
-          search: trimmed,
-          includeInactive: "false",
-          limit: "100"
-        });
-        const response = await fetch(`/api/parts/inventory?${query}`);
-        const data = await response.json();
-        if (!response.ok || !data?.success) {
-          throw new Error(data?.message || "Failed to load inventory");
-        }
-        setInventory(data.parts || []);
-        return data.parts || [];
+      const query = new URLSearchParams({
+        search: trimmed,
+        includeInactive: "false",
+        limit: "100"
+      });
+      const response = await fetch(`/api/parts/inventory?${query}`);
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to load inventory");
       }
+      setInventory(data.parts || []);
+      return data.parts || [];
     } catch (err) {
       setInventoryError(err.message || "Unable to load inventory");
       return [];

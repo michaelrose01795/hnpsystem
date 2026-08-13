@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
-import { sanitizeNumericId } from "@/lib/utils/ids";
+import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { ScrollArea } from "@/components/ui/scrollAPI";
@@ -255,6 +255,7 @@ function GoodsInPage() {
   const [goodsInItems, setGoodsInItems] = useState([]);
   const [showBinSuggestions, setShowBinSuggestions] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [partForm, setPartForm] = useState(() => createDefaultPartForm());
   const [activeTab, setActiveTab] = useState("global");
@@ -526,6 +527,46 @@ function GoodsInPage() {
     }
   }, [actingUserNumeric, actingUserUuid, ensureInvoiceReady, goodsInRecord, invoiceForm, invoiceScanPayload]);
 
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true);
+      const response = await fetch("/api/parts/goods-in", {
+        method: goodsInRecord?.id ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goodsInId: goodsInRecord?.id,
+          supplierAccountId: invoiceForm.supplierAccountId,
+          supplierName: invoiceForm.supplierName,
+          supplierAddress: invoiceForm.supplierAddress,
+          supplierContact: invoiceForm.supplierContact,
+          invoiceNumber: invoiceForm.invoiceNumber,
+          deliveryNoteNumber: invoiceForm.deliveryNoteNumber,
+          invoiceDate: invoiceForm.invoiceDate,
+          priceLevel: invoiceForm.priceLevel,
+          notes: invoiceForm.notes,
+          scanPayload: invoiceScanPayload,
+          userId: actingUserUuid,
+          userNumericId: actingUserNumeric,
+          saveDraft: true,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to save goods-in draft");
+      }
+      setGoodsInRecord(payload.goodsIn);
+      setToast({ type: "success", message: `${payload.goodsIn.goods_in_number} saved as draft` });
+      await fetchRecentGoodsIn();
+      return true;
+    } catch (error) {
+      console.error(error);
+      setToast({ type: "error", message: error.message });
+      return false;
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const buildPartPayload = () => ({
     partId: partForm.partId,
     partNumber: partForm.partNumber,
@@ -795,7 +836,7 @@ function GoodsInPage() {
     setSupplierModalOpen(false);
   };
 
-  const handlePartSelected = (part) => {
+  const handlePartSelected = useCallback((part) => {
     setPartError("");
     setPartForm((prev) => ({
       ...prev,
@@ -810,7 +851,40 @@ function GoodsInPage() {
     setSelectedCatalogPart(part);
     setPartSearchOpen(false);
     requestAnimationFrame(() => partNumberInputRef.current?.focus());
-  };
+  }, []);
+
+  const preselectedPartId = Array.isArray(router.query?.part)
+    ? router.query.part[0]
+    : router.query?.part;
+  useEffect(() => {
+    if (!router.isReady || !preselectedPartId) return;
+    if (!isValidUuid(preselectedPartId)) {
+      setPartError("The linked catalogue part is invalid.");
+      return;
+    }
+    if (selectedCatalogPart?.id === preselectedPartId) return;
+
+    const controller = new AbortController();
+    const loadLinkedPart = async () => {
+      try {
+        const response = await fetch(`/api/parts/inventory/${encodeURIComponent(preselectedPartId)}`, {
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success || !payload.part) {
+          throw new Error(payload?.message || "Unable to load the linked catalogue part");
+        }
+        handlePartSelected(payload.part);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        setPartError(error.message);
+        setToast({ type: "error", message: error.message });
+      }
+    };
+
+    loadLinkedPart();
+    return () => controller.abort();
+  }, [handlePartSelected, preselectedPartId, router.isReady, selectedCatalogPart?.id]);
 
   const resetGoodsInState = useCallback(() => {
     setGoodsInRecord(null);
@@ -865,7 +939,7 @@ function GoodsInPage() {
 
   }
 
-  return <GoodsInPageUi view="section2" actingUserNumeric={actingUserNumeric} actingUserUuid={actingUserUuid} activeTab={activeTab} addPartFieldStyle={addPartFieldStyle} addPartInputStyle={addPartInputStyle} addressFieldStyle={addressFieldStyle} ADVANCED_TABS={ADVANCED_TABS} CalendarField={CalendarField} completing={completing} completionSummary={completionSummary} CompletionPrompt={CompletionPrompt} completionPromptOpen={completionPromptOpen} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} createDefaultPartForm={createDefaultPartForm} currencyFormatter={currencyFormatter} dangerButtonStyle={dangerButtonStyle} DropdownField={DropdownField} duplicateCandidate={duplicateCandidate} fetchGoodsIn={fetchGoodsIn} fetchRecentGoodsIn={fetchRecentGoodsIn} fieldGridStyle={fieldGridStyle} fileInputRef={fileInputRef} filteredBinLocations={filteredBinLocations} FRANCHISE_OPTIONS={FRANCHISE_OPTIONS} goodsInItems={goodsInItems} GoodsInPartSearchModal={GoodsInPartSearchModal} goodsInRecord={goodsInRecord} handleAddPart={handleAddPart} handleCompleteGoodsIn={handleCompleteGoodsIn} handleCompletionDismiss={handleCompletionDismiss} handleFinishGoodsIn={handleFinishGoodsIn} handleIncreaseExistingLine={handleIncreaseExistingLine} handleInvoiceChange={handleInvoiceChange} handleJobItemsAssigned={handleJobItemsAssigned} handleNestedPartChange={handleNestedPartChange} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemoveItem={handleRemoveItem} handleSalePriceChange={handleSalePriceChange} handleScanDocChange={handleScanDocChange} handleScanDocClick={handleScanDocClick} handleSupplierSelected={handleSupplierSelected} inputStyle={inputStyle} invoiceCellStyle={invoiceCellStyle} invoiceForm={invoiceForm} invoiceHeaderCellStyle={invoiceHeaderCellStyle} invoiceRowStyle={invoiceRowStyle} invoiceScanPayload={invoiceScanPayload} invoiceTableStyles={invoiceTableStyles} isAdvancedPanelOpen={isAdvancedPanelOpen} JobAssignmentModal={JobAssignmentModal} jobModalOpen={jobModalOpen} labelStyle={labelStyle} notesTextareaStyle={notesTextareaStyle} partError={partError} partForm={partForm} partNumberInputRef={partNumberInputRef} partSearchOpen={partSearchOpen} PRICE_LEVEL_OPTIONS={PRICE_LEVEL_OPTIONS} primaryButtonStyle={primaryButtonStyle} recentError={recentError} recentGoodsIn={recentGoodsIn} recentLoading={recentLoading} removingItemId={removingItemId} savingPart={savingPart} scanBusy={scanBusy} ScrollArea={ScrollArea} secondaryButtonStyle={secondaryButtonStyle} sectionCardStyle={sectionCardStyle} selectedCatalogPart={selectedCatalogPart} setActiveTab={setActiveTab} setCompletionPromptOpen={setCompletionPromptOpen} setConfirmDialog={setConfirmDialog} setDuplicateCandidate={setDuplicateCandidate} setIsAdvancedPanelOpen={setIsAdvancedPanelOpen} setJobModalOpen={setJobModalOpen} setPartForm={setPartForm} setPartSearchOpen={setPartSearchOpen} setShowBinSuggestions={setShowBinSuggestions} setSupplierModalOpen={setSupplierModalOpen} setTimeout={setTimeout} showBinSuggestions={showBinSuggestions} splitFieldRowStyle={splitFieldRowStyle} supplierModalOpen={supplierModalOpen} SupplierSearchModal={SupplierSearchModal} TabGroup={TabGroup} textareaStyle={textareaStyle} toast={toast} VAT_RATE_OPTIONS={VAT_RATE_OPTIONS} />;
+  return <GoodsInPageUi view="section2" actingUserNumeric={actingUserNumeric} actingUserUuid={actingUserUuid} activeTab={activeTab} addPartFieldStyle={addPartFieldStyle} addPartInputStyle={addPartInputStyle} addressFieldStyle={addressFieldStyle} ADVANCED_TABS={ADVANCED_TABS} CalendarField={CalendarField} completing={completing} completionSummary={completionSummary} CompletionPrompt={CompletionPrompt} completionPromptOpen={completionPromptOpen} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} createDefaultPartForm={createDefaultPartForm} currencyFormatter={currencyFormatter} dangerButtonStyle={dangerButtonStyle} DropdownField={DropdownField} duplicateCandidate={duplicateCandidate} fetchGoodsIn={fetchGoodsIn} fetchRecentGoodsIn={fetchRecentGoodsIn} fieldGridStyle={fieldGridStyle} fileInputRef={fileInputRef} filteredBinLocations={filteredBinLocations} FRANCHISE_OPTIONS={FRANCHISE_OPTIONS} goodsInItems={goodsInItems} GoodsInPartSearchModal={GoodsInPartSearchModal} goodsInRecord={goodsInRecord} handleAddPart={handleAddPart} handleCompleteGoodsIn={handleCompleteGoodsIn} handleCompletionDismiss={handleCompletionDismiss} handleFinishGoodsIn={handleFinishGoodsIn} handleIncreaseExistingLine={handleIncreaseExistingLine} handleInvoiceChange={handleInvoiceChange} handleJobItemsAssigned={handleJobItemsAssigned} handleNestedPartChange={handleNestedPartChange} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemoveItem={handleRemoveItem} handleSalePriceChange={handleSalePriceChange} handleSaveDraft={handleSaveDraft} handleScanDocChange={handleScanDocChange} handleScanDocClick={handleScanDocClick} handleSupplierSelected={handleSupplierSelected} inputStyle={inputStyle} invoiceCellStyle={invoiceCellStyle} invoiceForm={invoiceForm} invoiceHeaderCellStyle={invoiceHeaderCellStyle} invoiceRowStyle={invoiceRowStyle} invoiceScanPayload={invoiceScanPayload} invoiceTableStyles={invoiceTableStyles} isAdvancedPanelOpen={isAdvancedPanelOpen} JobAssignmentModal={JobAssignmentModal} jobModalOpen={jobModalOpen} labelStyle={labelStyle} notesTextareaStyle={notesTextareaStyle} partError={partError} partForm={partForm} partNumberInputRef={partNumberInputRef} partSearchOpen={partSearchOpen} PRICE_LEVEL_OPTIONS={PRICE_LEVEL_OPTIONS} primaryButtonStyle={primaryButtonStyle} recentError={recentError} recentGoodsIn={recentGoodsIn} recentLoading={recentLoading} removingItemId={removingItemId} savingDraft={savingDraft} savingPart={savingPart} scanBusy={scanBusy} ScrollArea={ScrollArea} secondaryButtonStyle={secondaryButtonStyle} sectionCardStyle={sectionCardStyle} selectedCatalogPart={selectedCatalogPart} setActiveTab={setActiveTab} setCompletionPromptOpen={setCompletionPromptOpen} setConfirmDialog={setConfirmDialog} setDuplicateCandidate={setDuplicateCandidate} setIsAdvancedPanelOpen={setIsAdvancedPanelOpen} setJobModalOpen={setJobModalOpen} setPartForm={setPartForm} setPartSearchOpen={setPartSearchOpen} setShowBinSuggestions={setShowBinSuggestions} setSupplierModalOpen={setSupplierModalOpen} setTimeout={setTimeout} showBinSuggestions={showBinSuggestions} splitFieldRowStyle={splitFieldRowStyle} supplierModalOpen={supplierModalOpen} SupplierSearchModal={SupplierSearchModal} TabGroup={TabGroup} textareaStyle={textareaStyle} toast={toast} VAT_RATE_OPTIONS={VAT_RATE_OPTIONS} />;
 
 
 

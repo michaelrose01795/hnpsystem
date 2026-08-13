@@ -6,7 +6,8 @@ const db = getDatabaseClient();
 const TECH_ROLES = ["Techs", "MOT Tester"];
 
 const DEFAULT_TARGET_HOURS = 160;
-const DEFAULT_WEIGHT = 1.0;
+// Matches tech_efficiency_targets.weight in schemaReference.sql.
+const DEFAULT_WEIGHT = 0.75;
 const ENTRY_META_PREFIX = "__HNP_JOB_META__:";
 
 const normalizeHourValue = (value, { allowNull = false } = {}) => {

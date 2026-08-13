@@ -1,10 +1,15 @@
 // file location: src/components/page-ui/parts/parts-goods-in-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import Button from "@/components/ui/Button";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function GoodsInPageUi(props) {
   const [historySearch, setHistorySearch] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const {
     ADVANCED_TABS,
     CalendarField,
@@ -52,6 +57,7 @@ export default function GoodsInPageUi(props) {
     handlePartSelected,
     handleRemoveItem,
     handleSalePriceChange,
+    handleSaveDraft,
     handleScanDocChange,
     handleScanDocClick,
     handleSupplierSelected,
@@ -76,6 +82,7 @@ export default function GoodsInPageUi(props) {
     recentLoading,
     removingItemId,
     savingPart,
+    savingDraft,
     scanBusy,
     secondaryButtonStyle,
     sectionCardStyle,
@@ -211,33 +218,6 @@ export default function GoodsInPageUi(props) {
           min-width: 0;
           width: 100%;
         }
-        .goods-in-draft-header {
-          display: grid;
-          grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(92px, 0.55fr));
-          gap: 12px;
-          align-items: center;
-        }
-        .goods-in-draft-title h1 {
-          margin: 2px 0 0;
-          font-size: var(--text-h2);
-          color: var(--accentText);
-          letter-spacing: -0.02em;
-        }
-        .goods-in-metric {
-          min-width: 0;
-          font-variant-numeric: tabular-nums;
-        }
-        .goods-in-metric small {
-          display: block;
-          color: var(--text-1);
-          margin-bottom: 3px;
-        }
-        .goods-in-metric strong {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
         .goods-in-context-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
@@ -252,12 +232,6 @@ export default function GoodsInPageUi(props) {
           flex-wrap: wrap;
           font-size: 0.86rem;
           font-variant-numeric: tabular-nums;
-        }
-        .goods-in-support-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-          gap: var(--page-stack-gap);
-          align-items: start;
         }
         .goods-in-table-scroll {
           overflow-x: auto;
@@ -277,24 +251,11 @@ export default function GoodsInPageUi(props) {
             flex-direction: column;
             align-items: stretch;
           }
-          .goods-in-draft-header {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-          .goods-in-draft-title {
-            grid-column: 1 / -1;
-          }
-          .goods-in-support-grid {
-            grid-template-columns: 1fr;
-          }
         }
         @media (max-width: 560px) {
           .add-part-fields-grid,
-          .add-part-fields-row-span-3,
-          .goods-in-draft-header {
+          .add-part-fields-row-span-3 {
             grid-template-columns: 1fr;
-          }
-          .goods-in-draft-title {
-            grid-column: auto;
           }
         }
       `}</style>
@@ -315,29 +276,6 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
-        {(() => {
-          const totalUnits = goodsInItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-          const totalCost = goodsInItems.reduce((sum, item) => sum + Number(item.cost_price || 0) * Number(item.quantity || 0), 0);
-          const ledgerReady = Boolean(invoiceForm.supplierAccountId);
-          const status = goodsInRecord?.status || "not started";
-          return <LayerTheme as="header" sectionKey="goods-in-draft-header" parentKey="app-layout-page-card" style={sectionCardStyle}>
-            <div className="goods-in-draft-header">
-              <div className="goods-in-draft-title">
-                <small style={{ color: "var(--text-1)" }}>{goodsInRecord ? "Draft goods in" : "New goods in"}</small>
-                <h1>{goodsInRecord?.goods_in_number || "GIN assigned on first line"}</h1>
-                <div style={{ marginTop: 5, color: ledgerReady ? "var(--success-dark)" : "var(--danger)", fontWeight: 600 }}>
-                  {ledgerReady ? `Ledger linked · ${invoiceForm.supplierAccountNumber || invoiceForm.supplierAccountId}` : "Supplier ledger link required"}
-                </div>
-              </div>
-              <div className="goods-in-metric"><small>Supplier</small><strong>{invoiceForm.supplierName || "Not selected"}</strong></div>
-              <div className="goods-in-metric"><small>Invoice / delivery</small><strong>{invoiceForm.invoiceNumber || "—"} · {invoiceForm.deliveryNoteNumber || "—"}</strong></div>
-              <div className="goods-in-metric"><small>Status</small><strong>{status}</strong></div>
-              <div className="goods-in-metric"><small>Lines / units</small><strong>{goodsInItems.length} / {totalUnits}</strong></div>
-              <div className="goods-in-metric"><small>Current cost</small><strong>{currencyFormatter.format(totalCost)}</strong></div>
-            </div>
-          </LayerTheme>;
-        })()}
-
         <LayerTheme
           as="section"
           data-presentation="goods-in-invoice"
@@ -352,14 +290,21 @@ export default function GoodsInPageUi(props) {
         }}>Invoice details</h2>
             <div style={{
           display: "flex",
-          gap: "10px"
+          gap: "10px",
+          flexWrap: "wrap"
         }}>
-              <button style={primaryButtonStyle(false)} onClick={() => setSupplierModalOpen(true)}>
+              <Button type="button" variant="secondary" onClick={() => {
+                setSettingsOpen(true);
+                fetchRecentGoodsIn();
+              }}>
+                Settings
+              </Button>
+              <Button type="button" variant="primary" onClick={() => setSupplierModalOpen(true)}>
                 Supplier search
-              </button>
-              <button style={secondaryButtonStyle} onClick={handleScanDocClick} disabled={scanBusy}>
-                {scanBusy ? "Scanning..." : "Scan doc"}
-              </button>
+              </Button>
+              <Button type="button" variant="secondary" busy={scanBusy} onClick={handleScanDocClick}>
+                Scan doc
+              </Button>
               <input ref={fileInputRef} type="file" accept=".txt,.pdf,.csv,.json,.doc,.docx,.jpg,.png" style={{
             display: "none"
           }} onChange={handleScanDocChange} />
@@ -575,10 +520,17 @@ export default function GoodsInPageUi(props) {
                 </div>
               </LayerSurface>
               <LayerSurface as="section" className="goods-in-context-block" padding="12px">
-                <div style={{ fontWeight: 700 }}>Job demand · {selectedCatalogPart.open_job_count || 0}</div>
+                <div style={{ fontWeight: 700 }}>
+                  Job demand · {Number(selectedCatalogPart.open_job_quantity || 0)} units
+                </div>
+                <small style={{ color: "var(--text-1)" }}>
+                  {Number(selectedCatalogPart.open_requirement_count || 0)} open requirements across {Number(selectedCatalogPart.open_job_count || 0)} jobs
+                </small>
                 {(selectedCatalogPart.linked_jobs || []).length ? <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
                   {selectedCatalogPart.linked_jobs.slice(0, 4).map((job, index) => <div key={`${job.type}-${job.job_id}-${index}`} style={{ fontSize: "0.86rem" }}>
-                    <strong>{job.job_number}</strong> · qty {job.quantity || 1} · {job.status || job.job_waiting_status || "open"}
+                    <Link className="app-btn app-btn--secondary app-btn--xs" href={`/job-cards/${encodeURIComponent(job.job_number)}`}>
+                      {job.job_number}
+                    </Link>{" "}· qty {job.quantity || 1} · {job.status || job.job_waiting_status || "open"}
                   </div>)}
                 </div> : <div style={{ color: "var(--text-1)", marginTop: 8 }}>No open job requirement is linked to this catalogue part.</div>}
               </LayerSurface>
@@ -876,14 +828,65 @@ export default function GoodsInPageUi(props) {
             </ScrollArea></div>}
         </LayerTheme>
 
-        <div className="goods-in-support-grid">
-          <LayerTheme as="section" sectionKey="goods-in-recent" parentKey="app-layout-page-card" style={sectionCardStyle}>
-            <div className="invoice-details-toolbar">
-              <div><h2 style={{ margin: 0 }}>Recent goods in and drafts</h2><div style={{ color: "var(--text-1)", fontSize: ".86rem", marginTop: 3 }}>Search recent GIN, supplier, invoice, delivery note, part or date.</div></div>
-              <button className="app-btn app-btn--secondary" onClick={fetchRecentGoodsIn}>Refresh</button>
+        {completionSummary && <LayerTheme as="section" sectionKey="goods-in-completion-summary" parentKey="app-layout-page-card" style={sectionCardStyle}>
+          <h2 style={{ margin: 0 }}>Completion result</h2><div className="goods-in-summary-strip"><span>Lines <strong>{completionSummary.lines}</strong></span><span>Units <strong>{completionSummary.units}</strong></span><span>Updated <strong>{completionSummary.updated}</strong></span><span>Created <strong>{completionSummary.created}</strong></span><span>Failed <strong>{completionSummary.failed.length}</strong></span><span>Cost received <strong>{currencyFormatter.format(completionSummary.totalCost)}</strong></span></div>
+          {completionSummary.failed.length > 0 && <div className="app-status-message app-status-message--warning">{completionSummary.failed.map(item => <div key={`${item.partNumber}-${item.error}`}><strong>{item.partNumber || "Unknown part"}:</strong> {item.error}</div>)}</div>}
+        </LayerTheme>}
+      </div>
+
+      <PopupModal
+        isOpen={settingsOpen}
+        onClose={savingDraft ? undefined : () => setSettingsOpen(false)}
+        closeOnBackdrop={!savingDraft}
+        ariaLabel="Goods in settings"
+        cardClassName="app-settings-popup-card"
+        cardStyle={{ width: "min(900px, 100%)", padding: "var(--page-card-padding)", overflow: "hidden" }}
+      >
+        <div className="app-settings-popup" style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)", overflow: "hidden" }}>
+          <header className="app-popup-compact-header">
+            <h2>Goods in settings</h2>
+            <div className="app-popup-compact-header__actions">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                busy={savingDraft}
+                disabled={goodsInRecord?.status && goodsInRecord.status !== "draft"}
+                onClick={handleSaveDraft}
+              >
+                Save draft
+              </Button>
+              <Button type="button" variant="secondary" size="sm" disabled={savingDraft} onClick={() => setSettingsOpen(false)}>
+                Close
+              </Button>
             </div>
-            <input className="app-input" style={inputStyle} value={historySearch} onChange={event => setHistorySearch(event.target.value)} placeholder="Search recent receiving history" />
-            {recentLoading ? <div style={{ color: "var(--text-1)" }}>Loading recent records…</div> : recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8 }}>
+          </header>
+
+          <LayerTheme
+            as="section"
+            sectionKey="goods-in-recent"
+            parentKey="shared-popup-card"
+            style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+          >
+            <div className="invoice-details-toolbar">
+              <div>
+                <h3 style={{ margin: 0 }}>Recent goods in and drafts</h3>
+                <div style={{ color: "var(--text-1)", fontSize: ".86rem", marginTop: 3 }}>
+                  Search recent GIN, supplier, invoice, delivery note, part or date.
+                </div>
+              </div>
+              <Button type="button" variant="secondary" size="sm" onClick={fetchRecentGoodsIn}>
+                Refresh
+              </Button>
+            </div>
+            <SearchBar
+              value={historySearch}
+              onChange={event => setHistorySearch(event.target.value)}
+              onClear={() => setHistorySearch("")}
+              placeholder="Search recent receiving history"
+              ariaLabel="Search recent goods in and drafts"
+            />
+            {recentLoading ? <div style={{ color: "var(--text-1)" }}>Loading recent records…</div> : recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8, overflowY: "auto" }}>
               {recentGoodsIn.filter(record => {
                 const query = historySearch.trim().toLowerCase();
                 if (!query) return true;
@@ -891,23 +894,28 @@ export default function GoodsInPageUi(props) {
               }).slice(0, 6).map(record => {
                 const units = (record.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
                 const cost = (record.items || []).reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.cost_price || 0), 0);
-                return <button className="app-btn app-btn--secondary" key={record.id} type="button" style={{ ...secondaryButtonStyle, width: "100%", textAlign: "left", display: "grid", gridTemplateColumns: "minmax(100px, .7fr) minmax(140px, 1.4fr) auto", gap: 10, alignItems: "center" }} onClick={() => record.status === "draft" && fetchGoodsIn(record.id)} disabled={record.status !== "draft"} title={record.status === "draft" ? "Resume this draft" : "Completed record"}>
-                  <strong>{record.goods_in_number}</strong><span>{record.supplier_name || "Unknown supplier"} · {record.invoice_number || "No invoice"}</span><span>{record.status} · {record.items?.length || 0} lines / {units} units · {currencyFormatter.format(cost)}</span>
-                </button>;
+                return <Button
+                  key={record.id}
+                  type="button"
+                  variant="secondary"
+                  style={{ width: "100%", textAlign: "left", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: 10, alignItems: "center" }}
+                  onClick={async () => {
+                    if (record.status !== "draft") return;
+                    await fetchGoodsIn(record.id);
+                    setSettingsOpen(false);
+                  }}
+                  disabled={record.status !== "draft"}
+                  title={record.status === "draft" ? "Resume this draft" : "Completed record"}
+                >
+                  <strong>{record.goods_in_number}</strong>
+                  <span>{record.supplier_name || "Unknown supplier"} · {record.invoice_number || "No invoice"}</span>
+                  <span>{record.status} · {record.items?.length || 0} lines / {units} units · {currencyFormatter.format(cost)}</span>
+                </Button>;
               })}
             </div>}
           </LayerTheme>
-          <LayerTheme as="aside" sectionKey="goods-in-progress" parentKey="app-layout-page-card" style={sectionCardStyle}>
-            <h2 style={{ margin: 0 }}>Receiving progress</h2>
-            {(() => { const issues = [!invoiceForm.supplierAccountId && "Supplier ledger link missing", !invoiceForm.invoiceNumber.trim() && "Invoice number missing", goodsInItems.some(item => !item.bin_location) && "One or more bins missing", goodsInItems.some(item => Number(item.cost_price || 0) > Number(item.retail_price || 0)) && "Negative-margin pricing", !goodsInRecord && "Draft starts when the first part is added"].filter(Boolean); return <><div className="goods-in-summary-strip"><span>Context <strong>{invoiceForm.supplierAccountId && invoiceForm.invoiceNumber ? "ready" : "incomplete"}</strong></span><span>Lines <strong>{goodsInItems.length}</strong></span></div>{issues.length ? <ul style={{ margin: 0, paddingLeft: 20, color: "var(--warning-dark)" }}>{issues.map(issue => <li key={issue}>{issue}</li>)}</ul> : <div style={{ color: "var(--success-dark)", fontWeight: 600 }}>Ready to complete.</div>}</>; })()}
-          </LayerTheme>
         </div>
-
-        {completionSummary && <LayerTheme as="section" sectionKey="goods-in-completion-summary" parentKey="app-layout-page-card" style={sectionCardStyle}>
-          <h2 style={{ margin: 0 }}>Completion result</h2><div className="goods-in-summary-strip"><span>Lines <strong>{completionSummary.lines}</strong></span><span>Units <strong>{completionSummary.units}</strong></span><span>Updated <strong>{completionSummary.updated}</strong></span><span>Created <strong>{completionSummary.created}</strong></span><span>Failed <strong>{completionSummary.failed.length}</strong></span><span>Cost received <strong>{currencyFormatter.format(completionSummary.totalCost)}</strong></span></div>
-          {completionSummary.failed.length > 0 && <div className="app-status-message app-status-message--warning">{completionSummary.failed.map(item => <div key={`${item.partNumber}-${item.error}`}><strong>{item.partNumber || "Unknown part"}:</strong> {item.error}</div>)}</div>}
-        </LayerTheme>}
-      </div>
+      </PopupModal>
 
       {supplierModalOpen && <SupplierSearchModal onClose={() => setSupplierModalOpen(false)} onSelect={handleSupplierSelected} initialQuery={invoiceForm.supplierName} />}
       {partSearchOpen && <GoodsInPartSearchModal onClose={() => setPartSearchOpen(false)} onSelect={handlePartSelected} initialQuery={partForm.partNumber} />}

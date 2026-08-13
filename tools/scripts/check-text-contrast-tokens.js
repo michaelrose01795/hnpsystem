@@ -22,7 +22,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 6],
   ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 1],
   ["src/components/page-ui/messages/messages-ui.js", 1],
-  ["src/components/page-ui/stock-catalogue-ui.js", 1],
+  ["src/components/page-ui/stock-catalogue-ui.js", 0],
   ["src/pages/accounts/invoices/[invoiceId].js", 4],
   ["src/pages/dashboard/parts/index.js", 3],
   ["src/pages/dashboard/service/index.js", 4],

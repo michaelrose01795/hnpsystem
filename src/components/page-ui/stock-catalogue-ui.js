@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 
 const QUICK_FILTERS = [
@@ -208,12 +209,11 @@ export default function StockCataloguePageUi(props) {
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
-      return <>
+      return <div className="app-page-stack" style={{ gap: "var(--layout-card-gap)" }}>
         <LayerTheme
           as="section"
           sectionKey="stock-catalogue-overview"
           parentKey="stock-catalogue-page"
-          style={{ marginBottom: "var(--page-stack-gap)" }}
         >
           <div className="app-layout-header-row">
             <div>
@@ -233,7 +233,7 @@ export default function StockCataloguePageUi(props) {
             Summary unavailable. Catalogue search and stock actions are still available.
           </div> : null}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))", gap: "var(--layout-card-gap)" }}>
+          <div className="app-summary-grid" role="list" aria-label="Stock catalogue summary">
             {[
               ["Active parts", stockSummary?.totalParts],
               ["In stock", stockSummary?.inStockCount],
@@ -246,14 +246,16 @@ export default function StockCataloguePageUi(props) {
               ["Potential margin", stockSummary ? formatCurrency(stockSummary.potentialMargin) : null],
             ].map(([label, value]) => <LayerSurface
               key={label}
-              padding="var(--space-3)"
+              className="app-summary-item"
+              padding="8px 10px"
               radius="var(--radius-sm)"
-              gap="var(--space-1)"
+              gap="2px var(--space-sm)"
               sectionType="stat-card"
-              style={{ minHeight: "88px", justifyContent: "space-between" }}
+              role="listitem"
+              style={{ flexDirection: "row" }}
             >
-              <span style={{ color: "var(--text-1)", fontSize: "var(--text-label)", fontWeight: 600 }}>{label}</span>
-              <strong style={{ color: "var(--accentText)", fontSize: "var(--text-h3)", fontVariantNumeric: "tabular-nums" }}>
+              <span className="app-summary-label">{label}</span>
+              <strong className="app-summary-value">
                 {stockSummaryLoading ? "…" : value ?? 0}
               </strong>
             </LayerSurface>)}
@@ -312,8 +314,7 @@ export default function StockCataloguePageUi(props) {
 
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" style={{
       ...cardStyle,
-      backgroundColor: "var(--theme)",
-      marginBottom: "20px"
+      backgroundColor: "var(--theme)"
     }}>
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-header" data-dev-section-type="toolbar" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job Card header" style={{
         display: "flex",
@@ -333,15 +334,19 @@ export default function StockCataloguePageUi(props) {
           flex: "1 1 320px",
           maxWidth: "640px"
         }}>
-              <input type="text" placeholder="Job number or registration" value={jobSearch} onChange={event => setJobSearch(event.target.value)} style={{
-          flex: 1,
-          padding: "12px",
-          borderRadius: "var(--radius-xs)",
-          border: "none"
-        }} />
-              <button type="submit" style={buttonStyle} disabled={jobLoading}>
-                {jobLoading ? "Searching..." : "Search"}
-              </button>
+              <SearchBar
+                type="search"
+                placeholder="Job number or registration"
+                ariaLabel="Job number or registration"
+                value={jobSearch}
+                onChange={event => setJobSearch(event.target.value)}
+                onClear={() => setJobSearch("")}
+                disabled={jobLoading}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <Button type="submit" variant="primary" busy={jobLoading}>
+                Search
+              </Button>
             </form>
           </div>
 
@@ -543,13 +548,10 @@ export default function StockCataloguePageUi(props) {
                                     Fitted <strong style={{ marginLeft: "4px" }}>{part.quantity_fitted}</strong>
                                   </span>
                                 </div>
-                                <button className="app-table-action-btn" onClick={() => handleJobPartUpdate(part.id, {
+                                <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobPartUpdate(part.id, {
                         quantityFitted: part.quantity_allocated,
                         status: "fitted"
-                      })} style={{
-                        background: "var(--primary)",
-                        color: "var(--text-2)"
-                      }}>
+                      })}>
                                   Mark fitted
                                 </button>
                               </td>
@@ -716,8 +718,7 @@ export default function StockCataloguePageUi(props) {
 
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" style={{
       ...cardStyle,
-      backgroundColor: "var(--theme)",
-      marginTop: "20px"
+      backgroundColor: "var(--theme)"
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
 
@@ -1520,7 +1521,7 @@ export default function StockCataloguePageUi(props) {
                 <section style={{ marginBottom: "var(--layout-card-gap)" }}>
                   <div className="app-layout-header-row" style={{ marginBottom: "var(--space-2)" }}>
                     <h3 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-body)" }}>Recent receipts</h3>
-                    {numberValue(selectedPart.qty_on_order) > 0 ? <Link className="app-btn app-btn--secondary" href="/goods-in">
+                    {numberValue(selectedPart.qty_on_order) > 0 ? <Link className="app-btn app-btn--secondary" href={`/goods-in?part=${encodeURIComponent(selectedPart.id)}`}>
                       Inspect Goods In
                     </Link> : null}
                   </div>
@@ -1673,7 +1674,7 @@ export default function StockCataloguePageUi(props) {
         {renderAddToJobModal()}
         {renderDeliveryModal()}
       <ConfirmationDialog isOpen={!!confirmDialog} message={confirmDialog?.message} cancelLabel="Cancel" confirmLabel="Yes" onCancel={() => setConfirmDialog(null)} onConfirm={confirmDialog?.onConfirm} />
-    </>; // render extracted page section.
+    </div>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
   }
