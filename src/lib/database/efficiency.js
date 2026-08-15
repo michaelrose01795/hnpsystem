@@ -479,6 +479,22 @@ export async function lookupEfficiencyJob(jobNumber) {
 }
 
 export async function getOvertimeAsEfficiency(userIds, year, month) {
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams({
+      userIds: (userIds || []).join(","),
+      year: String(year),
+      month: String(month),
+    });
+    const response = await fetch(`/api/efficiency/overtime-sessions?${params.toString()}`, {
+      credentials: "include",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      throw new Error(payload?.message || "Unable to load overtime efficiency data.");
+    }
+    return Array.isArray(payload.data) ? payload.data : [];
+  }
+
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endMonth = month === 12 ? 1 : month + 1;
   const endYear = month === 12 ? year + 1 : year;

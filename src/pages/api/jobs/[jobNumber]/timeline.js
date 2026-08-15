@@ -1,20 +1,28 @@
 // file location: src/pages/api/jobs/[jobNumber]/timeline.js
-import { createClient } from "@supabase/supabase-js"; // import supabase client
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { supabaseService } from "@/lib/database/supabaseClient";
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+async function handler(req, res) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-async function handler(req, res, session) {
+  if (!supabaseService) {
+    return res.status(503).json({ error: "Database service is unavailable" });
+  }
+
   // Extract jobNumber from the request URL
-  const { jobNumber } = req.query;
+  const jobNumber = Array.isArray(req.query.jobNumber)
+    ? req.query.jobNumber[0]
+    : String(req.query.jobNumber || "").trim();
+  if (!jobNumber || jobNumber.length > 100) {
+    return res.status(400).json({ error: "Invalid job number" });
+  }
 
   try {
     // 1️⃣ Get the job ID from the jobs table based on job number
-    const { data: job, error: jobError } = await supabase
+    const { data: job, error: jobError } = await supabaseService
       .from("jobs")
       .select("id")
       .eq("job_number", jobNumber)
@@ -25,7 +33,7 @@ async function handler(req, res, session) {
     }
 
     // 2️⃣ Call the get_job_timeline() SQL function via RPC
-    const { data: timeline, error: timelineError } = await supabase.rpc(
+    const { data: timeline, error: timelineError } = await supabaseService.rpc(
       "get_job_timeline",
       { p_job_id: job.id } // parameter name must match SQL function
     );

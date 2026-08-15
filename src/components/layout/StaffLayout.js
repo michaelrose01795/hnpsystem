@@ -142,6 +142,9 @@ export default function Layout({
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff
   const isVerticalPhone = isMobile && viewportHeight >= viewportWidth;
+  // The 50/50 Menu / Status control row is the breakpoint contract for the
+  // top-drop sidebar treatment. Desktop keeps its side-opening rails.
+  const usesTopDropSidebars = isTablet;
   // Fixed-card scroll model gate. On desktop staff pages the whole chrome is
   // locked to the viewport (no page scroll); the page card becomes a constant-
   // size rounded panel that scrolls its content internally, with the topbar
@@ -162,7 +165,7 @@ export default function Layout({
   const workspaceNavEnabled = !presentationShell && isWorkspaceNavEnabled();
   const closeSidebar = useCallback(() => {
     const shouldAnimateClose =
-      isVerticalPhone &&
+      usesTopDropSidebars &&
       isSidebarOpen &&
       typeof window !== "undefined" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -175,9 +178,9 @@ export default function Layout({
 
     setIsPortraitSidebarClosing(false);
     setIsSidebarOpen(false);
-  }, [isSidebarOpen, isVerticalPhone]);
+  }, [isSidebarOpen, usesTopDropSidebars]);
   const openSidebar = () => {
-    if (isVerticalPhone && mobileMenuButtonRef.current) {
+    if (usesTopDropSidebars && mobileMenuButtonRef.current) {
       const buttonRect = mobileMenuButtonRef.current.getBoundingClientRect();
       setPortraitSidebarTop(Math.round(buttonRect.top));
     }
@@ -187,10 +190,10 @@ export default function Layout({
     setIsSidebarOpen(true);
   };
   const isMobileSidebarVisible =
-    isSidebarOpen || (isVerticalPhone && isPortraitSidebarClosing);
+    isSidebarOpen || (usesTopDropSidebars && isPortraitSidebarClosing);
   const closeStatusSidebar = useCallback(() => {
     const shouldAnimateClose =
-      isVerticalPhone &&
+      usesTopDropSidebars &&
       isStatusSidebarOpen &&
       typeof window !== "undefined" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -203,9 +206,9 @@ export default function Layout({
 
     setIsPortraitStatusClosing(false);
     setIsStatusSidebarOpen(false);
-  }, [isStatusSidebarOpen, isVerticalPhone]);
+  }, [isStatusSidebarOpen, usesTopDropSidebars]);
   const openStatusSidebar = useCallback(() => {
-    if (isVerticalPhone && mobileStatusButtonRef.current) {
+    if (usesTopDropSidebars && mobileStatusButtonRef.current) {
       const buttonRect = mobileStatusButtonRef.current.getBoundingClientRect();
       setPortraitStatusTop(Math.round(buttonRect.top));
     }
@@ -213,9 +216,9 @@ export default function Layout({
     setIsSidebarOpen(false);
     setIsPortraitStatusClosing(false);
     setIsStatusSidebarOpen(true);
-  }, [isVerticalPhone]);
+  }, [usesTopDropSidebars]);
   const isMobileStatusVisible =
-    isStatusSidebarOpen || (isVerticalPhone && isPortraitStatusClosing);
+    isStatusSidebarOpen || (usesTopDropSidebars && isPortraitStatusClosing);
   // Fixed-card scroll model (desktop staff pages): the page card is a constant-
   // size rounded frosted frame; its content scrolls inside an inner scroller
   // (pageScrollRef) that runs up behind the always-visible topbar at the top and
@@ -1216,10 +1219,9 @@ export default function Layout({
     justifyContent: hideSidebar ? "center" : "flex-start",
     alignItems: hideSidebar ? "center" : "stretch",
     gap: hideSidebar ? "0" : "12px",
-    // Portrait phones take their single horizontal inset from
-    // --page-gutter-x-mobile on .app-layout-main-column. Keeping this outer
-    // shell flush prevents the menu/search/topbar/page gutters from doubling.
-    padding: hideSidebar ? "0" : isVerticalPhone ? "0" : isTablet ? "12px" : "0 16px",
+    // Compact layouts take their single 10px screen inset from the main column.
+    // Keeping this outer shell flush aligns the 50/50 controls, dropdown and page.
+    padding: hideSidebar ? "0" : isTablet ? "0" : "0 16px",
     boxSizing: "border-box",
     overflow: hideSidebar || lockViewport ? "hidden" : "visible",
     position: "relative",
@@ -1358,10 +1360,10 @@ export default function Layout({
           gap: hideSidebar ? 0 : "12px",
           padding: hideSidebar
             ? "0"
-            : isMessagesRoute
-              ? isTablet
-                ? "var(--page-gutter-y-mobile) var(--page-gutter-x-mobile)"
-                : "var(--page-gutter-y) var(--page-gutter-x) 16px"
+            : isTablet
+              ? "var(--page-gutter-y-mobile) 10px" // Exact compact screen gutter requested for the 50/50 sidebar layout.
+              : isMessagesRoute
+                ? "var(--page-gutter-y) var(--page-gutter-x) 16px"
               : undefined,
           background: "transparent",
           // Locked-viewport model fills the chrome height and clips, so the page
@@ -1381,8 +1383,8 @@ export default function Layout({
             <div
               style={{
                 display: "flex",
-                width: isVerticalPhone ? "auto" : "100%",
-                gap: "8px",
+                width: "100%",
+                gap: "var(--space-sm)",
               }}
             >
               <button
@@ -1391,7 +1393,7 @@ export default function Layout({
                 onClick={openSidebar}
                 className={`app-btn ${isMobileSidebarVisible ? "app-btn--primary" : "app-btn--secondary"}`}
                 aria-expanded={isMobileSidebarVisible}
-                aria-controls={isVerticalPhone ? "portrait-navigation-sidebar" : undefined}
+                aria-controls="compact-navigation-sidebar"
                 style={{ flex: 1 }}
               >
                 Menu
@@ -1400,10 +1402,10 @@ export default function Layout({
                 <button
                   ref={mobileStatusButtonRef}
                   type="button"
-                  onClick={isVerticalPhone ? openStatusSidebar : () => setIsStatusSidebarOpen((prev) => !prev)}
+                  onClick={openStatusSidebar}
                   className={`app-btn ${isMobileStatusVisible ? "app-btn--primary" : "app-btn--secondary"}`}
                   aria-expanded={isMobileStatusVisible}
-                  aria-controls={isVerticalPhone ? "portrait-status-sidebar" : undefined}
+                  aria-controls="compact-status-sidebar"
                   style={{ flex: 1 }}
                 >
                   Status
@@ -1432,70 +1434,36 @@ export default function Layout({
                   className="app-mobile-sidebar-backdrop"
                   onClick={presentationShell ? undefined : closeSidebar}
                 />
-                {isVerticalPhone ? (
-                  <div
-                    id="portrait-navigation-sidebar"
-                    className={`app-portrait-sidebar-assembly${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Navigation sidebar"
-                    onAnimationEnd={(event) => {
-                      if (event.target !== event.currentTarget) return;
-                      if (isPortraitSidebarClosing) {
-                        setIsPortraitSidebarClosing(false);
-                      }
-                    }}
-                    style={{
-                      "--portrait-sidebar-top": `${portraitSidebarTop}px`,
-                    }}
+                <div
+                  id="compact-navigation-sidebar"
+                  className={`app-portrait-sidebar-assembly${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Navigation sidebar"
+                  onAnimationEnd={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (isPortraitSidebarClosing) {
+                      setIsPortraitSidebarClosing(false);
+                    }
+                  }}
+                  style={{
+                    "--portrait-sidebar-top": `${portraitSidebarTop}px`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="app-btn app-portrait-sidebar__close-tab"
+                    onClick={closeSidebar}
+                    aria-label="Close navigation sidebar"
                   >
-                    <button
-                      type="button"
-                      className="app-btn app-portrait-sidebar__close-tab"
-                      onClick={closeSidebar}
-                      aria-label="Close navigation sidebar"
-                    >
-                      Close
-                    </button>
-                    <div className="app-portrait-sidebar__panel">
-                      <Sidebar
-                        onToggle={closeSidebar}
-                        onNavigate={closeSidebar}
-                        isCondensed
-                        isVerticalPhone
-                        extraSections={sidebarExtraSections}
-                        visibleRoles={userRoles}
-                        allowedRoutes={presentationAllowedRoutes}
-                        presentationRoleKey={activePresentationRole?.key || null}
-                        inPresentationMode={presentationShell}
-                        pendingHref={pendingHref}
-                        isAuthLoading={isPreAuthLoading}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    role="dialog"
-                    aria-modal="true"
-                    style={{
-                      position: "relative",
-                      zIndex: 1,
-                      width: "100%",
-                      maxWidth: "100%",
-                      height: "100%",
-                      background: colors.mainBg,
-                      borderRadius: 0,
-                      boxShadow: "none",
-                      padding: "24px 20px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                      overflowY: "auto",
-                    }}
-                  >
+                    Close
+                  </button>
+                  <div className="app-portrait-sidebar__panel">
                     <Sidebar
                       onToggle={closeSidebar}
+                      onNavigate={closeSidebar}
                       isCondensed
+                      isVerticalPhone
                       extraSections={sidebarExtraSections}
                       visibleRoles={userRoles}
                       allowedRoutes={presentationAllowedRoutes}
@@ -1505,7 +1473,7 @@ export default function Layout({
                       isAuthLoading={isPreAuthLoading}
                     />
                   </div>
-                )}
+                </div>
               </div>
             )}
           </>
@@ -1826,85 +1794,62 @@ export default function Layout({
 
       {/* Status sidebar overlay for tablets/phones */}
       {showMobileStatusSidebar && (
-        isVerticalPhone ? (
+        <div
+          className={`app-mobile-sidebar-overlay${isPortraitStatusClosing ? " is-closing" : ""}`}
+          {...lockChromeInteraction}
+        >
           <div
-            className={`app-mobile-sidebar-overlay${isPortraitStatusClosing ? " is-closing" : ""}`}
-            {...lockChromeInteraction}
+            className="app-mobile-sidebar-backdrop"
+            onClick={presentationShell ? undefined : closeStatusSidebar}
+          />
+          <div
+            id="compact-status-sidebar"
+            className={`app-portrait-sidebar-assembly app-portrait-sidebar-assembly--status${isPortraitStatusClosing ? " is-closing" : " is-opening"}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Status sidebar"
+            onAnimationEnd={(event) => {
+              if (event.target !== event.currentTarget) return;
+              if (isPortraitStatusClosing) {
+                setIsPortraitStatusClosing(false);
+              }
+            }}
+            style={{
+              "--portrait-sidebar-top": `${portraitStatusTop}px`,
+            }}
           >
-            <div
-              className="app-mobile-sidebar-backdrop"
-              onClick={presentationShell ? undefined : closeStatusSidebar}
-            />
-            <div
-              id="portrait-status-sidebar"
-              className={`app-portrait-sidebar-assembly app-portrait-sidebar-assembly--status${isPortraitStatusClosing ? " is-closing" : " is-opening"}`}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Status sidebar"
-              onAnimationEnd={(event) => {
-                if (event.target !== event.currentTarget) return;
-                if (isPortraitStatusClosing) {
-                  setIsPortraitStatusClosing(false);
-                }
-              }}
-              style={{
-                "--portrait-sidebar-top": `${portraitStatusTop}px`,
-              }}
+            <button
+              type="button"
+              className="app-btn app-portrait-sidebar__close-tab"
+              onClick={closeStatusSidebar}
+              aria-label="Close status sidebar"
             >
-              <button
-                type="button"
-                className="app-btn app-portrait-sidebar__close-tab"
-                onClick={closeStatusSidebar}
-                aria-label="Close status sidebar"
-              >
-                Close
-              </button>
-              <div className="app-portrait-sidebar__panel">
-                <StatusSidebar
-                  jobId={activeJobId}
-                  currentStatus={currentJobStatus}
-                  isOpen={isMobileStatusVisible}
-                  onToggle={closeStatusSidebar}
-                  onJobSearch={presentationShell ? () => {} : handleJobSearch}
-                  onJobClear={presentationShell ? () => {} : handleJobClear}
-                  hasUrlJobId={hasActiveAutoJob}
-                  viewportWidth={viewportWidth}
-                  isCompact={false}
-                  timelineContent={
-                    timelineJobNumber ? (
-                      <JobTimeline jobNumber={String(timelineJobNumber)} />
-                    ) : null
-                  }
-                  showToggleButton={false}
-                  canClose={false}
-                  refreshKey={statusSidebarRefreshKey}
-                  isVerticalPhone
-                />
-              </div>
+              Close
+            </button>
+            <div className="app-portrait-sidebar__panel">
+              <StatusSidebar
+                jobId={activeJobId}
+                currentStatus={currentJobStatus}
+                isOpen={isMobileStatusVisible}
+                onToggle={closeStatusSidebar}
+                onJobSearch={presentationShell ? () => {} : handleJobSearch}
+                onJobClear={presentationShell ? () => {} : handleJobClear}
+                hasUrlJobId={hasActiveAutoJob}
+                viewportWidth={viewportWidth}
+                isCompact={false}
+                timelineContent={
+                  timelineJobNumber ? (
+                    <JobTimeline jobNumber={String(timelineJobNumber)} />
+                  ) : null
+                }
+                showToggleButton={false}
+                canClose={false}
+                refreshKey={statusSidebarRefreshKey}
+                isVerticalPhone
+              />
             </div>
           </div>
-        ) : (
-          <div {...lockChromeInteraction}>
-            <StatusSidebar
-              jobId={activeJobId}
-              currentStatus={currentJobStatus}
-              isOpen={isStatusSidebarOpen}
-              onToggle={presentationShell ? () => {} : closeStatusSidebar}
-              onJobSearch={presentationShell ? () => {} : handleJobSearch}
-              onJobClear={presentationShell ? () => {} : handleJobClear}
-              hasUrlJobId={hasActiveAutoJob}
-              viewportWidth={viewportWidth}
-              isCompact={isTablet && !isMobile}
-              timelineContent={
-                timelineJobNumber ? (
-                  <JobTimeline jobNumber={String(timelineJobNumber)} />
-                ) : null
-              }
-              showToggleButton={false}
-              refreshKey={statusSidebarRefreshKey}
-            />
-          </div>
-        )
+        </div>
       )}
 
       {isTech && (
