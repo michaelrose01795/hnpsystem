@@ -35,6 +35,10 @@ export const WORKSHOP_CAPACITY_VIEW_ROLES = Array.from(new Set([
   "service",
   "mobile technician",
 ]));
+export const EFFICIENCY_VIEW_ROLES = Array.from(new Set([
+  ...WORKSHOP_CAPACITY_VIEW_ROLES,
+  ...MANAGER_SCOPED_ROLES,
+]));
 export const DEV_FULL_ACCESS_ROLES = Array.from(
   new Set(
     [

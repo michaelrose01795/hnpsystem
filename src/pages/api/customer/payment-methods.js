@@ -1,16 +1,36 @@
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-async function handler(req, res, session) {
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function handler(req, res) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key not configured" });
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-  }
-
   try {
+    if (req.method === "GET") {
+      const customerId = String(req.query.customerId || "").trim();
+      if (!UUID_PATTERN.test(customerId)) {
+        return res.status(400).json({ success: false, error: "A valid customerId is required" });
+      }
+
+      const { data, error } = await supabaseService
+        .from("customer_payment_methods")
+        .select("method_id, nickname, card_brand, last4, expiry_month, expiry_year, is_default, created_at")
+        .eq("customer_id", customerId)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, methods: data || [] });
+    }
+
+    if (req.method !== "POST") {
+      res.setHeader("Allow", ["GET", "POST"]);
+      return res.status(405).json({ success: false, error: "Method not allowed" });
+    }
+
     const {
       customerId,
       nickname,
@@ -21,7 +41,7 @@ async function handler(req, res, session) {
       isDefault = false,
     } = req.body || {};
 
-    if (!customerId || !last4 || !expiryMonth || !expiryYear) {
+    if (!UUID_PATTERN.test(String(customerId || "").trim()) || !last4 || !expiryMonth || !expiryYear) {
       return res.status(400).json({
         success: false,
         error: "customerId, last4, expiryMonth, and expiryYear are required",

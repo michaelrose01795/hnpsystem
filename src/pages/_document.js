@@ -332,6 +332,9 @@ class MyDocument extends Document {
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <meta name="theme-color" content={bootTheme.background} />
+          <link rel="icon" type="image/png" sizes="1024x1024" href="/images/logo/desktop.png" />
+          <link rel="shortcut icon" type="image/png" href="/images/logo/desktop.png" />
+          <link rel="apple-touch-icon" href="/images/logo/desktop.png" />
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

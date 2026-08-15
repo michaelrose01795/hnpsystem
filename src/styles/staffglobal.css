@@ -941,7 +941,11 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     position: relative;
     z-index: 1;
   }
+}
 
+/* Whenever Menu and Status form the compact 50/50 row, the selected panel
+   drops from that row using the same treatment as portrait phone mode. */
+@media (max-width: 1024px) {
   html.staff-scope .app-portrait-sidebar-assembly {
     position: absolute;
     z-index: 1;
@@ -1079,7 +1083,7 @@ html.staff-scope .app-mobile-sidebar-backdrop {
   }
 }
 
-@media (max-width: 640px) and (orientation: portrait) and (prefers-reduced-motion: reduce) {
+@media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
   html.staff-scope .app-portrait-sidebar-assembly,
   html.staff-scope .app-mobile-sidebar-backdrop {
     animation: none;

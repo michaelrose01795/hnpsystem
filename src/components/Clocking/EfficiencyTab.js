@@ -315,11 +315,6 @@ export default function EfficiencyTab({
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "overtime_sessions" },
-        () => { fetchData(); }
-      )
-      .on(
-        "postgres_changes",
         { event: "*", schema: "public", table: "tech_efficiency_targets" },
         () => { fetchData(); }
       )
@@ -330,7 +325,13 @@ export default function EfficiencyTab({
       )
       .subscribe();
 
+    // overtime_sessions is deliberately server-only after the RLS hardening,
+    // so it cannot participate in a browser Realtime channel. Poll the guarded
+    // efficiency endpoint instead to retain timely overtime updates.
+    const overtimeRefresh = window.setInterval(fetchData, 60000);
+
     return () => {
+      window.clearInterval(overtimeRefresh);
       supabase.removeChannel(channel);
     };
   }, [fetchData]);
