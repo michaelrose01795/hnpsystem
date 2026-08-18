@@ -1,5 +1,4 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { EFFICIENCY_VIEW_ROLES } from "@/lib/auth/roles";
 import { getOvertimeAsEfficiency } from "@/lib/database/efficiency";
 
 const parseUserIds = (value) => {
@@ -35,4 +34,6 @@ async function handler(req, res) {
   }
 }
 
-export default withRoleGuard(handler, { allow: EFFICIENCY_VIEW_ROLES });
+// Sidebar access is configurable per user, so authentication—not a second
+// hard-coded role list—is the API boundary for this page's shared Overall data.
+export default withRoleGuard(handler);

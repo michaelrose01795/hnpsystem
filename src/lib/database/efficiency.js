@@ -1,9 +1,8 @@
 // file location: src/lib/database/efficiency.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { getWorkshopClockingUsers } from "@/lib/database/workshopClocking";
 
 const db = getDatabaseClient();
-
-const TECH_ROLES = ["Techs", "MOT Tester"];
 
 const DEFAULT_TARGET_HOURS = 160;
 // Matches tech_efficiency_targets.weight in schemaReference.sql.
@@ -84,16 +83,7 @@ const normalizeEfficiencyEntry = (row = {}) => {
  * Queries by role so results remain correct if names change.
  */
 export async function getEfficiencyTechnicians() {
-  const { data, error } = await db
-    .from("users")
-    .select("user_id, first_name, last_name, role, contracted_hours")
-    .in("role", TECH_ROLES)
-    .eq("is_active", true)
-    .order("first_name", { ascending: true });
-
-  if (error) throw error;
-
-  return data || [];
+  return getWorkshopClockingUsers();
 }
 
 /**

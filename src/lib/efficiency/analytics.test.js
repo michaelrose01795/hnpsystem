@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  aggregateWorkshopMetrics,
   buildCategoryAnalysis,
   buildClockingQualityAlerts,
   buildJobAnalysis,
@@ -18,6 +19,44 @@ const options = {
 };
 
 describe("efficiency analytics", () => {
+  it("aggregates workshop metrics from the same weighted technician rows", () => {
+    const workshop = aggregateWorkshopMetrics([
+      {
+        weight: 0.5,
+        metrics: {
+          productiveHours: 8,
+          loggedHours: 9,
+          overtimeHours: 1,
+          unallocatedHours: 0.5,
+          targetHours: 8,
+          fullMonthTargetHours: 160,
+          allocatedHours: 10,
+        },
+      },
+      {
+        weight: 1,
+        metrics: {
+          productiveHours: 6,
+          loggedHours: 8,
+          overtimeHours: 2,
+          unallocatedHours: 1,
+          targetHours: 8,
+          fullMonthTargetHours: 160,
+          allocatedHours: 6,
+        },
+      },
+    ]);
+
+    expect(workshop.productiveHours).toBe(14);
+    expect(workshop.loggedHours).toBe(17);
+    expect(workshop.overtimeHours).toBe(3);
+    expect(workshop.allocatedHours).toBe(16);
+    expect(workshop.efficiencyPct).toBe(114.3);
+    expect(workshop.weightedActual).toBe(10);
+    expect(workshop.weightedTarget).toBe(12);
+    expect(workshop.weightedDifference).toBe(-2);
+  });
+
   it("keeps the automatic row and excludes a likely duplicate manual row", () => {
     const entries = [
       {

@@ -98,17 +98,14 @@ export default function LoginPageUi(props) {
                     {errorMessage}
                   </p>}
 
-                <Button type="submit" variant="primary" style={{
-              width: "100%"
-            }}>
-                  Login
-                </Button>
-                <Button type="button" variant="ghost" size="xs" onClick={openResetModal} style={{
-              alignSelf: "center",
-              marginTop: "8px"
-            }}>
-                  Reset password
-                </Button>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--layout-card-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
+                  <Button type="submit" variant="primary" style={{ width: "100%" }}>
+                    Login
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }}>
+                    Reset password
+                  </Button>
+                </div>
               </form>
             </LoginCard>
           </div>

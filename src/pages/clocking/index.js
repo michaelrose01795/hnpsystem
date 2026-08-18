@@ -17,13 +17,15 @@ import { useUser } from "@/context/UserContext";
 import { hasAnyRole, WORKSHOP_CAPACITY_MANAGER_ROLES } from "@/lib/auth/roles";
 import {
   buildCapacitySummary,
-  buildWorkshopAttention,
   buildWorkshopBoard,
   CLOCKING_STATUSES,
-  DEFAULT_WAITING_THRESHOLD_MINUTES,
 } from "@/lib/clocking/workshopBoard";
+import { WORKSHOP_ASSIGNMENT_OPTIONS } from "@/lib/clocking/workshopAssignments";
 import { getWorkshopClockingSnapshot } from "@/lib/database/workshopClocking";
 import { supabase } from "@/lib/database/supabaseClient";
+// The /clocking/[technicianSlug] route component, rendered inline in the
+// technician popup via its `embedded` mode.
+import UserClockingHistory from "@/pages/clocking/[technicianSlug]";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "All statuses" },
@@ -37,17 +39,15 @@ const SORT_OPTIONS = [
   { value: "active", label: "Longest active job" },
 ];
 
-const WAITING_THRESHOLD_OPTIONS = [15, 30, 45, 60].map((minutes) => ({
-  value: String(minutes),
-  label: `${minutes} minute threshold`,
-}));
-
-const STATUS_META = {
-  [CLOCKING_STATUSES.IN_PROGRESS]: { tone: "success", short: "In progress" },
-  [CLOCKING_STATUSES.ON_MOT]: { tone: "success", short: "On MOT" },
-  [CLOCKING_STATUSES.TEA_BREAK]: { tone: "warning", short: "Tea break" },
-  [CLOCKING_STATUSES.WAITING]: { tone: "warning", short: "Waiting" },
-  [CLOCKING_STATUSES.NOT_CLOCKED]: { tone: "danger", short: "Not clocked" },
+// Tone only. The label comes from CLOCKING_STATUSES itself so the badge, the
+// status filter and the board data all speak with one vocabulary — the previous
+// local `short` strings were a second, differently-cased copy of these values.
+const STATUS_TONE = {
+  [CLOCKING_STATUSES.IN_PROGRESS]: "success",
+  [CLOCKING_STATUSES.ON_MOT]: "success",
+  [CLOCKING_STATUSES.TEA_BREAK]: "warning",
+  [CLOCKING_STATUSES.WAITING]: "warning",
+  [CLOCKING_STATUSES.NOT_CLOCKED]: "danger",
 };
 
 const pad = (value) => String(value).padStart(2, "0");
@@ -59,6 +59,16 @@ const toDayStartIso = (date) => {
 };
 
 const formatHours = (value) => `${Number(value || 0).toFixed(2)}h`;
+// Allocation variance reads in minutes on the card ("+38m", "-1h 12m") because
+// that is how the workshop talks about running over or under on a job.
+const formatVariance = (hours) => {
+  const totalMinutes = Math.round(Math.abs(Number(hours) || 0) * 60);
+  const sign = (Number(hours) || 0) < 0 ? "-" : "+";
+  if (totalMinutes < 60) return `${sign}${totalMinutes}m`;
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${sign}${wholeHours}h ${minutes}m` : `${sign}${wholeHours}h`;
+};
 const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 const formatClockTime = (value) => {
   if (!value) return "—";
@@ -66,7 +76,14 @@ const formatClockTime = (value) => {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 };
-const formatPlannedTime = (value) => value ? formatClockTime(value) : "Queue order";
+// Far-right scheduling value on the next-job strip. Prefer a real clock time;
+// fall back to the queue position so the slot never renders a bare label.
+const formatPlannedTime = (nextJob) => {
+  if (!nextJob) return "—";
+  if (nextJob.scheduledTime) return formatClockTime(nextJob.scheduledTime);
+  const position = Number(nextJob.queuePosition);
+  return Number.isFinite(position) ? `Queue ${position}` : "—";
+};
 
 const submitManagedClockingAction = async (payload) => {
   const response = await fetch("/api/clocking/manage", {
@@ -81,9 +98,12 @@ const submitManagedClockingAction = async (payload) => {
   return result;
 };
 
+// Plain .app-badge + variant class — the same shape used across the app (see
+// EfficiencyInsights). No local sizing or colour: --sm is the shared size
+// modifier and the tone variants own the palette.
 function StatusBadge({ status }) {
-  const meta = STATUS_META[status] || STATUS_META[CLOCKING_STATUSES.NOT_CLOCKED];
-  return <span className={`clocking-board__status app-tone-${meta.tone}`}>{meta.short}</span>;
+  const tone = STATUS_TONE[status] || STATUS_TONE[CLOCKING_STATUSES.NOT_CLOCKED];
+  return <span className={`app-badge app-badge--${tone}`}>{status || CLOCKING_STATUSES.NOT_CLOCKED}</span>;
 }
 
 function Metric({ label, value, detail, tone = "" }) {
@@ -96,123 +116,174 @@ function Metric({ label, value, detail, tone = "" }) {
   );
 }
 
-function AllocationIndicator({ technician }) {
-  if (!technician.currentJobId) return null;
-  if (!technician.allocationAvailable) {
-    return <div className="app-status-message app-status-message--warning">Allocation details are temporarily unavailable.</div>;
-  }
-  const overBy = Math.max(0, technician.differenceHours);
+// One job panel — used for both the current and the next job so the two read as
+// the same object at two points in time rather than two unrelated widgets.
+// Layout is a fixed three-beat rhythm: job number + badge, scrollable work
+// summary, then panel-specific detail. Each variant has a fixed height (see the
+// --clocking-*-panel-height tokens) so cards never resize with their content.
+function JobPanel({ variant, prefix, jobNumber, descriptions, badge, headerMeta, emptyLabel, children }) {
+  const lines = Array.isArray(descriptions) ? descriptions.filter(Boolean) : [];
+  const summary = lines.join(" · ");
+
   return (
-    <div className="clocking-board__allocation">
-      <div className="clocking-board__allocation-copy">
-        <span>Allocated {formatHours(technician.allocatedHours)}</span>
-        <strong className={technician.isOverAllocated ? "clocking-board__danger-text" : ""}>
-          Actual {formatHours(technician.actualHours)}
-        </strong>
+    <LayerTheme
+      as="section"
+      padding={variant === "current" ? "var(--space-2)" : "var(--space-3)"}
+      gap="var(--space-2)"
+      className={`clocking-board__job-panel clocking-board__job-panel--${variant}`}
+    >
+      {/* The job number takes the place of a "Current job" / "Next job" label —
+          the badge and the rows beneath already say which panel this is. */}
+      <div className="clocking-board__job-panel-head">
+        {jobNumber ? (
+          <Link className="clocking-board__job-number" href={`/job-cards/${encodeURIComponent(jobNumber)}`}>
+            {prefix ? <span className="clocking-board__job-number-prefix">{prefix}</span> : null}
+            <span className="clocking-board__job-number-value">{jobNumber}</span>
+          </Link>
+        ) : (
+          <span className="clocking-board__job-number-empty">{emptyLabel}</span>
+        )}
+        <span className={`clocking-board__job-header-meta${headerMeta ? " app-badge clocking-board__job-header-meta--filled" : ""}`}>
+          {headerMeta}
+        </span>
+        <span className="clocking-board__job-header-badge">{badge}</span>
       </div>
-      <div className="clocking-board__progress" aria-label={`${technician.allocationProgress.toFixed(0)} percent of allocated time used`}>
-        <span
-          className={technician.isOverAllocated ? "is-over" : ""}
-          style={{ width: `${Math.min(100, technician.allocationProgress)}%` }}
-        />
+
+      {/* Bounded scroll region: short descriptions use only the space they need,
+          while longer request lists scroll instead of resizing the panel. */}
+      <div className="clocking-board__job-summary themed-scrollbar">
+        <p title={summary || undefined}>{jobNumber ? summary || "No description recorded" : "—"}</p>
       </div>
-      <small className={technician.isOverAllocated ? "clocking-board__danger-text" : ""}>
-        {technician.isOverAllocated
-          ? `${formatHours(overBy)} over allocation`
-          : `${formatHours(Math.max(0, -technician.differenceHours))} remaining`}
-      </small>
-    </div>
+
+      {jobNumber ? children : null}
+    </LayerTheme>
   );
 }
 
-const TechnicianCard = memo(function TechnicianCard({ technician, canManage, onManage }) {
-  const active = technician.status === CLOCKING_STATUSES.IN_PROGRESS || technician.status === CLOCKING_STATUSES.ON_MOT;
+const TechnicianCard = memo(function TechnicianCard({ technician, onOpenDetails }) {
+  const hasCurrentJob = Boolean(technician.currentJobNumber);
+  // A zero allocation is not an allocation: without this the card renders a
+  // "+335h 10m" variance against "Allocated 0.00h" and "0% used".
+  const allocated = Number(technician.allocatedHours) || 0;
+  const showAllocation = hasCurrentJob && technician.allocationAvailable && allocated > 0;
+  const nextJob = technician.nextJob;
+  // Bar fill is elapsed vs allocated, clamped at the end of the track; the
+  // overrun keeps showing numerically in the variance pill beside it.
+  const progress = showAllocation
+    ? technician.isOverAllocated
+      ? 100
+      : Math.min(100, Math.max(0, Number(technician.allocationProgress) || 0))
+    : 0;
+  // Uncapped so the legend can report a real overrun (e.g. "143% used") while
+  // the bar itself stays pinned at the end of the track.
+  const usedPercent = showAllocation ? (Number(technician.actualHours) || 0) / allocated * 100 : 0;
+  // Board-level isOverAllocated can be true against a zero allocation; the card
+  // only treats an overrun as real when there is an allocation to overrun.
+  const isOver = showAllocation && technician.isOverAllocated;
+  const allocationLabel = technician.allocationAvailable
+    ? allocated > 0 ? `Allocated ${formatHours(allocated)}` : "No allocation set"
+    : "Allocation unavailable";
+
   return (
     <LayerSurface
       as="article"
-      padding="var(--section-card-padding)"
-      gap="var(--space-3)"
-      className={`clocking-board__technician clocking-board__technician--${STATUS_META[technician.status]?.tone || "danger"}`}
+      padding="var(--space-3)"
+      gap="var(--space-2)"
+      className="clocking-board__technician"
       data-status={technician.status}
     >
       <header className="clocking-board__technician-header">
-        <div>
-          <h3>{technician.name}</h3>
-          <p>{technician.role}</p>
-        </div>
-        <StatusBadge status={technician.status} />
+        <h3 title={technician.name}>{technician.name}</h3>
+        {/* app-btn--icon is the family's single-glyph shape (square at
+            --control-height, pill radius). Opens the technician popup, which
+            carries Change status and the full detail view. */}
+        <Button
+          type="button"
+          variant="primary"
+          className="app-btn--icon"
+          aria-haspopup="dialog"
+          aria-label={`Clocking details for ${technician.name}`}
+          onClick={() => onOpenDetails(technician)}
+        >
+          <span aria-hidden="true">ⓘ</span>
+        </Button>
       </header>
 
-      <LayerTheme padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__current-work">
-        <div className="clocking-board__work-heading">
-          <span>{active ? "Current job" : technician.status === CLOCKING_STATUSES.WAITING ? "Idle time" : "Current activity"}</span>
-          <strong>{active ? technician.currentJobNumber || "—" : formatHours(active ? technician.activityHours : technician.idleHours || technician.activityHours)}</strong>
+      <JobPanel
+        variant="current"
+        prefix="Job"
+        jobNumber={technician.currentJobNumber}
+        descriptions={technician.currentDescriptions}
+        badge={<StatusBadge status={technician.status} />}
+        emptyLabel="Not clocked on"
+      >
+        <div className="clocking-board__time-row">
+          <div className="clocking-board__time-block">
+            <span className="app-summary-label">Time on job</span>
+            {/* actualHours (all clockings against this job), not the current
+                session — it is what the bar and the variance are measured on. */}
+            <strong className="clocking-board__time-value">{formatHours(technician.actualHours)}</strong>
+          </div>
+          {showAllocation ? (
+            <span className={`app-badge ${isOver ? "app-badge--danger" : "app-badge--success"}`}>
+              {formatVariance(technician.differenceHours)}
+            </span>
+          ) : null}
         </div>
-        <p>
-          {active
-            ? technician.currentDescription
-            : technician.status === CLOCKING_STATUSES.WAITING
-              ? `Waiting since ${formatClockTime(technician.waitingSince)}`
-              : technician.status === CLOCKING_STATUSES.TEA_BREAK
-                ? `${technician.breakNotes} · since ${formatClockTime(technician.activityStartedAt)}`
-                : "No attendance record today"}
-        </p>
-        {active ? (
-          <div className="clocking-board__live-duration">
-            <span>Live activity</span>
-            <strong>{formatHours(technician.activityHours)}</strong>
-          </div>
-        ) : null}
-        <AllocationIndicator technician={technician} />
-      </LayerTheme>
 
-      <div className="clocking-board__next-job">
-        <span>Next queued job</span>
-        {technician.nextJob ? (
-          <div>
-            <strong>{technician.nextJob.jobNumber}</strong>
-            <p>{technician.nextJob.description}</p>
-            <small>{technician.nextJob.type} · {formatHours(technician.nextJob.plannedHours)} · {formatPlannedTime(technician.nextJob.scheduledTime)}</small>
-          </div>
-        ) : <p>No queued job</p>}
-      </div>
+        <div
+          className="clocking-board__progress"
+          role="progressbar"
+          aria-label="Time on job against allocated time"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={Math.round(progress)}
+        >
+          <span
+            className={isOver ? "is-over" : ""}
+            style={{ width: `${progress}%` /* Live elapsed-vs-allocated value, not a static style. */ }}
+          />
+        </div>
 
-      <footer className="clocking-board__card-actions">
-        {canManage ? (
-          <Button type="button" variant={active ? "secondary" : "primary"} size="xs" onClick={() => onManage(technician)}>
-            {active ? "Clock off" : "Clock onto job"}
-          </Button>
+        <div className="clocking-board__progress-legend">
+          <span>{allocationLabel}</span>
+          {showAllocation ? <span>{Math.round(usedPercent)}% used</span> : null}
+        </div>
+      </JobPanel>
+
+      <JobPanel
+        variant="next"
+        jobNumber={nextJob?.jobNumber}
+        descriptions={nextJob?.descriptions}
+        badge={nextJob ? <span className="app-badge app-badge--accent-soft">{nextJob.type || "Job"}</span> : null}
+        emptyLabel="No queued job"
+        headerMeta={nextJob ? (
+          <time dateTime={nextJob.scheduledTime || undefined}>{formatPlannedTime(nextJob)}</time>
         ) : null}
-        {active && technician.currentJobNumber ? (
-          <Link className="app-btn app-btn--secondary app-btn--xs" href={`/job-cards/${encodeURIComponent(technician.currentJobNumber)}`}>
-            Open job card
-          </Link>
-        ) : null}
-        <Link className="app-btn app-btn--secondary app-btn--xs" href={`/clocking/${technician.slug}`}>
-          View details
-        </Link>
-      </footer>
+      />
     </LayerSurface>
   );
 });
 
-function BoardSkeleton() {
+function BoardSkeleton({ count = 6 }) {
   return (
     <div className="clocking-board__technician-grid" aria-label="Loading live technician board">
       <SkeletonKeyframes />
-      {Array.from({ length: 6 }).map((_, index) => (
-        <LayerSurface key={index} padding="var(--section-card-padding)" gap="var(--space-3)">
-          <SkeletonBlock width="52%" height="18px" />
-          <SkeletonBlock width="30%" height="12px" />
-          <SkeletonBlock width="100%" height="112px" />
-          <SkeletonBlock width="100%" height="44px" />
+      {Array.from({ length: count }).map((_, index) => (
+        <LayerSurface key={index} padding="var(--space-3)" gap="var(--space-2)">
+          {/* Mirrors the real card: header, current panel, next panel. */}
+          <SkeletonBlock width="55%" height="var(--control-height)" />
+          <SkeletonBlock width="100%" height="var(--clocking-current-panel-height)" />
+          <SkeletonBlock width="100%" height="var(--clocking-next-panel-height)" />
         </LayerSurface>
       ))}
     </div>
   );
 }
 
-function ClockingControlModal({ technician, onClose, onCompleted }) {
+// Clock-on / clock-off controls. Extracted from the old standalone modal so it
+// can sit as the first section of the technician popup.
+function ChangeStatusSection({ technician, onCompleted }) {
   const active = technician && (technician.status === CLOCKING_STATUSES.IN_PROGRESS || technician.status === CLOCKING_STATUSES.ON_MOT);
   const [jobNumber, setJobNumber] = useState(technician?.currentJobNumber || "");
   const [submitting, setSubmitting] = useState(false);
@@ -236,7 +307,6 @@ function ClockingControlModal({ technician, onClose, onCompleted }) {
       await submitManagedClockingAction(active
         ? { action: "clock-out", userId: technician.userId, clockingId: technician.clockingId }
         : { action: "clock-in", userId: technician.userId, jobNumber: trimmedJobNumber });
-      onClose();
       void onCompleted();
     } catch (actionError) {
       setError(actionError?.message || "Unable to update technician clocking.");
@@ -246,50 +316,187 @@ function ClockingControlModal({ technician, onClose, onCompleted }) {
   };
 
   return (
+    <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
+      <header className="app-popup-compact-header">
+        <h2>Change status</h2>
+        <div className="app-popup-compact-header__actions">
+          <Button type="button" variant="primary" size="sm" busy={submitting} disabled={!active && !jobNumber.trim()} onClick={submit}>
+            {active ? "Clock off" : "Clock on"}
+          </Button>
+        </div>
+      </header>
+      {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
+      {active ? (
+        <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
+          <span className="app-summary-label">Active job</span>
+          <strong>{technician?.currentJobNumber || "—"} · {formatHours(technician?.actualHours)}</strong>
+          <span>{technician?.currentDescription}</span>
+        </LayerSurface>
+      ) : (
+        <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
+          <label htmlFor="clocking-control-job-number">Job number</label>
+          <input
+            id="clocking-control-job-number"
+            className="app-input"
+            value={jobNumber}
+            onChange={(event) => setJobNumber(event.target.value)}
+            placeholder="Enter job number"
+            autoComplete="off"
+          />
+        </LayerSurface>
+      )}
+    </LayerTheme>
+  );
+}
+
+function WorkshopAssignmentSection({ technician, onCompleted }) {
+  const assignmentDate = toDateKey(new Date());
+  const [assignmentType, setAssignmentType] = useState(technician?.workshopAssignment || "tech");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setAssignmentType(technician?.workshopAssignment || "tech");
+    setError("");
+    setSaved(false);
+  }, [technician]);
+
+  const saveAssignment = async () => {
+    if (!technician) return;
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      const response = await fetch("/api/clocking/workshop-assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: technician.userId,
+          assignmentDate,
+          assignmentType,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to update the workshop section.");
+      }
+      await onCompleted?.();
+      setSaved(true);
+    } catch (saveError) {
+      setError(saveError?.message || "Unable to update the workshop section.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
+      <header className="app-popup-compact-header">
+        <h2>Workshop section</h2>
+        <div className="app-popup-compact-header__actions">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            busy={saving}
+            disabled={assignmentType === technician?.workshopAssignment}
+            onClick={saveAssignment}
+          >
+            Save assignment
+          </Button>
+        </div>
+      </header>
+
+      {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
+      {saved ? <div className="app-status-message app-status-message--success" role="status">Workshop section updated for today.</div> : null}
+
+      <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
+        <DropdownField
+          id="clocking-workshop-assignment"
+          label="Today’s board section"
+          ariaLabel="Today’s workshop board section"
+          value={assignmentType}
+          options={WORKSHOP_ASSIGNMENT_OPTIONS}
+          disabled={saving}
+          onChange={(event) => {
+            setAssignmentType(event.target.value);
+            setSaved(false);
+          }}
+        />
+        <small className="clocking-details-modal__assignment-help">
+          This controls today’s Tech/MOT board placement only. Permanent role: {technician?.role || "Technician"}.
+        </small>
+      </LayerSurface>
+    </LayerTheme>
+  );
+}
+
+// The card's info button opens this instead of navigating to
+// /clocking/[technicianSlug]: Change status first, then the full detail page
+// rendered inline underneath via its `embedded` mode (same component, same data
+// loading — no duplicated markup).
+function TechnicianDetailsPopup({ technician, canManage, onClose, onCompleted }) {
+  return (
     <PopupModal
       isOpen={Boolean(technician)}
-      onClose={submitting ? undefined : onClose}
-      closeOnBackdrop={!submitting}
-      ariaLabel="Clocking control"
-      cardClassName="clocking-control-modal"
-      cardStyle={{ width: "min(460px, 100%)", padding: "var(--page-card-padding)" }}
+      onClose={onClose}
+      ariaLabel={technician ? `${technician.name} clocking details` : "Technician clocking details"}
+      cardClassName="clocking-details-modal"
+      cardStyle={{ width: "min(1040px, 100%)", padding: "var(--page-card-padding)" }}
     >
-      <div className="clocking-control-modal__content">
-        <header className="app-popup-compact-header">
-          <h2>Clocking control</h2>
-          <div className="app-popup-compact-header__actions">
-            <Button type="button" variant="primary" size="sm" busy={submitting} disabled={!active && !jobNumber.trim()} onClick={submit}>
-              {active ? "Clock off" : "Clock on"}
-            </Button>
-            <Button type="button" variant="secondary" size="sm" disabled={submitting} onClick={onClose}>Close</Button>
-          </div>
-        </header>
-        <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
-          <span className="clocking-board__label">Technician</span>
-          <strong>{technician?.name} · {technician?.role}</strong>
-        </LayerTheme>
-        {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
-        {active ? (
-          <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
-            <span className="clocking-board__label">Active job</span>
-            <strong>{technician?.currentJobNumber || "—"} · {formatHours(technician?.activityHours)}</strong>
-            <span>{technician?.currentDescription}</span>
+      {technician ? (
+        <div className="clocking-details-modal__content">
+          <header className="app-popup-compact-header">
+            <h2>{technician.name}</h2>
+            <div className="app-popup-compact-header__actions">
+              <Link className="app-btn app-btn--secondary app-btn--sm" href={`/clocking/${technician.slug}`}>Open full page</Link>
+              <Button type="button" variant="secondary" size="sm" onClick={onClose}>Close</Button>
+            </div>
+          </header>
+
+          {canManage ? (
+            <div className="clocking-details-modal__management-grid">
+              <ChangeStatusSection technician={technician} onCompleted={onCompleted} />
+              <WorkshopAssignmentSection technician={technician} onCompleted={onCompleted} />
+            </div>
+          ) : null}
+
+          <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
+            <h3 className="clocking-details-modal__section-title">View details</h3>
+            <UserClockingHistory slug={technician.slug} embedded />
           </LayerTheme>
-        ) : (
-          <LayerTheme padding="var(--space-3)" gap="var(--space-2)">
-            <label htmlFor="clocking-control-job-number">Job number</label>
-            <input
-              id="clocking-control-job-number"
-              className="app-input"
-              value={jobNumber}
-              onChange={(event) => setJobNumber(event.target.value)}
-              placeholder="Enter job number"
-              autoComplete="off"
-            />
-          </LayerTheme>
-        )}
-      </div>
+        </div>
+      ) : null}
     </PopupModal>
+  );
+}
+
+function TechnicianSection({ sectionKey, title, technicians, loading, snapshot, emptyLabel, onOpenDetails, skeletonCount = 6 }) {
+  return (
+    <LayerTheme
+      as="section"
+      sectionKey={sectionKey}
+      parentKey="app-layout-page-card"
+      padding="var(--section-card-padding)"
+      gap="var(--space-3)"
+    >
+      <header className="clocking-board__section-header clocking-board__section-header--compact">
+        <div><h2>{title}</h2><p>{technicians.length} shown</p></div>
+      </header>
+      {loading && !snapshot ? <BoardSkeleton count={skeletonCount} /> : technicians.length ? (
+        <div className="clocking-board__technician-grid">
+          {technicians.map((technician) => (
+            <TechnicianCard key={technician.userId} technician={technician} onOpenDetails={onOpenDetails} />
+          ))}
+        </div>
+      ) : (
+        <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
+          <strong>{emptyLabel}</strong>
+          <span>Change the status filter to show other workshop users.</span>
+        </LayerSurface>
+      )}
+    </LayerTheme>
   );
 }
 
@@ -310,7 +517,6 @@ function ClockingOverviewTab() {
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("workshop");
-  const [waitingThreshold, setWaitingThreshold] = useState(DEFAULT_WAITING_THRESHOLD_MINUTES);
   const refreshTimerRef = useRef(null);
   const fetchSequenceRef = useRef(0);
 
@@ -325,12 +531,20 @@ function ClockingOverviewTab() {
     else setLoading(true);
     try {
       const referenceDate = new Date();
-      const data = await getWorkshopClockingSnapshot({
-        dateKey: toDateKey(referenceDate),
-        dayStartIso: toDayStartIso(referenceDate),
-      });
+      const dateKey = toDateKey(referenceDate);
+      const [data, assignmentsResponse] = await Promise.all([
+        getWorkshopClockingSnapshot({
+          dateKey,
+          dayStartIso: toDayStartIso(referenceDate),
+        }),
+        fetch(`/api/clocking/workshop-assignment?date=${encodeURIComponent(dateKey)}`),
+      ]);
+      const assignmentsPayload = await assignmentsResponse.json().catch(() => null);
+      if (!assignmentsResponse.ok || !assignmentsPayload?.success) {
+        throw new Error(assignmentsPayload?.message || "Unable to load today’s workshop assignments.");
+      }
       if (sequence !== fetchSequenceRef.current) return;
-      setSnapshot(data);
+      setSnapshot({ ...data, assignments: assignmentsPayload.data || [] });
       setError("");
       setLastUpdated(new Date());
       setNow(new Date());
@@ -381,6 +595,10 @@ function ClockingOverviewTab() {
       .channel("clocking-dashboard")
       .on("postgres_changes", { event: "*", schema: "public", table: "time_records" }, queueRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "job_clocking" }, queueRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "company_settings" }, (payload) => {
+        const settingKey = payload?.new?.setting_key || payload?.old?.setting_key || "";
+        if (String(settingKey).startsWith("workshop_daily_assignment:")) queueRefresh();
+      })
       .subscribe((state) => {
         if (state === "SUBSCRIBED") setRealtimeState("live");
         else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT" || state === "CLOSED") setRealtimeState("offline");
@@ -393,14 +611,6 @@ function ClockingOverviewTab() {
 
   const board = useMemo(() => buildWorkshopBoard(snapshot || {}, now), [snapshot, now]);
   const capacity = useMemo(() => buildCapacitySummary(board, capacityDay), [board, capacityDay]);
-  const attention = useMemo(
-    () => buildWorkshopAttention(board.technicians, capacityDay, waitingThreshold),
-    [board.technicians, capacityDay, waitingThreshold]
-  );
-  const longJobs = useMemo(
-    () => board.technicians.filter((technician) => technician.isOverAllocated).sort((a, b) => b.differenceHours - a.differenceHours),
-    [board.technicians]
-  );
   const visibleTechnicians = useMemo(() => {
     const filtered = statusFilter === "all"
       ? [...board.technicians]
@@ -413,49 +623,42 @@ function ClockingOverviewTab() {
       return a.workshopOrder - b.workshopOrder || a.name.localeCompare(b.name);
     });
   }, [board.technicians, sortBy, statusFilter]);
-
+  const visibleWorkshopTechnicians = visibleTechnicians.filter((technician) => !technician.isMotRole);
+  const visibleMotUsers = visibleTechnicians.filter((technician) => technician.isMotRole);
   const selectedTechnician = board.technicians.find((technician) => technician.userId === selectedTechnicianId) || null;
+
   const stale = lastUpdated ? now.getTime() - lastUpdated.getTime() > 120000 : false;
   const liveLabel = realtimeState === "live" && !stale ? "Live" : realtimeState === "offline" ? "Connection interrupted" : stale ? "Data may be stale" : "Connecting";
 
   return (
     <div className="clocking-board">
-      <LayerTheme as="section" sectionKey="clocking-capacity-summary" padding="var(--section-card-padding)" gap="var(--space-3)">
-        <header className="clocking-board__section-header">
-          <div>
-            <h1>Workshop control board</h1>
-            <p>Live workshop capacity and technician activity</p>
+      <LayerTheme as="section" sectionKey="clocking-capacity-summary" padding="var(--section-card-padding)" gap="var(--space-2)">
+        {capacityError ? <div className="app-status-message app-status-message--warning" role="status">Capacity summary unavailable: {capacityError}</div> : null}
+        <div className="clocking-board__toolbar">
+          <div className="clocking-board__filters">
+            <DropdownField ariaLabel="Filter technician status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_FILTER_OPTIONS} />
+            <DropdownField ariaLabel="Sort technicians" value={sortBy} onChange={(event) => setSortBy(event.target.value)} options={SORT_OPTIONS} />
+            {canManageCapacity ? <Button type="button" variant="primary" size="sm" onClick={() => setCapacitySettingsOpen(true)}>Capacity settings</Button> : null}
           </div>
           <div className="clocking-board__live-state" aria-live="polite">
             <span className={realtimeState === "live" && !stale ? "is-live" : "is-stale"} />
             <strong>{refreshing ? "Updating" : liveLabel}</strong>
             <small>Refreshed {formatClockTime(lastUpdated)}</small>
           </div>
-        </header>
-        {capacityError ? <div className="app-status-message app-status-message--warning" role="status">Capacity summary unavailable: {capacityError}</div> : null}
-        <div className="app-summary-grid clocking-board__capacity-grid">
-          <Metric label="Working technicians" value={`${capacity.working} / ${capacity.total}`} detail="Clocked today" />
-          <Metric label="Productive today" value={formatHours(capacity.productiveHours)} detail="Job clocking" />
-          <Metric label="Hours remaining" value={capacityLoading ? "—" : formatHours(capacity.remainingHours)} detail={capacityLoading ? "Loading capacity" : `${formatHours(capacity.capacityHours)} available`} />
-          <Metric label="Utilisation" value={capacityLoading ? "—" : formatPercent(capacity.utilisationPct)} detail="Productive ÷ available" tone={capacity.utilisationPct > 100 ? "danger" : ""} />
         </div>
-      </LayerTheme>
-
-      <LayerTheme as="section" sectionKey="clocking-live-status" padding="var(--space-3)" gap="var(--space-3)">
-        <div className="clocking-board__toolbar">
-          <div className="app-summary-grid clocking-board__status-grid">
-            <Metric label="Technicians" value={board.summary.total} />
-            <Metric label="In progress" value={board.summary.inProgress} />
-            <Metric label="On MOT" value={board.summary.onMot} />
-            <Metric label="Tea break" value={board.summary.teaBreak} />
-            <Metric label="Waiting" value={board.summary.waiting} />
-            <Metric label="Not clocked" value={board.summary.notClocked} />
-          </div>
-          <div className="clocking-board__filters">
-            <DropdownField ariaLabel="Filter technician status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_FILTER_OPTIONS} />
-            <DropdownField ariaLabel="Sort technicians" value={sortBy} onChange={(event) => setSortBy(event.target.value)} options={SORT_OPTIONS} />
-            {canManageCapacity ? <Button type="button" variant="primary" size="sm" onClick={() => setCapacitySettingsOpen(true)}>Capacity settings</Button> : null}
-          </div>
+        <div className="clocking-board__capacity-grid">
+          <Metric label="Working technicians" value={`${capacity.working} / ${capacity.total}`} />
+          <Metric label="Productive today" value={formatHours(capacity.productiveHours)} />
+          <Metric label="Hours remaining" value={capacityLoading ? "—" : formatHours(capacity.remainingHours)} />
+          <Metric label="Utilisation" value={capacityLoading ? "—" : formatPercent(capacity.utilisationPct)} tone={capacity.utilisationPct > 100 ? "danger" : ""} />
+        </div>
+        <div className="clocking-board__status-grid">
+          <Metric label="Technicians" value={board.summary.total} />
+          <Metric label="In progress" value={board.summary.inProgress} />
+          <Metric label="On MOT" value={board.summary.onMot} />
+          <Metric label="Tea break" value={board.summary.teaBreak} />
+          <Metric label="Waiting" value={board.summary.waiting} />
+          <Metric label="Not clocked" value={board.summary.notClocked} />
         </div>
       </LayerTheme>
 
@@ -471,197 +674,150 @@ function ClockingOverviewTab() {
         </div>
       ) : null}
 
-      <div className="clocking-board__primary-layout">
-        <LayerTheme as="section" sectionKey="clocking-technician-board" padding="var(--section-card-padding)" gap="var(--space-3)">
-          <header className="clocking-board__section-header clocking-board__section-header--compact">
-            <div><h2>Technicians</h2><p>{visibleTechnicians.length} shown</p></div>
-          </header>
-          {loading && !snapshot ? <BoardSkeleton /> : visibleTechnicians.length ? (
-            <div className="clocking-board__technician-grid">
-              {visibleTechnicians.map((technician) => (
-                <TechnicianCard key={technician.userId} technician={technician} canManage={canManageCapacity} onManage={(selected) => setSelectedTechnicianId(selected.userId)} />
-              ))}
-            </div>
-          ) : (
-            <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
-              <strong>No technicians match this view</strong>
-              <span>Change the status filter to show the rest of the workshop.</span>
-            </LayerSurface>
-          )}
-        </LayerTheme>
+      <TechnicianSection
+        sectionKey="clocking-technician-board"
+        title="Technicians"
+        technicians={visibleWorkshopTechnicians}
+        loading={loading}
+        snapshot={snapshot}
+        emptyLabel="No technicians match this view"
+        onOpenDetails={(technician) => setSelectedTechnicianId(technician.userId)}
+      />
 
-        <aside className="clocking-board__operations-rail">
-          <LayerTheme as="section" sectionKey="clocking-workshop-attention" padding="var(--section-card-padding)" gap="var(--space-3)">
-            <header className="clocking-board__section-header clocking-board__section-header--compact clocking-board__section-header--rail">
-              <div><h2>Workshop attention</h2><p>{attention.length} actionable {attention.length === 1 ? "exception" : "exceptions"}</p></div>
-              <DropdownField ariaLabel="Waiting alert threshold" value={String(waitingThreshold)} onChange={(event) => setWaitingThreshold(Number(event.target.value))} options={WAITING_THRESHOLD_OPTIONS} />
-            </header>
-            {capacityLoading && !capacityDay ? <div className="app-status-message app-status-message--info">Checking expected attendance and capacity…</div> : null}
-            <div className="clocking-board__attention-list">
-              {attention.length ? attention.map((item) => (
-                <LayerSurface key={item.id} padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__attention-item">
-                  <span className={`clocking-board__attention-tone app-tone-${item.tone}`}>{item.tone === "danger" ? "Needs action" : "Check"}</span>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                  <Link href={`/clocking/${item.technician.slug}`}>View technician</Link>
-                </LayerSurface>
-              )) : !loading ? (
-                <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
-                  <strong>No workshop exceptions</strong>
-                  <span>Current waiting, attendance and allocation checks are clear.</span>
-                </LayerSurface>
-              ) : null}
-            </div>
-          </LayerTheme>
+      <TechnicianSection
+        sectionKey="clocking-mot-user-board"
+        title="MOT users"
+        technicians={visibleMotUsers}
+        loading={loading}
+        snapshot={snapshot}
+        emptyLabel="No MOT users match this view"
+        onOpenDetails={(technician) => setSelectedTechnicianId(technician.userId)}
+        skeletonCount={3}
+      />
 
-          <LayerTheme as="section" sectionKey="clocking-workshop-activity" padding="var(--section-card-padding)" gap="var(--space-3)">
-            <header className="clocking-board__section-header clocking-board__section-header--compact">
-              <div><h2>Workshop activity</h2><p>Recent meaningful clocking changes</p></div>
-            </header>
-            <div className="clocking-board__activity-list">
-              {board.activity.length ? board.activity.map((event) => (
-                <div className="clocking-board__activity-row" key={event.id}>
-                  <span>{formatClockTime(event.at)}</span>
-                  <strong>{event.message}</strong>
-                </div>
-              )) : <p className="clocking-board__empty-copy">No clocking changes recorded today.</p>}
-            </div>
-          </LayerTheme>
+      <TechnicianDetailsPopup
+        technician={selectedTechnician}
+        canManage={canManageCapacity}
+        onClose={() => setSelectedTechnicianId(null)}
+        onCompleted={() => fetchBoard({ background: true })}
+      />
 
-          <LayerTheme as="section" sectionKey="clocking-long-jobs" padding="var(--section-card-padding)" gap="var(--space-3)">
-            <header className="clocking-board__section-header clocking-board__section-header--compact">
-              <div><h2>Long jobs vs allocated</h2><p>Active work currently above allocation</p></div>
-            </header>
-            <div className="clocking-board__long-list">
-              {longJobs.length ? longJobs.map((technician) => (
-                <LayerSurface key={`${technician.userId}-${technician.currentJobId}`} padding="var(--space-3)" gap="var(--space-2)" className="clocking-board__long-row">
-                  <div><strong>{technician.currentJobNumber}</strong><span>{technician.name}</span></div>
-                  <div><strong className="clocking-board__danger-text">+{formatHours(technician.differenceHours)}</strong><span>{formatHours(technician.actualHours)} / {formatHours(technician.allocatedHours)}</span></div>
-                </LayerSurface>
-              )) : <p className="clocking-board__empty-copy">No active jobs are above their existing allocation.</p>}
-            </div>
-          </LayerTheme>
-        </aside>
-      </div>
-
-      <LayerTheme as="section" sectionKey="clocking-today-summary" padding="var(--section-card-padding)" gap="var(--space-3)">
-        <header className="clocking-board__section-header clocking-board__section-header--compact">
-          <div><h2>Today&apos;s summary</h2><p>Live capacity distribution; technician efficiency calculations are unchanged</p></div>
-          <Link className="app-btn app-btn--secondary app-btn--xs" href="/tech/efficiency">Open technician efficiency</Link>
-        </header>
-        <div className="app-summary-grid clocking-board__performance-grid">
-          <Metric label="Productive hours" value={formatHours(board.performance.productiveHours)} detail="Job clocking" />
-          <Metric label="Available hours" value={capacityLoading ? "—" : formatHours(capacity.capacityHours)} detail="Capacity settings" />
-          <Metric label="Remaining hours" value={capacityLoading ? "—" : formatHours(capacity.remainingHours)} detail="Available less productive" />
-          <Metric label="Idle time" value={formatHours(board.performance.idleHours)} detail="Attendance less job and break" />
-          <Metric label="Break time" value={formatHours(board.performance.breakHours)} detail="Recorded today" />
-          <Metric label="Capacity used" value={capacityLoading ? "—" : formatPercent(capacity.utilisationPct)} detail="Live distribution" tone={capacity.utilisationPct > 100 ? "danger" : ""} />
-        </div>
-      </LayerTheme>
-
-      <ClockingControlModal technician={selectedTechnician} onClose={() => setSelectedTechnicianId(null)} onCompleted={() => fetchBoard({ background: true })} />
       <CapacitySettingsPopup
         isOpen={capacitySettingsOpen}
         onClose={() => setCapacitySettingsOpen(false)}
         onSaved={fetchCapacity}
       />
 
-      <style jsx>{`
+      {/*
+        `global` is required, not stylistic. styled-jsx only stamps its scope
+        class onto JSX inside the component that owns the <style> tag, and the
+        card / section / modal markup lives in sibling components in this file
+        (TechnicianCard, TechnicianSection, BoardSkeleton, TechnicianDetailsPopup).
+        Scoped rules therefore never matched them and the card rendered as raw
+        stacked blocks. Every selector below is namespaced under
+        .clocking-board / .clocking-details-modal so global emission is safe.
+      */}
+      <style jsx global>{`
+        /* The current panel uses a compact one-line baseline and grows only when
+           its bounded description needs more room. The next panel stays fixed. */
+        .clocking-board { --clocking-current-panel-height: 191px; --clocking-next-panel-height: 128px; }
         .clocking-board { container: clocking-board / inline-size; display: flex; flex-direction: column; gap: var(--page-stack-gap); width: 100%; min-width: 0; color: var(--text-1); }
-        .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__technician-header, .clocking-board__work-heading, .clocking-board__live-duration, .clocking-board__allocation-copy, .clocking-board__card-actions, .clocking-board__activity-row, .clocking-board__long-row, .clocking-board__filters { display: flex; align-items: center; gap: var(--space-3); }
-        .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__technician-header, .clocking-board__work-heading, .clocking-board__live-duration, .clocking-board__allocation-copy, .clocking-board__long-row { justify-content: space-between; }
-        .clocking-board__section-header > div:first-child, .clocking-board__technician-header > div:first-child { min-width: 0; }
+        .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__filters { display: flex; align-items: center; gap: var(--space-3); }
+        .clocking-board__section-header, .clocking-board__toolbar { justify-content: space-between; }
+        .clocking-board__section-header > div:first-child { min-width: 0; }
         .clocking-board__section-header h1 { margin: 0; color: var(--accentText); font-size: clamp(1.35rem, 2.4vw, 1.9rem); letter-spacing: -0.025em; line-height: 1.1; }
         .clocking-board__section-header h2 { margin: 0; color: var(--accentText); font-size: 1.05rem; line-height: 1.15; }
-        .clocking-board__section-header p, .clocking-board__technician-header p, .clocking-board__current-work p, .clocking-board__next-job p, .clocking-board__attention-item p, .clocking-board__empty-copy { margin: 2px 0 0; color: var(--text-1); font-size: var(--text-caption); }
+        .clocking-board__section-header p { margin: 2px 0 0; color: var(--text-1); font-size: var(--text-caption); }
         .clocking-board__section-header--compact { min-height: 44px; }
-        .clocking-board__section-header--rail { align-items: stretch; flex-direction: column; }
-        .clocking-board__section-header--rail :global(.dropdown-api) { width: 100%; }
         .clocking-board__live-state { display: grid; grid-template-columns: 8px auto; align-items: center; column-gap: var(--space-sm); flex: 0 0 auto; }
         .clocking-board__live-state > span { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); grid-row: 1 / span 2; }
         .clocking-board__live-state > span.is-live { background: var(--success); }
         .clocking-board__live-state strong { font-size: var(--text-label); }
         .clocking-board__live-state small { color: var(--text-1); font-size: var(--text-caption); }
-        .clocking-board__capacity-grid { flex: 0 0 auto; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .clocking-board__status-grid { grid-template-columns: repeat(6, minmax(104px, 1fr)); flex: 1 1 620px; }
-        .clocking-board__metric { max-height: none; height: auto; min-height: 52px; font-variant-numeric: tabular-nums; }
+        .clocking-board__capacity-grid, .clocking-board__status-grid { display: grid; width: 100%; min-width: 0; gap: var(--space-2); }
+        .clocking-board__capacity-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .clocking-board__status-grid { grid-template-columns: repeat(6, minmax(104px, 1fr)); }
+        html.staff-scope .clocking-board__metric { max-height: none; height: auto; min-height: 52px; font-variant-numeric: tabular-nums; }
         .clocking-board__metric small { flex-basis: 100%; color: var(--text-1); font-size: var(--text-caption); }
-        .clocking-board__toolbar { align-items: stretch; flex-wrap: wrap; }
-        .clocking-board__filters { justify-content: flex-end; flex-wrap: wrap; flex: 0 1 auto; }
-        .clocking-board__filters :global(.dropdown-api) { width: min(190px, 100%); }
-        .clocking-board__primary-layout { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(18rem, 0.85fr); gap: var(--page-stack-gap); align-items: start; }
-        .clocking-board__operations-rail { display: flex; flex-direction: column; gap: var(--page-stack-gap); align-self: start; min-width: 0; }
-        .clocking-board__technician-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); grid-auto-rows: max-content; gap: var(--layout-card-gap); align-items: start; align-content: start; }
-        .clocking-board__technician { min-height: 0; height: auto; align-self: start; transition: transform 180ms ease, box-shadow 180ms ease; }
-        .clocking-board__technician:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-        .clocking-board__technician-header { align-items: flex-start; }
-        .clocking-board__technician-header h3 { margin: 0; color: var(--text-1); font-size: 1rem; line-height: 1.15; }
-        .clocking-board__status, .clocking-board__attention-tone { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 5px 9px; border-radius: var(--radius-xs); font-size: var(--text-caption); font-weight: 700; white-space: nowrap; }
-        .clocking-board__current-work { min-height: 0; }
-        .clocking-board__work-heading > span, .clocking-board__live-duration > span, .clocking-board__next-job > span, .clocking-board__label { color: var(--grey-accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-        .clocking-board__work-heading strong, .clocking-board__live-duration strong { color: var(--accentText); font-variant-numeric: tabular-nums; }
-        .clocking-board__current-work p, .clocking-board__next-job p { overflow-wrap: anywhere; }
-        .clocking-board__allocation { display: flex; flex-direction: column; gap: var(--space-2); margin-top: auto; }
-        .clocking-board__allocation-copy, .clocking-board__allocation small { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
-        .clocking-board__progress { width: 100%; height: 7px; border-radius: var(--radius-xs); background: var(--surface); overflow: hidden; }
-        .clocking-board__progress > span { display: block; height: 100%; background: var(--success); border-radius: inherit; transition: width 240ms ease; }
+        .clocking-board__toolbar { align-items: center; flex-wrap: nowrap; gap: var(--space-2); }
+        .clocking-board__filters { justify-content: flex-start; flex: 0 1 auto; flex-wrap: nowrap; gap: var(--space-2); min-width: 0; }
+        .clocking-board__filters .dropdown-api { flex: 0 0 190px; width: 190px; }
+        .clocking-board__filters .app-btn { flex: 0 0 auto; white-space: nowrap; }
+        /* Technician card: name + overflow header, then two --theme job panels
+           (current, next) sharing one JobPanel shape, then the action footer.
+           Sizing comes from tokens and the shared families only — badges use
+           .app-badge--sm, buttons keep the family's locked --control-height,
+           micro-labels reuse .app-summary-label. No local re-styling of either
+           family lives here. Three cards per row; the grid is capped so cards
+           stay ~400px on ultrawide displays. */
+        .clocking-board__technician-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--layout-card-gap); align-items: stretch; align-content: start; width: 100%; max-width: calc((400px * 3) + (var(--layout-card-gap) * 2)); }
+        .clocking-board__technician { min-width: 0; min-height: 0; height: 100%; align-self: stretch; box-shadow: var(--shadow-sm); transition: transform 180ms ease, box-shadow 180ms ease; }
+        .clocking-board__technician:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .clocking-board__technician-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+        .clocking-board__technician-header h3 { margin: 0; min-width: 0; overflow: hidden; color: var(--text-1); font-size: var(--text-h4); font-weight: 700; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+        /* The current panel keeps one --space-2 token beneath its allocation
+           legend; longer descriptions can grow up to the three-line cap. */
+        .clocking-board__job-panel { min-width: 0; flex: 0 0 auto; }
+        .clocking-board__job-panel--current { min-height: var(--clocking-current-panel-height); }
+        .clocking-board__job-panel--next { height: var(--clocking-next-panel-height); }
+        .clocking-board__job-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-2); flex: 0 0 auto; min-height: var(--control-height); min-width: 0; }
+        /* html.staff-scope prefix is required on anchors: the global
+           "html.staff-scope a" rule (0,1,2) otherwise out-specifies a bare class
+           and paints these accent-red with a hover underline. */
+        html.staff-scope .clocking-board__job-number { display: flex; align-items: baseline; gap: var(--space-1); min-width: 0; color: var(--text-1); text-decoration: none; }
+        html.staff-scope .clocking-board__job-number:hover { color: var(--accentText); text-decoration: none; }
+        .clocking-board__job-number-prefix { flex: 0 0 auto; color: var(--grey-accent); font-size: var(--text-caption); opacity: 0.75; }
+        .clocking-board__job-number-value { min-width: 0; overflow: hidden; font-size: var(--text-h4); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-overflow: ellipsis; white-space: nowrap; }
+        .clocking-board__job-number-empty { min-width: 0; overflow: hidden; color: var(--grey-accent); font-size: var(--text-h4); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; opacity: 0.75; }
+        .clocking-board__job-header-meta { justify-self: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .clocking-board__job-header-meta--filled { background: var(--primary-control-bg); color: var(--primary-control-color); /* Matches the canonical Primary button palette; no shared badge variant provides this pairing. */ }
+        .clocking-board__job-header-badge { justify-self: end; min-width: 0; }
+        .clocking-board__job-summary { flex: 0 0 auto; overflow-y: auto; overscroll-behavior: contain; }
+        .clocking-board__job-summary > p { margin: 0; color: var(--text-1); font-size: var(--text-body-sm); line-height: 1.35; overflow-wrap: anywhere; }
+        .clocking-board__job-panel--current .clocking-board__job-summary { max-height: calc(1.35em * 3); }
+        .clocking-board__job-panel--next .clocking-board__job-summary { max-height: calc(1.35em * 2); }
+        .clocking-board__time-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex: 0 0 auto; min-height: var(--control-height); min-width: 0; }
+        .clocking-board__time-block { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
+        .clocking-board__time-value { color: var(--text-1); font-size: var(--text-h2); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
+        .clocking-board__progress { width: 100%; height: 10px; flex: 0 0 auto; overflow: hidden; border-radius: var(--radius-pill); background: var(--surface); }
+        .clocking-board__progress > span { display: block; height: 100%; border-radius: inherit; background: var(--success); transition: width 240ms ease; }
         .clocking-board__progress > span.is-over { background: var(--danger); }
-        .clocking-board__danger-text { color: var(--danger-dark) !important; }
-        .clocking-board__next-job { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
-        .clocking-board__next-job > div { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-sm); }
-        .clocking-board__next-job > div p, .clocking-board__next-job > div small { grid-column: 2; }
-        .clocking-board__next-job small { color: var(--text-1); font-size: var(--text-caption); }
-        .clocking-board__card-actions { align-items: stretch; flex-wrap: wrap; margin-top: auto; padding-top: var(--space-2); }
-        .clocking-board__card-actions > :global(*) { flex: 1 1 112px; }
-        .clocking-board__attention-list, .clocking-board__long-list { display: flex; flex-direction: column; gap: var(--space-sm); }
-        .clocking-board__attention-item strong { font-size: var(--text-label); line-height: 1.25; }
-        .clocking-board__attention-item a { font-size: var(--text-caption); font-weight: 700; }
-        .clocking-board__activity-list { display: flex; flex-direction: column; max-height: min(18rem, 34dvh); overflow-y: auto; }
-        .clocking-board__activity-row { align-items: baseline; padding: var(--space-2) 0; border-bottom: var(--separating-line); font-size: var(--text-label); }
-        .clocking-board__activity-row:last-child { border-bottom: none; }
-        .clocking-board__activity-row span { flex: 0 0 48px; color: var(--grey-accent); font-variant-numeric: tabular-nums; }
-        .clocking-board__long-row { flex-direction: row; }
-        .clocking-board__long-row > div { display: flex; flex-direction: column; gap: 2px; }
-        .clocking-board__long-row > div:last-child { align-items: flex-end; text-align: right; }
-        .clocking-board__long-row span { color: var(--text-1); font-size: var(--text-caption); }
-        .clocking-board__performance-grid { flex: 0 0 auto; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .clocking-board__progress-legend { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex: 0 0 auto; color: var(--grey-accent); font-size: var(--text-caption); font-variant-numeric: tabular-nums; opacity: 0.75; }
+        .clocking-details-modal__content { display: flex; flex-direction: column; gap: var(--layout-card-gap); }
+        .clocking-details-modal__management-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--layout-card-gap); align-items: stretch; }
+        .clocking-details-modal__management-grid > section { height: 100%; min-width: 0; }
+        .clocking-details-modal__assignment-help { color: var(--text-1); font-size: var(--text-caption); line-height: 1.4; }
+        .clocking-details-modal__content h2 { color: var(--accentText); font-size: var(--text-h3); }
+        .clocking-details-modal__section-title { margin: 0; color: var(--accentText); font-size: var(--text-h4); }
+        .clocking-details-modal { overflow: visible; }
         .clocking-board__empty { align-items: flex-start; }
         .clocking-board__empty span { color: var(--text-1); font-size: var(--text-label); }
-        .clocking-control-modal__content { display: flex; flex-direction: column; gap: var(--layout-card-gap); }
-        .clocking-control-modal__content h2 { color: var(--accentText); font-size: 1.2rem; }
-        :global(.clocking-control-modal) { overflow: visible; }
-        :global(.clocking-board > .app-status-message) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+        .clocking-board > .app-status-message { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
         @container clocking-board (max-width: 60rem) {
-          .clocking-board__primary-layout { grid-template-columns: 1fr; }
-          .clocking-board__operations-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-          .clocking-board__operations-rail > :first-child { grid-column: 1 / -1; }
           .clocking-board__capacity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .clocking-board__performance-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .clocking-board__status-grid { grid-template-columns: repeat(3, minmax(104px, 1fr)); }
+          .clocking-board__technician-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        @container clocking-board (max-width: 45rem) {
-          .clocking-board__operations-rail { grid-template-columns: 1fr; }
-          .clocking-board__operations-rail > :first-child { grid-column: auto; }
-          .clocking-board__performance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @container clocking-board (max-width: 44rem) {
+          .clocking-board__technician-grid { grid-template-columns: minmax(0, 1fr); }
         }
         @media (max-width: 768px) {
+          .clocking-details-modal__management-grid { grid-template-columns: minmax(0, 1fr); }
           .clocking-board__section-header { align-items: flex-start; flex-wrap: wrap; }
+          .clocking-board__toolbar { align-items: flex-start; flex-wrap: wrap; }
           .clocking-board__live-state { width: 100%; }
-          .clocking-board__filters { width: 100%; justify-content: stretch; }
-          .clocking-board__filters :global(.dropdown-api), .clocking-board__filters :global(.app-btn) { flex: 1 1 180px; width: 100%; }
+          .clocking-board__filters { width: 100%; justify-content: stretch; flex-wrap: wrap; }
+          .clocking-board__filters .dropdown-api, .clocking-board__filters .app-btn { flex: 1 1 180px; width: 100%; }
+          .clocking-board__technician-grid { grid-template-columns: minmax(0, 1fr); max-width: none; }
         }
         @media (max-width: 520px) {
-          .clocking-board__capacity-grid, .clocking-board__performance-grid { grid-template-columns: 1fr 1fr; }
+          .clocking-board__capacity-grid { grid-template-columns: 1fr 1fr; }
           .clocking-board__status-grid { display: flex; flex-flow: row nowrap; overflow-x: auto; }
-          .clocking-board__status-grid > :global(*) { flex: 0 0 118px; }
-          .clocking-board__technician-grid { grid-template-columns: 1fr; }
-          .clocking-board__card-actions { display: grid; grid-template-columns: 1fr; }
-          .clocking-board__card-actions > :global(*) { width: 100%; }
-          .clocking-board__section-header--compact :global(.dropdown-api) { width: 100%; }
-          :global(.clocking-board > .app-status-message) { align-items: stretch; flex-direction: column; }
+          .clocking-board__status-grid > * { flex: 0 0 118px; }
+          .clocking-board > .app-status-message { align-items: stretch; flex-direction: column; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .clocking-board__technician, .clocking-board__progress > span { transition: none; }
+          .clocking-board__technician { transition: none; }
           .clocking-board__technician:hover { transform: none; }
         }
       `}</style>

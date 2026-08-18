@@ -1,55 +1,42 @@
 Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
 
-
-
-
-
-
-Status style section!
-.app-summary-item
-
 TODO
-have it so if the user is using a smaller screen and the two "Menu Status" button are sideby side at the top of the screen, then haev it so sidebar section eithre nvatigation or status sidebar section like it does within the phone vertical mode etc 
+Promote only these finished commits from development into main:all the commits which arent in main move to main from dev etc, do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
+
 
 
 
 CHECK
-Cancel appointment button to be added within the jobcard scheduling tab button etc. 
+Cancel appointment button to be add what coed within the jobcard scheduling tab button etc. 
 
 
-Manager update give url link
 
-DO NEXT!! lots to do 
-TODO 
+
+
+CHECK
 /Clocking
 Minor changes todo 
 
 
-
-z
-TODO
+CHECK
 /consumables-tracker
 Minor changes todo 
 
 
-
-
 TODO
 /tech/efficiency
-Minor changes todo 
+CHeck for imporvements 
 
-
-
-DONE
+CHECK
 /stock-catalogue
 
 
-DONE
+CHECK
 /goods-in
 Minor changes todo 
 
-CHECK
-setting button and popup and added part to line data linked correctly
+
+
 
 
 

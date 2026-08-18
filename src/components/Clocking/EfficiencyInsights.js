@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import KpiTrendChart from "@/components/reporting/KpiTrendChart";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -43,55 +44,50 @@ function EmptyMessage({ children }) {
 }
 
 function TrendChart({ points }) {
-  const chart = useMemo(() => {
-    if (!points?.length) return null;
-    const width = 640;
-    const height = 180;
-    const inset = 18;
-    const max = Math.max(120, ...points.map((point) => Number(point.efficiencyPct || 0)));
-    const divisor = Math.max(points.length - 1, 1);
-    const coordinates = points.map((point, index) => ({
-      ...point,
-      x: inset + (index / divisor) * (width - inset * 2),
-      y: height - inset - (Number(point.efficiencyPct || 0) / max) * (height - inset * 2),
+  const series = (points || [])
+    .filter((point) => Number.isFinite(Number(point?.efficiencyPct)))
+    .map((point) => ({
+      key: point.date || point.label,
+      value: Number(point.efficiencyPct),
     }));
-    return {
-      width,
-      height,
-      points: coordinates,
-      polyline: coordinates.map((point) => `${point.x},${point.y}`).join(" "),
-    };
-  }, [points]);
 
-  if (!chart) return <EmptyMessage>No efficiency points are available for this period.</EmptyMessage>;
+  if (!series.length) return <EmptyMessage>No efficiency points are available for this period.</EmptyMessage>;
+
+  const values = series.map(({ value }) => value);
+  const lowest = Math.min(...values);
+  const highest = Math.max(...values);
 
   return (
-    <div className="efficiency-trend-chart">
-      <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Efficiency trend">
-        <line className="efficiency-trend-target" x1="18" x2="622" y1="54" y2="54" />
-        <polyline className="efficiency-trend-line" points={chart.polyline} />
-        {chart.points.map((point) => (
-          <circle key={point.date} className="efficiency-trend-point" cx={point.x} cy={point.y} r="4">
-            <title>{`${point.label}: ${point.efficiencyPct.toFixed(1)}%`}</title>
-          </circle>
-        ))}
-      </svg>
-      <div className="efficiency-trend-labels" aria-hidden="true">
-        <span>{chart.points[0]?.label}</span>
-        <span>{chart.points.at(-1)?.label}</span>
-      </div>
+    <div
+      className="efficiency-trend-chart"
+      role="group"
+      aria-label={`Efficiency trend from ${series[0].key} to ${series.at(-1).key}`}
+    >
+      <KpiTrendChart
+        series={series}
+        unit="percent"
+        format="0.0"
+        height={160}
+        includeZero={false}
+        sectionType="data-visualization"
+      />
+      <p className="efficiency-trend-summary">
+        Target: <strong>100%</strong> · Period range: <strong>{lowest.toFixed(1)}–{highest.toFixed(1)}%</strong>
+      </p>
     </div>
   );
 }
 
 function JobsTable({ jobs }) {
   if (!jobs.length) return <EmptyMessage>No jobs match this view in the selected period.</EmptyMessage>;
+  const showTechnician = jobs.some((job) => job.technicianName);
   return (
     <div className="app-table-shell-scroll efficiency-analysis-table" data-app-table-shell-scroll>
       <table className="app-table-shell app-table-shell--with-headings">
         <thead>
           <tr>
             <th>Job</th>
+            {showTechnician ? <th>Technician</th> : null}
             <th>Description</th>
             <th>Allocated</th>
             <th>Actual</th>
@@ -106,6 +102,7 @@ function JobsTable({ jobs }) {
                   {job.jobNumber}
                 </Link>
               </td>
+              {showTechnician ? <td>{job.technicianName || "—"}</td> : null}
               <td>{job.description}</td>
               <td>{formatHours(job.allocatedHours)}</td>
               <td>{formatHours(job.actualHours)}</td>
@@ -122,6 +119,8 @@ function JobsTable({ jobs }) {
 
 export default function EfficiencyInsights({
   technicianName,
+  technicianRole,
+  clockingHref,
   periodLabel,
   metrics,
   previousMetrics,
@@ -132,6 +131,7 @@ export default function EfficiencyInsights({
   alerts,
   analysisLoading = false,
   analysisError = "",
+  hideHeadline = false,
 }) {
   const [jobView, setJobView] = useState("over");
   const targetState = getTargetState(metrics?.efficiencyPct);
@@ -149,13 +149,15 @@ export default function EfficiencyInsights({
     (sum, job) => sum + Math.max(Number(job.difference || 0), 0),
     0
   );
+  const latestTrendPoint = trend?.at(-1);
+  const latestTrendState = getTargetState(latestTrendPoint?.efficiencyPct);
 
   return (
     <div className="efficiency-insights-stack">
-      <LayerTheme className="efficiency-headline" as="section">
+      {!hideHeadline ? <LayerTheme className="efficiency-headline" as="section">
         <div className="efficiency-headline-main">
           <div>
-            <p className="efficiency-insight-eyebrow">{technicianName} · {periodLabel}</p>
+            <p className="efficiency-insight-eyebrow">{technicianName}{technicianRole ? ` · ${technicianRole}` : ""} · {periodLabel}</p>
             <div className="efficiency-headline-value-row">
               <strong>{Number(metrics?.efficiencyPct || 0).toFixed(1)}%</strong>
               <span className={`app-badge ${targetState.className}`}>{targetState.label}</span>
@@ -168,16 +170,19 @@ export default function EfficiencyInsights({
               {formatChange(previousChange, "%")}
             </strong>
             <small>{Number(previousMetrics?.efficiencyPct || 0).toFixed(1)}% previously</small>
+            {clockingHref ? <Link className="app-btn app-btn--secondary app-btn--sm" href={clockingHref}>Open clocking</Link> : null}
           </div>
         </div>
         <div className="efficiency-kpi-grid">
           {[
-            ["Productive", formatHours(metrics?.productiveHours)],
-            ["Target / available", formatHours(metrics?.targetHours)],
-            ["Allocated", formatHours(metrics?.allocatedHours)],
+            ["Logged total", formatHours(metrics?.loggedHours)],
+            ["Allocated total", formatHours(metrics?.allocatedHours)],
+            ["Total difference", formatChange(metrics?.allocationDifference || 0)],
+            ["Current target", formatHours(metrics?.targetHours)],
+            ["Full month target", formatHours(metrics?.fullMonthTargetHours)],
+            ["Productive hours", formatHours(metrics?.productiveHours)],
             ["Overtime", formatHours(metrics?.overtimeHours)],
-            ["Unallocated", formatHours(metrics?.unallocatedHours)],
-            ["Target variance", formatChange((metrics?.productiveHours || 0) - (metrics?.targetHours || 0))],
+            ["Unallocated / idle", formatHours(metrics?.unallocatedHours)],
           ].map(([label, value]) => (
             <LayerSurface key={label} className="efficiency-kpi-card" padding="var(--space-sm)" gap="4px">
               <span>{label}</span>
@@ -185,7 +190,7 @@ export default function EfficiencyInsights({
             </LayerSurface>
           ))}
         </div>
-      </LayerTheme>
+      </LayerTheme> : null}
 
       <div className="efficiency-primary-analysis-grid">
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-comparison-panel">
@@ -210,7 +215,19 @@ export default function EfficiencyInsights({
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-trend-panel">
-          <PanelHeader eyebrow="Selected period" title="Efficiency trend" />
+          <PanelHeader
+            title="Efficiency trend"
+            aside={(
+              <div className="efficiency-trend-header-meta">
+                <span className="app-badge app-badge--neutral">{periodLabel}</span>
+                {latestTrendPoint ? (
+                  <span className={`app-badge ${latestTrendState.className}`}>
+                    Latest {Number(latestTrendPoint.efficiencyPct || 0).toFixed(1)}%
+                  </span>
+                ) : null}
+              </div>
+            )}
+          />
           {analysisLoading ? <EmptyMessage>Loading trend data...</EmptyMessage> : null}
           {!analysisLoading && analysisError ? <EmptyMessage>{analysisError}</EmptyMessage> : null}
           {!analysisLoading && !analysisError ? <TrendChart points={trend} /> : null}
@@ -276,7 +293,7 @@ export default function EfficiencyInsights({
       <LayerTheme as="section" className="efficiency-analysis-panel">
         <PanelHeader
           eyebrow="Allocation impact"
-          title="Jobs affecting efficiency"
+          title={jobView === "over" ? "Jobs affecting efficiency" : "Best performing jobs"}
           aside={(
             <TabGroup
               value={jobView}
@@ -284,7 +301,7 @@ export default function EfficiencyInsights({
               ariaLabel="Job allocation result"
               items={[
                 { value: "over", label: `Over allocation (${jobs?.over?.length || 0})` },
-                { value: "under", label: `Under allocation (${jobs?.under?.length || 0})` },
+                { value: "under", label: `Best performing (${jobs?.under?.length || 0})` },
               ]}
             />
           )}
@@ -311,36 +328,34 @@ export default function EfficiencyInsights({
 
       {/* These classes are feature-local because the panel packing and SVG sizing are unique to this workspace. */}
       <style jsx>{`
-        .efficiency-insights-stack { display: flex; flex-direction: column; gap: var(--page-stack-gap); min-width: 0; }
+        .efficiency-insights-stack { display: flex; flex-direction: column; gap: var(--page-stack-gap); min-width: 0; color: var(--surfaceText); }
         :global(.efficiency-headline) { gap: var(--space-md); }
         .efficiency-headline-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-lg); align-items: end; }
         .efficiency-headline-value-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
-        .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
-        .efficiency-headline-caption, .efficiency-panel-note { color: var(--text-2); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
+        .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+        .efficiency-headline-caption, .efficiency-panel-note { color: var(--surfaceTextMuted); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
         .efficiency-headline-comparison { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
-        .efficiency-headline-comparison span, .efficiency-headline-comparison small { color: var(--text-2); }
+        .efficiency-headline-comparison span, .efficiency-headline-comparison small { color: var(--surfaceTextMuted); }
         .efficiency-headline-comparison strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
         .efficiency-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: var(--space-sm); }
-        :global(.efficiency-kpi-card span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-kpi-card span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         :global(.efficiency-kpi-card strong) { color: var(--surfaceText); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
         .efficiency-primary-analysis-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.4fr); gap: var(--page-stack-gap); align-items: stretch; }
         .efficiency-secondary-analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--page-stack-gap); }
         :global(.efficiency-analysis-panel) { min-height: 0; }
         .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
         .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
-        .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--text-2); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+        .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--surfaceTextMuted); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
         .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }
         :global(.efficiency-comparison-row) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
         :global(.efficiency-comparison-row > div) { display: flex; flex-direction: column; gap: 2px; }
-        :global(.efficiency-comparison-row span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-comparison-row span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         .is-positive { color: var(--success) !important; font-weight: 700; }
         .is-negative { color: var(--danger) !important; font-weight: 700; }
-        .efficiency-trend-chart { min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end; }
-        .efficiency-trend-chart svg { width: 100%; min-height: 150px; overflow: visible; }
-        .efficiency-trend-target { stroke: var(--separating-line); stroke-width: 2; stroke-dasharray: 6 6; }
-        .efficiency-trend-line { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-        .efficiency-trend-point { fill: var(--surface); stroke: var(--primary); stroke-width: 3; }
-        .efficiency-trend-labels { display: flex; justify-content: space-between; color: var(--text-2); font-size: .68rem; }
+        .efficiency-trend-chart { min-width: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
+        .efficiency-trend-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex-wrap: wrap; }
+        .efficiency-trend-summary { margin: 0; color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-trend-summary strong { color: var(--surfaceText); font-variant-numeric: tabular-nums; }
         .efficiency-breakdown-list { display: flex; flex-direction: column; gap: var(--space-sm); }
         .efficiency-breakdown-row > div:first-child { display: flex; justify-content: space-between; gap: var(--space-sm); font-size: var(--text-caption); }
         .efficiency-breakdown-track, .efficiency-target-progress { height: 8px; margin-top: 5px; background: var(--surface); border-radius: var(--radius-pill); overflow: hidden; }
@@ -349,24 +364,24 @@ export default function EfficiencyInsights({
         .efficiency-breakdown-track .is-unallocated { background: var(--warning); }
         .efficiency-target-progress-copy { display: flex; align-items: baseline; gap: var(--space-xs); }
         .efficiency-target-progress-copy strong { color: var(--primary-selected); font-size: 2rem; }
-        .efficiency-target-progress-copy span, .efficiency-target-progress-meta { color: var(--text-2); }
+        .efficiency-target-progress-copy span, .efficiency-target-progress-meta { color: var(--surfaceTextMuted); }
         .efficiency-target-progress-meta { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-caption); }
         .efficiency-lost-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); }
-        :global(.efficiency-lost-time-grid > div span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-lost-time-grid > div span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         :global(.efficiency-lost-time-grid > div strong) { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
         .efficiency-alert-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); padding: 0; margin: 0; }
         .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line); }
         .efficiency-alert-list li:last-child { border-bottom: 0; }
         .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
-        .efficiency-alert-list li div span { color: var(--text-2); font-size: var(--text-caption); }
-        .efficiency-insight-empty { color: var(--text-2); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
+        .efficiency-alert-list li div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insight-empty { color: var(--surfaceTextMuted); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
         .efficiency-analysis-table { max-height: 330px; overflow: auto; }
         .efficiency-analysis-table table { min-width: 700px; }
         .efficiency-job-link { color: var(--primary-selected); font-weight: 700; text-decoration: none; }
         .efficiency-job-link:hover { text-decoration: underline; }
         .efficiency-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-sm); }
         :global(.efficiency-category-card > div) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
-        :global(.efficiency-category-card > span) { color: var(--text-2); font-size: var(--text-caption); }
+        :global(.efficiency-category-card > span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         @media (max-width: 980px) {
           .efficiency-primary-analysis-grid { grid-template-columns: 1fr; }
         }
@@ -376,6 +391,7 @@ export default function EfficiencyInsights({
           .efficiency-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           :global(.efficiency-comparison-row) { grid-template-columns: minmax(0, 1fr) auto; }
           :global(.efficiency-comparison-row > span) { grid-column: 1 / -1; }
+          .efficiency-trend-header-meta { justify-content: flex-start; }
         }
       `}</style>
     </div>

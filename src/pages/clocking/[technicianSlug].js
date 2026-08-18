@@ -92,9 +92,21 @@ const isClockingLockedStatus = (statusValue) => {
 
 };
 
-export default function UserClockingHistory() {
+// Passthrough shells used when this page is embedded (e.g. inside the technician
+// popup on /clocking). The popup already provides the page surface, so the
+// route-level PageWrapper/PageContainer would double the padding and background.
+const EmbeddedShell = ({ children }) => <>{children}</>;
+
+/**
+ * Route component for /clocking/[technicianSlug].
+ *
+ * Also renders standalone inside a popup: pass `slug` to override the router
+ * param and `embedded` to drop the page shell. Everything else — data loading,
+ * manual entry, manager permissions — is identical in both modes.
+ */
+export default function UserClockingHistory({ slug: slugOverride, embedded = false }) {
   const router = useRouter();
-  const slugParamRaw = router.query.technicianSlug;
+  const slugParamRaw = slugOverride ?? router.query.technicianSlug;
   const userIdQueryRaw = router.query.userId;
   const slugParam = Array.isArray(slugParamRaw) ? slugParamRaw[0] : slugParamRaw;
   const userIdFromQuery = Array.isArray(userIdQueryRaw) ? userIdQueryRaw[0] : userIdQueryRaw;
@@ -742,7 +754,7 @@ export default function UserClockingHistory() {
     cursor: "pointer"
   };
 
-  return <UserClockingHistoryUi view="section1" activeJobs={activeJobs} activeJobsLoading={activeJobsLoading} badgeBaseStyle={badgeBaseStyle} basePanelStyle={basePanelStyle} buttonPrimaryStyle={buttonPrimaryStyle} buttonSecondaryStyle={buttonSecondaryStyle} CalendarField={CalendarField} clockInDate={clockInDate} ClockingHistorySection={ClockingHistorySection} clockOutDate={clockOutDate} deriveStatus={deriveStatus} DropdownField={DropdownField} entries={entries} error={error} formatDuration={formatDuration} formatTime={formatTime} formError={formError} formFinishTime={formFinishTime} formJobNumber={formJobNumber} formStartTime={formStartTime} formSubmitting={formSubmitting} formSuccess={formSuccess} handleJobNumberChange={handleJobNumberChange} handleManualEntrySubmit={handleManualEntrySubmit} historyRefreshSignal={historyRefreshSignal} inputStyle={inputStyle} isManager={isManager} lastClockedJobId={lastClockedJobId} lastClockedJobNumber={lastClockedJobNumber} loading={loading} managerBadgeStyle={managerBadgeStyle} PageContainer={PageContainer} PageWrapper={PageWrapper} requestOptions={requestOptions} selectedJobLockedMessage={selectedJobLockedMessage} selectedRequest={selectedRequest} setClockInDate={setClockInDate} setClockOutDate={setClockOutDate} setFormError={setFormError} setFormFinishTime={setFormFinishTime} setFormJobNumber={setFormJobNumber} setFormStartTime={setFormStartTime} setFormSuccess={setFormSuccess} setJobRequests={setJobRequests} setSelectedJobId={setSelectedJobId} setSelectedJobLockedMessage={setSelectedJobLockedMessage} setSelectedRequest={setSelectedRequest} STATUS_BADGE_STYLES={STATUS_BADGE_STYLES} STATUS_STATES={STATUS_STATES} tableCellStyle={tableCellStyle} tableHeaderStyle={tableHeaderStyle} tableStyle={tableStyle} tableWrapperStyle={tableWrapperStyle} TimePickerField={TimePickerField} />;
+  return <UserClockingHistoryUi view="section1" activeJobs={activeJobs} activeJobsLoading={activeJobsLoading} badgeBaseStyle={badgeBaseStyle} basePanelStyle={basePanelStyle} buttonPrimaryStyle={buttonPrimaryStyle} buttonSecondaryStyle={buttonSecondaryStyle} CalendarField={CalendarField} clockInDate={clockInDate} ClockingHistorySection={ClockingHistorySection} clockOutDate={clockOutDate} deriveStatus={deriveStatus} DropdownField={DropdownField} entries={entries} error={error} formatDuration={formatDuration} formatTime={formatTime} formError={formError} formFinishTime={formFinishTime} formJobNumber={formJobNumber} formStartTime={formStartTime} formSubmitting={formSubmitting} formSuccess={formSuccess} handleJobNumberChange={handleJobNumberChange} handleManualEntrySubmit={handleManualEntrySubmit} historyRefreshSignal={historyRefreshSignal} inputStyle={inputStyle} isManager={isManager} lastClockedJobId={lastClockedJobId} lastClockedJobNumber={lastClockedJobNumber} loading={loading} managerBadgeStyle={managerBadgeStyle} PageContainer={embedded ? EmbeddedShell : PageContainer} PageWrapper={embedded ? EmbeddedShell : PageWrapper} requestOptions={requestOptions} selectedJobLockedMessage={selectedJobLockedMessage} selectedRequest={selectedRequest} setClockInDate={setClockInDate} setClockOutDate={setClockOutDate} setFormError={setFormError} setFormFinishTime={setFormFinishTime} setFormJobNumber={setFormJobNumber} setFormStartTime={setFormStartTime} setFormSuccess={setFormSuccess} setJobRequests={setJobRequests} setSelectedJobId={setSelectedJobId} setSelectedJobLockedMessage={setSelectedJobLockedMessage} setSelectedRequest={setSelectedRequest} STATUS_BADGE_STYLES={STATUS_BADGE_STYLES} STATUS_STATES={STATUS_STATES} tableCellStyle={tableCellStyle} tableHeaderStyle={tableHeaderStyle} tableStyle={tableStyle} tableWrapperStyle={tableWrapperStyle} TimePickerField={TimePickerField} />;
 
 
 

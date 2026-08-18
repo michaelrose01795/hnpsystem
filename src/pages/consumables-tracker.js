@@ -14,6 +14,11 @@ import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { PageShell, ContentWidth } from "@/components/ui";
 import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-consumables-tracker-ui"; // Extracted presentation layer.
 import { hasAnyRole, WORKSHOP_MANAGER_ROLES } from "@/lib/auth/roles";
+import {
+  findConsumableForRequest,
+  groupConsumableRequests,
+  normalizeConsumableRequestStatus,
+} from "@/lib/consumableRequests";
 
 // Page layout follows the canonical page shell and layer surface structure.
 // hierarchy from staffglobal.css (via @/components/ui), so no local layout shells.
@@ -47,22 +52,6 @@ const historyModalStyle = {
 };
 
 
-function normalizeConsumableName(value) {
-  return (value || "").trim().toLowerCase();
-}
-
-function compactConsumableKey(value) {
-  return normalizeConsumableName(value).replace(/\s+/g, "");
-}
-
-function namesMatch(valueA, valueB) {
-  const keyA = compactConsumableKey(valueA);
-  const keyB = compactConsumableKey(valueB);
-  if (!keyA || !keyB) {
-    return false;
-  }
-  return keyA === keyB;
-}
 function formatCurrency(value) {
   if (value === null || value === undefined) {
     return "—";
@@ -131,21 +120,14 @@ const DAY_MS = 1000 * 60 * 60 * 24;
 
 function getStockInsight(item) {
   const stock = Math.max(0, Number(item?.stockQuantity) || 0);
-  const history = (item?.orderHistory || [])
-    .map((order) => ({ ...order, parsedDate: new Date(order.date), quantity: Number(order.quantity) || 0 }))
-    .filter((order) => order.quantity > 0 && !Number.isNaN(order.parsedDate.getTime()))
-    .sort((a, b) => b.parsedDate - a.parsedDate)
-    .slice(0, 4);
-  const dailyRates = [];
-
-  for (let index = 0; index < history.length - 1; index += 1) {
-    const days = Math.round((history[index].parsedDate - history[index + 1].parsedDate) / DAY_MS);
-    if (days > 0) dailyRates.push(history[index + 1].quantity / days);
-  }
-
-  const dailyUsage = dailyRates.length
-    ? dailyRates.reduce((sum, rate) => sum + rate, 0) / dailyRates.length
-    : null;
+  const usageWindowDays = 90;
+  const usageCutoff = Date.now() - usageWindowDays * DAY_MS;
+  const recentUsageQuantity = (item?.usageHistory || []).reduce((total, usage) => {
+    const usedAt = new Date(usage.usedAt).getTime();
+    if (!Number.isFinite(usedAt) || usedAt < usageCutoff) return total;
+    return total + Math.max(0, Number(usage.quantity) || 0);
+  }, 0);
+  const dailyUsage = recentUsageQuantity > 0 ? recentUsageQuantity / usageWindowDays : null;
   const daysRemaining = dailyUsage && dailyUsage > 0 ? Math.max(0, Math.round(stock / dailyUsage)) : null;
   const preferredStock = Number(item?.estimatedQuantity) > 0 ? Number(item.estimatedQuantity) : null;
   const suggestedOrderQuantity = preferredStock === null ? null : Math.max(0, Math.ceil(preferredStock - stock));
@@ -379,13 +361,8 @@ function ConsumablesTrackerPage() {
     fetchTechRequests();
   }, [fetchTechRequests]);
 
-  const findConsumableByName = useCallback(
-    (name) => {
-      if (!name) {
-        return null;
-      }
-      return consumables.find((item) => namesMatch(item.name, name));
-    },
+  const findRequestConsumable = useCallback(
+    (request) => findConsumableForRequest(request, consumables),
     [consumables]
   );
 
@@ -394,7 +371,7 @@ function ConsumablesTrackerPage() {
       if (!request) {
         return;
       }
-      const consumable = findConsumableByName(request.itemName);
+      const consumable = findRequestConsumable(request);
       if (!consumable) {
         setRequestsError(
           `Consumable "${request.itemName}" isn't in the tracker yet. Add it via Stock Check before ordering.`
@@ -406,7 +383,7 @@ function ConsumablesTrackerPage() {
         createNewRequest: request.status === "arrived",
       });
     },
-    [findConsumableByName, openOrderModal]
+    [findRequestConsumable, openOrderModal]
   );
 
   const handleRequestOrdered = useCallback(
@@ -457,7 +434,7 @@ function ConsumablesTrackerPage() {
   const handleRequestArrived = useCallback(
     async (request) => {
       if (!request) return;
-      const consumable = findConsumableByName(request.itemName);
+      const consumable = findRequestConsumable(request);
       if (!consumable) {
         setRequestsError(
           `Consumable "${request.itemName}" isn't in the tracker, so its stock cannot be updated.`
@@ -491,7 +468,7 @@ function ConsumablesTrackerPage() {
         setOrderingRequestId(null);
       }
     },
-    [findConsumableByName, refreshConsumables]
+    [findRequestConsumable, refreshConsumables]
   );
 
   const currentMonthNumber = useMemo(() => new Date().getMonth() + 1, []);
@@ -614,7 +591,8 @@ function ConsumablesTrackerPage() {
     "workshop_consumables",
     "workshop_consumable_orders",
     "workshop_consumable_requests",
-    "workshop_consumable_budgets"];
+    "workshop_consumable_budgets",
+    "workshop_consumable_usage"];
 
     const handleRealtime = (payload) => {
       if (payload.table === "workshop_consumable_requests") {
@@ -833,32 +811,10 @@ function ConsumablesTrackerPage() {
     });
   }, [consumablesWithInsights, searchQuery]);
 
-  const groupedRequests = useMemo(() => {
-    const groups = new Map();
-    techRequests.forEach((request) => {
-      const key = compactConsumableKey(request.itemName || request.item_name);
-      if (!key) return;
-      const existing = groups.get(key) || {
-        key,
-        itemName: request.itemName || request.item_name,
-        totalQuantity: 0,
-        activeQuantity: 0,
-        fulfilledQuantity: 0,
-        requests: [],
-        latestRequestAt: null,
-      };
-      const quantity = Number(request.quantity) || 0;
-      existing.totalQuantity += quantity;
-      if (["pending", "urgent", "ordered"].includes(request.status)) existing.activeQuantity += quantity;
-      if (["arrived", "completed"].includes(request.status)) existing.fulfilledQuantity += quantity;
-      existing.requests.push(request);
-      if (!existing.latestRequestAt || new Date(request.requestedAt) > new Date(existing.latestRequestAt)) {
-        existing.latestRequestAt = request.requestedAt;
-      }
-      groups.set(key, existing);
-    });
-    return Array.from(groups.values()).sort((a, b) => b.activeQuantity - a.activeQuantity || b.totalQuantity - a.totalQuantity);
-  }, [techRequests]);
+  const groupedRequests = useMemo(
+    () => groupConsumableRequests(techRequests, consumables),
+    [consumables, techRequests]
+  );
 
   const supplierSpend = useMemo(() => {
     const grouped = new Map();
@@ -878,7 +834,7 @@ function ConsumablesTrackerPage() {
       active: active.length,
       low: active.filter((item) => item.stockStatus === "Low").length,
       out: active.filter((item) => item.stockStatus === "Out").length,
-      requestsNeedingAttention: techRequests.filter((request) => ["pending", "urgent"].includes(request.status)).length,
+      requestsNeedingAttention: techRequests.filter((request) => ["pending", "urgent"].includes(normalizeConsumableRequestStatus(request.status))).length,
       scheduledValue: scheduled.reduce((sum, item) => {
         const quantity = item.suggestedOrderQuantity ?? item.estimatedQuantity ?? 0;
         return sum + quantity * (Number(item.unitCost) || 0);

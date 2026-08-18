@@ -50,6 +50,7 @@ async function logTechnicianRequestsFromStockChecks(rows = [], quantityByConsuma
       return {
         id: row.id,
         item_name: itemName,
+        catalog_consumable_id: row.consumableId,
         quantity: quantityByConsumableId.get(row.consumableId) || 1,
         requested_by: row.technicianId || null,
         requested_by_name: row.technicianName || null,
@@ -64,9 +65,22 @@ async function logTechnicianRequestsFromStockChecks(rows = [], quantityByConsuma
     return;
   }
 
-  const { error } = await supabase
+  let result = await supabase
     .from("workshop_consumable_requests")
     .upsert(payload, { onConflict: "id", ignoreDuplicates: true });
+
+  if (["42703", "PGRST204"].includes(String(result.error?.code || "").toUpperCase())) {
+    const compatibilityPayload = payload.map((row) => {
+      const compatibleRow = { ...row };
+      delete compatibleRow.catalog_consumable_id;
+      return compatibleRow;
+    });
+    result = await supabase
+      .from("workshop_consumable_requests")
+      .upsert(compatibilityPayload, { onConflict: "id", ignoreDuplicates: true });
+  }
+
+  const { error } = result;
 
   if (error) {
     throw error;

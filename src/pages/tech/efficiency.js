@@ -5,10 +5,18 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import dynamic from "next/dynamic";
 import TechEfficiencyPageUi from "@/components/page-ui/tech/tech-efficiency-ui"; // Extracted presentation layer.
+import {
+  MOBILE_TECH_ROLES,
+  TECHNICIAN_ROLES,
+  normalizeRoles,
+} from "@/lib/auth/roles";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
+const TECHNICIAN_ROLE_SET = new Set(
+  normalizeRoles([...TECHNICIAN_ROLES, ...MOBILE_TECH_ROLES])
+);
 
 export default function TechEfficiencyPage() {
-  const { dbUserId } = useUser();
+  const { dbUserId, user } = useUser();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -17,8 +25,19 @@ export default function TechEfficiencyPage() {
 
 
   const techUserId = dbUserId ? Number(dbUserId) : null;
+  const normalizedUserRoles = normalizeRoles(user?.roles || []);
+  const isTechnicianOnly =
+    normalizedUserRoles.length > 0 &&
+    normalizedUserRoles.every((role) => TECHNICIAN_ROLE_SET.has(role));
+  const canViewWorkshop = !isTechnicianOnly;
 
-  return <TechEfficiencyPageUi view="section1" EfficiencyTab={EfficiencyTab} ready={ready} techUserId={techUserId} />;
+  return <TechEfficiencyPageUi
+    view="section1"
+    EfficiencyTab={EfficiencyTab}
+    ready={ready}
+    techUserId={techUserId}
+    canViewWorkshop={canViewWorkshop}
+  />;
 
 
 

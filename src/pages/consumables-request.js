@@ -374,6 +374,7 @@ const TechConsumableRequestPage = () => {
           items: selectedStockItems.map((item) => ({
             itemName: item.name,
             quantity: item.quantity,
+            catalogConsumableId: item.id,
           })),
           requestedById: dbUserId,
           requestedByName: user?.username || null,
