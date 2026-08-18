@@ -3,6 +3,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
 import { getMockRows } from "@/features/presentation/mockData";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
 
 const formatUserName = (user) => {
   if (!user) return "Unknown user";
@@ -97,16 +98,11 @@ export const getAdminDashboardData = async () => {
         .gte("created_at", weekStart)
         .lte("created_at", todayEnd)
     ),
-    runQuery(() =>
-      supabase
-        .from("hr_absences")
-        .select("absence_id,user_id,type,start_date,end_date,user:user_id(first_name,last_name,email)")
-        .eq("type", "Holiday")
-        .gte("start_date", todayStart)
-        .lte("start_date", dayjs().add(7, "day").endOf("day").toISOString())
-        .order("start_date", { ascending: true })
-        .limit(6)
-    ),
+    fetchApprovedStaffAbsences({
+      startDate: dayjs().format("YYYY-MM-DD"),
+      endDate: dayjs().add(7, "day").format("YYYY-MM-DD"),
+      type: "Holiday",
+    }).then((rows) => rows.slice(0, 6)),
     runQuery(() =>
       supabase
         .from("notifications")

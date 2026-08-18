@@ -38,8 +38,13 @@ import {
   buildJobAnalysis,
   buildPeriodMetrics,
   buildTrend,
+  aggregateWorkshopMetrics,
+  buildWorkshopComparableMetrics,
+  buildWorkshopComparisons,
+  buildWorkshopTrend,
   reconcileEfficiencyEntries,
 } from "@/lib/efficiency/analytics";
+import { generateTechnicianSlug } from "@/utils/technicianSlug";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -95,6 +100,13 @@ const formatFilterHeadingDate = (date) =>
   date instanceof Date && !Number.isNaN(date.getTime())
     ? date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     : "";
+const getEfficiencyState = (value) => {
+  const efficiency = Number(value || 0);
+  if (efficiency >= 110) return { label: "Above Target", className: "app-badge--success-strong" };
+  if (efficiency >= 100) return { label: "On Target", className: "app-badge--success" };
+  if (efficiency >= 80) return { label: "Near Target", className: "app-badge--warning" };
+  return { label: "Below Target", className: "app-badge--danger" };
+};
 
 const sortEntriesNewestFirst = (items) =>
   [...(Array.isArray(items) ? items : [])].sort((a, b) => {
@@ -160,9 +172,8 @@ export default function EfficiencyTab({
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [technicians, setTechnicians] = useState([]);
-  const [activeTab, setActiveTab] = useState(
-    filterUserId ? String(filterUserId) : "overall"
-  );
+  const [techniciansLoaded, setTechniciansLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState("overall");
   const [entries, setEntries] = useState([]);
   const [targets, setTargets] = useState(new Map());
   const [loading, setLoading] = useState(true);
@@ -211,7 +222,18 @@ export default function EfficiencyTab({
   const [detailEditSubmitting, setDetailEditSubmitting] = useState(false);
   const [detailEditError, setDetailEditError] = useState("");
 
-  // Load technicians
+  const loadTechnicians = useCallback(async () => {
+    try {
+      const techs = await getEfficiencyTechnicians();
+      setTechnicians(techs);
+    } catch (err) {
+      setError(err?.message || "Failed to load technicians.");
+    } finally {
+      setTechniciansLoaded(true);
+    }
+  }, []);
+
+  // Load the canonical /clocking technician population.
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -220,6 +242,8 @@ export default function EfficiencyTab({
         if (!cancelled) setTechnicians(techs);
       } catch (err) {
         if (!cancelled) setError(err?.message || "Failed to load technicians.");
+      } finally {
+        if (!cancelled) setTechniciansLoaded(true);
       }
     };
     load();
@@ -237,9 +261,26 @@ export default function EfficiencyTab({
     [technicians]
   );
 
+  useEffect(() => {
+    if (!techniciansLoaded) return;
+    if (activeTab === "overall") return;
+    const tabStillExists = visibleTechs.some(
+      (tech) => String(tech.user_id) === String(activeTab)
+    );
+    if (!tabStillExists) {
+      setActiveTab(filterUserId && visibleTechs.length ? String(filterUserId) : "overall");
+    }
+  }, [activeTab, filterUserId, techniciansLoaded, visibleTechs]);
+
   // Fetch entries and targets when month/year or technicians change
   const fetchData = useCallback(async () => {
-    if (allUserIds.length === 0) return;
+    if (!techniciansLoaded) return;
+    if (allUserIds.length === 0) {
+      setEntries([]);
+      setTargets(new Map());
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -264,10 +305,16 @@ export default function EfficiencyTab({
     } finally {
       setLoading(false);
     }
-  }, [allUserIds, selectedYear, selectedMonth]);
+  }, [allUserIds, selectedYear, selectedMonth, techniciansLoaded]);
 
   const fetchAnalysisData = useCallback(async () => {
-    if (allUserIds.length === 0) return;
+    if (!techniciansLoaded) return;
+    if (allUserIds.length === 0) {
+      setAnalysisEntries([]);
+      setQualityClockings([]);
+      setAnalysisLoading(false);
+      return;
+    }
     setAnalysisLoading(true);
     setAnalysisError("");
     const previousMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
@@ -294,7 +341,7 @@ export default function EfficiencyTab({
     } finally {
       setAnalysisLoading(false);
     }
-  }, [allUserIds, entries, selectedMonth, selectedYear]);
+  }, [allUserIds, entries, selectedMonth, selectedYear, techniciansLoaded]);
 
   useEffect(() => {
     fetchData();
@@ -315,11 +362,6 @@ export default function EfficiencyTab({
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "overtime_sessions" },
-        () => { fetchData(); }
-      )
-      .on(
-        "postgres_changes",
         { event: "*", schema: "public", table: "tech_efficiency_targets" },
         () => { fetchData(); }
       )
@@ -328,19 +370,23 @@ export default function EfficiencyTab({
         { event: "*", schema: "public", table: "job_clocking" },
         () => { fetchData(); }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "users" },
+        () => { loadTechnicians(); }
+      )
       .subscribe();
 
+    // overtime_sessions is deliberately server-only after the RLS hardening,
+    // so it cannot participate in a browser Realtime channel. Poll the guarded
+    // efficiency endpoint instead to retain timely overtime updates.
+    const overtimeRefresh = window.setInterval(fetchData, 60000);
+
     return () => {
+      window.clearInterval(overtimeRefresh);
       supabase.removeChannel(channel);
     };
-  }, [fetchData]);
-
-  // Set default active tab when filterUserId is set
-  useEffect(() => {
-    if (filterUserId && visibleTechs.length > 0 && activeTab === "overall") {
-      // Keep overall as default - it's fine
-    }
-  }, [filterUserId, visibleTechs, activeTab]);
+  }, [fetchData, loadTechnicians]);
 
   useEffect(() => {
     const current = parseYmd(filterDate);
@@ -431,7 +477,7 @@ export default function EfficiencyTab({
 
   // Per-tech summaries (respecting current filters/search)
   const techSummaries = useMemo(() => {
-    return visibleTechs.map((tech) => {
+    return technicians.map((tech) => {
       const techEntries = entriesByUser.get(tech.user_id) || [];
       const target = targets.get(tech.user_id) || { monthlyTargetHours: 160, weight: 1.0 };
       const totals = calculateTechTotals(techEntries, target, {
@@ -449,7 +495,7 @@ export default function EfficiencyTab({
         weight: target.weight,
       };
     });
-  }, [entriesByUser, filterDateValue, periodFilter, selectedMonth, selectedYear, targets, visibleTechs]);
+  }, [entriesByUser, filterDateValue, periodFilter, selectedMonth, selectedYear, targets, technicians]);
 
   const overviewTechSummaries = useMemo(() => {
     if (overviewTechFilter === "all") return techSummaries;
@@ -587,28 +633,74 @@ export default function EfficiencyTab({
     [analysisEntries, filterDateValue, overviewTechSummaries, periodFilter]
   );
 
-  const totalsForFilteredSet = useMemo(() => {
-    const sourceEntries = (activeTab === "overall" ? overviewEntries : activeSummary?.entries || [])
-      .filter((entry) => entry?._source !== "overtime_sessions" && !entry?._excludedFromTotals);
-    const allocations = new Set();
-    return sourceEntries.reduce(
-      (acc, entry) => {
-        const logged = Number(entry.hours_spent || 0);
-        acc.logged += logged;
-        const allocationKey = entry?._allocation_key || `entry:${entry?.id}`;
-        if (!allocations.has(allocationKey)) {
-          allocations.add(allocationKey);
-          acc.allocated += Number(entry.allocated_hours || 0);
-        }
-        return acc;
-      },
-      { logged: 0, allocated: 0 }
-    );
-  }, [activeSummary?.entries, activeTab, overviewEntries]);
-
-  const filteredSetDifference = Number(
-    (totalsForFilteredSet.logged - totalsForFilteredSet.allocated).toFixed(2)
+  const workshopConfigs = useMemo(
+    () => overviewTechSummaries.map((summary) => ({
+      userId: summary.tech.user_id,
+      target: summary.target,
+      weight: summary.weight,
+      weeklyContractedHours:
+        summary.target.weeklyContractedHours ?? summary.tech.contracted_hours ?? 40,
+    })),
+    [overviewTechSummaries]
   );
+  const overallCurrentMetrics = useMemo(
+    () => aggregateWorkshopMetrics(overviewTechSummaries.map((summary) => ({
+      weight: summary.weight,
+      metrics: buildPeriodMetrics(summary.entries, summary.target, {
+        year: selectedYear,
+        month: selectedMonth,
+        period: periodFilter,
+        anchorDate: filterDateValue,
+        weeklyContractedHours:
+          summary.target.weeklyContractedHours ?? summary.tech.contracted_hours ?? 40,
+      }),
+    }))),
+    [filterDateValue, overviewTechSummaries, periodFilter, selectedMonth, selectedYear]
+  );
+  const overallComparable = useMemo(
+    () => buildWorkshopComparableMetrics(
+      analysisEntries,
+      workshopConfigs,
+      periodFilter,
+      filterDateValue
+    ),
+    [analysisEntries, filterDateValue, periodFilter, workshopConfigs]
+  );
+  const overallComparisons = useMemo(
+    () => buildWorkshopComparisons(analysisEntries, workshopConfigs, filterDateValue),
+    [analysisEntries, filterDateValue, workshopConfigs]
+  );
+  const overallTrend = useMemo(
+    () => buildWorkshopTrend(analysisEntries, workshopConfigs, periodFilter, filterDateValue),
+    [analysisEntries, filterDateValue, periodFilter, workshopConfigs]
+  );
+  const technicianNames = useMemo(
+    () => new Map(technicians.map((tech) => [Number(tech.user_id), getDisplayName(tech)])),
+    [technicians]
+  );
+  const overallJobs = useMemo(() => {
+    const result = buildJobAnalysis(overviewEntries);
+    const addTechnician = (job) => ({
+      ...job,
+      technicianName: technicianNames.get(Number(job.userId)) || "Technician",
+    });
+    return { over: result.over.map(addTechnician), under: result.under.map(addTechnician) };
+  }, [overviewEntries, technicianNames]);
+  const overallCategories = useMemo(
+    () => buildCategoryAnalysis(overviewEntries),
+    [overviewEntries]
+  );
+  const overallAlerts = useMemo(() => {
+    const selectedIds = new Set(workshopConfigs.map((config) => Number(config.userId)));
+    return buildClockingQualityAlerts(
+      overviewEntries,
+      qualityClockings.filter((clocking) => selectedIds.has(Number(clocking.user_id)))
+    ).map((alert) => ({
+      ...alert,
+      detail: `${technicianNames.get(Number(alert.userId)) || "Technician"} · ${alert.detail}`,
+    }));
+  }, [overviewEntries, qualityClockings, technicianNames, workshopConfigs]);
+
   const totalDifferenceColor = (value) =>
     Number(value) < -0.01 ? "var(--success)" : "var(--danger)";
   const overallSectionStatusColor = totalDifferenceColor(overallTotals?.difference ?? 0);
@@ -644,12 +736,6 @@ export default function EfficiencyTab({
     editable &&
     detailPopupTechId != null &&
     (editableUserId == null || editableUserId === detailPopupTechId);
-
-  const openDetailPopup = (techUserId) => {
-    setDetailPopupTechId(techUserId);
-    setDetailEditMode(false);
-    setDetailEditError("");
-  };
 
   const closeDetailPopup = () => {
     setDetailPopupTechId(null);
@@ -1079,7 +1165,7 @@ export default function EfficiencyTab({
               ? `${formatHours(entry.allocated_hours)}h`
               : "",
             `${formatHours(entry.hours_spent || 0)}h`,
-            entry._source === "job_clocking" ? "Automatic" : entry._source === "overtime_sessions" ? "Overtime" : "Manual",
+            entry._source === "job_clocking" ? "Clocking" : entry._source === "overtime_sessions" ? "Overtime" : "Manual",
             entry.notes || "",
             entry.day_type || "",
           ];
@@ -1317,7 +1403,7 @@ export default function EfficiencyTab({
                 placeholder="All technicians"
                 options={[
                   { key: "all", value: "all", label: "All technicians" },
-                  ...visibleTechs.map((tech) => ({
+                  ...technicians.map((tech) => ({
                     key: `tech-${tech.user_id}`,
                     value: String(tech.user_id),
                     label: tech.first_name,
@@ -1400,7 +1486,7 @@ export default function EfficiencyTab({
                   Logged Total
                 </span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>
-                  {formatHours(totalsForFilteredSet.logged)}h
+                  {formatHours(overallCurrentMetrics.loggedHours)}h
                 </strong>
               </div>
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-allocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
@@ -1408,15 +1494,31 @@ export default function EfficiencyTab({
                   Allocated Total
                 </span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>
-                  {formatHours(totalsForFilteredSet.allocated)}h
+                  {formatHours(overallCurrentMetrics.allocatedHours)}h
                 </strong>
+              </div>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-productive" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
+                <span style={statusLabelStyle(overallSectionStatusColor)}>Productive Hours</span>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.productiveHours)}h</strong>
+              </div>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-target" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
+                <span style={statusLabelStyle(overallSectionStatusColor)}>Available / Target</span>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.targetHours)}h</strong>
+              </div>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-overtime" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
+                <span style={statusLabelStyle(overallSectionStatusColor)}>Overtime</span>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.overtimeHours)}h</strong>
+              </div>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-unallocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
+                <span style={statusLabelStyle(overallSectionStatusColor)}>Unallocated / Non-productive</span>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.unallocatedHours)}h</strong>
               </div>
               <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-total-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Total Difference
                 </span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>
-                  {formatSignedHours(filteredSetDifference)}
+                  {formatSignedHours(overallCurrentMetrics.allocationDifference)}
                 </strong>
               </div>
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-actual" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
@@ -1460,6 +1562,21 @@ export default function EfficiencyTab({
             </div>
           </DevLayoutSection>
 
+          <EfficiencyInsights
+            technicianName="Workshop overall"
+            periodLabel={activeFilterHeading}
+            metrics={overallCurrentMetrics}
+            previousMetrics={overallComparable.previous}
+            comparisons={overallComparisons}
+            trend={overallTrend}
+            jobs={overallJobs}
+            categories={overallCategories}
+            alerts={overallAlerts}
+            analysisLoading={analysisLoading}
+            analysisError={analysisError}
+            hideHeadline
+          />
+
           {/* Technician summary table */}
           <DevLayoutSection
             sectionKey="tech-efficiency-overall-breakdown"
@@ -1483,8 +1600,10 @@ export default function EfficiencyTab({
                 <thead style={{ background: "var(--theme-hover)" }}>
                   <tr>
                     <th style={themedTableHeadingStyle}>Technician</th>
+                    <th style={themedTableHeadingStyle}>Role</th>
                     <th style={themedTableHeadingStyle}>Weight</th>
                     <th style={themedTableHeadingStyle}>Actual Hours</th>
+                    <th style={themedTableHeadingStyle}>Allocated Hours</th>
                     <th style={themedTableHeadingStyle}>Target Hours</th>
                     <th style={themedTableHeadingStyle}>Difference</th>
                     <th style={themedTableHeadingStyle}>Efficiency %</th>
@@ -1494,7 +1613,7 @@ export default function EfficiencyTab({
                 <tbody style={{ background: "var(--surface)" }}>
                   {overviewTechSummaries.length === 0 ? (
                     <tr style={themedTableRowStyle}>
-                      <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
+                      <td colSpan={9} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
                         No technicians configured.
                       </td>
                     </tr>
@@ -1506,20 +1625,39 @@ export default function EfficiencyTab({
                         data-dev-section-key={`tech-efficiency-overall-tech-${tech.user_id}`}
                         data-dev-section-type="content-card"
                         data-dev-section-parent="tech-efficiency-overall-breakdown-table"
-                        onClick={() => openDetailPopup(tech.user_id)}
-                        style={{ ...themedTableRowStyle, cursor: "pointer", transition: "background 0.15s ease" }}
+                        onClick={visibleTechs.some((item) => item.user_id === tech.user_id)
+                          ? () => setActiveTab(String(tech.user_id))
+                          : undefined}
+                        onKeyDown={(event) => {
+                          if (!visibleTechs.some((item) => item.user_id === tech.user_id)) return;
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setActiveTab(String(tech.user_id));
+                          }
+                        }}
+                        role={visibleTechs.some((item) => item.user_id === tech.user_id) ? "button" : undefined}
+                        tabIndex={visibleTechs.some((item) => item.user_id === tech.user_id) ? 0 : -1}
+                        style={{
+                          ...themedTableRowStyle,
+                          cursor: visibleTechs.some((item) => item.user_id === tech.user_id) ? "pointer" : "default",
+                          transition: "background 0.15s ease",
+                        }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                       >
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{getDisplayName(tech)}</td>
+                        <td style={tdStyle}>{tech.role || "Technician"}</td>
                         <td style={tdStyle}>{(weight * 100).toFixed(0)}%</td>
                         <td style={tdStyle}>{totals.actualHours}h</td>
+                        <td style={tdStyle}>{totals.allocatedHours}h</td>
                         <td style={tdStyle}>{totals.targetHours}h</td>
                         <td style={{ ...tdStyle, color: totalDifferenceColor(totals.difference), fontWeight: 600 }}>
                           {formatSignedHours(totals.difference)}
                         </td>
                         <td style={{ ...tdStyle, fontWeight: 700, color: effColor(totals.efficiencyPct) }}>
-                          {totals.efficiencyPct}%
+                          <span className={`app-badge ${getEfficiencyState(totals.efficiencyPct).className}`}>
+                            {totals.efficiencyPct}% · {getEfficiencyState(totals.efficiencyPct).label}
+                          </span>
                         </td>
                         <td style={tdStyle}>
                           {Number(previousEfficiencyByTech.get(tech.user_id) || 0).toFixed(1)}%
@@ -1545,6 +1683,12 @@ export default function EfficiencyTab({
         <>
           <EfficiencyInsights
             technicianName={getDisplayName(activeSummary.tech)}
+            technicianRole={activeSummary.tech.role}
+            clockingHref={`/clocking/${generateTechnicianSlug(
+              activeSummary.tech.first_name,
+              activeSummary.tech.last_name,
+              activeSummary.tech.user_id
+            )}`}
             periodLabel={activeFilterHeading}
             metrics={activeMetrics}
             previousMetrics={activeComparable?.previous}
@@ -1676,7 +1820,7 @@ export default function EfficiencyTab({
                           </td>
                           <td style={tdStyle}>
                             <span className={`app-badge ${entry._source === "job_clocking" ? "app-badge--accent-soft" : entry._source === "overtime_sessions" ? "app-badge--warning" : "app-badge--neutral"}`}>
-                              {entry._source === "job_clocking" ? "Automatic" : entry._source === "overtime_sessions" ? "Overtime" : "Manual"}
+                              {entry._source === "job_clocking" ? "Clocking" : entry._source === "overtime_sessions" ? "Overtime" : "Manual"}
                             </span>
                           </td>
                           <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

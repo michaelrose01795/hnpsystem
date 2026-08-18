@@ -662,15 +662,15 @@ export default function Sidebar({
         background: "var(--surface)",
       }}
     >
-      {/* Header */}
-      {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent. Background now follows the sidebar theme for both light/dark modes. */}
-      <DevLayoutSection
-        className="sidebar-logo-header app-sidebar__header"
-        sectionKey={sidebarHeaderKey}
-        parentKey={sidebarSectionKey}
-        sectionType="content-card"
-        backgroundToken="app-sidebar-header"
-        style={{
+      {/* Desktop header. Compact top-drop sidebars begin directly with navigation. */}
+      {!isVerticalPhone && (
+        <DevLayoutSection
+          className="sidebar-logo-header app-sidebar__header"
+          sectionKey={sidebarHeaderKey}
+          parentKey={sidebarSectionKey}
+          sectionType="content-card"
+          backgroundToken="app-sidebar-header"
+          style={{
           // Sticky so the brand logo stays pinned to the top of the sidebar's
           // own scroll while the nav list slides up behind it. Solid surface
           // fill hides the scrolling nav passing behind the pinned header.
@@ -686,38 +686,39 @@ export default function Sidebar({
           padding: isCollapsed ? "0 2px" : undefined,
           height: isCondensed ? "60px" : "75px", // fix the height so the oversized logo crops vertically
           overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            flex: "1 1 auto",
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
           }}
         >
-          {isCollapsed ? (
-            // Collapsed rail uses the square desktop-app icon (the same image
-            // offered on the desktop-download card) rather than the wide wordmark.
-            // Routed through BrandLogo so the icon recolours to the active theme
-            // accent, matching the expanded wordmark instead of staying a fixed red.
-            <BrandLogo
-              src="/images/logo/desktop.png"
-              alt="H&P"
-              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-            />
-          ) : (
-            <BrandLogo
-              alt="H&P logo"
-              width={800}
-              height={240}
-              style={headerLogoStyle}
-            />
-          )}
-        </div>
-      </DevLayoutSection>
+          <div
+            style={{
+              flex: "1 1 auto",
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            {isCollapsed ? (
+              // Collapsed rail uses the square desktop-app icon (the same image
+              // offered on the desktop-download card) rather than the wide wordmark.
+              // Routed through BrandLogo so the icon recolours to the active theme
+              // accent, matching the expanded wordmark instead of staying a fixed red.
+              <BrandLogo
+                src="/images/logo/desktop.png"
+                alt="H&P"
+                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+              />
+            ) : (
+              <BrandLogo
+                alt="H&P logo"
+                width={800}
+                height={240}
+                style={headerLogoStyle}
+              />
+            )}
+          </div>
+        </DevLayoutSection>
+      )}
 
       {!isVerticalPhone && (
         <div

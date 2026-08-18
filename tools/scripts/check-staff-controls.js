@@ -51,7 +51,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 9],
   ["src/components/page-ui/parts/parts-goods-in-ui.js", 50],
   ["src/components/page-ui/parts/parts-manager-ui.js", 1],
-  ["src/components/page-ui/stock-catalogue-ui.js", 22],
+  ["src/components/page-ui/stock-catalogue-ui.js", 14],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
   ["src/components/page-ui/valet/valet-ui.js", 2],
   ["src/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui.js", 3],

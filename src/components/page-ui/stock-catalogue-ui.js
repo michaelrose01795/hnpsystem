@@ -5,6 +5,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 const QUICK_FILTERS = [
   { id: "all", label: "All parts" },
@@ -19,6 +20,21 @@ const QUICK_FILTERS = [
 const numberValue = (value) => Number(value) || 0;
 const availableStock = (part) =>
   numberValue(part?.qty_in_stock) - numberValue(part?.qty_reserved);
+
+const stockStatusBadgeTone = (status) => {
+  if (status === "low_stock") return "app-badge--warning";
+  if (status === "back_order") return "app-badge--danger";
+  if (status === "high_stock") return "app-badge--success";
+  return "app-badge--accent-soft";
+};
+
+const linkedJobStatusBadgeTone = (status) => {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized.includes("cancel") || normalized.includes("reject")) return "app-badge--danger";
+  if (normalized.includes("wait") || normalized.includes("pending") || normalized.includes("order")) return "app-badge--warning";
+  if (normalized.includes("book") || normalized.includes("pick") || normalized.includes("fit") || normalized.includes("stock")) return "app-badge--success";
+  return "app-badge--neutral";
+};
 
 const matchesQuickFilter = (part, filter) => {
   const onHand = numberValue(part.qty_in_stock);
@@ -98,8 +114,6 @@ export default function StockCataloguePageUi(props) {
     matchesLinkedJobStatus,
     partsPipeline,
     pendingJobParts,
-    popupCardStyles,
-    popupOverlayStyles,
     renderAddToJobModal,
     renderDeliveryModal,
     resetAddToJobModal,
@@ -214,6 +228,7 @@ export default function StockCataloguePageUi(props) {
           as="section"
           sectionKey="stock-catalogue-overview"
           parentKey="stock-catalogue-page"
+          gap="var(--layout-card-gap)"
         >
           <div className="app-layout-header-row">
             <div>
@@ -233,7 +248,12 @@ export default function StockCataloguePageUi(props) {
             Summary unavailable. Catalogue search and stock actions are still available.
           </div> : null}
 
-          <div className="app-summary-grid" role="list" aria-label="Stock catalogue summary">
+          <div
+            className="app-summary-grid"
+            role="list"
+            aria-label="Stock catalogue summary"
+            style={{ gap: "var(--layout-card-gap)" }}
+          >
             {[
               ["Active parts", stockSummary?.totalParts],
               ["In stock", stockSummary?.inStockCount],
@@ -860,7 +880,8 @@ export default function StockCataloguePageUi(props) {
 
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
         maxHeight: "min(58dvh, 620px)",
-        overflow: "auto"
+        overflowY: "auto",
+        overflowX: "auto"
       }}>
             {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
           color: "var(--grey-accent-light)"
@@ -870,24 +891,33 @@ export default function StockCataloguePageUi(props) {
                 <table className="app-data-table app-data-table--rounded" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
             ...tableStyle,
             fontSize: "var(--text-body)",
-            minWidth: "1120px"
+            tableLayout: "fixed",
+            minWidth: "960px"
           }}>
+                  <colgroup>
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "19%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "8%" }} />
+                  </colgroup>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{
                 background: "var(--surface)",
                 color: "var(--danger)"
               }}>
-                      <th style={{
-                  textAlign: "left",
-                  padding: "10px"
-                }}>Part Number</th>
+                      <th>Part Number</th>
                       <th>Part details</th>
                       <th>Category / supplier</th>
-                      <th>Bin</th>
+                      <th style={{ whiteSpace: "nowrap" }}>Bin</th>
                       <th>Stock</th>
                       <th>Unit cost</th>
-                      <th>Reorder</th>
-                      <th>Status</th>
+                      <th style={{ whiteSpace: "nowrap" }}>Reorder</th>
+                      <th style={{ whiteSpace: "nowrap" }}>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -904,26 +934,26 @@ export default function StockCataloguePageUi(props) {
               }} onMouseLeave={e => {
                 e.currentTarget.style.background = "transparent";
               }}>
-                          <td style={{
-                  padding: "10px",
+                          <td data-label="Part number" style={{
                   fontWeight: 600,
-                  color: "var(--primary)"
+                  color: "var(--primary)",
+                  overflowWrap: "anywhere"
                 }}>
                             {part.part_number}
                           </td>
-                          <td>
-                            <div style={{ fontWeight: 600 }}>{part.name}</div>
+                          <td data-label="Part details" style={{ overflow: "hidden" }}>
+                            <div title={part.name} style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{part.name}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
                               OEM {part.oem_reference || "—"}
                             </div>
                           </td>
-                          <td>
+                          <td data-label="Category / supplier">
                             <div>{part.category || "Uncategorised"}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{part.supplier || "No supplier"}</div>
                           </td>
-                          <td style={{ fontWeight: 600 }}>{part.storage_location || "—"}</td>
-                          <td>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: "var(--space-2)", fontVariantNumeric: "tabular-nums" }}>
+                          <td data-label="Bin" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{part.storage_location || "—"}</td>
+                          <td data-label="Stock">
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(48px, 1fr))", gap: "var(--space-sm)", fontVariantNumeric: "tabular-nums" }}>
                               <span><small style={{ display: "block", color: "var(--text-1)" }}>Hand</small><strong>{numberValue(part.qty_in_stock)}</strong></span>
                               <span><small style={{ display: "block", color: "var(--text-1)" }}>Reserved</small><strong>{numberValue(part.qty_reserved)}</strong></span>
                               <span><small style={{ display: "block", color: "var(--text-1)" }}>Available</small><strong style={{ color: availableStock(part) <= numberValue(part.reorder_level) ? "var(--danger)" : "var(--success-dark)" }}>{availableStock(part)}</strong></span>
@@ -932,8 +962,8 @@ export default function StockCataloguePageUi(props) {
                               Required by open jobs: {numberValue(part.open_job_count)}
                             </div> : null}
                           </td>
-                          <td style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
-                          <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                          <td data-label="Unit cost" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
+                          <td data-label="Reorder" style={{ fontVariantNumeric: "tabular-nums" }}>
                             <strong>{numberValue(part.reorder_level)}</strong>
                             {availableStock(part) < numberValue(part.reorder_level) ? <div style={{ color: "var(--danger)", fontSize: "var(--text-caption)" }}>
                               {numberValue(part.reorder_level) - availableStock(part)} below
@@ -942,21 +972,12 @@ export default function StockCataloguePageUi(props) {
                               {numberValue(part.qty_on_order)} expected soon
                             </div> : null}
                           </td>
-                          <td>
-                            <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "4px 10px",
-                    borderRadius: "var(--radius-pill)",
-                    background: part.stock_status === "low_stock" ? "rgba(var(--warning-rgb), 0.2)" : part.stock_status === "back_order" ? "rgba(var(--danger-rgb), 0.2)" : part.stock_status === "high_stock" ? "rgba(var(--success-rgb), 0.2)" : "rgba(var(--info-rgb), 0.18)",
-                    color: part.stock_status === "low_stock" ? "var(--danger-dark)" : part.stock_status === "back_order" ? "var(--danger)" : part.stock_status === "high_stock" ? "var(--success-dark)" : "var(--info-dark)",
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 600
-                  }}>
+                          <td data-label="Status">
+                            <span className={`app-badge ${stockStatusBadgeTone(part.stock_status)}`}>
                               {(part.stock_status || "in_stock").replace(/_/g, " ")}
                             </span>
                           </td>
-                          <td>
+                          <td data-label="Actions">
                             <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={event => {
                               event.stopPropagation();
                               setSelectedPart(part);
@@ -988,251 +1009,133 @@ export default function StockCataloguePageUi(props) {
         </div>
 
         {/* Part Details Modal */}
-        {isPartModalOpen && selectedPart && <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles} onClick={() => setIsPartModalOpen(false)}>
+        {isPartModalOpen && selectedPart && <PopupModal
+          onClose={() => {
+            setIsPartModalOpen(false);
+            setIsEditMode(false);
+            setEditedPart(null);
+          }}
+          ariaLabel={`Part details for ${selectedPart.part_number}`}
+          cardStyle={{ width: "min(100%, 1180px)" }}
+        >
             <div style={{
-        ...popupCardStyles,
-        maxWidth: "1000px",
-        maxHeight: "90vh",
-        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        padding: "28px"
-      }} onClick={e => e.stopPropagation()}>
+        gap: "var(--layout-card-gap)",
+        padding: "var(--section-card-padding)"
+      }}>
               {/* Header */}
-              <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingBottom: "16px",
-          marginBottom: "20px"
-        }}>
-                <div style={{
-            flex: 1
-          }}>
+              <header className="app-popup-compact-header">
+                <div style={{ minWidth: 0 }}>
                   <h2 style={{
               margin: 0,
-              color: "var(--primary)",
-              fontSize: "var(--text-h2)",
-              fontWeight: 700
+              color: "var(--accentText)",
+              fontSize: "var(--text-h2)"
             }}>
                     {selectedPart.part_number}
                   </h2>
                   <p style={{
-              margin: "6px 0 0 0",
+              margin: "var(--space-1) 0 0",
               color: "var(--text-1)",
-              fontSize: "var(--text-body)"
+              fontSize: "var(--text-body-sm)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
             }}>
                     {selectedPart.name}
                   </p>
                 </div>
-                <div style={{
-            display: "flex",
-            gap: "8px"
-          }}>
-                  {!isEditMode ? <button onClick={handleEditPart} style={{
-              background: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "var(--text-body)"
-            }}>
+                <div className="app-popup-compact-header__actions">
+                  {!isEditMode ? <Button type="button" variant="primary" onClick={handleEditPart}>
                       Edit
-                    </button> : <>
-                      <button onClick={handleSavePart} disabled={isSavingPart} style={{
-                background: isSavingPart ? "var(--surface)" : "var(--success)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                padding: "8px 16px",
-                cursor: isSavingPart ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                fontSize: "var(--text-body)"
-              }}>
-                        {isSavingPart ? "Saving..." : "Save"}
-                      </button>
-                      <button onClick={handleCancelEdit} disabled={isSavingPart} style={{
-                background: "var(--surface)",
-                color: "var(--text-1)",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                padding: "8px 16px",
-                cursor: isSavingPart ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                fontSize: "var(--text-body)"
-              }}>
+                    </Button> : <>
+                      <Button type="button" variant="primary" busy={isSavingPart} onClick={handleSavePart}>
+                        Save
+                      </Button>
+                      <Button type="button" variant="secondary" onClick={handleCancelEdit} disabled={isSavingPart}>
                         Cancel
-                      </button>
+                      </Button>
                     </>}
-                  <button onClick={() => {
+                  <Button type="button" variant="secondary" onClick={() => {
               setIsPartModalOpen(false);
               setIsEditMode(false);
               setEditedPart(null);
-            }} style={{
-              background: "var(--surface)",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              fontSize: "var(--text-h2)",
-              cursor: "pointer",
-              color: "var(--text-1)",
-              padding: "8px",
-              width: "var(--control-height-xs)",
-              height: "var(--control-height-xs)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease"
-            }} onMouseEnter={e => {
-              e.currentTarget.style.background = "var(--danger-light)";
-              e.currentTarget.style.color = "var(--danger)";
-            }} onMouseLeave={e => {
-              e.currentTarget.style.background = "var(--surface)";
-              e.currentTarget.style.color = "var(--text-1)";
             }}>
-                  ×
-                </button>
+                    Close
+                  </Button>
               </div>
-              </div>
+              </header>
 
               {/* Scrollable Content */}
-              <div style={{
-          flex: 1,
-          overflow: "auto",
-          paddingRight: "12px"
-        }}>
+              <div style={{ minWidth: 0 }}>
                 {/* Two Column Layout */}
                 <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "20px",
-            marginBottom: "20px"
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
+            gap: "var(--layout-card-gap)",
+            marginBottom: "var(--layout-card-gap)",
+            alignItems: "start"
           }}>
                   {/* Left Column - Stock & Pricing */}
                   <div>
                     {/* Stock Overview Card */}
-                    <div style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                marginBottom: "16px",
-                border: "none"
-              }}>
+                    <LayerTheme
+                      as="section"
+                      padding="var(--space-3)"
+                      radius="var(--radius-sm)"
+                      gap="var(--space-2)"
+                      style={{ marginBottom: "var(--layout-card-gap)" }}
+                    >
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-1)",
-                  marginBottom: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px"
+                  color: "var(--accentText)",
+                  margin: 0
                 }}>
                         Stock Overview
                       </h3>
-                      <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                  gap: "10px"
-                }}>
+                      <div className="app-summary-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))" }}>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px"
-                    }}>On Hand</div>
+                          <div className="app-summary-label">On Hand</div>
                           {isEditMode ? <input className="app-input" type="number" value={editedPart?.qty_in_stock ?? selectedPart.qty_in_stock} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       qty_in_stock: parseInt(e.target.value) || 0
-                    }))} /> : <div style={{
-                      fontSize: "var(--text-h2)",
-                      fontWeight: 700,
-                      color: "var(--primary)"
-                    }}>{selectedPart.qty_in_stock}</div>}
+                    }))} /> : <strong className="app-summary-value">{selectedPart.qty_in_stock}</strong>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px"
-                    }}>Reserved</div>
-                          {isEditMode ? <input type="number" value={editedPart?.qty_reserved ?? selectedPart.qty_reserved ?? 0} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Reserved</div>
+                          {isEditMode ? <input className="app-input" type="number" value={editedPart?.qty_reserved ?? selectedPart.qty_reserved ?? 0} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       qty_reserved: parseInt(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
-                      fontSize: "var(--text-h2)",
-                      fontWeight: 700
-                    }}>{selectedPart.qty_reserved || 0}</div>}
+                    }))} /> : <strong className="app-summary-value">{selectedPart.qty_reserved || 0}</strong>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px"
-                    }}>On Order</div>
-                          {isEditMode ? <input type="number" value={editedPart?.qty_on_order ?? selectedPart.qty_on_order ?? 0} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">On Order</div>
+                          {isEditMode ? <input className="app-input" type="number" value={editedPart?.qty_on_order ?? selectedPart.qty_on_order ?? 0} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       qty_on_order: parseInt(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
-                      fontSize: "var(--text-h2)",
-                      fontWeight: 700
-                    }}>{selectedPart.qty_on_order || 0}</div>}
+                    }))} /> : <strong className="app-summary-value">{selectedPart.qty_on_order || 0}</strong>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px"
-                    }}>Min Level</div>
-                          {isEditMode ? <input type="number" value={editedPart?.reorder_level ?? selectedPart.reorder_level ?? 0} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Min Level</div>
+                          {isEditMode ? <input className="app-input" type="number" value={editedPart?.reorder_level ?? selectedPart.reorder_level ?? 0} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       reorder_level: parseInt(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
-                      fontSize: "var(--text-h2)",
-                      fontWeight: 700
-                    }}>{selectedPart.reorder_level || 0}</div>}
+                    }))} /> : <strong className="app-summary-value">{selectedPart.reorder_level || 0}</strong>}
                         </div>
                         <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px" }}>Available</div>
-                          <div style={{
-                            fontSize: "var(--text-h2)",
-                            fontWeight: 700,
+                          <div className="app-summary-label">Available</div>
+                          <strong className="app-summary-value" style={{
                             color: availableStock(isEditMode ? { ...selectedPart, ...editedPart } : selectedPart) <= numberValue(isEditMode ? editedPart?.reorder_level ?? selectedPart.reorder_level : selectedPart.reorder_level) ? "var(--danger)" : "var(--success-dark)"
                           }}>
                             {availableStock(isEditMode ? { ...selectedPart, ...editedPart } : selectedPart)}
-                          </div>
+                          </strong>
                         </div>
                         <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px" }}>Back order</div>
-                          <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>
+                          <div className="app-summary-label">Back order</div>
+                          <strong className="app-summary-value">
                             {selectedPart.stock_status === "back_order" ? numberValue(selectedPart.qty_on_order) : 0}
-                          </div>
+                          </strong>
                         </div>
                       </div>
                       <div style={{
@@ -1243,42 +1146,22 @@ export default function StockCataloguePageUi(props) {
                   alignItems: "center"
                 }}>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)"
-                    }}>Linked Jobs</div>
-                          <div style={{
-                      fontSize: "var(--text-h3)",
-                      fontWeight: 600
-                    }}>{selectedPart.open_job_count || 0}</div>
+                          <div className="app-summary-label">Linked Jobs</div>
+                          <strong className="app-summary-value">{selectedPart.open_job_count || 0}</strong>
                         </div>
-                        <span style={{
-                    padding: "6px 12px",
-                    borderRadius: "var(--radius-pill)",
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 600,
-                    background: selectedPart.stock_status === "low_stock" ? "rgba(var(--warning-rgb), 0.2)" : selectedPart.stock_status === "back_order" ? "rgba(var(--danger-rgb), 0.2)" : selectedPart.stock_status === "high_stock" ? "rgba(var(--success-rgb), 0.2)" : "rgba(var(--info-rgb), 0.18)",
-                    color: selectedPart.stock_status === "low_stock" ? "var(--danger-dark)" : selectedPart.stock_status === "back_order" ? "var(--danger)" : selectedPart.stock_status === "high_stock" ? "var(--success-dark)" : "var(--info-dark)"
-                  }}>
+                        <span className={`app-badge ${stockStatusBadgeTone(selectedPart.stock_status)}`}>
                           {(selectedPart.stock_status || "in_stock").replace(/_/g, " ")}
                         </span>
                       </div>
-                    </div>
+                    </LayerTheme>
 
                     {/* Pricing Card */}
-                    <div style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                border: "none"
-              }}>
+                    <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-1)",
-                  marginBottom: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px"
+                  color: "var(--accentText)",
+                  margin: 0
                 }}>
                         Pricing
                       </h3>
@@ -1296,19 +1179,10 @@ export default function StockCataloguePageUi(props) {
                       fontSize: "var(--text-body-sm)",
                       color: "var(--text-1)"
                     }}>Cost Price</span>
-                          {isEditMode ? <input type="number" step="0.01" value={editedPart?.unit_cost ?? selectedPart.unit_cost} onChange={e => setEditedPart(prev => ({
+                          {isEditMode ? <input className="app-input" type="number" step="0.01" value={editedPart?.unit_cost ?? selectedPart.unit_cost} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       unit_cost: parseFloat(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <span style={{
+                    }))} /> : <span style={{
                       fontSize: "var(--text-h3)",
                       fontWeight: 700
                     }}>{formatCurrency(selectedPart.unit_cost)}</span>}
@@ -1322,19 +1196,10 @@ export default function StockCataloguePageUi(props) {
                       fontSize: "var(--text-body-sm)",
                       color: "var(--text-1)"
                     }}>Sell Price</span>
-                          {isEditMode ? <input type="number" step="0.01" value={editedPart?.unit_price ?? selectedPart.unit_price} onChange={e => setEditedPart(prev => ({
+                          {isEditMode ? <input className="app-input" type="number" step="0.01" value={editedPart?.unit_price ?? selectedPart.unit_price} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       unit_price: parseFloat(e.target.value) || 0
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <span style={{
+                    }))} /> : <span style={{
                       fontSize: "var(--text-h3)",
                       fontWeight: 700,
                       color: "var(--primary)"
@@ -1359,143 +1224,82 @@ export default function StockCataloguePageUi(props) {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </LayerTheme>
                   </div>
 
                   {/* Right Column - Part Info */}
                   <div>
-                    <div style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                border: "none",
-                height: "100%"
-              }}>
+                    <LayerTheme
+                      as="section"
+                      sectionKey="stock-catalogue-part-information"
+                      parentKey="shared-popup-card"
+                      padding="var(--space-3)"
+                      radius="var(--radius-sm)"
+                      gap="var(--space-2)"
+                      style={{ height: "100%" }}
+                    >
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-1)",
-                  marginBottom: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px"
+                  color: "var(--accentText)",
+                  margin: 0
                 }}>
                         Part Information
                       </h3>
                       <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: "var(--layout-card-gap)",
                   fontSize: "var(--text-body)"
                 }}>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px",
-                      fontWeight: 600
-                    }}>NAME</div>
-                          {isEditMode ? <input type="text" value={editedPart?.name ?? selectedPart.name ?? ""} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Name</div>
+                          {isEditMode ? <input className="app-input" type="text" value={editedPart?.name ?? selectedPart.name ?? ""} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       name: e.target.value
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
+                    }))} /> : <div style={{
                       color: "var(--text-1)"
                     }}>{selectedPart.name || "—"}</div>}
                         </div>
                         <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>DESCRIPTION</div>
+                          <div className="app-summary-label">Description</div>
                           {isEditMode ? <textarea className="app-input" rows={2} value={editedPart?.description ?? selectedPart.description ?? ""} onChange={event => setEditedPart(prev => ({ ...prev, description: event.target.value }))} /> : <div style={{ color: "var(--text-1)" }}>{selectedPart.description || "—"}</div>}
                         </div>
                         <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>OEM CODE</div>
+                          <div className="app-summary-label">OEM code</div>
                           <div style={{ color: "var(--text-1)", fontWeight: 600 }}>{selectedPart.oem_reference || "—"}</div>
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px",
-                      fontWeight: 600
-                    }}>STORAGE LOCATION</div>
-                          {isEditMode ? <input type="text" value={editedPart?.storage_location ?? selectedPart.storage_location ?? ""} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Storage location</div>
+                          {isEditMode ? <input className="app-input" type="text" value={editedPart?.storage_location ?? selectedPart.storage_location ?? ""} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       storage_location: e.target.value
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
+                    }))} /> : <div style={{
                       color: "var(--text-1)",
                       fontWeight: 600,
                       fontSize: "var(--text-h4)"
                     }}>{selectedPart.storage_location || "—"}</div>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px",
-                      fontWeight: 600
-                    }}>SERVICE DEFAULT</div>
-                          {isEditMode ? <input type="text" value={editedPart?.service_default_zone ?? selectedPart.service_default_zone ?? ""} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Service default</div>
+                          {isEditMode ? <input className="app-input" type="text" value={editedPart?.service_default_zone ?? selectedPart.service_default_zone ?? ""} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       service_default_zone: e.target.value
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
+                    }))} /> : <div style={{
                       color: "var(--text-1)"
                     }}>{selectedPart.service_default_zone || "—"}</div>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px",
-                      fontWeight: 600
-                    }}>SUPPLIER</div>
-                          {isEditMode ? <input type="text" value={editedPart?.supplier ?? selectedPart.supplier ?? ""} onChange={e => setEditedPart(prev => ({
+                          <div className="app-summary-label">Supplier</div>
+                          {isEditMode ? <input className="app-input" type="text" value={editedPart?.supplier ?? selectedPart.supplier ?? ""} onChange={e => setEditedPart(prev => ({
                       ...prev,
                       supplier: e.target.value
-                    }))} style={{
-                      padding: "8px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 600,
-                      width: "100%"
-                    }} /> : <div style={{
+                    }))} /> : <div style={{
                       color: "var(--text-1)"
                     }}>{selectedPart.supplier || "Unknown"}</div>}
                         </div>
                         <div>
-                          <div style={{
-                      fontSize: "var(--text-caption)",
-                      color: "var(--text-1)",
-                      marginBottom: "4px",
-                      fontWeight: 600
-                    }}>CATEGORY</div>
+                          <div className="app-summary-label">Category</div>
                           {isEditMode ? (
                             <input className="app-input" type="text" value={editedPart?.category ?? selectedPart.category ?? ""} onChange={e => setEditedPart(prev => ({
                               ...prev,
@@ -1506,7 +1310,7 @@ export default function StockCataloguePageUi(props) {
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "4px", fontWeight: 600 }}>NOTES</div>
+                          <div className="app-summary-label">Notes</div>
                           {isEditMode ? (
                             <textarea className="app-input" rows={3} value={editedPart?.notes ?? selectedPart.notes ?? ""} onChange={event => setEditedPart(prev => ({ ...prev, notes: event.target.value }))} />
                           ) : (
@@ -1514,19 +1318,20 @@ export default function StockCataloguePageUi(props) {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </LayerTheme>
                   </div>
                 </div>
 
-                <section style={{ marginBottom: "var(--layout-card-gap)" }}>
-                  <div className="app-layout-header-row" style={{ marginBottom: "var(--space-2)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))", gap: "var(--layout-card-gap)", alignItems: "start" }}>
+                <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
+                  <div className="app-layout-header-row">
                     <h3 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-body)" }}>Recent receipts</h3>
                     {numberValue(selectedPart.qty_on_order) > 0 ? <Link className="app-btn app-btn--secondary" href={`/goods-in?part=${encodeURIComponent(selectedPart.id)}`}>
                       Inspect Goods In
                     </Link> : null}
                   </div>
                   {recentReceiptsError ? <div className="app-status-message app-status-message--warning">Receipt history is currently unavailable.</div> : recentReceipts.length > 0 ? <div style={{ overflowX: "auto" }}>
-                    <table className="app-data-table app-data-table--rounded" style={{ minWidth: "680px" }}>
+                    <table className="app-data-table app-data-table--rounded" style={{ minWidth: "520px", fontSize: "var(--text-body-sm)" }}>
                       <thead><tr><th>Date</th><th>Movement</th><th>Supplier</th><th>Reference</th><th>Unit cost</th></tr></thead>
                       <tbody>{recentReceipts.map(receipt => <tr key={receipt.id}>
                         <td>{formatDateTime(receipt.delivery_date || receipt.created_at)}</td>
@@ -1537,81 +1342,51 @@ export default function StockCataloguePageUi(props) {
                       </tr>)}</tbody>
                     </table>
                   </div> : <div style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>No completed delivery log is recorded for this part.</div>}
-                </section>
+                </LayerTheme>
 
                 {/* Linked Jobs Table */}
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--radius-sm)",
-            padding: "16px",
-            border: "none"
-          }}>
-                  <div style={{
+                <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
+                   <div style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: "12px",
-              marginBottom: "12px"
+              gap: "var(--layout-card-gap)"
             }}>
                     <h3 style={{
                 fontSize: "var(--text-body)",
                 fontWeight: 600,
-                color: "var(--text-1)",
-                margin: 0,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px"
+                color: "var(--accentText)",
+                margin: 0
               }}>
                       Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length > 0 && `(${selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length})`}
                     </h3>
-                    <button className="app-btn app-btn--secondary" type="button" onClick={() => {
+                    <Button variant="secondary" type="button" onClick={() => {
                 setShowAddToJobModal(true);
                 resetAddToJobModal();
               }}>
                       Add part to job
-                    </button>
+                    </Button>
                   </div>
                   {selectedPart.linked_jobs && selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length > 0 ? <div style={{
               overflowX: "auto",
               overflowY: selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length > 4 ? "auto" : "visible",
               maxHeight: selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).length > 4 ? "240px" : "none"
             }}>
-                      <table style={{
+                      <table className="app-data-table app-data-table--rounded" style={{
                 ...tableStyle,
-                fontSize: "var(--text-body-sm)"
+                fontSize: "var(--text-body-sm)",
+                tableLayout: "fixed"
               }}>
                         <thead>
-                          <tr style={{
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontSize: "var(--text-caption)",
-                    textTransform: "uppercase"
-                  }}>
-                            <th style={{
-                      textAlign: "left",
-                      padding: "10px",
-                      fontWeight: 600
-                    }}>Job Number</th>
-                            <th style={{
-                      textAlign: "right",
-                      padding: "10px",
-                      fontWeight: 600
-                    }}>Qty</th>
-                            <th style={{
-                      textAlign: "left",
-                      padding: "10px",
-                      fontWeight: 600
-                    }}>Source</th>
-                            <th style={{
-                      textAlign: "left",
-                      padding: "10px",
-                      fontWeight: 600
-                    }}>Status</th>
+                          <tr>
+                            <th>Job Number</th>
+                            <th style={{ textAlign: "right" }}>Qty</th>
+                            <th>Source</th>
+                            <th>Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           {selectedPart.linked_jobs.filter(link => matchesLinkedJobStatus(link.status)).map(link => {
-                    const sourceMeta = resolveSourceMeta(link.source);
-                    const statusMeta = resolveStatusStyles(link.status);
                     return <tr key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`} style={{
                       borderBottom: "var(--separating-line)",
                       transition: "background 0.15s ease"
@@ -1620,10 +1395,7 @@ export default function StockCataloguePageUi(props) {
                     }} onMouseLeave={e => {
                       e.currentTarget.style.background = "transparent";
                     }}>
-                                  <td style={{
-                        padding: "10px",
-                        fontWeight: 600
-                      }}>
+                                  <td style={{ fontWeight: 600 }}>
                                     <a href={`/job-cards/${link.job_number}`} target="_blank" rel="noopener noreferrer" style={{
                           color: "var(--primary)",
                           textDecoration: "none",
@@ -1637,42 +1409,46 @@ export default function StockCataloguePageUi(props) {
                                       {link.job_number}
                                     </a>
                                   </td>
-                                  <td style={{
-                        padding: "10px",
-                        textAlign: "right",
-                        fontWeight: 600
-                      }}>{link.quantity || 1}</td>
-                                  <td style={{
-                        padding: "10px"
-                      }}>
-                                    <RequirementBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
+                                  <td style={{ textAlign: "right", fontWeight: 600 }}>{link.quantity || 1}</td>
+                                  <td>
+                                    <span className="app-badge app-badge--neutral">{formatStatusLabel(link.source || "Manual")}</span>
                                   </td>
-                                  <td style={{
-                        padding: "10px"
-                      }}>
-                                    <RequirementBadge label={formatStatusLabel(link.status)} background={statusMeta.background} color={statusMeta.color} />
+                                  <td>
+                                    <span className={`app-badge ${linkedJobStatusBadgeTone(link.status)}`}>{formatStatusLabel(link.status)}</span>
                                   </td>
                                 </tr>;
                   })}
                         </tbody>
                       </table>
-                    </div> : <div style={{
-              padding: "24px",
-              textAlign: "center",
-              color: "var(--text-1)",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-xs)",
-              fontSize: "var(--text-body)"
-            }}>
+                    </div> : <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" style={{ textAlign: "center", color: "var(--text-1)", fontSize: "var(--text-body)" }}>
                       No linked jobs for this part
-                    </div>}
+                    </LayerSurface>}
+                </LayerTheme>
                 </div>
               </div>
             </div>
-          </div>}
+          </PopupModal>}
 
         {renderAddToJobModal()}
         {renderDeliveryModal()}
+        {/* Keep the dense nine-column inventory table compact on wider layouts;
+            its modest minimum width introduces horizontal scrolling only once
+            the available area can no longer keep the content legible. */}
+        <style jsx global>{`
+          [data-dev-section-key="stock-catalogue-inventory-table"] th,
+          [data-dev-section-key="stock-catalogue-inventory-table"] td {
+            padding: 10px 8px;
+            vertical-align: middle;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+          }
+
+          [data-dev-section-key="stock-catalogue-part-information"] > div > div {
+            display: grid;
+            gap: var(--space-xs);
+            min-width: 0;
+          }
+        `}</style>
       <ConfirmationDialog isOpen={!!confirmDialog} message={confirmDialog?.message} cancelLabel="Cancel" confirmLabel="Yes" onCancel={() => setConfirmDialog(null)} onConfirm={confirmDialog?.onConfirm} />
     </div>; // render extracted page section.
     default:

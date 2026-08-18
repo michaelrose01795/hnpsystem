@@ -51,6 +51,7 @@ import {
   normaliseDecisionStatus } from
 "@/features/vhc/vhcStatusEngine";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
+import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
 import {
   clockInToJob,
   getUserActiveJobs,
@@ -11244,27 +11245,10 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
     const loadTechAbsences = async () => {
       try {
         const todayIso = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-        const { data, error: queryError } = await supabase.
-        from("hr_absences").
-        select(`
-            absence_id,
-            type,
-            start_date,
-            end_date,
-            approval_status,
-            user:user_id(
-              user_id,
-              first_name,
-              last_name,
-              email,
-              role
-            )
-          `).
-        eq("approval_status", "Approved").
-        lte("start_date", todayIso) // absence started on or before today
-        .gte("end_date", todayIso); // absence ends on or after today
-
-        if (queryError) throw queryError;
+        const data = await fetchApprovedStaffAbsences({
+          startDate: todayIso,
+          endDate: todayIso,
+        });
 
         // Filter to tech-related roles only
         const techRoles = new Set(["technician", "techs", "technician lead", "lead technician", "mot tester", "tester"]);

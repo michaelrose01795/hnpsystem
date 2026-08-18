@@ -47,6 +47,38 @@ const calculateBasicSalary = (contractedHours, hourlyRate) => {
   return Number((hours * rate).toFixed(2));
 };
 
+export async function getApprovedStaffAbsences({ startDate, endDate, type } = {}) {
+  let query = adminDb
+    .from("hr_absences")
+    .select(`
+      absence_id,
+      user_id,
+      type,
+      start_date,
+      end_date,
+      notes,
+      approval_status,
+      user:users!hr_absences_user_id_fkey(
+        user_id,
+        first_name,
+        last_name,
+        email,
+        role,
+        contracted_hours
+      )
+    `)
+    .eq("approval_status", "Approved")
+    .lte("start_date", endDate)
+    .gte("end_date", startDate)
+    .order("start_date", { ascending: true });
+
+  if (type) query = query.eq("type", type);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
 
 export async function listTrainingCourses() { // Fetch all training courses sorted by creation date.
   const { data, error } = await adminDb // Query using the service client.

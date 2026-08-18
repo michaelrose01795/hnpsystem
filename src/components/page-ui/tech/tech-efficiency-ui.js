@@ -6,6 +6,7 @@ export default function TechEfficiencyPageUi(props) {
     EfficiencyTab,
     ready,
     techUserId,
+    canViewWorkshop,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -17,7 +18,11 @@ export default function TechEfficiencyPageUi(props) {
       color: "var(--info)"
     }}>
             Loading your profile...
-          </LayerSurface> : <EfficiencyTab editable={true} filterUserId={techUserId} editableUserId={techUserId} />}
+          </LayerSurface> : <EfficiencyTab
+            editable
+            filterUserId={canViewWorkshop ? null : techUserId}
+            editableUserId={canViewWorkshop ? null : techUserId}
+          />}
       </div>
       <style jsx>{`
         .tech-efficiency-page-shell {

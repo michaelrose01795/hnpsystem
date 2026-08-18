@@ -7,15 +7,18 @@ import {
   markConsumableRequestArrived,
   updateConsumableRequest,
 } from "@/lib/database/consumables";
+import { normalizeConsumableRequestStatus } from "@/lib/consumableRequests";
 
 const formatRequestRow = (row) => ({
   id: row.id,
-  itemName: row.item_name,
+  itemName: row.consumable?.item_name || row.item_name,
+  requestedItemName: row.item_name,
   quantity: row.quantity,
   requestedById: row.requested_by,
   requestedByName: row.requested_by_name,
-  consumableId: row.consumable_id,
-  status: row.status,
+  consumableId: row.consumable_id || null,
+  catalogConsumableId: row.catalog_consumable_id || null,
+  status: normalizeConsumableRequestStatus(row.status),
   requestedAt: row.requested_at,
   arrivedAt: row.arrived_at,
   updatedAt: row.updated_at,
@@ -34,7 +37,7 @@ async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { action, sourceRequestId, consumableId, itemName, quantity, requestedById, requestedByName, items } = req.body || {};
+      const { action, sourceRequestId, consumableId, catalogConsumableId, itemName, quantity, requestedById, requestedByName, items } = req.body || {};
       if (action === "reorder") {
         if (!sourceRequestId || !consumableId) {
           return res.status(400).json({ success: false, message: "sourceRequestId and consumableId are required." });
@@ -55,6 +58,7 @@ async function handler(req, res) {
         .map((item) => ({
           itemName: (item?.itemName || "").trim(),
           quantity: Math.min(999, Math.max(1, Number.parseInt(item?.quantity, 10) || 1)),
+          catalogConsumableId: item?.catalogConsumableId || null,
         }))
         .filter((item) => Boolean(item.itemName));
 
@@ -69,6 +73,7 @@ async function handler(req, res) {
         quantity: item.quantity,
         requested_by: requestedById || null,
         requested_by_name: requestedByName || null,
+        catalog_consumable_id: item.catalogConsumableId || catalogConsumableId || null,
       }));
 
       const newRows = await createConsumableRequestRows(rows);

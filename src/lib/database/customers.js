@@ -322,19 +322,20 @@ export const getCustomerJobs = async (customerId) => {
 export const getCustomerPaymentMethods = async (customerId) => {
   if (!customerId) return [];
 
-  const { data, error } = await supabase
-    .from("customer_payment_methods")
-    .select("method_id, nickname, card_brand, last4, expiry_month, expiry_year, is_default, created_at")
-    .eq("customer_id", customerId)
-    .order("is_default", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  if (error) {
+  try {
+    const response = await fetch(
+      `/api/customer/payment-methods?customerId=${encodeURIComponent(customerId)}`,
+      { credentials: "include" }
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      throw new Error(payload?.error || "Unable to load customer payment methods.");
+    }
+    return Array.isArray(payload.methods) ? payload.methods : [];
+  } catch (error) {
     console.error("❌ getCustomerPaymentMethods error:", error.message);
     return [];
   }
-
-  return data || [];
 };
 
 export const getCustomerActivityEvents = async (customerId, { limit = 50 } = {}) => {

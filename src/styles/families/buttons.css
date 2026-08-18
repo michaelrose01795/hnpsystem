@@ -2,7 +2,7 @@
  *
  * Canonical home for the Button family.
  *
- * Variants: primary, secondary, ghost, danger
+ * Variants: primary, secondary, ghost, danger, theme
  * Sizes:    md (default), sm, xs    — height is LOCKED to var(--control-height)
  *                                     across sizes; only padding/font-size vary.
  * Modifiers: pill, nav, is-active
@@ -134,6 +134,20 @@ html.staff-scope .app-btn--ghost {
 html.staff-scope .app-btn--ghost:hover,
 html.staff-scope .app-btn--ghost:focus-visible {
   background: var(--control-bg) !important;
+}
+
+/* Theme — a filled, borderless button on the tinted --theme layer, carrying its
+   glyph in --surface. Reads like Primary but sits quieter, for in-card actions
+   (e.g. the technician card's info button) where a full Primary fill would
+   compete with the card's own content. */
+html.staff-scope .app-btn--theme {
+  background: var(--theme) !important;
+  color: var(--surface) !important;
+  border: none !important;
+}
+html.staff-scope .app-btn--theme:hover,
+html.staff-scope .app-btn--theme:focus-visible {
+  background: var(--theme-hover) !important;
 }
 
 html.staff-scope .app-btn--danger {

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     // Find all stale active records from before today
     const { data: staleRecords, error: fetchError } = await supabase
       .from("time_records")
-      .select("id, user_id, date, clock_in")
+      .select("id, user_id, job_id, job_number, date, clock_in")
       .is("clock_out", null)
       .lt("date", today);
 
@@ -48,13 +48,14 @@ export default async function handler(req, res) {
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const notes = isWeekend ? "Weekend - Auto-closed at midnight" : "Auto-closed at midnight";
 
+      const updatedAt = new Date().toISOString();
       const { error: updateError } = await supabase
         .from("time_records")
         .update({
           clock_out: clockOutTime,
           hours_worked: hoursWorked,
           notes,
-          updated_at: new Date().toISOString(),
+          updated_at: updatedAt,
         })
         .eq("id", record.id);
 
@@ -62,6 +63,19 @@ export default async function handler(req, res) {
         console.error(`Failed to close record ${record.id}:`, updateError);
         errors.push({ id: record.id, error: updateError.message });
       } else {
+        if (record.job_id && record.clock_in) {
+          const { error: jobClockingError } = await supabase
+            .from("job_clocking")
+            .update({ clock_out: clockOutTime, updated_at: updatedAt })
+            .eq("user_id", record.user_id)
+            .eq("job_id", record.job_id)
+            .eq("clock_in", record.clock_in)
+            .is("clock_out", null);
+
+          if (jobClockingError) {
+            errors.push({ id: record.id, error: `Paired job clocking: ${jobClockingError.message}` });
+          }
+        }
         closed++;
         console.log(`Auto-closed record ${record.id} for user ${record.user_id} from ${record.date} (${hoursWorked} hrs)`);
       }

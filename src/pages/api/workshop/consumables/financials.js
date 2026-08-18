@@ -52,16 +52,19 @@ const calculateFinancialSummary = async (year, month) => {
 
   const { data: consumables, error: consumableError } = await supabase
     .from("workshop_consumables")
-    .select("estimated_quantity, unit_cost");
+    .select("estimated_quantity, stock_quantity, unit_cost, is_required");
 
   if (consumableError) {
     throw consumableError;
   }
 
   const projectedSpend = (consumables || []).reduce((acc, consumable) => {
+    if (consumable.is_required === false) return acc;
     const estimatedQty = toNumber(consumable.estimated_quantity);
+    const stockQty = toNumber(consumable.stock_quantity);
+    const suggestedOrderQty = Math.max(0, estimatedQty - stockQty);
     const unitCost = toNumber(consumable.unit_cost);
-    return acc + estimatedQty * unitCost;
+    return acc + suggestedOrderQty * unitCost;
   }, 0);
 
   const { data: budgetRow, error: budgetError } = await supabase
