@@ -10,7 +10,6 @@ import React, {
 } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { buildCiRoster } from "@/lib/api/ciMocks";
 
 const NETWORK_TIMEOUT_MS = 4000;
 const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
@@ -71,7 +70,7 @@ async function fetchRoster(signal) {
   }
 }
 
-export function RosterProvider({ children, initialRosterData = null }) {
+export function RosterProvider({ children, initialRosterData = null, deferLoad = false }) {
   const router = useRouter();
   const { user, loading: userLoading } = useUser() || {};
   const [state, setState] = useState(() => stateFromInitialRoster(initialRosterData));
@@ -105,6 +104,7 @@ export function RosterProvider({ children, initialRosterData = null }) {
       hasLoadedRef.current = true;
     } catch (error) {
       if (PLAYWRIGHT_AUTH_ENABLED) {
+        const { buildCiRoster } = await import("@/lib/api/ciMocks");
         const data = buildCiRoster();
         setState({
           usersByRole: data.usersByRole || {},
@@ -130,7 +130,9 @@ export function RosterProvider({ children, initialRosterData = null }) {
     if (hasLoadedRef.current) return undefined;
 
     const controller = new AbortController();
-    fetchRoster(controller.signal)
+    let idleId = null;
+    let timerId = null;
+    const startLoad = () => fetchRoster(controller.signal)
       .then((data) => {
         setState({
           usersByRole: data.usersByRole || {},
@@ -141,9 +143,10 @@ export function RosterProvider({ children, initialRosterData = null }) {
         });
         hasLoadedRef.current = true;
       })
-      .catch((error) => {
+      .catch(async (error) => {
         if (error.name === "AbortError") return;
         if (PLAYWRIGHT_AUTH_ENABLED) {
+          const { buildCiRoster } = await import("@/lib/api/ciMocks");
           const data = buildCiRoster();
           setState({
             usersByRole: data.usersByRole || {},
@@ -158,8 +161,20 @@ export function RosterProvider({ children, initialRosterData = null }) {
         setState((prev) => ({ ...prev, isLoading: false, error }));
       });
 
-    return () => controller.abort();
-  }, [isPresentationRoute, isPublicPresentation, userLoading]);
+    if (deferLoad && typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(startLoad, { timeout: 1200 });
+    } else if (deferLoad) {
+      timerId = window.setTimeout(startLoad, 0);
+    } else {
+      void startLoad();
+    }
+
+    return () => {
+      controller.abort();
+      if (idleId !== null) window.cancelIdleCallback(idleId);
+      if (timerId !== null) window.clearTimeout(timerId);
+    };
+  }, [deferLoad, isPresentationRoute, isPublicPresentation, userLoading]);
 
   const value = useMemo(
     () => ({

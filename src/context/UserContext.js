@@ -2,8 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
-import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
-import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
@@ -316,6 +314,7 @@ export function UserProvider({ children }) {
       }
 
       try {
+        const { ensureDevDbUserAndGetId } = await import("@/lib/users/devUsers");
         const ensuredId = await withTimeout(
           ensureDevDbUserAndGetId(user),
           "Workshop user id resolution"
@@ -427,6 +426,7 @@ export function UserProvider({ children }) {
     }
 
     try {
+      const { getUserActiveJobs } = await import("@/lib/database/jobClocking");
       const active = await withTimeout(
         getUserActiveJobs(dbUserId),
         "Active job refresh"

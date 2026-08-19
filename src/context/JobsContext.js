@@ -3,6 +3,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react"; // React primitives
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext"; // access current user
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with caching and auto-refresh
 import { addJobToDatabase, updateJobStatus } from "@/lib/database/jobs"; // database mutation functions
@@ -10,6 +11,7 @@ import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidati
 
 // Create the Jobs context
 const JobsContext = createContext();
+const JOBS_CONTEXT_ROUTES = new Set(["/new-job", "/tech/dashboard"]);
 
 // Hook for using jobs context
 export const useJobs = () => useContext(JobsContext);
@@ -34,8 +36,10 @@ const defaultJobFields = {
 };
 
 export function JobsProvider({ children }) {
+  const router = useRouter();
   const { user } = useUser() || {}; // get current user
-  const { jobs, isLoading: loading, mutate: mutateJobs } = useJobsList({ enabled: !!user }); // SWR-powered with auto-refresh
+  const jobsContextEnabled = Boolean(user) && JOBS_CONTEXT_ROUTES.has(router.pathname);
+  const { jobs, isLoading: loading, mutate: mutateJobs } = useJobsList({ enabled: jobsContextEnabled }); // fetch only where this context is consumed
 
   // Add a new job to the database and refresh the cache
   const addJob = async (job) => {

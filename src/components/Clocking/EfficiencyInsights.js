@@ -5,6 +5,7 @@ import { useState } from "react";
 import KpiTrendChart from "@/components/reporting/KpiTrendChart";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 
 const roundHours = (value) => {
@@ -27,9 +28,9 @@ const getTargetState = (efficiency) => {
   return { label: "Below target", className: "app-badge--danger" };
 };
 
-function PanelHeader({ eyebrow, title, aside }) {
+function PanelHeader({ eyebrow, title, aside, className = "" }) {
   return (
-    <header className="efficiency-insight-header">
+    <header className={`efficiency-insight-header${className ? ` ${className}` : ""}`}>
       <div>
         {eyebrow ? <p className="efficiency-insight-eyebrow">{eyebrow}</p> : null}
         <h3>{title}</h3>
@@ -41,6 +42,140 @@ function PanelHeader({ eyebrow, title, aside }) {
 
 function EmptyMessage({ children }) {
   return <p className="efficiency-insight-empty">{children}</p>;
+}
+
+function HeadlineComparisonSkeleton({ showAction = true }) {
+  return (
+    <div className="efficiency-headline-comparison" aria-hidden="true">
+      <SkeletonBlock width="150px" height="11px" />
+      <SkeletonBlock width="72px" height="24px" />
+      <SkeletonBlock width="110px" height="11px" />
+      {showAction ? <SkeletonBlock width="112px" height="var(--control-height-sm)" /> : null}
+    </div>
+  );
+}
+
+function HeadlineSkeleton() {
+  return (
+    <>
+      <div className="efficiency-headline-main" aria-hidden="true">
+        <div>
+          <SkeletonBlock width="220px" height="10px" />
+          <div className="efficiency-headline-value-row efficiency-skeleton-value-row">
+            <SkeletonBlock width="180px" height="64px" />
+            <SkeletonBlock width="96px" height="24px" borderRadius="var(--radius-pill)" />
+          </div>
+          <SkeletonBlock width="280px" height="12px" />
+        </div>
+        <HeadlineComparisonSkeleton />
+      </div>
+      <div className="efficiency-kpi-grid" aria-hidden="true">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <LayerSurface key={index} className="efficiency-kpi-card" padding="var(--space-sm)" gap="8px">
+            <SkeletonBlock width={index % 2 ? "74%" : "62%"} height="11px" />
+            <SkeletonBlock width={index % 3 ? "58%" : "46%"} height="20px" />
+          </LayerSurface>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ComparisonSkeleton() {
+  return (
+    <div className="efficiency-comparison-list" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <LayerSurface key={index} className="efficiency-comparison-row" padding="var(--space-sm)">
+          <div><SkeletonBlock width="82px" height="14px" /><SkeletonBlock width="112px" height="10px" /></div>
+          <div><SkeletonBlock width="58px" height="14px" /><SkeletonBlock width="76px" height="10px" /></div>
+          <SkeletonBlock width="48px" height="14px" />
+        </LayerSurface>
+      ))}
+    </div>
+  );
+}
+
+function TrendSkeleton() {
+  return (
+    <div className="efficiency-trend-chart" aria-hidden="true">
+      <SkeletonBlock width="100%" height="160px" />
+      <SkeletonBlock width="250px" height="11px" />
+    </div>
+  );
+}
+
+function BreakdownSkeleton() {
+  return (
+    <div className="efficiency-breakdown-list" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div className="efficiency-breakdown-row" key={index}>
+          <div><SkeletonBlock width="120px" height="11px" /><SkeletonBlock width="48px" height="11px" /></div>
+          <SkeletonBlock width="100%" height="8px" borderRadius="var(--radius-pill)" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TargetProgressSkeleton() {
+  return (
+    <div className="efficiency-target-skeleton" aria-hidden="true">
+      <div className="efficiency-target-progress-copy"><SkeletonBlock width="84px" height="32px" /><SkeletonBlock width="64px" height="12px" /></div>
+      <SkeletonBlock width="100%" height="8px" borderRadius="var(--radius-pill)" />
+      <div className="efficiency-target-progress-meta"><SkeletonBlock width="92px" height="11px" /><SkeletonBlock width="82px" height="11px" /></div>
+    </div>
+  );
+}
+
+function LostTimeSkeleton() {
+  return (
+    <div className="efficiency-lost-time-grid" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <LayerSurface key={index} padding="var(--space-sm)" gap="8px">
+          <SkeletonBlock width="86%" height="11px" />
+          <SkeletonBlock width="54px" height="22px" />
+        </LayerSurface>
+      ))}
+    </div>
+  );
+}
+
+function AlertsSkeleton() {
+  return (
+    <div className="efficiency-alert-list efficiency-alert-list--skeleton" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div className="efficiency-alert-skeleton-row" key={index}>
+          <SkeletonBlock width="58px" height="22px" borderRadius="var(--radius-pill)" />
+          <div><SkeletonBlock width="150px" height="12px" /><SkeletonBlock width="220px" height="10px" /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function JobsTableSkeleton({ showTechnician }) {
+  const columns = showTechnician ? 6 : 5;
+  return (
+    <div className="app-table-shell-scroll efficiency-analysis-table" data-app-table-shell-scroll aria-hidden="true">
+      <table className="app-table-shell app-table-shell--with-headings">
+        <thead><tr>{Array.from({ length: columns }).map((_, index) => <th key={index}><SkeletonBlock width={index === 2 ? "120px" : "72px"} height="11px" /></th>)}</tr></thead>
+        <tbody>{Array.from({ length: 4 }).map((_, index) => <SkeletonTableRow key={index} cols={columns} />)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function CategoriesSkeleton() {
+  return (
+    <div className="efficiency-category-grid" aria-hidden="true">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <LayerSurface key={index} padding="var(--space-sm)" className="efficiency-category-card">
+          <div><SkeletonBlock width="92px" height="13px" /><SkeletonBlock width="54px" height="22px" borderRadius="var(--radius-pill)" /></div>
+          <SkeletonBlock width="150px" height="11px" />
+        </LayerSurface>
+      ))}
+    </div>
+  );
 }
 
 function TrendChart({ points }) {
@@ -132,6 +267,7 @@ export default function EfficiencyInsights({
   analysisLoading = false,
   analysisError = "",
   hideHeadline = false,
+  loading = false,
 }) {
   const [jobView, setJobView] = useState("over");
   const targetState = getTargetState(metrics?.efficiencyPct);
@@ -151,11 +287,13 @@ export default function EfficiencyInsights({
   );
   const latestTrendPoint = trend?.at(-1);
   const latestTrendState = getTargetState(latestTrendPoint?.efficiencyPct);
+  const analysisPending = loading || analysisLoading;
 
   return (
-    <div className="efficiency-insights-stack">
+    <div className="efficiency-insights-stack" aria-busy={loading || analysisLoading || undefined}>
+      {(loading || analysisLoading) ? <SkeletonKeyframes /> : null}
       {!hideHeadline ? <LayerTheme className="efficiency-headline" as="section">
-        <div className="efficiency-headline-main">
+        {loading ? <HeadlineSkeleton /> : <><div className="efficiency-headline-main">
           <div>
             <p className="efficiency-insight-eyebrow">{technicianName}{technicianRole ? ` · ${technicianRole}` : ""} · {periodLabel}</p>
             <div className="efficiency-headline-value-row">
@@ -164,14 +302,14 @@ export default function EfficiencyInsights({
             </div>
             <p className="efficiency-headline-caption">Allocated time divided by productive logged time</p>
           </div>
-          <div className="efficiency-headline-comparison">
+          {analysisLoading ? <HeadlineComparisonSkeleton showAction={Boolean(clockingHref)} /> : <div className="efficiency-headline-comparison">
             <span>Previous equivalent period</span>
             <strong className={previousChange >= 0 ? "is-positive" : "is-negative"}>
               {formatChange(previousChange, "%")}
             </strong>
             <small>{Number(previousMetrics?.efficiencyPct || 0).toFixed(1)}% previously</small>
             {clockingHref ? <Link className="app-btn app-btn--secondary app-btn--sm" href={clockingHref}>Open clocking</Link> : null}
-          </div>
+          </div>}
         </div>
         <div className="efficiency-kpi-grid">
           {[
@@ -189,13 +327,13 @@ export default function EfficiencyInsights({
               <strong>{value}</strong>
             </LayerSurface>
           ))}
-        </div>
+        </div></>}
       </LayerTheme> : null}
 
       <div className="efficiency-primary-analysis-grid">
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-comparison-panel">
           <PanelHeader eyebrow="Comparable periods" title="Today / week / month" />
-          <div className="efficiency-comparison-list">
+          {analysisPending ? <ComparisonSkeleton /> : <div className="efficiency-comparison-list">
             {(comparisons || []).map((comparison) => (
               <LayerSurface key={comparison.key} className="efficiency-comparison-row" padding="var(--space-sm)">
                 <div>
@@ -211,31 +349,32 @@ export default function EfficiencyInsights({
                 </span>
               </LayerSurface>
             ))}
-          </div>
+          </div>}
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-trend-panel">
           <PanelHeader
             title="Efficiency trend"
+            className="efficiency-trend-header"
             aside={(
               <div className="efficiency-trend-header-meta">
-                <span className="app-badge app-badge--neutral">{periodLabel}</span>
+                {analysisPending ? <><SkeletonBlock width="96px" height="22px" borderRadius="var(--radius-pill)" /><SkeletonBlock width="94px" height="22px" borderRadius="var(--radius-pill)" /></> : <><span className="app-badge app-badge--neutral">{periodLabel}</span>
                 {latestTrendPoint ? (
                   <span className={`app-badge ${latestTrendState.className}`}>
                     Latest {Number(latestTrendPoint.efficiencyPct || 0).toFixed(1)}%
                   </span>
-                ) : null}
+                ) : null}</>}
               </div>
             )}
           />
-          {analysisLoading ? <EmptyMessage>Loading trend data...</EmptyMessage> : null}
-          {!analysisLoading && analysisError ? <EmptyMessage>{analysisError}</EmptyMessage> : null}
-          {!analysisLoading && !analysisError ? <TrendChart points={trend} /> : null}
+          {analysisPending ? <TrendSkeleton /> : null}
+          {!analysisPending && analysisError ? <EmptyMessage>{analysisError}</EmptyMessage> : null}
+          {!analysisPending && !analysisError ? <TrendChart points={trend} /> : null}
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader eyebrow="Recorded sources" title="Time breakdown" />
-          <div className="efficiency-breakdown-list">
+          {loading ? <BreakdownSkeleton /> : <div className="efficiency-breakdown-list">
             {timeBreakdown.map((item) => (
               <div key={item.label} className="efficiency-breakdown-row">
                 <div><span>{item.label}</span><strong>{formatHours(item.value)}</strong></div>
@@ -244,13 +383,13 @@ export default function EfficiencyInsights({
                 </div>
               </div>
             ))}
-          </div>
-          <p className="efficiency-panel-note">Waiting, idle and break time are not classified because current efficiency and job-clocking records do not identify them reliably.</p>
+          </div>}
+          {!loading ? <p className="efficiency-panel-note">Waiting, idle and break time are not classified because current efficiency and job-clocking records do not identify them reliably.</p> : null}
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader eyebrow="Working day" title="Daily target progress" />
-          <div className="efficiency-target-progress-copy">
+          {analysisPending ? <TargetProgressSkeleton /> : <><div className="efficiency-target-progress-copy">
             <strong>{formatHours(dayComparison?.current?.productiveHours || 0)}</strong>
             <span>of {formatHours(dayComparison?.current?.targetHours || 0)}</span>
           </div>
@@ -260,24 +399,24 @@ export default function EfficiencyInsights({
           <div className="efficiency-target-progress-meta">
             <span>{Number(dayComparison?.current?.targetProgressPct || 0).toFixed(1)}% complete</span>
             <span>{formatHours(dayComparison?.current?.remainingTargetHours || 0)} remaining</span>
-          </div>
+          </div></>}
         </LayerTheme>
       </div>
 
       <div className="efficiency-secondary-analysis-grid">
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader eyebrow="Derivable causes" title="Lost time analysis" />
-          <div className="efficiency-lost-time-grid">
+          {analysisPending ? <LostTimeSkeleton /> : <div className="efficiency-lost-time-grid">
             <LayerSurface padding="var(--space-sm)"><span>Jobs over allocation</span><strong>{formatHours(overAllocatedHours)}</strong></LayerSurface>
             <LayerSurface padding="var(--space-sm)"><span>Unallocated job time</span><strong>{formatHours(metrics?.unallocatedHours)}</strong></LayerSurface>
             <LayerSurface padding="var(--space-sm)"><span>Clocking issues</span><strong>{alerts?.length || 0}</strong></LayerSurface>
-          </div>
-          <p className="efficiency-panel-note">Parts delays, customer authorisation and technical-support delays are excluded because these records are not linked consistently enough for a reliable total.</p>
+          </div>}
+          {!analysisPending ? <p className="efficiency-panel-note">Parts delays, customer authorisation and technical-support delays are excluded because these records are not linked consistently enough for a reliable total.</p> : null}
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
-          <PanelHeader eyebrow="Data quality" title="Clocking alerts" aside={<span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
-          {!alerts?.length ? <EmptyMessage>No clocking-quality issues found for this period.</EmptyMessage> : (
+          <PanelHeader eyebrow="Data quality" title="Clocking alerts" aside={analysisPending ? <SkeletonBlock width="42px" height="22px" borderRadius="var(--radius-pill)" /> : <span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
+          {analysisPending ? <AlertsSkeleton /> : !alerts?.length ? <EmptyMessage>No clocking-quality issues found for this period.</EmptyMessage> : (
             <ul className="efficiency-alert-list">
               {alerts.slice(0, 6).map((alert) => (
                 <li key={alert.key}>
@@ -294,7 +433,7 @@ export default function EfficiencyInsights({
         <PanelHeader
           eyebrow="Allocation impact"
           title={jobView === "over" ? "Jobs affecting efficiency" : "Best performing jobs"}
-          aside={(
+          aside={loading ? <SkeletonBlock width="230px" height="var(--control-height-sm)" /> : (
             <TabGroup
               value={jobView}
               onChange={setJobView}
@@ -306,12 +445,12 @@ export default function EfficiencyInsights({
             />
           )}
         />
-        <JobsTable jobs={jobs?.[jobView] || []} />
+        {loading ? <JobsTableSkeleton showTechnician={hideHeadline} /> : <JobsTable jobs={jobs?.[jobView] || []} />}
       </LayerTheme>
 
       <LayerTheme as="section" className="efficiency-analysis-panel">
         <PanelHeader eyebrow="Existing job data" title="Job category analysis" />
-        {!categories?.length ? <EmptyMessage>No reliable job categories are available for this period.</EmptyMessage> : (
+        {loading ? <CategoriesSkeleton /> : !categories?.length ? <EmptyMessage>No reliable job categories are available for this period.</EmptyMessage> : (
           <div className="efficiency-category-grid">
             {categories.map((category) => {
               const state = getTargetState(category.efficiencyPct);
@@ -332,6 +471,7 @@ export default function EfficiencyInsights({
         :global(.efficiency-headline) { gap: var(--space-md); }
         .efficiency-headline-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-lg); align-items: end; }
         .efficiency-headline-value-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+        .efficiency-skeleton-value-row { margin: var(--space-sm) 0; }
         .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
         .efficiency-headline-caption, .efficiency-panel-note { color: var(--surfaceTextMuted); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
         .efficiency-headline-comparison { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
@@ -345,6 +485,9 @@ export default function EfficiencyInsights({
         :global(.efficiency-analysis-panel) { min-height: 0; }
         .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
         .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
+        .efficiency-trend-header { align-items: center; flex-wrap: nowrap; }
+        .efficiency-trend-header > div:first-child { min-width: 0; }
+        .efficiency-trend-header h3 { white-space: nowrap; }
         .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--surfaceTextMuted); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
         .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }
         :global(.efficiency-comparison-row) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
@@ -353,7 +496,7 @@ export default function EfficiencyInsights({
         .is-positive { color: var(--success) !important; font-weight: 700; }
         .is-negative { color: var(--danger) !important; font-weight: 700; }
         .efficiency-trend-chart { min-width: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
-        .efficiency-trend-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex-wrap: wrap; }
+        .efficiency-trend-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex: 0 0 auto; flex-wrap: nowrap; }
         .efficiency-trend-summary { margin: 0; color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         .efficiency-trend-summary strong { color: var(--surfaceText); font-variant-numeric: tabular-nums; }
         .efficiency-breakdown-list { display: flex; flex-direction: column; gap: var(--space-sm); }
@@ -366,6 +509,7 @@ export default function EfficiencyInsights({
         .efficiency-target-progress-copy strong { color: var(--primary-selected); font-size: 2rem; }
         .efficiency-target-progress-copy span, .efficiency-target-progress-meta { color: var(--surfaceTextMuted); }
         .efficiency-target-progress-meta { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-caption); }
+        .efficiency-target-skeleton { display: flex; flex-direction: column; gap: var(--space-xs); }
         .efficiency-lost-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); }
         :global(.efficiency-lost-time-grid > div span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         :global(.efficiency-lost-time-grid > div strong) { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
@@ -374,6 +518,9 @@ export default function EfficiencyInsights({
         .efficiency-alert-list li:last-child { border-bottom: 0; }
         .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
         .efficiency-alert-list li div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-alert-list--skeleton { margin: 0; }
+        .efficiency-alert-skeleton-row { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); }
+        .efficiency-alert-skeleton-row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
         .efficiency-insight-empty { color: var(--surfaceTextMuted); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
         .efficiency-analysis-table { max-height: 330px; overflow: auto; }
         .efficiency-analysis-table table { min-width: 700px; }
@@ -391,7 +538,6 @@ export default function EfficiencyInsights({
           .efficiency-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           :global(.efficiency-comparison-row) { grid-template-columns: minmax(0, 1fr) auto; }
           :global(.efficiency-comparison-row > span) { grid-column: 1 / -1; }
-          .efficiency-trend-header-meta { justify-content: flex-start; }
         }
       `}</style>
     </div>

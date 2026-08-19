@@ -9,6 +9,7 @@ import "@/features/tracking/map/trackingMap.css"; // /tracking site-map diagram 
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import dynamic from "next/dynamic";
 import React, { useEffect } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
@@ -30,37 +31,28 @@ const interFont = Inter({
 const FONT_VARIABLE_STYLE = `:root { --font-inter: ${interFont.style.fontFamily}; }`;
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
-import { UserProvider } from "@/context/UserContext"; // import user context
-import { NextActionProvider } from "@/context/NextActionContext"; // import next action context provider
-import { JobsProvider } from "@/context/JobsContext"; // import jobs context
-import { ClockingProvider } from "@/context/ClockingContext"; // import clocking context
-import { RosterProvider } from "@/context/RosterContext"; // import roster context
-import { AlertProvider } from "@/context/AlertContext";
+import { useUser } from "@/context/UserContext";
 import { ThemeProvider } from "@/styles/themeProvider";
-import { ConfirmationProvider } from "@/context/ConfirmationContext";
-import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
-import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
-import { SupportDiagnosticsProvider } from "@/context/SupportReportContext";
-import SupportErrorBoundary from "@/components/support/SupportErrorBoundary";
-import GlobalNotesWidget from "@/components/GlobalNotesWidget";
-import CookieBanner from "@/components/CookieBanner";
-import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
-import GlobalTableShells from "@/components/App/GlobalTableShells";
-import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
-import StaffStyleReviewHighlighter from "@/components/dev-platform/StaffStyleReviewHighlighter";
-import GlobalTooltip from "@/components/ui/GlobalTooltip";
-import ActivityTracker from "@/components/activity/ActivityTracker";
-import { SWRConfig } from "swr"; // global SWR cache and revalidation config
-import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
-import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
-import RouteProgressBar from "@/components/layout/RouteProgressBar"; // instant top-bar feedback on route change
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
-import { useUser } from "@/context/UserContext";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+
+// Keep staff-only providers, shell code and global listeners out of the login
+// route's initial JavaScript. These chunks are requested only when rendered.
+const GlobalNotesWidget = dynamic(() => import("@/components/GlobalNotesWidget"), { ssr: false });
+const CookieBanner = dynamic(() => import("@/components/CookieBanner"), { ssr: false });
+const GlobalDraftPersistence = dynamic(() => import("@/components/App/GlobalDraftPersistence"), { ssr: false });
+const GlobalTableShells = dynamic(() => import("@/components/App/GlobalTableShells"), { ssr: false });
+const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overlay/DevLayoutOverlayRoot"), { ssr: false });
+const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
+const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
+const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
+const StaffProviders = dynamic(() => import("@/components/App/StaffProviders"));
+const Layout = dynamic(() => import("@/components/Layout"));
+const RouteProgressBar = dynamic(() => import("@/components/layout/RouteProgressBar"), { ssr: false });
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
 // need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
@@ -555,8 +547,25 @@ function PageAccessGuard({ pathname }) {
   return null;
 }
 
+function LightweightLoginScope({ children }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    root.classList.remove("website-scope", "dev-scope");
+    root.classList.add("staff-scope");
+    body.classList.remove("website-scope", "dev-scope");
+    body.classList.add("staff-scope");
+    restoreFetchInterceptor();
+  }, []);
+
+  return children;
+}
+
 // Main app entry with all providers composed
 export default function MyApp({ Component, pageProps }) {
+  const isLightweightLogin = Component.lightweightApp === true;
+  const loginPage = <Component {...pageProps} />;
+
   return (
     <>
       {/* Pin --font-inter to :root so var(--font-family) (which references it)
@@ -564,39 +573,20 @@ export default function MyApp({ Component, pageProps }) {
           The interFont.className activates next/font's @font-face declaration. */}
       <style dangerouslySetInnerHTML={{ __html: FONT_VARIABLE_STYLE }} />
       <span className={interFont.className} style={{ display: "none" }} aria-hidden="true" />
-    <SessionProvider session={pageProps.session}>
-      <ActivityTracker />
-      <AlertProvider>
-        <ConfirmationProvider>
-          <UserProvider>
-            <DevLayoutOverlayProvider>
-              <DevLayoutRegistryProvider>
-                <ThemeProvider defaultMode="system">
-                  <SWRConfig value={swrConfig}>
-                    <NextActionProvider>
-                      <JobsProvider>
-                        <ClockingProvider>
-                          <RosterProvider initialRosterData={pageProps.initialRosterData}>
-                            <SupportDiagnosticsProvider>
-                              {/* App-wide Help & Diagnostics error boundary (Phase 4).
-                                  hostSupportModal: the boundary hosts the report popup
-                                  when the shell (and its StaffTopbar host) is unmounted. */}
-                              <SupportErrorBoundary hostSupportModal>
-                                <AppWrapper Component={Component} pageProps={pageProps} />
-                              </SupportErrorBoundary>
-                            </SupportDiagnosticsProvider>
-                          </RosterProvider>
-                        </ClockingProvider>
-                      </JobsProvider>
-                    </NextActionProvider>
-                  </SWRConfig>
-                </ThemeProvider>
-              </DevLayoutRegistryProvider>
-            </DevLayoutOverlayProvider>
-          </UserProvider>
-        </ConfirmationProvider>
-      </AlertProvider>
-    </SessionProvider>
+      <SessionProvider session={pageProps.session}>
+          {isLightweightLogin ? (
+            <ThemeProvider defaultMode="system">
+            <LightweightLoginScope>{loginPage}</LightweightLoginScope>
+            </ThemeProvider>
+          ) : (
+            <>
+              <ActivityTracker />
+              <StaffProviders initialRosterData={pageProps.initialRosterData}>
+                <AppWrapper Component={Component} pageProps={pageProps} />
+              </StaffProviders>
+            </>
+          )}
+      </SessionProvider>
       <Analytics />
       <SpeedInsights />
     </>

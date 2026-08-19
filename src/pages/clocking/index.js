@@ -482,7 +482,7 @@ function TechnicianSection({ sectionKey, title, technicians, loading, snapshot, 
       gap="var(--space-3)"
     >
       <header className="clocking-board__section-header clocking-board__section-header--compact">
-        <div><h2>{title}</h2><p>{technicians.length} shown</p></div>
+        <div><h2>{title}</h2></div>
       </header>
       {loading && !snapshot ? <BoardSkeleton count={skeletonCount} /> : technicians.length ? (
         <div className="clocking-board__technician-grid">
@@ -727,7 +727,6 @@ function ClockingOverviewTab() {
         .clocking-board__section-header > div:first-child { min-width: 0; }
         .clocking-board__section-header h1 { margin: 0; color: var(--accentText); font-size: clamp(1.35rem, 2.4vw, 1.9rem); letter-spacing: -0.025em; line-height: 1.1; }
         .clocking-board__section-header h2 { margin: 0; color: var(--accentText); font-size: 1.05rem; line-height: 1.15; }
-        .clocking-board__section-header p { margin: 2px 0 0; color: var(--text-1); font-size: var(--text-caption); }
         .clocking-board__section-header--compact { min-height: 44px; }
         .clocking-board__live-state { display: grid; grid-template-columns: 8px auto; align-items: center; column-gap: var(--space-sm); flex: 0 0 auto; }
         .clocking-board__live-state > span { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); grid-row: 1 / span 2; }
