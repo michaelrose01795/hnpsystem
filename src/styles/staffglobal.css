@@ -2709,7 +2709,7 @@ html.staff-scope .login-loading-text {
 }
 
 html.staff-scope .login-loading-text.is-hidden {
-  display: none;
+  visibility: hidden;
 }
 
 html.staff-scope .login-preview {
@@ -2740,6 +2740,8 @@ html.staff-scope .login-brand {
 html.staff-scope .login-logo {
   width: 452px;
   height: auto;
+  aspect-ratio: 881 / 270;
+  display: block;
   max-width: 100%;
   object-fit: contain;
 }
@@ -7814,6 +7816,8 @@ html.staff-scope .app-job-operations-row-shell {
   min-width: 0;
   cursor: default;
   outline: none;
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 13rem;
 }
 
 html.staff-scope .app-job-operations-row-shell:focus-visible {

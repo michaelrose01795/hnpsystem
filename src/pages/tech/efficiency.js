@@ -4,13 +4,16 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import dynamic from "next/dynamic";
-import TechEfficiencyPageUi from "@/components/page-ui/tech/tech-efficiency-ui"; // Extracted presentation layer.
+import TechEfficiencyPageUi, { TechEfficiencyRouteSkeleton } from "@/components/page-ui/tech/tech-efficiency-ui"; // Extracted presentation layer.
 import {
   MOBILE_TECH_ROLES,
   TECHNICIAN_ROLES,
   normalizeRoles,
 } from "@/lib/auth/roles";
-const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
+const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), {
+  ssr: false,
+  loading: () => <TechEfficiencyRouteSkeleton />,
+});
 const TECHNICIAN_ROLE_SET = new Set(
   normalizeRoles([...TECHNICIAN_ROLES, ...MOBILE_TECH_ROLES])
 );

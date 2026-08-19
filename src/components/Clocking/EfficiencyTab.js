@@ -28,6 +28,7 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock, SkeletonKeyframes, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 import EfficiencyInsights from "@/components/Clocking/EfficiencyInsights";
@@ -154,6 +155,89 @@ const buildRequestOptions = (jobNumberValue, requestRows) => {
 
   return options;
 };
+
+function MetricGridSkeleton({ count, statCardStyle }) {
+  return (
+    <div
+      className="efficiency-summary-grid"
+      aria-hidden="true"
+      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
+    >
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} style={{ ...statCardStyle, gap: "10px" }}>
+          <SkeletonBlock width={index % 3 === 0 ? "72%" : "60%"} height="11px" />
+          <SkeletonBlock width={index % 2 === 0 ? "58%" : "46%"} height="25px" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle, tableStyle }) {
+  return (
+    <DevLayoutSection
+      sectionKey={sectionKey}
+      sectionType="content-card"
+      parentKey="tech-efficiency-page"
+      backgroundToken="theme"
+      style={themedSectionStyle}
+    >
+      <SkeletonBlock width={titleWidth} height="18px" />
+      <div className="efficiency-table-wrap" style={tableWrapperStyle} aria-hidden="true">
+        <table style={tableStyle}>
+          <thead><tr>{Array.from({ length: 9 }).map((_, index) => <th key={index}><SkeletonBlock width={index === 2 ? "112px" : "72px"} height="11px" /></th>)}</tr></thead>
+          <tbody>{Array.from({ length: 5 }).map((_, index) => <SkeletonTableRow key={index} cols={9} />)}</tbody>
+        </table>
+      </div>
+    </DevLayoutSection>
+  );
+}
+
+function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardStyle, tableWrapperStyle, tableStyle }) {
+  return (
+    <div
+      className="efficiency-content-skeleton"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading"
+      aria-busy="true"
+      style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)", width: "100%", minWidth: 0 }}
+    >
+      <SkeletonKeyframes />
+      {!individual ? (
+        <DevLayoutSection
+          sectionKey="tech-efficiency-overall-summary"
+          sectionType="content-card"
+          parentKey="tech-efficiency-page"
+          backgroundToken="theme"
+          style={themedSectionStyle}
+        >
+          <SkeletonBlock width="260px" height="19px" />
+          <MetricGridSkeleton count={12} statCardStyle={statCardStyle} />
+        </DevLayoutSection>
+      ) : null}
+
+      <EfficiencyInsights
+        loading
+        analysisLoading
+        hideHeadline={!individual}
+        comparisons={[]}
+        trend={[]}
+        jobs={{ over: [], under: [] }}
+        categories={[]}
+        alerts={[]}
+      />
+
+      <EfficiencyTableSkeleton
+        sectionKey={individual ? "tech-efficiency-tech-entries" : "tech-efficiency-overall-breakdown"}
+        titleWidth={individual ? "84px" : "190px"}
+        themedSectionStyle={themedSectionStyle}
+        tableWrapperStyle={tableWrapperStyle}
+        tableStyle={tableStyle}
+      />
+    </div>
+  );
+}
 
 /**
  * EfficiencyTab - shows efficiency data for technicians.
@@ -282,6 +366,7 @@ export default function EfficiencyTab({
       return;
     }
     setLoading(true);
+    setAnalysisLoading(true);
     setError("");
     try {
       const [manualEntries, clockingEntries, overtimeEntries, allTargets] = await Promise.all([
@@ -1445,18 +1530,16 @@ export default function EfficiencyTab({
         </div>
       )}
 
-      {/* Loading */}
+      {/* Card-shaped loading state mirrors the selected view and uses the same
+          section/card primitives as the loaded content. */}
       {loading && (
-        <div
-          data-dev-section="1"
-          data-dev-section-key="tech-efficiency-loading"
-          data-dev-section-type="content-card"
-          data-dev-section-parent="tech-efficiency-page"
-          data-dev-background-token="surface-loading"
-          style={sectionStyle}
-        >
-          <p style={{ color: "var(--info)", margin: 0 }}>Loading efficiency data...</p>
-        </div>
+        <EfficiencyContentSkeleton
+          individual={activeTab !== "overall" || filterUserId != null}
+          themedSectionStyle={themedSectionStyle}
+          statCardStyle={statCardStyle}
+          tableWrapperStyle={tableWrapperStyle}
+          tableStyle={tableStyle}
+        />
       )}
 
       {/* Overall Tab */}
@@ -1554,10 +1637,12 @@ export default function EfficiencyTab({
                 </strong>
               </div>
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-previous" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
-                <span style={statusLabelStyle(overallSectionStatusColor)}>Previous / Change</span>
-                <strong style={summaryValueStyle(overallSectionStatusColor)}>
-                  {previousOverallTotals.efficiencyPct}% · {overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct > 0 ? "+" : ""}{(overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct).toFixed(1)}%
-                </strong>
+                {analysisLoading ? <><SkeletonBlock width="72%" height="11px" /><SkeletonBlock width="58%" height="25px" /></> : <>
+                  <span style={statusLabelStyle(overallSectionStatusColor)}>Previous / Change</span>
+                  <strong style={summaryValueStyle(overallSectionStatusColor)}>
+                    {previousOverallTotals.efficiencyPct}% · {overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct > 0 ? "+" : ""}{(overallTotals.efficiencyPct - previousOverallTotals.efficiencyPct).toFixed(1)}%
+                  </strong>
+                </>}
               </div>
             </div>
           </DevLayoutSection>
@@ -1660,12 +1745,14 @@ export default function EfficiencyTab({
                           </span>
                         </td>
                         <td style={tdStyle}>
-                          {Number(previousEfficiencyByTech.get(tech.user_id) || 0).toFixed(1)}%
-                          {" · "}
-                          <span style={{ color: totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
-                            {totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) > 0 ? "+" : ""}
-                            {(totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0)).toFixed(1)}%
-                          </span>
+                          {analysisLoading ? <SkeletonBlock width="96px" height="14px" /> : <>
+                            {Number(previousEfficiencyByTech.get(tech.user_id) || 0).toFixed(1)}%
+                            {" · "}
+                            <span style={{ color: totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
+                              {totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0) > 0 ? "+" : ""}
+                              {(totals.efficiencyPct - Number(previousEfficiencyByTech.get(tech.user_id) || 0)).toFixed(1)}%
+                            </span>
+                          </>}
                         </td>
                       </tr>
                     ))

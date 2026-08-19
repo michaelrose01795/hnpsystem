@@ -34,6 +34,7 @@ export default function MobileMechanicEligibility({
   jobCategories,
   isMobileMechanic,
   onSelectionChange,
+  leadingControl,
 }) {
   const postcode = customer?.postcode || "";
   const driveTime = useDriveTimeToHNP(postcode);
@@ -64,6 +65,55 @@ export default function MobileMechanicEligibility({
       className="job-cards-create-mobile-eligibility-grid"
       shell
     >
+      <div
+        className="job-cards-create-mobile-eligibility-grid__controls"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))", // Keep Job Source and Mobile Mechanic as an equal-width pair within the narrow Job Information card.
+          gap: "12px",
+          minWidth: 0,
+        }}
+      >
+        {leadingControl}
+        <div
+          className="job-cards-create-mobile-eligibility-grid__choice"
+          style={{
+            display: "grid",
+            alignContent: "start",
+            gap: 0,
+            minWidth: 0,
+          }}
+        >
+          <label>Mobile Mechanic?</label>
+          <div
+            className="tab-api"
+            style={{ flexWrap: "nowrap", minWidth: "max-content" }}
+            aria-disabled={!verdict.eligible ? "true" : "false"}
+          >
+            {[true, false].map((choice) => {
+              const disabled = !verdict.eligible && choice === true;
+              return (
+                <button
+                  key={choice ? "yes" : "no"}
+                  type="button"
+                  onClick={() => {
+                    if (!disabled) onSelectionChange?.(choice);
+                  }}
+                  disabled={disabled}
+                  aria-pressed={isMobileMechanic === choice}
+                  data-tone="default"
+                  className={`tab-api__item${isMobileMechanic === choice ? " is-active" : ""}`}
+                  style={{ flex: "1 1 0", minWidth: "64px" }}
+                  title={disabled ? "This job does not meet the Mobile Mechanic rules" : undefined}
+                >
+                  {choice ? "Yes" : "No"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <ul
         className="job-cards-create-mobile-eligibility-grid__rules"
         style={{
@@ -93,45 +143,6 @@ export default function MobileMechanicEligibility({
           </li>
         ))}
       </ul>
-
-      <div
-        className="job-cards-create-mobile-eligibility-grid__choice"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "10px",
-          flexWrap: "wrap",
-        }}
-      >
-        <span>Send as Mobile Mechanic?</span>
-        <div
-          className="tab-api"
-          style={{ flexWrap: "nowrap", minWidth: "max-content" }}
-          aria-disabled={!verdict.eligible ? "true" : "false"}
-        >
-          {[true, false].map((choice) => {
-            const disabled = !verdict.eligible && choice === true;
-            return (
-              <button
-                key={choice ? "yes" : "no"}
-                type="button"
-                onClick={() => {
-                  if (!disabled) onSelectionChange?.(choice);
-                }}
-                disabled={disabled}
-                aria-pressed={isMobileMechanic === choice}
-                data-tone="default"
-                className={`tab-api__item${isMobileMechanic === choice ? " is-active" : ""}`}
-                style={{ flex: "1 1 0", minWidth: "64px" }}
-                title={disabled ? "This job does not meet the Mobile Mechanic rules" : undefined}
-              >
-                {choice ? "Yes" : "No"}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {isMobileMechanic && verdict.eligible ? (
         <StatusMessage

@@ -1,15 +1,5 @@
 Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
 
-TODO
-Promote only these finished commits from development into main:all the commits which arent in main move to main from dev etc, do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
-
-
-
-
-CHECK
-Cancel appointment button to be add what coed within the jobcard scheduling tab button etc. 
-
-
 
 
 
@@ -35,39 +25,14 @@ CHECK
 /goods-in
 Minor changes todo 
 
-
-
-
-
-
----
-
-
-CHECKKKK
-One thing to fix on your side
-10 of your 22 Vercel env vars are not exposed to the Preview environment — SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, and the seven POSTGRES_* vars (all Production-only). The NEXT_PUBLIC_SUPABASE_* pair is on Preview, so the app will likely render, but anything reading those server-side names will break on Preview only. In Vercel → Settings → Environment Variables, tick Preview on those (pointing at a staging DB if you'd rather previews not touch live data). I didn't change them — that's a data-access decision, and re-scoping them to a live database is your call.
-
-CHECK Drag and drop wihtin next job
-
-cust profile add new job buttonm to uato fill  
-
-CHAT GPT TODO
-look into the users not having to click clock on manaully, but this doing it automatically, liek the app knowing when the user is on the job and then finished the job and then on road test etc find out how this can be as automated as possible etc. 
-
---------------- VHC --------
-go through all taps to adjust slight ui desing and make sure everythign works correctly 
-
-
------------------- DO NEXT -------------------
-CHECK 
-SETTING POPUP WITHIN CLOCKING PAGE
+--- 
 
 
 TODO
 Within "https://hnpsystem.vercel.app/vhc/customer/00076/OSD7Ds_cq_77" for example page remove the notes button, this isn’t visible. Have it so the buttons authorise and decline are set to custglobal.css. Have it so the wheels and tires and brakes and hubs section shows the measurement as well as all of them showing the notes of the concern within the rows. Add a table bottom line in between the rows.  In the top right of this page add a profile button which takes the user to the website/login page or the website/profile page depending if the user is already logged in. Have it so this page is linked to the customers profile page as well so they can open it when they wish. Make sure this page follows the custglobal.CSS page fully. 
 
 TODO
-Improve the layout of the website/profile page, I feel like it it’s really long page and not very easy to navigate. Have it so alll /website pages works the best with phone vertical mode. 
+Improve the layout of the website/profile page, I feel like it it’s really long page and not very easy to navigate. Have it so alll /website pages works the best with phone vertical mode. as the main screen size to use. and then secondary for larger screens etc. 
 
 TOD with one above maybe. 
 Depending on the layout change, have it so the JUMP TO section is hidden in a menu button instead of always visible. 
