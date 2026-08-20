@@ -87,12 +87,12 @@ function useTweenedNumber(target, animate) {
   return val;
 }
 
-function TrendSkeleton({ height, sectionKey, parentKey }) {
+function TrendSkeleton({ height, sectionKey, parentKey, sectionType }) {
   return (
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
-      sectionType="content-card"
+      sectionType={sectionType}
       backgroundToken="transparent"
       className="report-graph"
       data-dev-text-preview="Loading KPI trend chart"
@@ -124,7 +124,17 @@ function TrendSkeleton({ height, sectionKey, parentKey }) {
   );
 }
 
-export default function KpiTrendChart({ series = [], unit = "count", format = "0,0", height = 120, sectionKey, parentKey, loading = false }) {
+export default function KpiTrendChart({
+  series = [],
+  unit = "count",
+  format = "0,0",
+  height = 120,
+  sectionKey,
+  parentKey,
+  sectionType = "content-card",
+  includeZero = true,
+  loading = false,
+}) {
   const reactId = React.useId();
   const fillId = `kpiTrendFill-${reactId}`;
   const glowId = `kpiTrendGlow-${reactId}`;
@@ -138,7 +148,14 @@ export default function KpiTrendChart({ series = [], unit = "count", format = "0
   const tweened = useTweenedNumber(targetValue, !reducedMotion);
 
   if (loading) {
-    return <TrendSkeleton height={height} sectionKey={sectionKey} parentKey={parentKey} />;
+    return (
+      <TrendSkeleton
+        height={height}
+        sectionKey={sectionKey}
+        parentKey={parentKey}
+        sectionType={sectionType}
+      />
+    );
   }
 
   if (points.length === 0) {
@@ -146,7 +163,7 @@ export default function KpiTrendChart({ series = [], unit = "count", format = "0
       <DevLayoutSection
         sectionKey={sectionKey}
         parentKey={parentKey}
-        sectionType="content-card"
+        sectionType={sectionType}
         backgroundToken="transparent"
         className="report-graph__empty"
         data-dev-text-preview="Empty KPI trend chart"
@@ -162,8 +179,8 @@ export default function KpiTrendChart({ series = [], unit = "count", format = "0
   const padX = 8;
   const padY = 12;
   const values = points.map((p) => Number(p.value) || 0);
-  const max = Math.max(...values, 0);
-  const min = Math.min(...values, 0);
+  const max = includeZero ? Math.max(...values, 0) : Math.max(...values);
+  const min = includeZero ? Math.min(...values, 0) : Math.min(...values);
   const span = max - min || 1;
   const stepX = points.length > 1 ? (W - padX * 2) / (points.length - 1) : 0;
   const xy = (i, v) => {
@@ -200,7 +217,7 @@ export default function KpiTrendChart({ series = [], unit = "count", format = "0
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
-      sectionType="content-card"
+      sectionType={sectionType}
       backgroundToken="transparent"
       className={`report-graph${hover != null ? " report-graph--scrubbing" : ""}`}
       data-dev-text-preview="KPI trend chart"

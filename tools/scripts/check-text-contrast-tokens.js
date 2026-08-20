@@ -9,10 +9,21 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = process.cwd();
-const SEARCH_ROOTS = ["src/components/page-ui", "src/pages"];
+const SEARCH_ROOTS = ["src/components", "src/pages"];
 const FILE_RE = /\.(js|jsx|ts|tsx)$/;
-const AMBIGUOUS_TEXT_RE = /color\s*:\s*["'`]var\(--text-2\)["'`]/g;
+// Match both JS style objects (`color: "var(...)"`) and CSS inside styled-jsx
+// template strings (`color: var(...)`). The latter was previously invisible to
+// this guard and allowed dark-on-dark text to reach the efficiency workspace.
+const AMBIGUOUS_TEXT_RE = /color\s*:\s*["'`]?var\(--text-2\)["'`]?/g;
 const MIGRATION_BASELINE = new Map([
+  ["src/components/HR/tabs/EmployeesTab.js", 1],
+  ["src/components/Parts/DeliverySchedulerModal.js", 1],
+  ["src/components/VHC/VhcDetailsPanel.js", 2],
+  ["src/components/VHC/VhcMediaGallery.js", 1],
+  ["src/components/layout/WorkspaceBreadcrumbs.js", 1],
+  ["src/components/layout/WorkspaceHeader.js", 1],
+  ["src/components/popups/CheckSheetPopup.js", 2],
+  ["src/components/popups/ConfirmationDialog.js", 1],
   ["src/components/page-ui/dashboard/parts/dashboard-parts-ui.js", 8],
   ["src/components/page-ui/dashboard/service/dashboard-service-ui.js", 6],
   ["src/components/page-ui/dashboard/workshop/dashboard-workshop-ui.js", 1],
@@ -23,11 +34,12 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 1],
   ["src/components/page-ui/messages/messages-ui.js", 1],
   ["src/components/page-ui/stock-catalogue-ui.js", 0],
+  ["src/components/page-ui/tech/tech-dashboard-ui.js", 2],
   ["src/pages/accounts/invoices/[invoiceId].js", 4],
   ["src/pages/dashboard/parts/index.js", 3],
   ["src/pages/dashboard/service/index.js", 4],
   ["src/pages/dev/user-diagnostic.js", 5],
-  ["src/pages/job-cards/[jobNumber].js", 16],
+  ["src/pages/job-cards/[jobNumber].js", 18],
   ["src/pages/jobs/index.js", 3],
   ["src/pages/mobile/dashboard.js", 4],
   ["src/pages/nextjobs.js", 1],

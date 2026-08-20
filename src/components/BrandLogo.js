@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 
 const LIGHT_LOGO_SRC = "/images/logo/Logo.png";
@@ -90,6 +91,10 @@ export default function BrandLogo({
   style,
   width,
   height,
+  priority = false,
+  sizes,
+  quality,
+  recolor = true,
   // Base image to recolour. Defaults to the wide wordmark, but callers (e.g. the
   // collapsed sidebar rail) can pass the square desktop icon so it recolours to
   // the active theme accent the same way the wordmark does.
@@ -120,6 +125,11 @@ export default function BrandLogo({
   }, [effectiveAccent, mode]);
 
   useEffect(() => {
+    if (!recolor) {
+      setSrc(baseSrc);
+      return;
+    }
+
     if (typeof window === "undefined") {
       setSrc(baseSrc);
       return;
@@ -134,7 +144,20 @@ export default function BrandLogo({
       setSrc(baseSrc);
     };
     img.src = baseSrc;
-  }, [baseSrc, targetRgb, mode]);
+  }, [baseSrc, targetRgb, mode, recolor]);
 
-  return <img src={src} alt={alt} className={className} style={style} width={width} height={height} {...rest} />;
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      className={className}
+      style={style}
+      width={width || 881}
+      height={height || 270}
+      priority={priority}
+      sizes={sizes}
+      quality={quality}
+      {...rest}
+    />
+  );
 }

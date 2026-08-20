@@ -941,7 +941,11 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     position: relative;
     z-index: 1;
   }
+}
 
+/* Whenever Menu and Status form the compact 50/50 row, the selected panel
+   drops from that row using the same treatment as portrait phone mode. */
+@media (max-width: 1024px) {
   html.staff-scope .app-portrait-sidebar-assembly {
     position: absolute;
     z-index: 1;
@@ -953,6 +957,7 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: var(--control-height) minmax(0, 1fr);
     column-gap: var(--space-sm);
+    row-gap: 10px; /* Keep the dropped panel visibly below the Menu / Status control row. */
     transform-origin: top center;
     pointer-events: auto;
   }
@@ -994,8 +999,8 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     top: calc(100% - 1px);
     right: 0;
     left: 0;
-    height: calc(var(--space-sm) + 1px);
-    background: inherit;
+    height: 11px; /* Fill the 10px panel gap plus the shared pixel at the button edge. */
+    background: var(--surface);
     pointer-events: none;
   }
 
@@ -1012,13 +1017,13 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     border-radius: 0 var(--page-card-radius) var(--page-card-radius) var(--page-card-radius);
   }
 
-  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__close-tab {
-    grid-column: 2;
+  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__panel,
+  html.staff-scope .app-portrait-sidebar__panel .status-sidebar--vertical-phone {
+    border-radius: var(--page-card-radius) 0 var(--page-card-radius) var(--page-card-radius);
   }
 
-  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__panel,
-  html.staff-scope .app-portrait-sidebar-assembly--status .status-sidebar--vertical-phone {
-    border-radius: var(--page-card-radius) 0 var(--page-card-radius) var(--page-card-radius);
+  html.staff-scope .app-portrait-sidebar-assembly--status .app-portrait-sidebar__close-tab {
+    grid-column: 2;
   }
 
   html.staff-scope .app-mobile-sidebar-overlay:not(.is-closing) .app-mobile-sidebar-backdrop {
@@ -1079,7 +1084,7 @@ html.staff-scope .app-mobile-sidebar-backdrop {
   }
 }
 
-@media (max-width: 640px) and (orientation: portrait) and (prefers-reduced-motion: reduce) {
+@media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
   html.staff-scope .app-portrait-sidebar-assembly,
   html.staff-scope .app-mobile-sidebar-backdrop {
     animation: none;
@@ -1936,6 +1941,16 @@ html.staff-scope .app-badge {
   white-space: nowrap;
 }
 
+/* Status and label badges follow the standard 44px control height everywhere
+   except dense data tables, where they align to the canonical 32px table
+   action height. Feature code must use .app-badge instead of sizing badges
+   inline so this single responsive density contract remains authoritative. */
+html.staff-scope .app-data-table .app-badge {
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+  padding: 0 var(--space-3);
+}
+
 html.staff-scope .app-badge--uppercase {
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2694,7 +2709,7 @@ html.staff-scope .login-loading-text {
 }
 
 html.staff-scope .login-loading-text.is-hidden {
-  display: none;
+  visibility: hidden;
 }
 
 html.staff-scope .login-preview {
@@ -2725,6 +2740,8 @@ html.staff-scope .login-brand {
 html.staff-scope .login-logo {
   width: 452px;
   height: auto;
+  aspect-ratio: 881 / 270;
+  display: block;
   max-width: 100%;
   object-fit: contain;
 }
@@ -7799,6 +7816,8 @@ html.staff-scope .app-job-operations-row-shell {
   min-width: 0;
   cursor: default;
   outline: none;
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 13rem;
 }
 
 html.staff-scope .app-job-operations-row-shell:focus-visible {

@@ -12,12 +12,18 @@ const panelGridStyle = {
   gap: "var(--layout-card-gap)",
   alignItems: "start",
 };
+const equalHeightPanelGridStyle = {
+  ...panelGridStyle,
+  alignItems: "stretch",
+  gridAutoRows: "1fr",
+};
 // One sticky header plus ten canonical 44px data rows before internal scrolling.
 const tableViewportStyle = {
   overflow: "auto",
   maxWidth: "100%",
   maxHeight: "calc(var(--table-row-height) * 11)",
 };
+const fourRowListMinHeight = "calc(var(--table-row-height) + var(--table-row-height) + var(--table-row-height) + var(--table-row-height) + var(--layout-card-gap) + var(--layout-card-gap) + var(--layout-card-gap))";
 const labelStyle = {
   color: "var(--surfaceTextMuted)",
   fontSize: "var(--text-caption)",
@@ -29,6 +35,14 @@ const modalCloseStyle = {
   position: "absolute",
   top: "var(--space-3)",
   right: "var(--space-3)",
+};
+const historyTableOffsetStyle = { marginTop: "10px" }; // Keeps the history table clear of the absolutely positioned Close button.
+const itemHistoryLinkStyle = {
+  color: "var(--accentText)",
+  cursor: "pointer",
+  fontWeight: 700,
+  textDecoration: "underline",
+  textUnderlineOffset: "2px",
 };
 
 function toneStyle(tone) {
@@ -56,14 +70,14 @@ function Status({ children, tone = "neutral" }) {
   );
 }
 
-function SectionHeader({ title, meta, actions }) {
+function SectionHeader({ title, meta, actions, actionsStyle }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)", flexWrap: "wrap" }}>
         <h2 style={headingStyle}>{title}</h2>
         {meta ? <span style={{ ...mutedStyle, fontSize: "var(--text-body-sm)" }}>{meta}</span> : null}
       </div>
-      {actions ? <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "center" }}>{actions}</div> : null}
+      {actions ? <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "center", ...actionsStyle }}>{actions}</div> : null}
     </div>
   );
 }
@@ -92,6 +106,15 @@ function Empty({ children }) {
 
 function ErrorMessage({ children }) {
   return children ? <div className="app-status-message app-status-message--danger" role="alert">{children}</div> : null;
+}
+
+function PriceChangeMessage({ value }) {
+  if (value === null || value === undefined) return null;
+  return (
+    <div className={`app-status-message app-status-message--${value > 0 ? "warning" : "info"}`}>
+      Latest unit cost is {Math.abs(value).toFixed(1)}% {value >= 0 ? "higher" : "lower"} than the previous order.
+    </div>
+  );
 }
 
 function TableViewport({ children, label }) {
@@ -123,6 +146,47 @@ function TableViewport({ children, label }) {
       aria-label={label}
       tabIndex={0}
       style={{ ...tableViewportStyle, ...(measuredMaxHeight === null ? {} : { maxHeight: `${measuredMaxHeight}px` }) }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ListViewport({ children, label, reserveRows = false, visibleRows = 4 }) {
+  const viewportRef = useRef(null);
+  const [measuredMaxHeight, setMeasuredMaxHeight] = useState(null);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+
+    const measure = () => {
+      const rows = Array.from(viewport.children).slice(0, visibleRows);
+      const rowGap = Number.parseFloat(window.getComputedStyle(viewport).rowGap) || 0;
+      const rowsHeight = rows.reduce((total, row) => total + row.getBoundingClientRect().height, 0);
+      const nextHeight = Math.ceil(rowsHeight + Math.max(0, rows.length - 1) * rowGap);
+      setMeasuredMaxHeight((current) => current === nextHeight ? current : nextHeight);
+    };
+
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    Array.from(viewport.children).forEach((row) => observer?.observe(row));
+    return () => observer?.disconnect();
+  });
+
+  return (
+    <div
+      ref={viewportRef}
+      aria-label={label}
+      tabIndex={0}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+        overflowY: "auto",
+        minHeight: reserveRows ? fourRowListMinHeight : 0,
+        ...(measuredMaxHeight === null ? {} : { maxHeight: `${measuredMaxHeight}px` }),
+      }}
     >
       {children}
     </div>
@@ -234,7 +298,10 @@ export default function ConsumablesTrackerPageUi(props) {
             <div style={historyModalStyle} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeHistoryModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>{historyModalConsumable.name} order history</h2>
-              <HistoryRows item={historyModalConsumable} formatCurrency={formatCurrency} formatDate={formatDate} />
+              <PriceChangeMessage value={historyModalConsumable.priceChange} />
+              <div style={historyTableOffsetStyle}>
+                <HistoryRows item={historyModalConsumable} formatCurrency={formatCurrency} formatDate={formatDate} />
+              </div>
             </div>
           </div>
         ) : null}
@@ -245,11 +312,7 @@ export default function ConsumablesTrackerPageUi(props) {
               <Button type="button" variant="secondary" size="sm" onClick={closeOrderModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>Order {orderModalConsumable.name}</h2>
               <p style={{ margin: 0, ...mutedStyle }}>The last order is pre-filled. Review or change each detail before saving.</p>
-              {orderModalConsumable.priceChange !== null ? (
-                <div className={`app-status-message app-status-message--${orderModalConsumable.priceChange > 0 ? "warning" : "info"}`}>
-                  Latest unit cost is {Math.abs(orderModalConsumable.priceChange).toFixed(1)}% {orderModalConsumable.priceChange >= 0 ? "higher" : "lower"} than the previous order.
-                </div>
-              ) : null}
+              <PriceChangeMessage value={orderModalConsumable.priceChange} />
               {previewLogs.length ? <HistoryRows item={{ ...orderModalConsumable, orderHistory: previewLogs }} formatCurrency={formatCurrency} formatDate={formatDate} /> : null}
               <form onSubmit={handleEditedOrder} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--layout-card-gap)" }}>
                 <label style={{ ...textStyle, fontWeight: 600 }}>Quantity
@@ -324,7 +387,7 @@ export default function ConsumablesTrackerPageUi(props) {
           </div>
         </LayerTheme>
 
-        <div style={panelGridStyle}>
+        <div style={equalHeightPanelGridStyle}>
           <LayerTheme sectionKey="workshop-consumables-stock-overview" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
             <SectionHeader title="Stock overview" meta={`${dashboardSummary.active} active items`} />
             <div className="app-summary-section">
@@ -340,7 +403,7 @@ export default function ConsumablesTrackerPageUi(props) {
               <span style={{ width: `${dashboardSummary.active ? dashboardSummary.out / dashboardSummary.active * 100 : 0}%`, background: "var(--danger-base)" }} />
             </div>
             <h3 style={{ ...headingStyle, fontSize: "1rem" }}>Critical items</h3>
-            {loadingConsumables ? <InlineLoading width={150} label="Loading stock" /> : criticalItems.length ? criticalItems.map((item) => (
+            {loadingConsumables ? <InlineLoading width={150} label="Loading stock" /> : criticalItems.length ? criticalItems.slice(0, 4).map((item) => (
               <LayerSurface key={item.id} padding="var(--space-3)" gap="var(--space-sm)" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center" }}>
                 <div style={{ minWidth: 0 }}>
                   <strong style={textStyle}>{item.name}</strong>
@@ -380,19 +443,25 @@ export default function ConsumablesTrackerPageUi(props) {
           </LayerTheme>
         </div>
 
-        <div style={panelGridStyle}>
-          <LayerTheme sectionKey="workshop-consumables-alerts" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
+        <div style={equalHeightPanelGridStyle}>
+          <LayerTheme sectionKey="workshop-consumables-alerts" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Alerts and notifications" meta={`${alerts.length} active`} />
-            {alerts.length ? alerts.map((alert, index) => <div key={`${alert.label}-${index}`} className={`app-status-message app-status-message--${alert.tone}`}>{alert.label}</div>) : <div className="app-status-message app-status-message--success">No consumable alerts need attention.</div>}
+            <ListViewport label="Consumables alerts" reserveRows>
+              {alerts.length ? alerts.map((alert, index) => <div key={`${alert.label}-${index}`} className={`app-status-message app-status-message--${alert.tone}`}>{alert.label}</div>) : <div className="app-status-message app-status-message--success">No consumable alerts need attention.</div>}
+            </ListViewport>
           </LayerTheme>
-          <LayerTheme sectionKey="workshop-consumables-suppliers" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
+          <LayerTheme sectionKey="workshop-consumables-suppliers" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Supplier spend" meta={monthLabel} />
             <ErrorMessage>{logsError}</ErrorMessage>
-            {logsLoading ? <InlineLoading width={140} label="Loading supplier spend" /> : supplierSpend.length ? supplierSpend.slice(0, 6).map((supplier) => (
-              <div key={supplier.supplier} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "center" }}>
-                <span style={textStyle}>{supplier.supplier}</span><strong style={{ ...textStyle, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(supplier.spend)}</strong>
-              </div>
-            )) : <Empty>No supplier spend for this month.</Empty>}
+            {logsLoading ? <InlineLoading width={140} label="Loading supplier spend" /> : (
+              <ListViewport label="Supplier spend by supplier" reserveRows>
+                {supplierSpend.length ? supplierSpend.map((supplier) => (
+                  <div key={supplier.supplier} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "center", minHeight: "var(--table-row-height)" }}>
+                    <span style={textStyle}>{supplier.supplier}</span><strong style={{ ...textStyle, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(supplier.spend)}</strong>
+                  </div>
+                )) : <Empty>No supplier spend for this month.</Empty>}
+              </ListViewport>
+            )}
           </LayerTheme>
         </div>
 
@@ -400,9 +469,10 @@ export default function ConsumablesTrackerPageUi(props) {
           <SectionHeader
             title="Scheduled consumables"
             meta={loadingConsumables ? "Loading" : `${scheduled.length} items`}
+            actionsStyle={{ flex: "1 1 460px", minWidth: 0, flexWrap: "nowrap", justifyContent: "flex-end" }}
             actions={<>
-              <SearchBar value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onClear={() => setSearchQuery("")} placeholder="Search stock or supplier" style={{ minWidth: "min(100%, 260px)" }} />
-              <Button type="button" variant="primary" size="sm" onClick={openBulkOrder} disabled={!bulkSelectionValid}>Order selected ({selectedConsumableIds.size})</Button>
+              <SearchBar value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onClear={() => setSearchQuery("")} placeholder="Search stock or supplier" style={{ flex: "1 1 200px", minWidth: 0, maxWidth: "420px" }} />
+              <Button type="button" variant="primary" size="sm" onClick={openBulkOrder} disabled={!bulkSelectionValid} style={{ flexShrink: 0 }}>Order selected ({selectedConsumableIds.size})</Button>
             </>}
           />
           {selectedConsumableIds.size > 1 && !bulkSelectionValid ? <div className="app-status-message app-status-message--warning">Select at least two items with the same recorded supplier to create a grouped order.</div> : null}
@@ -416,7 +486,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 return (
                   <tr key={item.id}>
                     <td><label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px" }}><input className="app-toggle--checkbox" type="checkbox" checked={selectedConsumableIds.has(item.id)} onChange={() => toggleConsumableSelection(item.id)} aria-label={`Select ${item.name}`} /></label></td>
-                    <td><Button type="button" size="xs" variant="ghost" onClick={() => openHistoryModal(item)}>{item.name}</Button>{item.priceChange !== null ? <small style={{ display: "block", color: item.priceChange > 0 ? "var(--warning-text)" : "var(--surfaceTextMuted)" }}>{item.priceChange >= 0 ? "+" : ""}{item.priceChange.toFixed(1)}% price change</small> : null}</td>
+                    <td><a href="#consumable-order-history" aria-haspopup="dialog" aria-label={`View order history for ${item.name}`} onClick={(event) => { event.preventDefault(); openHistoryModal(item); }} style={itemHistoryLinkStyle}>{item.name}</a></td>
                     <td>{item.supplier || "—"}</td>
                     <td>{item.stockQuantity.toLocaleString()}</td>
                     <td>{item.minimumStock === null ? "—" : item.minimumStock.toLocaleString()} / {item.preferredStock?.toLocaleString() || "—"}</td>
@@ -427,7 +497,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     <td><Status tone={item.stockTone}>{item.stockStatus}</Status></td>
                     <td><Status tone={item.scheduleStatus.tone}>{item.scheduleStatus.label === "Coming Up" ? "Order now" : item.scheduleStatus.label}</Status></td>
                     <td><Status tone={priority === "Urgent" ? "danger" : priority === "Review" ? "warning" : "safe"}>{priority}</Status></td>
-                    <td><div style={{ display: "flex", gap: "var(--space-sm)" }}><Button type="button" size="xs" variant="primary" onClick={() => openOrderModal(item)}>{item.orderHistory.length ? "Repeat" : "Order"}</Button><Button type="button" size="xs" variant="secondary" onClick={() => openHistoryModal(item)}>History</Button></div></td>
+                    <td><div style={{ display: "flex", gap: "var(--space-sm)" }}><Button type="button" size="xs" variant="primary" onClick={() => openOrderModal(item)}>{item.orderHistory.length ? "Repeat" : "Order"}</Button></div></td>
                   </tr>
                 );
               })}</tbody>
@@ -437,7 +507,7 @@ export default function ConsumablesTrackerPageUi(props) {
         </LayerTheme>
 
         <LayerTheme id="consumable-requests" sectionKey="workshop-consumables-requests" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
-          <SectionHeader title="Technician requests" meta={requestsLoading ? "Loading" : `${techRequests.length} original requests · ${groupedRequests.length} items`} />
+          <SectionHeader title="Technician requests" meta={requestsLoading ? "Loading" : `${techRequests.length} request records · ${groupedRequests.length} grouped items`} />
           <ErrorMessage>{requestsError}</ErrorMessage>
           <div className="app-summary-section">
             <div className="app-summary-grid" role="list" aria-label="Technician request summary">
@@ -445,15 +515,15 @@ export default function ConsumablesTrackerPageUi(props) {
                 <Metric
                   key={group.key}
                   label={group.itemName}
-                  value={group.activeQuantity.toLocaleString()}
-                  detail={`${group.requests.length} request${group.requests.length === 1 ? "" : "s"} · ${group.fulfilledQuantity} fulfilled`}
+                  value={`${group.activeQuantity.toLocaleString()} open`}
+                  detail={`${group.totalQuantity.toLocaleString()} requested · ${group.fulfilledQuantity.toLocaleString()} fulfilled · ${group.requests.length} record${group.requests.length === 1 ? "" : "s"}`}
                 />
               ))}
             </div>
           </div>
           <TableViewport label="Technician consumable requests">
             <table className="app-data-table app-data-table--rounded" style={{ minWidth: "860px" }}>
-              <thead><tr><th>Item</th><th>Total requested</th><th>Technician</th><th>Requested</th><th>Status</th><th>Urgency</th><th>Action</th></tr></thead>
+              <thead><tr><th>Item</th><th>Quantity</th><th>Technician</th><th>Requested</th><th>Status</th><th>Urgency</th><th>Action</th></tr></thead>
               <tbody>{techRequests.map((request) => {
                 const urgency = request.status === "urgent" ? "Urgent" : request.status === "pending" ? "Review" : "Normal";
                 return (
@@ -470,22 +540,26 @@ export default function ConsumablesTrackerPageUi(props) {
           {!requestsLoading && !techRequests.length ? <Empty>No technician requests recorded.</Empty> : null}
         </LayerTheme>
 
-        <div style={panelGridStyle}>
-          <LayerTheme sectionKey="workshop-consumables-top-requested" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
+        <div style={equalHeightPanelGridStyle}>
+          <LayerTheme sectionKey="workshop-consumables-top-requested" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Top requested items" meta="All available request history" />
-            {groupedRequests.length ? groupedRequests.slice(0, 8).map((group, index) => (
-              <div key={group.key} style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "center" }}>
-                <strong style={{ color: "var(--accentText)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</strong><span style={textStyle}>{group.itemName}</span><span style={mutedStyle}>{group.totalQuantity} total · {group.activeQuantity} open</span>
-              </div>
-            )) : <Empty>No request history is available.</Empty>}
+            <ListViewport label="Top requested consumables" reserveRows>
+              {groupedRequests.length ? groupedRequests.map((group, index) => (
+                <div key={group.key} style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "center", minHeight: "var(--table-row-height)" }}>
+                  <strong style={{ color: "var(--accentText)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</strong><span style={textStyle}>{group.itemName}</span><span style={mutedStyle}>{group.totalQuantity} total · {group.activeQuantity} open</span>
+                </div>
+              )) : <Empty>No request history is available.</Empty>}
+            </ListViewport>
           </LayerTheme>
-          <LayerTheme sectionKey="workshop-consumables-activity" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
+          <LayerTheme sectionKey="workshop-consumables-activity" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Recent activity" meta="Orders and requests" />
-            {recentActivity.length ? recentActivity.map((activity) => (
-              <div key={activity.id} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "start" }}>
-                <div><strong style={textStyle}>{activity.label}</strong><div style={{ ...mutedStyle, fontSize: "var(--text-caption)", marginTop: "4px" }}>{activity.detail}</div></div><time style={{ ...mutedStyle, fontSize: "var(--text-caption)" }}>{formatDate(activity.date)}</time>
-              </div>
-            )) : <Empty>No recent activity is available.</Empty>}
+            <ListViewport label="Recent consumables activity" reserveRows>
+              {recentActivity.length ? recentActivity.map((activity) => (
+                <div key={activity.id} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "var(--space-3)", alignItems: "start", minHeight: "var(--table-row-height)" }}>
+                  <div><strong style={textStyle}>{activity.label}</strong><div style={{ ...mutedStyle, fontSize: "var(--text-caption)", marginTop: "4px" }}>{activity.detail}</div></div><time style={{ ...mutedStyle, fontSize: "var(--text-caption)" }}>{formatDate(activity.date)}</time>
+                </div>
+              )) : <Empty>No recent activity is available.</Empty>}
+            </ListViewport>
           </LayerTheme>
         </div>
 

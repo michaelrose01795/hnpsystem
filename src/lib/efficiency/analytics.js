@@ -1,4 +1,4 @@
-import { calculateTechTotals } from "@/lib/database/efficiency";
+import { calculateOverallTotals, calculateTechTotals } from "@/lib/database/efficiency";
 
 const HOUR_TOLERANCE = 0.02;
 const LONG_CLOCKING_HOURS = 12;
@@ -164,6 +164,8 @@ export function buildPeriodMetrics(entries, target, options) {
     overtimeHours,
     unallocatedHours,
     remainingTargetHours: roundHours(Math.max(totals.targetHours - totals.actualHours, 0)),
+    fullMonthTargetHours: roundHours(target?.monthlyTargetHours || 0),
+    allocationDifference: roundHours(totals.actualHours - totals.allocatedHours),
     targetProgressPct:
       totals.targetHours > 0
         ? roundHours((totals.actualHours / totals.targetHours) * 100)
@@ -171,6 +173,117 @@ export function buildPeriodMetrics(entries, target, options) {
     reconciledEntries: reconciled,
     productiveEntries,
   };
+}
+
+export function aggregateWorkshopMetrics(items) {
+  const rows = (Array.isArray(items) ? items : []).filter((item) => item?.metrics);
+  const overall = calculateOverallTotals(
+    rows.map((item) => ({
+      totals: {
+        ...item.metrics,
+        actualHours: Number(item.metrics.actualHours ?? item.metrics.productiveHours ?? 0),
+      },
+      weight: Number(item.weight ?? 1),
+    }))
+  );
+  const summed = rows.reduce(
+    (totals, item) => {
+      const metrics = item.metrics;
+      totals.loggedHours += Number(metrics.loggedHours || 0);
+      totals.productiveHours += Number(metrics.productiveHours || 0);
+      totals.overtimeHours += Number(metrics.overtimeHours || 0);
+      totals.unallocatedHours += Number(metrics.unallocatedHours || 0);
+      totals.targetHours += Number(metrics.targetHours || 0);
+      totals.fullMonthTargetHours += Number(metrics.fullMonthTargetHours || 0);
+      totals.allocatedHours += Number(metrics.allocatedHours || 0);
+      return totals;
+    },
+    { loggedHours: 0, productiveHours: 0, overtimeHours: 0, unallocatedHours: 0, targetHours: 0, fullMonthTargetHours: 0, allocatedHours: 0 }
+  );
+
+  Object.keys(summed).forEach((key) => { summed[key] = roundHours(summed[key]); });
+  return {
+    ...summed,
+    actualHours: summed.productiveHours,
+    difference: roundHours(summed.productiveHours - summed.targetHours),
+    allocationDifference: roundHours(summed.productiveHours - summed.allocatedHours),
+    remainingTargetHours: roundHours(Math.max(summed.targetHours - summed.productiveHours, 0)),
+    targetProgressPct: summed.targetHours > 0 ? roundHours((summed.productiveHours / summed.targetHours) * 100) : 0,
+    efficiencyPct: overall.efficiencyPct,
+    weightedActual: overall.weightedActual,
+    weightedTarget: overall.weightedTarget,
+    weightedDifference: overall.difference,
+  };
+}
+
+const metricsForConfig = (entries, config, period, anchorDate, referenceDate) => {
+  const userEntries = (Array.isArray(entries) ? entries : []).filter(
+    (entry) => Number(entry?.user_id) === Number(config.userId)
+  );
+  const comparable = buildComparableMetrics(userEntries, config.target, period, anchorDate, referenceDate);
+  return {
+    current: { metrics: comparable.current, weight: config.weight },
+    previous: { metrics: comparable.previous, weight: config.weight },
+  };
+};
+
+export function buildWorkshopComparableMetrics(entries, configs, period, anchorDate, referenceDate = new Date()) {
+  const rows = (Array.isArray(configs) ? configs : []).map((config) =>
+    metricsForConfig(entries, config, period, anchorDate, referenceDate)
+  );
+  const current = aggregateWorkshopMetrics(rows.map((row) => row.current));
+  const previous = aggregateWorkshopMetrics(rows.map((row) => row.previous));
+  return {
+    current,
+    previous,
+    efficiencyChange: roundHours(current.efficiencyPct - previous.efficiencyPct),
+    productiveChange: roundHours(current.productiveHours - previous.productiveHours),
+  };
+}
+
+export function buildWorkshopComparisons(entries, configs, anchorDate, referenceDate = new Date()) {
+  return [["day", "Today"], ["week", "Week"], ["month", "Month"]].map(([key, label]) => ({
+    key,
+    label,
+    ...buildWorkshopComparableMetrics(entries, configs, key, anchorDate, referenceDate),
+  }));
+}
+
+export function buildWorkshopTrend(entries, configs, period, anchorDate, referenceDate = new Date()) {
+  const bounds = getPeriodBounds(period, anchorDate);
+  const cursor = new Date(bounds.start);
+  const points = [];
+  while (cursor < bounds.end) {
+    const date = toYmd(cursor);
+    const dayEntries = (Array.isArray(entries) ? entries : []).filter((entry) => entry?.date === date);
+    const items = (Array.isArray(configs) ? configs : []).map((config) => ({
+      weight: config.weight,
+      metrics: buildPeriodMetrics(
+        dayEntries.filter((entry) => Number(entry.user_id) === Number(config.userId)),
+        config.target,
+        {
+          year: cursor.getFullYear(),
+          month: cursor.getMonth() + 1,
+          period: "day",
+          anchorDate: new Date(cursor),
+          referenceDate,
+          weeklyContractedHours: config.weeklyContractedHours,
+        }
+      ),
+    }));
+    const metrics = aggregateWorkshopMetrics(items);
+    if (dayEntries.length > 0 || period !== "month") {
+      points.push({
+        date,
+        label: cursor.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+        efficiencyPct: metrics.efficiencyPct,
+        productiveHours: metrics.productiveHours,
+        targetHours: metrics.targetHours,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return points;
 }
 
 const buildTargetOptions = (bounds, target, referenceDate) => ({
@@ -249,6 +362,7 @@ export function buildJobAnalysis(entries) {
     if (!groups.has(key)) {
       groups.set(key, {
         key,
+        userId: entry.user_id,
         jobNumber,
         description: entry.job_description || "No description recorded",
         allocatedHours: 0,
@@ -336,6 +450,7 @@ export function buildClockingQualityAlerts(entries, rawClockings = []) {
       alerts.push({
         key: `duplicate-${entry.id}`,
         severity: "warning",
+        userId: entry.user_id,
         title: "Possible duplicate entry",
         detail: `${entry.date} · ${entry.job_number || "No job number"}`,
       });
@@ -344,6 +459,7 @@ export function buildClockingQualityAlerts(entries, rawClockings = []) {
       alerts.push({
         key: `allocation-${entry.id}`,
         severity: "neutral",
+        userId: entry.user_id,
         title: "Missing allocation",
         detail: `${entry.date} · ${entry.job_number || entry.job_description || "Manual entry"}`,
       });
@@ -352,6 +468,7 @@ export function buildClockingQualityAlerts(entries, rawClockings = []) {
       alerts.push({
         key: `long-${entry.id}`,
         severity: "danger",
+        userId: entry.user_id,
         title: "Unusually long clocking",
         detail: `${entry.date} · ${roundHours(entry.hours_spent)}h on ${entry.job_number}`,
       });
@@ -364,6 +481,7 @@ export function buildClockingQualityAlerts(entries, rawClockings = []) {
       alerts.push({
         key: `open-${clocking.id}`,
         severity: "danger",
+        userId: clocking.user_id,
         title: "Missing clock-off",
         detail: `${clocking.job_number || "No job"} · started ${new Date(clocking.clock_in).toLocaleString("en-GB")}`,
       });
@@ -381,6 +499,7 @@ export function buildClockingQualityAlerts(entries, rawClockings = []) {
         alerts.push({
           key: `overlap-${clocking.id}-${next.id}`,
           severity: "danger",
+          userId: clocking.user_id,
           title: "Overlapping clockings",
           detail: `${clocking.job_number} overlaps ${next.job_number}`,
         });

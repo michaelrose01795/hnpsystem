@@ -66,7 +66,13 @@ export default function LoginPageUi(props) {
           }}>
           <div className="login-center-stage">
             <div className="login-brand">
-              <BrandLogo alt="HP Automotive" className="login-logo" />
+              <BrandLogo
+                alt="HP Automotive"
+                className="login-logo"
+                priority
+                sizes="(max-width: 390px) 200px, (max-width: 640px) 230px, (max-width: 820px) 380px, 452px"
+                recolor={false}
+              />
             </div>
             <LoginCard className="login-card--auth" title="Login">
               <form onSubmit={handleDbLogin} className="login-form">
@@ -98,17 +104,14 @@ export default function LoginPageUi(props) {
                     {errorMessage}
                   </p>}
 
-                <Button type="submit" variant="primary" style={{
-              width: "100%"
-            }}>
-                  Login
-                </Button>
-                <Button type="button" variant="ghost" size="xs" onClick={openResetModal} style={{
-              alignSelf: "center",
-              marginTop: "8px"
-            }}>
-                  Reset password
-                </Button>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--layout-card-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
+                  <Button type="submit" variant="primary" style={{ width: "100%" }}>
+                    Login
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }}>
+                    Reset password
+                  </Button>
+                </div>
               </form>
             </LoginCard>
           </div>

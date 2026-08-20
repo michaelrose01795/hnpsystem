@@ -1,4 +1,9 @@
 import { getJobCapacityProgress } from "@/lib/capacity/technicianCapacity";
+import {
+  getDefaultWorkshopAssignment,
+  resolveWorkshopAssignment,
+  WORKSHOP_ASSIGNMENT_TYPES,
+} from "@/lib/clocking/workshopAssignments";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 
 export const CLOCKING_STATUSES = Object.freeze({
@@ -21,6 +26,12 @@ const asTime = (value) => {
 
 const roundHours = (value) => Math.round((Number(value) || 0) * 100) / 100;
 
+const toOptionalHours = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const hours = Number(value);
+  return Number.isFinite(hours) && hours >= 0 ? roundHours(hours) : null;
+};
+
 const durationHours = (start, end, nowMs) => {
   const startMs = asTime(start);
   const endMs = end ? asTime(end) : nowMs;
@@ -37,11 +48,6 @@ const isMotJob = (job) => {
   const status = String(job?.status || "").toLowerCase();
   const categories = Array.isArray(job?.job_categories) ? job.job_categories : [];
   return status.includes("mot") || categories.some((category) => String(category || "").toLowerCase().includes("mot"));
-};
-
-const isMotRole = (role) => {
-  const value = String(role || "").toLowerCase();
-  return value.includes("mot") || value === "tester";
 };
 
 const getAppointment = (job) => {
@@ -71,9 +77,22 @@ const getAllocatedHours = (job, requestId) => {
   const selectedRequest = requestId == null
     ? null
     : requests.find((request) => String(request.request_id) === String(requestId));
-  const selectedHours = Number(selectedRequest?.hours);
-  if (selectedRequest && Number.isFinite(selectedHours) && selectedHours >= 0) {
-    return { hours: roundHours(selectedHours), request: selectedRequest, available: true };
+  const selectedHours = toOptionalHours(selectedRequest?.hours);
+  if (selectedRequest && selectedHours !== null) {
+    return { hours: selectedHours, request: selectedRequest, available: true };
+  }
+
+  // VHC-authorised job requests intentionally store `hours` as NULL; their
+  // allocation remains on the linked vhc_checks row. Do not coerce NULL to
+  // zero or the live card incorrectly reports "No allocation set".
+  const selectedVhcId = selectedRequest?.vhc_item_id;
+  const selectedVhcCheck = (Array.isArray(job?.vhc_checks) ? job.vhc_checks : []).find((check) =>
+    (selectedVhcId != null && String(check?.vhc_id) === String(selectedVhcId)) ||
+    (requestId != null && String(check?.request_id) === String(requestId))
+  );
+  const selectedVhcHours = toOptionalHours(selectedVhcCheck?.labour_hours);
+  if (selectedRequest && selectedVhcCheck && selectedVhcHours !== null) {
+    return { hours: selectedVhcHours, request: selectedRequest, available: true };
   }
 
   const normalisedJob = {
@@ -93,6 +112,37 @@ const jobDescription = (job, request) =>
   job?.type ||
   "No description available";
 
+// A job's customer-facing request lines, in board order. VHC-sourced requests
+// are excluded to match the allocation maths in buildRequestProgress, and the
+// actively-clocked request is hoisted first so the card leads with the work the
+// technician is actually on. Falls back to the single job description.
+const jobDescriptions = (job, activeRequest) => {
+  const requests = (Array.isArray(job?.job_requests) ? job.job_requests : [])
+    .filter((request) => {
+      const source = String(request?.request_source || "").trim().toLowerCase();
+      return !request?.vhc_item_id && !source.includes("vhc");
+    })
+    .sort((a, b) => Number(a?.sort_order || 0) - Number(b?.sort_order || 0));
+
+  const activeId = activeRequest?.request_id;
+  const ordered = activeId == null
+    ? requests
+    : [
+      ...requests.filter((request) => String(request.request_id) === String(activeId)),
+      ...requests.filter((request) => String(request.request_id) !== String(activeId)),
+    ];
+
+  const lines = [];
+  ordered.forEach((request) => {
+    const line = String(request?.description || request?.job_type || "").trim();
+    if (line && !lines.includes(line)) lines.push(line);
+  });
+
+  if (lines.length) return lines;
+  const fallback = jobDescription(job, activeRequest);
+  return fallback ? [fallback] : [];
+};
+
 const compareQueueJobs = (a, b) => {
   const aPosition = Number.isFinite(Number(a?.queue_position)) ? Number(a.queue_position) : Number.MAX_SAFE_INTEGER;
   const bPosition = Number.isFinite(Number(b?.queue_position)) ? Number(b.queue_position) : Number.MAX_SAFE_INTEGER;
@@ -104,13 +154,42 @@ const compareQueueJobs = (a, b) => {
 
 const getLatest = (rows, field) => [...rows].sort((a, b) => (asTime(b?.[field]) || 0) - (asTime(a?.[field]) || 0))[0] || null;
 
+const clockingPairKey = (row) => {
+  const clockIn = asTime(row?.clock_in);
+  if (clockIn === null || row?.user_id == null || row?.job_id == null) return null;
+  return `${row.user_id}:${row.job_id}:${clockIn}`;
+};
+
+// Attendance auto-close historically closed the paired time_records row but
+// could leave job_clocking open. Reconcile the read model from the exact
+// user/job/clock-in pair so stale rows cannot accrue time indefinitely.
+export const reconcileJobClockingsWithTimeRecords = (jobClockings = [], timeRecords = []) => {
+  const closedTimeRecords = new Map();
+  timeRecords.forEach((record) => {
+    if (!record?.clock_out) return;
+    const key = clockingPairKey(record);
+    if (key) closedTimeRecords.set(key, record.clock_out);
+  });
+
+  return jobClockings.map((clocking) => {
+    if (clocking?.clock_out) return clocking;
+    const key = clockingPairKey(clocking);
+    const reconciledClockOut = key ? closedTimeRecords.get(key) : null;
+    return reconciledClockOut
+      ? { ...clocking, clock_out: reconciledClockOut, reconciledFromTimeRecord: true }
+      : clocking;
+  });
+};
+
 export function buildWorkshopBoard(snapshot, now = new Date()) {
   const nowMs = now.getTime();
   const users = snapshot?.users || [];
   const timeRecords = snapshot?.timeRecords || [];
   const jobClockings = snapshot?.jobClockings || [];
   const jobs = snapshot?.jobs || [];
+  const assignments = snapshot?.assignments || [];
   const jobById = new Map(jobs.map((job) => [String(job.id), job]));
+  const assignmentByUserId = new Map(assignments.map((assignment) => [String(assignment.user_id), assignment]));
 
   const rows = users.map((user) => {
     const userKey = String(user.user_id);
@@ -121,6 +200,11 @@ export function buildWorkshopBoard(snapshot, now = new Date()) {
     const currentJob = activeClocking ? jobById.get(String(activeClocking.job_id)) || activeClocking.job || null : null;
     const motJob = currentJob ? isMotJob(currentJob) : false;
     const hasClockedToday = userTimeRecords.length > 0;
+    const defaultWorkshopAssignment = getDefaultWorkshopAssignment(user.role);
+    const workshopAssignment = resolveWorkshopAssignment(
+      user.role,
+      assignmentByUserId.get(userKey)?.assignment_type
+    );
 
     let status = CLOCKING_STATUSES.NOT_CLOCKED;
     if (activeClocking) status = motJob ? CLOCKING_STATUSES.ON_MOT : CLOCKING_STATUSES.IN_PROGRESS;
@@ -162,6 +246,7 @@ export function buildWorkshopBoard(snapshot, now = new Date()) {
       id: nextJob.id,
       jobNumber: nextJob.job_number,
       description: jobDescription(nextJob, nextRequest),
+      descriptions: jobDescriptions(nextJob, nextRequest),
       type: nextRequest?.job_type || nextJob.type || "Service",
       plannedHours: nextAllocation,
       scheduledTime: nextAppointment?.scheduled_time || null,
@@ -172,13 +257,17 @@ export function buildWorkshopBoard(snapshot, now = new Date()) {
       userId: user.user_id,
       name: [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email || `Technician ${user.user_id}`,
       role: user.role || "Technician",
-      isMotRole: isMotRole(user.role),
+      avatarUrl: user.photo_url || "",
+      isMotRole: workshopAssignment === WORKSHOP_ASSIGNMENT_TYPES.MOT,
+      workshopAssignment,
+      defaultWorkshopAssignment,
       slug: generateTechnicianSlug(user.first_name, user.last_name, user.user_id) || String(user.user_id),
       status,
       hasClockedToday,
       currentJobId: currentJob?.id || activeClocking?.job_id || null,
       currentJobNumber: activeClocking?.job_number || currentJob?.job_number || null,
       currentDescription: activeClocking ? jobDescription(currentJob, allocation.request) : null,
+      currentDescriptions: activeClocking ? jobDescriptions(currentJob, allocation.request) : [],
       clockingId: activeClocking?.id || null,
       activityStartedAt: activeClocking?.clock_in || activeTimeRecord?.clock_in || null,
       activityHours: activeClocking ? durationHours(activeClocking.clock_in, null, nowMs) : activeTimeRecord ? durationHours(activeTimeRecord.clock_in, null, nowMs) : 0,

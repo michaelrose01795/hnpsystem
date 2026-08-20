@@ -47,6 +47,23 @@ const USER_COLUMNS_WITHOUT_SIDEBAR_ACCESS = USER_COLUMN_LIST.filter(
   (column) => column !== "sidebar_access"
 ).join(", ");
 
+// Browser-side technician rosters use the anon Supabase client. Keep that
+// query aligned with the users-table column grant in the security migration so
+// no password, payroll, address, emergency-contact or document data is ever
+// requested or exposed to the browser.
+const PUBLIC_STAFF_DIRECTORY_COLUMNS = [
+  "user_id",
+  "first_name",
+  "last_name",
+  "email",
+  "role",
+  "job_title",
+  "department",
+  "photo_url",
+  "contracted_hours",
+  "is_active",
+].join(", ");
+
 const isMissingSidebarAccessColumnError = (error) =>
   Boolean(error?.message && /users\.sidebar_access|sidebar_access/i.test(error.message) && /does not exist/i.test(error.message));
 
@@ -153,14 +170,12 @@ const fetchUsersByRoles = async (roles) => {
     .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
     .join(",");
   const roleFilter = `role.in.(${escapedList})`;
-  const { data, error } = await withOptionalSidebarAccessColumn((columns) =>
-    db
-      .from(USERS_TABLE)
-      .select(columns)
-      .eq("is_active", true)
-      .or(roleFilter)
-      .order("first_name", { ascending: true })
-  );
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .select(PUBLIC_STAFF_DIRECTORY_COLUMNS)
+    .eq("is_active", true)
+    .or(roleFilter)
+    .order("first_name", { ascending: true });
   if (error) {
     throw new Error(`Failed to fetch users by role: ${error.message}`);
   }

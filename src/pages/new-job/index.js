@@ -366,18 +366,15 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      const { data, error } = await supabase.
-      from("users").
-      select("user_id, signature_file_url, signature_storage_path").
-      eq("user_id", dbUserId).
-      maybeSingle();
+      const response = await fetch(`/api/profile/signature?userId=${encodeURIComponent(dbUserId)}`);
+      const payload = await response.json().catch(() => ({}));
 
       if (!cancelled) {
-        if (error) {
-          console.warn("Signature lookup failed", error.message);
+        if (!response.ok) {
+          console.warn("Signature lookup failed", payload?.message || response.statusText);
           setUserSignature(null);
         } else {
-          setUserSignature(data || null);
+          setUserSignature(payload?.data || null);
         }
       }
     };

@@ -2,23 +2,38 @@
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { getSession, signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
-import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
-import LoginDropdown from "@/components/LoginDropdown";
 import BrandLogo from "@/components/BrandLogo";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
-import { warmNewsUpdatesCache } from "@/lib/database/newsUpdates";
-import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+
+const LoginDropdown = dynamic(() => import("@/components/LoginDropdown"));
+
+const EMPTY_LOGIN_ROSTER = {
+  usersByRole: {},
+  usersByRoleDetailed: {},
+  allUsers: [],
+  isLoading: true,
+};
+
+async function fetchLoginRoster(signal) {
+  const response = await fetch("/api/users/roster", { signal, credentials: "include" });
+  const payload = await response.json();
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.message || "Failed to load login roster");
+  }
+  return payload.data || {};
+}
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -29,7 +44,7 @@ const LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY = "hnp-login-redirect-in-progress";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
 const warmStaffLandingPage = () =>
-  warmNewsUpdatesCache().catch((error) => {
+  import("@/lib/database/newsUpdates").then(({ warmNewsUpdatesCache }) => warmNewsUpdatesCache()).catch((error) => {
     console.error("Failed to warm news feed cache:", error);
   });
 const STAFF_DEV_LOGIN_HIDDEN_CATEGORIES = new Set(["customers"]);
@@ -169,12 +184,13 @@ export default function LoginPage() {
   const devLogin = userContext?.devLogin;
   const logout = userContext?.logout;
   const logoutInProgress = userContext?.logoutInProgress;
+  const [rosterState, setRosterState] = useState(EMPTY_LOGIN_ROSTER);
   const {
     usersByRole,
     usersByRoleDetailed,
     allUsers,
     isLoading: rosterLoading
-  } = useRoster();
+  } = rosterState;
   const { setTemporaryOverride, commitUserTheme } = useTheme();
 
   const router = useRouter();
@@ -216,6 +232,41 @@ export default function LoginPage() {
   useEffect(() => {
     clearAppShellLoading();
   }, []);
+
+  useEffect(() => {
+    if (!allowDevUserSelection) {
+      setRosterState((current) => ({ ...current, isLoading: false }));
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const load = () => {
+      void fetchLoginRoster(controller.signal)
+        .then((data) => {
+          setRosterState({
+            usersByRole: data.usersByRole || {},
+            usersByRoleDetailed: data.usersByRoleDetailed || {},
+            allUsers: data.allUsers || [],
+            isLoading: false,
+          });
+        })
+        .catch((error) => {
+          if (error.name === "AbortError") return;
+          console.error("Failed to load developer login roster", error);
+          setRosterState((current) => ({ ...current, isLoading: false }));
+        });
+    };
+    const idleId = typeof window.requestIdleCallback === "function"
+      ? window.requestIdleCallback(load, { timeout: 1200 })
+      : null;
+    const timerId = idleId === null ? window.setTimeout(load, 0) : null;
+
+    return () => {
+      controller.abort();
+      if (idleId !== null) window.cancelIdleCallback(idleId);
+      if (timerId !== null) window.clearTimeout(timerId);
+    };
+  }, [allowDevUserSelection]);
 
   useEffect(() => {
     // Warm the default staff landing-page bundle while credentials are entered,
@@ -939,23 +990,5 @@ export default function LoginPage() {
 
 }
 
-export async function getServerSideProps() {
-  if (!canShowDevLogin()) {
-    return { props: {} };
-  }
-
-  try {
-    return {
-      props: {
-        initialRosterData: await buildRosterPayload(),
-      },
-    };
-  } catch (error) {
-    console.error("Failed to preload dev login roster", error);
-    return {
-      props: {
-        initialRosterData: EMPTY_ROSTER_PAYLOAD,
-      },
-    };
-  }
-}
+LoginPage.lightweightApp = true;
+LoginPage.enableDevLogin = canShowDevLogin();

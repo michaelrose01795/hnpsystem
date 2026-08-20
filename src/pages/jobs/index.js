@@ -3,7 +3,7 @@
 // Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"; // import React and hooks
+import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredValue } from "react"; // import React and hooks
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
@@ -622,7 +622,8 @@ export default function ViewJobCards() {
   carryStatusCounts :
   orderStatusCounts;
   const activeStatusFilter = activeStatusFilters[activeTab];
-  const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
+  const immediateSearchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
+  const searchValue = useDeferredValue(immediateSearchValue);
   const searchPlaceholder = isOrdersTab ? "Search orders..." : "Search jobs...";
   const emptyStateMessage = jobsLoadError && jobs.length === 0 ?
   jobsLoadError :
@@ -644,41 +645,28 @@ export default function ViewJobCards() {
     return baseTabs;
   }, [canViewOrdersTab]);
 
-  // For Orders tab, show all orders regardless of status filter
-  const filteredByStatus = isOrdersTab ?
-  baseJobs :
-  activeStatusFilter === "All" ?
-  baseJobs :
-  baseJobs.filter((job) => {
-    const jobStatus = job.status || "Unknown";
-    return jobStatus === activeStatusFilter;
-  });
+  const sortedJobs = useMemo(() => {
+    // Orders ignore the job-status filter. Defer search-driven filtering so
+    // typing stays responsive even when a large operational list is mounted.
+    const filteredByStatus = isOrdersTab || activeStatusFilter === "All"
+      ? baseJobs
+      : baseJobs.filter((job) => (job.status || "Unknown") === activeStatusFilter);
+    const filteredJobs = searchValue
+      ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
+      : filteredByStatus;
+    const getSortValue = (job) => {
+      if (job?.appointment?.date && job?.appointment?.time) {
+        return new Date(`${job.appointment.date}T${job.appointment.time}`);
+      }
+      if (job?.appointment?.date) return new Date(`${job.appointment.date}T00:00:00`);
+      if (job?.createdAt) return new Date(job.createdAt);
+      return new Date(0);
+    };
 
-  const filteredJobs = searchValue ?
-  filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue)) :
-  filteredByStatus;
-
-  const getSortValue = (job) => {
-    if (job?.appointment?.date && job?.appointment?.time) {
-      return new Date(`${job.appointment.date}T${job.appointment.time}`);
-    }
-    if (job?.appointment?.date) {
-      return new Date(`${job.appointment.date}T00:00:00`);
-    }
-    if (job?.createdAt) {
-      return new Date(job.createdAt);
-    }
-    return new Date(0);
-  };
-
-  const sortedJobs = filteredJobs.
-  slice().
-  sort((a, b) => {
-    if (isOrdersTab) {
-      return getSortValue(a) - getSortValue(b);
-    }
-    return getSortValue(b) - getSortValue(a);
-  });
+    return filteredJobs.slice().sort((a, b) => (
+      isOrdersTab ? getSortValue(a) - getSortValue(b) : getSortValue(b) - getSortValue(a)
+    ));
+  }, [activeStatusFilter, baseJobs, isOrdersTab, searchValue]);
 
   const popupStatusLabel = useMemo(() => {
     if (!popupJob) return "";

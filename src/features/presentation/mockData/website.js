@@ -76,6 +76,32 @@ export const buildWebsiteProfileResponse = () => {
       occurred_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
     },
   ];
+  // The customer portal inbox renders activity-shaped rows (event_id +
+  // activity_type + activity_payload.body), not the internal messages table —
+  // feeding it `messages` rows leaves every bubble without a React key.
+  const portalMessages = [
+    {
+      event_id: "demo-message-staff-welcome",
+      activity_type: "message_staff",
+      activity_source: "presentation",
+      activity_payload: { body: "Hi Alex — your MOT is due soon. Would you like us to book it in?" },
+      occurred_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      event_id: "demo-message-customer-reply",
+      activity_type: "message_customer",
+      activity_source: "presentation",
+      activity_payload: { body: "Yes please — any morning next week works for me." },
+      occurred_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      event_id: "demo-message-staff-confirm",
+      activity_type: "message_staff",
+      activity_source: "presentation",
+      activity_payload: { body: "Booked for Tuesday at 9am. We'll send a reminder the day before." },
+      occurred_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
   const vhcReports = getMockRows("vhc_reports") || [];
   const vhcByJob = Object.fromEntries(
     jobs.flatMap((job) => {
@@ -122,18 +148,48 @@ export const buildWebsiteProfileResponse = () => {
     invoices,
     appointments,
     accounts: getMockRows("accounts") || [],
-    paymentMethods: [{ id: "pm-demo-001", brand: "Visa", last4: "4242", expiry: "12/29" }],
-    bookingRequests: appointments,
+    // Shape must match public.customer_payment_methods — the portal keys on
+    // method_id and reads card_brand/expiry_month/expiry_year.
+    paymentMethods: [
+      {
+        method_id: "pm-demo-001",
+        customer_id: customerId,
+        nickname: "Personal card",
+        card_brand: "Visa",
+        last4: "4242",
+        expiry_month: 12,
+        expiry_year: 2029,
+        is_default: true,
+      },
+    ],
+    // Shape must match public.job_booking_requests — the portal keys on
+    // request_id and reads description/submitted_at/status.
+    bookingRequests: appointments.map((appt, index) => ({
+      request_id: appt.request_id || `demo-booking-${appt.appointment_id || appt.id || index + 1}`,
+      job_id: appt.job_id || null,
+      customer_id: customerId,
+      vehicle_id: appt.vehicle_id || null,
+      description: appt.description || appt.appointment_type || "Booking request",
+      status: appt.status || "pending",
+      submitted_at: appt.created_at || appt.appointment_date || new Date().toISOString(),
+    })),
     jobHistory: jobs,
     vhcByJob,
     vhcDeclinations: [],
     vhcMedia: [],
     vhcShareLinks,
+    // Shape must match public.account_transactions (see schemaReference.sql):
+    // the portal keys rows on transaction_id and reads transaction_date/type,
+    // so a mock missing those renders keyless list items and blank metadata.
     transactions: invoices.map((invoice) => ({
-      id: `txn-${invoice.invoice_number}`,
+      transaction_id: `txn-${invoice.invoice_number}`,
       invoice_number: invoice.invoice_number,
       amount: invoice.invoice_total,
-      transaction_type: invoice.paid ? "payment" : "invoice",
+      type: invoice.paid ? "Credit" : "Debit",
+      description: `Invoice ${invoice.invoice_number}`,
+      job_number: invoice.job_number || null,
+      payment_method: invoice.paid ? "Card" : null,
+      transaction_date: invoice.invoice_date || invoice.created_at,
       created_at: invoice.invoice_date || invoice.created_at,
     })),
     jobStatusHistory: activity,
@@ -143,7 +199,7 @@ export const buildWebsiteProfileResponse = () => {
       sent_at: row.completed_at || new Date().toISOString(),
     })),
     activity,
-    messages: getMockRows("messages") || [],
+    messages: portalMessages,
   };
 };
 

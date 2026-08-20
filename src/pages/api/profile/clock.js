@@ -67,6 +67,19 @@ async function autoCloseStaleRecord(record) {
   if (error) {
     console.error("Failed to auto-close stale record:", record.id, error);
   } else {
+    if (record.job_id && record.user_id && record.clock_in) {
+      const { error: jobClockingError } = await supabase
+        .from("job_clocking")
+        .update({ clock_out: clockOutTime, updated_at: new Date().toISOString() })
+        .eq("user_id", record.user_id)
+        .eq("job_id", record.job_id)
+        .eq("clock_in", record.clock_in)
+        .is("clock_out", null);
+
+      if (jobClockingError) {
+        console.error("Failed to auto-close paired job clocking:", jobClockingError);
+      }
+    }
     console.log(`Auto-closed stale record ${record.id} from ${record.date} (${hoursWorked} hrs)`);
   }
 
@@ -184,7 +197,7 @@ export default async function handler(req, res) {
       // Find ANY active (un-clocked-out) record for this user
       const { data: activeRecord, error } = await supabase
         .from("time_records")
-        .select("id, user_id, date, clock_in, clock_out, hours_worked, notes")
+        .select("id, user_id, job_id, job_number, date, clock_in, clock_out, hours_worked, notes")
         .eq("user_id", userId)
         .is("clock_out", null)
         .order("clock_in", { ascending: false })
@@ -237,7 +250,7 @@ export default async function handler(req, res) {
         // Check for ANY active (un-clocked-out) record across all dates
         const { data: existing } = await supabase
           .from("time_records")
-          .select("id, date, clock_in")
+          .select("id, user_id, job_id, job_number, date, clock_in")
           .eq("user_id", userId)
           .is("clock_out", null)
           .order("clock_in", { ascending: false })

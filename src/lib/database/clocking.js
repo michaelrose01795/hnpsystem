@@ -33,6 +33,23 @@ const autoCloseStaleRecord = async (record) => {
     return { success: false, error };
   }
 
+  // Job attendance creates a matching job_clocking row with the same
+  // user/job/clock-in tuple. Close that row at the same time so workshop
+  // dashboards cannot continue treating an auto-closed session as active.
+  if (record.job_id && record.user_id && record.clock_in) {
+    const { error: jobClockingError } = await supabase
+      .from("job_clocking")
+      .update({ clock_out: clockOutTime, updated_at: new Date().toISOString() })
+      .eq("user_id", record.user_id)
+      .eq("job_id", record.job_id)
+      .eq("clock_in", record.clock_in)
+      .is("clock_out", null);
+
+    if (jobClockingError) {
+      console.error("Failed to auto-close paired job clocking:", jobClockingError);
+    }
+  }
+
   console.log(`Auto-closed stale record ${record.id} from ${record.date} (${hoursWorked} hrs)`);
   return { success: true, closedRecord: { ...record, clock_out: clockOutTime, hours_worked: hoursWorked, notes } };
 };

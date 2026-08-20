@@ -131,10 +131,6 @@ export default function CreateJobCardPageUi(props) {
     handlePaymentTypeChange(index, value);
     if (value === "Warranty") setJobSource("Warranty");
   };
-  const moneyInputStyle = {
-    width: "118px",
-    flexShrink: 0
-  };
   const yesNoToggleStyle = {
     flexWrap: "nowrap",
     minWidth: "max-content"
@@ -142,6 +138,11 @@ export default function CreateJobCardPageUi(props) {
   const yesNoButtonStyle = {
     flex: "1 1 0",
     minWidth: "64px"
+  };
+  const linkedJobTabStyle = {
+    width: "48px", // Fix every linked-job control to the compact rendered width of the original Job1 tab.
+    minWidth: "48px",
+    flex: "0 0 48px"
   };
   const moreFieldStyle = {
     display: "flex",
@@ -204,12 +205,14 @@ export default function CreateJobCardPageUi(props) {
           }}>
                 {jobCardSelectorOptions.map(option => {
               const isActive = activeTabIndex === option.index;
-              return <button key={option.id} type="button" role="tab" onClick={() => setActiveTabIndex(option.index)} aria-selected={isActive} data-tone="default" className={`tab-api__item${isActive ? " is-active" : ""}`}>
+              return <button key={option.id} type="button" role="tab" onClick={() => setActiveTabIndex(option.index)} aria-selected={isActive} data-tone="default" className={`tab-api__item${isActive ? " is-active" : ""}`} style={linkedJobTabStyle}>
                       {option.label}
                     </button>;
             })}
-                {!isSubJobMode && <button type="button" onClick={addNewJobTab} data-tone="default" className="tab-api__item job-cards-create-add-linked-button" title="Add another linked job">
-                    +
+                {!isSubJobMode && <button type="button" onClick={addNewJobTab} data-tone="default" className="tab-api__item job-cards-create-add-linked-button" title="Add another linked job" aria-label="Add another linked job" style={linkedJobTabStyle}>
+                    <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 4.5V19.5M4.5 12H19.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
                   </button>}
               </div>
 
@@ -368,23 +371,21 @@ export default function CreateJobCardPageUi(props) {
                   </div>
                 </div>
 
-                <div className="job-cards-create-aligned-row job-cards-create-job-row--source">
-                  <label>
-                    Job Source
-                  </label>
-                  <div className="tab-api tab-api--wrap">
-                    {["Retail", "Warranty"].map(src => <button key={src} type="button" aria-pressed={jobSource === src} data-tone="default" className={`tab-api__item${jobSource === src ? " is-active" : ""}`} onClick={() => setJobSource(src)}>
-                        {src}
-                      </button>)}
-                  </div>
-                </div>
-
                 {/* Mobile Mechanic eligibility — evaluates the current
                     customer + vehicle + detected job types and exposes a
                     Yes/No toggle gated by the eligibility verdict.
                     Customer postcode drives a drive-time lookup inside the
                     component; no extra API wiring is needed here. */}
-                <MobileMechanicEligibility customer={customerForm} vehicle={vehicle} jobDetections={jobDetections} jobCategories={jobCategories} isMobileMechanic={isMobileMechanic} onSelectionChange={setIsMobileMechanic} />
+                <MobileMechanicEligibility customer={customerForm} vehicle={vehicle} jobDetections={jobDetections} jobCategories={jobCategories} isMobileMechanic={isMobileMechanic} onSelectionChange={setIsMobileMechanic} leadingControl={<div className="job-cards-create-aligned-row job-cards-create-job-row--source">
+                    <label>
+                      Job Source
+                    </label>
+                    <div className="tab-api tab-api--wrap">
+                      {["Retail", "Warranty"].map(src => <button key={src} type="button" aria-pressed={jobSource === src} data-tone="default" className={`tab-api__item${jobSource === src ? " is-active" : ""}`} onClick={() => setJobSource(src)}>
+                          {src}
+                        </button>)}
+                    </div>
+                  </div>} />
               </div>
             </LayerTheme>
 
@@ -688,7 +689,23 @@ export default function CreateJobCardPageUi(props) {
                         h
                       </span>
                     </div>
-                    <input type="number" min="0" step="0.01" value={req.setPrice ?? req.price ?? ""} onChange={e => updateRequestField(i, "setPrice", e.target.value)} placeholder="Cost" aria-label={`Request ${i + 1} cost`} className="app-input" style={moneyInputStyle} />
+                    <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                width: "100px", // Holds a five-digit cost input and its fixed currency suffix without widening the request row.
+                flexShrink: 0
+              }}>
+                      <input type="number" min="0" step="0.01" value={req.setPrice ?? req.price ?? ""} onChange={e => updateRequestField(i, "setPrice", e.target.value)} placeholder="Cost" aria-label={`Request ${i + 1} cost`} className="app-input" style={{
+                  width: "82px" // Fits a value such as 10000 while keeping the cost control compact.
+                }} />
+                      <span style={{
+                  pointerEvents: "none",
+                  flexShrink: 0
+                }}>
+                        £
+                      </span>
+                    </div>
                     {/* Open the Question Prompts helper for this specific
                         request row. Disabled when the request text is empty
                         so advisors don't hit it by mistake — an empty
@@ -802,13 +819,20 @@ export default function CreateJobCardPageUi(props) {
           onClose={() => setMoreRequestIndex(null)}
           ariaLabel={`Request ${moreRequestIndex + 1} details`}
           cardStyle={{
-        width: "100%",
-        maxWidth: "760px"
+        width: "min(100%, 760px)",
+        padding: "var(--page-card-padding)"
       }}>
-              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
                 <div className="app-popup-compact-header">
                   <h3>Request {moreRequestIndex + 1} Details</h3>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => setMoreRequestIndex(null)}>Close</Button>
+                  <div className="app-popup-compact-header__actions">
+                    <Button type="button" size="sm" onClick={() => setMoreRequestIndex(null)}>Done</Button>
+                    <Button type="button" variant="danger" size="sm" onClick={() => {
+                  handleRemoveRequest(moreRequestIndex);
+                  setMoreRequestIndex(null);
+                }}>Remove Request</Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setMoreRequestIndex(null)}>Close</Button>
+                  </div>
                 </div>
                 <div style={moreFieldStyle}>
                   <label>Request Description</label>
@@ -852,13 +876,6 @@ export default function CreateJobCardPageUi(props) {
                 <div style={moreFieldStyle}>
                   <label>Internal Notes</label>
                   <textarea value={moreRequest.noteText || ""} onChange={e => updateRequestField(moreRequestIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                  <Button type="button" variant="danger" onClick={() => {
-                handleRemoveRequest(moreRequestIndex);
-                setMoreRequestIndex(null);
-              }}>Remove Request</Button>
-                  <Button type="button" onClick={() => setMoreRequestIndex(null)}>Done</Button>
                 </div>
               </div>
           </PopupModal>}
@@ -1074,9 +1091,23 @@ export default function CreateJobCardPageUi(props) {
             html.staff-scope .job-cards-create-mobile-eligibility-grid {
               display: grid !important;
               grid-template-rows: subgrid;
-              grid-row: 4 / span 6;
+              grid-row: 3 / span 6;
               row-gap: 12px;
               min-width: 0;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__controls {
+              grid-row: 1;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__controls > .job-cards-create-job-row--source {
+              grid-column: 1;
+              grid-row: 1;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__controls > .job-cards-create-mobile-eligibility-grid__choice {
+              grid-column: 2;
+              grid-row: 1;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__rules {
@@ -1091,19 +1122,19 @@ export default function CreateJobCardPageUi(props) {
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(1) {
-              grid-row: 1;
-            }
-
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(2) {
               grid-row: 2;
             }
 
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(3) {
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(2) {
               grid-row: 3;
             }
 
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(4) {
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(3) {
               grid-row: 4;
+            }
+
+            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(4) {
+              grid-row: 5;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-detail {
@@ -1111,10 +1142,6 @@ export default function CreateJobCardPageUi(props) {
               align-items: center;
               gap: var(--space-sm);
               box-sizing: border-box;
-            }
-
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__choice {
-              grid-row: 5;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__message {

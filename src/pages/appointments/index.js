@@ -19,6 +19,7 @@ import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Sha
 import supabase from "@/lib/database/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
 import { invalidateCache } from "@/lib/database/queryCache"; // clear stale cache after mutations
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with auto-refresh
@@ -601,31 +602,8 @@ export default function Appointments() {
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
     try {
-      const { data, error } = await supabase.
-      from("hr_absences").
-      select(`
-          absence_id,
-          type,
-          start_date,
-          end_date,
-          notes,
-          approval_status,
-          user:user_id(
-            user_id,
-            first_name,
-            last_name,
-            email,
-            role,
-            contracted_hours
-          )
-        `).
-      eq("approval_status", "Approved").
-      lte("start_date", endDate).
-      gte("end_date", startDate);
-
-      if (error) throw error;
-
-      const map = buildStaffAbsenceMap(data || [], dates[0], dates[dates.length - 1]);
+      const data = await fetchApprovedStaffAbsences({ startDate, endDate });
+      const map = buildStaffAbsenceMap(data, dates[0], dates[dates.length - 1]);
       setStaffAbsences(map);
     } catch (error) {
       console.error("Error fetching staff absences:", error);

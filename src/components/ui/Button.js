@@ -1,6 +1,6 @@
 // file location: src/components/ui/Button.js
 // Standard button component using the .app-btn class system.
-// Variants: primary (default), secondary, ghost, danger
+// Variants: primary (default), secondary, ghost, danger, theme
 // Sizes: default, sm, xs
 // Shape: default (rounded), pill
 //

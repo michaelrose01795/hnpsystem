@@ -1,9 +1,8 @@
 // file location: src/lib/database/efficiency.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { getWorkshopClockingUsers } from "@/lib/database/workshopClocking";
 
 const db = getDatabaseClient();
-
-const TECH_ROLES = ["Techs", "MOT Tester"];
 
 const DEFAULT_TARGET_HOURS = 160;
 // Matches tech_efficiency_targets.weight in schemaReference.sql.
@@ -84,16 +83,7 @@ const normalizeEfficiencyEntry = (row = {}) => {
  * Queries by role so results remain correct if names change.
  */
 export async function getEfficiencyTechnicians() {
-  const { data, error } = await db
-    .from("users")
-    .select("user_id, first_name, last_name, role, contracted_hours")
-    .in("role", TECH_ROLES)
-    .eq("is_active", true)
-    .order("first_name", { ascending: true });
-
-  if (error) throw error;
-
-  return data || [];
+  return getWorkshopClockingUsers();
 }
 
 /**
@@ -479,6 +469,22 @@ export async function lookupEfficiencyJob(jobNumber) {
 }
 
 export async function getOvertimeAsEfficiency(userIds, year, month) {
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams({
+      userIds: (userIds || []).join(","),
+      year: String(year),
+      month: String(month),
+    });
+    const response = await fetch(`/api/efficiency/overtime-sessions?${params.toString()}`, {
+      credentials: "include",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      throw new Error(payload?.message || "Unable to load overtime efficiency data.");
+    }
+    return Array.isArray(payload.data) ? payload.data : [];
+  }
+
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endMonth = month === 12 ? 1 : month + 1;
   const endYear = month === 12 ? year + 1 : year;

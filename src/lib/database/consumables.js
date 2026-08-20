@@ -1,5 +1,6 @@
 // file location: src/lib/database/consumables.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { normalizeConsumableRequestStatus } from "@/lib/consumableRequests";
 
 const supabase = getDatabaseClient();
 
@@ -45,6 +46,10 @@ const consumablesTrackerSelect = (includeStockQuantity = true) => `
     unit_cost,
     total_value,
     supplier
+  ),
+  workshop_consumable_usage (
+    quantity,
+    used_at
   )
 `;
 
@@ -217,6 +222,7 @@ export async function listConsumablesForTracker() {
       notes: row.notes ?? null,
       latestOrder: null,
       orderHistory: [],
+      usageHistory: [],
     };
 
     if (rawName) {
@@ -288,6 +294,16 @@ export async function listConsumablesForTracker() {
       row.workshop_consumable_orders.forEach(addOrderCandidate);
     }
 
+    if (row.workshop_consumable_usage && Array.isArray(row.workshop_consumable_usage)) {
+      row.workshop_consumable_usage.forEach((usage) => {
+        if (!usage.used_at) return;
+        existing.usageHistory.push({
+          quantity: toNumber(usage.quantity),
+          usedAt: usage.used_at,
+        });
+      });
+    }
+
     const lastOrderDate = parseDate(row.last_order_date);
     if (lastOrderDate) {
       const quantity = toNumber(row.last_order_quantity ?? row.lastOrderQuantity);
@@ -351,6 +367,9 @@ export async function listConsumablesForTracker() {
       isRequired: entry.isRequired,
       notes: entry.notes,
       orderHistory,
+      usageHistory: entry.usageHistory
+        .slice()
+        .sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime()),
     };
   });
 
@@ -451,20 +470,70 @@ export async function addConsumableOrder(
 }
 
 export async function listConsumableRequestRows() {
-  const { data, error } = await supabase
+  let result = await supabase
     .from("workshop_consumable_requests")
-    .select("*")
+    .select(`
+      *,
+      consumable:workshop_consumables!workshop_consumable_requests_consumable_id_fkey (
+        id,
+        item_name
+      )
+    `)
     .order("requested_at", { ascending: false });
+
+  if (["42703", "PGRST200", "PGRST204"].includes(String(result.error?.code || "").toUpperCase())) {
+    result = await supabase
+      .from("workshop_consumable_requests")
+      .select("*")
+      .order("requested_at", { ascending: false });
+  }
+
+  const { data, error } = result;
 
   if (error) throw error;
   return data || [];
 }
 
 export async function createConsumableRequestRows(rows = []) {
-  const { data, error } = await supabase
+  const { data: trackerRows, error: trackerError } = await supabase
+    .from("workshop_consumables")
+    .select("id, item_name");
+
+  if (trackerError) throw trackerError;
+
+  const trackerIdsByName = new Map();
+  (trackerRows || []).forEach((item) => {
+    const key = normalizeName(item.item_name).replace(/\s+/g, "");
+    const ids = trackerIdsByName.get(key) || [];
+    ids.push(item.id);
+    trackerIdsByName.set(key, ids);
+  });
+
+  const linkedRows = rows.map((row) => {
+    if (row.consumable_id) return row;
+    const matches = trackerIdsByName.get(normalizeName(row.item_name).replace(/\s+/g, "")) || [];
+    return matches.length === 1 ? { ...row, consumable_id: matches[0] } : row;
+  });
+
+  let result = await supabase
     .from("workshop_consumable_requests")
-    .insert(rows)
+    .insert(linkedRows)
     .select("*");
+
+  if (String(result.error?.code || "").toUpperCase() === "PGRST204" || String(result.error?.code || "").toUpperCase() === "42703") {
+    const compatibilityRows = linkedRows.map((row) => {
+      const compatibleRow = { ...row };
+      delete compatibleRow.consumable_id;
+      delete compatibleRow.catalog_consumable_id;
+      return compatibleRow;
+    });
+    result = await supabase
+      .from("workshop_consumable_requests")
+      .insert(compatibilityRows)
+      .select("*");
+  }
+
+  const { data, error } = result;
 
   if (error) throw error;
   return data || [];
@@ -478,7 +547,7 @@ export async function createConsumableReorderRequest({ sourceRequestId, consumab
     .single();
 
   if (sourceError) throw sourceError;
-  if (sourceRequest.status !== "arrived") {
+  if (normalizeConsumableRequestStatus(sourceRequest.status) !== "arrived") {
     throw new Error("Only an arrived request can be reordered.");
   }
 
