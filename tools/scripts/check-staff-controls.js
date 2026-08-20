@@ -16,6 +16,7 @@ const path = require("path");
 
 const ROOT = process.cwd();
 const SEARCH_ROOTS = [
+  "src/components/popups",
   "src/components/page-ui",
   "src/pages",
 ];
@@ -27,10 +28,17 @@ const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 // Transitional ceiling for legacy controls. Lower counts as files are migrated.
 // Do not increase this map. New files default to 0.
 const MIGRATION_BASELINE = new Map([
+  ["src/components/popups/CheckSheetPopup.js", 3],
+  ["src/components/popups/ConfirmationDialog.js", 2],
+  ["src/components/popups/ExistingCustomerPopup.js", 1],
+  ["src/components/popups/InvoiceBuilderPopup.js", 10],
+  ["src/components/popups/NewCustomerPopup.js", 1],
+  ["src/components/popups/NextActionPrompt.js", 7],
+  ["src/components/popups/Popup.js", 1],
   ["src/components/page-ui/accounts/payslips/payslips-ui.js", 3],
   ["src/components/page-ui/accounts/reports/accounts-reports-ui.js", 2],
   ["src/components/page-ui/admin/users/admin-users-ui.js", 1],
-  ["src/components/page-ui/appointments/appointments-ui.js", 4],
+  ["src/components/page-ui/appointments/appointments-ui.js", 3],
   ["src/components/page-ui/clocking/clocking-technician-slug-ui.js", 3],
   ["src/components/page-ui/dev/dev-status-snapshot-ui.js", 2],
   ["src/components/page-ui/dev/dev-user-diagnostic-ui.js", 4],
@@ -71,7 +79,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/hr/performance.js", 1],
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
-  ["src/pages/job-cards/[jobNumber].js", 45],
+  ["src/pages/job-cards/[jobNumber].js", 44],
   ["src/pages/messages/index.js", 2],
   ["src/pages/new-order/[orderNumber].js", 1],
   ["src/pages/password-reset/new.js", 2],
@@ -245,8 +253,60 @@ if (quickNoteStart < 0 || quickNoteEnd < 0) {
   }
 }
 
+// The appointments day-jobs table is rendered through a body-level portal.
+// Keep its controls on the same canonical table/badge/layer families as page
+// content so global density and theme changes reach both locations.
+const appointmentsUiPath = "src/components/page-ui/appointments/appointments-ui.js";
+const appointmentsUiSource = fs.readFileSync(path.join(ROOT, appointmentsUiPath), "utf8");
+const dayJobsStart = appointmentsUiSource.indexOf('ariaLabel="Jobs for the selected day"');
+const dayJobsEnd = appointmentsUiSource.indexOf("</PopupModal>", dayJobsStart);
+
+if (dayJobsStart < 0 || dayJobsEnd < 0) {
+  violations.push(`${appointmentsUiPath}: day-jobs PopupModal contract could not be located`);
+} else {
+  const dayJobsPopup = appointmentsUiSource.slice(dayJobsStart, dayJobsEnd);
+  const requiredFragments = [
+    '<LayerTheme padding="0" gap="0"',
+    'className="app-data-table app-data-table--rounded app-table-shell app-table-shell--with-headings"',
+    'className={`app-badge ${getJobTypeBadgeClass(label)}`}',
+    'className={`app-badge ${getCustomerStatusBadgeClass(job.waitingStatus || "Neither")}`}',
+  ];
+  const forbiddenFragments = [
+    "...getJobTypeBadgeStyle(",
+    "...getCustomerStatusBadgeColors(",
+  ];
+
+  requiredFragments.forEach((fragment) => {
+    if (!dayJobsPopup.includes(fragment)) {
+      violations.push(`${appointmentsUiPath}: day-jobs popup missing staff contract fragment ${JSON.stringify(fragment)}`);
+    }
+  });
+  forbiddenFragments.forEach((fragment) => {
+    if (dayJobsPopup.includes(fragment)) {
+      violations.push(`${appointmentsUiPath}: day-jobs popup contains forbidden inline badge fragment ${JSON.stringify(fragment)}`);
+    }
+  });
+}
+
 const staffGlobalPath = "src/styles/staffglobal.css";
 const staffGlobalSource = fs.readFileSync(path.join(ROOT, staffGlobalPath), "utf8");
+const tableButtonRuleStart = staffGlobalSource.indexOf("html.staff-scope .app-data-table button {");
+const tableButtonRuleEnd = staffGlobalSource.indexOf("}", tableButtonRuleStart);
+
+if (tableButtonRuleStart < 0 || tableButtonRuleEnd < 0) {
+  violations.push(`${staffGlobalPath}: canonical data-table button height rule could not be located`);
+} else {
+  const tableButtonRule = staffGlobalSource.slice(tableButtonRuleStart, tableButtonRuleEnd);
+  [
+    "height: var(--table-action-btn-height) !important",
+    "min-height: var(--table-action-btn-height) !important",
+  ].forEach((fragment) => {
+    if (!tableButtonRule.includes(fragment)) {
+      violations.push(`${staffGlobalPath}: canonical data-table buttons missing ${JSON.stringify(fragment)}`);
+    }
+  });
+}
+
 const quickNoteCssStart = staffGlobalSource.indexOf("/* Quick-note composer on /jobs;");
 const quickNoteCssEnd = staffGlobalSource.indexOf(
   "html.staff-scope .app-job-operations-row__request-meta",

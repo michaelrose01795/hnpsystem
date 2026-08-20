@@ -1,13 +1,11 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
 import React, { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import IssueReportPopup from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
 import {
   vhcModalContentStyles,
-  popupOverlayStyles,
-  popupCardStyles,
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
@@ -16,8 +14,6 @@ import {
   STATUS_OPTIONS,
   fieldLabelStyle,
   inputStyle,
-  issueReportEyebrowStyle,
-  issueReportTitleStyle,
   statusSelectStyle,
   lockedRowOverlayStyle,
   lockedRowBadgeStyle,
@@ -268,55 +264,12 @@ export default function UndersideDetailsModal({
       </div>
       </div>
 
-      {activeConcern.open && typeof document !== "undefined"
-        ? createPortal(
-        <div
-          style={{
-            ...popupOverlayStyles,
-            zIndex: "var(--z-modal)",
-            padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
-          }}
+      {activeConcern.open ? (
+        <IssueReportPopup
+          isOpen={activeConcern.open}
+          title={activeConcern.category}
+          onClose={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
         >
-          <div
-            style={{
-              ...popupCardStyles,
-              width: "min(720px, 94vw)",
-              minHeight: "auto",
-              maxHeight: "calc(100dvh - 48px)",
-              padding: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: 0,
-              overflow: "hidden",
-              background: "var(--page-card-bg, var(--surface))",
-              borderRadius: "var(--radius-sm)",
-            }}
-          >
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "16px",
-              padding: "18px 20px",
-              background: "var(--theme, var(--surface))",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
-                <span style={issueReportEyebrowStyle}>
-                  Issue report
-                </span>
-                <h3 style={issueReportTitleStyle}>
-                  {activeConcern.category}
-                </h3>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
-                style={{ padding: "6px 14px" }}
-              >
-                Close
-              </Button>
-            </div>
 
             <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", background: "var(--surface)" }}>
               <label style={fieldLabelStyle}>Issue</label>
@@ -487,11 +440,8 @@ export default function UndersideDetailsModal({
                 })
               )}
             </div>
-          </div>
-        </div>,
-          document.body
-        )
-        : null}
+        </IssueReportPopup>
+      ) : null}
     </VHCModalShell>
   );
 }

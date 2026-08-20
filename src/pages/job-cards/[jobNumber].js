@@ -94,6 +94,10 @@ import {
 "@/lib/prePickLocations";
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
+import {
+  WORKSHOP_APPOINTMENT_TIME_OPTIONS,
+  toAppointmentTimestamp,
+} from "@/lib/appointments/dateTime";
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
 import {
   getClockingAwareJobStatus,
@@ -2304,16 +2308,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setAppointmentSaving(true);
 
       try {
-        const scheduledTime = new Date(
-          `${appointmentDetails.date}T${appointmentDetails.time}`
+        const scheduledTime = toAppointmentTimestamp(
+          appointmentDetails.date,
+          appointmentDetails.time
         );
 
-        if (Number.isNaN(scheduledTime.getTime())) {
-          throw new Error("Invalid appointment date or time");
-        }
-
         const payload = {
-          scheduled_time: scheduledTime.toISOString(),
+          scheduled_time: scheduledTime,
           status: appointmentDetails.status || "booked",
           notes: appointmentDetails.notes || null,
           updated_at: new Date().toISOString()
@@ -9099,12 +9100,14 @@ function SchedulingTab({
 
             </div>
             <div>
-              <TimePickerField
+              <DropdownField
                 label="Time"
                 value={appointmentForm.time}
                 onChange={(event) => handleAppointmentFieldChange("time", event.target.value)}
                 disabled={!canEdit || appointmentSaving}
                 className="compact-picker"
+                placeholder="Select time"
+                options={WORKSHOP_APPOINTMENT_TIME_OPTIONS}
                 style={{ ...inputStyle }} />
 
             </div>
@@ -9155,17 +9158,40 @@ function SchedulingTab({
           </div>
 
           {canEdit &&
-          jobData.appointment &&
-          String(jobData.appointment.status || "").toLowerCase() !== "cancelled" &&
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--layout-card-gap)" }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns:
+              jobData.appointment && String(jobData.appointment.status || "").toLowerCase() !== "cancelled" ?
+              "repeat(2, minmax(0, 1fr))" :
+              "minmax(0, 1fr)",
+            gap: "var(--layout-card-gap)",
+            marginTop: "var(--layout-card-gap)"
+          }}>
             <Button
               type="button"
-              variant="danger"
+              variant="primary"
+              onClick={handleAppointmentSubmit}
+              disabled={!appointmentDirty || appointmentSaving}
+              style={{ width: "100%" }}>
+
+              {appointmentSaving ?
+              "Saving..." :
+              jobData.appointment ?
+              "Update Appointment" :
+              "Schedule Appointment"}
+            </Button>
+            {jobData.appointment &&
+            String(jobData.appointment.status || "").toLowerCase() !== "cancelled" &&
+            <Button
+              type="button"
+              variant="secondary"
               onClick={handleAppointmentCancel}
-              disabled={appointmentSaving}>
+              disabled={appointmentSaving}
+              style={{ width: "100%" }}>
 
               Cancel appointment
             </Button>
+            }
           </div>
           }
         </DevLayoutSection>
@@ -9383,33 +9409,6 @@ function SchedulingTab({
 
           {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
         </button>
-
-        {/* Secondary: Update / Schedule Appointment */}
-        {canEdit &&
-          <button
-            onClick={handleAppointmentSubmit}
-            disabled={!appointmentDirty || appointmentSaving}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: appointmentDirty ? "rgba(var(--primary-rgb), 0.12)" : "rgba(var(--primary-rgb), 0.04)",
-              color: appointmentDirty ? "var(--primary-selected)" : "var(--text-1)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed",
-              opacity: !appointmentDirty ? 0.6 : 1,
-              transition: "opacity 0.15s, background-color 0.15s, color 0.15s"
-            }}>
-
-            {appointmentSaving ?
-            "Saving..." :
-            jobData.appointment ?
-            "Update Appointment" :
-            "Schedule Appointment"}
-          </button>
-          }
 
         {/* Feedback messages */}
         {bookingMessage &&

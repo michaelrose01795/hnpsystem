@@ -25,6 +25,10 @@ import {
   getJobRequests,
 } from "@/lib/canonical/fields";
 import dayjs from "dayjs";
+import {
+  formatAppointmentTimestamp,
+  toAppointmentTimestamp,
+} from "@/lib/appointments/dateTime";
 
 const supabase = getDatabaseClient();
 
@@ -2388,6 +2392,7 @@ const formatJobData = (data) => {
         .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] || null
     : storedStatusUpdatedAt;
   const primaryAppointment = selectCurrentAppointment(data.appointments);
+  const appointmentDateTime = formatAppointmentTimestamp(primaryAppointment?.scheduled_time);
 
   // Normalise technician information so UI layers can rely on assignedTech
   const assignedTech = (() => {
@@ -2693,8 +2698,8 @@ const formatJobData = (data) => {
     appointment: primaryAppointment
       ? {
           appointmentId: primaryAppointment.appointment_id,
-          date: dayjs(primaryAppointment.scheduled_time).format("YYYY-MM-DD"),
-          time: dayjs(primaryAppointment.scheduled_time).format("HH:mm"),
+          date: appointmentDateTime.date,
+          time: appointmentDateTime.time,
           status: primaryAppointment.status,
           notes: primaryAppointment.notes || "",
           createdAt: primaryAppointment.created_at,
@@ -3735,8 +3740,9 @@ export const createOrUpdateAppointment = async (
       };
     }
 
-    // Combine date and time into a timestamp
-    const scheduledDateTime = `${appointmentDate}T${appointmentTime}:00`;
+    // Store the selected workshop wall-clock time as an explicit UTC instant.
+    // This keeps 08:00 as 08:00 in London across both GMT and BST.
+    const scheduledDateTime = toAppointmentTimestamp(appointmentDate, appointmentTime);
 
     // Check if appointment already exists for this job
     const { data: existingAppointment, error: checkError } = await supabase
