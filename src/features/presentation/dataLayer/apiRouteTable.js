@@ -1217,6 +1217,11 @@ export const API_ROUTE_TABLE = [
   // Messages / notifications
   { pattern: /^\/api\/messages\/unread-count\/?$/, table: "messages", transform: () => ({ success: true, count: messageThreads.filter((thread) => thread.hasUnread).length }) },
   { pattern: /^\/api\/messages\/connect-customer\/?$/, table: "messages", transform: () => ({ success: true }) },
+  // POST /api/messages/job-customer-thread — the job card Messages tab calls
+  // this on mount and throws if the response carries no thread id, so the
+  // presentation must return a real thread (its transcript is served by the
+  // /threads/<id>/messages route below).
+  { pattern: /^\/api\/messages\/job-customer-thread\/?$/, table: "messages", transform: () => ({ success: true, thread: messageThreads[0] || null }) },
   { pattern: /^\/api\/messages\/customer-requests\/process\/?$/, table: "messages", transform: () => ({ success: true }) },
   { pattern: /^\/api\/messages\/customer-requests\/[^/]+\/?$/, table: "messages", transform: () => ({ success: true }) },
   { pattern: /^\/api\/messages\/customer-requests\/?$/, table: "messages", transform: () => ({ success: true, items: messageCustomerRequests }) },
