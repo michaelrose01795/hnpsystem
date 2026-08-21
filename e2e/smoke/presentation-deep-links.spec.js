@@ -56,16 +56,14 @@ test.describe('Presentation deep-link smoke', () => {
 
     for (const url of tamperedUrls) {
       await page.goto(url, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => {});
 
       const isRolePicker = page.url().includes('/loginPresentation');
-      const isBlocked = await page
-        .locator('body')
-        .getByText('Presentation page not available')
-        .isVisible()
-        .catch(() => false);
-
-      expect(isRolePicker || isBlocked, `${url} should not render a real presentation page`).toBe(true);
+      if (!isRolePicker) {
+        await expect(
+          page.getByText('Presentation page not available'),
+          `${url} should not render a real presentation page`
+        ).toBeVisible({ timeout: 15_000 });
+      }
     }
   });
 
