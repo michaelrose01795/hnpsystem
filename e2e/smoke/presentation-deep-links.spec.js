@@ -159,7 +159,11 @@ test.describe('Presentation deep-link smoke', () => {
     await page.goto('/presentation/workshop-manager/tracking/8', { waitUntil: 'domcontentloaded' });
     await waitForPresentationReady(page);
 
-    await page.locator('button:visible').filter({ hasText: 'Logout' }).first().click();
+    const presentationSidebar = page
+      .locator('.app-sidebar')
+      .filter({ has: page.locator('a[href^="/presentation/"]'), visible: true })
+      .first();
+    await presentationSidebar.getByRole('button', { name: 'Logout' }).click();
     await expect(page).toHaveURL(/\/loginPresentation$/);
   });
 
