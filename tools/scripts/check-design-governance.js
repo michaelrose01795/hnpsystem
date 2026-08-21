@@ -404,7 +404,8 @@ function collectOneOffStyling() {
   const detail = new Map();
   for (const file of JS_FILES) {
     if (VISUAL_EXEMPT.some((p) => file.startsWith(p))) continue;
-    const text = read(file);
+    // Keep the bounded style scan deterministic across Windows and Linux.
+    const text = read(file).replace(/\r?\n/g, "\r\n");
     let count = 0;
     const keys = new Set();
     for (const match of text.matchAll(STYLE_PROP_RE)) {
