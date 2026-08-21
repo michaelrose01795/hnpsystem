@@ -12,7 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { test, expect } = require('../helpers/fixtures.js');
+const { test, expect, waitForAppReady } = require('../helpers/fixtures.js');
 
 const PASSTHROUGH_RE = /^\/api\/(auth|health|img-proxy)\b/;
 
@@ -34,6 +34,13 @@ function groupUrlsByRole(urls) {
     groups[role].push(url);
     return groups;
   }, {});
+}
+
+async function waitForPresentationReady(page) {
+  await waitForAppReady(page);
+  await expect(page.getByText(/Loading real page/)).toBeHidden({ timeout: 15_000 });
+  // React effects install the presentation fetch and navigation guards after paint.
+  await page.waitForTimeout(250);
 }
 
 test.describe('Presentation deep-link smoke', () => {
@@ -75,13 +82,17 @@ test.describe('Presentation deep-link smoke', () => {
       if (role === 'customer') continue;
 
       await page.goto(roleUrls[0], { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => {});
+      await waitForPresentationReady(page);
 
-      const sidebarUrls = await page
-        .locator('.app-sidebar a[href^="/presentation/"]')
-        .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+      const sidebarLinks = page.locator('.app-sidebar a[href^="/presentation/"]');
+      await expect(sidebarLinks, `${role} should show one sidebar link per documented page`).toHaveCount(
+        roleUrls.length,
+        { timeout: 15_000 }
+      );
+      const sidebarUrls = await sidebarLinks.evaluateAll((links) =>
+        links.map((link) => link.getAttribute('href'))
+      );
 
-      expect(sidebarUrls, `${role} should show one sidebar link per documented page`).toHaveLength(roleUrls.length);
       for (const url of roleUrls) {
         expect(sidebarUrls, `${role} sidebar should include ${url}`).toContain(url);
       }
@@ -107,7 +118,7 @@ test.describe('Presentation deep-link smoke', () => {
     });
 
     await page.goto('/presentation/general/messages/0', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await waitForPresentationReady(page);
 
     const fetchResults = await page.evaluate(async () => {
       const relativeGet = await fetch('/api/messages').then((res) => res.json());
@@ -146,9 +157,9 @@ test.describe('Presentation deep-link smoke', () => {
 
   test('exiting a presentation returns to the presentation picker', async ({ page }) => {
     await page.goto('/presentation/workshop-manager/tracking/8', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await waitForPresentationReady(page);
 
-    await page.getByRole('button', { name: 'Logout' }).click();
+    await page.locator('button:visible').filter({ hasText: 'Logout' }).first().click();
     await expect(page).toHaveURL(/\/loginPresentation$/);
   });
 
@@ -191,8 +202,7 @@ test.describe('Presentation deep-link smoke', () => {
       expect(response, `expected a navigation response for ${url}`).toBeTruthy();
       expect(response.status(), `${url} should not be a server error`).toBeLessThan(500);
 
-      // Give the page a moment for client-side data fetches to settle.
-      await page.waitForLoadState('networkidle').catch(() => {});
+      await waitForPresentationReady(page);
 
       await expect(page.locator('body')).not.toContainText('Application error');
 
