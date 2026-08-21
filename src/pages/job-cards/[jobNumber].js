@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
+import { usePolling } from "@/hooks/usePolling"; // shared visibility-gated poller
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
@@ -38,7 +39,21 @@ import {
 import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
-import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
+// VhcDetailsPanel is the largest component in the app (~511KB of source, plus
+// the fault taxonomy it pulls in). Loading it through next/dynamic moves it out
+// of the job card's first-load bundle; the VHC tab is gated behind the
+// vhcTabMounted latch (activation or idle), so it is requested off the critical
+// path rather than during hydration. ssr:false because the panel is client-only
+// (it opens realtime channels and reads the DOM on mount).
+const VhcDetailsPanel = dynamic(() => import("@/components/VHC/VhcDetailsPanel"), {
+  ssr: false,
+  loading: () => (
+    <>
+      <SkeletonKeyframes />
+      <SkeletonBlock height="320px" />
+    </>
+  ),
+});
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 // Phase 1 of the VHC refactor: route all VHC status reads through the canonical
@@ -62,8 +77,13 @@ import {
 import PartsTabNew from "@/components/PartsTab";
 import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
-import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
-import VideoEditorModal from "@/components/VHC/VideoEditorModal";
+// Media editors: heavy, and only ever used after a user picks a document to
+// edit. They were mounted unconditionally with `isOpen={false}` (VHCModalShell
+// returns null when closed), so they shipped and mounted on every job card.
+// Loaded dynamically and rendered only while actually open — VHCModalShell
+// already rendered nothing in the closed state, so this is behaviour-neutral.
+const PhotoEditorModal = dynamic(() => import("@/components/VHC/PhotoEditorModal"), { ssr: false });
+const VideoEditorModal = dynamic(() => import("@/components/VHC/VideoEditorModal"), { ssr: false });
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
@@ -93,7 +113,11 @@ import {
   resolveLinkedPrePickLocation } from
 "@/lib/prePickLocations";
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
-import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
+import { useJob, buildJobCardKey } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
+import {
+  WORKSHOP_APPOINTMENT_TIME_OPTIONS,
+  toAppointmentTimestamp,
+} from "@/lib/appointments/dateTime";
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
 import {
   getClockingAwareJobStatus,
@@ -798,6 +822,15 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const [activeTab, setActiveTab] = useState("customer-requests");
   const [logisticsWaitingStatusOverride, setLogisticsWaitingStatusOverride] = useState(null);
   const [writeUpTabMounted, setWriteUpTabMounted] = useState(false);
+  // Same deferred-mount latch as writeUpTabMounted below. The VHC tab pulls in
+  // VhcDetailsPanel (the single largest component in the app) plus the fault
+  // taxonomy, ~892KB of the job card's first-load JS. Mounting it on activation
+  // or on idle — instead of during the initial render of every job card — keeps
+  // that off the hydration critical path. The tab still ends up mounted on every
+  // job card, so nothing downstream changes; the card's authorised/declined
+  // totals already have an explicit "without loading VHC tab" fallback computed
+  // from jobData.vhcChecks (see vhcFinancialTotals).
+  const [vhcTabMounted, setVhcTabMounted] = useState(false);
   const tabsScrollRef = useRef(null);
   const tabsDragScrollRef = useRef({ active: false, startX: 0, startScrollLeft: 0 });
   const prefetchedJobTabsRef = useRef(new Set());
@@ -1211,6 +1244,43 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab === "vhc") {
+      setVhcTabMounted(true);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (vhcTabMounted || typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+    let idleId = null;
+    let timeoutId = null;
+    const mountVhcTab = () => {
+      if (!cancelled) {
+        setVhcTabMounted(true);
+      }
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(mountVhcTab, { timeout: 2500 });
+    } else {
+      timeoutId = window.setTimeout(mountVhcTab, 1200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== null && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [vhcTabMounted, jobNumber]);
+
+  useEffect(() => {
     if (writeUpTabMounted || typeof window === "undefined") {
       return;
     }
@@ -1438,20 +1508,42 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         jobFetchInFlightRef.current = true;
         setError(null);
 
+        // ONE authoritative source for the card.
+        //
+        // This used to call getJobByNumber() directly from the browser — a
+        // second full fetch of the same job that useJob() had already requested
+        // through /api/jobcards/[jobNumber], followed by two more sequential
+        // browser round trips (fetchSharedNote, getCustomerJobs). The API route
+        // resolves all of that in ONE request whose queries run in parallel next
+        // to the database, and it already returns notes, shared note, customer,
+        // vehicle, job history and warranty data.
+        //
+        // The response is written straight into the SWR cache, so the hook and
+        // this page can never disagree, and a revisit renders from cache while
+        // revalidating underneath.
         const shouldForceFresh = Boolean(force);
-        const { data, error } = await getJobByNumber(jobNumber, {
-          archive: isArchiveMode,
-          force: shouldForceFresh,
-          noCache: shouldForceFresh
-        });
+        const key = buildJobCardKey(jobNumber, { archive: isArchiveMode });
+        const requestUrl = shouldForceFresh
+          ? `${key}${key.includes("?") ? "&" : "?"}force=1`
+          : key;
 
-        if (error || !data?.jobCard) {
-          setError(error?.message || "Job card not found");
+        const response = await fetch(requestUrl, { credentials: "include" });
+        if (!response.ok) {
+          setError(
+            response.status === 404 ? "Job card not found" : `Failed to load job card (${response.status})`
+          );
           return;
         }
+        const payload = await response.json();
+        const jobCard = payload?.job || payload?.jobCard || null;
+        if (!jobCard) {
+          setError("Job card not found");
+          return;
+        }
+        // Seed SWR with what we just fetched rather than letting it re-request.
+        mutateSwrJob(payload, { revalidate: false });
 
-        const jobCard = data.jobCard;
-        console.log("ðŸ” jobCard.jobRequests hours:", (jobCard.jobRequests || []).map((r) => ({ desc: (r.description || "").slice(0, 30), hours: r.hours })));
+        const data = payload;
         const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
         const resolvedHydratedMileage = pickMileageValue(
           jobCard?.mileage,
@@ -1479,25 +1571,21 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         // return [] when the PostgREST schema cache is stale) would overwrite correctly
         // fetched files and cause them to disappear from the gallery.
 
-        if (isArchiveMode) {
-          const archivedNotes = Array.isArray(jobCard.notes) ? jobCard.notes : [];
-          setJobNotes(archivedNotes);
-          const archivedShared = archivedNotes[0] || null;
-          setSharedNote(archivedShared?.noteText || "");
-          setSharedNoteMeta(archivedShared);
-        } else {
-          const latestSharedNote = jobCard.id ?
-          await fetchSharedNote(jobCard.id) :
-          null;
-          setSharedNote(latestSharedNote?.noteText || "");
-          setSharedNoteMeta(latestSharedNote);
-        }
+        // Notes, the shared note and the customer's job history all arrive in
+        // the same response now (the API resolves them in parallel server-side).
+        // These were three extra sequential browser round trips.
+        const notesFromApi = Array.isArray(data.notes)
+          ? data.notes
+          : Array.isArray(jobCard.notes)
+            ? jobCard.notes
+            : [];
+        setJobNotes(notesFromApi);
+        const resolvedSharedNote = data.sharedNote || notesFromApi[0] || null;
+        setSharedNote(resolvedSharedNote?.noteText || "");
+        setSharedNoteMeta(resolvedSharedNote);
 
-        const customerJobs = jobCard.customerId ?
-        await getCustomerJobs(jobCard.customerId) :
-        [];
         setVehicleJobHistory(
-          mapCustomerJobsToHistory(customerJobs, jobCard.reg)
+          Array.isArray(data.vehicleJobHistory) ? data.vehicleJobHistory : []
         );
       } catch (err) {
         console.error("Exception fetching job:", err);
@@ -1510,7 +1598,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
       }
     },
-    [jobNumber, fetchSharedNote, isArchiveMode, mutateSwrJob]
+    [jobNumber, isArchiveMode, mutateSwrJob]
   );
 
   useEffect(() => {
@@ -1623,15 +1711,22 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Hydrate local state from SWR cache (prefetch or previous visit) for instant rendering
+  // Hydrate local state from SWR cache (prefetch or previous visit) for instant
+  // rendering. This is the stale-while-revalidate path: the card paints from
+  // cache while fetchJobData revalidates underneath.
   useEffect(() => {
     if (!swrJobResponse) return; // no cached data available yet
     if (jobData) return; // already have local data, don't overwrite
     const jobCard = swrJobResponse.job || swrJobResponse.jobCard; // handle both API response shapes
     if (!jobCard) return; // no job card in the response
+    // Only accept a cached response that belongs to the job in the URL. Without
+    // this, any future SWR option that serves another key's data (or a race
+    // while switching between two cards) could paint the wrong job.
+    const cachedNumber = String(jobCard.jobNumber ?? jobCard.job_number ?? "").trim();
+    if (cachedNumber && String(jobNumber || "").trim() && cachedNumber !== String(jobNumber).trim()) return;
     setJobData(jobCard); // hydrate local state from SWR cache
     setLoading(false); // remove loading state since we have data
-  }, [swrJobResponse, jobData]);
+  }, [swrJobResponse, jobData, jobNumber]);
 
   useEffect(() => {
     writeUpOptimisticSyncRef.current = null;
@@ -2304,16 +2399,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setAppointmentSaving(true);
 
       try {
-        const scheduledTime = new Date(
-          `${appointmentDetails.date}T${appointmentDetails.time}`
+        const scheduledTime = toAppointmentTimestamp(
+          appointmentDetails.date,
+          appointmentDetails.time
         );
 
-        if (Number.isNaN(scheduledTime.getTime())) {
-          throw new Error("Invalid appointment date or time");
-        }
-
         const payload = {
-          scheduled_time: scheduledTime.toISOString(),
+          scheduled_time: scheduledTime,
           status: appointmentDetails.status || "booked",
           notes: appointmentDetails.notes || null,
           updated_at: new Date().toISOString()
@@ -3769,11 +3861,27 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
   }, [jobNumber]);
 
+  // Poll the customer's VHC delivery status.
+  //
+  // This was a blind `setInterval(..., 15000)` that ran for as long as the page
+  // was open, whether or not the tab was visible and whether or not the status
+  // could still change — it was the single most-requested endpoint in a dev
+  // session (358 calls). Two changes, no behavioural loss:
+  //   * usePolling is visibility-gated (the shared hook already used by
+  //     PartsTab): it stops while the tab is hidden and fetches immediately on
+  //     return, so a user looking at the page sees the same freshness.
+  //   * Once the customer has viewed the report there is no further transition
+  //     to observe, so polling stops. Any staff action that changes the status
+  //     (Send) already calls loadVhcCustomerStatus directly via
+  //     onVhcCustomerStatusReload.
   useEffect(() => {
     loadVhcCustomerStatus();
-    const interval = setInterval(loadVhcCustomerStatus, 15000);
-    return () => clearInterval(interval);
   }, [loadVhcCustomerStatus]);
+
+  const vhcCustomerStatusIsTerminal =
+    String(vhcCustomerStatus?.status || "").toLowerCase() === "viewed";
+
+  usePolling(loadVhcCustomerStatus, 15000, Boolean(jobNumber) && !vhcCustomerStatusIsTerminal);
 
   const vhcCustomerStatusMeta = useMemo(() => {
     const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
@@ -4062,7 +4170,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} vhcTabDangerReadyInstant={vhcTabDangerReadyInstant} writeUpCompleteInstant={writeUpCompleteInstant} writeUpPartiallyCompleteInstant={writeUpPartiallyCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} vhcTabDangerReadyInstant={vhcTabDangerReadyInstant} writeUpCompleteInstant={writeUpCompleteInstant} writeUpPartiallyCompleteInstant={writeUpPartiallyCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} vhcTabMounted={vhcTabMounted} />;
 
 
 
@@ -9099,12 +9207,14 @@ function SchedulingTab({
 
             </div>
             <div>
-              <TimePickerField
+              <DropdownField
                 label="Time"
                 value={appointmentForm.time}
                 onChange={(event) => handleAppointmentFieldChange("time", event.target.value)}
                 disabled={!canEdit || appointmentSaving}
                 className="compact-picker"
+                placeholder="Select time"
+                options={WORKSHOP_APPOINTMENT_TIME_OPTIONS}
                 style={{ ...inputStyle }} />
 
             </div>
@@ -9155,17 +9265,40 @@ function SchedulingTab({
           </div>
 
           {canEdit &&
-          jobData.appointment &&
-          String(jobData.appointment.status || "").toLowerCase() !== "cancelled" &&
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--layout-card-gap)" }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns:
+              jobData.appointment && String(jobData.appointment.status || "").toLowerCase() !== "cancelled" ?
+              "repeat(2, minmax(0, 1fr))" :
+              "minmax(0, 1fr)",
+            gap: "var(--layout-card-gap)",
+            marginTop: "var(--layout-card-gap)"
+          }}>
             <Button
               type="button"
-              variant="danger"
+              variant="primary"
+              onClick={handleAppointmentSubmit}
+              disabled={!appointmentDirty || appointmentSaving}
+              style={{ width: "100%" }}>
+
+              {appointmentSaving ?
+              "Saving..." :
+              jobData.appointment ?
+              "Update Appointment" :
+              "Schedule Appointment"}
+            </Button>
+            {jobData.appointment &&
+            String(jobData.appointment.status || "").toLowerCase() !== "cancelled" &&
+            <Button
+              type="button"
+              variant="secondary"
               onClick={handleAppointmentCancel}
-              disabled={appointmentSaving}>
+              disabled={appointmentSaving}
+              style={{ width: "100%" }}>
 
               Cancel appointment
             </Button>
+            }
           </div>
           }
         </DevLayoutSection>
@@ -9383,33 +9516,6 @@ function SchedulingTab({
 
           {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
         </button>
-
-        {/* Secondary: Update / Schedule Appointment */}
-        {canEdit &&
-          <button
-            onClick={handleAppointmentSubmit}
-            disabled={!appointmentDirty || appointmentSaving}
-            style={{
-              padding: "var(--control-padding)",
-              backgroundColor: appointmentDirty ? "rgba(var(--primary-rgb), 0.12)" : "rgba(var(--primary-rgb), 0.04)",
-              color: appointmentDirty ? "var(--primary-selected)" : "var(--text-1)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed",
-              opacity: !appointmentDirty ? 0.6 : 1,
-              transition: "opacity 0.15s, background-color 0.15s, color 0.15s"
-            }}>
-
-            {appointmentSaving ?
-            "Saving..." :
-            jobData.appointment ?
-            "Update Appointment" :
-            "Schedule Appointment"}
-          </button>
-          }
 
         {/* Feedback messages */}
         {bookingMessage &&
@@ -13116,8 +13222,9 @@ function DocumentsTab({
         </div>)
       }
 
+      {editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "") ? (
       <PhotoEditorModal
-        isOpen={editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "")}
+        isOpen
         photoFile={editingDoc?.url || editingDoc?.file_url || ""}
         onSave={(editedFile) => {
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
@@ -13125,10 +13232,11 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
+      ) : null}
 
-
+      {editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "") ? (
       <VideoEditorModal
-        isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
+        isOpen
         videoFile={editingDoc?.url || editingDoc?.file_url || ""}
         onSave={(editedFile) => {
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
@@ -13136,6 +13244,7 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
+      ) : null}
 
     </div>);
 

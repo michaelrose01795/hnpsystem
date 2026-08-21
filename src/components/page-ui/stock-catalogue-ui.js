@@ -18,6 +18,8 @@ const QUICK_FILTERS = [
 ];
 
 const numberValue = (value) => Number(value) || 0;
+// Keep the wrapped Potential margin row exactly 10px from the summary row above and overview panels below.
+const STOCK_OVERVIEW_SECTION_GAP = "10px";
 const availableStock = (part) =>
   numberValue(part?.qty_in_stock) - numberValue(part?.qty_reserved);
 
@@ -235,9 +237,6 @@ export default function StockCataloguePageUi(props) {
               <h1 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h2)", letterSpacing: "-0.02em" }}>
                 Parts inventory
               </h1>
-              <p style={{ margin: "var(--space-1) 0 0", color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
-                Stock, incoming supply and open-job demand in one workspace.
-              </p>
             </div>
             <span className="app-badge app-badge--accent-soft">
               Available = on hand − reserved
@@ -248,12 +247,13 @@ export default function StockCataloguePageUi(props) {
             Summary unavailable. Catalogue search and stock actions are still available.
           </div> : null}
 
-          <div
-            className="app-summary-grid"
-            role="list"
-            aria-label="Stock catalogue summary"
-            style={{ gap: "var(--layout-card-gap)" }}
-          >
+          <div style={{ display: "grid", gap: STOCK_OVERVIEW_SECTION_GAP }}>
+            <div
+              className="app-summary-grid"
+              role="list"
+              aria-label="Stock catalogue summary"
+              style={{ columnGap: "var(--layout-card-gap)", rowGap: STOCK_OVERVIEW_SECTION_GAP }}
+            >
             {[
               ["Active parts", stockSummary?.totalParts],
               ["In stock", stockSummary?.inStockCount],
@@ -278,10 +278,10 @@ export default function StockCataloguePageUi(props) {
               <strong className="app-summary-value">
                 {stockSummaryLoading ? "…" : value ?? 0}
               </strong>
-            </LayerSurface>)}
-          </div>
+              </LayerSurface>)}
+            </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" }}>
             <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
               <strong style={{ color: "var(--accentText)" }}>Stock status breakdown</strong>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "var(--space-2)" }}>
@@ -329,6 +329,7 @@ export default function StockCataloguePageUi(props) {
                 </div>) :
                 <span style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>No category value data available.</span>}
             </LayerSurface>
+            </div>
           </div>
         </LayerTheme>
 

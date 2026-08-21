@@ -8,7 +8,11 @@ import {
   getCategoryById,
   getCategoryIdForSectionType,
 } from "@/lib/dev-layout/categories";
-import { findDevLayoutSectionSources } from "@/lib/dev-layout/sectionSourceMap";
+import {
+  ensureDevLayoutSectionSources,
+  findDevLayoutSectionSources,
+  isDevLayoutSectionSourcesReady,
+} from "@/lib/dev-layout/sectionSourceMap";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
 // Default visibility thresholds (match the original overlay behaviour). Small
@@ -826,6 +830,21 @@ export default function DevLayoutOverlay() {
   const [sections, setSections] = useState([]);
   const [copiedSectionKey, setCopiedSectionKey] = useState("");
   const [selectedSectionKey, setSelectedSectionKey] = useState("");
+  // The section source map is loaded on demand (it is ~155KB and was previously
+  // in the first-load bundle of 54 routes). The overlay is the main interactive
+  // consumer, so make sure it is resolved as soon as the overlay mounts, and
+  // re-render once it is so the "source file" line appears without a nudge.
+  const [sourceMapReady, setSourceMapReady] = useState(isDevLayoutSectionSourcesReady());
+  useEffect(() => {
+    if (sourceMapReady) return undefined;
+    let cancelled = false;
+    void ensureDevLayoutSectionSources().then(() => {
+      if (!cancelled) setSourceMapReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceMapReady]);
   const rafRef = useRef(null);
   const panelRef = useRef(null);
 

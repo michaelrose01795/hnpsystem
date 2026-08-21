@@ -25,6 +25,10 @@ import {
   getJobRequests,
 } from "@/lib/canonical/fields";
 import dayjs from "dayjs";
+import {
+  formatAppointmentTimestamp,
+  toAppointmentTimestamp,
+} from "@/lib/appointments/dateTime";
 
 const supabase = getDatabaseClient();
 
@@ -329,6 +333,184 @@ const normaliseCauseEntries = (entries = []) => {
 export const getAllJobs = ({ throwOnError = false, cacheKey = "jobs:all" } = {}) =>
   cachedQuery(cacheKey, () => _getAllJobsUncached({ throwOnError }));
 
+/* ============================================
+   WORKLOAD LIST QUERY (the /jobs screen)
+   --------------------------------------------
+   `getAllJobs` above selects EVERY job ever created, with 14 nested relations —
+   including vehicle→customer, parts_job_items→parts_catalog and
+   goods_in_items→goods_in, plus the full text of every note, write-up, request
+   and file row. The jobs list renders about 30 fields per row.
+
+   This query returns the same row SHAPE (it runs through the same
+   `formatJobData`, so every consumer — buildJobRowSummary, the operational
+   status counts, the technician workload map, deriveJobTypeDisplay and the list
+   UI — sees exactly the fields it already reads) but:
+
+     * selects only the columns those consumers actually use,
+     * reduces job_notes / job_files / job_requests to their primary key, since
+       the list only ever reads `.length` of them,
+     * drops goods_in_items and the parts_catalog join entirely (unused by the
+       list), and
+     * is bounded by `limit` and ordered newest-first.
+
+   Column choices are derived from: lib/jobCards/jobRowSummary.js,
+   lib/jobType/display.js, features/vhc/vhcStatusEngine.js (projectVhcItem /
+   deriveLabourStatus / derivePartsStatus), pages/jobs/index.js and
+   components/page-ui/job-cards/view/job-cards-view-ui.js.
+============================================ */
+export const JOBS_WORKLOAD_DEFAULT_LIMIT = 400;
+
+const JOBS_WORKLOAD_SELECT = `
+  id,
+  job_number,
+  description,
+  type,
+  status,
+  completion_status,
+  tech_completion_status,
+  assigned_to,
+  customer,
+  customer_id,
+  vehicle_id,
+  vehicle_reg,
+  vehicle_make_model,
+  milage,
+  waiting_status,
+  job_source,
+  job_division,
+  job_categories,
+  requests,
+  cosmetic_notes,
+  vhc_required,
+  checked_in_at,
+  workshop_started_at,
+  status_updated_at,
+  queue_position,
+  vhc_completed_at,
+  vhc_sent_at,
+  created_at,
+  updated_at,
+  next_update_due,
+  prime_job_id,
+  prime_job_number,
+  is_prime_job,
+  sub_job_sequence,
+  vehicle:vehicle_id(
+    vehicle_id,
+    registration,
+    reg_number,
+    make,
+    model,
+    make_model,
+    vin,
+    mileage,
+    customer:customer_id(
+      id,
+      firstname,
+      lastname,
+      email,
+      mobile,
+      telephone,
+      postcode
+    )
+  ),
+  technician:assigned_to(user_id, first_name, last_name, email, role),
+  appointments(appointment_id, scheduled_time, status, notes, created_at),
+  vhc_checks(
+    vhc_id,
+    severity,
+    approval_status,
+    authorization_state,
+    display_status,
+    labour_complete,
+    labour_hours,
+    request_id,
+    Complete
+  ),
+  parts_requests(request_id, status),
+  parts_job_items!parts_job_items_job_id_fkey(id, status, vhc_item_id),
+  job_notes(note_id),
+  job_files(file_id),
+  job_requests(request_id),
+  job_writeups(writeup_id, completion_status, task_checklist),
+  job_clocking(id, clock_in, clock_out),
+  booking_request:job_booking_requests(
+    request_id,
+    job_id,
+    status,
+    waiting_status,
+    estimated_completion
+  )
+`;
+
+const _getJobsWorkloadUncached = async ({ limit = JOBS_WORKLOAD_DEFAULT_LIMIT, throwOnError = false } = {}) => {
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(JOBS_WORKLOAD_SELECT)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("❌ getJobsWorkload error:", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+    });
+    if (throwOnError) throw error;
+    return [];
+  }
+
+  return (data || []).map((job) => formatJobData(job));
+};
+
+export const getJobsWorkload = ({
+  limit = JOBS_WORKLOAD_DEFAULT_LIMIT,
+  throwOnError = false,
+  noCache = false,
+  cacheKey = "jobs:workload",
+} = {}) => {
+  if (noCache) {
+    invalidateCache(`${cacheKey}:`);
+    return _getJobsWorkloadUncached({ limit, throwOnError });
+  }
+  // `shared: true` — the workload list is the same for every staff viewer (it is
+  // not filtered by session, role or user id), so a short server-side dedupe
+  // window is safe. See the note in lib/database/queryCache.js.
+  return cachedQuery(
+    `${cacheKey}:${limit}`,
+    () => _getJobsWorkloadUncached({ limit, throwOnError }),
+    undefined,
+    { shared: true }
+  );
+};
+
+/**
+ * One workload row, in the same shape as getJobsWorkload().
+ *
+ * Lets the jobs list patch a single changed job in place when a realtime event
+ * names it, instead of re-downloading the whole workload. Never cached — it is
+ * only ever called because something just changed.
+ */
+export const getJobWorkloadRow = async (jobId, { throwOnError = false } = {}) => {
+  const numericId = Number(jobId);
+  if (!Number.isInteger(numericId) || numericId <= 0) return null;
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(JOBS_WORKLOAD_SELECT)
+    .eq("id", numericId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("❌ getJobWorkloadRow error:", error?.message || error);
+    if (throwOnError) throw error;
+    return null;
+  }
+
+  return data ? formatJobData(data) : null;
+};
+
 export const getJobRequestsForClocking = async (jobId) => {
   const numericJobId = Number(jobId);
   if (!Number.isInteger(numericJobId)) return [];
@@ -364,6 +546,16 @@ export const subscribeToJobChanges = (channelKey, onChange) => {
   };
 };
 
+// Tables the jobs overview subscribes to.
+//
+// `customers` and `vehicles` were removed: the list shows a customer name, reg
+// and make/model, all of which are denormalised onto the job row (or refreshed
+// when the job itself changes), so a subscription to every customer and vehicle
+// edit in the business only produced un-attributable full refetches.
+//
+// Every remaining table except `users` carries a `job_id` (or is `jobs` itself),
+// so the subscriber can patch exactly the affected row instead of re-downloading
+// the workload — see patchJobRow in pages/jobs/index.js.
 const JOBS_OVERVIEW_REALTIME_TABLES = [
   "jobs",
   "appointments",
@@ -375,8 +567,6 @@ const JOBS_OVERVIEW_REALTIME_TABLES = [
   "job_clocking",
   "job_booking_requests",
   "job_notes",
-  "customers",
-  "vehicles",
   "users",
 ];
 
@@ -2388,6 +2578,7 @@ const formatJobData = (data) => {
         .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] || null
     : storedStatusUpdatedAt;
   const primaryAppointment = selectCurrentAppointment(data.appointments);
+  const appointmentDateTime = formatAppointmentTimestamp(primaryAppointment?.scheduled_time);
 
   // Normalise technician information so UI layers can rely on assignedTech
   const assignedTech = (() => {
@@ -2693,8 +2884,8 @@ const formatJobData = (data) => {
     appointment: primaryAppointment
       ? {
           appointmentId: primaryAppointment.appointment_id,
-          date: dayjs(primaryAppointment.scheduled_time).format("YYYY-MM-DD"),
-          time: dayjs(primaryAppointment.scheduled_time).format("HH:mm"),
+          date: appointmentDateTime.date,
+          time: appointmentDateTime.time,
           status: primaryAppointment.status,
           notes: primaryAppointment.notes || "",
           createdAt: primaryAppointment.created_at,
@@ -3735,8 +3926,9 @@ export const createOrUpdateAppointment = async (
       };
     }
 
-    // Combine date and time into a timestamp
-    const scheduledDateTime = `${appointmentDate}T${appointmentTime}:00`;
+    // Store the selected workshop wall-clock time as an explicit UTC instant.
+    // This keeps 08:00 as 08:00 in London across both GMT and BST.
+    const scheduledDateTime = toAppointmentTimestamp(appointmentDate, appointmentTime);
 
     // Check if appointment already exists for this job
     const { data: existingAppointment, error: checkError } = await supabase

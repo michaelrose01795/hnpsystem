@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
+import { getShellBootstrap, invalidateShellBootstrap } from "@/lib/shell/bootstrapClient";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
@@ -19,6 +20,23 @@ const SIDEBAR_ACCESS_REFRESH_MS = 15000;
 const CAN_USE_DEV_AUTH =
   process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED || PLAYWRIGHT_AUTH_ENABLED;
 const isBrowser = () => typeof document !== "undefined";
+// The sidebar-access snapshot is re-fetched every SIDEBAR_ACCESS_REFRESH_MS. The
+// endpoint returns a freshly parsed object each time, so storing it verbatim
+// changed `sidebarAccess`'s identity on every poll even when the data was
+// identical — which invalidated `effectiveUser`, produced a new `user` object,
+// and re-fired every effect in the app that depends on `user`. Comparing the
+// serialised snapshot lets us keep the previous reference when nothing changed.
+// Key order is stable because both sides come from JSON.parse of the same
+// endpoint's response shape.
+const sameSidebarAccess = (a, b) => {
+  if (a === b) return true;
+  if (a == null || b == null) return a == null && b == null;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
 const withTimeout = (promise, label, timeoutMs = NETWORK_TIMEOUT_MS) => {
   let timeoutId;
   const timeout = new Promise((_, reject) => {
@@ -76,7 +94,20 @@ export function UserProvider({ children }) {
   // resolved. Rendering role defaults first causes incorrect modules to flash
   // before an administrator's persisted layout replaces them.
   const [sidebarAccessLoading, setSidebarAccessLoading] = useState(true);
+  // The DB user id that owns `sidebarAccess`. A snapshot is never exposed as
+  // ready until this id matches the current user, which prevents a previous
+  // user's modules surviving across session changes or overlapping requests.
+  const [sidebarAccessOwnerId, setSidebarAccessOwnerId] = useState(null);
+  const [sidebarAccessReady, setSidebarAccessReady] = useState(false);
+  const sidebarAccessOwnerIdRef = useRef(sidebarAccessOwnerId);
+  const sidebarAccessReadyRef = useRef(sidebarAccessReady);
+  sidebarAccessOwnerIdRef.current = sidebarAccessOwnerId;
+  sidebarAccessReadyRef.current = sidebarAccessReady;
   const sidebarAccessRequestRef = useRef(0);
+  // True once sidebar access has been resolved at least once for this user, so
+  // the combined shell bootstrap is only consulted for the FIRST resolution and
+  // every later refresh goes straight to the dedicated endpoint.
+  const sidebarAccessResolvedRef = useRef(false);
   const [currentJob, setCurrentJob] = useState(null);
   const hasLogoutBarrier = logoutBarrierUntil > Date.now();
   const authSyncBlocked = isLoggingOut || hasLogoutBarrier;
@@ -174,7 +205,10 @@ export function UserProvider({ children }) {
     setUser((prev) => (prev && prev.id === demoUser.id ? prev : demoUser));
     setDbUserId(1);
     sidebarAccessRequestRef.current += 1;
+    sidebarAccessResolvedRef.current = false;
     setSidebarAccess(null);
+    setSidebarAccessOwnerId(null);
+    setSidebarAccessReady(true);
     setSidebarAccessLoading(false);
     setLoading(false);
   }, [sessionStatus, router.asPath]);
@@ -216,7 +250,10 @@ export function UserProvider({ children }) {
         const parsed = JSON.parse(stored);
         const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
         sidebarAccessRequestRef.current += 1;
+        sidebarAccessResolvedRef.current = false;
         setSidebarAccess(null);
+        setSidebarAccessOwnerId(null);
+        setSidebarAccessReady(false);
         setSidebarAccessLoading(true);
         setUser(finalDevUser);
         setDevRoleCookie(finalDevUser.roles || []);
@@ -255,7 +292,10 @@ export function UserProvider({ children }) {
       };
       if (String(user?.id ?? "") !== String(sessionUser.id ?? "")) {
         sidebarAccessRequestRef.current += 1;
+        sidebarAccessResolvedRef.current = false;
         setSidebarAccess(null);
+        setSidebarAccessOwnerId(null);
+        setSidebarAccessReady(false);
         setSidebarAccessLoading(true);
       }
       setUser(sessionUser);
@@ -280,6 +320,8 @@ export function UserProvider({ children }) {
     const resolveDbUser = async () => {
       if (!user) {
         setDbUserId(null);
+        setSidebarAccessOwnerId(null);
+        setSidebarAccessReady(false);
         setSidebarAccessLoading(false);
         setCurrentJob(null);
         return;
@@ -287,6 +329,7 @@ export function UserProvider({ children }) {
 
       if (isPresentationMode()) {
         setDbUserId(1);
+        setSidebarAccessReady(true);
         setCurrentJob(null);
         return;
       }
@@ -294,6 +337,7 @@ export function UserProvider({ children }) {
       if (PLAYWRIGHT_AUTH_ENABLED) {
         const numericUserId = Number(user.id);
         setDbUserId(Number.isInteger(numericUserId) && numericUserId > 0 ? numericUserId : 1);
+        setSidebarAccessReady(true);
         setCurrentJob(null);
         return;
       }
@@ -322,12 +366,18 @@ export function UserProvider({ children }) {
         if (!cancelled) {
           const resolvedId = ensuredId || null;
           setDbUserId(resolvedId);
-          if (!resolvedId) setSidebarAccessLoading(false);
+          if (!resolvedId) {
+            setSidebarAccessOwnerId(null);
+            setSidebarAccessReady(false);
+            setSidebarAccessLoading(false);
+          }
         }
       } catch (err) {
         console.error("Failed to resolve workshop user id", err?.message || err);
         if (!cancelled) {
           setDbUserId(null);
+          setSidebarAccessOwnerId(null);
+          setSidebarAccessReady(false);
           setSidebarAccessLoading(false);
         }
       }
@@ -348,10 +398,48 @@ export function UserProvider({ children }) {
     const requestId = ++sidebarAccessRequestRef.current;
     if (!dbUserId || isPresentationMode() || PLAYWRIGHT_AUTH_ENABLED) {
       setSidebarAccess(null);
+      setSidebarAccessOwnerId(null);
+      setSidebarAccessReady(isPresentationMode() || PLAYWRIGHT_AUTH_ENABLED);
       setSidebarAccessLoading(false);
       return;
     }
+    const requestedUserId = Number(dbUserId);
+    const alreadyResolvedForUser =
+      sidebarAccessReadyRef.current &&
+      Number(sidebarAccessOwnerIdRef.current) === requestedUserId;
+    if (!alreadyResolvedForUser) {
+      setSidebarAccess(null);
+      setSidebarAccessOwnerId(null);
+      setSidebarAccessReady(false);
+      setSidebarAccessLoading(true);
+    }
     try {
+      // First resolution comes from the combined shell bootstrap, which fetches
+      // sidebar access, the roster and the unread count in ONE round trip
+      // instead of three (see lib/shell/bootstrapClient.js). Refreshes — the 15s
+      // poll, focus/online, and admin-edit events — keep using the dedicated
+      // endpoint so this stays a head start rather than a dependency.
+      if (!sidebarAccessResolvedRef.current) {
+        const boot = await getShellBootstrap({ userKey: dbUserId });
+        if (requestId !== sidebarAccessRequestRef.current) return;
+        // A non-null bootstrap snapshot is conclusive. A null bootstrap value
+        // is ambiguous because the aggregate endpoint also uses null when this
+        // section fails, so confirm that case with the dedicated endpoint.
+        if (
+          boot &&
+          Number(boot.userId) === requestedUserId &&
+          boot.sidebarAccess != null
+        ) {
+          sidebarAccessResolvedRef.current = true;
+          const next = boot.sidebarAccess;
+          setSidebarAccess((prev) => (sameSidebarAccess(prev, next) ? prev : next));
+          setSidebarAccessOwnerId(requestedUserId);
+          setSidebarAccessReady(true);
+          setSidebarAccessLoading(false);
+          return;
+        }
+      }
+
       const res = await withTimeout(
         fetch(`/api/profile/sidebar-access?userId=${encodeURIComponent(dbUserId)}`, {
           credentials: "include",
@@ -360,18 +448,34 @@ export function UserProvider({ children }) {
       );
       if (requestId !== sidebarAccessRequestRef.current) return;
       if (!res.ok) {
-        setSidebarAccess(null);
+        // Retain confirmed data for this same user during a refresh failure.
+        // On initial load there is no confirmed snapshot, so remain fail-closed.
+        if (!alreadyResolvedForUser) {
+          setSidebarAccess(null);
+          setSidebarAccessOwnerId(null);
+          setSidebarAccessReady(false);
+        }
         setSidebarAccessLoading(false);
         return;
       }
       const json = await res.json();
-      setSidebarAccess(json?.sidebarAccess ?? null);
+      const nextSidebarAccess = json?.sidebarAccess ?? null;
+      // Keep the previous object when the snapshot is unchanged (see
+      // sameSidebarAccess above) so the 15s poll does not churn `user`.
+      setSidebarAccess((prev) => (sameSidebarAccess(prev, nextSidebarAccess) ? prev : nextSidebarAccess));
+      sidebarAccessResolvedRef.current = true;
+      setSidebarAccessOwnerId(requestedUserId);
+      setSidebarAccessReady(true);
       setSidebarAccessLoading(false);
     } catch (err) {
       if (requestId !== sidebarAccessRequestRef.current) return;
       console.error("Failed to load sidebar access", err?.message || err);
+      if (!alreadyResolvedForUser) {
+        setSidebarAccess(null);
+        setSidebarAccessOwnerId(null);
+        setSidebarAccessReady(false);
+      }
       setSidebarAccessLoading(false);
-      setSidebarAccess(null); // fail open to role-derived nav — never lock a user out
     }
   }, [dbUserId]);
 
@@ -450,8 +554,9 @@ export function UserProvider({ children }) {
     refreshCurrentJob();
   }, [refreshCurrentJob]);
 
-  // Developer login
-  const devLogin = async (userChoice = {}, role = "WORKSHOP") => {
+  // Developer login. useCallback'd (with only stable setState/ref deps) so it
+  // does not change the context value's identity on every render.
+  const devLogin = useCallback(async (userChoice = {}, role = "WORKSHOP") => {
     if (!CAN_USE_DEV_AUTH) {
       return { success: false, error: new Error("Developer login is disabled in production.") };
     }
@@ -486,7 +591,10 @@ export function UserProvider({ children }) {
       };
 
       sidebarAccessRequestRef.current += 1;
+      sidebarAccessResolvedRef.current = false;
       setSidebarAccess(null);
+      setSidebarAccessOwnerId(null);
+      setSidebarAccessReady(false);
       setSidebarAccessLoading(true);
       setUser(finalUser);
       if (CAN_USE_DEV_AUTH) {
@@ -498,21 +606,28 @@ export function UserProvider({ children }) {
       console.error("Dev login failed", err);
       return { success: false, error: err };
     }
-  };
+  }, []);
 
-  // Logout — clears both local state and NextAuth session
-  const logout = async () => {
+  // Logout — clears both local state and NextAuth session. Same stability note
+  // as devLogin above: every dependency is a stable setState or module helper.
+  const logout = useCallback(async () => {
     setIsLoggingOut(true);
     const barrierUntil = Date.now() + LOGOUT_BARRIER_MS;
     setLogoutBarrierUntil(barrierUntil);
     setLogoutBarrier(barrierUntil);
     sidebarAccessRequestRef.current += 1;
+    sidebarAccessResolvedRef.current = false;
     setUser(null);
     setSidebarAccess(null);
+    setSidebarAccessOwnerId(null);
+    setSidebarAccessReady(false);
     setSidebarAccessLoading(false);
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
     setCurrentJob(null);
+    // Drop the cached shell payload so the next sign-in can never read the
+    // previous user's sidebar access, roster or unread count.
+    invalidateShellBootstrap();
     if (CAN_USE_DEV_AUTH) {
       localStorage.removeItem("devUser");
     }
@@ -525,34 +640,83 @@ export function UserProvider({ children }) {
     } finally {
       setIsLoggingOut(false);
     }
-  };
+  }, []);
 
   // Expose the signed-in user with their sidebar-access snapshot attached so the
   // sidebar (StaffSidebar) and the client route guard (_app PageAccessGuard) can
   // read user.sidebarAccess without a separate subscription. Memoised so identity
   // only changes when the user or the snapshot changes.
-  const effectiveUser = useMemo(
-    () => (user ? { ...user, sidebarAccess } : user),
-    [user, sidebarAccess]
-  );
+  const effectiveUser = useMemo(() => {
+    if (!user) return user;
 
-  const contextValue = {
-    user: effectiveUser,
-    loading,
-    devLogin,
-    logout,
-    status,
-    setStatus,
-    dbUserId,
+    // Effects update the local user after NextAuth changes. During the render
+    // before that effect runs, suppress the old user entirely so their roles
+    // and modules cannot be painted for the incoming session.
+    if (sessionStatus === "authenticated" && session?.user) {
+      const sessionUserId = session.user.id || session.user.sub || session.user.user_id || null;
+      if (sessionUserId != null && String(user.id ?? "") !== String(sessionUserId)) return null;
+    }
+
+    const accessBelongsToCurrentUser =
+      sidebarAccessReady &&
+      (isPresentationMode() ||
+        PLAYWRIGHT_AUTH_ENABLED ||
+        Number(sidebarAccessOwnerId) === Number(dbUserId));
+    return {
+      ...user,
+      sidebarAccess: accessBelongsToCurrentUser ? sidebarAccess : null,
+    };
+  }, [
+    user,
+    sessionStatus,
+    session?.user,
     sidebarAccess,
-    sidebarAccessLoading,
-    refreshSidebarAccess,
-    currentJob,
-    setCurrentJob,
-    refreshCurrentJob,
-    authUserId: effectiveUser?.authUuid || (typeof effectiveUser?.id === "string" ? effectiveUser.id : null),
-    logoutInProgress: authSyncBlocked,
-  };
+    sidebarAccessOwnerId,
+    sidebarAccessReady,
+    dbUserId,
+  ]);
+
+  // Memoised: `useUser()` has 77 call sites across the app and UserProvider sits
+  // near the root, so an unmemoised object literal here re-rendered every
+  // consumer on every provider render. Every entry below is either state, a
+  // stable setState, or a useCallback/useMemo result, so the identity now
+  // changes only when the data actually changes.
+  const contextValue = useMemo(
+    () => ({
+      user: effectiveUser,
+      loading,
+      devLogin,
+      logout,
+      status,
+      setStatus,
+      dbUserId,
+      sidebarAccess,
+      sidebarAccessLoading,
+      sidebarAccessReady,
+      refreshSidebarAccess,
+      currentJob,
+      setCurrentJob,
+      refreshCurrentJob,
+      authUserId:
+        effectiveUser?.authUuid || (typeof effectiveUser?.id === "string" ? effectiveUser.id : null),
+      logoutInProgress: authSyncBlocked,
+    }),
+    [
+      effectiveUser,
+      loading,
+      devLogin,
+      logout,
+      status,
+      dbUserId,
+      sidebarAccess,
+      sidebarAccessLoading,
+      sidebarAccessReady,
+      refreshSidebarAccess,
+      currentJob,
+      refreshCurrentJob,
+      authSyncBlocked,
+    ]
+  );
 
   return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;
 }

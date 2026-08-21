@@ -4,7 +4,30 @@
 // We honour the common Supabase filters used across the app so real page-ui
 // handlers run unchanged against mock data.
 
-import { getMockRows } from "../mockData";
+// The fixture set (`../mockData`) is ~224KB of demo rows. It used to be a static
+// import, and because `@/lib/database/supabaseClient` imports the presentation
+// stub client — and every route imports the supabase client — the whole demo
+// dataset shipped in the shared first-load bundle of all 163 page routes,
+// including /login and the public website.
+//
+// It is loaded lazily instead. Every terminator on the stub builder
+// (.then / .single / .maybeSingle — see presentationStubClient.js) is already
+// async, so awaiting the fixtures here is invisible to callers: the query still
+// resolves with real fixture data, never with an empty placeholder. Nothing
+// outside a /presentation route ever triggers the load.
+let mockRowsPromise = null;
+const loadMockRows = () => {
+  if (!mockRowsPromise) {
+    mockRowsPromise = import("../mockData").then((mod) => mod.getMockRows);
+  }
+  return mockRowsPromise;
+};
+
+// Warm the fixtures as soon as presentation mode is entered, so the first query
+// on a demo route does not wait on the network for the chunk.
+export const preloadPresentationFixtures = () => {
+  void loadMockRows();
+};
 
 function withDefaultColumns(row) {
   if (!row || typeof row !== "object" || Array.isArray(row)) return row;
@@ -101,7 +124,7 @@ function matchesOrExpression(row, expression) {
   return splitOrExpression(expression).some((part) => matchesOrPart(row, part));
 }
 
-export function routeSupabaseQuery(descriptor) {
+export async function routeSupabaseQuery(descriptor) {
   const {
     table,
     op = "select",
@@ -130,6 +153,7 @@ export function routeSupabaseQuery(descriptor) {
     return { data, error: null, count: data.length, status: 200, statusText: "OK" };
   }
 
+  const getMockRows = await loadMockRows();
   const rows = (getMockRows(table) || []).map(withDefaultColumns);
   let result = rows.filter(
     (row) =>

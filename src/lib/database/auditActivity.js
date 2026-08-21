@@ -139,19 +139,9 @@ export async function endAuditSession({
   return data;
 }
 
-export async function recordAuditEvent(event) {
-  let enrichedEvent = event;
-  if (event.actor_user_id && (!event.actor_name || !event.actor_department)) {
-    const actor = await getAuditActor(event.actor_user_id);
-    if (actor) {
-      enrichedEvent = {
-        ...event,
-        actor_name: event.actor_name || actor.name,
-        actor_role: event.actor_role || actor.role,
-        actor_department: event.actor_department || actor.department,
-      };
-    }
-  }
+// Sanitise and write one already-enriched event. Shared by the single-event and
+// batch paths so both produce byte-identical rows.
+async function writeAuditEventRow(enrichedEvent) {
   const payload = {
     ...enrichedEvent,
     before_data: sanitiseAuditData(enrichedEvent.before_data),
@@ -168,11 +158,91 @@ export async function recordAuditEvent(event) {
   return data;
 }
 
-export async function recordAuditEvents(events = []) {
-  const results = [];
-  for (const event of events.slice(0, 50)) {
-    results.push(await recordAuditEvent(event));
+export async function recordAuditEvent(event) {
+  let enrichedEvent = event;
+  if (event.actor_user_id && (!event.actor_name || !event.actor_department)) {
+    const actor = await getAuditActor(event.actor_user_id);
+    if (actor) {
+      enrichedEvent = {
+        ...event,
+        actor_name: event.actor_name || actor.name,
+        actor_role: event.actor_role || actor.role,
+        actor_department: event.actor_department || actor.department,
+      };
+    }
   }
+  return writeAuditEventRow(enrichedEvent);
+}
+
+// Resolve several audit actors in one query.
+//
+// recordAuditEvent enriches each event with the actor's name/role/department by
+// querying `users` per event. A flush carries up to 50 events, and in practice
+// they nearly all share one actor — the person using the app — so that was up to
+// 50 identical lookups.
+async function getAuditActors(userIds = []) {
+  const ids = [...new Set(userIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await requireServiceClient()
+    .from("users")
+    .select("user_id, first_name, last_name, email, role, department")
+    .in("user_id", ids);
+  if (error) throw new Error(`Unable to resolve audit actors: ${error.message}`);
+  return new Map(
+    (data || []).map((row) => [
+      Number(row.user_id),
+      {
+        userId: row.user_id,
+        name: [row.first_name, row.last_name].filter(Boolean).join(" ") || `User ${row.user_id}`,
+        email: row.email || null,
+        role: row.role || null,
+        department: row.department || null,
+      },
+    ])
+  );
+}
+
+// Concurrency cap for the per-event RPC. The rows are independent (each carries
+// its own occurred_at and its own dedupe key, and a duplicate is swallowed via
+// 23505), so ordering within a flush is not meaningful — but firing all 50 at
+// once would take 50 pooled connections for a background telemetry write, so it
+// is bounded.
+const AUDIT_WRITE_CONCURRENCY = 6;
+
+export async function recordAuditEvents(events = []) {
+  const batch = events.slice(0, 50);
+  if (batch.length === 0) return [];
+
+  // One lookup for every actor in the batch instead of one per event.
+  const actorsById = await getAuditActors(
+    batch.filter((e) => e.actor_user_id && (!e.actor_name || !e.actor_department)).map((e) => e.actor_user_id)
+  );
+
+  const enriched = batch.map((event) => {
+    const actor = actorsById.get(Number(event.actor_user_id));
+    if (!actor) return event;
+    return {
+      ...event,
+      actor_name: event.actor_name || actor.name,
+      actor_role: event.actor_role || actor.role,
+      actor_department: event.actor_department || actor.department,
+    };
+  });
+
+  // Bounded parallelism instead of a strict await-per-event loop. Results stay
+  // in input order so callers that map ids back to events are unaffected.
+  const results = new Array(enriched.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < enriched.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await writeAuditEventRow(enriched[index]);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(AUDIT_WRITE_CONCURRENCY, enriched.length) }, worker)
+  );
   return results;
 }
 

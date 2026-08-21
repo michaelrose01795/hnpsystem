@@ -639,9 +639,6 @@ export default function CreateJobCardPageUi(props) {
               {requests.map((req, i) => <LayerSurface key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" radius="var(--radius-sm)" padding="10px" style={{
             marginBottom: "10px"
           }}>
-                  <strong style={{ marginBottom: "10px" }}>
-                    Request {i + 1}
-                  </strong>
                   <div style={{
               display: "flex",
               gap: "10px",
@@ -650,6 +647,12 @@ export default function CreateJobCardPageUi(props) {
               overflowX: "auto",
               paddingBottom: "2px"
             }}>
+                    <strong style={{
+                flexShrink: 0,
+                whiteSpace: "nowrap"
+              }}>
+                      Request {i + 1}
+                    </strong>
                     <RequestPresetAutosuggestInput value={req.text || ""} onChange={nextValue => handleRequestChange(i, nextValue)} onPresetSelect={preset => {
                 const updated = [...requests];
                 updated[i] = {
@@ -663,10 +666,17 @@ export default function CreateJobCardPageUi(props) {
                 setRequests(updated);
                 setJobDetections(detections);
                 setJobCategories(Array.from(new Set(detections.map(d => d.jobType))));
-              }} placeholder="Enter job request (MOT, Service, Diagnostic)" containerStyle={{
-                flex: "1 1 auto",
+              }} placeholder="Enter job request (MOT, Service, Diagnostic)" horizontalSuggestions containerStyle={{
+                flex: "1 1 280px",
                 minWidth: "280px"
               }} />
+                    <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginLeft: "auto",
+                flexShrink: 0
+              }}>
                     <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -717,6 +727,7 @@ export default function CreateJobCardPageUi(props) {
                     <Button type="button" variant="secondary" size="sm" onClick={() => setMoreRequestIndex(i)}>
                       More
                     </Button>
+                    </div>
                   </div>
                 </LayerSurface>)}
             </div>

@@ -62,16 +62,25 @@ export function useTeamPresence({
       }
     };
 
+    // Visibility-gated for the same reason as useOperationalSnapshot: this is
+    // top-bar chrome, so polling a hidden tab buys nothing.
+    const isVisible = () =>
+      typeof document === "undefined" || document.visibilityState === "visible";
+    const tick = () => { if (isVisible()) load(); };
+
     load();
     const onFocus = () => load();
-    const interval = setInterval(load, pollMs);
+    const onVisibility = () => { if (isVisible()) load(); };
+    const interval = setInterval(tick, pollMs);
     if (typeof window !== "undefined") window.addEventListener("focus", onFocus);
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelled = true;
       if (abortRef.current) abortRef.current.abort();
       clearInterval(interval);
       if (typeof window !== "undefined") window.removeEventListener("focus", onFocus);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [shouldFetch, pollMs]);
 

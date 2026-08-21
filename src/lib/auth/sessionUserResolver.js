@@ -11,14 +11,41 @@ function parsePositiveInt(value) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+// Confirming that a numeric id from the session still exists is a round trip
+// that ~20 API routes make on their hot path, and the answer ("does user N
+// exist") is the same for every caller — it is not user-scoped data. Cache
+// POSITIVE results only, briefly: a newly created user is picked up on its first
+// request, while a repeat request within the window skips the query.
+//
+// This does not weaken anything: the NextAuth JWT already grants access for its
+// own lifetime regardless of this lookup, so a short existence cache cannot
+// extend access that the session did not already carry.
+const NUMERIC_ID_CACHE_TTL_MS = 60_000;
+const numericIdCache = new Map(); // userId -> expiresAt
+
 async function findUserIdByNumericId(userId) {
+  const cachedUntil = numericIdCache.get(userId);
+  if (cachedUntil && cachedUntil > Date.now()) return userId;
+
   const { data, error } = await supabase
     .from("users")
     .select("user_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
-  return data?.user_id || null;
+
+  const resolved = data?.user_id || null;
+  if (resolved) {
+    numericIdCache.set(resolved, Date.now() + NUMERIC_ID_CACHE_TTL_MS);
+    // Bound the map so a long-lived instance cannot grow without limit.
+    if (numericIdCache.size > 500) {
+      const now = Date.now();
+      for (const [key, expiry] of numericIdCache) {
+        if (expiry <= now) numericIdCache.delete(key);
+      }
+    }
+  }
+  return resolved;
 }
 
 async function findUserIdByEmail(email) {

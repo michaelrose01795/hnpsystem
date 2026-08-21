@@ -718,9 +718,9 @@ function ClockingOverviewTab() {
         .clocking-board / .clocking-details-modal so global emission is safe.
       */}
       <style jsx global>{`
-        /* The current panel uses a compact one-line baseline and grows only when
-           its bounded description needs more room. The next panel stays fixed. */
-        .clocking-board { --clocking-current-panel-height: 191px; --clocking-next-panel-height: 128px; }
+        /* Both job panels stay fixed so one technician card cannot grow taller
+           than its neighbours when a job has a longer description. */
+        .clocking-board { --clocking-current-panel-height: 232px; --clocking-next-panel-height: 128px; }
         .clocking-board { container: clocking-board / inline-size; display: flex; flex-direction: column; gap: var(--page-stack-gap); width: 100%; min-width: 0; color: var(--text-1); }
         .clocking-board__section-header, .clocking-board__toolbar, .clocking-board__filters { display: flex; align-items: center; gap: var(--space-3); }
         .clocking-board__section-header, .clocking-board__toolbar { justify-content: space-between; }
@@ -754,11 +754,11 @@ function ClockingOverviewTab() {
         .clocking-board__technician:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
         .clocking-board__technician-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
         .clocking-board__technician-header h3 { margin: 0; min-width: 0; overflow: hidden; color: var(--text-1); font-size: var(--text-h4); font-weight: 700; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-        /* The current panel keeps one --space-2 token beneath its allocation
-           legend; longer descriptions can grow up to the three-line cap. */
-        .clocking-board__job-panel { min-width: 0; flex: 0 0 auto; }
-        .clocking-board__job-panel--current { min-height: var(--clocking-current-panel-height); }
-        .clocking-board__job-panel--next { height: var(--clocking-next-panel-height); }
+        /* Exact min/height/max values prevent intrinsic content sizing from
+           changing either panel; long descriptions scroll inside their region. */
+        .clocking-board__job-panel { min-width: 0; flex: 0 0 auto; box-sizing: border-box; overflow: hidden; }
+        .clocking-board__job-panel--current { height: var(--clocking-current-panel-height); min-height: var(--clocking-current-panel-height); max-height: var(--clocking-current-panel-height); }
+        .clocking-board__job-panel--next { height: var(--clocking-next-panel-height); min-height: var(--clocking-next-panel-height); max-height: var(--clocking-next-panel-height); }
         .clocking-board__job-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-2); flex: 0 0 auto; min-height: var(--control-height); min-width: 0; }
         /* html.staff-scope prefix is required on anchors: the global
            "html.staff-scope a" rule (0,1,2) otherwise out-specifies a bare class
@@ -773,7 +773,7 @@ function ClockingOverviewTab() {
         .clocking-board__job-header-badge { justify-self: end; min-width: 0; }
         .clocking-board__job-summary { flex: 0 0 auto; overflow-y: auto; overscroll-behavior: contain; }
         .clocking-board__job-summary > p { margin: 0; color: var(--text-1); font-size: var(--text-body-sm); line-height: 1.35; overflow-wrap: anywhere; }
-        .clocking-board__job-panel--current .clocking-board__job-summary { max-height: calc(1.35em * 3); }
+        .clocking-board__job-panel--current .clocking-board__job-summary { flex: 1 1 auto; min-height: 0; max-height: calc(1.35em * 3); }
         .clocking-board__job-panel--next .clocking-board__job-summary { max-height: calc(1.35em * 2); }
         .clocking-board__time-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex: 0 0 auto; min-height: var(--control-height); min-width: 0; }
         .clocking-board__time-block { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }

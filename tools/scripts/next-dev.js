@@ -50,7 +50,11 @@ async function main() {
   let openedBrowser = false;
   const child = spawn(
     process.execPath,
-    ["--no-deprecation", nextBin, "dev", "--port", port, "--webpack"],
+    // Bundler intentionally unpinned: Next 16 defaults to Turbopack, which is
+    // the same bundler `next build` uses (see next.config.mjs `turbopack`).
+    // Forcing --webpack here made dev compile 8-20s per route and diverge from
+    // the shipped module graph.
+    ["--no-deprecation", nextBin, "dev", "--port", port],
     { stdio: ["inherit", "pipe", "pipe"] }
   );
 

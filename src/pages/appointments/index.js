@@ -26,6 +26,7 @@ import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 import { getJobRequests } from "@/lib/canonical/fields";
 import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
+import { WORKSHOP_APPOINTMENT_TIME_OPTIONS } from "@/lib/appointments/dateTime";
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
 // Calculate hours worked between two timestamps
@@ -72,16 +73,6 @@ const generateDates = (daysAhead = 60) => {
     current.setDate(current.getDate() + 1);
   }
   return result;
-};
-
-// Generate time slots from 8:00 AM to 5:00 PM in 30-minute intervals
-const generateTimeSlots = () => {
-  const slots = [];
-  for (let hour = 8; hour <= 17; hour++) {// 8 AM to 5 PM
-    slots.push(`${hour.toString().padStart(2, "0")}:00`);
-    if (hour < 17) slots.push(`${hour.toString().padStart(2, "0")}:30`);
-  }
-  return slots;
 };
 
 const parseHoursValue = (value) => {
@@ -440,7 +431,7 @@ export default function Appointments() {
   const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeSlots] = useState(generateTimeSlots());
+  const timeSlots = WORKSHOP_APPOINTMENT_TIME_OPTIONS;
   const [isLoading, setIsLoading] = useState(false);
   const [checkingInJobId, setCheckingInJobId] = useState(null);
   const [jobRequestHours, setJobRequestHours] = useState({});
@@ -1327,54 +1318,38 @@ export default function Appointments() {
     return job.type || "Service";
   };
 
-  const getJobTypeBadgeStyle = (label) => {
-    const base = {
-      display: "inline-block",
-      padding: "3px 8px",
-      borderRadius: "var(--radius-sm)",
-      fontSize: "11px",
-      fontWeight: "600",
-      textTransform: "capitalize",
-      whiteSpace: "nowrap"
-    };
+  const getJobTypeBadgeClass = (label) => {
     switch (label) {
       case "service":
-        return { ...base, background: "rgba(59,130,246,0.12)", color: "#2563eb" };
+        return "app-badge--accent-soft";
       case "mot":
-        return { ...base, background: "rgba(var(--warning-rgb), 0.12)", color: "var(--warning-text)" };
+        return "app-badge--warning";
       case "diagnosis":
-        return { ...base, background: "rgba(var(--accent-purple-rgb), 0.12)", color: "var(--accent-purple)" };
+        return "app-badge--accent-strong";
       default:
-        return { ...base, background: "rgba(107,114,128,0.12)", color: "#6b7280" };
+        return "app-badge--neutral";
     }
   };
 
-  const getCustomerStatusBadgeColors = (status) => {
+  const getCustomerStatusBadgeClass = (status) => {
     const normalized = (status || "").toLowerCase();
     if (normalized === "waiting") {
       // Red danger badge — matches staffglobal.css .app-badge--danger theme.
-      return {
-        backgroundColor: "var(--danger-surface)",
-        color: "var(--danger-dark)"
-      };
+      return "app-badge--danger";
     }
     if (normalized === "loan car") {
-      return {
-        backgroundColor: "var(--theme)",
-        color: "var(--info)"
-      };
+      return "app-badge--accent-soft";
     }
     if (normalized === "collection") {
-      return {
-        backgroundColor: "var(--warning-surface)",
-        color: "var(--warning)"
-      };
+      return "app-badge--warning";
     }
-    return {
-      backgroundColor: "var(--success-surface)",
-      color: "var(--success-dark)"
-    };
+    return "app-badge--success";
   };
+
+  // Keep the presentation prop names stable while the page UI consumes the
+  // canonical badge class names instead of visual style objects.
+  const getJobTypeBadgeStyle = getJobTypeBadgeClass;
+  const getCustomerStatusBadgeColors = getCustomerStatusBadgeClass;
 
   const getEstimatedFinishTime = (job) => {
     const appointment = job.appointment;

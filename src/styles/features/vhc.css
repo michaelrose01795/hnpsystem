@@ -174,3 +174,271 @@ html.staff-scope .vhc-summary-item__text {
   font-size: 13px;
   color: var(--text-1);
 }
+
+/* Shared issue-report popup structure used by every VHC inspection location. */
+html.staff-scope .vhc-issue-report {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+}
+
+html.staff-scope .vhc-issue-report__header {
+  flex-direction: row;
+  min-width: 0;
+}
+
+html.staff-scope .vhc-issue-report__header h3 {
+  color: var(--text-1);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+html.staff-scope .vhc-issue-report__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--layout-card-gap) var(--space-lg) var(--space-lg);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+html.staff-scope .vhc-issue-report__add {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+html.staff-scope .vhc-issue-report__section-title {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-h4);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+}
+
+html.staff-scope .vhc-issue-report__field,
+html.staff-scope .vhc-issue-report__severity-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+html.staff-scope .vhc-issue-report__label {
+  color: var(--text-1);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+html.staff-scope .vhc-issue-report__add-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .vhc-issue-report__severity-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+html.staff-scope button.vhc-issue-report__severity {
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope button.vhc-issue-report__severity--green {
+  color: var(--success-text) !important;
+  background: var(--success-surface) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--amber {
+  color: var(--warning-text) !important;
+  background: var(--warning-surface) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--red {
+  color: var(--danger-text) !important;
+  background: var(--danger-surface) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--green:hover,
+html.staff-scope button.vhc-issue-report__severity--green:focus-visible {
+  background: var(--success-surface-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--amber:hover,
+html.staff-scope button.vhc-issue-report__severity--amber:focus-visible {
+  background: var(--warning-surface-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--red:hover,
+html.staff-scope button.vhc-issue-report__severity--red:focus-visible {
+  background: var(--danger-surface-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--green.is-selected {
+  color: var(--text-2) !important;
+  background: var(--success) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--amber.is-selected {
+  color: var(--text-2) !important;
+  background: var(--warning) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--red.is-selected {
+  color: var(--text-2) !important;
+  background: var(--danger) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--green.is-selected:hover,
+html.staff-scope button.vhc-issue-report__severity--green.is-selected:focus-visible {
+  background: var(--success-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--amber.is-selected:hover,
+html.staff-scope button.vhc-issue-report__severity--amber.is-selected:focus-visible {
+  background: var(--warning-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity--red.is-selected:hover,
+html.staff-scope button.vhc-issue-report__severity--red.is-selected:focus-visible {
+  background: var(--danger-hover) !important;
+}
+
+html.staff-scope button.vhc-issue-report__severity:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .vhc-issue-report__reported {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+html.staff-scope .vhc-issue-report__divider {
+  width: 100%;
+  margin-top: var(--layout-card-gap);
+  border-top: var(--separating-line);
+}
+
+html.staff-scope .vhc-issue-report__reported-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .vhc-issue-report__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .vhc-issue-report__rows--scroll {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+html.staff-scope .vhc-issue-report__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+html.staff-scope .vhc-issue-report__row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .vhc-issue-report__description {
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .vhc-issue-report__time {
+  color: var(--text-2);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+html.staff-scope .vhc-issue-report__row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .vhc-issue-report__severity-dropdown {
+  width: 160px;
+  min-width: 160px;
+}
+
+html.staff-scope .vhc-issue-report__empty {
+  /* Empty-state copy sits on LayerTheme. Always use the standard readable
+     text token here; --text-2 is reserved for inverse text on strong fills. */
+  color: var(--text-1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+}
+
+@media (max-width: 640px) {
+  html.staff-scope .vhc-issue-report__body {
+    gap: 0;
+    padding: var(--layout-card-gap) var(--space-md) var(--space-md);
+  }
+
+  html.staff-scope .vhc-issue-report__add-actions,
+  html.staff-scope .vhc-issue-report__severity-field,
+  html.staff-scope .vhc-issue-report__add-actions > .app-btn,
+  html.staff-scope .vhc-issue-report__severity-options {
+    width: 100%;
+  }
+
+  html.staff-scope .vhc-issue-report__row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  html.staff-scope .vhc-issue-report__row-actions {
+    justify-content: stretch;
+  }
+
+  html.staff-scope .vhc-issue-report__severity-dropdown {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}

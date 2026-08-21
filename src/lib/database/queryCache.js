@@ -8,6 +8,16 @@ const DEFAULT_TTL_MS = 5000; // 5-second cache window
 const cache = new Map();      // key → { data, expiresAt }
 const inflight = new Map();   // key → Promise
 
+// This module holds a process-global Map. In the browser that is per-tab and
+// therefore per-user, which is what it was designed for. On the server it is
+// shared by every request the Node process handles, so caching a per-user result
+// there could serve one user's data to another inside the TTL window.
+//
+// Server-side caching is therefore OPT-IN and only legitimate for results that
+// are identical for every viewer (`shared: true`). Anything derived from the
+// caller's session, role or user id must never set it.
+const IS_SERVER = typeof window === "undefined";
+
 /**
  * Returns cached data if still within TTL, otherwise null.
  */
@@ -40,7 +50,14 @@ function setInCache(key, data, ttlMs = DEFAULT_TTL_MS) {
  * @param {number} [ttlMs] - Cache TTL in milliseconds (default 5000)
  * @returns {Promise<*>}  - The fetched (or cached) result
  */
-export async function cachedQuery(key, fn, ttlMs = DEFAULT_TTL_MS) {
+export async function cachedQuery(key, fn, ttlMs = DEFAULT_TTL_MS, { shared = false } = {}) {
+  // On the server, only cache results that are the same for every viewer.
+  // Everything else runs uncached so one request can never observe another
+  // user's data. See the IS_SERVER note at the top of this file.
+  if (IS_SERVER && !shared) {
+    return fn();
+  }
+
   // 1. Return from cache if fresh
   const cached = getFromCache(key);
   if (cached !== null) return cached;

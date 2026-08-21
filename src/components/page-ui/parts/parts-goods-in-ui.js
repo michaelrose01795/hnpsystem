@@ -403,9 +403,9 @@ export default function GoodsInPageUi(props) {
             <h2 style={{
           margin: 0
         }}>Add part</h2>
-            <button style={primaryButtonStyle(false)} onClick={() => setPartSearchOpen(true)}>
+            <Button type="button" variant="secondary" onClick={() => setPartSearchOpen(true)}>
               Search catalogue
-            </button>
+            </Button>
           </div>
           {partError && <div style={{
         border: "none",

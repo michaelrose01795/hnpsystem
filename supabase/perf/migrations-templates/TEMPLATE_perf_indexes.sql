@@ -1,0 +1,99 @@
+-- TEMPLATE — do not apply as-is.
+--
+-- Copy to supabase/migrations/<timestamp>_perf_indexes.sql and keep ONLY the
+-- statements that a plan from 02-explain-hot-queries.sql actually justifies.
+-- Each index below names the call site it would serve, so an index with no
+-- matching slow plan should simply be deleted from the copy rather than kept
+-- "just in case" — every index is written on every insert, update and delete.
+--
+-- LOCKING: CREATE INDEX CONCURRENTLY does not block reads or writes, but it
+-- cannot run inside a transaction block. Supabase's SQL editor wraps statements
+-- in a transaction by default, so run these ONE AT A TIME, or via psql with
+-- --single-transaction disabled. A CONCURRENTLY build that fails leaves an
+-- INVALID index behind: drop it and retry.
+--
+--   select indexrelid::regclass, indisvalid from pg_index where not indisvalid;
+--
+-- Down migration is at the bottom.
+
+-- ---------------------------------------------------------------------------
+-- Job-card child lookups.  Serves: /api/jobcards/[jobNumber] (getJobByNumber)
+-- and every nested relation on the workload list.
+-- Justified when: 02 section B shows a Seq Scan on the table.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_vhc_checks_job_id       on public.vhc_checks       (job_id);
+-- create index concurrently if not exists idx_parts_job_items_job_id  on public.parts_job_items  (job_id);
+-- create index concurrently if not exists idx_parts_requests_job_id   on public.parts_requests   (job_id);
+-- create index concurrently if not exists idx_job_requests_job_id     on public.job_requests     (job_id);
+-- create index concurrently if not exists idx_job_notes_job_id        on public.job_notes        (job_id);
+-- create index concurrently if not exists idx_job_writeups_job_id     on public.job_writeups     (job_id);
+-- create index concurrently if not exists idx_job_files_job_id        on public.job_files        (job_id);
+-- create index concurrently if not exists idx_appointments_job_id     on public.appointments     (job_id);
+
+-- ---------------------------------------------------------------------------
+-- Workload list ordering.  Serves: /api/jobs/workload (order by created_at desc,
+-- limit 400).
+-- Justified when: 02 section A's second plan shows a sort over the whole table
+-- rather than an index scan.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_jobs_created_at_desc on public.jobs (created_at desc);
+
+-- Job lookup by number. Serves: opening any job card.
+-- Only needed if job_number does not already carry a unique constraint.
+-- create index concurrently if not exists idx_jobs_job_number on public.jobs (job_number);
+
+-- ---------------------------------------------------------------------------
+-- Clocking.  Serves: /api/profile/clock (the active record for a user) and the
+-- clocking-aware status derivation on the workload list.
+-- Partial index: only open records are ever looked up this way, so the index
+-- stays small no matter how much history accumulates.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_job_clocking_open_by_user
+--   on public.job_clocking (user_id, clock_in desc)
+--   where clock_out is null;
+-- create index concurrently if not exists idx_job_clocking_job_id on public.job_clocking (job_id);
+
+-- ---------------------------------------------------------------------------
+-- Messaging.  Serves: the unread badge (/api/messages/unread-count) and the
+-- thread list.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_message_thread_members_user
+--   on public.message_thread_members (user_id, thread_id);
+-- Latest-message-per-thread lookup:
+-- create index concurrently if not exists idx_messages_thread_created
+--   on public.messages (thread_id, created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Audit / activity.  Serves: the hash-chain head read on every audit write, and
+-- the activity timeline.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_audit_log_id_desc on public.audit_log (id desc);
+-- create index concurrently if not exists idx_user_activity_events_occurred
+--   on public.user_activity_events (occurred_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Status history / tracking.
+-- ---------------------------------------------------------------------------
+-- create index concurrently if not exists idx_job_status_history_job
+--   on public.job_status_history (job_id, changed_at desc);
+
+-- ===========================================================================
+-- Down:  drop only what this migration created, in the same CONCURRENTLY mode.
+-- ===========================================================================
+-- drop index concurrently if exists public.idx_vhc_checks_job_id;
+-- drop index concurrently if exists public.idx_parts_job_items_job_id;
+-- drop index concurrently if exists public.idx_parts_requests_job_id;
+-- drop index concurrently if exists public.idx_job_requests_job_id;
+-- drop index concurrently if exists public.idx_job_notes_job_id;
+-- drop index concurrently if exists public.idx_job_writeups_job_id;
+-- drop index concurrently if exists public.idx_job_files_job_id;
+-- drop index concurrently if exists public.idx_appointments_job_id;
+-- drop index concurrently if exists public.idx_jobs_created_at_desc;
+-- drop index concurrently if exists public.idx_jobs_job_number;
+-- drop index concurrently if exists public.idx_job_clocking_open_by_user;
+-- drop index concurrently if exists public.idx_job_clocking_job_id;
+-- drop index concurrently if exists public.idx_message_thread_members_user;
+-- drop index concurrently if exists public.idx_messages_thread_created;
+-- drop index concurrently if exists public.idx_audit_log_id_desc;
+-- drop index concurrently if exists public.idx_user_activity_events_occurred;
+-- drop index concurrently if exists public.idx_job_status_history_job;

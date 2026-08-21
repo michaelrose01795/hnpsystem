@@ -1,31 +1,20 @@
-Promote only these finished commits from development into main: [PASTE COMMIT HASHES OR COMMIT NAMES HERE], do not include any other development commits, preserve all unfinished development work exactly as it is, push the updated main branch to origin, then switch the local workspace back to development and confirm development remains the active branch.
+--- 
 
+TODO
+npm i next@latest
 
+TODO
+Now carry out the real HNPSystem staff UI cleanup across all routes outside `/website` using the new governance rules and baselines, systematically migrate existing legacy implementations onto the canonical shared staff design system while preserving the current rendered appearance and behaviour as the visual reference unless a genuine bug is being fixed, reduce the baselined debt rather than increasing it, replace duplicated or one-off implementations with the existing shared components and semantic tokens where they can reproduce the same frontend result, prioritise the highest-value areas first including broken/undefined token usage, buttons and raw controls, inputs and labels, dropdowns, tabs, badges and status pills, tables, cards and layer primitives, modals and popups, typography, raw colours, arbitrary spacing/radius values and excessive `!important`, keep approved feature-specific and dealership-density exceptions intact, do not restyle components simply to make them look more uniform, do not change layout, colour, sizing, typography, spacing, interaction or responsive behaviour unless needed to preserve the existing design through the shared system, keep `/website` and `custglobal.css` completely separate and unchanged, work in safe groups so each migration can be verified before moving on, use the existing staff UI as the source of truth for visual output, and continue until all realistically removable legacy debt is migrated to the canonical system and any remaining exceptions are explicitly documented rather than left as accidental drift.
 
-
-CHECK
-/Clocking
-Minor changes todo 
-
-
-CHECK
-/consumables-tracker
-Minor changes todo 
 
 
 TODO
-/tech/efficiency
-CHeck for imporvements 
+view the claude with rules etc 
 
-CHECK
-/stock-catalogue
+TODO
+view claude for speed data updates
 
-
-CHECK
-/goods-in
-Minor changes todo 
-
---- 
+---
 
 
 TODO

@@ -1,0 +1,43 @@
+/* file location: src/styles/features/website-manager.css
+   Staff-side Website Manager editor chrome (src/features/websiteManager/panels/
+   LivePreviewPanel.js — the /website-manager route).
+
+   These three rules previously lived at the bottom of custglobal.css, deliberately
+   OUTSIDE `html.website-scope`, because the editor renders in the staff app rather
+   than the public marketing scope. That made custglobal.css load-bearing for a
+   staff route, which is why it had to stay in the global _app import.
+
+   custglobal.css is now loaded only by routes that call `useWebsiteScope()`
+   (see src/features/website/hooks/useWebsiteScope.js), so these staff rules move
+   into the staff system here — which is also what CLAUDE.md §3.0b requires
+   ("/website is a separate system … never mix the two"). Imported from
+   staffglobal.css alongside features/vhc.css. */
+
+.ws-editor-split {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ws-editor-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ws-editor-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.ws-editor-preview iframe {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--theme);
+}

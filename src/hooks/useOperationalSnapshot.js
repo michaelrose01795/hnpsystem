@@ -51,16 +51,27 @@ export function useOperationalSnapshot({ department = null, isPresentation = fal
       }
     };
 
+    // Only poll while the tab is visible. This runs on every staff page for as
+    // long as the tab is open; in a background tab the value is not on screen,
+    // so the request is pure cost. Coming back to the tab loads immediately, so
+    // what the user sees is never staler than it was before.
+    const isVisible = () =>
+      typeof document === "undefined" || document.visibilityState === "visible";
+    const tick = () => { if (isVisible()) load(); };
+
     load();
     const onFocus = () => load();
-    const interval = setInterval(load, POLL_MS);
+    const onVisibility = () => { if (isVisible()) load(); };
+    const interval = setInterval(tick, POLL_MS);
     if (typeof window !== "undefined") window.addEventListener("focus", onFocus);
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelled = true;
       if (abortRef.current) abortRef.current.abort();
       clearInterval(interval);
       if (typeof window !== "undefined") window.removeEventListener("focus", onFocus);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [shouldFetch, department]);
 

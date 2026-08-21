@@ -5,6 +5,17 @@ import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is rai
 import "@/styles/theme.css"; // register CSS variables before globals
 import "@/styles/staffglobal.css"; // staff/admin app global base styles
 import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
+// PERFORMANCE NOTE — this import costs 82KB of render-blocking CSS on all 163
+// routes even though every rule inside is scoped to `html.website-scope`, which
+// only the ~7 customer-facing routes ever set. Moving it onto those routes was
+// attempted and reverted: Next's Pages Router still refuses global CSS imported
+// from anywhere but _app ("Global CSS cannot be imported from files other than
+// your Custom <App>"), so it cannot simply be imported by `useWebsiteScope()`.
+// The two viable routes out are (a) convert custglobal.css to a CSS Module with
+// every selector wrapped in `:global(...)`, or (b) emit it as a static asset and
+// <link> it from the customer layout. Both are mechanical but touch all ~650
+// rules, so they are left for the in-flight design-governance work rather than
+// bundled into a performance pass.
 import "@/features/tracking/map/trackingMap.css"; // /tracking site-map diagram (Pages Router requires plain-CSS imports here)
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -38,7 +49,8 @@ import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/pre
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
-import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { installPerfConsole, startJourney, stage } from "@/lib/perf/stageTimings";
 
 // Keep staff-only providers, shell code and global listeners out of the login
 // route's initial JavaScript. These chunks are requested only when rendered.
@@ -103,6 +115,27 @@ function AppWrapper({ Component, pageProps }) {
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);
 
+  // Stage timing for the journeys users actually feel. Installs `hnpPerf()` in
+  // the console and marks each client navigation so route-change time can be
+  // separated from data time and from API/database time (the latter comes from
+  // the Server-Timing headers the hot endpoints now emit).
+  useEffect(() => {
+    installPerfConsole();
+    stage("app:mounted");
+  }, []);
+
+  useEffect(() => {
+    if (!router?.events) return undefined;
+    const onStart = (url) => startJourney(`nav ${url}`);
+    const onComplete = () => stage("nav:routeChangeComplete");
+    router.events.on("routeChangeStart", onStart);
+    router.events.on("routeChangeComplete", onComplete);
+    return () => {
+      router.events.off("routeChangeStart", onStart);
+      router.events.off("routeChangeComplete", onComplete);
+    };
+  }, [router]);
+
   // Route-owned global style scopes. Next loads global CSS from _app only, so
   // the route decides which global family is active by toggling root classes:
   // staffglobal.css applies under html.staff-scope, custglobal.css applies
@@ -123,8 +156,18 @@ function AppWrapper({ Component, pageProps }) {
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.
   useEffect(() => {
-    if (isPresentationRoute) installFetchInterceptor();
-    else restoreFetchInterceptor();
+    if (isPresentationRoute) {
+      installFetchInterceptor();
+      // The demo fixtures behind the supabase presentation stub are loaded
+      // lazily (see features/presentation/dataLayer/queryRouter.js) so they stay
+      // out of every real route's bundle. Warm them the moment a demo route is
+      // entered so the first stubbed query does not wait on the chunk.
+      void import("@/features/presentation/dataLayer/queryRouter").then((mod) =>
+        mod.preloadPresentationFixtures?.()
+      );
+    } else {
+      restoreFetchInterceptor();
+    }
     return () => restoreFetchInterceptor();
   }, [isPresentationRoute]);
 
@@ -176,6 +219,10 @@ function AppWrapper({ Component, pageProps }) {
   // TEMP diagnostic: mark each fresh document/app boot. Also clear any
   // leftover console output and trace buffer so F12 starts clean.
   useEffect(() => {
+    // Development-only: clears the console and the persisted trace buffer so a
+    // fresh boot starts clean. Skipped in production, where the tracer is a
+    // no-op and wiping the user's console would be user-hostile.
+    if (!TRACE_ENABLED) return;
     if (typeof window !== "undefined") {
       const native = globalThis.__HNP_NATIVE_CONSOLE__ || console;
       try {
@@ -200,6 +247,11 @@ function AppWrapper({ Component, pageProps }) {
   //   copy(window.__hnpTrace)   to grab the full timeline
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
+    // Development-only navigation timeline. In production this installed nine
+    // global listeners (including a capture-phase document click handler that
+    // called console.clear() on every link click) purely to feed a tracer that
+    // is itself disabled there.
+    if (!TRACE_ENABLED) return undefined;
 
     const native =
       (typeof globalThis !== "undefined" && globalThis.__HNP_NATIVE_CONSOLE__) || console;
@@ -403,67 +455,81 @@ function AppWrapper({ Component, pageProps }) {
       }
     };
 
+    // Route bundles here are large (0.7-2.7MB uncompressed). Prefetching on a
+    // bare `mouseover` meant that sweeping the cursor down the sidebar fired a
+    // prefetch for every link it crossed, downloading and parsing dozens of
+    // route bundles the user never asked for. Two guards fix that without
+    // losing the instant-navigation benefit:
+    //   1. hover must be SUSTAINED (HOVER_INTENT_MS) before it counts as intent;
+    //      pointerdown / touchstart / focusin are real intent and fire at once.
+    //   2. a session cap, so an unusual interaction pattern cannot queue an
+    //      unbounded number of bundle downloads.
+    const HOVER_INTENT_MS = 150;
+    const MAX_PREFETCHED_ROUTES = 12;
+    let hoverTimer = null;
+
     const prefetchRoute = (eventOrHref) => {
       const href = typeof eventOrHref === "string" ? eventOrHref : getInternalHref(eventOrHref);
       if (!href) return;
       if (prefetchedRoutes.has(href)) return;
+      if (prefetchedRoutes.size >= MAX_PREFETCHED_ROUTES) return;
       prefetchedRoutes.add(href);
       Promise.resolve(router.prefetch?.(href)).catch(() => {
         prefetchedRoutes.delete(href);
       });
     };
 
+    const clearHoverIntent = () => {
+      if (hoverTimer) {
+        window.clearTimeout(hoverTimer);
+        hoverTimer = null;
+      }
+    };
+
+    const onHover = (event) => {
+      const href = getInternalHref(event);
+      clearHoverIntent();
+      if (!href) return;
+      hoverTimer = window.setTimeout(() => {
+        hoverTimer = null;
+        prefetchRoute(href);
+      }, HOVER_INTENT_MS);
+    };
+
     // Intent-based prefetch only. Navigation itself is handled by Next's <Link>
     // so router.asPath updates optimistically and the sidebar's active state
     // flips on click without waiting for the new page to finish loading.
-    document.addEventListener("mouseover", prefetchRoute, true);
+    document.addEventListener("mouseover", onHover, true);
+    document.addEventListener("mouseout", clearHoverIntent, true);
     document.addEventListener("focusin", prefetchRoute, true);
     document.addEventListener("touchstart", prefetchRoute, true);
     document.addEventListener("pointerdown", prefetchRoute, true);
 
     return () => {
-      document.removeEventListener("mouseover", prefetchRoute, true);
+      clearHoverIntent();
+      document.removeEventListener("mouseover", onHover, true);
+      document.removeEventListener("mouseout", clearHoverIntent, true);
       document.removeEventListener("focusin", prefetchRoute, true);
       document.removeEventListener("touchstart", prefetchRoute, true);
       document.removeEventListener("pointerdown", prefetchRoute, true);
     };
   }, [router]);
 
-  useEffect(() => {
-    const hideTimers = new WeakMap();
-    const HIDE_DELAY = 3000;
-
-    const showScrollbar = (el) => {
-      el.classList.add('scrollbar-visible');
-      el.classList.remove('scrollbar-hidden');
-    };
-
-    const hideScrollbar = (el) => {
-      el.classList.remove('scrollbar-visible');
-      el.classList.add('scrollbar-hidden');
-    };
-
-    const resetHideTimer = (el) => {
-      const existing = hideTimers.get(el);
-      if (existing) clearTimeout(existing);
-      showScrollbar(el);
-      hideTimers.set(el, setTimeout(() => hideScrollbar(el), HIDE_DELAY));
-    };
-
-    // Capture scroll events from any element (scroll doesn't bubble, so we use capture phase)
-    const handleScroll = (e) => {
-      const target = e.target === document ? document.body : e.target;
-      if (target && target.nodeType === 1) {
-        resetHideTimer(target);
-      }
-    };
-
-    document.addEventListener('scroll', handleScroll, true);
-
-    return () => {
-      document.removeEventListener('scroll', handleScroll, true);
-    };
-  }, []);
+  // REMOVED: the global show-scrollbar-on-scroll handler.
+  //
+  // It bound a capture-phase `scroll` listener on `document` (catching every
+  // scroll event from every scroller in the app), kept a WeakMap of per-element
+  // timers, and toggled `.scrollbar-visible` / `.scrollbar-hidden` classes —
+  // class mutations that then woke the document-wide modal-lock MutationObserver
+  // below.
+  //
+  // Those two classes have no visual effect: staffglobal.css ends with
+  // `html.staff-scope * { scrollbar-width: none !important }` and
+  // `html.staff-scope *::-webkit-scrollbar { display: none !important }`, which
+  // hide scrollbar chrome on every element. `.scrollbar-visible` only re-declares
+  // `scrollbar-color`, so the bar it colours is never rendered. Scrollbar chrome
+  // is opted back in per-container (.app-table-shell-scroll /
+  // [data-app-table-shell-scroll]) and does not depend on these classes.
 
   // Enforce global modal lock for any popup implementation pattern in the app.
   useEffect(() => {
@@ -471,30 +537,61 @@ function AppWrapper({ Component, pageProps }) {
     const MODAL_SELECTOR = ".popup-backdrop, [aria-modal='true'], [data-modal-portal='true']";
     if (typeof document === "undefined") return undefined;
 
-    const updateModalLock = () => {
-      const hasModal = Boolean(document.querySelector(MODAL_SELECTOR));
-      document.documentElement.classList.toggle(MODAL_CLASS, hasModal);
-      document.body.classList.toggle(MODAL_CLASS, hasModal);
-    };
-
     const preventBackgroundScroll = (event) => {
-      if (!document.body.classList.contains(MODAL_CLASS)) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest(MODAL_SELECTOR)) return;
       event.preventDefault();
     };
 
+    // The wheel/touchmove blockers must be non-passive to call preventDefault,
+    // which forces the browser to wait on JS for every scroll gesture. They used
+    // to be attached for the whole session and no-op'd on a class check. Attach
+    // them only while a modal is actually open, so ordinary page scrolling is
+    // never gated on a listener that has nothing to do.
+    let scrollBlockersAttached = false;
+    const attachScrollBlockers = () => {
+      if (scrollBlockersAttached) return;
+      scrollBlockersAttached = true;
+      document.addEventListener("wheel", preventBackgroundScroll, { capture: true, passive: false });
+      document.addEventListener("touchmove", preventBackgroundScroll, { capture: true, passive: false });
+    };
+    const detachScrollBlockers = () => {
+      if (!scrollBlockersAttached) return;
+      scrollBlockersAttached = false;
+      document.removeEventListener("wheel", preventBackgroundScroll, true);
+      document.removeEventListener("touchmove", preventBackgroundScroll, true);
+    };
+
+    const updateModalLock = () => {
+      const hasModal = Boolean(document.querySelector(MODAL_SELECTOR));
+      document.documentElement.classList.toggle(MODAL_CLASS, hasModal);
+      document.body.classList.toggle(MODAL_CLASS, hasModal);
+      if (hasModal) attachScrollBlockers();
+      else detachScrollBlockers();
+    };
+
+    // The observer watches the whole body subtree, so it fires for every React
+    // commit that touches a class anywhere on the page — frequently on the
+    // realtime-driven job tables. Coalesce a burst of mutations into a single
+    // document-wide querySelector per animation frame.
+    let lockFrame = 0;
+    const scheduleModalLockUpdate = () => {
+      if (lockFrame) return;
+      lockFrame = window.requestAnimationFrame(() => {
+        lockFrame = 0;
+        updateModalLock();
+      });
+    };
+
     updateModalLock();
-    const observer = new MutationObserver(updateModalLock);
+    const observer = new MutationObserver(scheduleModalLockUpdate);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-modal"] });
-    document.addEventListener("wheel", preventBackgroundScroll, { capture: true, passive: false });
-    document.addEventListener("touchmove", preventBackgroundScroll, { capture: true, passive: false });
 
     return () => {
       observer.disconnect();
-      document.removeEventListener("wheel", preventBackgroundScroll, true);
-      document.removeEventListener("touchmove", preventBackgroundScroll, true);
+      if (lockFrame) window.cancelAnimationFrame(lockFrame);
+      detachScrollBlockers();
       document.documentElement.classList.remove(MODAL_CLASS);
       document.body.classList.remove(MODAL_CLASS);
     };
@@ -506,20 +603,29 @@ function AppWrapper({ Component, pageProps }) {
   const getLayout = Component.getLayout || defaultGetLayout;
   const pageElement = <Component {...pageProps} />;
 
+  // Customer-facing surfaces (the public website, the customer portal, and the
+  // public VHC report links) render none of the staff chrome, so the staff-only
+  // global helpers below have nothing to act on there. They are not free,
+  // though: GlobalTableShells installs a document-wide MutationObserver plus
+  // mousemove/scroll/resize listeners for staff data tables, and
+  // GlobalDraftPersistence tracks staff form drafts. Skipping them keeps the
+  // customer pages off those listeners entirely.
+  const isCustomerFacingSurface = isWebsiteRoute || isCustomerRoute || isPublicVhcReportRoute;
+
   return (
     <>
       <RouteProgressBar />
-      <GlobalDraftPersistence />
-      <GlobalTableShells />
+      {!isCustomerFacingSurface && <GlobalDraftPersistence />}
+      {!isCustomerFacingSurface && <GlobalTableShells />}
       <PageAccessGuard pathname={pathname} />
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
       <GlobalTooltip />
-      <DevLayoutOverlayRoot />
+      {!isCustomerFacingSurface && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}
-      <StaffStyleReviewHighlighter />
+      {!isCustomerFacingSurface && <StaffStyleReviewHighlighter />}
     </>
   ); // render the requested page inside its (persistent) layout shell
 }

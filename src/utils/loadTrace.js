@@ -23,6 +23,19 @@ const PREFIX = "[HNP-TRACE]";
 const STORAGE_KEY = "hnp-trace-buffer";
 const MAX_ENTRIES = 600;
 
+// Development-only. Every trace() call used to JSON.stringify the whole ring
+// buffer (up to MAX_ENTRIES) and write it to sessionStorage synchronously, on
+// the main thread, in production too — because it prints through the stashed
+// native console, `compiler.removeConsole` in next.config.mjs never stripped it.
+// The tracer stays fully functional in development; in a production build the
+// exports below become no-ops that the bundler can eliminate.
+const TRACING_ENABLED = process.env.NODE_ENV !== "production";
+
+// Exported so call sites that install their own diagnostic listeners (the
+// navigation timeline in _app.js) can skip that work entirely rather than
+// installing handlers that would call a no-op trace().
+export const TRACE_ENABLED = TRACING_ENABLED;
+
 const now = () =>
   typeof performance !== "undefined" && typeof performance.now === "function"
     ? performance.now()
@@ -45,12 +58,35 @@ const loadBuffer = () => {
   }
 };
 
-const saveBuffer = (buffer) => {
+// Coalesce persistence to one write per idle slice. The buffer is only read
+// back after a hard navigation, so it does not need to be durable per entry —
+// and serialising it on every call was the single most expensive thing this
+// module did during boot, when traces arrive in bursts.
+let saveScheduled = false;
+let pendingBuffer = null;
+const flushBuffer = () => {
+  saveScheduled = false;
+  const buffer = pendingBuffer;
+  pendingBuffer = null;
+  if (!buffer) return;
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(buffer));
   } catch {
     // sessionStorage unavailable / full — the in-memory buffer still works.
   }
+};
+const saveBuffer = (buffer) => {
+  pendingBuffer = buffer;
+  if (saveScheduled) return;
+  saveScheduled = true;
+  const schedule =
+    typeof window.requestIdleCallback === "function"
+      ? (fn) => window.requestIdleCallback(fn, { timeout: 500 })
+      : (fn) => window.setTimeout(fn, 0);
+  schedule(flushBuffer);
+  // A hard navigation can happen before the idle callback runs; persist
+  // synchronously on the way out so the cross-reload timeline is not lost.
+  window.addEventListener("pagehide", flushBuffer, { once: true });
 };
 
 const format = (value) => {
@@ -69,6 +105,7 @@ const format = (value) => {
 
 // Core tracer — records one timeline entry and prints one console line.
 export function trace(category, message, data) {
+  if (!TRACING_ENABLED) return;
   if (typeof window === "undefined") return;
 
   const elapsed = Number((now() - t0).toFixed(1));
@@ -109,6 +146,7 @@ export function trace(category, message, data) {
 // Logs "<name> mounted" / "<name> UNMOUNTED" — use to catch remounts/flicker.
 export function useTraceMount(name, data) {
   useEffect(() => {
+    if (!TRACING_ENABLED) return undefined;
     trace("mount", `${name} mounted`, data);
     return () => trace("mount", `${name} UNMOUNTED`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,9 +154,14 @@ export function useTraceMount(name, data) {
 }
 
 // Logs whenever `value` changes — including the first observed value.
+// Deliberately has no dependency array: detecting a change requires running
+// after every render. In production the body short-circuits immediately, so the
+// per-render cost is a single boolean check (it is mounted five times in
+// UserProvider alone, plus StaffLayout).
 export function useTraceValue(name, value) {
   const prev = useRef(Symbol("hnp-init"));
   useEffect(() => {
+    if (!TRACING_ENABLED) return;
     if (prev.current !== value) {
       trace("state", `${name}: ${format(prev.current)} -> ${format(value)}`);
       prev.current = value;
