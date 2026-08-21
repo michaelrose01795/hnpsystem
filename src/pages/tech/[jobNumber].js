@@ -5,6 +5,15 @@
 import React, { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
+// The six VHC section modals and the two media editors are rendered only when a
+// section is opened (`activeSection === "..." && <Modal/>` in the page-ui) or a
+// document is being edited, but they were static imports — so every technician
+// job card downloaded them up front. WheelsTyresDetailsModal in particular pulls
+// in the fault taxonomy via lib/vhc/issueSuggestions, a 217KB chunk on its own.
+// Loading them through next/dynamic is behaviour-neutral: the render guards that
+// decide when they appear are unchanged.
+import dynamic from "next/dynamic";
+import { usePolling } from "@/hooks/usePolling"; // shared visibility-gated poller
 import Layout from "@/components/Layout";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
@@ -65,17 +74,17 @@ import {
 } from "@/features/vhc/vhcStatusEngine";
 
 // VHC Section Modals
-import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
-import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
-import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
-import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
-import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
-import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
+const WheelsTyresDetailsModal = dynamic(() => import("@/components/VHC/WheelsTyresDetailsModal"), { ssr: false });
+const BrakesHubsDetailsModal = dynamic(() => import("@/components/VHC/BrakesHubsDetailsModal"), { ssr: false });
+const ServiceIndicatorDetailsModal = dynamic(() => import("@/components/VHC/ServiceIndicatorDetailsModal"), { ssr: false });
+const ExternalDetailsModal = dynamic(() => import("@/components/VHC/ExternalDetailsModal"), { ssr: false });
+const InternalElectricsDetailsModal = dynamic(() => import("@/components/VHC/InternalElectricsDetailsModal"), { ssr: false });
+const UndersideDetailsModal = dynamic(() => import("@/components/VHC/UndersideDetailsModal"), { ssr: false });
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import CustomerVideoButton from "@/components/VHC/CustomerVideoButton";
 import Button from "@/components/ui/Button";
-import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
-import VideoEditorModal from "@/components/VHC/VideoEditorModal";
+const PhotoEditorModal = dynamic(() => import("@/components/VHC/PhotoEditorModal"), { ssr: false });
+const VideoEditorModal = dynamic(() => import("@/components/VHC/VideoEditorModal"), { ssr: false });
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
@@ -1281,12 +1290,23 @@ export default function TechJobDetailPage() {
     fetchJobData();
   }, [fetchJobData]);
 
+  // Customer VHC delivery status. Already scoped to the VHC tab; now also
+  // visibility-gated (via the shared usePolling hook) and stopped once the
+  // customer has viewed the report, since there is no later transition to
+  // observe. Matches the job-card page's handling of the same endpoint.
   useEffect(() => {
-    if (activeTab !== "vhc") return undefined;
+    if (activeTab !== "vhc") return;
     void loadVhcCustomerStatus();
-    const interval = setInterval(loadVhcCustomerStatus, 15000);
-    return () => clearInterval(interval);
   }, [activeTab, loadVhcCustomerStatus]);
+
+  const vhcCustomerStatusIsTerminal =
+    String(vhcCustomerStatus?.status || "").toLowerCase() === "viewed";
+
+  usePolling(
+    loadVhcCustomerStatus,
+    15000,
+    activeTab === "vhc" && !vhcCustomerStatusIsTerminal
+  );
 
   useEffect(() => {
     if (!jobCardId) {
@@ -5741,8 +5761,9 @@ function DocumentsTab({
         </div>
       }
 
+      {editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "") ? (
       <PhotoEditorModal
-        isOpen={editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "")}
+        isOpen
         photoFile={editingDoc?.url || editingDoc?.file_url || ""}
         onSave={(editedFile) => {
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
@@ -5750,10 +5771,11 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
-      
+      ) : null}
 
+      {editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "") ? (
       <VideoEditorModal
-        isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
+        isOpen
         videoFile={editingDoc?.url || editingDoc?.file_url || ""}
         onSave={(editedFile) => {
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
@@ -5761,6 +5783,7 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
+      ) : null}
       
     </DevLayoutSection>);
 

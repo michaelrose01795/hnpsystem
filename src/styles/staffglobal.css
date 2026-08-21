@@ -18,6 +18,7 @@
  */
 @import "./families/index.css";
 @import "./features/vhc.css";
+@import "./features/website-manager.css";
 
 /* ========================================================= */
 /* === VHC Total Column — hide number input spinners === */
@@ -1102,11 +1103,18 @@ html.staff-scope .app-mobile-sidebar-backdrop {
 /* === Modern Floating Scrollbar Styles === */
 /* ========================================================= */
 
-/* Global scrollbar for all elements - hidden by default */
+/* Global scrollbar for all elements - hidden by default.
+
+   PERFORMANCE (no visual change): this rule used to also declare
+   `transition: scrollbar-color 0.3s ease`, which registered a transitionable
+   property on EVERY element in the document. The end-of-stylesheet block
+   ("Keep every scroll container scrollable while removing the browser chrome")
+   sets `html.staff-scope * { scrollbar-color: transparent transparent
+   !important }`, so the transitioned property is permanently pinned and the
+   transition could never run — it was pure style-recalc cost. Removed. */
 html.staff-scope * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
@@ -1152,15 +1160,18 @@ html.staff-scope *::-webkit-scrollbar-thumb:hover {
   background-clip: padding-box;
 }
 
-/* Show scrollbar on hover for all elements */
-html.staff-scope *:hover {
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
+/* Show scrollbar on hover for all elements — REMOVED (no visual change).
 
-html.staff-scope *:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  background-clip: padding-box;
-}
+   `html.staff-scope *:hover { scrollbar-color: ... }` carried no !important, so
+   it was already beaten by the end-of-stylesheet
+   `html.staff-scope * { scrollbar-color: transparent transparent !important }`,
+   and `*:hover::-webkit-scrollbar-thumb` renders nothing because
+   `*::-webkit-scrollbar { display: none !important }` hides the scrollbar in the
+   same block. Both rules were therefore dead — but a UNIVERSAL :hover selector
+   forces the browser to re-resolve style for the whole hover chain on every
+   pointer move, which is one of the most expensive things a stylesheet can do
+   on a dense page. Scrollbar chrome is opted back in per-container at the end of
+   this file (.app-table-shell-scroll / [data-app-table-shell-scroll]). */
 
 /* Specific styling for tabs container to hide scrollbar completely */
 html.staff-scope .tabs-scroll-container::-webkit-scrollbar {
@@ -1262,13 +1273,23 @@ html.staff-scope .timepicker-api__options::-webkit-scrollbar-thumb:hover {
 /* global show-on-scroll handler in _app.js adds `.scrollbar-visible`. To    */
 /* explicitly opt a tab rail back into showing a bar, use the dedicated      */
 /* `.tabs-scroll-container-visible` class.                                   */
+/* NOTE (no visual change): the `html.staff-scope *:has(> table)` arm of these
+   two selectors was dropped. `:has()` on a universal selector makes the style
+   invalidation set unbounded — the engine must re-evaluate "does this element
+   have a direct <table> child" across the document on DOM mutation, which the
+   realtime-driven job tables do continuously. It was also redundant: it declared
+   exactly the values that the end-of-stylesheet
+   `html.staff-scope * { scrollbar-width: none !important }` /
+   `html.staff-scope *::-webkit-scrollbar { display: none !important }` block
+   already applies to every element. The explicit container list below is the
+   part that carries meaning (it is what `.tabs-scroll-container-visible` opts
+   back out of). */
 html.staff-scope :where(
   .app-table-shell-scroll,
   [data-app-table-shell-scroll],
   .tabs-scroll-container,
   [data-dev-section-type="tab-row"]
-):not(.tabs-scroll-container-visible),
-  html.staff-scope *:has(> table):not(.tabs-scroll-container-visible) {
+):not(.tabs-scroll-container-visible) {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -1278,8 +1299,7 @@ html.staff-scope :where(
   [data-app-table-shell-scroll],
   .tabs-scroll-container,
   [data-dev-section-type="tab-row"]
-):not(.tabs-scroll-container-visible)::-webkit-scrollbar,
-  html.staff-scope *:has(> table):not(.tabs-scroll-container-visible)::-webkit-scrollbar {
+):not(.tabs-scroll-container-visible)::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
   display: none !important;

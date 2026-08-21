@@ -167,7 +167,9 @@ function WorkshopQueueCard({
   const cardStyle = {
     flex: "0 0 auto",
     width: "var(--wqp-card-w)",
-    minHeight: "var(--wqp-card-min-h)",
+    height: "var(--wqp-card-h)",
+    minHeight: "var(--wqp-card-h)",
+    maxHeight: "var(--wqp-card-h)",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
@@ -1151,7 +1153,7 @@ export default function WorkshopQueuePlanner({
         .wqp-shell {
           --wqp-user-col: 150px;
           --wqp-card-w: 212px;
-          --wqp-card-min-h: 132px;
+          --wqp-card-h: 132px;
           --wqp-gap: 14px;
           --wqp-row-min-h: 104px;
         }

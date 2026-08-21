@@ -3,14 +3,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
-import LayerTheme from "@/components/ui/LayerTheme";
-import IssueReportPopup from "@/components/VHC/IssueReportPopup";
+import IssueReportPopup, {
+  IssueReportAddSection,
+  IssueReportList,
+  IssueReportRow,
+} from "@/components/VHC/IssueReportPopup";
 import themeConfig, { vhcModalContentStyles } from "@/styles/appTheme";
-import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
-import useIsMobile from "@/hooks/useIsMobile";
-import { fieldLabelStyle } from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -34,8 +34,6 @@ const UNDER_BONNET_ITEMS = [
   "Service reminder/Oil level",
   "Miscellaneous",
 ];
-
-const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
 const SERVICE_CHOICE_STATUS = {
   reset: "Green",
@@ -90,7 +88,6 @@ export default function ServiceIndicatorDetailsModal({
   userId = null,
   onSectionMediaUploaded = null,
 }) {
-  const isMobile = useIsMobile();
   const { readDraft, persistDraft, completeDraft } = useVhcSectionDraft({
     sectionKey: "serviceIndicator",
     jobId,
@@ -580,51 +577,15 @@ export default function ServiceIndicatorDetailsModal({
           onClose={closeConcernModal}
           width="760px"
         >
-          <div
-            data-dev-section="1"
-            data-dev-section-key="vhc-service-concern-popup"
-            data-dev-section-type="content-card"
-            data-dev-section-parent="vhc-service-layout"
-            style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "inherit" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: isMobile ? "20px" : "24px",
-                padding: isMobile ? "16px" : "24px",
-                minHeight: 0,
-                overflowY: "auto",
-              }}
-            >
-              <div
-                role="region"
-                aria-labelledby="vhc-service-concern-form-heading"
-                data-dev-section="1"
-                data-dev-section-key="vhc-service-concern-form"
-                data-dev-section-type="form"
-                data-dev-section-parent="vhc-service-concern-popup"
-                style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <h4 id="vhc-service-concern-form-heading" style={{ margin: 0, fontSize: "16px", fontWeight: 750, color: palette.textPrimary }}>
-                    Add a concern
-                  </h4>
-                  <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, color: palette.textMuted }}>
-                    Record what was found, then choose the urgency for the workshop team.
-                  </p>
-                </div>
-
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
-                  <span style={fieldLabelStyle}>Issue details</span>
-                  {activeConcernTarget === "Miscellaneous" ? (
+          <IssueReportAddSection
+            descriptionControl={activeConcernTarget === "Miscellaneous" ? (
                     <textarea
                       value={newConcern}
                       onChange={(event) => setNewConcern(event.target.value)}
                       placeholder="Describe where the issue is and what you observed..."
                       readOnly={locked}
-                      rows={4}
-                      style={{ width: "100%", resize: "vertical", minHeight: "104px" }}
+                      rows={3}
+                      style={{ width: "100%" }}
                     />
                   ) : (
                     <IssueAutocomplete
@@ -636,128 +597,23 @@ export default function ServiceIndicatorDetailsModal({
                       placeholder="Describe the issue..."
                     />
                   )}
-                </label>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(180px, 220px) auto",
-                    gap: "12px",
-                    alignItems: "end",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
-                    <label htmlFor="vhc-service-concern-status" style={fieldLabelStyle}>
-                      Urgency
-                    </label>
-                    <DropdownField
-                      id="vhc-service-concern-status"
-                      value={concernStatus}
-                      onChange={(e) => setConcernStatus(e.target.value)}
-                      className="vhc-concern-dropdown"
-                      style={{ width: "100%" }}
-                    >
-                      {STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </DropdownField>
-                  </div>
-
-                  <Button
-                    variant="primary"
-                    onClick={addConcern}
-                    disabled={locked || newConcern.trim() === ""}
-                    style={{ width: isMobile ? "100%" : "auto" }}
-                  >
-                    Add concern
-                  </Button>
-                </div>
-              </div>
-
-              <div
-                role="region"
-                aria-labelledby="vhc-service-concern-entries-heading"
-                data-dev-section="1"
-                data-dev-section-key="vhc-service-concern-entries"
-                data-dev-section-type="content-card"
-                data-dev-section-parent="vhc-service-concern-popup"
-                style={{ display: "flex", flexDirection: "column", gap: "12px", minHeight: 0 }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                  <h4 id="vhc-service-concern-entries-heading" style={{ margin: 0, fontSize: "16px", fontWeight: 750, color: palette.textPrimary }}>
-                    Logged concerns
-                  </h4>
-                  <span className="app-badge app-badge--accent-soft">
-                    {activeConcernEntries.length}
-                  </span>
-                </div>
-
-              {activeConcernEntries.length === 0 ? (
-                <LayerTheme
-                  padding="16px"
-                  gap="4px"
-                  style={{ color: palette.textMuted, fontSize: "13px", lineHeight: 1.5 }}
-                >
-                  Nothing has been logged for this item yet.
-                </LayerTheme>
-              ) : (
-                activeConcernEntries.map((concern, entryIndex) => (
-                  <LayerTheme
+            severity={concernStatus}
+            onSeverityChange={setConcernStatus}
+            onAdd={addConcern}
+            addDisabled={newConcern.trim() === ""}
+            disabled={locked}
+          />
+          <IssueReportList count={activeConcernEntries.length} emptyMessage="No issues reported for this location." scroll={activeConcernEntries.length > 2}>
+            {activeConcernEntries.map((concern) => (
+                  <IssueReportRow
                     key={`${concern.source}-${concern._globalIndex}`}
-                    padding={isMobile ? "14px" : "16px"}
-                    gap="12px"
-                    style={{
-                      position: "relative",
-                    }}
-                  >
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 180px auto",
-                      gap: "10px",
-                      alignItems: "end",
-                    }}>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: palette.textPrimary }}>
-                        Concern {entryIndex + 1}
-                      </span>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <span style={fieldLabelStyle}>Urgency</span>
-                        <DropdownField
-                          value={concern.status}
-                          onChange={(e) => updateConcern(concern._globalIndex, { status: e.target.value })}
-                          className="vhc-concern-dropdown"
-                          style={{ width: "100%" }}
-                          disabled={locked}
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </DropdownField>
-                      </div>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => deleteConcern(concern._globalIndex)}
-                        disabled={locked}
-                        style={{ width: isMobile ? "100%" : "auto" }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                    {activeConcernTarget === "Miscellaneous" ? (
+                    issue={concern}
+                    description={activeConcernTarget === "Miscellaneous" ? (
                       <textarea
                         value={getConcernText(concern)}
                         onChange={(e) => updateConcern(concern._globalIndex, { text: e.target.value })}
-                        rows={3}
-                        style={{
-                          width: "100%",
-                          resize: "vertical",
-                          minHeight: "88px",
-                        }}
+                        rows={2}
+                        style={{ width: "100%" }}
                         readOnly={locked}
                       />
                     ) : (
@@ -778,12 +634,13 @@ export default function ServiceIndicatorDetailsModal({
                         }}
                       />
                     )}
-                  </LayerTheme>
-                ))
-              )}
-              </div>
-            </div>
-          </div>
+                    severity={concern.status}
+                    onSeverityChange={(status) => updateConcern(concern._globalIndex, { status })}
+                    onDelete={() => deleteConcern(concern._globalIndex)}
+                    disabled={locked}
+                  />
+                ))}
+          </IssueReportList>
         </IssueReportPopup>
       ) : null}
     </VHCModalShell>

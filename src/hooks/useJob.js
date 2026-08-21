@@ -4,6 +4,7 @@
 // Returns cached data instantly on revisit, revalidates in background.
 
 import useSWR from "swr"; // stale-while-revalidate data fetching
+import { buildJobCardKey } from "@/lib/swr/keys";
 
 // Fetcher that calls the job card API route and throws on non-OK responses
 const fetcher = async (url) => {
@@ -17,18 +18,26 @@ const fetcher = async (url) => {
   return res.json(); // return parsed JSON response
 };
 
+// Re-exported so existing importers of this hook keep working; the definition
+// lives in lib/swr/keys.js alongside the prefetch and revalidation helpers that
+// must agree with it.
+export { buildJobCardKey };
+
 export function useJob(jobNumber, options = {}) {
   const { archive = false } = options; // whether to fetch from archive
-  const params = new URLSearchParams(); // build query string
-  if (archive) params.set("archive", "1"); // append archive flag if needed
-  const query = params.toString(); // serialise query params
-  const key = jobNumber
-    ? `/api/jobcards/${encodeURIComponent(jobNumber)}${query ? `?${query}` : ""}` // SWR cache key matches the API URL
-    : null; // null key = don't fetch (SWR convention)
+  const key = buildJobCardKey(jobNumber, { archive }); // null key = don't fetch (SWR convention)
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetcher, {
     revalidateOnFocus: true, // refresh when user tabs back
     dedupingInterval: 5000, // don't re-fetch within 5 seconds of last fetch
+    // Stale-while-revalidate. SWR's cache is keyed per job, so reopening a card
+    // (or switching back to one) renders the previous response immediately and
+    // refreshes underneath.
+    //
+    // Deliberately NOT `keepPreviousData`: that returns the LAST KEY's data
+    // while a new key loads, which on this hook means rendering the previously
+    // opened job's data under the new job's URL.
+    revalidateIfStale: true,
   });
 
   return {
@@ -37,6 +46,7 @@ export function useJob(jobNumber, options = {}) {
     customer: data?.customer || null, // customer record
     vehicle: data?.vehicle || null, // vehicle record
     sharedNote: data?.sharedNote || null, // latest shared note
+    notes: data?.notes || [], // full notes list (was a separate client query)
     vehicleJobHistory: data?.vehicleJobHistory || [], // customer job history
     error, // SWR error (null when successful)
     isLoading, // true during initial load with no cached data

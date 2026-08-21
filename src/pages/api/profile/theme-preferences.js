@@ -34,9 +34,70 @@ async function resolveRequestUserId(req, res) {
   return resolveSessionUserId(session);
 }
 
+// Read the caller's saved theme preference.
+//
+// This lived in the browser (themeProvider.js queried `users` through
+// supabaseClient). That single import put the whole @supabase/supabase-js client
+// — postgrest + realtime + GoTrue, ~213KB — into the first-load bundle of all 163
+// routes, INCLUDING /login, where the query can never even run: it is gated on a
+// numeric user id, and nobody is signed in yet.
+//
+// The accent_color fallback is preserved exactly: some deployments predate that
+// column, so a failure on the two-column select retries with dark_mode alone.
+async function readThemePreference(req, res) {
+  try {
+    const userId = await resolveRequestUserId(req, res);
+    if (!Number.isInteger(Number(userId)) || Number(userId) <= 0) {
+      return res.status(200).json({ success: true, data: { mode: null, accent: null } });
+    }
+
+    const db = supabaseService || supabase;
+    res.setHeader("Cache-Control", "private, no-store");
+
+    const full = await db
+      .from("users")
+      .select("dark_mode, accent_color")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!full.error) {
+      return res.status(200).json({
+        success: true,
+        data: { mode: full.data?.dark_mode ?? null, accent: full.data?.accent_color ?? null },
+      });
+    }
+
+    // accent_color unavailable on this deployment — fall back to mode only.
+    const modeOnly = await db
+      .from("users")
+      .select("dark_mode")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (modeOnly.error) throw modeOnly.error;
+    return res.status(200).json({
+      success: true,
+      data: { mode: modeOnly.data?.dark_mode ?? null, accent: null },
+    });
+  } catch (error) {
+    const statusCode = error?.message === "Authentication required" ? 401 : 500;
+    if (statusCode !== 401) {
+      console.error("❌ GET /api/profile/theme-preferences error", error);
+    }
+    return res.status(statusCode).json({
+      success: false,
+      message: "Failed to load theme preferences",
+    });
+  }
+}
+
 export default async function handler(req, res) {
+  if (req.method === "GET") {
+    return readThemePreference(req, res);
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+    res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 

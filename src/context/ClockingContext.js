@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/context/ClockingContext.js
 // Uses /api/profile/clock API which handles auto-closing stale records server-side
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 
 // Create context
@@ -77,7 +77,7 @@ export const ClockingProvider = ({ children }) => {
   }, []);
 
   // Clock in via the server API (auto-closes stale records if needed)
-  const clockIn = async () => {
+  const clockIn = useCallback(async () => {
     if (!dbUserId) {
       console.warn("Clock in attempted without resolved users.user_id");
       return;
@@ -101,10 +101,10 @@ export const ClockingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dbUserId, fetchClockingStatus]);
 
   // Clock out via the server API
-  const clockOut = async () => {
+  const clockOut = useCallback(async () => {
     if (!dbUserId) {
       console.warn("Clock out attempted without resolved users.user_id");
       return;
@@ -128,25 +128,36 @@ export const ClockingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dbUserId, fetchClockingStatus]);
 
-  return (
-    <ClockingContext.Provider
-      value={{
-        clockedIn,
-        hoursWorked,
-        allUsersClocking,
-        fetchClockingStatus,
-        fetchAllUsersClocking,
-        loading,
-        clockIn,
-        clockOut,
-        userId: dbUserId,
-      }}
-    >
-      {children}
-    </ClockingContext.Provider>
+  // Memoised for the same reason as UserContext: an inline object literal here
+  // re-rendered every useClockingContext() consumer on each provider render.
+  const contextValue = useMemo(
+    () => ({
+      clockedIn,
+      hoursWorked,
+      allUsersClocking,
+      fetchClockingStatus,
+      fetchAllUsersClocking,
+      loading,
+      clockIn,
+      clockOut,
+      userId: dbUserId,
+    }),
+    [
+      clockedIn,
+      hoursWorked,
+      allUsersClocking,
+      fetchClockingStatus,
+      fetchAllUsersClocking,
+      loading,
+      clockIn,
+      clockOut,
+      dbUserId,
+    ]
   );
+
+  return <ClockingContext.Provider value={contextValue}>{children}</ClockingContext.Provider>;
 };
 
 // Hook to use the context safely

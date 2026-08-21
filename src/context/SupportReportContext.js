@@ -39,7 +39,11 @@ import {
 import { collectProviderDiagnostics } from "@/lib/support/diagnosticRegistry";
 import { registerBuiltinDiagnosticProviders } from "@/lib/support/providers";
 import { readBuildInfo } from "@/lib/support/buildInfo";
-import { getSectionSourceMapHash } from "@/lib/dev-layout/sectionSourceMap";
+import {
+  ensureDevLayoutSectionSources,
+  getSectionSourceMapHash,
+  isDevLayoutSectionSourcesReady,
+} from "@/lib/dev-layout/sectionSourceMap";
 
 const noop = () => {};
 
@@ -86,7 +90,25 @@ export function SupportDiagnosticsProvider({ children }) {
   useEffect(() => {
     registerBuiltinDiagnosticProviders();
     const uninstall = installBrowserCapture(storeRef.current, { now: () => Date.now() });
-    return uninstall;
+    // The dev-layout section source map (used to stamp code ownership on a
+    // captured report) is loaded on demand so its ~155KB stays out of every
+    // route's first-load bundle. Warm it once the browser is idle so it is
+    // resolved long before a user opens the support modal or hits the error
+    // boundary, without competing with the page's own boot work.
+    const warm = () => void ensureDevLayoutSectionSources();
+    const idleHandle =
+      typeof window !== "undefined" && typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(warm, { timeout: 4000 })
+        : typeof window !== "undefined"
+          ? window.setTimeout(warm, 2000)
+          : null;
+    return () => {
+      if (idleHandle != null && typeof window !== "undefined") {
+        if (typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idleHandle);
+        else window.clearTimeout(idleHandle);
+      }
+      uninstall();
+    };
   }, []);
 
   // Record route-change actions. Uses the router event bus already present.
@@ -194,10 +216,23 @@ export function SupportDiagnosticsProvider({ children }) {
 
   const openSupportReport = useCallback(
     (options = {}) => {
-      const snap = captureDiagnostics({ sectionKey: options.sectionKey });
-      setSnapshot(snap);
+      // Open immediately so the modal never waits on I/O.
       setPrefill(options.prefill || (options.error ? { description: String(options.error) } : null));
       setIsOpen(true);
+
+      // The dev-layout section source map is loaded on demand (see
+      // lib/dev-layout/sectionSourceMap.js) and warmed on idle at mount, so it is
+      // normally already resolved here. Await it before capturing anyway: this is
+      // the path that produces the report a human will read, and code_ownership
+      // must not be missing just because the map was still in flight.
+      const capture = () => setSnapshot(captureDiagnostics({ sectionKey: options.sectionKey }));
+      if (isDevLayoutSectionSourcesReady()) {
+        capture();
+      } else {
+        // Show what we have now, then re-capture once the map lands.
+        capture();
+        void ensureDevLayoutSectionSources().then(capture);
+      }
     },
     [captureDiagnostics]
   );

@@ -1,6 +1,7 @@
 // file location: src/hooks/useMessagesBadge.js
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/database/supabaseClient";
+import { getShellBootstrap, peekShellBootstrap } from "@/lib/shell/bootstrapClient";
 
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
@@ -22,7 +23,11 @@ export function useMessagesBadge(userId) {
     }
 
     try {
-      const response = await fetch(`/api/messages/threads${buildQuery({ userId })}`);
+      // Dedicated count endpoint. This used to call /api/messages/threads and
+      // reduce the full thread list (participants, user records, message bodies)
+      // down to one integer; /api/messages/unread-count applies the same unread
+      // rule server-side over a single column.
+      const response = await fetch(`/api/messages/unread-count${buildQuery({ userId })}`);
       if (!response.ok) {
         // No session yet, or the user can't view threads — this badge is a
         // best-effort poll, so just show no count instead of surfacing a
@@ -31,20 +36,39 @@ export function useMessagesBadge(userId) {
         return;
       }
       const payload = await response.json();
-      const threads = Array.isArray(payload.data) ? payload.data : [];
-      const totalUnread = threads.reduce(
-        (sum, thread) => sum + (thread.hasUnread ? 1 : 0),
-        0
-      );
+      const totalUnread = Number(payload?.data?.unreadCount) || 0;
       setUnreadCount(totalUnread);
     } catch (error) {
       console.error("❌ Failed to refresh message badge:", error);
     }
   }, [userId]);
 
+  // First value comes from the combined shell bootstrap when it is available,
+  // so the badge costs no request of its own on a fresh boot. Realtime events
+  // and later refreshes use /api/messages/unread-count as before.
   useEffect(() => {
-    refreshUnreadCount();
-  }, [refreshUnreadCount]);
+    if (!userId) {
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    const seed = peekShellBootstrap();
+    if (seed && Number(seed.userId) === Number(userId) && typeof seed.unreadCount === "number") {
+      setUnreadCount(seed.unreadCount);
+      return;
+    }
+    void getShellBootstrap({ userKey: userId }).then((boot) => {
+      if (cancelled) return;
+      if (boot && Number(boot.userId) === Number(userId) && typeof boot.unreadCount === "number") {
+        setUnreadCount(boot.unreadCount);
+      } else {
+        void refreshUnreadCount();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, refreshUnreadCount]);
 
   useEffect(() => {
     if (!userId) {

@@ -28,13 +28,10 @@ const getTargetState = (efficiency) => {
   return { label: "Below target", className: "app-badge--danger" };
 };
 
-function PanelHeader({ eyebrow, title, aside, className = "" }) {
+function PanelHeader({ title, aside, className = "" }) {
   return (
     <header className={`efficiency-insight-header${className ? ` ${className}` : ""}`}>
-      <div>
-        {eyebrow ? <p className="efficiency-insight-eyebrow">{eyebrow}</p> : null}
-        <h3>{title}</h3>
-      </div>
+      <h3>{title}</h3>
       {aside}
     </header>
   );
@@ -332,7 +329,7 @@ export default function EfficiencyInsights({
 
       <div className="efficiency-primary-analysis-grid">
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-comparison-panel">
-          <PanelHeader eyebrow="Comparable periods" title="Today / week / month" />
+          <PanelHeader title="Comparable periods" />
           {analysisPending ? <ComparisonSkeleton /> : <div className="efficiency-comparison-list">
             {(comparisons || []).map((comparison) => (
               <LayerSurface key={comparison.key} className="efficiency-comparison-row" padding="var(--space-sm)">
@@ -373,7 +370,7 @@ export default function EfficiencyInsights({
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
-          <PanelHeader eyebrow="Recorded sources" title="Time breakdown" />
+          <PanelHeader title="Time breakdown" />
           {loading ? <BreakdownSkeleton /> : <div className="efficiency-breakdown-list">
             {timeBreakdown.map((item) => (
               <div key={item.label} className="efficiency-breakdown-row">
@@ -388,7 +385,7 @@ export default function EfficiencyInsights({
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
-          <PanelHeader eyebrow="Working day" title="Daily target progress" />
+          <PanelHeader title="Daily target progress" />
           {analysisPending ? <TargetProgressSkeleton /> : <><div className="efficiency-target-progress-copy">
             <strong>{formatHours(dayComparison?.current?.productiveHours || 0)}</strong>
             <span>of {formatHours(dayComparison?.current?.targetHours || 0)}</span>
@@ -405,7 +402,7 @@ export default function EfficiencyInsights({
 
       <div className="efficiency-secondary-analysis-grid">
         <LayerTheme as="section" className="efficiency-analysis-panel">
-          <PanelHeader eyebrow="Derivable causes" title="Lost time analysis" />
+          <PanelHeader title="Lost time analysis" />
           {analysisPending ? <LostTimeSkeleton /> : <div className="efficiency-lost-time-grid">
             <LayerSurface padding="var(--space-sm)"><span>Jobs over allocation</span><strong>{formatHours(overAllocatedHours)}</strong></LayerSurface>
             <LayerSurface padding="var(--space-sm)"><span>Unallocated job time</span><strong>{formatHours(metrics?.unallocatedHours)}</strong></LayerSurface>
@@ -415,7 +412,7 @@ export default function EfficiencyInsights({
         </LayerTheme>
 
         <LayerTheme as="section" className="efficiency-analysis-panel">
-          <PanelHeader eyebrow="Data quality" title="Clocking alerts" aside={analysisPending ? <SkeletonBlock width="42px" height="22px" borderRadius="var(--radius-pill)" /> : <span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
+          <PanelHeader title="Clocking alerts" aside={analysisPending ? <SkeletonBlock width="42px" height="22px" borderRadius="var(--radius-pill)" /> : <span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
           {analysisPending ? <AlertsSkeleton /> : !alerts?.length ? <EmptyMessage>No clocking-quality issues found for this period.</EmptyMessage> : (
             <ul className="efficiency-alert-list">
               {alerts.slice(0, 6).map((alert) => (
@@ -431,7 +428,6 @@ export default function EfficiencyInsights({
 
       <LayerTheme as="section" className="efficiency-analysis-panel">
         <PanelHeader
-          eyebrow="Allocation impact"
           title={jobView === "over" ? "Jobs affecting efficiency" : "Best performing jobs"}
           aside={loading ? <SkeletonBlock width="230px" height="var(--control-height-sm)" /> : (
             <TabGroup
@@ -449,7 +445,7 @@ export default function EfficiencyInsights({
       </LayerTheme>
 
       <LayerTheme as="section" className="efficiency-analysis-panel">
-        <PanelHeader eyebrow="Existing job data" title="Job category analysis" />
+        <PanelHeader title="Job category analysis" />
         {loading ? <CategoriesSkeleton /> : !categories?.length ? <EmptyMessage>No reliable job categories are available for this period.</EmptyMessage> : (
           <div className="efficiency-category-grid">
             {categories.map((category) => {
@@ -486,7 +482,6 @@ export default function EfficiencyInsights({
         .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
         .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
         .efficiency-trend-header { align-items: center; flex-wrap: nowrap; }
-        .efficiency-trend-header > div:first-child { min-width: 0; }
         .efficiency-trend-header h3 { white-space: nowrap; }
         .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--surfaceTextMuted); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
         .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }

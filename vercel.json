@@ -1,3 +1,5 @@
 {
-  "devCommand": "node tools/scripts/next-dev.js"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "devCommand": "node tools/scripts/next-dev.js",
+  "regions": ["lhr1"]
 }

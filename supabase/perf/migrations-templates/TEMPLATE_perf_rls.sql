@@ -1,0 +1,79 @@
+-- TEMPLATE — do not apply as-is.
+--
+-- RLS optimisation. Two distinct changes with very different risk profiles;
+-- keep them in separate migrations so one can be reverted without the other.
+--
+-- ===========================================================================
+-- CHANGE 1 — evaluate auth functions once per statement (SAFE)
+-- ===========================================================================
+-- A policy written as
+--     using (user_id = auth.uid())
+-- calls auth.uid() once PER ROW examined. Written as
+--     using (user_id = (select auth.uid()))
+-- Postgres hoists it to a one-time InitPlan and evaluates it once per statement.
+--
+-- The set of rows admitted is IDENTICAL: auth.uid() is stable within a
+-- statement, so per-row and per-statement evaluation cannot disagree. This is
+-- the change Supabase's own Performance Advisor raises as
+-- "auth_rls_initplan".
+--
+-- Apply it only to the policies section 6 of 01-baseline-snapshot.sql reports as
+-- 'PER-ROW — candidate'. Copy each policy's existing expression verbatim and
+-- change ONLY the auth call, so nothing else can drift.
+--
+-- Example (replace with the real policy text from section 6):
+--
+-- alter policy "jobs_select_own"
+--   on public.jobs
+--   using (assigned_to = (select auth.uid()));
+--
+-- Verify afterwards, per policy, that the row set is unchanged:
+--   set local role authenticated;
+--   select count(*) from public.jobs;   -- compare against the pre-change count
+--   reset role;
+--
+-- Down: restore the bare call.
+-- alter policy "jobs_select_own" on public.jobs using (assigned_to = auth.uid());
+
+
+-- ===========================================================================
+-- CHANGE 2 — consolidate multiple permissive policies (NEEDS PROOF)
+-- ===========================================================================
+-- Postgres ORs every PERMISSIVE policy for a role+action together and runs each
+-- one per row, so N policies cost N evaluations. Section 7 lists where that
+-- happens.
+--
+-- This is NOT automatically safe. Merging changes the expression, and an OR of
+-- two policies is only equivalent to one combined policy if the combined
+-- expression admits exactly the same rows for exactly the same roles. Roles
+-- overlap (a user can hold several), and a policy that looks redundant may be
+-- the only one covering a specific role.
+--
+-- Required before merging any pair:
+--   1. Record the exact row count per affected role, per table, BEFORE.
+--   2. Write the combined policy as a literal OR of the originals first —
+--      no simplification, no "tidying" of the boolean logic.
+--   3. Re-run the counts per role. They must match exactly.
+--   4. Only then simplify, re-verifying counts after each simplification.
+--
+-- Template:
+--
+-- begin;
+--   create policy "jobs_select_combined" on public.jobs
+--     for select to authenticated
+--     using (
+--       (<expression from policy A>)
+--       or
+--       (<expression from policy B>)
+--     );
+--   drop policy "jobs_select_a" on public.jobs;
+--   drop policy "jobs_select_b" on public.jobs;
+-- commit;
+--
+-- Down: recreate the original policies with their original expressions and drop
+-- the combined one. Keep the original CREATE POLICY statements in the migration
+-- comment so the reversal is exact rather than reconstructed.
+--
+-- If the row counts cannot be proven identical for every role, DO NOT MERGE.
+-- The per-row cost of an extra permissive policy is much cheaper than a policy
+-- that silently widens or narrows access.

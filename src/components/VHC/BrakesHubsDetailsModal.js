@@ -1,7 +1,11 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
-import IssueReportPopup from "@/components/VHC/IssueReportPopup";
+import IssueReportPopup, {
+  IssueReportAddSection,
+  IssueReportList,
+  IssueReportRow,
+} from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
 import themeConfig, {
@@ -1246,15 +1250,11 @@ export default function BrakesHubsDetailsModal({
               width="640px"
               onClose={resetConcernPopup}
             >
-                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <span style={{ ...fieldLabelStyle, display: "block" }}>
-                  Area:{" "}
-                  <strong style={{ color: palette.textPrimary }}>
-                    {areaLabels[concernPopup.category] || concernPopup.category}
-                  </strong>
-                </span>
-                <label style={fieldLabelStyle}>Concern</label>
-                <IssueAutocomplete
+              <IssueReportAddSection
+                heading={concernPopup.editIndex !== null ? "Update Issue" : "Add Issue"}
+                addLabel={concernPopup.editIndex !== null ? "Save Issue" : "Add Issue"}
+                descriptionControl={(
+                  <IssueAutocomplete
                   sectionKey={areaSuggestionKeys[concernPopup.category] || "brakes_front_pads"}
                   value={concernPopup.tempConcern.issue}
                   onChange={(nextValue) =>
@@ -1276,57 +1276,37 @@ export default function BrakesHubsDetailsModal({
                     width: "100%",
                   }}
                 />
-
-                <label style={fieldLabelStyle}>Severity</label>
-                <DropdownField
-                  value={concernPopup.tempConcern.status}
-                  onChange={(e) =>
-                    setConcernPopup((prev) => ({
-                      ...prev,
-                      tempConcern: { ...prev.tempConcern, status: e.target.value },
-                    }))
-                  }
-                  className="vhc-concern-dropdown"
-                  style={dropdownFieldStyle}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                >
-                  <option>Red</option>
-                  <option>Amber</option>
-                  <option>Green</option>
-                </DropdownField>
-
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
-                  {concernPopup.editIndex !== null && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => {
-                        deleteConcern(concernPopup.category, concernPopup.editIndex);
-                        resetConcernPopup();
-                      }}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        if (!concernPopup.tempConcern.issue.trim()) return;
-                        addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
-                        resetConcernPopup();
-                      }}
+                )}
+                severity={concernPopup.tempConcern.status}
+                onSeverityChange={(status) =>
+                  setConcernPopup((prev) => ({ ...prev, tempConcern: { ...prev.tempConcern, status } }))
+                }
+                onAdd={() => {
+                  if (!concernPopup.tempConcern.issue.trim()) return;
+                  addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
+                  resetConcernPopup();
+                }}
+                addDisabled={!concernPopup.tempConcern.issue.trim()}
+                disabled={locked}
+              />
+              <IssueReportList
+                count={activeIssueEntries.filter((issue) => issue.categoryKey === concernPopup.category).length}
+                emptyMessage="No issues reported for this location."
+              >
+                {activeIssueEntries
+                  .filter((issue) => issue.categoryKey === concernPopup.category)
+                  .map((issue) => (
+                    <IssueReportRow
+                      key={`${issue.categoryKey}-${issue.index}`}
+                      issue={issue}
+                      description={issue.text || issue.issue}
+                      severity={issue.status}
+                      onSeverityChange={(status) => updateConcernStatus(issue.categoryKey, issue.index, status)}
+                      onDelete={() => deleteConcern(issue.categoryKey, issue.index)}
                       disabled={locked}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                    >
-                      {concernPopup.editIndex !== null ? "Save" : "Add Concern"}
-                    </Button>
-                  </div>
-                </div>
-                </div>
+                    />
+                  ))}
+              </IssueReportList>
             </IssueReportPopup>
           ) : null}
         </div>

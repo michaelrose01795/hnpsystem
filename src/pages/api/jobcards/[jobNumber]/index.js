@@ -11,6 +11,7 @@ import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobCards/util
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { createServerTimer } from "@/lib/perf/serverTiming";
 
 const buildArchiveCandidates = (input) => {
   const token = String(input || "").trim();
@@ -58,6 +59,8 @@ const loadArchivedJob = async (jobNumberIdentifier) => {
       customer: snapshot.customer || null,
       vehicle: snapshot.vehicle || null,
       sharedNote: snapshot.sharedNote || null,
+      // Archived snapshots keep their notes on the archived job card itself.
+      notes: snapshot.notes || jobCard?.notes || [],
       vehicleJobHistory: snapshot.vehicleJobHistory || [],
     },
     error: null,
@@ -88,14 +91,22 @@ async function handler(req, res, session) {
     return res.status(400).json({ message: "Job number is required" });
   }
 
+  // Server-Timing: splits this route's TTFB into database time vs handler time,
+  // so a slow job card can be attributed to a query rather than guessed at.
+  // Read it from the browser via PerformanceResourceTiming.serverTiming — see
+  // src/lib/perf/stageTimings.js.
+  const timer = createServerTimer();
+
   try {
     const requestForce = String(force || "") === "1";
     const requestArchive = String(archive || "") === "1";
-    const identity = await resolveJobIdentity({
-      client: supabaseService,
-      identifier: rawJobNumber,
-      select: "id, job_number",
-    });
+    const identity = await timer.db("resolveIdentity", () =>
+      resolveJobIdentity({
+        client: supabaseService,
+        identifier: rawJobNumber,
+        select: "id, job_number",
+      })
+    );
     const rawJobNumberTrimmed = String(rawJobNumber).trim();
     const canonicalJobNumber = identity?.job_number || rawJobNumberTrimmed;
     const liveLookupCandidates = Array.from(
@@ -111,11 +122,13 @@ async function handler(req, res, session) {
       }
 
       res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
+      timer.applyTo(res);
       return res.status(200).json({
         job: data.jobCard,
         customer: data.customer || null,
         vehicle: data.vehicle || null,
         sharedNote: data.sharedNote || null,
+        notes: data.notes || [],
         vehicleJobHistory: data.vehicleJobHistory || [],
       });
     }
@@ -123,7 +136,7 @@ async function handler(req, res, session) {
     let liveResult = null;
     for (const candidate of liveLookupCandidates) {
       // Retry the underlying lookup across raw and padded variants before failing the request.
-      const attempt = await loadLiveJob(candidate, { force: requestForce });
+      const attempt = await timer.db("loadJob", () => loadLiveJob(candidate, { force: requestForce }));
       if (attempt?.data?.jobCard) {
         liveResult = attempt;
         break;
@@ -134,11 +147,13 @@ async function handler(req, res, session) {
       const archived = await loadArchivedJob(canonicalJobNumber);
       if (archived?.data?.jobCard) {
         res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
+        timer.applyTo(res);
         return res.status(200).json({
           job: archived.data.jobCard,
           customer: archived.data.customer || null,
           vehicle: archived.data.vehicle || null,
           sharedNote: archived.data.sharedNote || null,
+          notes: archived.data.notes || [],
           vehicleJobHistory: archived.data.vehicleJobHistory || [],
         });
       }
@@ -158,13 +173,15 @@ async function handler(req, res, session) {
         : jobCard.linkedWarrantyJobId || null;
     // Fetch notes, customer history, and warranty claim/totals/requests in parallel.
     const [notes, customerJobs, warrantyClaim, warrantyTotals, warrantyLinkedRequests] =
-      await Promise.all([
-        jobCard.id ? getNotesByJob(jobCard.id) : [], // fetch job notes
-        jobCard.customerId ? getCustomerJobs(jobCard.customerId) : [], // fetch customer job history
-        warrantyJobId ? getWarrantyClaimForJob(warrantyJobId) : null, // warranty claim header + requests
-        warrantyJobId ? computeWarrantyTotals(warrantyJobId) : null, // derived parts + labour totals
-        warrantyJobId ? getWarrantyJobRequests(warrantyJobId) : [], // warranty job work lines
-      ]);
+      await timer.db("jobCardFanout", () =>
+        Promise.all([
+          jobCard.id ? getNotesByJob(jobCard.id) : [], // fetch job notes
+          jobCard.customerId ? getCustomerJobs(jobCard.customerId) : [], // fetch customer job history
+          warrantyJobId ? getWarrantyClaimForJob(warrantyJobId) : null, // warranty claim header + requests
+          warrantyJobId ? computeWarrantyTotals(warrantyJobId) : null, // derived parts + labour totals
+          warrantyJobId ? getWarrantyJobRequests(warrantyJobId) : [], // warranty job work lines
+        ])
+      );
     const sharedNote = notes[0] || null;
     const vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
 
@@ -183,6 +200,12 @@ async function handler(req, res, session) {
       customer,
       vehicle,
       sharedNote,
+      // Full notes list, not just the latest. The job card page used to fetch
+      // this separately from the browser (fetchSharedNote -> getNotesByJob)
+      // AFTER its own job query had resolved. `notes` is already loaded here, in
+      // the same Promise.all, so returning it removes a second sequential
+      // round trip and lets the page use one authoritative response.
+      notes: notes || [],
       vehicleJobHistory
     });
   } catch (error) {

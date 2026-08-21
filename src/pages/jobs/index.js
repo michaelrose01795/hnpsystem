@@ -7,7 +7,10 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredVa
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
-import { getAllJobs, subscribeToJobsOverviewChanges, updateJobStatus } from "@/lib/database/jobs"; // import database functions
+// The jobs list no longer imports getAllJobs: it fetches the narrow, bounded
+// workload through /api/jobs/workload so the query runs server-side and the
+// query module stays out of this page's client bundle.
+import { subscribeToJobsOverviewChanges, updateJobStatus } from "@/lib/database/jobs";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -31,6 +34,10 @@ const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Rele
 
 const CARRY_OVER_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 const JOBS_PAGE_CACHE_KEY = "jobs:all:jobs-page";
+// Coalescing window for realtime events that cannot be attributed to a single
+// job. Wider than the previous 150ms because a busy workshop produces bursts
+// (every clock-on writes job_clocking) and each expiry costs a workload fetch.
+const JOBS_REALTIME_REFRESH_DELAY_MS = 600;
 const JOBS_FETCH_RETRY_DELAYS = [250, 750];
 
 const waitForRetry = (delayMs) => new Promise((resolve) => window.setTimeout(resolve, delayMs));
@@ -239,10 +246,18 @@ export default function ViewJobCards() {
 
     for (let attempt = 0; attempt <= JOBS_FETCH_RETRY_DELAYS.length; attempt += 1) {
       try {
-        const jobsFromSupabase = await getAllJobs({
-          throwOnError: true,
-          cacheKey: JOBS_PAGE_CACHE_KEY,
-        });
+        // Server-owned narrow workload query (see pages/api/jobs/workload.js).
+        // This replaced a direct browser-to-PostgREST getAllJobs() call that
+        // selected every job ever created with 14 nested relations.
+        const response = await fetch(`/api/jobs/workload${showLoading ? "" : "?fresh=1"}`, { credentials: "include" });
+        if (!response.ok) {
+          throw new Error(`Jobs workload request failed (HTTP ${response.status})`);
+        }
+        const payload = await response.json();
+        if (!payload?.success) {
+          throw new Error(payload?.message || "Jobs workload request failed");
+        }
+        const jobsFromSupabase = Array.isArray(payload.data) ? payload.data : [];
 
         // A successful empty result can briefly occur while the browser session
         // is settling after a hard reload. Confirm it before rendering an empty state.
@@ -300,26 +315,81 @@ export default function ViewJobCards() {
     void fetchNextJobsRoster();
   }, [fetchNextJobsRoster]);
 
+  // Patch a single job in place. Used when a realtime event names the job that
+  // changed, so a status flip or a clock-on no longer re-downloads the whole
+  // workload — previously ANY event on 13 tables (job_clocking fires every time
+  // a technician clocks on or off) triggered a full refetch 150ms later.
+  const patchJobRow = useCallback(async (jobId) => {
+    try {
+      const response = await fetch(`/api/jobs/workload?jobId=${encodeURIComponent(jobId)}`, {
+        credentials: "include",
+      });
+      if (!response.ok) return false;
+      const payload = await response.json();
+      if (!payload?.success) return false;
+      const updated = payload.data;
+      if (!updated) {
+        // Row is gone (deleted / archived out of the workload) — drop it.
+        setJobs((current) => current.filter((job) => String(job.id) !== String(jobId)));
+        return true;
+      }
+      setJobs((current) => {
+        const index = current.findIndex((job) => String(job.id) === String(updated.id));
+        if (index === -1) return current; // Not in the current page of results.
+        const next = current.slice();
+        next[index] = updated;
+        return next;
+      });
+      setPopupJob((current) =>
+        current && String(current.id) === String(updated.id) ? updated : current
+      );
+      setQuickNoteJob((current) =>
+        current && String(current.id) === String(updated.id) ? updated : current
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
-    const unsubscribe = subscribeToJobsOverviewChanges("jobs-page", (_payload, table) => {
+    const unsubscribe = subscribeToJobsOverviewChanges("jobs-page", (payload, table) => {
       if (table === "users") void fetchNextJobsRoster();
       if (table === "job_notes" && quickNoteJob?.id) {
         void getNotesByJob(quickNoteJob.id).then((notes) => {
           setQuickNoteNotes(Array.isArray(notes) ? notes : []);
         });
       }
+
+      // Fast path: the event carries a job id, so refresh just that row.
+      const row = payload?.new || payload?.old || null;
+      const jobId = table === "jobs" ? row?.id : row?.job_id;
+      if (jobId) {
+        void patchJobRow(jobId).then((patched) => {
+          if (patched) return;
+          // Row wasn't in view (or the patch failed) — fall back to a coalesced
+          // full refresh.
+          if (jobsRealtimeRefreshRef.current) window.clearTimeout(jobsRealtimeRefreshRef.current);
+          jobsRealtimeRefreshRef.current = window.setTimeout(() => {
+            void fetchJobs({ showLoading: false });
+          }, JOBS_REALTIME_REFRESH_DELAY_MS);
+        });
+        return;
+      }
+
+      // Slow path: an event we cannot attribute to one job. Coalesce hard — a
+      // burst of these used to produce a full workload download every 150ms.
       if (jobsRealtimeRefreshRef.current) window.clearTimeout(jobsRealtimeRefreshRef.current);
       jobsRealtimeRefreshRef.current = window.setTimeout(() => {
-        invalidateCache(JOBS_PAGE_CACHE_KEY);
         void fetchJobs({ showLoading: false });
-      }, 150);
+      }, JOBS_REALTIME_REFRESH_DELAY_MS);
     });
 
     return () => {
       unsubscribe();
       if (jobsRealtimeRefreshRef.current) window.clearTimeout(jobsRealtimeRefreshRef.current);
     };
-  }, [fetchJobs, fetchNextJobsRoster, quickNoteJob?.id]);
+  }, [fetchJobs, fetchNextJobsRoster, patchJobRow, quickNoteJob?.id]);
 
   useEffect(() => {
     if (!quickNoteJob?.id) {

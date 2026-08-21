@@ -9,7 +9,7 @@ It applies to every prompt, every session, every agent.
 ## 1. Project Identity
 
 - **App:** HNPSystem — Dealer Management System for Humphries & Parks
-- **Stack:** Next.js (Pages Router), React, Supabase (PostgreSQL), NextAuth.js, Tailwind CSS v4, CSS custom properties
+- **Stack:** Next.js (Pages Router), React, Supabase (PostgreSQL), NextAuth.js, plain CSS with CSS custom properties. **There is no Tailwind build** - `tailwindcss` is in `package.json` but there is no config, no PostCSS pipeline and no `@tailwind` directive anywhere, so utility classes silently do not compile. Do not write them.
 - **Auth:** NextAuth.js with Credentials Provider → Supabase users table. Keycloak env vars exist but are not yet active.
 - **Roles:** Defined in `src/lib/auth/roles.js` and `src/config/users.js`. Role checks use `hasAnyRole`, `isHrCoreRole`, `isAdminManagerRole`, etc. Never hardcode role strings — import from those files.
 - **Database:** Supabase client at `src/lib/database/supabaseClient.js`. All DB operations live under `src/lib/database/`. Never query Supabase directly in page or component files.
@@ -55,6 +55,55 @@ Before writing or changing any code:
 
 **Enforcement:** `npm run check:borders` ([tools/scripts/check-borders.js](tools/scripts/check-borders.js)) scans `src/` for forbidden `border: …` declarations and exits non-zero on violations. Run it before committing any UI change. Functional diagram primitives (TyreDiagram, BrakeDiagram, photo/video editors, LoadingSkeleton, email templates) are allowlisted inside the script.
 
+### 3.0b Design Governance — canonical sources & drift control
+
+Full detail: [docs/ui/staff-design-governance.md](docs/ui/staff-design-governance.md).
+Enforced by `npm run check:design` (runs in `predev` and `prebuild`).
+
+**Canonical sources.** These existing files are the design system. Nothing
+else may define staff UI appearance:
+
+| Concern | Canonical source |
+|---|---|
+| Design tokens | `src/styles/theme.css` |
+| Staff global stylesheet | `src/styles/staffglobal.css` |
+| Shared UI families | `src/styles/families/*.css` (entry `families/index.css`) |
+| Family registry | `src/components/ui/variants.js` (`UI_FAMILIES`) |
+| Customer design system | `src/styles/custglobal.css` (`/website` only) |
+
+**Rules for new work.** These apply to new code and do not require touching
+existing pages:
+
+1. Use a shared component (`Button`, `DropdownField`, `InputField`,
+   `TabGroup`, `LayerSurface`/`LayerTheme`, `EmptyState`, `PopupModal`).
+   Failing that, the canonical class of a family registered in `variants.js`.
+2. If a family lacks the variant you need, add it to the family file **and**
+   register it in `variants.js`. Never style it locally.
+3. **No one-off inline visual styling.** `style={{ background, color,
+   padding, border, borderRadius, boxShadow, font*, letterSpacing,
+   textTransform }}` is blocked on new/changed files. Layout-only inline
+   styles (`display`, `flex`, `gap`, `grid`, `width`, `position`, …) are fine.
+4. No raw hex colours. No `var()` pointing at a token that is not defined.
+5. No new `!important`.
+6. `/website` and `custglobal.css` stay isolated — staff CSS must never style
+   `html.website-scope`, and vice versa. This is a hard check.
+
+**Baselined debt.** `tools/design-baselines/design-governance.json` records
+the existing violations per file: family classes declared outside their
+family file (268), `!important` (486), undefined token references (187), raw
+hex colours (423), one-off inline styling (11,950). **A file with no baseline
+entry is held to zero**, so new drift fails the build while existing files
+keep exactly the styling they have. Counts may only fall.
+
+**Do not "fix" baselined debt as a side effect of unrelated work.** The
+current staff UI is the visual reference, legacy styling included. Correcting
+a duplicate, an undefined token or a one-off style changes what a page
+renders and belongs in a deliberate migration with its own visual review.
+Known competing implementations (three tab systems, `.app-toast` vs
+`.app-alert`, the duplicated `.app-empty-state` rules, the missing desktop
+heading hierarchy and form-label primitive) are catalogued in the governance
+doc — recorded on purpose, not yet consolidated.
+
 ### 3.0 Layer Primitives — THE LAW (post-Layer-Sweep, 2026-05-05)
 
 **Only two surface primitives exist for the entire app:**
@@ -82,7 +131,10 @@ Before writing or changing any code:
 
 ### 3.1 Token Sources
 - **Colour tokens:** `src/styles/theme.css` — CSS custom properties only (e.g. `var(--accentText)`, `var(--surface)`, `var(--theme)`, `var(--text-1)`)
-- **Base layout classes:** `src/styles/globals.css` — `.app-page-shell`, `.app-page-stack`, `.app-section-card`, `.app-page-card`
+- **Base layout classes:** `src/styles/staffglobal.css` — `.app-page-shell`, `.app-page-stack`, `.app-section-card`, `.app-page-card`
+- **Shared UI families:** `src/styles/families/*.css`, imported through `families/index.css` at the top of `staffglobal.css`. Registered in `src/components/ui/variants.js`.
+- **Customer design system:** `src/styles/custglobal.css` — `/website` only, gated by `html.website-scope`. Completely separate; never mix the two.
+- There is no `src/styles/globals.css`. Older docs referring to it mean `staffglobal.css`.
 - **Never hardcode hex colours.** Never introduce a new colour outside of `theme.css`.
 - **Never add a new CSS custom property** without confirming it belongs in the global token system.
 - The canonical surface tokens are `--surface` and `--theme`. Tokens like `--surfaceMain`, `--section-card-bg`, `--page-card-bg`, `--row-background` are deprecated aliases pointing at `--surface` and will be removed at the end of the layer sweep.
@@ -90,17 +142,27 @@ Before writing or changing any code:
 ### 3.2 Key Colour Tokens (quick reference)
 | Token | Purpose |
 |---|---|
-| `--accentMain` / `--accentText` | Brand red, headings, active states |
-| `--surfaceMain` | Page-level card background |
-| `--section-card-bg` | Inner section card background |
-| `--text-primary` | Primary body text |
-| `--text-secondary` | Muted / subtitle text |
+| `--primary` / `--accentText` | Brand red — headings, active states, primary fills |
+| `--primary-hover` | Brand red, hover / pressed |
+| `--surface` | Base surface fill — `<LayerSurface>` |
+| `--theme` | Tinted surface fill — `<LayerTheme>` |
+| `--surfaceMain` / `--section-card-bg` / `--page-card-bg` | Deprecated aliases of `--surface` (still defined) |
+| `--text-1` | Body text on a surface (use opacity for muted copy) |
+| `--text-2` / `--onAccentText` | **On-accent** text (white on brand red). NOT muted body text |
 | `--success-base` / `--danger-base` / `--warning-base` | Status colours |
-| `--border` | Standard border colour |
+| `--text-h1` … `--text-h4`, `--text-body`, `--text-body-sm`, `--text-label`, `--text-caption` | Type scale |
+| `--separating-line` | The only allowed line inside a table / list |
+| `--input-ring` / `--checkbox-ring` / `--ghostbutton-ring` / `--focus-ring` | The four allowed outline tokens (§3.0a) |
+| `--control-height` | 44px control floor |
 | `--page-stack-gap` | Gap between stacked sections |
 | `--layout-card-gap` | Gap inside a section card |
 | `--section-card-padding` | Padding inside section cards |
 | `--page-card-padding` | Padding inside the main page card |
+
+**Corrected — these were documented above but have never existed in `theme.css`:**
+`--accentMain`, `--text-primary`, `--text-secondary` and `--border` have **no definition anywhere**, so every `var()` referencing them silently falls through to its fallback (or to nothing). They are **not** to be used. They have deliberately NOT been defined, because giving one a value would change what the elements currently referencing it render — see `undefined-tokens` in `npm run check:design:list` for the full list (187 references) and resolve them at the call site.
+
+Other frequently-referenced-but-undefined names: `--text-body-xs` (use `--text-caption`), `--font-mono` (use `--font-family-mono`), `--accent` and `--accent-dark` (use `--accentText` / `--primary-hover`), `--surface-dark` (use `--theme`), `--control-height-md` (use `--control-height`).
 
 ### 3.3 Layout Class System (follow this hierarchy strictly)
 ```
@@ -229,7 +291,7 @@ src/
 
 **Any change that touches the following requires an explicit stop-and-confirm before proceeding:**
 - `src/styles/theme.css` — colour tokens or design tokens
-- `src/styles/globals.css` — base layout classes or global resets
+- `src/styles/staffglobal.css` — base layout classes or global resets
 - `src/components/Layout.js` — global page shell
 - `src/components/Sidebar.js` — global sidebar
 - `src/components/Section.js` or `src/components/ui/Card.js` — canonical card components
@@ -276,8 +338,8 @@ If creating a new file, state why an existing file could not be used instead.
 
 - Do not introduce one-off inline styles for colour, spacing, or layout if a token or class already covers it.
 - If a one-off style is genuinely required, add a comment on the same line explaining why.
-- Do not introduce new CSS class names outside of `globals.css` without justification.
-- Do not add Tailwind utility classes that conflict with the existing CSS variable system.
+- Do not introduce new CSS class names outside of `staffglobal.css` (or the owning `families/*.css` file) without justification.
+- Do not add Tailwind utility classes. There is no Tailwind build in this project (see §1).
 
 ---
 
@@ -286,7 +348,12 @@ If creating a new file, state why an existing file could not be used instead.
 | What | Where |
 |---|---|
 | Colour + design tokens | `src/styles/theme.css` |
-| Layout classes | `src/styles/globals.css` |
+| Layout classes | `src/styles/staffglobal.css` |
+| Shared UI families | `src/styles/families/*.css` |
+| Family registry | `src/components/ui/variants.js` |
+| Customer (/website) styles | `src/styles/custglobal.css` |
+| Design governance guide | `docs/ui/staff-design-governance.md` |
+| Design governance check | `npm run check:design` |
 | Global page layout | `src/components/Layout.js` |
 | Sidebar | `src/components/Sidebar.js` |
 | Section card | `src/components/Section.js` |

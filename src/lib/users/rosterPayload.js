@@ -1,7 +1,8 @@
 // file location: src/lib/users/rosterPayload.js
 import { buildCiRoster, isPlaywrightCi } from "@/lib/api/ciMocks";
 import { getDatabaseClient } from "@/lib/database/client";
-import { getAllUsers, getUsersGroupedByRole } from "@/lib/database/users";
+import { isDevAuthAllowed } from "@/lib/auth/devAuth";
+import { getAllUsers } from "@/lib/database/users";
 
 const db = getDatabaseClient();
 const CUSTOMER_ROLE = "Customer";
@@ -65,17 +66,49 @@ const getCustomerDevLoginUsers = async () => {
   });
 };
 
+// Group an already-fetched user list by role, reproducing the ordering the
+// database applied in getUsersGroupedByRole (role, first name, last name, id).
+const groupUsersByRole = (users = []) => {
+  const sorted = [...users].sort((a, b) => {
+    const byRole = String(a.role || "").localeCompare(String(b.role || ""));
+    if (byRole !== 0) return byRole;
+    const byFirst = String(a.firstName || "").localeCompare(String(b.firstName || ""));
+    if (byFirst !== 0) return byFirst;
+    const byLast = String(a.lastName || "").localeCompare(String(b.lastName || ""));
+    if (byLast !== 0) return byLast;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+
+  return sorted.reduce((acc, shaped) => {
+    const key = shaped.role || "Unassigned";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(shaped);
+    return acc;
+  }, {});
+};
+
 export async function buildRosterPayload() {
   if (isPlaywrightCi()) {
     return buildCiRoster();
   }
 
-  const [grouped, allUsers, customers] = await Promise.all([
-    getUsersGroupedByRole(),
-    getAllUsers(),
-    getCustomerDevLoginUsers(),
-  ]);
+  // This runs on EVERY authenticated page boot (RosterProvider). It used to
+  // issue three queries:
+  //
+  //   getUsersGroupedByRole()   — every active user
+  //   getAllUsers()             — the same rows again, same columns, only a
+  //                               different ORDER BY
+  //   getCustomerDevLoginUsers()— every customer row in the database, unbounded
+  //
+  // The two user queries are now one fetch grouped in memory, and the customer
+  // list — which exists only to populate the DEV LOGIN picker — is skipped
+  // unless dev auth is actually available. In production that removes an
+  // unbounded scan that grows with the customer base, and stops sending every
+  // customer's name and email to every staff member on every page load.
+  const allUsers = await getAllUsers();
+  const customers = isDevAuthAllowed() ? await getCustomerDevLoginUsers() : [];
 
+  const grouped = groupUsersByRole(allUsers);
   const groupedWithCustomers = {
     ...(grouped || {}),
     [CUSTOMER_ROLE]: customers,

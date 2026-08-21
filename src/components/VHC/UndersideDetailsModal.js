@@ -1,20 +1,20 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
 import React, { useEffect, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
-import IssueReportPopup from "@/components/VHC/IssueReportPopup";
+import IssueReportPopup, {
+  IssueReportAddSection,
+  IssueReportList,
+  IssueReportRow,
+} from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
 import {
   vhcModalContentStyles,
 } from "@/styles/appTheme";
-import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import {
   palette,
-  STATUS_OPTIONS,
-  fieldLabelStyle,
   inputStyle,
-  statusSelectStyle,
   lockedRowOverlayStyle,
   lockedRowBadgeStyle,
 } from "@/components/VHC/vhcModalStyles";
@@ -271,9 +271,8 @@ export default function UndersideDetailsModal({
           onClose={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
         >
 
-            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", background: "var(--surface)" }}>
-              <label style={fieldLabelStyle}>Issue</label>
-              {isMiscCategory(activeConcern.category) ? (
+          <IssueReportAddSection
+            descriptionControl={isMiscCategory(activeConcern.category) ? (
                 <input
                   type="text"
                   placeholder="Describe the issue…"
@@ -308,120 +307,35 @@ export default function UndersideDetailsModal({
                   inputStyle={inputStyle}
                 />
               )}
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "0 0 150px", minWidth: "150px" }}>
-                  <label style={fieldLabelStyle}>Status</label>
-                  <DropdownField
-                    value={activeConcern.temp.status}
-                    onChange={(e) =>
-                      setActiveConcern((prev) => ({
-                        ...prev,
-                        temp: { ...prev.temp, status: e.target.value },
-                      }))
-                    }
-                    className="vhc-concern-dropdown"
-                    style={{ ...statusSelectStyle, width: "100%" }}
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </DropdownField>
-                </div>
-                <Button variant="primary" size="sm" onClick={addConcern} disabled={locked}>
-                  Add Concern
-                </Button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                overflowY: shouldScrollConcernEntries ? "auto" : "visible",
-                maxHeight: shouldScrollConcernEntries ? "340px" : "none",
-                padding: "0 20px 20px",
-              }}
-            >
-              {activeConcernEntries.length === 0 ? (
-                <div
-                  style={{
-                    padding: "16px",
-                    borderRadius: "var(--radius-md)",
-                    border: "none",
-                    backgroundColor: palette.accentSurface,
-                    color: palette.textMuted,
-                    fontSize: "13px",
-                  }}
-                >
-                  No concerns added yet. Add items to keep this section current.
-                </div>
-              ) : (
-                activeConcernEntries.map((concern, idx) => {
+            severity={activeConcern.temp.status}
+            onSeverityChange={(status) =>
+              setActiveConcern((prev) => ({ ...prev, temp: { ...prev.temp, status } }))
+            }
+            onAdd={addConcern}
+            addDisabled={!activeConcern.temp.issue.trim()}
+            disabled={locked}
+          />
+          <IssueReportList
+            count={activeConcernEntries.length}
+            emptyMessage="No issues reported for this location."
+            scroll={shouldScrollConcernEntries}
+          >
+            {activeConcernEntries.map((concern, idx) => {
                   const rowLocked = isConcernLocked(concern, activeConcern.category);
                   const lockReason = getLockReason(concern, activeConcern.category);
                   const isDeclined = lockReason === "declined";
                   return (
-                    <div
+                    <IssueReportRow
                       key={`${activeConcern.category}-${idx}`}
-                      style={{
-                        position: "relative",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                        padding: "14px",
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: palette.surface,
-                      }}
-                    >
-                      {rowLocked && lockReason && (
-                        <div style={lockedRowOverlayStyle}>
-                          <span style={lockedRowBadgeStyle(isDeclined)}>
-                            Row {isDeclined ? "Declined" : "Authorised"}
-                          </span>
-                        </div>
-                      )}
-                      <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) 160px auto",
-                        gap: "10px",
-                        alignItems: "center"
-                      }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textMuted }}>{activeConcern.category}</span>
-                        <DropdownField
-                          value={concern.status}
-                          onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
-                          className="vhc-concern-dropdown"
-                          style={{ ...statusSelectStyle, width: "160px", flex: "0 0 160px" }}
-                          disabled={rowLocked}
-                        >
-                          {STATUS_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </DropdownField>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => deleteConcern(activeConcern.category, idx)}
-                          disabled={rowLocked}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                      <label style={fieldLabelStyle}>Issue</label>
-                      {isMiscCategory(activeConcern.category) ? (
+                      issue={concern}
+                      description={isMiscCategory(activeConcern.category) ? (
                         <input
                           type="text"
                           value={concern.issue}
                           onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
                           readOnly={rowLocked}
                           style={inputStyle}
+                          aria-label="Issue description"
                         />
                       ) : (
                         <IssueAutocomplete
@@ -434,12 +348,21 @@ export default function UndersideDetailsModal({
                           inputStyle={inputStyle}
                         />
                       )}
-
-                    </div>
+                      severity={concern.status}
+                      onSeverityChange={(status) => updateConcern(activeConcern.category, idx, "status", status)}
+                      onDelete={() => deleteConcern(activeConcern.category, idx)}
+                      disabled={rowLocked}
+                      overlay={rowLocked && lockReason ? (
+                        <div style={lockedRowOverlayStyle}>
+                          <span style={lockedRowBadgeStyle(isDeclined)}>
+                            Row {isDeclined ? "Declined" : "Authorised"}
+                          </span>
+                        </div>
+                      ) : null}
+                    />
                   );
-                })
-              )}
-            </div>
+                })}
+          </IssueReportList>
         </IssueReportPopup>
       ) : null}
     </VHCModalShell>

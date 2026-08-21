@@ -329,6 +329,54 @@ export const getThreadsForUser = async (userId) => {
   );
 };
 
+// Unread-thread COUNT only — the cheap path behind the sidebar's message badge.
+//
+// getThreadsForUser (above) returns every thread with all participants, each
+// participant joined to `users`, plus the latest message and its sender — and
+// the badge then reduced all of that to a single integer. This helper applies
+// the identical `hasUnread` rule (latest message exists AND is newer than the
+// caller's last_read_at) while selecting exactly one column from one foreign
+// table, so the badge no longer pulls message bodies or user records.
+export const getUnreadThreadCountForUser = async (userId) => {
+  const userIdNum = normalizeUserId(userId);
+  if (!userIdNum) return 0;
+
+  const { data: membershipRows, error: membershipError } = await dbClient
+    .from("message_thread_members")
+    .select("thread_id, last_read_at")
+    .eq("user_id", userIdNum);
+
+  if (membershipError) {
+    console.error("❌ getUnreadThreadCountForUser membership error:", membershipError);
+    return 0;
+  }
+  if (!membershipRows?.length) return 0;
+
+  const lastReadByThread = new Map(
+    membershipRows.map((row) => [row.thread_id, row.last_read_at || null])
+  );
+
+  const { data: threadRows, error } = await dbClient
+    .from("message_threads")
+    .select("thread_id, recent_messages:messages!messages_thread_id_fkey(created_at)")
+    .in("thread_id", Array.from(lastReadByThread.keys()))
+    .order("created_at", { ascending: false, foreignTable: "recent_messages" })
+    .limit(1, { foreignTable: "recent_messages" });
+
+  if (error) {
+    console.error("❌ getUnreadThreadCountForUser thread fetch error:", error);
+    return 0;
+  }
+
+  return (threadRows || []).reduce((count, row) => {
+    const latestCreatedAt = row.recent_messages?.[0]?.created_at || null;
+    if (!latestCreatedAt) return count;
+    const lastReadAt = lastReadByThread.get(row.thread_id) || null;
+    const unread = !lastReadAt || new Date(latestCreatedAt) > new Date(lastReadAt);
+    return unread ? count + 1 : count;
+  }, 0);
+};
+
 const fetchThreadRecord = async (threadId) => {
   const { data, error } = await dbClient
     .from("message_threads")

@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
-import { getMockRows } from "@/features/presentation/mockData";
+// Demo fixtures are loaded on demand. A static import here put the whole
+// presentation dataset into /dashboard/admin's first-load bundle for the sake
+// of the presentation branch below, which only ever runs on a demo route.
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
 
@@ -12,7 +14,8 @@ const formatUserName = (user) => {
   return name || user.email || "Unknown user";
 };
 
-const buildPresentationAdminDashboardData = () => {
+const buildPresentationAdminDashboardData = async () => {
+  const { getMockRows } = await import("@/features/presentation/mockData");
   const today = dayjs();
   const jobs = getMockRows("jobs");
   const appointments = getMockRows("appointments");
