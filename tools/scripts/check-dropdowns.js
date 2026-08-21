@@ -10,6 +10,17 @@ const path = require("path");
 
 const ROOT = process.cwd();
 const SOURCE_ROOT = path.join(ROOT, "src");
+
+// Coverage contract: every staff-facing component, feature module and page.
+// Declared explicitly (rather than relying on the whole-src walk) so
+// tools/scripts/check-design-governance.js can assert the scope is never
+// narrowed. "src" itself is still walked, so anything outside these roots is
+// covered too - the list is a floor, not a filter.
+const SEARCH_ROOTS = [
+  "src/components",
+  "src/features",
+  "src/pages",
+];
 const STAFF_GLOBAL_CSS = path.join(SOURCE_ROOT, "styles", "staffglobal.css");
 const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 
@@ -130,7 +141,10 @@ function findNativeSelectLines(source) {
 const violations = [];
 const observedCounts = new Map();
 
-for (const file of walk(SOURCE_ROOT)) {
+const SCAN_ROOTS = [SOURCE_ROOT, ...SEARCH_ROOTS.map((r) => path.join(ROOT, r))];
+const SCANNED = new Set(SCAN_ROOTS.flatMap((root) => walk(root)));
+
+for (const file of SCANNED) {
   const source = fs.readFileSync(file, "utf8");
   const nativeSelectLines = findNativeSelectLines(source);
   if (nativeSelectLines.length === 0) continue;

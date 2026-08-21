@@ -3412,34 +3412,11 @@ html.website-scope .ws-preview-target .ws-preview-target:hover ~ * .ws-preview-t
   opacity: 0;
 }
 
-/* ── Staff-side: editor split layout (left pane + iframe pane) ────────── */
-/* These rules sit OUTSIDE html.website-scope because the editor itself
-   renders in the staff app, not in the public marketing scope. */
-.ws-editor-split {
-  display: grid;
-  grid-template-columns: minmax(320px, 420px) 1fr;
-  gap: 16px;
-  align-items: start;
-}
-@media (max-width: 1024px) {
-  .ws-editor-split {
-    grid-template-columns: 1fr;
-  }
-}
-.ws-editor-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 12px;
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
-}
-.ws-editor-preview iframe {
-  width: 100%;
-  border-radius: 8px;
-  background: var(--theme);
-}
+/* ── Staff-side editor split layout MOVED ─────────────────────────────── */
+/* The .ws-editor-* rules used to live here, outside html.website-scope,
+   because the Website Manager editor renders in the STAFF app. They now live in
+   src/styles/features/website-manager.css (imported by staffglobal.css), so this
+   file can be loaded by /website routes only. See CLAUDE.md 3.0b. */
 
 /* /website/login layout. These classes replace the old page-scoped module
    so the login experience is styled by custglobal.css like every other

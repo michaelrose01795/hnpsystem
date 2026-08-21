@@ -19,7 +19,9 @@
 // "appointments-planner"; the booking toolbar, scheduler board and day-jobs
 // table all hang off it, so the overlay reports the real card hierarchy.
 import React, { useMemo, useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical surface layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme";
 import PopupModal from "@/components/popups/popupStyleApi"; // shared staffglobal popup (full-cover backdrop hides the topbar)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // data-area skeletons while jobs load
 import { CalendarField } from "@/components/ui/calendarAPI"; // in-app calendar picker (.calendar-api) — replaces the native date popup
@@ -1236,16 +1238,15 @@ export default function AppointmentsUi(props) {
     currentNote,
     formatDate,
     formatDateNoYear,
-    getCustomerStatusBadgeColors,
+    getCustomerStatusBadgeColors: getCustomerStatusBadgeClass,
     getDetectedJobTypeLabels,
     getEstimatedFinishTime,
     getJobGroupBadge,
-    getJobTypeBadgeStyle,
+    getJobTypeBadgeStyle: getJobTypeBadgeClass,
     getVehicleDisplay,
     handleAddAppointment,
     handleCheckIn,
     handleJobNumberInputChange,
-    handleJobRowClick,
     handleJobRowHover,
     handleSelectScheduleDate,
     handleOpenDayJobs,
@@ -1344,11 +1345,7 @@ export default function AppointmentsUi(props) {
               <option value="day">Day view</option>
             </DropdownField>
             <input type="text" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} />
-            <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time">
-              {timeSlots.map((slot) => <option key={slot} value={slot}>
-                  {slot}
-                </option>)}
-            </DropdownField>
+            <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time" options={timeSlots} />
             <Button variant="secondary" onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
               {isLoading ? "Booking..." : "Book Appointment"}
             </Button>
@@ -1412,17 +1409,7 @@ export default function AppointmentsUi(props) {
                   }}>{formatDateNoYear(selectedDay)}</span>
               </h3>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-                <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "6px 12px",
-                    backgroundColor: "var(--surface)",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    color: "var(--text-1)"
-                  }}>
+                <span className="app-badge app-badge--neutral">
                   {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
                 </span>
                 {/* Close — top-right of the popup */}
@@ -1438,14 +1425,12 @@ export default function AppointmentsUi(props) {
 
             {/* ✅ Enhanced Jobs Table — caps at ~10 rows, then scrolls vertically.
                 ~10 × 49px row + the sticky header ≈ 540px. */}
-            <div style={{
+            <LayerTheme padding="0" gap="0" style={{
                 overflowX: "auto",
                 overflowY: "auto",
-                maxHeight: "min(64vh, 540px)",
-                borderRadius: "var(--radius-md)",
-                background: "var(--theme)"
+                maxHeight: "min(64vh, 540px)"
               }}>
-              <table ref={dayJobsTableRef} className="app-data-table app-data-table--rounded" data-dev-section-key="appointments-day-jobs-table" data-dev-section-parent="appointments-day-jobs" data-dev-section-type="data-table" style={{
+              <table ref={dayJobsTableRef} className="app-data-table app-data-table--rounded app-table-shell app-table-shell--with-headings" data-dev-section-key="appointments-day-jobs-table" data-dev-section-parent="appointments-day-jobs" data-dev-section-type="data-table" style={{
                   width: "100%",
                   borderCollapse: "separate",
                   borderSpacing: 0,
@@ -1534,8 +1519,23 @@ export default function AppointmentsUi(props) {
                           fontWeight: "700",
                           background: cellBackground
                         }}>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => handleJobRowClick(job.jobNumber || job.id)} onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)} style={{ gap: "6px" }}>
-                              <span>{job.jobNumber || job.id || "-"}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", minHeight: "44px" }}>
+                              <Link
+                                href={`/job-cards/${encodeURIComponent(job.jobNumber || job.id)}`}
+                                onClick={() => setShowDayJobsPopup(false)}
+                                onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  minWidth: "44px",
+                                  minHeight: "44px",
+                                  color: "var(--text-1)",
+                                  fontWeight: 700,
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: "3px"
+                                }}>
+                                {job.jobNumber || job.id || "-"}
+                              </Link>
                               {(() => {
                               const badge = getJobGroupBadge(job);
                               if (!badge) return null;
@@ -1551,7 +1551,7 @@ export default function AppointmentsUi(props) {
                                     {badge} Job Cards
                                   </span>;
                             })()}
-                            </button>
+                            </div>
                           </td>
                           <td style={{
                           padding: "12px 14px",
@@ -1588,15 +1588,7 @@ export default function AppointmentsUi(props) {
                             maxHeight: "52px",
                             overflowY: "auto"
                           }}>
-                              {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map((label) => <span key={label} style={{
-                              ...getJobTypeBadgeStyle(label),
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "6px 12px",
-                              borderRadius: "var(--radius-xs)",
-                              border: "none",
-                              fontWeight: "700"
-                            }}>
+                              {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map((label) => <span key={label} className={`app-badge ${getJobTypeBadgeClass(label)}`}>
                                   {label}
                                 </span>)}
                             </div>
@@ -1606,16 +1598,7 @@ export default function AppointmentsUi(props) {
                           borderBottom: cellBorder,
                           background: cellBackground
                         }}>
-                            <span style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            padding: "6px 12px",
-                            borderRadius: "var(--radius-xs)",
-                            border: "none",
-                            fontSize: "11px",
-                            fontWeight: "700",
-                            ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither")
-                          }}>
+                            <span className={`app-badge ${getCustomerStatusBadgeClass(job.waitingStatus || "Neither")}`}>
                               {job.waitingStatus || "Neither"}
                             </span>
                           </td>
@@ -1662,7 +1645,7 @@ export default function AppointmentsUi(props) {
                     </tr>}
                 </tbody>
               </table>
-            </div>
+            </LayerTheme>
             </div>
           </PopupModal>
 

@@ -53,14 +53,37 @@ const nextConfig = { // Exported Next.js configuration object
   // diagnostics and the served bundle share one identifier (else Next's random id).
   generateBuildId: async () => BUILD_ID || null, // null → Next falls back to its default
   
-  images: { // Configure remote image domains
-    remotePatterns: [ // Allow generic HTTPS image sources
-      { // Single wildcard rule
-        protocol: "https", // Permit only HTTPS protocol
-        hostname: "**", // Accept any remote hostname
-      }, // Close remote pattern object
-    ], // Close remotePatterns array
-  }, // Close images config
+  // Remote image hosts the built-in optimiser (/_next/image) may fetch from.
+  //
+  // This was `hostname: "**"`, which let anyone point this deployment's image
+  // optimiser at any HTTPS URL on the internet and have it fetched, transformed
+  // and cached at our expense — the same open-proxy problem that
+  // src/pages/api/img-proxy.js already guards against with its own allowlist
+  // ("without it, this endpoint would be an open proxy that anyone could abuse").
+  //
+  // Only two components use next/image: BrandLogo (local /images/*, needs no
+  // remote pattern) and DocumentsUploadPopup, which renders job-document
+  // thumbnails from Supabase Storage. The Supabase host is derived from the
+  // configured project URL so this stays correct across environments.
+  images: {
+    remotePatterns: (() => {
+      const patterns = [];
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      if (supabaseUrl) {
+        try {
+          patterns.push({
+            protocol: "https",
+            hostname: new URL(supabaseUrl).hostname,
+            pathname: "/storage/v1/object/**",
+          });
+        } catch {
+          // Malformed URL — fall through to the empty allowlist rather than
+          // silently re-opening the optimiser to every host.
+        }
+      }
+      return patterns;
+    })(),
+  },
   
   env: { // Surface selected environment variables to the client bundle
     NEXT_PUBLIC_KEYCLOAK_URL: process.env.NEXT_PUBLIC_KEYCLOAK_URL, // Keycloak base URL

@@ -1,9 +1,8 @@
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const LOCAL_URL_PATTERN = /https?:\/\/(?:localhost|127\.0\.0\.1|\[?::1\]?)(?::\d+)?(?:\/[^\s]*)?/i;
-const PRE_VERCEL_TASKKILL_PID = "25756";
 
 function isWsl() {
   if (process.platform !== "linux") return false;
@@ -31,18 +30,65 @@ function openExternalBrowser(url) {
   openProcess.unref();
 }
 
+// Stop a *previous dev server for this project* before starting Vercel dev.
+//
+// This used to run `taskkill /PID 25756 /F` against a PID hard-coded at the time
+// someone hit the problem. PIDs are recycled, so on any later boot that number
+// belongs to an unrelated process — the script would force-kill whatever
+// happened to hold it. Next.js writes the live dev server's PID to
+// `.next/dev/lock`, so read the actual owner instead, verify it is still running
+// and is a node process, and only then stop it.
+function readDevServerLock() {
+  try {
+    const lockPath = path.join(process.cwd(), ".next", "dev", "lock");
+    if (!fs.existsSync(lockPath)) return null;
+    const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    const pid = Number(lock?.pid);
+    if (!Number.isInteger(pid) || pid <= 0) return null;
+    return { pid, port: lock?.port ?? null };
+  } catch {
+    return null;
+  }
+}
+
+function isRunningNodeProcess(pid) {
+  if (process.platform !== "win32") return false;
+  try {
+    const out = execFileSync("tasklist", ["/FI", `PID eq ${pid}`, "/NH", "/FO", "CSV"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return /^"node\.exe"/i.test(out.trim());
+  } catch {
+    return false;
+  }
+}
+
 function runPreVercelTaskkill() {
   if (process.platform !== "win32") return Promise.resolve();
 
-  console.log(`[vercel:dev] Running taskkill /PID ${PRE_VERCEL_TASKKILL_PID} /F before Vercel dev...`);
+  const lock = readDevServerLock();
+  if (!lock) {
+    console.log("[vercel:dev] No .next/dev/lock — nothing to stop.");
+    return Promise.resolve();
+  }
+  if (lock.pid === process.pid) return Promise.resolve();
+  if (!isRunningNodeProcess(lock.pid)) {
+    console.log(`[vercel:dev] Stale lock (PID ${lock.pid} is not a running node process) — skipping.`);
+    return Promise.resolve();
+  }
+
+  console.log(
+    `[vercel:dev] Stopping the existing dev server for this project (PID ${lock.pid}${lock.port ? `, port ${lock.port}` : ""})...`
+  );
 
   return new Promise((resolve) => {
-    const taskkill = spawn("taskkill", ["/PID", PRE_VERCEL_TASKKILL_PID, "/F"], {
+    const taskkill = spawn("taskkill", ["/PID", String(lock.pid), "/F"], {
       stdio: "inherit",
     });
 
     taskkill.on("error", (error) => {
-      console.warn(`[vercel:dev] Could not run taskkill before Vercel dev: ${error.message}`);
+      console.warn(`[vercel:dev] Could not stop the existing dev server: ${error.message}`);
       resolve();
     });
 

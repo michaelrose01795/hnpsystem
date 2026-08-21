@@ -1,23 +1,21 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import IssueReportPopup, {
+  IssueReportAddSection,
+  IssueReportList,
+  IssueReportRow,
+} from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
 import themeConfig, {
   vhcModalContentStyles,
-  popupOverlayStyles,
-  popupCardStyles,
 } from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
-import {
-  issueReportEyebrowStyle,
-  issueReportTitleStyle,
-} from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -447,7 +445,9 @@ export default function BrakesHubsDetailsModal({
   const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
   const [showValidation, setShowValidation] = useState(false);
   const [activeSide, setActiveSide] = useState("front");
+  const [stableSectionHeight, setStableSectionHeight] = useState(null);
   const hasInitializedRef = useRef(false);
+  const sectionsContainerRef = useRef(null);
   const [concernPopup, setConcernPopup] = useState({
     open: false,
     category: "frontPads",
@@ -470,6 +470,24 @@ export default function BrakesHubsDetailsModal({
   useEffect(() => {
     persistDraft({ data, showDrum });
   }, [data, persistDraft, showDrum]);
+
+  useEffect(() => {
+    const container = sectionsContainerRef.current;
+    const isRearDrumView = activeSide === "rear" && showDrum;
+    if (!container || isRearDrumView || typeof ResizeObserver === "undefined") return undefined;
+
+    const rememberHeight = () => {
+      const nextHeight = container.getBoundingClientRect().height;
+      setStableSectionHeight((currentHeight) =>
+        Math.abs((currentHeight ?? 0) - nextHeight) > 0.5 ? nextHeight : currentHeight,
+      );
+    };
+
+    rememberHeight();
+    const observer = new ResizeObserver(rememberHeight);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [activeSide, showDrum]);
 
   const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
   const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
@@ -651,26 +669,6 @@ export default function BrakesHubsDetailsModal({
   };
 
   const inputStyle = { width: "100%" };
-
-  const popupOverlayStyle = {
-    ...popupOverlayStyles,
-    zIndex: "var(--z-modal)",
-    padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
-  };
-
-  const popupCardStyle = {
-    ...popupCardStyles,
-    width: "min(640px, 94vw)",
-    minHeight: "auto",
-    maxHeight: "calc(100dvh - 48px)",
-    padding: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: 0,
-    overflow: "hidden",
-    background: "var(--page-card-bg, var(--surface))",
-    borderRadius: "var(--radius-sm)",
-  };
 
   const enhanceFocus = (event) => {
     event.target.style.backgroundColor = "var(--control-bg-hover)";
@@ -885,31 +883,16 @@ export default function BrakesHubsDetailsModal({
   const brakeDiagramValues = useMemo(() => {
     const frontSeverityRank = computeAxleSeverityRank(data.frontPads, data.frontDiscs);
     const frontValue = parsePadValue(data.frontPads.measurement);
-
-    let rearValue, rearSeverityRank;
-
-    if (showDrum) {
-      // Map drum status to diagram severity
-      const drumStatus = data.rearDrums.status;
-      let drumSeverity = "unknown";
-      if (drumStatus === "Good") drumSeverity = "good";
-      else if (drumStatus === "Monitor") drumSeverity = "advisory";
-      else if (drumStatus === "Replace") drumSeverity = "critical";
-
-      rearValue = "drum";
-      rearSeverityRank = resolveDiagramRank(drumSeverity);
-    } else {
-      rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
-      rearValue = parsePadValue(data.rearPads.measurement);
-    }
+    const rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
+    const rearValue = parsePadValue(data.rearPads.measurement);
 
     return {
       nsf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
       osf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
-      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank), isDrum: showDrum },
-      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank), isDrum: showDrum },
+      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
+      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
     };
-  }, [data, showDrum]);
+  }, [data]);
 
   const discComplete = (section) => {
     if (!section) return false;
@@ -974,6 +957,46 @@ export default function BrakesHubsDetailsModal({
   };
 
   if (!isOpen) return null;
+
+  const rearDiscChecks = (
+    <>
+      <PadsSection
+        title={padLabels.rearPads}
+        padData={data.rearPads}
+        onMeasurementChange={(value) => updatePadMeasurement("rearPads", value)}
+        onStatusChange={(value) => updatePadStatus("rearPads", value)}
+        sectionPanelBase={sectionPanelBase}
+        fieldLabelStyle={fieldLabelStyle}
+        inputStyle={inputStyle}
+        dropdownFieldStyle={dropdownFieldStyle}
+        enhanceFocus={enhanceFocus}
+        resetFocus={resetFocus}
+        panelStyle={showValidation && missingSections.rearPads ? requiredPanelStyle : null}
+      />
+      <DiscsSection
+        title={discLabels.rearDiscs}
+        discData={data.rearDiscs}
+        onTabChange={(tab) => updateDiscTab("rearDiscs", tab)}
+        onMeasurementChange={(value) => updateDiscMeasurementValue("rearDiscs", value)}
+        onMeasurementStatusChange={(value) =>
+          updateDisc("rearDiscs", "measurements", { status: value })
+        }
+        onVisualStatusChange={(value) =>
+          updateDisc("rearDiscs", "visual", { status: value })
+        }
+        showDrumButton
+        onSwitchToDrum={() => setShowDrum(true)}
+        showSwitchInTabs
+        sectionPanelBase={sectionPanelBase}
+        fieldLabelStyle={fieldLabelStyle}
+        inputStyle={inputStyle}
+        dropdownFieldStyle={dropdownFieldStyle}
+        enhanceFocus={enhanceFocus}
+        resetFocus={resetFocus}
+        panelStyle={showValidation && missingSections.rearDiscs ? requiredPanelStyle : null}
+      />
+    </>
+  );
 
   return (
     <VHCModalShell
@@ -1081,6 +1104,7 @@ export default function BrakesHubsDetailsModal({
             </div>
 
             <div
+              ref={sectionsContainerRef}
               data-dev-section="1"
               data-dev-section-key="vhc-brakes-sections"
               data-dev-section-type="content-card"
@@ -1088,11 +1112,14 @@ export default function BrakesHubsDetailsModal({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "18px",
+                gap: activeSide === "rear" && showDrum ? "10px" : "18px",
                 flex: 1,
                 overflowY: "auto",
                 paddingRight: "8px",
-                minHeight: 0,
+                minHeight:
+                  activeSide === "rear" && showDrum && stableSectionHeight
+                    ? `${stableSectionHeight}px`
+                    : 0, // Preserve the normal checks footprint while drum content is visible.
               }}
             >
               {activeSide === "front" && (
@@ -1134,45 +1161,7 @@ export default function BrakesHubsDetailsModal({
                 </>
               )}
 
-              {activeSide === "rear" && !showDrum && (
-                <>
-                  <PadsSection
-                    title={padLabels.rearPads}
-                    padData={data.rearPads}
-                    onMeasurementChange={(value) => updatePadMeasurement("rearPads", value)}
-                    onStatusChange={(value) => updatePadStatus("rearPads", value)}
-                    sectionPanelBase={sectionPanelBase}
-                    fieldLabelStyle={fieldLabelStyle}
-                    inputStyle={inputStyle}
-                    dropdownFieldStyle={dropdownFieldStyle}
-                    enhanceFocus={enhanceFocus}
-                    resetFocus={resetFocus}
-                    panelStyle={showValidation && missingSections.rearPads ? requiredPanelStyle : null}
-                  />
-                  <DiscsSection
-                    title={discLabels.rearDiscs}
-                    discData={data.rearDiscs}
-                    onTabChange={(tab) => updateDiscTab("rearDiscs", tab)}
-                    onMeasurementChange={(value) => updateDiscMeasurementValue("rearDiscs", value)}
-                    onMeasurementStatusChange={(value) =>
-                      updateDisc("rearDiscs", "measurements", { status: value })
-                    }
-                    onVisualStatusChange={(value) =>
-                      updateDisc("rearDiscs", "visual", { status: value })
-                    }
-                    showDrumButton
-                    onSwitchToDrum={() => setShowDrum(true)}
-                    showSwitchInTabs
-                    sectionPanelBase={sectionPanelBase}
-                    fieldLabelStyle={fieldLabelStyle}
-                    inputStyle={inputStyle}
-                    dropdownFieldStyle={dropdownFieldStyle}
-                    enhanceFocus={enhanceFocus}
-                    resetFocus={resetFocus}
-                    panelStyle={showValidation && missingSections.rearDiscs ? requiredPanelStyle : null}
-                  />
-                </>
-              )}
+              {activeSide === "rear" && !showDrum ? rearDiscChecks : null}
 
               {activeSide === "rear" && showDrum && (
                 <DrumBrakesSection
@@ -1254,39 +1243,18 @@ export default function BrakesHubsDetailsModal({
             </div>
           </div>
 
-          {concernPopup.open && typeof document !== "undefined" &&
-            createPortal(
-            <div style={{ ...popupOverlayStyle, zIndex: 5600 }}>
-              <div style={popupCardStyle}>
-                <div style={{
-                  padding: "18px 20px",
-                  background: "var(--theme, var(--surface))",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "16px",
-                }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={issueReportEyebrowStyle}>
-                      Issue report
-                    </span>
-                    <h4 style={issueReportTitleStyle}>
-                      {areaLabels[concernPopup.category] || concernPopup.category}
-                    </h4>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={resetConcernPopup}>
-                    Close
-                  </Button>
-                </div>
-                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <span style={{ ...fieldLabelStyle, display: "block" }}>
-                  Area:{" "}
-                  <strong style={{ color: palette.textPrimary }}>
-                    {areaLabels[concernPopup.category] || concernPopup.category}
-                  </strong>
-                </span>
-                <label style={fieldLabelStyle}>Concern</label>
-                <IssueAutocomplete
+          {concernPopup.open ? (
+            <IssueReportPopup
+              isOpen={concernPopup.open}
+              title={areaLabels[concernPopup.category] || concernPopup.category}
+              width="640px"
+              onClose={resetConcernPopup}
+            >
+              <IssueReportAddSection
+                heading={concernPopup.editIndex !== null ? "Update Issue" : "Add Issue"}
+                addLabel={concernPopup.editIndex !== null ? "Save Issue" : "Add Issue"}
+                descriptionControl={(
+                  <IssueAutocomplete
                   sectionKey={areaSuggestionKeys[concernPopup.category] || "brakes_front_pads"}
                   value={concernPopup.tempConcern.issue}
                   onChange={(nextValue) =>
@@ -1308,64 +1276,39 @@ export default function BrakesHubsDetailsModal({
                     width: "100%",
                   }}
                 />
-
-                <label style={fieldLabelStyle}>Severity</label>
-                <DropdownField
-                  value={concernPopup.tempConcern.status}
-                  onChange={(e) =>
-                    setConcernPopup((prev) => ({
-                      ...prev,
-                      tempConcern: { ...prev.tempConcern, status: e.target.value },
-                    }))
-                  }
-                  className="vhc-concern-dropdown"
-                  style={dropdownFieldStyle}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
-                >
-                  <option>Red</option>
-                  <option>Amber</option>
-                  <option>Green</option>
-                </DropdownField>
-
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
-                  {concernPopup.editIndex !== null && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        deleteConcern(concernPopup.category, concernPopup.editIndex);
-                        resetConcernPopup();
-                      }}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "var(--danger)" }}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <Button variant="ghost" size="sm" onClick={resetConcernPopup} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        if (!concernPopup.tempConcern.issue.trim()) return;
-                        addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
-                        resetConcernPopup();
-                      }}
+                )}
+                severity={concernPopup.tempConcern.status}
+                onSeverityChange={(status) =>
+                  setConcernPopup((prev) => ({ ...prev, tempConcern: { ...prev.tempConcern, status } }))
+                }
+                onAdd={() => {
+                  if (!concernPopup.tempConcern.issue.trim()) return;
+                  addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
+                  resetConcernPopup();
+                }}
+                addDisabled={!concernPopup.tempConcern.issue.trim()}
+                disabled={locked}
+              />
+              <IssueReportList
+                count={activeIssueEntries.filter((issue) => issue.categoryKey === concernPopup.category).length}
+                emptyMessage="No issues reported for this location."
+              >
+                {activeIssueEntries
+                  .filter((issue) => issue.categoryKey === concernPopup.category)
+                  .map((issue) => (
+                    <IssueReportRow
+                      key={`${issue.categoryKey}-${issue.index}`}
+                      issue={issue}
+                      description={issue.text || issue.issue}
+                      severity={issue.status}
+                      onSeverityChange={(status) => updateConcernStatus(issue.categoryKey, issue.index, status)}
+                      onDelete={() => deleteConcern(issue.categoryKey, issue.index)}
                       disabled={locked}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-                    >
-                      {concernPopup.editIndex !== null ? "Save" : "Add Concern"}
-                    </Button>
-                  </div>
-                </div>
-                </div>
-              </div>
-            </div>,
-              document.body
-            )}
+                    />
+                  ))}
+              </IssueReportList>
+            </IssueReportPopup>
+          ) : null}
         </div>
       </div>
     </VHCModalShell>

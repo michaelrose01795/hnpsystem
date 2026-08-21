@@ -1,5 +1,5 @@
 // file location: src/lib/support/diagnostics.test.js
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   createRingBuffer,
   createDiagnosticsStore,
@@ -13,6 +13,10 @@ import {
   BUFFER_LIMITS,
 } from "@/lib/support/diagnostics";
 import { DEV_LAYOUT_SECTION_SOURCE_MAP } from "@/lib/dev-layout/sectionSourceMap.generated";
+import {
+  ensureDevLayoutSectionSources,
+  isDevLayoutSectionSourcesReady,
+} from "@/lib/dev-layout/sectionSourceMap";
 
 describe("createRingBuffer", () => {
   it("keeps only the most recent N items in order", () => {
@@ -83,6 +87,19 @@ describe("record helpers scrub at capture time", () => {
 });
 
 describe("resolveCodeOwnership", () => {
+  // The section source map is ~155KB and is loaded on demand so it stays out of
+  // every route's first-load bundle (see lib/dev-layout/sectionSourceMap.js).
+  // Lookups answer "no match" until it resolves. In the app, SupportReportContext
+  // warms it on idle at mount and openSupportReport awaits it before capturing;
+  // here we await it explicitly so these assertions test the resolved behaviour.
+  beforeAll(async () => {
+    await ensureDevLayoutSectionSources();
+  });
+
+  it("is ready once the map has been loaded", () => {
+    expect(isDevLayoutSectionSourcesReady()).toBe(true);
+  });
+
   it("returns file/line for a known exact section key from the generated map", () => {
     const exact = DEV_LAYOUT_SECTION_SOURCE_MAP.find(
       (e) => e && e.dynamic !== true && !String(e.key).includes("*") && e.file

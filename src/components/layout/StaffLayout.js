@@ -42,7 +42,6 @@ import { resolveQuickActions } from "@/config/topbar/quickActions";
 import { useContinueContext } from "@/hooks/useContinueContext";
 import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
-import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob, switchJob } from "@/lib/database/jobClocking";
@@ -134,7 +133,9 @@ export default function Layout({
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
-  useMessagesBadge(dbUserId);
+  // NOTE: useMessagesBadge is intentionally NOT mounted here. Its result was
+  // discarded at this level, so it only duplicated the request (and the realtime
+  // channel) that StaffSidebar — the sole consumer of the count — already makes.
   // Replace native browser title= tooltips on buttons app-wide with the
   // staffglobal styled tooltip (.app-hover-tooltip). Mounted once here.
   useNativeTitleTooltips();

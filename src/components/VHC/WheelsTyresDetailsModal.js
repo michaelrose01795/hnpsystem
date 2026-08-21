@@ -1,13 +1,15 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import IssueReportPopup, {
+  IssueReportAddSection,
+  IssueReportList,
+  IssueReportRow,
+} from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import Button from "@/components/ui/Button";
 import themeConfig, {
   vhcModalContentStyles,
-  popupOverlayStyles,
-  popupCardStyles,
 } from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -15,11 +17,6 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
-import {
-  fieldLabelStyle,
-  issueReportEyebrowStyle,
-  issueReportTitleStyle,
-} from "@/components/VHC/vhcModalStyles";
 
 const palette = themeConfig.palette;
 
@@ -46,7 +43,6 @@ const SPARE_TYPES = [
   { key: "not_checked", label: "Not Checked" },
 ];
 
-const CONCERN_STATUS_OPTIONS = ["Amber", "Red", "Green"];
 
 const TYRE_SEVERITY_RANK = {
   Red: 1,
@@ -740,28 +736,28 @@ export default function WheelsTyresDetailsModal({
     setConcernEditIndex(null);
   };
 
-  const deleteConcern = () => {
-    if (concernTarget === null || concernEditIndex === null) {
-      setConcernTarget(null);
-      setConcernInput("");
-      setConcernStatus("Amber");
-      setConcernEditIndex(null);
-      return;
-    }
-    setTyres((prev) => {
-      const updated = { ...prev };
-      const targetWheel = updated[concernTarget];
-      const existing = targetWheel.concerns ?? [];
-      updated[concernTarget] = {
-        ...targetWheel,
-        concerns: existing.filter((_, idx) => idx !== concernEditIndex),
-      };
-      return updated;
-    });
-    setConcernInput("");
-    setConcernStatus("Amber");
-    setConcernTarget(null);
-    setConcernEditIndex(null);
+  const updateConcernSeverity = (index, status) => {
+    if (!concernTarget) return;
+    setTyres((prev) => ({
+      ...prev,
+      [concernTarget]: {
+        ...prev[concernTarget],
+        concerns: (prev[concernTarget]?.concerns || []).map((concern, concernIndex) =>
+          concernIndex === index ? { ...concern, status } : concern
+        ),
+      },
+    }));
+  };
+
+  const deleteConcernAt = (index) => {
+    if (!concernTarget) return;
+    setTyres((prev) => ({
+      ...prev,
+      [concernTarget]: {
+        ...prev[concernTarget],
+        concerns: (prev[concernTarget]?.concerns || []).filter((_, concernIndex) => concernIndex !== index),
+      },
+    }));
   };
 
   const currentTyre = tyres[activeWheel];
@@ -1199,70 +1195,24 @@ export default function WheelsTyresDetailsModal({
         </div>
       </div>
 
-      {concernTarget && typeof document !== "undefined"
-        ? createPortal(
-        <div
-          style={{
-            ...popupOverlayStyles,
-            zIndex: "var(--z-modal)",
-            padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
+      {concernTarget ? (
+        <IssueReportPopup
+          isOpen={Boolean(concernTarget)}
+          title={`${concernTarget} Tyre`}
+          width="640px"
+          onClose={() => {
+            setConcernTarget(null);
+            setConcernInput("");
+            setConcernStatus("Amber");
+            setConcernEditIndex(null);
           }}
         >
-          <div
-            style={{
-              ...popupCardStyles,
-              width: "min(640px, 94vw)",
-              minHeight: "auto",
-              maxHeight: "calc(100dvh - 48px)",
-              padding: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: 0,
-              overflow: "hidden",
-              background: "var(--page-card-bg, var(--surface))",
-              borderRadius: "var(--radius-sm)",
-            }}
-          >
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "16px",
-              padding: "18px 20px",
-              background: "var(--theme, var(--surface))",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={issueReportEyebrowStyle}>
-                  Issue report
-                </span>
-                <h3 style={issueReportTitleStyle}>
-                  {concernTarget} Tyre
-                </h3>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setConcernTarget(null);
-                  setConcernInput("");
-                  setConcernStatus("Amber");
-                  setConcernEditIndex(null);
-                }}
-              >
-                Close
-              </Button>
-            </div>
 
-            <div style={{
-              padding: "18px 20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-              background: "var(--surface)",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={fieldLabelStyle}>Issue</label>
-                <IssueAutocomplete
+          <IssueReportAddSection
+            heading={concernEditIndex !== null ? "Update Issue" : "Add Issue"}
+            addLabel={concernEditIndex !== null ? "Save Issue" : "Add Issue"}
+            descriptionControl={(
+              <IssueAutocomplete
                   sectionKey={WHEEL_SECTION_KEYS[concernTarget] || "wheels_nsf"}
                   value={concernInput}
                   onChange={setConcernInput}
@@ -1271,50 +1221,28 @@ export default function WheelsTyresDetailsModal({
                   placeholder="Describe concern..."
                   inputStyle={{ ...baseInputStyle, minHeight: "var(--control-height)" }}
                 />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: "14px", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label style={fieldLabelStyle}>Status</label>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    {CONCERN_STATUS_OPTIONS.map((status) => (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setConcernStatus(status)}
-                        style={pillButton({ active: concernStatus === status })}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-              {concernEditIndex !== null && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={deleteConcern}
-                >
-                  Delete
-                </Button>
-              )}
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={addConcern}
-                  disabled={locked}
-                >
-                  {concernEditIndex !== null ? "Save" : "Add Concern"}
-                </Button>
-              </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-          document.body
-        )
-        : null}
+            )}
+            severity={concernStatus}
+            onSeverityChange={setConcernStatus}
+            onAdd={addConcern}
+            addDisabled={!concernInput.trim()}
+            disabled={locked}
+          />
+          <IssueReportList count={(tyres[concernTarget]?.concerns || []).length} emptyMessage="No issues reported for this tyre.">
+            {(tyres[concernTarget]?.concerns || []).map((concern, index) => (
+              <IssueReportRow
+                key={`${concernTarget}-reported-${index}`}
+                issue={concern}
+                description={concern.text || concern.issue}
+                severity={concern.status}
+                onSeverityChange={(status) => updateConcernSeverity(index, status)}
+                onDelete={() => deleteConcernAt(index)}
+                disabled={locked}
+              />
+            ))}
+          </IssueReportList>
+        </IssueReportPopup>
+      ) : null}
     </VHCModalShell>
   );
 }

@@ -158,6 +158,7 @@ export default function JobCardDetailPageUi(props) {
     writeUpCompleteInstant,
     writeUpPartiallyCompleteInstant,
     writeUpTabMounted,
+    vhcTabMounted,
   } = props; // receive page logic props.
   const activeTabLabel = tabs?.find(tab => tab.id === activeTab)?.label || activeTab;
   const normaliseBadgeText = (value) => String(value || "").trim().toLowerCase();
@@ -836,10 +837,14 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: VHC</strong>
                 <span>{partsWriteUpVhcLockDescription}</span>
               </div>}
-            <VHCTab jobNumber={jobNumber} jobData={jobData} canEdit={canEditPartsWriteUpVhc} canShowCustomerActions={vhcTabAmberReadyInstant} actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} actingUserName={user?.name || user?.email || ""} onFinancialTotalsChange={setVhcFinancialTotalsFromPanel} onJobDataRefresh={() => fetchJobData({
+            {/* Deferred mount, mirroring the Write-Up tab above: the VHC panel is
+                the heaviest component on the card, so it mounts on activation or
+                on idle (see vhcTabMounted in pages/job-cards/[jobNumber].js)
+                rather than during the initial render of every job card. */}
+            {vhcTabMounted || activeTab === "vhc" ? <VHCTab jobNumber={jobNumber} jobData={jobData} canEdit={canEditPartsWriteUpVhc} canShowCustomerActions={vhcTabAmberReadyInstant} actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} actingUserName={user?.name || user?.email || ""} onFinancialTotalsChange={setVhcFinancialTotalsFromPanel} onJobDataRefresh={() => fetchJobData({
             silent: true,
             force: true
-          })} onVhcCustomerStatusReload={reloadVhcCustomerStatus} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onToggleVhcRequired={handleToggleVhcRequired} canToggleVhcRequired={canEdit} />
+          })} onVhcCustomerStatusReload={reloadVhcCustomerStatus} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} onToggleVhcRequired={handleToggleVhcRequired} canToggleVhcRequired={canEdit} /> : null}
           </div>
 
           <div className="app-page-stack" style={{

@@ -241,13 +241,21 @@ if (!isStubEnv && typeof window === "undefined" && !supabaseServiceRole) {
 
 export const supabaseService = wrapWithPresentationProxy(supabaseServiceRole);
 
+// Supabase Auth is NOT used by this application — authentication is NextAuth
+// (see pages/api/auth/[...nextauth].js), and there is no supabase.auth.* call
+// anywhere outside this file. The client was nevertheless configured with the
+// full auth stack, so on every page load GoTrue read a session out of
+// localStorage, started a token-refresh timer, and parsed the URL looking for an
+// auth callback. Turning those off removes that boot work; every query still
+// goes out under the anon key exactly as before, and storage/realtime are
+// unaffected.
 const rawSupabaseClient = isStubEnv
   ? stubClient
   : createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
       },
       global: { fetch: resilientFetch },
     });

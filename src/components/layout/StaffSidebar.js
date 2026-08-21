@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { useClockingContext } from "@/context/ClockingContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import {
@@ -200,7 +201,7 @@ export default function Sidebar({
     },
     [pathname, pendingHref]
   );
-  const { user, dbUserId, sidebarAccessLoading } = useUser();
+  const { user, dbUserId, sidebarAccessLoading, sidebarAccessReady } = useUser();
   // Full name for the Profile nav button (replaces the generic "Profile" label).
   // user.username resolves to the signed-in user's display name (see UserContext).
   const fullName = (user?.username || "").trim();
@@ -225,7 +226,11 @@ export default function Sidebar({
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
   const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
   const isSidebarNavigationLoading =
-    !inPresentationMode && (isAuthLoading || (workspaceNavEnabled && sidebarAccessLoading));
+    !inPresentationMode &&
+    (isAuthLoading ||
+      !user ||
+      sidebarAccessLoading ||
+      !sidebarAccessReady);
   const ghostControlStyle = {
     backgroundColor: "var(--theme)",
     backgroundImage: "none",
@@ -434,54 +439,31 @@ export default function Sidebar({
     router.replace("/login");
   };
 
-  // Clock in/out state for sidebar button
-  const [isClockedIn, setIsClockedIn] = useState(false);
+  // Clock in/out state for the sidebar button.
+  //
+  // This used to keep its own `isClockedIn` and fetch `/api/profile/clock`
+  // itself — the exact same request ClockingProvider (which already wraps this
+  // component, see components/App/StaffProviders.js) makes for the same user.
+  // Reading the shared state removes the duplicate GET and the duplicate POST
+  // path; `clockLoading` stays local so the button's own pending label is
+  // unchanged and is not driven by the provider's shared `loading` flag.
+  const { clockedIn: isClockedIn, clockIn, clockOut } = useClockingContext();
   const [clockLoading, setClockLoading] = useState(false);
   const employeeUserId = Number(dbUserId);
   const canUseEmployeeClock = Number.isInteger(employeeUserId) && employeeUserId > 0;
-
-  useEffect(() => {
-    if (!user || !canUseEmployeeClock) {
-      setIsClockedIn(false);
-      return;
-    }
-    const fetchClockStatus = async () => {
-      try {
-        const url = `/api/profile/clock?userId=${employeeUserId}`;
-        const response = await fetch(url, { credentials: "include" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (payload?.success) {
-          setIsClockedIn(payload.data.isClockedIn);
-        }
-      } catch (err) {
-        console.error("Failed to fetch clock status:", err);
-      }
-    };
-    fetchClockStatus();
-  }, [user, canUseEmployeeClock, employeeUserId]);
 
   const handleClockToggle = useCallback(async () => {
     if (!canUseEmployeeClock) return;
     setClockLoading(true);
     try {
-      const action = isClockedIn ? "clock-out" : "clock-in";
-      const url = `/api/profile/clock?userId=${employeeUserId}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ action }),
-      });
-      if (response.ok) {
-        setIsClockedIn(!isClockedIn);
-      }
+      if (isClockedIn) await clockOut();
+      else await clockIn();
     } catch (err) {
       console.error("Clock toggle error:", err);
     } finally {
       setClockLoading(false);
     }
-  }, [isClockedIn, canUseEmployeeClock, employeeUserId]);
+  }, [isClockedIn, canUseEmployeeClock, clockIn, clockOut]);
 
   // `truncate` ellipsises the label on a single line — used by the Profile
   // button, which now renders the user's (potentially long) full name inside the

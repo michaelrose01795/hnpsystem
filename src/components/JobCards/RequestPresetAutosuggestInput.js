@@ -20,6 +20,7 @@ export default function RequestPresetAutosuggestInput({
   containerStyle = {},
   suggestionStyle = {},
   showHours = true,
+  horizontalSuggestions = false,
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -234,9 +235,24 @@ export default function RequestPresetAutosuggestInput({
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(-1)}
                   className={`dropdown-api__option${active ? " is-selected" : ""}`}
+                  style={horizontalSuggestions ? {
+                    flexDirection: "row", // Opt-in layout keeps the description and labour hours on one suggestion row.
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "var(--space-sm)",
+                  } : undefined}
                 >
-                  <div className="dropdown-api__option-label">
-                    <span>
+                  <div className="dropdown-api__option-label" style={horizontalSuggestions ? {
+                    flex: "1 1 auto", // The description owns the available space before the fixed hours badge.
+                    minWidth: 0,
+                    textAlign: "left",
+                  } : undefined}>
+                    <span style={horizontalSuggestions ? {
+                      minWidth: 0, // Ellipsis prevents a long description from pushing the hours off the right edge.
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    } : undefined}>
                       {renderHighlightedLabel(suggestion.label, query)}
                     </span>
                   </div>
@@ -244,6 +260,10 @@ export default function RequestPresetAutosuggestInput({
                     <span
                       className={`app-badge ${active ? "app-badge--accent-strong" : "app-badge--accent-soft"}`}
                       title="Approximate workshop-planning baseline; use vehicle-specific manufacturer time when available"
+                      style={horizontalSuggestions ? {
+                        marginLeft: "auto", // Keep labour hours aligned at the far-right edge of every suggestion.
+                        flexShrink: 0,
+                      } : undefined}
                     >
                       ~{formatBaselineHours(suggestion.defaultHours)}
                     </span>

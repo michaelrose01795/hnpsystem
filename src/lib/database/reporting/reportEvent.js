@@ -19,7 +19,6 @@
 import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 import { reportingTableExists } from "./tableAvailability";
 import { writeStatusHistory } from "./statusHistory";
-import { writeAuditLog } from "@/lib/audit/auditLog";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
 import {
   getEvent,
@@ -186,8 +185,17 @@ export async function emitReportEvent({ event, history = null, audit = null } = 
     result.event = await insertReportEvent(event);
 
     // 3. audit_log (tamper-evident) for audit-required events.
+    //
+    // `@/lib/audit/auditLog` is SERVER-ONLY: it hashes the chain with Node's
+    // `crypto` and writes through the service-role client (which is null in the
+    // browser, so this step could never have completed client-side anyway).
+    // Importing it statically pulled a ~533KB Node-crypto/Buffer polyfill into
+    // the first-load bundle of every page that reaches `@/lib/database/jobs`.
+    // Loading it lazily, behind the server guard, keeps server behaviour
+    // identical and keeps the polyfill out of the browser's critical path.
     const needsAudit = audit || isEventAuditRequired(event.eventName);
-    if (needsAudit) {
+    if (needsAudit && typeof window === "undefined") {
+      const { writeAuditLog } = await import("@/lib/audit/auditLog");
       await writeAuditLog({
         action: (audit?.action || event.eventName).toString().toLowerCase(),
         actorUserId: Number.isFinite(Number(event.actorUserId)) ? Number(event.actorUserId) : null,

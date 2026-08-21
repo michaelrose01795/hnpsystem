@@ -11,7 +11,12 @@
 //    tokens to the DOM, the theme can never "fight itself" mid-transition.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { supabaseClient } from "@/lib/database/supabaseClient";
+// NOTE: this module deliberately does NOT import @/lib/database/supabaseClient.
+// It is reached statically from _app.js, so that one import placed the whole
+// @supabase/supabase-js client (postgrest + realtime + GoTrue, ~213KB) into the
+// first-load bundle of every route in the app — including /login, where the
+// query it powered could never run (it is gated on a numeric user id). Theme
+// preferences are now read and written through /api/profile/theme-preferences.
 import { useUser } from "@/context/UserContext";
 import { themes } from "@/styles/theme";
 import {
@@ -43,15 +48,8 @@ const LOGIN_THEME_OVERRIDE = { mode: "system", accent: DEFAULT_ACCENT };
 const isLoginThemeRoute = () =>
   typeof window !== "undefined" && LOGIN_THEME_ROUTES.has(window.location.pathname);
 
-const withTimeout = (promise, label, timeoutMs = NETWORK_TIMEOUT_MS) => {
-  let timeoutId;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-};
-
+// (The promise-based `withTimeout` helper was removed with the direct Supabase
+// reads it wrapped; theme I/O now goes through fetchWithTimeout below.)
 const fetchWithTimeout = async (url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) => {
   const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
@@ -340,34 +338,21 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         let data = null;
 
         if (numericUserId) {
+          // Server-side read (see the note on the imports above). The endpoint
+          // owns the accent_color fallback that used to live here.
           try {
-            const { data: fullData, error: fullError } = await withTimeout(
-              supabaseClient
-                .from("users")
-                .select("dark_mode, accent_color")
-                .eq("user_id", numericUserId)
-                .maybeSingle(),
-              "Theme preference Supabase load"
+            const response = await fetchWithTimeout(
+              `/api/profile/theme-preferences?userId=${encodeURIComponent(numericUserId)}`,
+              { method: "GET", credentials: "include" }
             );
-            if (fullError) throw fullError;
-            data = fullData;
-          } catch (fullErr) {
-            try {
-              const { data: fallbackData, error: fallbackError } = await withTimeout(
-                supabaseClient
-                  .from("users")
-                  .select("dark_mode")
-                  .eq("user_id", numericUserId)
-                  .maybeSingle(),
-                "Theme preference fallback Supabase load"
-              );
-              if (fallbackError) throw fallbackError;
-              data = fallbackData;
-            } catch (fallbackErr) {
-              data = null;
-              console.warn("Theme DB preference unavailable, using local preference", fallbackErr?.message || fallbackErr);
-            }
-            console.warn("Accent DB column unavailable, using local accent preference", fullErr?.message || fullErr);
+            if (!response.ok) throw new Error(`Theme preference load failed (${response.status})`);
+            const payload = await response.json().catch(() => null);
+            data = payload?.data
+              ? { dark_mode: payload.data.mode, accent_color: payload.data.accent }
+              : null;
+          } catch (themeErr) {
+            data = null;
+            console.warn("Theme DB preference unavailable, using local preference", themeErr?.message || themeErr);
           }
         } else if (authUserId) {
           const response = await fetchWithTimeout("/api/profile/me", {
@@ -443,33 +428,18 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null;
 
     if (numericUserId) {
+      // Server-side read (see the note on the imports above). The endpoint owns
+      // the accent_color fallback that used to live here.
       try {
-        const { data, error } = await withTimeout(
-          supabaseClient
-            .from("users")
-            .select("dark_mode, accent_color")
-            .eq("user_id", numericUserId)
-            .maybeSingle(),
-          "Theme preference commit load"
+        const response = await fetchWithTimeout(
+          `/api/profile/theme-preferences?userId=${encodeURIComponent(numericUserId)}`,
+          { method: "GET", credentials: "include" }
         );
-        if (error) throw error;
-        if (data) return { mode: data.dark_mode, accent: data.accent_color };
-      } catch (fullErr) {
-        try {
-          const { data, error } = await withTimeout(
-            supabaseClient
-              .from("users")
-              .select("dark_mode")
-              .eq("user_id", numericUserId)
-              .maybeSingle(),
-            "Theme preference commit fallback load"
-          );
-          if (error) throw error;
-          if (data) return { mode: data.dark_mode, accent: null };
-        } catch (fallbackErr) {
-          console.warn("Theme commit DB load failed", fallbackErr?.message || fallbackErr);
-        }
-        console.warn("Theme commit accent column unavailable", fullErr?.message || fullErr);
+        if (!response.ok) throw new Error(`Theme commit load failed (${response.status})`);
+        const payload = await response.json().catch(() => null);
+        if (payload?.data) return { mode: payload.data.mode, accent: payload.data.accent };
+      } catch (themeErr) {
+        console.warn("Theme commit DB load failed", themeErr?.message || themeErr);
       }
       return null;
     }

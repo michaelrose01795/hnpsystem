@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { getShellBootstrap } from "@/lib/shell/bootstrapClient";
 
 const NETWORK_TIMEOUT_MS = 4000;
 const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
@@ -127,39 +128,62 @@ export function RosterProvider({ children, initialRosterData = null, deferLoad =
       hasLoadedRef.current = true;
       return undefined;
     }
+    // Wait for a signed-in user before requesting the staff roster.
+    //
+    // This provider is mounted on every route, including the public customer
+    // website, the customer portal and the public VHC report links. It used to
+    // call /api/users/roster regardless of auth state, so an anonymous visitor
+    // paid a full request round-trip for a response that could only ever be a
+    // 401. Staff routes are unaffected: `user` is resolved before the shell
+    // renders anything that reads the roster.
+    if (userLoading) return undefined;
+    if (!user) {
+      setState((prev) => (prev.isLoading ? { ...prev, isLoading: false } : prev));
+      return undefined;
+    }
     if (hasLoadedRef.current) return undefined;
 
     const controller = new AbortController();
     let idleId = null;
     let timerId = null;
-    const startLoad = () => fetchRoster(controller.signal)
-      .then((data) => {
-        setState({
-          usersByRole: data.usersByRole || {},
-          usersByRoleDetailed: data.usersByRoleDetailed || {},
-          allUsers: data.allUsers || [],
-          isLoading: false,
-          error: null,
-        });
-        hasLoadedRef.current = true;
-      })
-      .catch(async (error) => {
+    const applyRoster = (data) => {
+      setState({
+        usersByRole: data.usersByRole || {},
+        usersByRoleDetailed: data.usersByRoleDetailed || {},
+        allUsers: data.allUsers || [],
+        isLoading: false,
+        error: null,
+      });
+      hasLoadedRef.current = true;
+    };
+
+    const startLoad = async () => {
+      // Prefer the combined shell bootstrap: it already carries the roster, so a
+      // fresh boot costs one shared round trip instead of a dedicated one here.
+      // It resolves to null on any failure, in which case this falls through to
+      // /api/users/roster exactly as before.
+      try {
+        const boot = await getShellBootstrap({ userKey: user?.id ?? null });
+        if (boot?.roster) {
+          applyRoster(boot.roster);
+          return;
+        }
+      } catch {
+        // fall through to the dedicated endpoint
+      }
+
+      try {
+        applyRoster(await fetchRoster(controller.signal));
+      } catch (error) {
         if (error.name === "AbortError") return;
         if (PLAYWRIGHT_AUTH_ENABLED) {
           const { buildCiRoster } = await import("@/lib/api/ciMocks");
-          const data = buildCiRoster();
-          setState({
-            usersByRole: data.usersByRole || {},
-            usersByRoleDetailed: data.usersByRoleDetailed || {},
-            allUsers: data.allUsers || [],
-            isLoading: false,
-            error: null,
-          });
-          hasLoadedRef.current = true;
+          applyRoster(buildCiRoster());
           return;
         }
         setState((prev) => ({ ...prev, isLoading: false, error }));
-      });
+      }
+    };
 
     if (deferLoad && typeof window.requestIdleCallback === "function") {
       idleId = window.requestIdleCallback(startLoad, { timeout: 1200 });
@@ -174,7 +198,7 @@ export function RosterProvider({ children, initialRosterData = null, deferLoad =
       if (idleId !== null) window.cancelIdleCallback(idleId);
       if (timerId !== null) window.clearTimeout(timerId);
     };
-  }, [deferLoad, isPresentationRoute, isPublicPresentation, userLoading]);
+  }, [deferLoad, isPresentationRoute, isPublicPresentation, userLoading, user]);
 
   const value = useMemo(
     () => ({
