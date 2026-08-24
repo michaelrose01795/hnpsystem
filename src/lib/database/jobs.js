@@ -2978,12 +2978,18 @@ export const addJobToDatabase = async ({
   cosmeticNotes,
   vhcRequired,
   maintenanceInfo,
+  bookedBy = null,
   // Prime/Sub-job parameters
   primeJobId = null,
   asPrimeJob = false,
 }) => {
   try {
     const normalizedJobNumber = normaliseJobNumberInput(jobNumber);
+    const parsedBookedBy = Number(String(bookedBy ?? "").trim());
+    const bookedByUserId = Number.isInteger(parsedBookedBy) && parsedBookedBy > 0
+      ? parsedBookedBy
+      : null;
+    const createdAt = new Date().toISOString();
 
     console.log("➕ addJobToDatabase called with:", { 
       regNumber,
@@ -3092,7 +3098,10 @@ export const addJobToDatabase = async ({
       assigned_to: assignedTo || null,
       type: type || "Service",
       description: description || "",
-      status: "Open",
+      status: "Booked",
+      booked_by: bookedByUserId,
+      status_updated_at: createdAt,
+      status_updated_by: bookedByUserId ? String(bookedByUserId) : null,
       waiting_status: waitingStatus || "Neither",
       job_source: jobSource || "Retail",
       job_division: jobDivision || "Retail",
@@ -3106,7 +3115,7 @@ export const addJobToDatabase = async ({
       is_prime_job: asPrimeJob && !primeJobId,
       sub_job_sequence: subJobSequence,
       maintenance_info: maintenanceInfo || {},
-      created_at: new Date().toISOString(),
+      created_at: createdAt,
     };
 
     console.log("📝 Inserting job with data:", jobInsert);
@@ -3164,6 +3173,26 @@ export const addJobToDatabase = async ({
     }
 
     let jobWithNumber = await ensureJobNumberAssigned(job, normalizedJobNumber);
+
+    // A newly saved job begins its lifecycle as Booked. Persist this milestone
+    // once, at creation time, with the advisor who pressed Save Job Card.
+    // Later appointment edits are deliberately idempotent and must not add
+    // another Booked entry to the Job Tracker.
+    const { error: bookedHistoryError } = await supabase
+      .from("job_status_history")
+      .insert([
+        {
+          job_id: jobWithNumber.id,
+          from_status: null,
+          to_status: "Booked",
+          changed_by: bookedByUserId ? String(bookedByUserId) : null,
+          reason: "Job created",
+          changed_at: createdAt,
+        },
+      ]);
+    if (bookedHistoryError) {
+      console.error("Failed to record initial Booked status:", bookedHistoryError);
+    }
 
     // If this is a prime job, set prime_job_number to the job's own job_number
     if (asPrimeJob && !primeJobId && jobWithNumber.job_number) {

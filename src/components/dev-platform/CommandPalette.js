@@ -174,10 +174,10 @@ export function CommandPaletteProvider({ children }) {
                     <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                       <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: i === active ? "var(--accentText)" : "var(--text-1)" }}>{cmd.title}</span>
                       {cmd.subtitle ? (
-                        <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmd.subtitle}</span>
+                        <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmd.subtitle}</span>
                       ) : null}
                     </span>
-                    <span style={{ marginLeft: "auto", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.4 }}>{cmd.group}</span>
+                    <span style={{ marginLeft: "auto", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.4 }}>{cmd.group}</span>
                   </li>
                 ))
               )}

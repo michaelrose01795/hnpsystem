@@ -27,7 +27,7 @@ const ALLOWED = DEV_PLATFORM_ROLES.map((r) => r.toUpperCase());
 function FilterChips({ filters }) {
   const entries = Object.entries(filters || {}).filter(([, v]) => v !== undefined && v !== "" && v !== false);
   if (entries.length === 0) {
-    return <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>No filters</span>;
+    return <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>No filters</span>;
   }
   return (
     <span style={{ display: "inline-flex", flexWrap: "wrap", gap: "6px" }}>

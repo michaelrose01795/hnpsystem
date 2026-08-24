@@ -21,8 +21,9 @@
 // Always collected (it is a handful of numbers from APIs the browser already
 // populates), never sent anywhere on its own. Read it with:
 //
-//   hnpPerf()        summary table for the current page
-//   hnpPerf.raw()    every recorded mark
+//   hnpPerf()              summary table for the current page
+//   hnpPerf.interactions() slowest interactions + long tasks (INP breakdown)
+//   hnpPerf.raw()          every recorded mark
 //   hnpPerf.clear()
 //
 // In development the summary also prints automatically once a journey settles.
@@ -110,6 +111,108 @@ function apiBreakdown(sinceMs = 0) {
     .sort((a, b) => b.total - a.total);
 }
 
+// --- interaction responsiveness (INP) ---------------------------------------
+//
+// INP is the 98th-percentile interaction latency, and it splits into three parts
+// that need different fixes:
+//
+//   inputDelay    time before the handler runs — the main thread was busy
+//   processing    the handler + the React render it triggers
+//   presentation  time from handler end to the next paint — usually layout /
+//                 style recalculation over a large tree
+//
+// A single number ("INP 480ms") cannot tell you which. This records every slow
+// interaction with that breakdown plus the element that was interacted with, and
+// separately records long tasks so a blocking script can be attributed.
+const INTERACTION_BUDGET_MS = 200; // Google's "good" INP threshold
+const MAX_RECORDS = 60;
+
+function interactionStore() {
+  if (!isBrowser()) return null;
+  if (!window.__hnpInteractions) {
+    window.__hnpInteractions = { events: [], longTasks: [], observing: false };
+  }
+  return window.__hnpInteractions;
+}
+
+const describeTarget = (node) => {
+  if (!node || typeof node.tagName !== "string") return "(unknown)";
+  const id = node.id ? `#${node.id}` : "";
+  const section = node.closest?.("[data-dev-section-key]")?.getAttribute("data-dev-section-key");
+  const cls = typeof node.className === "string" && node.className
+    ? `.${node.className.trim().split(/\s+/).slice(0, 2).join(".")}`
+    : "";
+  const name = node.getAttribute?.("name") || node.getAttribute?.("aria-label") || "";
+  return `${node.tagName.toLowerCase()}${id}${cls}${name ? `[${name}]` : ""}${section ? ` @${section}` : ""}`;
+};
+
+export function observeInteractions() {
+  const s = interactionStore();
+  if (!s || s.observing || typeof PerformanceObserver !== "function") return;
+  s.observing = true;
+
+  try {
+    // `event` entries carry the full interaction timeline. durationThreshold
+    // keeps the observer cheap — fast interactions are never reported.
+    const eventObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (!entry.interactionId) continue; // ignore non-interaction events
+        const inputDelay = Math.round(entry.processingStart - entry.startTime);
+        const processing = Math.round(entry.processingEnd - entry.processingStart);
+        const presentation = Math.round(entry.startTime + entry.duration - entry.processingEnd);
+        s.events.push({
+          type: entry.name,
+          total: Math.round(entry.duration),
+          inputDelay,
+          processing,
+          presentation,
+          target: describeTarget(entry.target),
+          route: window.location.pathname,
+          at: Math.round(entry.startTime),
+        });
+        if (s.events.length > MAX_RECORDS) s.events.shift();
+      }
+    });
+    eventObserver.observe({ type: "event", durationThreshold: 40, buffered: true });
+  } catch {
+    // `event` timing unsupported (Safari/Firefox) — long tasks below still work.
+  }
+
+  try {
+    const longTaskObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        s.longTasks.push({
+          duration: Math.round(entry.duration),
+          at: Math.round(entry.startTime),
+          attribution: (entry.attribution || [])
+            .map((a) => a.containerName || a.containerType || a.name)
+            .filter(Boolean)
+            .join(", "),
+          route: window.location.pathname,
+        });
+        if (s.longTasks.length > MAX_RECORDS) s.longTasks.shift();
+      }
+    });
+    longTaskObserver.observe({ type: "longtask", buffered: true });
+  } catch {
+    // longtask unsupported
+  }
+}
+
+/** Worst interactions and long tasks recorded so far. */
+export function interactions() {
+  const s = interactionStore();
+  if (!s) return null;
+  const slow = s.events.filter((e) => e.total >= INTERACTION_BUDGET_MS);
+  return {
+    worst: [...s.events].sort((a, b) => b.total - a.total).slice(0, 15),
+    overBudget: slow.length,
+    recorded: s.events.length,
+    longTasks: [...s.longTasks].sort((a, b) => b.duration - a.duration).slice(0, 15),
+    longTaskTotalMs: s.longTasks.reduce((n, t) => n + t.duration, 0),
+  };
+}
+
 // --- script weight actually fetched -----------------------------------------
 function scriptBreakdown() {
   if (!isBrowser() || typeof performance?.getEntriesByType !== "function") return null;
@@ -134,6 +237,7 @@ export function summary() {
 // --- console surface ---------------------------------------------------------
 export function installPerfConsole() {
   if (!isBrowser() || window.hnpPerf) return;
+  observeInteractions();
   const fn = () => {
     const data = summary();
     if (!data) return "no timings yet";
@@ -149,6 +253,16 @@ export function installPerfConsole() {
     return `${data.api.length} API calls · copy(hnpPerf.raw()) for the full record`;
   };
   fn.raw = summary;
+  fn.interactions = () => {
+    const data = interactions();
+    if (!data) return "no interaction data";
+    const native = globalThis.__HNP_NATIVE_CONSOLE__ || console;
+    native.log(`[PERF] interactions — ${data.overBudget} of ${data.recorded} over ${INTERACTION_BUDGET_MS}ms`);
+    if (data.worst.length) native.table(data.worst);
+    native.log(`[PERF] long tasks — ${data.longTasks.length} recorded, ${data.longTaskTotalMs}ms total`);
+    if (data.longTasks.length) native.table(data.longTasks);
+    return "inputDelay = main thread busy · processing = handler + render · presentation = paint";
+  };
   fn.clear = () => {
     const s = store();
     if (s) { s.marks = []; s.journey = null; s.journeyStart = 0; }
@@ -161,5 +275,5 @@ export function installPerfConsole() {
   }
 }
 
-const stageTimings = { startJourney, stage, timed, summary, installPerfConsole };
+const stageTimings = { startJourney, stage, timed, summary, installPerfConsole, observeInteractions, interactions };
 export default stageTimings;

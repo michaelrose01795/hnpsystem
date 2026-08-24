@@ -31,7 +31,7 @@ export function Pill({ label, tone = "text-1", title, strong = false, style }) {
         gap: "4px",
         padding: "2px 8px",
         borderRadius: "var(--radius-sm, 6px)",
-        fontSize: "var(--text-body-xs, 11px)",
+        fontSize: "var(--text-caption)",
         fontWeight: strong ? 700 : 600,
         lineHeight: 1.6,
         color: toneVar(tone),
@@ -148,12 +148,12 @@ export function KeyValue({ label, value, mono = false, tone }) {
   if (value === undefined || value === null || value === "") return null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(120px, 30%) 1fr", gap: "var(--space-sm)", alignItems: "baseline" }}>
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
       <div
         style={{
           fontSize: "var(--text-body-sm)",
           color: tone ? toneVar(tone) : "var(--text-1)",
-          fontFamily: mono ? "var(--font-mono, ui-monospace, monospace)" : "inherit",
+          fontFamily: mono ? "var(--font-family-mono)" : "inherit",
           wordBreak: "break-word",
         }}
       >
@@ -185,8 +185,8 @@ export function StatCard({ label, value, tone = "accentText", hint, onClick, act
       }}
     >
       <div style={{ fontSize: "var(--text-h2, 24px)", fontWeight: 800, color: toneVar(tone), lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.85 }}>{label}</div>
-      {hint ? <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.55 }}>{hint}</div> : null}
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.85 }}>{label}</div>
+      {hint ? <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.55 }}>{hint}</div> : null}
     </LayerSurface>
   );
 }
@@ -252,7 +252,7 @@ export function DevButton({ children, onClick, variant = "ghost", tone = "accent
         fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        color: solid ? "var(--accentText-contrast, #fff)" : toneVar(tone),
+        color: solid ? "var(--onAccentText)" : toneVar(tone),
         background: solid ? toneVar(tone) : toneTint(tone, 10),
       }}
     >
@@ -304,8 +304,8 @@ export function SourceRef({ file, line, style }) {
       }}
       title="Copy source path"
       style={{
-        fontFamily: "var(--font-mono, ui-monospace, monospace)",
-        fontSize: "var(--text-body-xs)",
+        fontFamily: "var(--font-family-mono)",
+        fontSize: "var(--text-caption)",
         color: "var(--accentText)",
         background: toneTint("accentText", 10),
         borderRadius: "var(--radius-sm, 6px)",
@@ -329,7 +329,7 @@ export function ConfidenceBar({ value = 0, label = "Confidence" }) {
   const tone = pct >= 66 ? "success-base" : pct >= 33 ? "warning-base" : "danger-base";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8 }}>
         <span>{label}</span>
         <span>{Math.round(pct)}%</span>
       </div>

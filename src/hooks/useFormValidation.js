@@ -109,6 +109,16 @@ export default function useFormValidation(config = {}) {
     if (name) setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   }, []);
 
+  const getDropdownProps = useCallback(
+    (name, options = {}) => {
+      const props = getFieldProps(name, options);
+      delete props.ref;
+      props.hasError = Boolean(errors[name]);
+      return props;
+    },
+    [getFieldProps, errors]
+  );
+
   const setFieldValue = useCallback((name, value) => {
     setValues((prev) => ({ ...prev, [name]: value }));
   }, []);
@@ -215,6 +225,7 @@ export default function useFormValidation(config = {}) {
     handleBlur,
     handleSubmit,
     getFieldProps,
+    getDropdownProps,
     focusField,
     reset,
     summaryErrors,

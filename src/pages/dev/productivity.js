@@ -119,7 +119,7 @@ function ProductivityView() {
                 gridTemplateColumns: "1fr auto auto auto",
                 gap: "var(--space-md)",
                 padding: "6px 8px",
-                fontSize: "var(--text-body-xs)",
+                fontSize: "var(--text-caption)",
                 textTransform: "uppercase",
                 letterSpacing: "0.03em",
                 color: "var(--text-1)",

@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
@@ -2248,6 +2249,12 @@ export default function TrackingDashboard() {
     }
   }, []);
 
+  // The job-status subscription below is unfiltered by design — any job in the
+  // workshop can trip an auto-movement rule — so on a busy day it fires often,
+  // and every hit reloaded the entire tracking list. The reload is now coalesced,
+  // and skipped entirely while the tab is hidden.
+  const scheduleEntriesRefresh = useCoalescedRefresh(loadEntries);
+
   const handleAutoMovement = useCallback(
     async (job, rule, newStatus) => {
       try {
@@ -2278,12 +2285,12 @@ export default function TrackingDashboard() {
           return;
         }
 
-        await loadEntries();
+        scheduleEntriesRefresh();
       } catch (autoError) {
         console.error("Auto movement error", autoError);
       }
     },
-    [dbUserId, loadEntries]
+    [dbUserId, scheduleEntriesRefresh]
   );
 
   useEffect(() => {

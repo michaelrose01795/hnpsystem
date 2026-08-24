@@ -197,5 +197,5 @@
 }
 
 .fieldValueMono {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-family-mono);
 }

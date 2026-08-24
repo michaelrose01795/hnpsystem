@@ -736,7 +736,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
     borderRadius: "var(--radius-md)",
     border: "none",
     background: "var(--primary)",
-    color: "var(--surface)",
+    color: "var(--onAccentText)",
     fontSize: "0.95rem",
     fontWeight: 600,
     padding: "12px 18px",

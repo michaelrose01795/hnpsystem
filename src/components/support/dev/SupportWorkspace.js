@@ -85,7 +85,7 @@ function ReportRow({ report, onOpen, active }) {
         minHeight: 44,
         cursor: "pointer",
         background: active ? "color-mix(in srgb, var(--accentText) 8%, transparent)" : "transparent",
-        borderBottom: "1px solid var(--separating-line)", // allowed: row rule inside a list
+        borderBottom: "1px solid var(--separating-line-color)", // allowed: row rule inside a list
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
@@ -96,7 +96,7 @@ function ReportRow({ report, onOpen, active }) {
         </span>
         <BadgeRow badges={badges} />
       </div>
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
         {report.route ? <span>{report.route}</span> : null}
         {report.reporter_username ? <span>{report.reporter_username}</span> : null}
         {report.app_version ? <span>{report.app_version}</span> : null}
@@ -230,7 +230,7 @@ export default function SupportWorkspace() {
         </div>
 
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>Views:</span>
+          <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>Views:</span>
           {SAVED_VIEW_PRESETS.map((v) => (
             <DevButton key={v.id} small variant="ghost" onClick={() => applyView(v)}>{v.name}</DevButton>
           ))}

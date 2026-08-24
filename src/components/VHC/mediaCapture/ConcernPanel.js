@@ -277,7 +277,11 @@ export default function ConcernPanel({
   return (
     <aside
       aria-label="Inspection concerns"
+      data-theme="dark"
       style={{
+        // This camera HUD must stay dark even when the surrounding app is
+        // using its light theme. This also keeps native scrollbar chrome dark.
+        colorScheme: "dark",
         // Pass-through mode: when the dev overlay is on, the whole
         // panel stops taking pointer events so rows can't fire while
         // the technician is inspecting layout. The DEV button below
@@ -295,7 +299,7 @@ export default function ConcernPanel({
         flexDirection: "column",
         gap: 0,
         padding: "var(--space-3) var(--space-2)",
-        background: "rgba(var(--accentMainRgb), 0.10)",
+        background: "var(--hud-surface-strong)",
         borderRadius: "var(--radius-lg)",
         border: "none",
         backdropFilter: "var(--hud-blur-strong)",

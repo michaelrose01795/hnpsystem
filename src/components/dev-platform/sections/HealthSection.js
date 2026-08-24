@@ -38,7 +38,7 @@ function CheckTile({ name, check }) {
         </span>
         <Pill label={check?.status || "?"} tone={TONE[check?.status] || "text-1"} strong />
       </div>
-      <p style={{ margin: 0, fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.8, wordBreak: "break-word" }}>
+      <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8, wordBreak: "break-word" }}>
         {check?.note || "No detail."}
       </p>
     </LayerSurface>

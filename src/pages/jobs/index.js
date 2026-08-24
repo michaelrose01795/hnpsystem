@@ -142,7 +142,7 @@ const popupQuietActionButtonStyle = {
   padding: "12px 20px",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--ghostbutton-ring)",
+  border: "1px solid var(--ghostbutton-ring-color)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
   fontSize: "14px",

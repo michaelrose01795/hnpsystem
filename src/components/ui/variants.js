@@ -272,6 +272,13 @@ export const UI_FAMILIES = [
         usage: "Customer/vehicle pickers.",
         status: "approved",
       },
+      {
+        id: "error",
+        className: "dropdown-api is-error",
+        description: "Invalid state ring. Set via the hasError prop on DropdownField / Dropdown.",
+        usage: "Form validation failures - never style the ring inline.",
+        status: "approved",
+      },
     ],
   },
   {
@@ -336,6 +343,7 @@ export const UI_FAMILIES = [
       { id: "danger", className: "app-badge app-badge--danger", description: "Negative status.", usage: "Overdue, Failed.", status: "approved" },
       { id: "accent-soft", className: "app-badge app-badge--accent-soft", description: "Soft accent chip.", usage: "Category tags inside lists.", status: "approved" },
       { id: "accent-strong", className: "app-badge app-badge--accent-strong", description: "Filled accent chip.", usage: "Active filter, selected tag.", status: "approved" },
+      { id: "count", className: "app-badge app-badge--danger-strong app-badge--count", description: "Fixed 32px circular counter.", usage: "Unread counts on sidebar nav rows. Host row takes .app-badge-slot (+ --counted while a badge is shown).", status: "approved" },
     ],
   },
   {

@@ -84,8 +84,8 @@ function PerformanceView() {
           endpoints.map((e) => (
             <SubSurface key={e.endpoint} style={{ flexDirection: "row", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{e.endpoint}</div>
-                <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                <div style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{e.endpoint}</div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                   {Object.entries(e.statuses).map(([s, c]) => `${s}×${c}`).join(" · ")}
                 </div>
               </div>
@@ -113,17 +113,17 @@ function PerformanceView() {
                   gridTemplateColumns: "auto 1fr auto",
                   gap: "10px",
                   alignItems: "baseline",
-                  borderBottom: "1px solid var(--separating-line)",
+                  borderBottom: "1px solid var(--separating-line-color)",
                   padding: "6px 0",
                 }}
               >
-                <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, whiteSpace: "nowrap" }}>
+                <span style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, whiteSpace: "nowrap" }}>
                   {t.ts ? new Date(t.ts).toLocaleTimeString() : "—"}
                 </span>
                 <span style={{ color: `var(--${t.tone})`, fontSize: "var(--text-body-sm)", wordBreak: "break-word" }}>
                   {t.status} · {t.method} {t.path}
                 </span>
-                <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>{t.ms != null ? `${t.ms}ms` : ""}</span>
+                <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>{t.ms != null ? `${t.ms}ms` : ""}</span>
               </div>
             ))}
           </div>

@@ -458,8 +458,8 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                       borderRadius: "var(--control-radius)",
                       background: c,
                       border: active
-                        ? "3px solid var(--checkbox-ring)"
-                        : "1px solid var(--checkbox-ring)",
+                        ? "3px solid var(--checkbox-ring-color)"
+                        : "1px solid var(--checkbox-ring-color)",
                       cursor: "pointer",
                       transition: "var(--control-transition)",
                     }}

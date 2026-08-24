@@ -686,7 +686,7 @@ export default function StatusSidebar({
         </div>
 
         {/* Content area: the overlay panel owns scrolling so page scroll does not move the tracker. */}
-        <div className="app-page-stack" style={{
+        <div className="app-page-stack status-sidebar__scroll-region" style={{
           overflowY: 'auto',
           overflowX: 'hidden',
           flex: 1,
@@ -703,7 +703,7 @@ export default function StatusSidebar({
               justifyContent: 'center', 
               height: '100%', 
               textAlign: 'center', 
-              color: 'var(--grey-accent-light)' 
+              color: 'var(--surfaceTextMuted)' 
             }}>
               <p style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--grey-accent-dark)' }}>
                 No Job Selected

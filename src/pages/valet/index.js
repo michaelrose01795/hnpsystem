@@ -10,7 +10,10 @@ import { useUser } from "@/context/UserContext";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
 import { getValetEtaSignals } from "@/lib/database/valetEtaSignals";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
-import { logJobSubStatus } from "@/lib/services/jobStatusService";
+// Loaded on demand — jobStatusService resolves the Supabase browser client, and
+// every use of it on this page is inside logChecklistCompletionTransitions,
+// which only runs when a valeter ticks a checklist item.
+const loadJobStatusService = () => import("@/lib/services/jobStatusService");
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
@@ -325,6 +328,7 @@ const logChecklistCompletionTransitions = async ({
   afterChecklist,
   actor
 }) => {
+  const { logJobSubStatus } = await loadJobStatusService();
   const tasks = [];
   const beforeWashState = resolveWashState(beforeChecklist);
   const afterWashState = resolveWashState(afterChecklist);

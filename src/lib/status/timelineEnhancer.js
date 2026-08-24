@@ -122,6 +122,7 @@ function buildSemanticKey(item) {
 function deduplicateEntries(entries) {
   const seen = new Set(); // Track seen dedup keys (full key)
   const seenSemantic = new Set(); // Track seen semantic keys (status + minute)
+  let lastMainStatus = null; // Consecutive writes of the same main status are one lifecycle event
 
   return entries.filter((item) => {
     const dedupeKey = buildEntryKey(item); // Build unique key for this entry
@@ -129,6 +130,10 @@ function deduplicateEntries(entries) {
 
     // Secondary dedup: same status at the same minute from different sources.
     const status = (item?.status || "").toLowerCase(); // Normalised status
+    if (item?.kind === "status" && status) {
+      if (status === lastMainStatus) return false; // Suppress historical no-op status writes
+      lastMainStatus = status;
+    }
     if (status) {
       const semanticKey = buildSemanticKey(item); // Short semantic key
       if (seenSemantic.has(semanticKey)) return false; // Skip same-status-same-minute duplicate

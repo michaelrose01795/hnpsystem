@@ -401,7 +401,7 @@ export default function DocumentsUploadPopup({
                     key={`${file.name}-${idx}`}
                     style={{
                       padding: "8px",
-                      borderBottom: "1px solid var(--separating-line)"
+                      borderBottom: "1px solid var(--separating-line-color)"
                     }}
                   >
                     {renamingIndex === idx ? (

@@ -273,7 +273,7 @@ export default function JobCardDetailPageUi(props) {
               fontSize: "28px",
               fontWeight: "700"
             }}>
-                Job Card #{jobData.jobNumber}
+                {jobData.jobNumber}
               </h1>
               <span className={`app-badge app-badge--uppercase ${jobHeaderStatusToneClass}`}>
                 {overallStatusLabel}

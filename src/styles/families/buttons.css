@@ -18,13 +18,37 @@
 /* ========================================================= */
 /* === Base rule                                           === */
 /* ========================================================= */
+/*
+ * State model (2026-08 colour audit).
+ *
+ * Every variant paints through THREE custom properties — --btn-bg,
+ * --btn-color, --btn-ring — and the base rule below is the only place that
+ * reads them. Two consequences:
+ *
+ *   - The two `!important`s on the base rule still lock the palette against
+ *     page-level inline styles on Links wearing .app-btn (Button.js already
+ *     strips visual inline keys on real buttons).
+ *   - Every state (:hover, :focus-visible, :active, :disabled, .is-active)
+ *     is a plain custom-property assignment, so states are free: they need no
+ *     `!important` of their own and cannot be lost to specificity. Before
+ *     this, the variant fills were `!important` and there were no :active
+ *     paints at all, so pressed was indistinguishable from hover.
+ *
+ * Add a new variant by declaring the three properties. Do not add
+ * `background`/`color` declarations to variants — they will be overridden.
+ */
 html.staff-scope .app-btn {
+  --btn-bg: var(--primary-control-bg);
+  --btn-color: var(--primary-control-color);
+  --btn-ring: none;
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
   font-size: var(--control-font-size);
   font-weight: 600;
-  border: none;
+  background: var(--btn-bg) !important;
+  color: var(--btn-color) !important;
+  border: var(--btn-ring);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -36,8 +60,16 @@ html.staff-scope .app-btn {
   text-decoration: none;
 }
 
-html.staff-scope .app-btn:disabled {
-  opacity: 0.5;
+/* Disabled keeps the button's SHAPE and drops its affordance. The old
+   `opacity: .5` faded an already-faint light-mode fill to dL* 2.7 from the
+   card, so the button outline stopped existing and only a ghost label
+   remained. A dedicated desaturated fill derived from --text-1 reads as
+   "off" in both themes and at every accent. */
+html.staff-scope .app-btn:disabled,
+html.staff-scope .app-btn[aria-disabled="true"] {
+  --btn-bg: var(--control-disabled-bg);
+  --btn-color: var(--control-disabled-text);
+  --btn-ring: none;
   cursor: not-allowed;
   transform: none;
 }
@@ -95,69 +127,88 @@ html.staff-scope .app-btn--icon {
 
 /* ========================================================= */
 /* === Variant treatments                                  === */
-/* === Declared with !important so page-level inline style === */
-/* === cannot drift the palette. Button.js strips visual   === */
-/* === inline keys; Links wearing .app-btn are guarded     === */
-/* === here.                                               === */
+/* === Each variant sets --btn-bg / --btn-color / --btn-ring === */
+/* === only. The base rule paints them (with !important, so === */
+/* === page-level inline style cannot drift the palette).   === */
 /* ========================================================= */
+
+/* Primary is the single source of truth for the form-control family.
+   Background / hover / active / text colour come from --primary-control-*
+   (theme.css); editing those tokens re-skins text inputs, dropdowns, calendar
+   and time pickers too. Inside a --theme layer those same tokens are re-bound
+   to the surface fill by families/cards.css, so a Primary button stays
+   visible on a section card as well as on a page card. */
 html.staff-scope .app-btn--primary {
-  /* Primary is the single source of truth for the form-control family.
-     Background / hover / text colour come from --primary-control-* (theme.css);
-     editing those four tokens re-skins text inputs, dropdowns, calendar and
-     time pickers too. Radius flows via .app-btn → --control-radius, which is
-     also driven by --primary-control-radius. */
-  background: var(--primary-control-bg) !important;
-  color: var(--primary-control-color) !important;
-  border: none !important;
+  --btn-bg: var(--primary-control-bg);
+  --btn-color: var(--primary-control-color);
 }
 html.staff-scope .app-btn--primary:hover,
 html.staff-scope .app-btn--primary:focus-visible {
-  background: var(--primary-control-bg-hover) !important;
+  --btn-bg: var(--primary-control-bg-hover);
+}
+html.staff-scope .app-btn--primary:active {
+  --btn-bg: var(--primary-control-bg-active);
 }
 
+/* Secondary shares Primary's fill but carries the accent as its label, so the
+   two read as a pair rather than as two unrelated buttons. */
 html.staff-scope .app-btn--secondary {
-  background: var(--control-bg) !important;
-  color: var(--text-accent) !important;
-  border: none !important;
+  --btn-bg: var(--control-bg);
+  --btn-color: var(--accent-text-on-tint);
 }
 html.staff-scope .app-btn--secondary:hover,
 html.staff-scope .app-btn--secondary:focus-visible {
-  background: var(--control-bg-hover) !important;
+  --btn-bg: var(--control-bg-hover);
+}
+html.staff-scope .app-btn--secondary:active {
+  --btn-bg: var(--control-bg-active);
 }
 
 html.staff-scope .app-btn--ghost {
-  background: transparent !important;
-  color: var(--accentText) !important;
-  /* Ghost buttons are one of the four allowed "ring" use-cases. */
-  border: var(--ghostbutton-ring) !important;
+  --btn-bg: transparent;
+  --btn-color: var(--accent-text-on-tint);
+  /* Ghost buttons are one of the five allowed "ring" use-cases. */
+  --btn-ring: var(--ghostbutton-ring);
 }
 html.staff-scope .app-btn--ghost:hover,
 html.staff-scope .app-btn--ghost:focus-visible {
-  background: var(--control-bg) !important;
+  --btn-bg: var(--control-bg);
+}
+html.staff-scope .app-btn--ghost:active {
+  --btn-bg: var(--control-bg-hover);
 }
 
-/* Theme — a filled, borderless button on the tinted --theme layer, carrying its
-   glyph in --surface. Reads like Primary but sits quieter, for in-card actions
-   (e.g. the technician card's info button) where a full Primary fill would
-   compete with the card's own content. */
+/* Theme — a quieter filled button for in-card actions (e.g. the technician
+   card's info button) where a full Primary fill would compete with the card's
+   own content. Its label used to be --surface on a --theme fill, i.e. white
+   text on a near-white tint (1.19:1 light, 1.31:1 dark) — invisible in both
+   themes at every accent. The accent label reads at ~4.9:1 in both. */
 html.staff-scope .app-btn--theme {
-  background: var(--theme) !important;
-  color: var(--surface) !important;
-  border: none !important;
+  --btn-bg: var(--theme);
+  --btn-color: var(--accent-text-on-tint);
 }
 html.staff-scope .app-btn--theme:hover,
 html.staff-scope .app-btn--theme:focus-visible {
-  background: var(--theme-hover) !important;
+  --btn-bg: var(--theme-hover);
+}
+html.staff-scope .app-btn--theme:active {
+  --btn-bg: var(--secondary-pressed);
 }
 
+/* Danger hardcoded `color: #fff`, which cannot flip with the theme: on dark
+   mode's --danger (#f87171) that scored 2.77:1, the worst contrast in the app.
+   --text-2 is white in light and near-black in dark; paired with the darkened
+   light --danger fill it clears 5.5:1 in both. */
 html.staff-scope .app-btn--danger {
-  background: var(--danger) !important;
-  color: #fff !important;
-  border: none !important;
+  --btn-bg: var(--danger);
+  --btn-color: var(--text-2);
 }
 html.staff-scope .app-btn--danger:hover,
 html.staff-scope .app-btn--danger:focus-visible {
-  background: var(--danger-dark) !important;
+  --btn-bg: var(--danger-hover);
+}
+html.staff-scope .app-btn--danger:active {
+  --btn-bg: var(--danger-dark);
 }
 
 /* ========================================================= */
@@ -169,14 +220,18 @@ html.staff-scope .app-btn--danger:focus-visible {
 /* === Not for production code.                             === */
 /* ========================================================= */
 html.staff-scope .app-btn[data-demo-state="hover"] {
-  background: var(--primary-hover) !important;
+  --btn-bg: var(--primary-control-bg-hover);
 }
 html.staff-scope .app-btn[data-demo-state="active"] {
-  background: var(--primary-pressed) !important;
+  --btn-bg: var(--primary-control-bg-active);
+}
+html.staff-scope .app-btn[data-demo-state="disabled"] {
+  --btn-bg: var(--control-disabled-bg);
+  --btn-color: var(--control-disabled-text);
 }
 html.staff-scope .app-btn[data-demo-state="focus"] {
-  box-shadow: var(--focus-ring) !important;
-  outline: none !important;
+  box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* ========================================================= */
@@ -185,9 +240,16 @@ html.staff-scope .app-btn[data-demo-state="focus"] {
 /* === route. Wins over --control and --secondary because  === */
 /* === it is declared after them in this file.             === */
 /* ========================================================= */
-html.staff-scope .app-btn.is-active {
-  background: var(--primary) !important;
-  color: var(--onAccentText) !important;
+html.staff-scope .app-btn.is-active,
+html.staff-scope .app-btn[aria-pressed="true"],
+html.staff-scope .app-btn[aria-selected="true"] {
+  --btn-bg: var(--primary);
+  --btn-color: var(--onAccentText);
+}
+html.staff-scope .app-btn.is-active:hover,
+html.staff-scope .app-btn[aria-pressed="true"]:hover,
+html.staff-scope .app-btn[aria-selected="true"]:hover {
+  --btn-bg: var(--primary-hover);
 }
 
 /* ========================================================= */

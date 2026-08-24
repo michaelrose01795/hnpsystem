@@ -4,7 +4,14 @@
 
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
-import { getAdminDashboardData } from "@/lib/database/dashboard/admin";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/admin");
 import { ContentWidth, LayerSurface, LayerTheme, PageShell } from "@/components/ui";
 import AdminDashboardUi from "@/components/page-ui/dashboard/admin/dashboard-admin-ui";
 
@@ -85,7 +92,7 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getAdminDashboardData();
+        const payload = await (await loadDashboardData()).getAdminDashboardData();
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load admin dashboard", fetchError);

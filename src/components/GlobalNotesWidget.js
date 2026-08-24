@@ -184,6 +184,27 @@ const setDragSelectionLock = (isLocked) => {
   document.body.style.cursor = isLocked ? "grabbing" : "";
 };
 
+function DeleteNoteIcon() {
+  return (
+    <svg
+      className={styles.deleteNoteIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 7h16" />
+      <path d="M9 7V4h6v3" />
+      <path d="m6 7 1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </svg>
+  );
+}
+
 function NotesLoadingSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -247,6 +268,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   const bubbleDragRef = useRef(null);
   const panelDragRef = useRef(null);
   const panelResizeRef = useRef(null);
+  const tabBarRef = useRef(null);
   const pointerMovedRef = useRef(false);
   const closePanelTimerRef = useRef(null);
   const saveTimersRef = useRef(new Map());
@@ -313,6 +335,12 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     setCommandSuggestions([]);
     setSelectedCommandIndex(0);
   }, [activeNoteId, isPanelVisible]);
+
+  useEffect(() => {
+    if (!isPanelVisible) return;
+    const selectedTab = tabBarRef.current?.querySelector('[aria-selected="true"]');
+    selectedTab?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeNoteId, activeView, isPanelVisible, notes.length]);
 
   useEffect(() => {
     setIsShareModalOpen(false);
@@ -1015,8 +1043,9 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         getNoteSharedUserIds(activeNote.noteId),
       ]);
       const ownerId = Number(activeNote.userId);
-      setTotalShareUserCount(allUsers.length);
-      setShareUsers(allUsers.filter((userRow) => Number(userRow.userId) !== ownerId));
+      const availableUsers = allUsers.filter((userRow) => Number(userRow.userId) !== ownerId);
+      setTotalShareUserCount(availableUsers.length);
+      setShareUsers(availableUsers);
       setSelectedShareUserIds(sharedUserIds);
     } catch (loadShareError) {
       setError(loadShareError?.message || "Failed to load share users");
@@ -1112,20 +1141,20 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             <span className={styles.dragHandleGrip} aria-hidden="true" />
           </div>
 
-          {/* Resize grip — tucked into the curved top-right corner.
-              Hidden in the AI view so the chat area can't be resized manually. */}
-          {activeView !== "ai" && (
-            <div
-              className={styles.resizeHandle}
-              onPointerDown={startResize}
-              role="presentation"
-              aria-hidden="true"
-            />
-          )}
+          {/* Resize grip — always available, including in the HELP chat view. */}
+          <div
+            className={styles.resizeHandle}
+            onPointerDown={startResize}
+            role="presentation"
+            aria-hidden="true"
+          />
 
           <header className={styles.header}>
             <div
-              className={`tab-api ${styles.tabBar}`}
+              className={`tab-api themed-scrollbar ${styles.tabBar}`}
+              ref={tabBarRef}
+              role="tablist"
+              aria-label="Floating note tabs"
               onPointerDown={(event) => event.stopPropagation()}
             >
               {/* App Guide (HELP) tab — always present, before note tabs */}
@@ -1137,6 +1166,8 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                 onClick={openAiTab}
                 title="App Guide — ask questions about the system"
                 aria-label="Open App Guide help"
+                role="tab"
+                aria-selected={activeView === "ai"}
               >
                 <span className={styles.tabTitle}>HELP</span>
               </button>
@@ -1144,37 +1175,40 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
               {notes.map((note) => {
                 const editable = !presentationDemo && Number(note.userId) === Number(dbUserId);
                 return (
-                  <button
+                  <div
                     key={note.noteId}
-                    type="button"
-                    className={`tab-api__item ${styles.tab} ${
+                    role="presentation"
+                    className={`${styles.noteTab} ${
                       note.noteId === activeNoteId && activeView === "notes" ? "is-active" : ""
                     }`}
-                    onClick={() => openNoteTab(note.noteId)}
-                    title={note.title || "Untitled"}
                   >
-                    <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                    <button
+                      type="button"
+                      className={styles.noteTabSelect}
+                      onClick={() => openNoteTab(note.noteId)}
+                      title={note.title || "Untitled"}
+                      role="tab"
+                      aria-selected={note.noteId === activeNoteId && activeView === "notes"}
+                    >
+                      <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                    </button>
                     {editable && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className={styles.tabClose}
+                      <button
+                        type="button"
+                        className={`app-btn ${styles.tabDelete}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           deleteTab(note.noteId);
                         }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            deleteTab(note.noteId);
-                          }
-                        }}
-                        aria-label="Close tab"
+                        aria-label={`Delete ${note.title || "untitled"} note`}
+                        title="Delete note"
                       >
-                        ×
-                      </span>
+                        <span className={styles.tabDeleteGlyph} aria-hidden="true">
+                          <DeleteNoteIcon />
+                        </span>
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
               {!presentationDemo && (
@@ -1185,7 +1219,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                   aria-label="Add tab"
                   title="Add tab"
                 >
-                  +
+                  <span className={styles.tabAddGlyph} aria-hidden="true">+</span>
                 </button>
               )}
             </div>
@@ -1324,21 +1358,27 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.shareModalHeader}>
-              <div className={styles.shareSearchWrap}>
-                <input
-                  type="text"
-                  className={`app-input ${styles.shareSearch}`}
-                  placeholder="Search users"
-                  value={shareSearch}
-                  onChange={(event) => setShareSearch(event.target.value)}
-                />
-                <span className={styles.shareSelectedCount}>
-                  {selectedShareUserIds.length} out of {totalShareUserCount} selected
-                </span>
+              <div className={styles.shareHeading}>
+                <h2>Share note</h2>
+                <p>Select the colleagues who can view this note.</p>
               </div>
               <button type="button" className={`app-btn app-btn--secondary ${styles.shareCloseButton}`} onClick={closeShareModal}>
                 Close
               </button>
+            </div>
+
+            <div className={styles.shareSearchWrap}>
+              <input
+                type="search"
+                className={`app-input ${styles.shareSearch}`}
+                placeholder="Search by name or email"
+                value={shareSearch}
+                onChange={(event) => setShareSearch(event.target.value)}
+                aria-label="Search users"
+              />
+              <span className={styles.shareSelectedCount} aria-live="polite">
+                {selectedShareUserIds.length} of {totalShareUserCount} selected
+              </span>
             </div>
 
             <LayerTheme
@@ -1359,6 +1399,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                     <label key={userRow.userId} className={styles.shareUserRow}>
                       <input
                         type="checkbox"
+                        className="app-toggle app-toggle--checkbox"
                         checked={isSelected}
                         onChange={() => toggleSharedUser(userRow.userId)}
                         disabled={isShareSaving}

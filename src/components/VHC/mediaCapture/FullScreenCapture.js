@@ -1821,7 +1821,7 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid var(--ghostbutton-ring)",
+                      border: "1px solid var(--ghostbutton-ring-color)",
                       background: "var(--hud-surface)",
                       color: "var(--hud-text)",
                       fontWeight: 700,
@@ -1861,7 +1861,7 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid var(--ghostbutton-ring)",
+                      border: "1px solid var(--ghostbutton-ring-color)",
                       background: "var(--hud-surface)",
                       color: "var(--hud-text)",
                       fontWeight: 700,
@@ -1948,7 +1948,7 @@ export default function FullScreenCapture({
             style={{
               padding: "var(--space-2) var(--space-4)",
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--ghostbutton-ring)",
+              border: "1px solid var(--ghostbutton-ring-color)",
               background: "var(--hud-surface)",
               color: "var(--hud-text)",
               fontSize: "var(--text-caption)",

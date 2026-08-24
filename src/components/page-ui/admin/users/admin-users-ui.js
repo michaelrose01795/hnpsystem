@@ -283,14 +283,14 @@ export default function AdminUserManagementUi(props) {
                   <tbody>
                     {visibleDbUsers.map((account) => (
                       <tr key={account.id}>
-                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line)" }}>
+                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line-color)" }}>
                           {account.firstName} {account.lastName}
                         </td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.email}</td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.role}</td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.phone || "-"}</td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{new Date(account.createdAt).toLocaleDateString()}</td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>{account.email}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>{account.role}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>{account.phone || "-"}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>{new Date(account.createdAt).toLocaleDateString()}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>
                           <button
                             type="button"
                             onClick={() => handleUserDelete(account.id, `${account.firstName} ${account.lastName}`.trim())}
@@ -418,8 +418,8 @@ export default function AdminUserManagementUi(props) {
                   <tbody>
                     {visibleRoleList.map(({ role, members }) => (
                       <tr key={role}>
-                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line)" }}>{role}</td>
-                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>
+                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line-color)" }}>{role}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line-color)" }}>
                           {members.length > 0 ? (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                               {members.map((member) => (

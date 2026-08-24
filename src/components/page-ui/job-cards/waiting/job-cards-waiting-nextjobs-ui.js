@@ -97,7 +97,7 @@ export default function NextJobsPageUi(props) {
       marginBottom: "12px",
       // Drop-target outline is a state indicator (drag-over highlight), not a surface border. Kept per rules.
       outline: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "none",
-      boxShadow: activeDropTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+      boxShadow: activeDropTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "var(--shadow-sm)",
       minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
       flexShrink: 0,
       transition: "all 0.2s ease",
@@ -239,7 +239,7 @@ export default function NextJobsPageUi(props) {
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
                     backgroundColor: "var(--surface)",
-                    boxShadow: "0 12px 28px rgba(var(--shadow-rgb), 0.18)",
+                    boxShadow: "var(--shadow-lg)",
                     zIndex: 3
                   }}>
                               <div style={{

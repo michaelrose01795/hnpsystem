@@ -108,15 +108,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
           type="button"
           onClick={onEdit}
           disabled={!onEdit}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--ghostbutton-ring)",
-            background: "var(--surface)",
-            color: "var(--text-1)",
-            fontWeight: 700,
-            cursor: onEdit ? "pointer" : "not-allowed",
-          }}
+          className="app-btn app-btn--ghost"
         >
           Edit employee details
         </button>
@@ -306,16 +298,8 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
             sectionType="toolbar"
             type="button"
             onClick={() => setShowDocumentsPopup(true)}
-            style={{
-              width: "100%",
-              padding: "var(--control-padding)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "rgba(var(--primary-rgb), 0.12)",
-              color: "var(--text-1)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="app-btn app-btn--secondary"
+            style={{ width: "100%" }}
           >
             Upload document
           </DevLayoutSection>

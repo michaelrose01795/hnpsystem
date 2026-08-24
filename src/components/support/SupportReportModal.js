@@ -225,7 +225,6 @@ export default function SupportReportModal() {
           onClick={closeSupportReport}
           disabled={isSubmitting}
           aria-label="Close report"
-          style={{ minHeight: "44px" }}
         >
           Close
         </button>
@@ -342,7 +341,6 @@ export default function SupportReportModal() {
             className="app-btn app-btn--ghost"
             onClick={handleClear}
             disabled={isSubmitting || isCapturing}
-            style={{ minHeight: "44px" }}
           >
             Clear
           </button>
@@ -352,7 +350,6 @@ export default function SupportReportModal() {
               className="app-btn app-btn--secondary"
               onClick={closeSupportReport}
               disabled={isSubmitting}
-              style={{ minHeight: "44px" }}
             >
               Cancel
             </button>
@@ -360,7 +357,7 @@ export default function SupportReportModal() {
               type="submit"
               className="app-btn app-btn--primary"
               disabled={isSubmitting || isCapturing}
-              style={{ minHeight: "44px", minWidth: "140px" }}
+              style={{ minWidth: "140px" }}
             >
               {isSubmitting ? "Sending…" : "Send report"}
             </button>

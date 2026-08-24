@@ -6,7 +6,20 @@
 
 import React, { useMemo, useState } from "react";
 import Head from "next/head";
+import Image from "next/image";
 import BrandLogo from "@/components/BrandLogo";
+
+// next/image only accepts hosts listed in next.config.mjs `images.remotePatterns`
+// (the Supabase Storage object path). Anything else — a legacy absolute URL, an
+// external link — must render through a plain <img>, because next/image throws on
+// an unconfigured host rather than degrading. Relative paths are always fine.
+const OPTIMISABLE_IMAGE_PATH = "/storage/v1/object/";
+const optimisedPhotoSrc = (url) => {
+  const value = String(url || "");
+  if (!value) return null;
+  if (value.startsWith("/")) return value; // same-origin
+  return value.includes(OPTIMISABLE_IMAGE_PATH) ? value : null;
+};
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 
@@ -33,7 +46,7 @@ function CustomerDivider() {
         width: "100%",
         height: 1,
         flexShrink: 0,
-        background: "color-mix(in srgb, var(--accentMain) 16%, transparent)"
+        background: "color-mix(in srgb, var(--primary) 16%, transparent)"
       }}
     />
   );
@@ -112,16 +125,16 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
       }}
     >
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--txt-bright)", marginTop: 2 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-1)", marginTop: 2 }}>
           {reportedDescription}
         </div>
         {measurement && (
-          <div style={{ fontSize: 12, color: "var(--txt-mute)", marginTop: 4 }}>{measurement}</div>
+          <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", marginTop: 4 }}>{measurement}</div>
         )}
         {supplementaryRows.length > 0 && (
           <div style={{ display: "grid", gap: 3, marginTop: 6 }}>
             {supplementaryRows.map((row) => (
-              <div key={row} style={{ fontSize: 12, color: "var(--txt-soft)", lineHeight: 1.35 }}>
+              <div key={row} style={{ fontSize: 12, color: "var(--text-1)", lineHeight: 1.35 }}>
                 {row}
               </div>
             ))}
@@ -139,20 +152,20 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
           }}
         >
           <div>
-            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Parts</div>
-            <div style={{ fontWeight: 600, color: "var(--txt-bright)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Parts</div>
+            <div style={{ fontWeight: 600, color: "var(--text-1)" }}>
               {formatCurrency(partsCost)}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Labour</div>
-            <div style={{ fontWeight: 600, color: "var(--txt-bright)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Labour</div>
+            <div style={{ fontWeight: 600, color: "var(--text-1)" }}>
               {labourHours > 0 ? `${labourHours}h · ${formatCurrency(labourCost)}` : "—"}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Total</div>
-            <div style={{ fontWeight: 700, color: "var(--txt-bright)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Total</div>
+            <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
               {formatCurrency(total)}
             </div>
           </div>
@@ -224,7 +237,7 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
 }
 
 function Section({ title, items, severity, interactive, onUpdateStatus, onRequestAuthorise, updatingIds }) {
-  const theme = SEVERITY_THEME[severity] || { bg: "var(--website-elev-1)", text: "var(--txt-bright)" };
+  const theme = SEVERITY_THEME[severity] || { bg: "var(--theme)", text: "var(--text-1)" };
   let authorizedTotal = 0;
   let declinedTotal = 0;
   items.forEach((item) => {
@@ -276,7 +289,7 @@ function Section({ title, items, severity, interactive, onUpdateStatus, onReques
         )}
       </div>
       {items.length === 0 ? (
-        <div style={{ padding: 14, fontSize: 13, color: "var(--txt-mute)" }}>No items recorded.</div>
+        <div style={{ padding: 14, fontSize: 13, color: "var(--surfaceTextMuted)" }}>No items recorded.</div>
       ) : (
         items.map((item, index) => (
           <Row
@@ -316,7 +329,7 @@ function TotalsGrid({ totals }) {
           fontWeight: 700,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--txt-mute)"
+          color: "var(--surfaceTextMuted)"
         }}
       >
         Work Summary
@@ -344,7 +357,7 @@ function TotalsGrid({ totals }) {
               borderRadius: "var(--radius-sm)"
             }}
           >
-            <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>{it.label}</div>
+            <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>{it.label}</div>
             <div
               style={{
                 fontSize: 18,
@@ -372,12 +385,12 @@ function AccessNotice({ accessMode }) {
           fontWeight: 700,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--txt-mute)"
+          color: "var(--surfaceTextMuted)"
         }}
       >
         Read-only share
       </div>
-      <div style={{ fontSize: 13, color: "var(--txt-soft)" }}>
+      <div style={{ fontSize: 13, color: "var(--text-1)" }}>
         This shared link can view the report, photos and videos. Authorising or declining work is only available from the customer view.
       </div>
     </LayerSurface>
@@ -391,8 +404,8 @@ function PhotosTab({ photoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--website-elev-1)",
-          color: "var(--txt-mute)",
+          background: "var(--theme)",
+          color: "var(--surfaceTextMuted)",
           fontSize: 13
         }}
       >
@@ -412,32 +425,51 @@ function PhotosTab({ photoFiles }) {
         <div
           key={file.file_id}
           style={{
-            background: "var(--website-elev-1)",
+            background: "var(--theme)",
             borderRadius: "var(--radius-sm)",
             overflow: "hidden"
           }}
         >
-          <div style={{ position: "relative", paddingTop: "75%", background: "var(--website-elev-2)" }}>
-            <img
-              src={file.file_url}
-              alt={file.file_name || "Photo"}
-              loading="lazy"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover"
-              }}
-            />
+          {/* These are technician phone photos straight from Supabase Storage —
+              routinely 2-5MB each — rendered into a ~160px grid cell on a
+              customer's mobile. next/image serves a resized WebP/AVIF variant at
+              the size actually displayed instead of the original file.
+              `optimisedPhotoSrc` returns null for any URL outside the host
+              configured in next.config.mjs `images.remotePatterns`, in which case
+              we fall back to the plain <img> rather than throwing. */}
+          <div style={{ position: "relative", paddingTop: "75%", background: "var(--theme-hover)" }}>
+            {optimisedPhotoSrc(file.file_url) ? (
+              <Image
+                src={file.file_url}
+                alt={file.file_name || "Photo"}
+                fill
+                loading="lazy"
+                sizes="(max-width: 640px) 45vw, 180px"
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <img
+                src={file.file_url}
+                alt={file.file_name || "Photo"}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover"
+                }}
+              />
+            )}
           </div>
           <div style={{ padding: "8px 10px" }}>
             <div
               style={{
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--txt-bright)",
+                color: "var(--text-1)",
                 wordBreak: "break-word"
               }}
             >
@@ -457,8 +489,8 @@ function VideosTab({ videoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--website-elev-1)",
-          color: "var(--txt-mute)",
+          background: "var(--theme)",
+          color: "var(--surfaceTextMuted)",
           fontSize: 13
         }}
       >
@@ -478,12 +510,12 @@ function VideosTab({ videoFiles }) {
         <div
           key={file.file_id}
           style={{
-            background: "var(--website-elev-1)",
+            background: "var(--theme)",
             borderRadius: "var(--radius-sm)",
             overflow: "hidden"
           }}
         >
-          <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--website-elev-2)" }}>
+          <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--theme-hover)" }}>
             <video
               src={file.file_url}
               controls
@@ -503,7 +535,7 @@ function VideosTab({ videoFiles }) {
               style={{
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--txt-bright)",
+                color: "var(--text-1)",
                 wordBreak: "break-word"
               }}
             >
@@ -565,25 +597,25 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
             style={{
               fontSize: 18,
               fontWeight: 800,
-              color: "var(--txt-bright)",
+              color: "var(--text-1)",
               lineHeight: 1.25
             }}
           >
             Confirm authorisation
           </div>
-          <div style={{ fontSize: 13, color: "var(--txt-soft)", marginTop: 6 }}>
+          <div style={{ fontSize: 13, color: "var(--text-1)", marginTop: 6 }}>
             Please confirm this work before it is sent to the workshop.
           </div>
         </div>
 
         <LayerTheme radius="var(--radius-sm)" padding="14px" gap="8px">
-          <div style={{ fontSize: 15, color: "var(--txt-bright)", fontWeight: 700 }}>
+          <div style={{ fontSize: 15, color: "var(--text-1)", fontWeight: 700 }}>
             {reportedDescription}
           </div>
         </LayerTheme>
 
         <LayerTheme radius="var(--radius-sm)" padding="14px" gap="10px">
-          <div style={{ fontSize: 12, color: "var(--txt-mute)", fontWeight: 700 }}>
+          <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", fontWeight: 700 }}>
             Total to authorise
           </div>
           <div
@@ -594,19 +626,19 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
             }}
           >
             <div>
-              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>Current authorised</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--txt-bright)" }}>
+              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>Current authorised</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-1)" }}>
                 {formatCurrency(safeCurrentAuthorizedTotal)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>This item</div>
+              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>This item</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "var(--success)" }}>
                 {formatCurrency(safeItemTotal)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>New total</div>
+              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>New total</div>
               <div style={{ fontSize: 22, lineHeight: 1.1, fontWeight: 800, color: "var(--success)" }}>
                 {formatCurrency(newAuthorizedTotal)}
               </div>
@@ -671,8 +703,8 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
             minHeight: 44,
             padding: "10px 12px",
             borderRadius: "var(--radius-sm)",
-            background: "var(--website-elev-2)",
-            color: "var(--txt-bright)",
+            background: "var(--theme-hover)",
+            color: "var(--text-1)",
             fontSize: 13,
             fontWeight: 700,
             cursor: isUpdating ? "not-allowed" : "pointer",
@@ -743,7 +775,7 @@ export default function VhcCustomerView({
           minHeight: "100vh",
           minHeight: "100dvh",
           background: "var(--surface)",
-          color: "var(--txt-bright)",
+          color: "var(--text-1)",
           display: "flex",
           flexDirection: "column"
         }}
@@ -783,13 +815,13 @@ export default function VhcCustomerView({
                 style={{
                   fontSize: 14,
                   fontWeight: 700,
-                  color: "var(--txt-bright)",
+                  color: "var(--text-1)",
                   lineHeight: 1.2
                 }}
               >
                 Vehicle Health Check
               </div>
-              <div style={{ fontSize: 12, color: "var(--txt-soft)", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--text-1)", marginTop: 2 }}>
                 Job #{jobNumber}
                 {vehicleInfo?.registration ? ` · ${vehicleInfo.registration}` : ""}
                 {vehicleInfo?.make || vehicleInfo?.model
@@ -797,7 +829,7 @@ export default function VhcCustomerView({
                   : ""}
               </div>
               {customerInfo?.name && (
-                <div style={{ fontSize: 12, color: "var(--txt-mute)", marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", marginTop: 1 }}>
                   {customerInfo.name}
                 </div>
               )}
@@ -811,8 +843,8 @@ export default function VhcCustomerView({
                   minHeight: 36,
                   padding: "8px 14px",
                   borderRadius: "var(--radius-sm)",
-                  background: "var(--website-elev-2)",
-                  color: "var(--txt-bright)",
+                  background: "var(--theme-hover)",
+                  color: "var(--text-1)",
                   fontWeight: 600,
                   fontSize: 13,
                   cursor: "pointer"
@@ -851,7 +883,7 @@ export default function VhcCustomerView({
                     background: activeTab === tab.id ? "var(--theme)" : "transparent",
                     fontWeight: activeTab === tab.id ? 700 : 500,
                     fontSize: 13,
-                    color: activeTab === tab.id ? "var(--accentText)" : "var(--txt-mute)",
+                    color: activeTab === tab.id ? "var(--accentText)" : "var(--surfaceTextMuted)",
                     cursor: "pointer",
                     whiteSpace: "nowrap"
                   }}
@@ -952,7 +984,7 @@ export default function VhcCustomerView({
           <div style={{ margin: "-12px -14px 12px" }}>
             <CustomerDivider />
           </div>
-          <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>
+          <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>
             Vehicle Health Check Report · Job #{jobNumber}
             {expiresAt && (
               <>

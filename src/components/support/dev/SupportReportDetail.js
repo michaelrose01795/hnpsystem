@@ -45,7 +45,7 @@ function Value({ value }) {
   if (typeof value === "boolean") return <span>{value ? "yes" : "no"}</span>;
   if (typeof value === "object") {
     return (
-      <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)", whiteSpace: "pre-wrap", wordBreak: "break-word", color: "var(--text-1)" }}>
+      <pre style={{ margin: 0, fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)", whiteSpace: "pre-wrap", wordBreak: "break-word", color: "var(--text-1)" }}>
         {JSON.stringify(value, null, 2)}
       </pre>
     );
@@ -115,7 +115,7 @@ function InvestigationPanel({ inv }) {
             <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Issue-tracker summary</div>
             <CopyButton text={inv.summary} label="Copy summary" />
           </div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "var(--text-body-xs)", fontFamily: "var(--font-mono, monospace)", color: "var(--text-1)" }}>{inv.summary}</pre>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "var(--text-caption)", fontFamily: "var(--font-family-mono)", color: "var(--text-1)" }}>{inv.summary}</pre>
         </SubSurface>
       ) : null}
     </Panel>
@@ -152,7 +152,7 @@ function CodeStatePanel({ inv, build }) {
             {vh.spansMultipleVersions ? <> → last seen <strong>{vh.lastSeenVersion}</strong></> : null}
             {vh.isRegression ? <> · <Pill label="Recurred across releases" tone="danger-base" /></> : null}
           </div>
-          <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>{vh.occurrences} matching occurrence(s)</div>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>{vh.occurrences} matching occurrence(s)</div>
         </SubSurface>
       ) : null}
     </Panel>
@@ -192,11 +192,11 @@ function ScreenshotsPanel({ screenshots }) {
             ) : (
               <div style={{ opacity: 0.6, fontSize: "var(--text-body-sm)" }}>Signed URL unavailable</div>
             )}
-            {s.annotation ? <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.8 }}>“{s.annotation}”</div> : null}
+            {s.annotation ? <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8 }}>“{s.annotation}”</div> : null}
           </SubSurface>
         ))}
       </div>
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.5 }}>Signed URLs expire after ~5 minutes — reload to refresh.</div>
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.5 }}>Signed URLs expire after ~5 minutes — reload to refresh.</div>
     </Panel>
   );
 }
@@ -216,8 +216,8 @@ function TimelinePanel({ diagnostics }) {
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
         {shown.map((e, i) => (
-          <div key={i} style={{ display: "flex", gap: "10px", padding: "6px 0", borderBottom: "1px solid var(--separating-line)" }}>
-            <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.55, minWidth: 66 }}>
+          <div key={i} style={{ display: "flex", gap: "10px", padding: "6px 0", borderBottom: "1px solid var(--separating-line-color)" }}>
+            <span style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.55, minWidth: 66 }}>
               {e.ts ? new Date(e.ts).toLocaleTimeString("en-GB") : ""}
             </span>
             <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", flex: 1 }}>
@@ -281,7 +281,7 @@ function DiagnosticsExplorer({ diagnostics }) {
           render={(e) => (
             <details>
               <summary style={{ cursor: "pointer" }}>{e.message}</summary>
-              {e.componentStack ? <pre style={{ margin: "4px 0 0", whiteSpace: "pre-wrap", fontSize: "var(--text-body-xs)", fontFamily: "var(--font-mono, monospace)", opacity: 0.8 }}>{e.componentStack}</pre> : null}
+              {e.componentStack ? <pre style={{ margin: "4px 0 0", whiteSpace: "pre-wrap", fontSize: "var(--text-caption)", fontFamily: "var(--font-family-mono)", opacity: 0.8 }}>{e.componentStack}</pre> : null}
             </details>
           )}
         />
@@ -327,7 +327,7 @@ function CommentsPanel({ comments, onAdd }) {
         {arr(comments).length === 0 ? <div style={{ opacity: 0.55, fontSize: "var(--text-body-sm)" }}>No notes yet.</div> : null}
         {arr(comments).map((c) => (
           <SubSurface key={c.id} style={{ gap: "2px", opacity: c._pending ? 0.6 : 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
               <span>{c.author_username || (c.author_id ? `User #${c.author_id}` : "Unknown")}</span>
               <span>{fmt(c.created_at)}</span>
             </div>
@@ -362,8 +362,8 @@ function ActivityPanel({ audit }) {
     <Panel title="Activity & audit history" sectionKey="support-detail-activity">
       <div style={{ display: "flex", flexDirection: "column" }}>
         {audit.map((a) => (
-          <div key={a.id} style={{ display: "flex", gap: "10px", padding: "6px 0", borderBottom: "1px solid var(--separating-line)", fontSize: "var(--text-body-sm)" }}>
-            <span style={{ color: "var(--text-1)", opacity: 0.55, minWidth: 132, fontSize: "var(--text-body-xs)" }}>{fmt(a.occurred_at)}</span>
+          <div key={a.id} style={{ display: "flex", gap: "10px", padding: "6px 0", borderBottom: "1px solid var(--separating-line-color)", fontSize: "var(--text-body-sm)" }}>
+            <span style={{ color: "var(--text-1)", opacity: 0.55, minWidth: 132, fontSize: "var(--text-caption)" }}>{fmt(a.occurred_at)}</span>
             <span style={{ flex: 1, color: "var(--text-1)" }}>
               <Pill label={label(a)} tone="accentText" /> {a.actor_user_id ? `by #${a.actor_user_id}` : ""}
               {a.diff && Object.keys(a.diff).length ? <span style={{ opacity: 0.7 }}> · {Object.entries(a.diff).map(([k, v]) => `${k}=${v}`).join(", ")}</span> : null}
@@ -442,7 +442,7 @@ export default function SupportReportDetail({ id }) {
           <Pill label={status.label} tone={status.tone} />
           <Pill label={cat.label} tone={cat.tone} />
           <BadgeRow badges={badges} />
-          <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>
+          <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
             {data.reporter_username ? `by ${data.reporter_username} · ` : ""}{fmt(data.created_at)} ·{" "}
             <a href={reportDeepLink(data)} style={{ color: "var(--accentText)" }}>#{String(data.id).slice(0, 8)}</a>
           </span>

@@ -5,7 +5,14 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getAccountsDashboardData } from "@/lib/database/dashboard/accounts";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/accounts");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface } from "@/components/ui"; // canonical surface layer primitive (nested inside dashboard theme sections)
 import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboard-accounts-ui"; // Extracted presentation layer.
@@ -197,7 +204,7 @@ export default function AccountsDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getAccountsDashboardData();
+        const payload = await (await loadDashboardData()).getAccountsDashboardData();
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load accounts dashboard", fetchError);

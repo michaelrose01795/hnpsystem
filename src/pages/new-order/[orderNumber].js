@@ -96,7 +96,7 @@ const formatOrderStatus = (value) => orderStatusLabels[value] || orderStatusLabe
 const statusChip = (label, tone = "info") => {
   const tones = {
     info: { background: "rgba(var(--info-rgb),0.15)", color: "var(--info-dark)" },
-    success: { background: "rgba(var(--success-rgb,34,139,34),0.2)", color: "var(--success, #297C3B)" },
+    success: { background: "rgba(var(--success-rgb,34,139,34),0.2)", color: "var(--success)" },
     warning: { background: "rgba(var(--warning-rgb),0.2)", color: "var(--danger-dark)" }
   };
   const colors = tones[tone] || tones.info;
@@ -507,7 +507,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
           Current status: {formatOrderStatus(order?.status)}
         </p>
         {completionReady ?
-        <p style={{ margin: 0, color: "var(--success, #297C3B)" }}>
+        <p style={{ margin: 0, color: "var(--success)" }}>
             Delivered and paid — order is marked complete and archived automatically.
           </p> :
 

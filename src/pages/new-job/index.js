@@ -3,7 +3,7 @@
 // ✅ Database linked through /src/lib/database
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { flushSync } from "react-dom";
 import { useRouter } from "next/router"; // for navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -33,6 +33,21 @@ import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
 import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
+
+// Wait for a pause in typing before looking a registration up in the database.
+const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
+
+// Static form schema. Module-level so its identity never changes; it has no
+// dependency on component state.
+const CUSTOMER_FIELD_DEFINITIONS = [
+  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
+  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
+  { label: "Email", field: "email", type: "email", placeholder: "" },
+  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
+  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
+  { label: "Address", field: "address", type: "textarea", placeholder: "" },
+  { label: "Contact Preference", field: "contactPreference", type: "multi-select" },
+];
 
 const PAYMENT_TYPE_OPTIONS = [
 { value: "Customer", label: "Customer" },
@@ -206,12 +221,29 @@ export default function CreateJobCardPage() {
 
   // Persist pending uploads whenever they change so a refresh or tab close
   // doesn't orphan the temp storage objects.
+  // Tracks the last persisted uploaded-file set so the effect below can skip the
+  // (synchronous, main-thread) localStorage write when nothing has changed.
+  const lastPendingUploadsSignatureRef = useRef(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const snapshot = jobTabs.
       map((tab) => ({ id: tab.id, uploadedFiles: tab.uploadedFiles || [] })).
       filter((entry) => entry.uploadedFiles.length > 0);
+
+      // This effect depends on `jobTabs`, and ALL of the form's state lives in
+      // jobTabs — so it re-ran on every keystroke anywhere on the page and did a
+      // JSON.stringify plus a synchronous localStorage write each time.
+      // localStorage writes block the main thread, so that landed directly on
+      // the interaction path. Uploaded files change rarely, so compare a cheap
+      // signature first and only touch storage when it actually differs.
+      const signature = snapshot
+        .map((entry) => `${entry.id}:${entry.uploadedFiles.length}`)
+        .join("|");
+      if (signature === lastPendingUploadsSignatureRef.current) return;
+      lastPendingUploadsSignatureRef.current = signature;
+
       if (snapshot.length === 0) {
         window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
       } else {
@@ -248,13 +280,23 @@ export default function CreateJobCardPage() {
   const setJobDetections = (val) => updateCurrentTab({ jobDetections: val });
   const uploadedFiles = currentTab.uploadedFiles;
   const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
-  const visibleJobDetections = jobDetections.filter((d) => d.sourceText);
-  const populatedRequests = requests.
-  map((request, index) => ({
-    index,
-    text: String(request?.text || "").trim()
-  })).
-  filter((request) => request.text);
+  // Memoised: both are handed down as props, so recomputing them on every render
+  // gave the child sections a new array identity on every keystroke anywhere on
+  // the page — re-rendering them even when their own data had not changed.
+  const visibleJobDetections = useMemo(
+    () => jobDetections.filter((d) => d.sourceText),
+    [jobDetections]
+  );
+  const populatedRequests = useMemo(
+    () =>
+      requests
+        .map((request, index) => ({
+          index,
+          text: String(request?.text || "").trim()
+        }))
+        .filter((request) => request.text),
+    [requests]
+  );
 
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
@@ -705,21 +747,16 @@ export default function CreateJobCardPage() {
     setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
   }; // append new empty request
 
-  const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
-    id: tab.id,
-    index,
-    label: `Job${index + 1}`
-  }));
+  const jobCardSelectorOptions = useMemo(
+    () => jobTabs.map((tab, index) => ({ id: tab.id, index, label: `Job${index + 1}` })),
+    [jobTabs]
+  );
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
 
-  const customerFieldDefinitions = [
-  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
-  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
-  { label: "Email", field: "email", type: "email", placeholder: "" },
-  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
-  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
-  { label: "Address", field: "address", type: "textarea", placeholder: "" },
-  { label: "Contact Preference", field: "contactPreference", type: "multi-select" }];
+  // (CUSTOMER_FIELD_DEFINITIONS is a module constant — see the top of the file.
+  // It was previously rebuilt as a fresh array on every render of this page and
+  // handed to the customer form as a prop, so every keystroke anywhere on the
+  // page changed its identity and re-rendered the whole customer section.)
 
 
   // remove a request from the list by index
@@ -810,10 +847,18 @@ export default function CreateJobCardPage() {
       }
     };
 
-    lookupVehicle();
+    // Debounced. This effect keys on `vehicle.reg`, which changes on every
+    // keystroke, so it previously issued a browser-to-Postgres query per
+    // character from the third onwards — typing a 7-character UK plate fired
+    // five lookups, each of which could resolve late and write state (and so
+    // re-render this page) while the user was still typing. The
+    // `lastVehicleLookupRef` guard only suppressed repeats of the SAME reg, not
+    // the prefixes on the way to it. One lookup per pause instead.
+    const handle = setTimeout(lookupVehicle, VEHICLE_LOOKUP_DEBOUNCE_MS);
 
     return () => {
       cancelled = true; // prevent state updates after unmount or reg change
+      clearTimeout(handle);
     };
   }, [vehicle.reg, hydrateVehicleFromRecord]);
 
@@ -1423,7 +1468,8 @@ export default function CreateJobCardPage() {
             accessNotes: ""
           } :
           null,
-          mobileUserId: dbUserId || null
+          mobileUserId: dbUserId || null,
+          bookedBy: dbUserId || null
         }
       });
 
@@ -1530,7 +1576,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={customerFieldDefinitions} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
+  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={CUSTOMER_FIELD_DEFINITIONS} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
 
 
 

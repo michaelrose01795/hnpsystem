@@ -7,8 +7,8 @@
   },
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
-    "predev": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:layers && npm run check:design && node tools/scripts/use-local-next-cache.js",
-    "prebuild": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:layers && npm run check:design",
+    "predev": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design && node tools/scripts/use-local-next-cache.js",
+    "prebuild": "npm run presentation:sync && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design",
     "dev": "next dev",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
@@ -49,7 +49,9 @@
     "git:release": "node tools/scripts/branch-flow.js release",
     "check:design": "node tools/scripts/check-design-governance.js",
     "check:design:list": "node tools/scripts/check-design-governance.js --list",
-    "check:design:update": "node tools/scripts/check-design-governance.js --update"
+    "check:design:update": "node tools/scripts/check-design-governance.js --update",
+    "check:colours": "node tools/scripts/check-colour-system.js",
+    "review:colours": "node tools/scripts/capture-colour-review.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -64,7 +66,7 @@
     "gsap": "^3.15.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
-    "next": "^16.3.0",
+    "next": "^16.3.2",
     "next-auth": "^4.24.15",
     "nodemailer-v9": "npm:nodemailer@^9.0.3",
     "postcss": "^8.5.25",

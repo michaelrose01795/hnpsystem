@@ -1,6 +1,5 @@
 // file location: src/hooks/useMessagesBadge.js
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/database/supabaseClient";
 import { getShellBootstrap, peekShellBootstrap } from "@/lib/shell/bootstrapClient";
 
 const buildQuery = (params = {}) => {
@@ -76,31 +75,58 @@ export function useMessagesBadge(userId) {
       return undefined;
     }
 
-    // Realtime 2.111 reuses an existing channel when its topic matches. This
-    // hook can be mounted by more than one shell component, and React Strict
-    // Mode can start a replacement effect before async channel removal has
-    // finished, so each subscription instance needs its own topic.
-    const channelInstanceId =
-      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const channel = supabase
-      .channel(`customer-messages-badge-${userId}-${channelInstanceId}`)
-      .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, () =>
-        refreshUnreadCount()
-      )
-      .on(
-        "postgres_changes",
-        {
-          schema: "public",
-          table: "message_thread_members",
-          event: "UPDATE",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => refreshUnreadCount()
-      )
-      .subscribe();
+    // The Supabase client is imported dynamically, and this is the reason the
+    // whole application is not carrying it.
+    //
+    // This hook is mounted by StaffSidebar, which is mounted by StaffLayout,
+    // which is mounted by Layout — the global page shell. A static import here
+    // therefore put all 213 KB of @supabase/supabase-js into the first-load
+    // bundle of every page that renders Layout, including 40+ routes that never
+    // touch the database from the browser at all. The badge itself needs none of
+    // it: its value comes from the shell bootstrap and /api/messages/unread-count.
+    // Only this subscription does, and only after mount.
+    //
+    // Pages that genuinely use Realtime still import the client directly and are
+    // unaffected — for them this resolves to the module they already have.
+    let cancelled = false;
+    let teardown = null;
+
+    void (async () => {
+      const { supabase } = await import("@/lib/database/supabaseClient");
+      if (cancelled) return;
+
+      // Realtime 2.111 reuses an existing channel when its topic matches. This
+      // hook can be mounted by more than one shell component, and React Strict
+      // Mode can start a replacement effect before async channel removal has
+      // finished, so each subscription instance needs its own topic.
+      const channelInstanceId =
+        globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const channel = supabase
+        .channel(`customer-messages-badge-${userId}-${channelInstanceId}`)
+        .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, () =>
+          refreshUnreadCount()
+        )
+        .on(
+          "postgres_changes",
+          {
+            schema: "public",
+            table: "message_thread_members",
+            event: "UPDATE",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => refreshUnreadCount()
+        )
+        .subscribe();
+
+      teardown = () => supabase.removeChannel(channel);
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      // The channel may not exist yet if the effect is torn down before the
+      // dynamic import settles; `cancelled` covers that case by preventing the
+      // subscription from being created at all.
+      if (teardown) teardown();
     };
   }, [userId, refreshUnreadCount]);
 

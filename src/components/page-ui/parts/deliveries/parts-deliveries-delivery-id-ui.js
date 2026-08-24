@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 export default function DeliveryRoutePageUi(props) {
   const {
@@ -198,7 +199,7 @@ export default function DeliveryRoutePageUi(props) {
                 <button type="button" onClick={handleSaveMpg} disabled={actionLoading} style={{
               ...buttonStyle,
               background: "var(--info-dark)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               padding: "8px 12px",
               minWidth: "80px",
               opacity: actionLoading ? 0.6 : 1
@@ -257,7 +258,7 @@ export default function DeliveryRoutePageUi(props) {
           <button type="button" onClick={handleAddStopClick} style={{
         ...buttonStyle,
         background: "var(--primary)",
-        color: "var(--surface)"
+        color: "var(--onAccentText)"
       }}>
             Add Stop
           </button>
@@ -406,7 +407,7 @@ export default function DeliveryRoutePageUi(props) {
                 <button type="button" onClick={handleSaveStop} disabled={savingStop} style={{
               ...buttonStyle,
               background: "var(--info-dark)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               opacity: savingStop ? 0.6 : 1
             }}>
                   {savingStop ? "Saving…" : "Save stop"}
@@ -438,7 +439,7 @@ export default function DeliveryRoutePageUi(props) {
             <button type="button" onClick={handleMarkDelivered} disabled={actionLoading || !activeStop && !nextPlannedStop} style={{
           ...buttonStyle,
           background: "var(--primary)",
-          color: "var(--surface)",
+          color: "var(--onAccentText)",
           opacity: actionLoading || !activeStop && !nextPlannedStop ? 0.6 : 1
         }}>
               Mark Stop as Delivered
@@ -446,7 +447,7 @@ export default function DeliveryRoutePageUi(props) {
             <button type="button" onClick={handleCompleteRoute} disabled={actionLoading || orderedStops.every(stop => stop.status === "delivered")} style={{
           ...buttonStyle,
           background: "var(--info-dark)",
-          color: "var(--surface)",
+          color: "var(--onAccentText)",
           opacity: actionLoading || orderedStops.every(stop => stop.status === "delivered") ? 0.6 : 1
         }}>
               Complete Route
@@ -581,19 +582,16 @@ export default function DeliveryRoutePageUi(props) {
               }}>
                         Update status
                       </label>
-                      <select value={stop.status || "planned"} onChange={event => handleStatusUpdate([stop.id], event.target.value)} style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                padding: "8px 12px",
-                fontWeight: 600,
-                color: "var(--primary-selected)",
-                minWidth: "160px",
-                background: "var(--surface)"
-              }}>
-                        <option value="planned">Planned</option>
-                        <option value="en_route">En Route</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
+                      <DropdownField
+                        value={stop.status || "planned"}
+                        onChange={event => handleStatusUpdate([stop.id], event.target.value)}
+                        options={[
+                          { value: "planned", label: "Planned" },
+                          { value: "en_route", label: "En Route" },
+                          { value: "delivered", label: "Delivered" },
+                        ]}
+                        style={{ minWidth: "160px" }}
+                      />
                     </div>
                     <div style={{
               marginTop: "8px",
@@ -605,7 +603,7 @@ export default function DeliveryRoutePageUi(props) {
                 borderRadius: "var(--radius-xs)",
                 border: "none",
                 background: "var(--primary)",
-                color: "var(--surface)",
+                color: "var(--onAccentText)",
                 padding: "6px 12px",
                 fontWeight: 600,
                 cursor: "pointer"
@@ -626,7 +624,7 @@ export default function DeliveryRoutePageUi(props) {
                       {stop.job?.job_number && <button type="button" onClick={() => handleConfirmDelivery(stop)} disabled={stop.status === "delivered" || actionLoading} style={{
                 borderRadius: "var(--radius-xs)",
                 background: "var(--accent-purple)",
-                color: "var(--surface)",
+                color: "var(--onAccentText)",
                 padding: "6px 12px",
                 fontWeight: 600,
                 cursor: stop.status === "delivered" ? "default" : "pointer",
@@ -705,7 +703,7 @@ export default function DeliveryRoutePageUi(props) {
                           <button type="button" onClick={handleSaveNote} disabled={noteSaving} style={{
                   ...buttonStyle,
                   background: "var(--info-dark)",
-                  color: "var(--surface)",
+                  color: "var(--onAccentText)",
                   padding: "6px 12px",
                   opacity: noteSaving ? 0.6 : 1
                 }}>

@@ -9,7 +9,9 @@ import { PageSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
-import { getClockingStatus } from "@/lib/database/clocking";
+// Loaded on demand — this module resolves the Supabase browser client, and its
+// single use here is one await inside a mount effect.
+const loadClocking = () => import("@/lib/database/clocking");
 import { prefetchJob } from "@/lib/swr/prefetch";
 import TechsDashboardUi from "@/components/page-ui/tech/tech-dashboard-ui"; // Extracted presentation layer.
 
@@ -188,6 +190,7 @@ export default function TechsDashboard() {
         setMyJobs(sortedJobs);
         setNextJob(sortedJobs.length > 0 ? sortedJobs[0] : null);
 
+        const { getClockingStatus } = await loadClocking();
         const { isClockedIn, data } = await getClockingStatus(dbUserId);
         setClockingStatus(data);
         setCurrentJob(isClockedIn && data ? sortedJobs[0] || null : null);

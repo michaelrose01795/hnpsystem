@@ -112,6 +112,19 @@ export const sumJobClockingHours = (entries = []) => {
   return Number(total.toFixed(2));
 };
 
+export const resolveClockingDisplayWindow = ({ clockIn = null, clockOut = null, now = Date.now() } = {}) => {
+  const isActive = !clockOut;
+  const completedClockOut = isActive ? null : clockOut;
+  const durationEnd = completedClockOut || new Date(now).toISOString();
+
+  return {
+    clockIn,
+    completedClockOut,
+    durationEnd,
+    isActive,
+  };
+};
+
 const formatCustomerName = (customer = {}) => {
   const first =
     customer.customer_firstname ??

@@ -130,7 +130,7 @@ const primaryButtonStyle = (disabled = false) => ({
 const secondaryButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--ghostbutton-ring)",
+  border: "1px solid var(--ghostbutton-ring-color)",
   fontWeight: 600,
   fontSize: "0.9rem",
   background: "transparent",
@@ -2522,7 +2522,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     cursor: "pointer",
     background: "var(--theme)",
     color: "var(--text-1)",
-    boxShadow: isSelected ? "0 0 0 1px var(--accentMain)" : "none"
+    boxShadow: isSelected ? "0 0 0 1px var(--primary)" : "none"
   });
 
   const formatJobType = (value = "") => {
@@ -2637,7 +2637,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   </thead>
                   <tbody>
                     {selectedRows.map(({ item, selectedQty }) =>
-                  <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line)" }}>
+                  <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line-color)" }}>
                         <td style={{ ...invoiceCellStyle, width: "90px" }}>
                           <button
                         type="button"
@@ -2694,7 +2694,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                       {remainingRows.map(({ item, remainingQty }) => {
                       const pendingValue = pendingQuantities.get(item.id) ?? "1";
                       return (
-                        <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line)" }}>
+                        <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line-color)" }}>
                             <td style={{ ...invoiceCellStyle, width: "90px" }}>
                               <button
                               type="button"

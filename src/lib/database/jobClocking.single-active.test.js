@@ -17,7 +17,11 @@ vi.mock("@/lib/canonical/fields", () => ({
   getVehicleRegistration: vi.fn(() => ""),
 }));
 
-import { clockInToJob, sumJobClockingHours } from "./jobClocking";
+import {
+  clockInToJob,
+  resolveClockingDisplayWindow,
+  sumJobClockingHours,
+} from "./jobClocking";
 
 describe("sumJobClockingHours", () => {
   it("includes both job-level and request-linked clocking entries", () => {
@@ -39,6 +43,42 @@ describe("sumJobClockingHours", () => {
         { hoursWorked: "not-a-number" },
       ])
     ).toBe(2.5);
+  });
+});
+
+describe("resolveClockingDisplayWindow", () => {
+  it("keeps clock-off blank while using the current time for a live duration", () => {
+    const now = Date.parse("2026-08-24T13:08:00.000Z");
+
+    expect(
+      resolveClockingDisplayWindow({
+        clockIn: "2026-08-24T13:07:00.000Z",
+        clockOut: null,
+        now,
+      })
+    ).toEqual({
+      clockIn: "2026-08-24T13:07:00.000Z",
+      completedClockOut: null,
+      durationEnd: "2026-08-24T13:08:00.000Z",
+      isActive: true,
+    });
+  });
+
+  it("uses the persisted timestamp after the technician clocks off", () => {
+    const clockOut = "2026-08-24T14:12:00.000Z";
+
+    expect(
+      resolveClockingDisplayWindow({
+        clockIn: "2026-08-24T13:07:00.000Z",
+        clockOut,
+        now: Date.parse("2026-08-24T15:00:00.000Z"),
+      })
+    ).toEqual({
+      clockIn: "2026-08-24T13:07:00.000Z",
+      completedClockOut: clockOut,
+      durationEnd: clockOut,
+      isActive: false,
+    });
   });
 });
 

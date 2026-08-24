@@ -88,7 +88,7 @@ function PayslipRow({ kind, payslip, onClick }) {
           {isPayslip ? formatPeriodLabel(payslip) : "Locked"}
         </span>
       </div>
-      <span style={{ fontWeight: 700, color: "var(--accentText, var(--accent))", fontSize: "0.92rem" }}>
+      <span style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "0.92rem" }}>
         {isPayslip ? formatCurrency(payslip.netPay) : "£•••"}
       </span>
       <span
@@ -328,7 +328,7 @@ export default function PayslipsCard({
               style={{
                 padding: "6px 14px",
                 fontSize: "0.74rem",
-                color: "var(--danger, #c62828)",
+                color: "var(--danger)",
               }}
             >
               {error.message || "Unable to load payslips."}

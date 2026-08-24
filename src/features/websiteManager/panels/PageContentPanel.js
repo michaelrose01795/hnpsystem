@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SECTION_SCHEMAS, SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
 import SectionEditor from "../editors/SectionEditor";
 import {
@@ -62,17 +63,11 @@ export default function PageContentPanel({
             >
               Website page
             </span>
-            <select
-              className="app-input"
+            <DropdownField
               value={pageKey}
               onChange={(e) => setPageKey(e.target.value)}
-            >
-              {pages.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              options={pages.map((p) => ({ value: p.key, label: p.name }))}
+            />
           </label>
           {selectedPage && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

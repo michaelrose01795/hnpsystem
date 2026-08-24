@@ -102,6 +102,7 @@ export default function StaffTopbar({
   // the page card can react to the bar's folded state. The refs + computed
   // styles arrive here as props; this component is purely presentational.
   wrapperRef = null,
+  wrapperClassName = "",
   barRef = null,
   wrapperStyle = undefined,
   barStyle = undefined,
@@ -142,7 +143,7 @@ export default function StaffTopbar({
   return (
     <div
       ref={wrapperRef}
-      className="app-topbar-dock"
+      className={["app-topbar-dock", wrapperClassName].filter(Boolean).join(" ")}
       style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
     <DevLayoutSection

@@ -95,7 +95,6 @@ export default function TyreDiagram({
     height: "100%",
     minHeight: 0,
     color: palette.textPrimary,
-    border: "1px solid var(--accent-border)",
     boxShadow: "none",
   };
 
@@ -272,7 +271,7 @@ export default function TyreDiagram({
           marginTop: "12px",
           borderRadius: "var(--control-radius)",
           border: "none",
-          minHeight: "var(--control-height-md)",
+          minHeight: "var(--control-height)",
           padding: "10px 20px",
           background: invalidSpare
             ? "var(--danger-surface)"

@@ -13,6 +13,7 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import AddNewJobPartPopup from "@/components/Parts/AddNewJobPartPopup";
 import {
   buildVhcRequestLinkRows,
 } from "@/lib/vhc/requestRowLinking";
@@ -99,6 +100,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [allocatingPart, setAllocatingPart] = useState(false);
   const [addJobDiagnostics, setAddJobDiagnostics] = useState(null);
   const [showBookPartPanel, setShowBookPartPanel] = useState(false);
+  const [showAddNewPartPopup, setShowAddNewPartPopup] = useState(false);
   const [showAllocatePanel, setShowAllocatePanel] = useState(false);
   const [showPrePickPopup, setShowPrePickPopup] = useState(false);
   const [selectedPrePickPartId, setSelectedPrePickPartId] = useState("");
@@ -2135,22 +2137,33 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 Search and add parts to this job
               </p>
             </div>
-            <SearchBar
-              value={catalogSearch}
-              disabled={!canAllocateParts}
-              onChange={(e) => {
-                setCatalogSearch(e.target.value);
-                setCatalogSuccessMessage("");
-                setCatalogSubmitError("");
-              }}
-              onClear={() => {
-                setCatalogSearch("");
-                setCatalogSuccessMessage("");
-                setCatalogSubmitError("");
-              }}
-              placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
-              style={{ width: "100%", opacity: canAllocateParts ? 1 : 0.7 }}
-            />
+            <div style={{ display: "flex", gap: "var(--control-gap)", alignItems: "center", flexWrap: "wrap" }}>
+              <SearchBar
+                value={catalogSearch}
+                disabled={!canAllocateParts}
+                onChange={(e) => {
+                  setCatalogSearch(e.target.value);
+                  setCatalogSuccessMessage("");
+                  setCatalogSubmitError("");
+                }}
+                onClear={() => {
+                  setCatalogSearch("");
+                  setCatalogSuccessMessage("");
+                  setCatalogSubmitError("");
+                }}
+                placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
+                style={{ flex: "1 1 260px", minWidth: 0, opacity: canAllocateParts ? 1 : 0.7 }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowAddNewPartPopup(true)}
+                disabled={!canAllocateParts}
+                style={{ whiteSpace: "nowrap" }}
+              >
+                Add new part
+              </Button>
+            </div>
             {catalogLoading && (
               <div>
                 <InlineLoading width={120} label="Searching" />
@@ -2172,7 +2185,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         width: "100%",
                         padding: "10px",
                         border: "none",
-                        borderBottom: "1px solid var(--separating-line)",
+                        borderBottom: "1px solid var(--separating-line-color)",
                         textAlign: "left",
                         background: isSelected ? "var(--surface)" : "transparent",
                         cursor: "pointer",
@@ -2467,6 +2480,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           </div>
         </ModalPortal>
       )}
+
+      <AddNewJobPartPopup
+        isOpen={showAddNewPartPopup}
+        jobId={jobId}
+        jobNumber={jobNumber}
+        actingUserId={actingUserId}
+        actingUserNumericId={actingUserNumericId}
+        onClose={() => setShowAddNewPartPopup(false)}
+        onAdded={async ({ partNumber }) => {
+          setCatalogSuccessMessage(`${partNumber} added directly to job ${jobNumber}.`);
+          if (typeof onRefreshJob === "function") await onRefreshJob();
+        }}
+      />
 
       {partPopup.open && partPopup.part && (
         <ModalPortal>

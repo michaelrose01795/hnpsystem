@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -90,18 +91,14 @@ function NewDpiaForm({ onCreated }) {
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Initial risk level
-        <select
+        <DropdownField
           value={riskLevel}
           onChange={(e) => setRiskLevel(e.target.value)}
-          className="app-input"
-          style={{ marginTop: 4, width: "100%", minHeight: 40 }}
-        >
-          {RISK_LEVELS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+          options={RISK_LEVELS}
+          style={{ marginTop: 4, width: "100%" }}
+        />
       </label>
-      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Creating..." : "Create"}
@@ -170,7 +167,7 @@ export default function DpiasPage() {
       </Section>
 
       <Section title="DPIA Register">
-        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (
@@ -191,30 +188,22 @@ export default function DpiasPage() {
                   <tr key={row.id}>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.system_or_feature}</td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
-                      <select
+                      <DropdownField
                         value={row.status}
                         disabled={busyId === row.id}
                         onChange={(e) => patch(row.id, { status: e.target.value })}
-                        className="app-input"
-                        style={{ minHeight: 32 }}
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                        options={STATUSES}
+                        size="sm"
+                      />
                     </td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
-                      <select
+                      <DropdownField
                         value={row.risk_level || "medium"}
                         disabled={busyId === row.id}
                         onChange={(e) => patch(row.id, { risk_level: e.target.value })}
-                        className="app-input"
-                        style={{ minHeight: 32 }}
-                      >
-                        {RISK_LEVELS.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                        options={RISK_LEVELS}
+                        size="sm"
+                      />
                     </td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.next_review)}</td>
                   </tr>

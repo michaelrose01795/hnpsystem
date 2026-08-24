@@ -16,6 +16,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import IssueAutocomplete from "@/components/VHC/IssueAutocomplete";
 import useVhcSectionDraft from "@/hooks/useVhcSectionDraft";
+import { buildBrakeDiagramValues } from "@/lib/vhc/brakeDiagramValues";
 
 const palette = themeConfig.palette;
 
@@ -141,71 +142,6 @@ const ALL_CONCERN_TARGETS = [
   { key: "rearDiscs", label: "Rear Discs" },
   { key: "rearDrums", label: "Rear Drum" },
 ];
-
-const getPadStatus = (value) => {
-  const reading = typeof value === "number" ? value : parseFloat(value);
-  if (Number.isNaN(reading)) return { text: "–", status: "unknown" };
-  if (reading <= 2) return { text: `${reading.toFixed(1)} mm`, status: "critical" };
-  if (reading < 4) return { text: `${reading.toFixed(1)} mm`, status: "advisory" };
-  return { text: `${reading.toFixed(1)} mm`, status: "good" };
-};
-
-const DIAGRAM_SEVERITY_RANK = {
-  Red: 1,
-  Amber: 2,
-  Green: 3,
-  critical: 1,
-  advisory: 2,
-  good: 3,
-  unknown: 4,
-};
-
-const RANK_TO_DIAGRAM_STATUS = {
-  1: "critical",
-  2: "advisory",
-  3: "good",
-  4: "unknown",
-};
-
-const resolveDiagramRank = (value) => DIAGRAM_SEVERITY_RANK[value] ?? 4;
-const mapRankToDiagramStatus = (rank) => RANK_TO_DIAGRAM_STATUS[rank] ?? "unknown";
-const getConcernRank = (concerns = []) =>
-  (concerns ?? []).reduce((minRank, concern) => {
-    return Math.min(minRank, resolveDiagramRank(concern.status));
-  }, 4);
-
-const computeAxleSeverityRank = (padSection, discSection) => {
-  const padMeasurement = (padSection?.measurement || "").trim();
-  const padHasData =
-    padMeasurement !== "" ||
-    (Array.isArray(padSection?.concerns) && padSection.concerns.length > 0) ||
-    (padSection?.status && padSection.status !== "Green");
-  const discValues = Array.isArray(discSection?.measurements?.values) ? discSection.measurements.values : [];
-  const discHasMeasurement = discValues.some((value) => String(value || "").trim() !== "");
-  const discHasData =
-    discHasMeasurement ||
-    (Array.isArray(discSection?.concerns) && discSection.concerns.length > 0) ||
-    ((discSection?.measurements?.status || "Green") !== "Green") ||
-    ((discSection?.visual?.status || "Green") !== "Green");
-  if (!padHasData && !discHasData) return 4;
-
-  const measurementStatus = getPadStatus(padSection.measurement).status;
-  const measurementRank = resolveDiagramRank(measurementStatus);
-  const padRank = resolveDiagramRank(padSection.status);
-  const padConcernRank = getConcernRank(padSection.concerns);
-  const discTab = discSection?.tab || "measurements";
-  const discStatus =
-    discTab === "visual" ? discSection.visual?.status : discSection.measurements?.status;
-  const discRank = resolveDiagramRank(discStatus);
-  const discConcernRank = getConcernRank(discSection.concerns);
-  return Math.min(
-    measurementRank,
-    padRank,
-    padConcernRank,
-    discRank,
-    discConcernRank,
-  );
-};
 
 const PadsSection = ({
   title,
@@ -871,28 +807,9 @@ export default function BrakesHubsDetailsModal({
     }
   };
 
-  const parsePadValue = (measurement) => {
-    const first = (measurement || "")
-      .split(/[, ]+/)
-      .map((val) => val.trim())
-      .find((val) => val !== "");
-    const parsed = parseFloat(first);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
   const brakeDiagramValues = useMemo(() => {
-    const frontSeverityRank = computeAxleSeverityRank(data.frontPads, data.frontDiscs);
-    const frontValue = parsePadValue(data.frontPads.measurement);
-    const rearSeverityRank = computeAxleSeverityRank(data.rearPads, data.rearDiscs);
-    const rearValue = parsePadValue(data.rearPads.measurement);
-
-    return {
-      nsf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
-      osf: { value: frontValue, severity: mapRankToDiagramStatus(frontSeverityRank) },
-      nsr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
-      osr: { value: rearValue, severity: mapRankToDiagramStatus(rearSeverityRank) },
-    };
-  }, [data]);
+    return buildBrakeDiagramValues(data, showDrum);
+  }, [data, showDrum]);
 
   const discComplete = (section) => {
     if (!section) return false;

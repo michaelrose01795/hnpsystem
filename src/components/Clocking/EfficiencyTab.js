@@ -18,6 +18,7 @@ import {
   calculateTechTotals,
   calculateOverallTotals,
 } from "@/lib/database/efficiency";
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -437,41 +438,65 @@ export default function EfficiencyTab({
   }, [fetchAnalysisData, loading]);
 
   // Real-time subscription: refresh when efficiency data or job clocking changes
+  //
+  // `fetchData` here is four month-wide queries in parallel across every
+  // technician, and it was wired directly to an unfiltered `job_clocking`
+  // subscription — the busiest table in the dealership. Every clock-in and
+  // clock-out anywhere re-ran the whole month for everyone with this tab open.
+  // Coalescing keeps the same refresh with the same triggers, but one call per
+  // burst and none while the tab is hidden.
+  //
+  // The schedulers are also stable identities, so the channel now subscribes
+  // once instead of being torn down and re-established whenever `fetchData`'s
+  // dependencies changed (a month or technician-list change did that).
+  const scheduleEfficiencyRefresh = useCoalescedRefresh(fetchData);
+  const scheduleTechnicianRefresh = useCoalescedRefresh(loadTechnicians);
+
   useEffect(() => {
     const channel = supabase.channel("efficiency-entries-live");
     channel
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tech_efficiency_entries" },
-        () => { fetchData(); }
+        scheduleEfficiencyRefresh
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tech_efficiency_targets" },
-        () => { fetchData(); }
+        scheduleEfficiencyRefresh
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "job_clocking" },
-        () => { fetchData(); }
+        scheduleEfficiencyRefresh
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "users" },
-        () => { loadTechnicians(); }
+        scheduleTechnicianRefresh
       )
       .subscribe();
 
-    // overtime_sessions is deliberately server-only after the RLS hardening,
-    // so it cannot participate in a browser Realtime channel. Poll the guarded
-    // efficiency endpoint instead to retain timely overtime updates.
-    const overtimeRefresh = window.setInterval(fetchData, 60000);
-
     return () => {
-      window.clearInterval(overtimeRefresh);
       supabase.removeChannel(channel);
     };
-  }, [fetchData, loadTechnicians]);
+  }, [scheduleEfficiencyRefresh, scheduleTechnicianRefresh]);
+
+  // overtime_sessions is deliberately server-only after the RLS hardening, so it
+  // cannot participate in a browser Realtime channel. Poll the guarded
+  // efficiency endpoint instead to retain timely overtime updates.
+  //
+  // The timer now skips ticks while the tab is hidden — previously it kept
+  // firing four month-wide queries in a tab the user had left hours ago. It
+  // still does not fire on mount (the initial load effect above owns that), so
+  // no extra request is introduced.
+  useEffect(() => {
+    const overtimeRefresh = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      scheduleEfficiencyRefresh();
+    }, 60000);
+    return () => window.clearInterval(overtimeRefresh);
+  }, [scheduleEfficiencyRefresh]);
 
   useEffect(() => {
     const current = parseYmd(filterDate);
@@ -1163,20 +1188,20 @@ export default function EfficiencyTab({
     letterSpacing: "0.08em",
     color: "var(--grey-accent)",
     background: "var(--surface)",
-    borderBottom: "1px solid var(--separating-line)",
+    borderBottom: "1px solid var(--separating-line-color)",
     padding: "12px 16px",
   };
 
   const tdStyle = {
     padding: "12px 16px",
-    borderBottom: "1px solid var(--separating-line)",
+    borderBottom: "1px solid var(--separating-line-color)",
     color: "var(--text-color)",
   };
 
   const themedTableHeadingStyle = {
     ...thStyle,
     background: "var(--theme-hover)",
-    borderBottom: "1px solid var(--separating-line)",
+    borderBottom: "1px solid var(--separating-line-color)",
     color: "var(--primary-selected)",
   };
 
@@ -1984,7 +2009,7 @@ export default function EfficiencyTab({
                         borderRadius: "var(--input-radius)",
                         border: "none",
                         background: "var(--primary)",
-                        color: "var(--surface)",
+                        color: "var(--onAccentText)",
                         fontWeight: 600,
                         fontSize: "0.82rem",
                         cursor: "pointer",
@@ -2121,7 +2146,7 @@ export default function EfficiencyTab({
                         borderRadius: "var(--input-radius)",
                         border: "none",
                         background: "var(--primary)",
-                        color: "var(--surface)",
+                        color: "var(--onAccentText)",
                         fontWeight: 600,
                         fontSize: "0.82rem",
                         cursor: detailEditSubmitting ? "not-allowed" : "pointer",

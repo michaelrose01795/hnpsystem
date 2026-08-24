@@ -57,7 +57,7 @@ export default function SupportAssistedPanel({ report }) {
 
       {assisted.affectedSystems.length > 0 && (
         <div>
-          <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+          <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
             Affected systems
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -97,7 +97,7 @@ export default function SupportAssistedPanel({ report }) {
         <DashboardGrid min={320}>
           {assisted.implementationSuggestions.length > 0 && (
             <div>
-              <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+              <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
                 Implementation suggestions
               </div>
               <ol style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -110,7 +110,7 @@ export default function SupportAssistedPanel({ report }) {
 
           {assisted.verificationChecklist.length > 0 && (
             <div>
-              <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+              <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
                 Verification checklist
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>

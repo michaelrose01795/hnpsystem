@@ -59,7 +59,29 @@ const ALLOWLIST = new Set([
   "src/pages/dev/user-diagnostic.js",
 ]);
 
-const ALLOWED_RING_TOKEN_RE = /var\(--(input-ring|checkbox-ring|ghostbutton-ring|focus-ring|separating-line|input-border)\)/;
+// Ring tokens come in pairs and the two halves are NOT interchangeable:
+//   --x-ring        a complete border SHORTHAND -> `border: var(--x-ring)`
+//   --x-ring-color  a bare COLOUR               -> `border: 1px solid var(--x-ring-color)`
+// Both spellings are legitimate, so both are allowed here.
+const ALLOWED_RING_TOKEN_RE =
+  /var\(--(input-ring|checkbox-ring|ghostbutton-ring|focus-ring|separating-line|input-border)(-focus)?(-color)?\)/;
+
+// ...but combining them is not. `1px solid var(--input-ring)` expands to
+// `1px solid 1px solid rgba(...)`, which is invalid CSS: the browser drops the
+// whole declaration and the control renders with NO ring at all. This was
+// silently true at ~49 call sites (inputs across HR, Parts, VHC and Job Cards)
+// before the 2026-08 colour audit, and it is invisible in review because the
+// token name looks right. Reach for the -color token instead.
+const RING_SHORTHAND_MISUSE_RE =
+  /\b(?:\d+(?:px|em|rem)?|thin|medium|thick)\s+(?:solid|dashed|dotted|double)\s+var\(--(?:input-ring|checkbox-ring|ghostbutton-ring|separating-line|input-border|focus-ring)\)/i;
+
+// Assigning any of these to a *-color property is the same class of mistake:
+// --focus-ring / --control-ring are box-shadow values, and the -ring tokens are
+// border shorthands. None of them is a colour, so the assignment is dropped.
+// The property and the token have to be matched together, not tested
+// independently — a line can legitimately carry a borderColor AND a boxShadow.
+const SHADOW_TOKEN_AS_COLOUR_RE =
+  /(?:border(?:Top|Bottom|Left|Right)?Color\s*[:=]\s*["'`]?|border(?:-(?:top|bottom|left|right))?-color\s*:\s*)var\(--(?:focus-ring|control-ring|input-ring|checkbox-ring|ghostbutton-ring|separating-line|input-border)\)/i;
 
 function isAllowedValue(rawValue) {
   const value = rawValue.trim().replace(/[,;].*$/, "").replace(/\/\/.*$/, "").replace(/\/\*[\s\S]*?\*\//g, "").trim();
@@ -131,10 +153,36 @@ function computePrintBlockLines(lines) {
 }
 
 const violations = [];
+const ringMisuse = [];
 
 for (const root of SEARCH_ROOTS) {
   for (const file of walk(path.join(ROOT, root))) {
     const relative = rel(file);
+    // The ring-misuse scan runs on EVERY file, allowlisted or not: a dropped
+    // ring is a rendering bug, not a style-policy question, and the diagram
+    // primitives on the allowlist are just as affected by it.
+    {
+      const source = fs.readFileSync(file, "utf8");
+      // Blank block comments across the WHOLE file before scanning, keeping
+      // newlines so line numbers stay accurate. Stripping per line missed
+      // multi-line comments, so prose explaining the ring-misuse bug was
+      // itself reported as the bug.
+      const scannable = source.replace(/\/\*[\s\S]*?\*\//g, (block) =>
+        block.replace(/[^\n]/g, " ")
+      );
+      scannable.split(/\r?\n/).forEach((line, index) => {
+        const stripped = line.replace(/\/\/.*$/, "");
+        if (RING_SHORTHAND_MISUSE_RE.test(stripped)) {
+          ringMisuse.push(
+            `${relative}:${index + 1}: shorthand ring token used as a colour — ${stripped.trim().slice(0, 100)}`
+          );
+        } else if (SHADOW_TOKEN_AS_COLOUR_RE.test(stripped)) {
+          ringMisuse.push(
+            `${relative}:${index + 1}: box-shadow token used as a border colour — ${stripped.trim().slice(0, 100)}`
+          );
+        }
+      });
+    }
     if (ALLOWLIST.has(relative)) continue;
     const source = fs.readFileSync(file, "utf8");
     const lines = source.split(/\r?\n/);
@@ -160,6 +208,16 @@ for (const root of SEARCH_ROOTS) {
   }
 }
 
+if (ringMisuse.length) {
+  console.error(`\nRing token misuse (${ringMisuse.length}) — these controls render NO ring at all:\n`);
+  for (const v of ringMisuse) console.error("  " + v);
+  console.error(
+    `\n  --x-ring       is a complete shorthand -> border: var(--x-ring)` +
+      `\n  --x-ring-color is a bare colour        -> border: 1px solid var(--x-ring-color)` +
+      `\n  --focus-ring / --control-ring are box-shadow values, never border colours.\n`
+  );
+}
+
 if (violations.length) {
   console.error(`\nBorder ban violations (${violations.length}):\n`);
   for (const v of violations) console.error("  " + v);
@@ -168,4 +226,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("Border ban check passed — no forbidden border declarations.");
+if (ringMisuse.length) process.exit(1);
+
+console.log("Border ban check passed — no forbidden border declarations, no dropped rings.");

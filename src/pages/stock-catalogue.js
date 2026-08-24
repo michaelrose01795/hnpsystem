@@ -114,7 +114,7 @@ const secondaryButtonStyle = {
   ...buttonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--primary)",
-  border: "1px solid var(--ghostbutton-ring)"
+  border: "1px solid var(--ghostbutton-ring-color)"
 };
 
 const tableStyle = {

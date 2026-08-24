@@ -172,27 +172,24 @@
   /* The panel itself supplies the uniform 10px inset around every section */
   padding: 0;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   flex: 0 0 auto;
 }
 
-/* Tab strip — spans the full card width at all times and scrolls
-   horizontally (scrollbar hidden) once the tabs overflow. */
+/* Tab strip — spans the full card width at all times and exposes a compact
+   horizontal scrollbar once the tabs overflow. */
 .tabBar {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
   min-width: 0;
+  flex: 0 1 100% !important;
   flex-wrap: nowrap !important;
   justify-content: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
-}
-
-.tabBar::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
 }
 
 .tab {
@@ -209,6 +206,10 @@
 .tab:hover,
 .tab:focus-visible {
   z-index: var(--hover-surface-z, 80);
+}
+
+.wrapper .tabBar > .tab {
+  flex: 0 0 auto !important;
 }
 
 .tabTitle {
@@ -233,47 +234,101 @@
   height: 35px;
   padding: 0;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
   background: var(--primary) !important;
   color: var(--onAccentText) !important;
 }
 
-/* Per-tab close affordance. */
-.tabClose {
+/* The glyph grows independently of the fixed 35px tab control. */
+.tabAddGlyph {
+  display: block;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 0.7;
+  transform: translateY(-1px);
+}
+
+/* A note tab groups its selector with a dedicated 44px delete target. */
+.noteTab {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto !important;
+  min-width: 0;
+  height: 44px;
+  padding-left: var(--space-sm);
+  border-radius: var(--control-radius);
+  background: var(--tab-button-bg);
+  color: var(--tab-button-color);
+  overflow: hidden;
+}
+
+.noteTab:global(.is-active) {
+  background: var(--primary);
+  color: var(--onAccentText);
+}
+
+.noteTabSelect {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  max-width: 150px;
+  padding: 0;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+}
+
+.noteTabSelect:focus-visible,
+.tabDelete:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tabDelete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 17px;
-  width: 17px;
-  height: 17px;
-  min-width: 17px;
-  min-height: 17px;
-  padding: 0;
-  border-radius: var(--radius-full);
-  background: rgba(var(--surface-rgb), 0.34);
-  color: currentColor;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: inherit;
   cursor: pointer;
   box-shadow: none;
   transition:
-    background-color 0.14s ease,
-    color 0.14s ease,
     box-shadow 0.14s ease;
 }
 
-.tabClose:hover,
-.tabClose:focus-visible {
-  background: var(--danger-surface);
-  color: var(--danger-text);
-  outline: none;
+.tabDeleteGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--text-2);
+  transition: background-color 0.14s ease, transform 0.14s ease;
 }
 
-.tabClose:focus-visible {
-  box-shadow: var(--focus-ring);
+.tabDelete:hover .tabDeleteGlyph,
+.tabDelete:focus-visible .tabDeleteGlyph {
+  background: var(--danger-hover);
+  transform: scale(1.04);
+}
+
+.tabDelete:active .tabDeleteGlyph {
+  transform: scale(0.96);
+}
+
+.deleteNoteIcon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
 }
 
 /* ========================================================= */
@@ -297,6 +352,7 @@
 
 .bodyAi {
   overflow: hidden;
+  container: app-guide-shell / size;
 }
 
 /* Title + per-note actions share one wrapping toolbar row. */
@@ -548,35 +604,56 @@
 }
 
 .shareModal {
-  width: 360px;
+  width: 480px;
   max-width: calc(100vw - 28px);
+  max-height: calc(100dvh - 28px);
   box-shadow: var(--dropdown-menu-shadow);
+  overflow: hidden;
 }
 
 .shareModalHeader {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+}
+
+.shareHeading {
+  min-width: 0;
+}
+
+.shareHeading h2 {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-h3);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.shareHeading p {
+  margin: var(--space-xs) 0 0;
+  max-width: 38ch;
+  color: var(--surfaceTextMuted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
 }
 
 .shareSearchWrap {
-  position: relative;
-  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
 }
 
 .shareSearch {
-  width: 100%;
-  padding-right: 126px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .shareSelectedCount {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 0 0 auto;
   font-size: var(--text-caption);
   color: var(--surfaceTextMuted);
-  pointer-events: none;
   white-space: nowrap;
 }
 
@@ -586,7 +663,8 @@
 
 .shareUserList {
   overflow-y: auto;
-  max-height: 230px;
+  min-height: 180px;
+  max-height: min(340px, calc(100dvh - 230px));
 }
 
 .shareUserRow {
@@ -595,7 +673,7 @@
   gap: 2px var(--space-sm);
   align-items: center;
   padding: var(--space-2) var(--space-2);
-  border-bottom: 1px solid var(--separating-line);
+  border-bottom: 1px solid var(--separating-line-color);
   min-height: 44px;
   cursor: pointer;
   transition: background-color 0.12s ease;
@@ -640,6 +718,12 @@
 /* === Responsive                                          === */
 /* ========================================================= */
 @media (max-width: 640px) {
+  .wrapper .tabBar > .tab,
+  .wrapper .tabBar > .noteTab {
+    flex: 0 0 auto !important;
+    min-width: max-content;
+  }
+
   .titleActions {
     flex: 1 1 auto;
     justify-content: flex-end;
@@ -650,18 +734,15 @@
   }
 
   .shareModalHeader {
+    gap: var(--space-sm);
+  }
+
+  .shareSearchWrap {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .shareSearch {
-    padding-right: 14px;
-  }
-
   .shareSelectedCount {
-    position: static;
-    display: block;
-    margin-top: var(--space-xs);
-    transform: none;
+    align-self: flex-start;
   }
 }

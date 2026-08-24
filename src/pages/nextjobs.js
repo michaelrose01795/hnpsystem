@@ -23,6 +23,7 @@ import { normalizeRequests, compareJobsForBoard, isNextJobsTechnicianPanelJob } 
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 // Engine helpers — single source of truth for "is this job still outstanding
 // because the customer authorised VHC work the tech hasn't finished yet".
 import {
@@ -243,7 +244,7 @@ const jobDetailsPopupQuietButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--ghostbutton-ring)"
+  border: "1px solid var(--ghostbutton-ring-color)"
 };
 
 const getJobRequestsCountFromPayload = (payload) => {
@@ -921,22 +922,41 @@ export default function NextJobsPage() {
     [jobProgressByJobId]
   );
 
+  // Realtime refresh, coalesced.
+  //
+  // Every subscription below is an unfiltered `event: "*"` on a whole table, and
+  // each one used to call its refetch straight from the callback. On a live
+  // workshop board that is the busiest code path on the page: one technician
+  // clocking on writes `job_clocking`, which fired `fetchActiveClockings()` AND
+  // `fetchJobClockingRows()` immediately — on every browser with /nextjobs open.
+  // Bulk operations (a status sweep, a parts import) turned into one full
+  // workload download per changed row.
+  //
+  // The refreshes themselves are unchanged; they are now scheduled through
+  // useCoalescedRefresh, so a burst produces one call and a hidden tab produces
+  // none until it is looked at again.
+  const scheduleJobsRefresh = useCoalescedRefresh(fetchJobs);
+  const scheduleClockingRefresh = useCoalescedRefresh(useCallback(() => {
+    fetchActiveClockings();
+    fetchJobClockingRows();
+  }, [fetchActiveClockings, fetchJobClockingRows]));
+  const scheduleCapacityRefresh = useCoalescedRefresh(fetchTechnicianCapacity);
+  const scheduleRequestProgressRefresh = useCoalescedRefresh(fetchJobRequestProgress);
+
   useEffect(() => {// Subscribe to Supabase changes for live updates
     const channel = supabase.
     channel("nextjobs-waiting-jobs").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "jobs" },
-      () => {
-        fetchJobs();
-      }
+      scheduleJobsRefresh
     ).
     subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchJobs]);
+  }, [scheduleJobsRefresh]);
 
   useEffect(() => {
     const channel = supabase.
@@ -944,17 +964,14 @@ export default function NextJobsPage() {
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "job_clocking" },
-      () => {
-        fetchActiveClockings();
-        fetchJobClockingRows();
-      }
+      scheduleClockingRefresh
     ).
     subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchActiveClockings, fetchJobClockingRows]);
+  }, [scheduleClockingRefresh]);
 
   useEffect(() => {
     const channel = supabase.
@@ -962,14 +979,14 @@ export default function NextJobsPage() {
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "technician_capacity_overrides" },
-      fetchTechnicianCapacity
+      scheduleCapacityRefresh
     ).
     subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchTechnicianCapacity]);
+  }, [scheduleCapacityRefresh]);
 
   useEffect(() => {
     const channel = supabase.
@@ -977,19 +994,19 @@ export default function NextJobsPage() {
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "job_requests" },
-      fetchJobRequestProgress
+      scheduleRequestProgressRefresh
     ).
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "vhc_checks" },
-      fetchJobs
+      scheduleJobsRefresh
     ).
     subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchJobRequestProgress, fetchJobs]);
+  }, [scheduleRequestProgressRefresh, scheduleJobsRefresh]);
 
   const techIdSet = useMemo(() => {
     return new Set(
@@ -1234,13 +1251,35 @@ export default function NextJobsPage() {
     [clockingNow, jobClockingRowsByJobKey]
   );
 
+  // Live "clocked time" ticker.
+  //
+  // `clockingNow` feeds exactly one thing: getJobClockedTimeText, which renders
+  // `Xh Ymins` — whole minutes. Updating it every second therefore re-rendered
+  // the entire board roughly sixty times for every one time the displayed text
+  // could actually change, all day, on every screen showing the dispatch board.
+  //
+  // The tick still runs each second, but it now recomputes the minute totals
+  // first (a reduce over the open clocking rows — orders of magnitude cheaper
+  // than a board render) and only commits state when one of them has moved. The
+  // displayed values are identical to before, to the second; the wasted renders
+  // in between are gone.
   useEffect(() => {
-    const hasOpenClocking = Object.values(jobClockingRowsByJobKey).some((rows) =>
+    const entries = Object.entries(jobClockingRowsByJobKey);
+    const hasOpenClocking = entries.some(([, rows]) =>
       (Array.isArray(rows) ? rows : []).some((row) => row && !row.clock_out)
     );
     if (!hasOpenClocking) return undefined;
+
+    const signatureAt = (now) =>
+      entries.map(([, rows]) => calculateClockingMinutesTotal(rows, now)).join("|");
+
+    let lastSignature = signatureAt(Date.now());
     const intervalId = window.setInterval(() => {
-      setClockingNow(Date.now());
+      const now = Date.now();
+      const signature = signatureAt(now);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      setClockingNow(now);
     }, 1000);
     return () => window.clearInterval(intervalId);
   }, [jobClockingRowsByJobKey]);
@@ -1898,7 +1937,7 @@ export default function NextJobsPage() {
           boxShadow:
           activeDropTarget === panelKey ?
           "0 4px 12px rgba(0, 0, 0, 0.2)" :
-          "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+          "var(--shadow-sm)",
           transition: "all 0.2s ease"
         }}>
 

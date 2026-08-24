@@ -3,6 +3,7 @@
 // through the Website Manager.
 import React, { useMemo, useState } from "react";
 import Section from "@/components/Section";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { EmptyState, formatDateTime, cellStyle, headCellStyle } from "../helpers";
 
 export default function ActivityPanel({ activity }) {
@@ -43,19 +44,12 @@ export default function ActivityPanel({ activity }) {
           onChange={(e) => setQuery(e.target.value)}
           style={{ flex: "1 1 220px", minWidth: 200 }}
         />
-        <select
-          className="app-input"
+        <DropdownField
           value={pageFilter}
           onChange={(e) => setPageFilter(e.target.value)}
+          options={[{ value: "all", label: "All pages" }, ...pageOptions]}
           style={{ flex: "0 0 auto", minWidth: 180 }}
-        >
-          <option value="all">All pages</option>
-          {pageOptions.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {filtered.length === 0 ? (

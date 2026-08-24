@@ -94,7 +94,7 @@ function CoveragePanel({ coverage }) {
 
       {Object.keys(byAction).length > 0 ? (
         <SubSurface>
-          <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>
             Logged actions
           </div>
           <KeyValueGrid>
@@ -119,7 +119,7 @@ function ActivityRow({ item, showRule }) {
         flexWrap: "wrap",
         padding: "8px 0",
         // Allowed row separator (§3.0a — row-bottom rule inside a list).
-        borderBottom: showRule ? "1px solid var(--separating-line)" : "none",
+        borderBottom: showRule ? "1px solid var(--separating-line-color)" : "none",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", minWidth: 0, flexWrap: "wrap" }}>
@@ -130,11 +130,11 @@ function ActivityRow({ item, showRule }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", flexShrink: 0 }}>
         {item.actorRole ? (
-          <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+          <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
             {item.actorRole}
           </span>
         ) : null}
-        <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.55, fontFamily: "var(--font-mono, ui-monospace, monospace)" }}>
+        <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.55, fontFamily: "var(--font-family-mono)" }}>
           {shortTime(item.at)}
         </span>
       </div>

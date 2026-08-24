@@ -34,7 +34,7 @@ export default function ShortcutHintsOverlay({ isOpen = false, onClose }) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "16px" }}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accent)" }}>
+        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accentText)" }}>
           Keyboard shortcuts
         </h2>
         <button

@@ -260,7 +260,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -279,7 +279,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -300,7 +300,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
+                  border: "1px solid var(--input-ring-color)",
                   fontSize: "14px",
                 }}
               />
@@ -320,7 +320,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
+                  border: "1px solid var(--input-ring-color)",
                   fontSize: "14px",
                 }}
               />
@@ -342,7 +342,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -368,7 +368,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
                 resize: "vertical",
               }}

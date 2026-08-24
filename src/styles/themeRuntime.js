@@ -115,152 +115,200 @@ export const getResolvedAccent = (accentName, resolvedMode) => {
   return resolvedMode === "dark" ? palette.dark : palette.light;
 };
 
-// Build the full semantic and legacy token set from the current accent and colour mode.
-export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT_ACCENT } = {}) => {
-  // Resolve the concrete accent colour first so every derived value uses the same base.
-  const accentMain = getResolvedAccent(accentName, resolvedMode);
 
-  // Convert the accent to RGB for all alpha-based surfaces and rings.
-  const accentRgbObject = hexToRgbObject(accentMain);
+// ---------------------------------------------------------------------------
+// buildThemeTokens - THE single derivation of every accent/surface token.
+// ---------------------------------------------------------------------------
+// This function is deliberately SELF-CONTAINED: every helper it needs is
+// declared inside its own body and it closes over nothing. That is what lets
+// src/pages/_document.js serialise it with `.toString()` and run the exact same
+// code in the pre-hydration boot script.
+//
+// Before this existed there were three hand-maintained copies of the
+// derivation (here, _document.js, and the static blocks in theme.css) and they
+// had already drifted apart: the boot script painted a visible
+// --primary-border, undid the softened --ghostbutton-ring and dropped
+// --control-menu-shadow, so the first paint showed accent hairlines that
+// vanished again on hydration.
+//
+// RULES FOR EDITING:
+//   - Do not reference anything outside this function. One external reference
+//     silently breaks the first paint.
+//   - Keep the values in step with the static :root and
+//     :root[data-theme="dark"] blocks in src/styles/theme.css, which are the
+//     no-JS fallback.
+export function buildThemeTokens(resolvedMode, accentMain) {
+  const isDark = resolvedMode === "dark";
 
-  // Store the accent in CSS rgba() string form too.
-  const accentRgb = hexToRgbString(accentMain);
+  // -- colour helpers (inlined on purpose; see RULES above) -----------------
+  const toRgb = (hexColor) => {
+    const hex = String(hexColor || "").replace("#", "");
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 185, g: 28, b: 28 };
+    return {
+      r: parseInt(hex.slice(0, 2), 16),
+      g: parseInt(hex.slice(2, 4), 16),
+      b: parseInt(hex.slice(4, 6), 16),
+    };
+  };
+  const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
+  const toHex = (rgb) =>
+    "#" + [rgb.r, rgb.g, rgb.b].map((v) => clamp(v).toString(16).padStart(2, "0")).join("");
+  const mix = (from, to, ratio) => {
+    const r = Math.max(0, Math.min(1, Number(ratio) || 0));
+    return {
+      r: from.r * (1 - r) + to.r * r,
+      g: from.g * (1 - r) + to.g * r,
+      b: from.b * (1 - r) + to.b * r,
+    };
+  };
 
-  // Reuse white and black anchors for consistent light/dark derivation.
+  const accent = toRgb(accentMain);
+  const accentRgb = accent.r + ", " + accent.g + ", " + accent.b;
+  const alpha = (a) => "rgba(" + accentRgb + ", " + a + ")";
+
   const white = { r: 255, g: 255, b: 255 };
   const black = { r: 0, g: 0, b: 0 };
 
-  // Use the real surface colour as the neutral background we blend back towards.
-  const surfaceAnchor = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : white;
+  // -- neutral surfaces ----------------------------------------------------
+  const surfaceMain = isDark ? "#16161a" : "#ffffff";
+  const surfaceObject = toRgb(surfaceMain);
+  const surfaceRgb = surfaceObject.r + ", " + surfaceObject.g + ", " + surfaceObject.b;
+  const surfaceHover = isDark ? "#23232b" : "#f7f7f7";
+  const surfaceMuted = isDark ? "#1d1d24" : "#f3f3f3";
+  const surfaceText = isDark ? "#f8f7ff" : "#0f0f0f";
+  const surfaceTextMuted = isDark ? "#f2f2ff" : "#1f1f1f";
+  const textObject = toRgb(surfaceText);
+  const surfaceTextRgb = textObject.r + ", " + textObject.g + ", " + textObject.b;
+  const textAlpha = (a) => "rgba(" + surfaceTextRgb + ", " + a + ")";
 
-  // Derive the solid accent hover state from the same behaviour the sidebar/topbar already uses today.
-  const accentHover = rgbToHex(
-    resolvedMode === "dark" ? blend(accentRgbObject, white, 0.18) : blend(accentRgbObject, black, 0.18)
-  );
+  const accentHover = toHex(isDark ? mix(accent, white, 0.18) : mix(accent, black, 0.18));
+  const accentPressed = toHex(isDark ? mix(accent, white, 0.34) : mix(accent, black, 0.32));
 
-  // Derive a stronger pressed shade for places that still need a darker accent variant.
-  const accentPressed = rgbToHex(
-    resolvedMode === "dark" ? blend(accentRgbObject, white, 0.34) : blend(accentRgbObject, black, 0.32)
-  );
+  // The accent as a LABEL on an accent-tinted fill (Secondary / Ghost / Theme
+  // buttons, chips on a theme layer). The plain accent clears 4.5:1 on a plain
+  // card, but the tint under it eats 0.3-0.6 of that, which dropped the
+  // low-chroma accents (Stone, Blue, Green, Amber, Orange) to 3.9-4.4:1. This
+  // pushes the label away from the ground it sits on - darker in light mode,
+  // lighter in dark - so every accent clears 4.5:1 on the tint too.
+  const accentOnTint = toHex(isDark ? mix(accent, white, 0.22) : mix(accent, black, 0.22));
 
-  // Keep accent surfaces subtle because they are used for rows, cards, panels, and controls.
-  const accentSurface = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.16)` : `rgba(${accentRgb}, 0.08)`;
+  // -- the surface ladder --------------------------------------------------
+  // The same alpha over white gives roughly HALF the perceptual (CIE dL*) step
+  // it gives over near-black, so light mode cannot reuse dark's alphas. These
+  // pairs are tuned so both themes land on the same dL* per rung:
+  //   theme layer on a card   light .16 -> 10.6   dark .18 -> 11.0
+  //   control fill on a card  light .14 ->  9.2   dark .16 ->  9.9
+  //   hover step from rest    light .22 ->  5.0   dark .24 ->  4.8
+  //   pressed step from rest  light .30 ->  9.0   dark .32 ->  9.6
+  // The two columns are SUPPOSED to differ. Matching the numbers un-matches
+  // the look, which is how light mode ended up flat in the first place. The
+  // figures are for the red accent; the low-chroma accents (Stone, Slate)
+  // produce the smallest steps and are what these alphas are sized for.
+  const accentSurface = isDark ? alpha(0.16) : alpha(0.14);
+  const accentSurfaceHover = isDark ? alpha(0.24) : alpha(0.22);
+  const accentSurfacePressed = isDark ? alpha(0.32) : alpha(0.3);
+  const themeColour = isDark ? alpha(0.18) : alpha(0.16);
+  const themeColourHover = isDark ? alpha(0.26) : alpha(0.24);
 
-  // Use a clearer hover/selected wash without turning large surfaces into solid colour blocks.
-  const accentSurfaceHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.24)` : `rgba(${accentRgb}, 0.14)`;
+  // App background behind the page card. An opaque blend rather than an alpha
+  // wash, so it stays a fixed plane regardless of what sits behind the root.
+  const shellBackground = toHex(mix(accent, surfaceObject, isDark ? 0.78 : 0.74));
 
-  // Keep a lighter accent wash for cards, highlights, and subtle accents.
-  const accentSurfaceSubtle = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.1)` : `rgba(${accentRgb}, 0.05)`;
+  // Controls sitting ON a theme layer take the surface fill and step back
+  // towards the accent on hover/active. No single accent-alpha fill can
+  // separate from both a --surface card and a --theme layer: at .12 on a .16
+  // tint the step is only dL* 2.7.
+  const controlOnThemeHover = toHex(mix(surfaceObject, accent, 0.12));
+  const controlOnThemeActive = toHex(mix(surfaceObject, accent, 0.2));
 
-  // Define the reusable theme colour separately from pressed controls; it is the app-wide accent background.
-  const themeColour = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.18)` : `rgba(${accentRgb}, 0.1)`;
+  const onAccentText = isDark ? "#0a0a0c" : "#ffffff";
+  const onAccentObject = toRgb(onAccentText);
+  const overlayBackdrop = isDark ? "rgba(2, 6, 23, 0.72)" : "rgba(15, 23, 42, 0.4)";
+  const overlayMuted = isDark ? "rgba(2, 6, 23, 0.5)" : "rgba(15, 23, 42, 0.24)";
 
-  // Define the app-wide hover colour for subtle themed surfaces.
-  const themeColourHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.26)` : `rgba(${accentRgb}, 0.16)`;
+  // Ring tokens come in pairs: a bare COLOUR and a full border SHORTHAND.
+  // Writing "1px solid var(--input-ring-color)" expands to "1px solid 1px solid ..."
+  // which is invalid CSS and drops the ring entirely - use the -color token
+  // when you are writing your own width and style.
+  // (Kept free of backticks: this whole function is serialised into the
+  // first-paint boot script in src/pages/_document.js.)
+  const inputRingColor = accentSurfaceHover;
+  const checkboxRingColor = accentMain;
+  const ghostRingColor = isDark ? alpha(0.45) : alpha(0.35);
+  const separatingLineColor = isDark ? alpha(0.2) : alpha(0.14);
+  const focusRing = "0 0 0 3px " + alpha(isDark ? 0.18 : 0.12);
+  const controlMenuShadow =
+    "0 0 0 1px " + alpha(0.18) + ", 0 0 32px " + alpha(0.22) + ", 0 0 12px rgba(0, 0, 0, 0.1)";
 
-  // Build a stronger accent border for selected and focused states.
-  const accentBorderStrong = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.42)` : `rgba(${accentRgb}, 0.32)`;
-
-  // Derive the app shell colour from the accent, matching the sidebar-led shell treatment.
-  const shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
-
-  // Define the neutral surface colours used for cards, panels, and inputs.
-  const surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
-
-  // Define the hover/raised neutral surface used for interactive neutral elements.
-  const surfaceHover = resolvedMode === "dark" ? "#23232b" : "#f7f7f7";
-
-  // Define the muted neutral surface used by sub-panels and inactive backgrounds.
-  const surfaceMuted = resolvedMode === "dark" ? "#1d1d24" : "#f3f3f3";
-
-  // Define the main readable text colour for normal surfaces.
-  const surfaceText = resolvedMode === "dark" ? "#f8f7ff" : "#0f0f0f";
-
-  // Define the secondary readable text colour for supporting copy.
-  const surfaceTextMuted = resolvedMode === "dark" ? "#f2f2ff" : "#1f1f1f";
-
-  // Use accent-coloured text/icons on accent-wash surfaces and controls.
-  const accentText = accentMain;
-
-  // Define the contrast text for solid accent fills.
-  const onAccentText = resolvedMode === "dark" ? "#0a0a0c" : "#ffffff";
-
-  // Centralise the backdrop colour for overlays and modal scrims.
-  const overlayBackdrop = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.72)" : "rgba(15, 23, 42, 0.4)";
-
-  // Provide a softer overlay for inline modal locks and localised dimming.
-  const overlayMuted = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.5)" : "rgba(15, 23, 42, 0.24)";
-
-  // Return the entire semantic token set plus compatibility aliases.
   return {
-    // Core semantic accent tokens.
-    accentMain,
-    accentHover,
-    accentPressed,
-    accentRgb,
-    accentText,
-    onAccentText,
-    accentSurface,
-    accentSurfaceHover,
-    accentSurfaceSubtle,
-    accentBorderStrong,
-
-    // Core semantic neutral surface tokens.
-    surfaceMain,
-    surfaceHover,
-    surfaceMuted,
-    surfaceText,
-    surfaceTextMuted,
-    shellBackground,
-    overlayBackdrop,
-    overlayMuted,
-
-    // Compatibility aliases that keep older code following the same semantic system.
+    accentMain: accentMain,
+    accentRgb: accentRgb,
+    shellBackground: shellBackground,
     legacy: {
       "--primary": accentMain,
       "--primary-hover": accentHover,
       "--primary-pressed": accentPressed,
       "--primary-selected": accentPressed,
       "--accentMainRgb": accentRgb,
-      "--accentText": accentText,
-      "--text-accent": accentText,
+      "--accentText": accentMain,
+      "--text-accent": accentMain,
       "--onAccentText": onAccentText,
       "--secondary": accentSurface,
       "--secondary-hover": accentSurfaceHover,
-      "--secondary-pressed": resolvedMode === "dark" ? `rgba(${accentRgb}, 0.32)` : `rgba(${accentRgb}, 0.2)`,
+      "--secondary-pressed": accentSurfacePressed,
       "--theme": themeColour,
+      "--theme-hover": themeColourHover,
       "--primary-border": "transparent",
       "--surfaceHover": surfaceHover,
       "--surfaceMutedToken": surfaceMuted,
       "--surfaceText": surfaceText,
       "--surfaceTextMuted": surfaceTextMuted,
       "--surface": surfaceMain,
-      "--surface-rgb": hexToRgbString(surfaceMain),
+      "--surface-rgb": surfaceRgb,
       "--text-1": surfaceText,
-      "--text-1-rgb": hexToRgbString(surfaceText),
+      "--text-1-rgb": surfaceTextRgb,
       "--text-2": onAccentText,
-      "--text-2-rgb": hexToRgbString(onAccentText),
+      "--text-2-rgb": onAccentObject.r + ", " + onAccentObject.g + ", " + onAccentObject.b,
       "--overlay": overlayBackdrop,
       "--overlay-muted": overlayMuted,
       "--page-shell-bg": shellBackground,
       "--nav-shell-bg": accentSurface,
       "--page-card-bg": surfaceMain,
-      "--section-card-bg": surfaceMain,
+      // Second rung of the ladder - alternates away from the page card above.
+      "--section-card-bg": themeColour,
+      "--nav-link-border": "none",
       "--nav-link-border-active": "none",
       "--secondary-border": "transparent",
       "--control-border": "none",
-      "--input-border": `1px solid ${accentSurfaceHover}`,
-      "--input-ring": `1px solid ${accentSurfaceHover}`,
-      "--ghostbutton-ring": `1px solid ${accentMain}`,
-      "--checkbox-ring": `2px solid ${accentMain}`,
-      "--focus-ring": `0 0 0 3px rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.18" : "0.12"})`,
-      "--separating-line": `1px solid rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.2" : "0.14"})`,
-      "--table-border": `1px solid rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.2" : "0.14"})`,
+      "--input-ring-color": inputRingColor,
+      "--input-ring": "1px solid " + inputRingColor,
+      "--input-border": "1px solid " + inputRingColor,
+      "--checkbox-ring-color": checkboxRingColor,
+      "--checkbox-ring": "2px solid " + checkboxRingColor,
+      "--ghostbutton-ring-color": ghostRingColor,
+      "--ghostbutton-ring": "1px solid " + ghostRingColor,
+      "--separating-line-color": separatingLineColor,
+      "--separating-line": "1px solid " + separatingLineColor,
+      "--table-border": "1px solid " + separatingLineColor,
+      "--focus-ring": focusRing,
+      "--control-ring": focusRing,
       "--control-border-hover": accentSurfaceHover,
       "--control-border-focus": accentSurfaceHover,
-      "--textfieldbackground": resolvedMode === "dark" ? "#a1a1aa" : "#9ca3af",
-      "--control-ring": `0 0 0 3px rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.18" : "0.12"})`,
-      "--control-menu-shadow": "none",
+      "--control-on-theme-bg": surfaceMain,
+      "--control-on-theme-bg-hover": controlOnThemeHover,
+      "--control-on-theme-bg-active": controlOnThemeActive,
+      "--accent-text-on-tint": accentOnTint,
+      "--control-disabled-bg": textAlpha(0.07),
+      "--control-disabled-text": textAlpha(0.55),
+      "--toggle-track-off": textAlpha(0.25),
+      "--input-placeholder": textAlpha(0.6),
+      "--textfieldbackground": textAlpha(0.6),
+      "--toggle-knob": isDark ? textAlpha(0.88) : "#ffffff",
+      "--control-menu-shadow": controlMenuShadow,
+      "--tab-container-bg": accentSurface,
+      "--tab-item-bg": accentSurface,
+      "--tab-item-bg-hover": accentSurfaceHover,
+      "--tab-item-text": surfaceText,
       "--row-background": surfaceMain,
       "--section-gradient-outer": accentSurfaceHover,
       "--section-gradient-inner": accentSurface,
@@ -268,28 +316,28 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--layer-gradient": accentSurface,
       "--profile-table-surface": accentSurface,
       "--profile-table-alt-surface": accentSurfaceHover,
-      "--search-surface": resolvedMode === "dark" ? "#2a2a32" : surfaceMain,
+      "--search-surface": isDark ? "#2a2a32" : surfaceMain,
       "--search-surface-muted": surfaceMain,
-      "--nav-link-border": "none",
       "--search-text": accentPressed,
       "--scrollbar-thumb": accentMain,
       "--scrollbar-thumb-hover": accentHover,
       "--accent-base": accentSurface,
       "--accent-base-rgb": accentRgb,
       "--accent-base-hover": accentSurfaceHover,
-      "--theme-hover": themeColourHover,
       "--accent-strong": accentMain,
       "--primary-rgb": accentRgb,
-      "--info": resolvedMode === "dark" ? "#f2a3a3" : "#d96f6f",
-      "--info-dark": resolvedMode === "dark" ? "#f7bcbc" : "#bf5656",
-      "--info-rgb": resolvedMode === "dark" ? "242, 163, 163" : "217, 111, 111",
-      "--theme-status": resolvedMode === "dark" ? "rgba(242, 163, 163, 0.26)" : "rgba(217, 111, 111, 0.18)",
+      "--info": isDark ? "#f2a3a3" : "#d96f6f",
+      "--info-dark": isDark ? "#f7bcbc" : "#bf5656",
+      "--info-rgb": isDark ? "242, 163, 163" : "217, 111, 111",
+      "--theme-status": isDark ? "rgba(242, 163, 163, 0.26)" : "rgba(217, 111, 111, 0.18)",
       "--accent-purple": accentMain,
       "--accent-purple-rgb": accentRgb,
-      "--accent-blue": accentMain,
-      "--accent-blue-rgb": accentRgb,
       "--accent-orange": accentMain,
       "--accent-orange-rgb": accentRgb,
     },
   };
-};
+}
+
+// Build the full semantic and legacy token set from the current accent and colour mode.
+export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT_ACCENT } = {}) =>
+  buildThemeTokens(resolvedMode, getResolvedAccent(accentName, resolvedMode));

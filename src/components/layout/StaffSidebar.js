@@ -470,6 +470,7 @@ export default function Sidebar({
   // fixed-width rail. `title` keeps the full text accessible on hover.
   const renderLinkLabel = (label, href, { truncate = false } = {}) => {
     const isMessagesItem = href === "/messages";
+    const showUnreadBadge = isMessagesItem && unreadCount > 0;
     const labelStyle = truncate
       ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }
       : undefined;
@@ -483,6 +484,9 @@ export default function Sidebar({
     }
     return (
       <div
+        className={
+          showUnreadBadge ? "app-badge-slot app-badge-slot--counted" : "app-badge-slot"
+        }
         style={{
           display: "flex",
           alignItems: "center",
@@ -493,9 +497,10 @@ export default function Sidebar({
         }}
       >
         {labelSpan}
-        {isMessagesItem && unreadCount > 0 && (
+        {showUnreadBadge && (
           <span
-            className="app-badge app-badge--danger-strong"
+            className="app-badge app-badge--danger-strong app-badge--count"
+            style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)" }}
           >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>

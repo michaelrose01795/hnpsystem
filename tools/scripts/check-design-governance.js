@@ -245,7 +245,7 @@ function checkCoverage() {
 // alone. The ratchet exists so a THIRD location cannot appear.
 const FAMILY_OWNERS = [
   [/\.app-btn(?![\w-])|\.app-btn--/, "src/styles/families/buttons.css"],
-  [/\.app-badge(?![\w-])|\.app-badge--/, "src/styles/families/badges.css"],
+  [/\.app-badge/, "src/styles/families/badges.css"], // covers --variants and the .app-badge-slot companion
   [/\.app-data-table|\.app-table-action-btn|\.app-table-shell/, "src/styles/families/tables.css"],
   [/\.app-input(?![\w-])|\.app-input--/, ["src/styles/families/inputs.css", "src/styles/families/forms.css"]],
   [/\.app-field-error|\.app-field-hint|\.app-form-summary/, "src/styles/families/forms.css"],
@@ -266,14 +266,32 @@ function selectorsOf(css) {
     .filter((s) => s && !s.startsWith("@"));
 }
 
+// Selector + declaration block, so family-ownership can tell a visual
+// declaration from a layout-only one.
+function rulesOf(css) {
+  return [...stripCssComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({
+      selector: m[1].replace(/\s+/g, " ").trim(),
+      body: m[2],
+    }))
+    .filter((r) => r.selector && !r.selector.startsWith("@"));
+}
+
+// Properties that define how a family LOOKS. A rule setting none of these is
+// positioning an existing component, not restyling it.
+const FAMILY_VISUAL_PROP_RE =
+  /(^|[;\s])(background|background-[a-z-]+|color|border|border-[a-z-]+|box-shadow|font|font-[a-z-]+|letter-spacing|text-transform|text-decoration|padding|padding-[a-z-]+|opacity|filter|outline|outline-[a-z-]+)\s*:/;
+
 function collectFamilyOwnership() {
   const hits = new Map();
   const detail = new Map();
   for (const file of CSS_FILES) {
-    for (const selector of selectorsOf(read(file))) {
+    for (const { selector, body } of rulesOf(read(file))) {
       // Dev-overlay trace selectors classify elements; they do not define a
       // family's appearance.
       if (/data-dev-overlay|data-dev-section/.test(selector)) continue;
+      // Layout-only rules position a component; they do not redefine it.
+      if (!FAMILY_VISUAL_PROP_RE.test(body)) continue;
       for (const [re, owner] of FAMILY_OWNERS) {
         const owners = Array.isArray(owner) ? owner : [owner];
         if (re.test(selector) && !owners.includes(file)) {
@@ -307,6 +325,23 @@ function collectImportant() {
 // definition anywhere, so the var() silently falls through to its fallback.
 // They are recorded here rather than defined, because defining one would change
 // what those elements render.
+// A handful of tokens are legitimately DEFINED AT RUNTIME from JS, as an inline
+// custom property on a wrapper element, and consumed from CSS. They are real
+// definitions - the checker just cannot see them in a stylesheet. Each entry
+// names the component that owns the token so the pairing stays auditable. This
+// list may only shrink.
+const RUNTIME_TOKEN_SOURCES = [
+  "src/pages/_app.js", // --font-inter, pinned to :root from next/font
+  "src/components/layout/StaffLayout.js", // --portrait-sidebar-top
+  "src/components/VHC/VideoEditorModal.js", // --video-editor-max-width / -aspect-ratio
+  "src/components/ui/StaffCardGrid.js", // --app-card-grid-min
+  "src/components/StatusTracking/JobProgressTracker.js", // --job-tracker-phase-color
+];
+
+// var(--radius-<size>) template literals compose the token name at runtime, so
+// the literal prefix left in the source is not a real reference.
+const DYNAMIC_TOKEN_REF_RE = /^var\(\s*--[A-Za-z0-9-]*\$\{/;
+
 function collectUndefinedTokens() {
   const defined = new Set();
   const tokenSources = [
@@ -322,13 +357,20 @@ function collectUndefinedTokens() {
     if (!exists(file)) continue;
     for (const m of read(file).matchAll(/(--[A-Za-z0-9-]+)\s*:/g)) defined.add(m[1]);
   }
+  for (const file of RUNTIME_TOKEN_SOURCES) {
+    if (!exists(file)) continue;
+    // Quoted keys only - i.e. an inline style object setting a custom property.
+    for (const m of read(file).matchAll(/"?(--[A-Za-z0-9-]+)"?\s*:/g)) defined.add(m[1]);
+  }
   const hits = new Map();
   const detail = new Map();
   for (const file of [...CSS_FILES, ...JS_FILES]) {
-    const text = read(file);
+    const raw = read(file);
+    const text = file.endsWith(".css") ? stripCssComments(raw) : raw;
     // Tokens a file sets itself (inline style vars, local scopes) are fine.
     const local = new Set([...text.matchAll(/(--[A-Za-z0-9-]+)"?\s*:/g)].map((m) => m[1]));
     const missing = [...text.matchAll(/var\(\s*(--[A-Za-z0-9-]+)/g)]
+      .filter((m) => !DYNAMIC_TOKEN_REF_RE.test(text.slice(m.index, m.index + m[0].length + 2)))
       .map((m) => m[1])
       .filter((t) => !defined.has(t) && !local.has(t));
     if (!missing.length) continue;
@@ -342,8 +384,9 @@ function collectUndefinedTokens() {
 // Rule 7 - raw colour literals in staff UI code (RATCHET)
 // ---------------------------------------------------------------------------
 const HEX_RE = /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g;
-// Trace-mode swatches, dev overlays, drawing primitives and email templates
-// legitimately use raw colours - they are not part of the product surface.
+// Not part of the product surface: trace-mode swatches, dev overlays, drawing
+// primitives and email templates. Applies to BOTH raw-colours and
+// one-off-styling.
 const VISUAL_EXEMPT = [
   "src/styles/families/",
   "src/styles/theme.css",
@@ -357,11 +400,36 @@ const VISUAL_EXEMPT = [
   "src/components/ui/variants.js",
 ];
 
+// Additionally exempt from raw-colours ONLY: contexts where a colour literal is
+// the only thing that CAN work. These files still have their inline styling
+// governed - the exemption is about the colour value, not about layout or
+// visual styling. Each entry needs a reason; this is not a place to park debt.
+const RAW_COLOUR_EXEMPT = [
+  ...VISUAL_EXEMPT,
+  // A token source: emitting colour literals is its job.
+  "src/styles/themeRuntime.js",
+  // The pre-hydration theme bootstrap runs before any stylesheet exists, so it
+  // has to carry the palette as literals.
+  "src/pages/_document.js",
+  // Transactional email HTML. Email clients do not support custom properties,
+  // so every colour must be inlined as a literal.
+  "src/lib/support/supportReportEmail.js",
+  "src/pages/api/",
+  // WebGL / three.js materials. A CSS variable cannot reach a shader.
+  "src/features/3Dwebsite/",
+  // Canvas 2D drawing surfaces (photo/video annotation, screen recording).
+  // The canvas API takes colour strings, not custom properties. This is the
+  // same set tools/scripts/check-borders.js allowlists as functional primitives.
+  "src/components/VHC/photoEditor/",
+  "src/components/VHC/videoEditor/",
+  "src/components/VHC/mediaCapture/",
+];
+
 function collectRawColours() {
   const hits = new Map();
   const detail = new Map();
   for (const file of [...CSS_FILES, ...JS_FILES]) {
-    if (VISUAL_EXEMPT.some((p) => file.startsWith(p))) continue;
+    if (RAW_COLOUR_EXEMPT.some((p) => file.startsWith(p))) continue;
     const matches = [...read(file).matchAll(HEX_RE)];
     if (!matches.length) continue;
     hits.set(file, matches.length);

@@ -22,7 +22,7 @@ function ReportsContent() {
             {hrPresentationData.reportMetrics.map((metric) => (
               <div key={metric.id} style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                 <span style={{ color: "var(--text-1)", fontSize: "var(--text-label)" }}>{metric.label}</span>
-                <strong style={{ color: "var(--accentText)", fontSize: "var(--text-title)" }}>{metric.value}</strong>
+                <strong style={{ color: "var(--accentText)", fontSize: "var(--text-h2)" }}>{metric.value}</strong>
                 <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{metric.detail}</span>
               </div>
             ))}

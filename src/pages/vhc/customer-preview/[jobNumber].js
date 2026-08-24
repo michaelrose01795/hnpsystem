@@ -1427,10 +1427,10 @@ export function VhcDirectCustomerPage({ accessMode = "preview" }) {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--txt-bright)", marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-1)", marginBottom: 8 }}>
             Unable to load report
           </div>
-          <div style={{ fontSize: 14, color: "var(--txt-soft)" }}>{error}</div>
+          <div style={{ fontSize: 14, color: "var(--text-1)" }}>{error}</div>
         </div>
       </div>
     );

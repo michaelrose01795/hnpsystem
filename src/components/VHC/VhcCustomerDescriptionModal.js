@@ -206,7 +206,7 @@ export default function VhcCustomerDescriptionModal({
                 borderRadius: "var(--radius-xs)",
                 background: "var(--danger-surface, rgba(239,68,68,0.1))",
                 border: "none",
-                color: "var(--danger, #ef4444)",
+                color: "var(--danger)",
                 fontSize: 13,
               }}
             >
@@ -236,7 +236,7 @@ export default function VhcCustomerDescriptionModal({
               borderRadius: "var(--radius-xs)",
               border: "none",
               background: "var(--primary, var(--primary))",
-              color: "var(--onAccentText, #fff)",
+              color: "var(--onAccentText)",
               fontWeight: 700,
               fontSize: 13,
               cursor: saving ? "not-allowed" : "pointer",
@@ -275,7 +275,7 @@ export default function VhcCustomerDescriptionModal({
                 borderRadius: "var(--radius-xs)",
                 border: "none",
                 background: "var(--primary, var(--primary))",
-                color: "var(--onAccentText, #fff)",
+                color: "var(--onAccentText)",
                 fontWeight: 700,
                 fontSize: 13,
                 cursor: saving ? "not-allowed" : "pointer",

@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/parts/create-order/parts-create-order-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 export default function PartsJobCardPageUi(props) {
   const {
@@ -109,7 +110,7 @@ export default function PartsJobCardPageUi(props) {
                         <button type="button" onClick={handleSaveCustomerDetails} disabled={savingCustomerDetails} style={{
                     borderRadius: "var(--radius-sm)",
                     background: "var(--primary)",
-                    color: "var(--surface)",
+                    color: "var(--onAccentText)",
                     padding: "8px 14px",
                     fontWeight: 600,
                     cursor: savingCustomerDetails ? "not-allowed" : "pointer",
@@ -132,7 +133,7 @@ export default function PartsJobCardPageUi(props) {
                       </> : <button type="button" onClick={handleStartCustomerEdit} style={{
                   borderRadius: "var(--radius-sm)",
                   background: "var(--primary)",
-                  color: "var(--surface)",
+                  color: "var(--onAccentText)",
                   padding: "8px 14px",
                   fontWeight: 600,
                   cursor: "pointer"
@@ -180,7 +181,7 @@ export default function PartsJobCardPageUi(props) {
                     borderRadius: "var(--radius-sm)",
                     border: "1px solid transparent",
                     background: isDarkMode ? "#7D3FFF" : "#E53935",
-                    color: "#ffffff",
+                    color: "var(--onAccentText)",
                     padding: "10px 18px",
                     fontWeight: 600,
                     cursor: "pointer"
@@ -190,7 +191,7 @@ export default function PartsJobCardPageUi(props) {
                       <button type="button" onClick={() => setShowNewCustomer(true)} style={{
                     borderRadius: "var(--radius-sm)",
                     background: "var(--primary)",
-                    color: "var(--surface)",
+                    color: "var(--onAccentText)",
                     padding: "10px 18px",
                     fontWeight: 600,
                     cursor: "pointer"
@@ -305,13 +306,14 @@ export default function PartsJobCardPageUi(props) {
                 <span style={{
                 fontWeight: 600
               }}>Fulfilment type</span>
-                <select value={form.delivery_type} onChange={event => handleFieldChange("delivery_type", event.target.value)} style={{
-                ...inputStyle,
-                cursor: "pointer"
-              }}>
-                  <option value="delivery">Delivery</option>
-                  <option value="collection">Collection</option>
-                </select>
+                <DropdownField
+                  value={form.delivery_type}
+                  onChange={event => handleFieldChange("delivery_type", event.target.value)}
+                  options={[
+                    { value: "delivery", label: "Delivery" },
+                    { value: "collection", label: "Collection" },
+                  ]}
+                />
               </label>
               <div style={twoColumnGrid}>
                 <CalendarField label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"} value={form.delivery_eta || ""} onChange={value => handleFieldChange("delivery_eta", value)} name="delivery_eta" />
@@ -362,7 +364,7 @@ export default function PartsJobCardPageUi(props) {
                 padding: "8px 14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                color: "var(--surface)"
+                color: "var(--onAccentText)"
               }}>
                   + Add part
                 </button>
@@ -395,7 +397,7 @@ export default function PartsJobCardPageUi(props) {
                       borderRadius: "var(--radius-sm)",
                       border: "none",
                       background: "var(--primary)",
-                      color: "var(--surface)",
+                      color: "var(--onAccentText)",
                       padding: "8px 12px",
                       fontWeight: 600,
                       cursor: "pointer"
@@ -487,7 +489,7 @@ export default function PartsJobCardPageUi(props) {
               padding: "10px 18px",
               fontWeight: 600,
               cursor: "pointer",
-              color: isDarkMode ? "#ffffff" : "#000000"
+              color: "var(--text-1)"
             }}>
                 Clear
               </button>
@@ -495,7 +497,7 @@ export default function PartsJobCardPageUi(props) {
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               padding: "10px 18px",
               fontWeight: 600,
               cursor: "pointer",

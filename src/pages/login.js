@@ -7,7 +7,6 @@ import { getSession, signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRouter } from "next/router";
 import BrandLogo from "@/components/BrandLogo";
-import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
@@ -38,8 +37,7 @@ async function fetchLoginRoster(signal) {
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
-const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
-const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
+const AUTH_LAYOUT_ENTRANCE_STORAGE_KEY = "hnp-auth-layout-entrance";
 const LOGIN_REDIRECT_IN_PROGRESS_STORAGE_KEY = "hnp-login-redirect-in-progress";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
@@ -101,17 +99,24 @@ const getPostLoginRoute = (router, activeUser) => {
   return defaultRoute;
 };
 
-const showAppShellLoading = () => {
+const prepareAuthenticatedLayoutEntrance = (target) => {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(LOGIN_SHELL_LOADING_STORAGE_KEY, "1");
-  window.dispatchEvent(new Event(LOGIN_SHELL_LOADING_EVENT));
+  if (target === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE || target.startsWith("/website/")) {
+    window.sessionStorage.removeItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY);
+    return;
+  }
+  window.sessionStorage.setItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY, "1");
 };
 
-const clearAppShellLoading = () => {
+const clearAuthenticatedLayoutEntrance = () => {
   if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(LOGIN_SHELL_LOADING_STORAGE_KEY);
-  window.dispatchEvent(new Event(LOGIN_SHELL_LOADING_EVENT));
+  window.sessionStorage.removeItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY);
 };
+
+const warmAuthenticatedShell = (userId) =>
+  import("@/lib/shell/bootstrapClient")
+    .then(({ getShellBootstrap }) => getShellBootstrap({ userKey: userId ?? null }))
+    .catch(() => null);
 
 const LoginCard = ({
   title,
@@ -155,7 +160,7 @@ const LoginCard = ({
         {subtitle &&
       <p
         style={{
-          color: "var(--text-1, #64748b)",
+          color: "var(--text-1)",
           fontSize: "0.95rem",
           margin: 0
         }}>
@@ -230,7 +235,7 @@ export default function LoginPage() {
   useTraceValue("login.sessionStatus", sessionStatus);
 
   useEffect(() => {
-    clearAppShellLoading();
+    clearAuthenticatedLayoutEntrance();
   }, []);
 
   useEffect(() => {
@@ -371,6 +376,7 @@ export default function LoginPage() {
     if (devLoginInProgressRef.current) return;
     devLoginInProgressRef.current = true;
     setRedirectInProgress(true);
+    setIsRedirecting(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -386,12 +392,18 @@ export default function LoginPage() {
       setErrorMessage("Developer Platform login is disabled in this environment.");
       devLoginInProgressRef.current = false;
       setRedirectInProgress(false);
+      setIsRedirecting(false);
       return;
     }
-    showAppShellLoading();
-    setIsRedirecting(true);
-    await router.replace("/dev");
+    prepareAuthenticatedLayoutEntrance("/dev");
+    await warmAuthenticatedShell("dev-platform");
+    const navigated = await router.replace("/dev");
     setRedirectInProgress(false);
+    if (!navigated) {
+      clearAuthenticatedLayoutEntrance();
+      setIsRedirecting(false);
+      setRedirectInProgress(false);
+    }
   }, [allowDevUserSelection, router, setRedirectInProgress]);
 
   // Developer login routes through NextAuth's credentials provider with the
@@ -415,6 +427,7 @@ export default function LoginPage() {
     }
     devLoginInProgressRef.current = true;
     setRedirectInProgress(true);
+    setIsRedirecting(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -444,24 +457,31 @@ export default function LoginPage() {
         setErrorMessage("Developer login failed. Session was not created.");
         devLoginInProgressRef.current = false;
         setRedirectInProgress(false);
+        setIsRedirecting(false);
         return;
       }
 
-      trace("login", "devLogin: signIn ok -> show shell loading");
-      showAppShellLoading();
-      setIsRedirecting(true);
-      // Resolve + lock the destination user's saved theme while the loading
-      // screen is showing, so the next page boots straight into it instead of
-      // changing colour again once /newsfeed has mounted.
+      trace("login", "devLogin: signIn ok -> prepare authenticated layout", target);
+      prepareAuthenticatedLayoutEntrance(target);
+      // Resolve the destination user's saved theme and shell data while the
+      // login view remains stable, so authenticated chrome can enter complete.
       void warmStaffLandingPage();
-      await commitUserTheme(numericId);
+      await Promise.all([
+        commitUserTheme(numericId),
+        warmAuthenticatedShell(numericId),
+      ]);
       // Client-side navigation keeps the app shell + providers mounted — no
       // full document reload. signIn() above already issued the JWT cookie and
       // broadcast a session update, so NextAuth's useSession picks up the new
       // user without a hard reload (same path as the email/password login).
       trace("login", "devLogin: router.replace", target);
-      await router.replace(target);
+      const navigated = await router.replace(target);
       setRedirectInProgress(false);
+      if (!navigated) {
+        clearAuthenticatedLayoutEntrance();
+        setIsRedirecting(false);
+        setRedirectInProgress(false);
+      }
       return;
     }
 
@@ -471,19 +491,25 @@ export default function LoginPage() {
       setErrorMessage("Developer login failed. Session was not created.");
       devLoginInProgressRef.current = false;
       setRedirectInProgress(false);
+      setIsRedirecting(false);
       return;
     }
 
-    trace("login", "devLogin (fallback): ok -> show shell loading", target);
-    showAppShellLoading();
-    setIsRedirecting(true);
-    // Lock the destination user's saved theme in before navigating so the
-    // colour settles once, on the loading screen.
+    trace("login", "devLogin (fallback): prepare authenticated layout", target);
+    prepareAuthenticatedLayoutEntrance(target);
     void warmStaffLandingPage();
-    await commitUserTheme(userId);
+    await Promise.all([
+      commitUserTheme(userId),
+      warmAuthenticatedShell(userId),
+    ]);
     trace("login", "devLogin (fallback): router.replace", target);
-    await router.replace(target);
+    const navigated = await router.replace(target);
     setRedirectInProgress(false);
+    if (!navigated) {
+      clearAuthenticatedLayoutEntrance();
+      setIsRedirecting(false);
+      setRedirectInProgress(false);
+    }
   };
 
   // Email/password login — routes through NextAuth CredentialsProvider
@@ -491,6 +517,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (redirectInProgressRef.current) return;
     setRedirectInProgress(true);
+    setIsRedirecting(true);
     setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -507,31 +534,40 @@ export default function LoginPage() {
       if (result?.error) {
         setErrorMessage("User not found or incorrect password.");
         setRedirectInProgress(false);
+        setIsRedirecting(false);
         return;
       }
 
       if (result?.ok) {
         const refreshedSession = await getSession();
         const resolvedTarget = getPostLoginRoute(router, refreshedSession?.user || null);
-        trace("login", "dbLogin: signIn ok -> show shell loading", resolvedTarget);
-        showAppShellLoading();
-        setIsRedirecting(true);
-        // Lock the destination user's saved theme in before navigating so the
-        // colour settles once, on the loading screen.
+        trace("login", "dbLogin: signIn ok -> prepare authenticated layout", resolvedTarget);
+        prepareAuthenticatedLayoutEntrance(resolvedTarget);
         if (resolvedTarget === DEFAULT_STAFF_POST_LOGIN_ROUTE) {
           void warmStaffLandingPage();
         }
-        await commitUserTheme();
+        await Promise.all([
+          commitUserTheme(),
+          warmAuthenticatedShell(refreshedSession?.user?.id),
+        ]);
         trace("login", "dbLogin: router.replace", resolvedTarget);
-        await router.replace(resolvedTarget);
+        const navigated = await router.replace(resolvedTarget);
         setRedirectInProgress(false);
+        if (!navigated) {
+          clearAuthenticatedLayoutEntrance();
+          setIsRedirecting(false);
+          setRedirectInProgress(false);
+        }
         return;
       }
       setRedirectInProgress(false);
+      setIsRedirecting(false);
     } catch (err) {
       console.error("Login error:", err);
       setErrorMessage("Login failed, please try again.");
+      clearAuthenticatedLayoutEntrance();
       setRedirectInProgress(false);
+      setIsRedirecting(false);
     }
   };
 
@@ -584,8 +620,8 @@ export default function LoginPage() {
   };
 
   // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in.
-  // While the redirect is in flight, the login page swaps in PageLoadingSkeleton so
-  // the user sees the global loading style instead of a flash of the login form.
+  // The login view stays mounted during the hand-off; the authenticated shell
+  // only appears once its identity and saved navigation are ready.
   useEffect(() => {
     // The /login screen is also one of the Presentation deck slides. There the
     // synthetic demo user is always present, so this post-login redirect must
@@ -602,7 +638,6 @@ export default function LoginPage() {
       username: activeUser.username,
       id: activeUser.id,
     });
-    showAppShellLoading();
     setIsRedirecting(true);
 
     const roles = [].
@@ -637,14 +672,22 @@ export default function LoginPage() {
 
     const target = getPostLoginRoute(router, activeUser);
     trace("login", "auto-redirect: commit theme, then router.replace", target);
-    // Lock the destination theme in before navigating so the colour settles
-    // once, on the loading screen, instead of after the next page mounts.
+    prepareAuthenticatedLayoutEntrance(target);
     if (!isCustomer) {
       void warmStaffLandingPage();
     }
-    commitUserTheme(activeUser.id).finally(() => {
+    Promise.all([
+      commitUserTheme(activeUser.id),
+      isCustomer ? Promise.resolve(null) : warmAuthenticatedShell(activeUser.id),
+    ]).finally(() => {
       trace("login", "auto-redirect: router.replace now", target);
-      router.replace(target).finally(() => setRedirectInProgress(false));
+      router.replace(target).then((navigated) => {
+        setRedirectInProgress(false);
+        if (navigated) return;
+        clearAuthenticatedLayoutEntrance();
+        setIsRedirecting(false);
+        setRedirectInProgress(false);
+      });
     });
   }, [user, session, sessionStatus, router, dbUserId, logoutInProgress, commitUserTheme, setRedirectInProgress]);
 
@@ -685,11 +728,7 @@ export default function LoginPage() {
     }
   }, [rosterLoading]);
 
-  if (isRedirecting) {
-    return <LoginPageUi view="section1" PageSkeleton={PageSkeleton} />;
-  }
-
-  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleDevPlatformSelect={handleDevPlatformSelect} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} handlePresentationSelect={handlePresentationSelect} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleDevPlatformSelect={handleDevPlatformSelect} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} handlePresentationSelect={handlePresentationSelect} isRedirecting={isRedirecting} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
 

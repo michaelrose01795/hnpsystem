@@ -359,7 +359,7 @@ export default function DevSidebarAccess() {
                         <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
                           {userDisplayName(user)}
                         </span>
-                        <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
+                        <span style={{ fontSize: "var(--text-caption)", opacity: 0.7 }}>
                           {user.role || "No role"}{user.sidebarAccess ? " - customised" : ""}
                         </span>
                       </span>
@@ -452,7 +452,7 @@ export default function DevSidebarAccess() {
                     Restore own role default
                   </DevButton>
                 </div>
-                <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                   This controls sidebar visibility. Existing page and API role guards remain in force.
                 </div>
                 {saveError ? (
@@ -496,7 +496,7 @@ export default function DevSidebarAccess() {
                         style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left", padding: "8px 12px" }}
                       >
                         <span>{bundle.label}</span>
-                        <span style={{ fontSize: "var(--text-body-xs)", opacity: 0.7 }}>
+                        <span style={{ fontSize: "var(--text-caption)", opacity: 0.7 }}>
                           {assigned
                             ? availableCount > 0
                               ? `Add ${availableCount} missing`
@@ -615,7 +615,7 @@ export default function DevSidebarAccess() {
                         />
                         <span style={{ minWidth: 0 }}>
                           <span style={{ display: "block", fontWeight: 600 }}>{item.label}</span>
-                          <span style={{ display: "block", fontSize: "var(--text-body-xs)", opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span style={{ display: "block", fontSize: "var(--text-caption)", opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {owner ? `Already in ${owner.label}` : item.href}
                           </span>
                         </span>

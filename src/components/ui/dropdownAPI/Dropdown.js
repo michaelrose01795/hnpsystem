@@ -94,6 +94,7 @@ export default function Dropdown({
   value,
   onChange,
   disabled = false,
+  hasError = false,
   helperText = "",
   className = "",
   size = "md",
@@ -381,6 +382,7 @@ export default function Dropdown({
     isOpen ? "is-open" : "",
     selectedOption ? "has-value" : "",
     size === "sm" ? "dropdown-api--sm" : "",
+    hasError ? "is-error" : "",
     className,
   ]
     .filter(Boolean)

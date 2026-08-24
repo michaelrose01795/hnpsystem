@@ -51,7 +51,7 @@ const inputStyle = {
 function Field({ label, children }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+      <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
         {label}
       </span>
       {children}
@@ -279,7 +279,7 @@ function KnowledgeView() {
             </Field>
             {form.fingerprint && (
               <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>Linked incident:</span>
+                <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>Linked incident:</span>
                 <Pill label={form.fingerprint} tone="accentText" />
                 <DevButton small onClick={() => set({ fingerprint: "" })}>Clear link</DevButton>
               </div>

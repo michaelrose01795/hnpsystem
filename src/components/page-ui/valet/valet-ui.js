@@ -166,7 +166,7 @@ export default function ValetDashboardUi(props) {
           </DevLayoutSection> : filteredJobs.length === 0 ? <DevLayoutSection data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
       padding: "60px 0",
       textAlign: "center",
-      color: "var(--grey-accent-light)",
+      color: "var(--surfaceTextMuted)",
       fontSize: "16px"
     }}>
             {selectedDay ? `No valet jobs found for ${formatDateOnlyLabel(selectedDay)}.` : "No jobs requiring wash were found."}

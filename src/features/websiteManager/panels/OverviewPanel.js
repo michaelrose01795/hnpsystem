@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
 import { fetchSection } from "../websiteApi";
 import { fetchProducts, fetchOrders } from "../shopApi";
@@ -201,16 +202,16 @@ export default function OverviewPanel({
             onChange={(e) => setQuery(e.target.value)}
             style={{ flex: "1 1 220px", minWidth: 200 }}
           />
-          <select
-            className="app-input"
+          <DropdownField
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "published", label: "Published only" },
+              { value: "draft", label: "Draft only" },
+            ]}
             style={{ flex: "0 0 auto", minWidth: 160 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="published">Published only</option>
-            <option value="draft">Draft only</option>
-          </select>
+          />
         </div>
 
         {filteredPages.length === 0 ? (

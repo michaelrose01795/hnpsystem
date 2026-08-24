@@ -91,7 +91,7 @@ const statusChipStyle = (variant = "scheduled") => {
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.18)", color: "var(--danger-dark)" },
     en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
-    completed: { background: "rgba(var(--success-rgb, 34,139,34),0.2)", color: "var(--success, #297C3B)" }
+    completed: { background: "rgba(var(--success-rgb, 34,139,34),0.2)", color: "var(--success)" }
   };
   return {
     padding: "4px 12px",
@@ -110,7 +110,7 @@ const paidPillStyle = (isPaid) => ({
   fontWeight: 600,
   fontSize: "0.75rem",
   background: isPaid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.18)",
-  color: isPaid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+  color: isPaid ? "var(--success)" : "var(--danger-dark)"
 });
 
 const modalOverlayStyle = {
@@ -210,7 +210,7 @@ const collectionLoadTokens = {
   full: {
     label: "At capacity",
     background: "rgba(var(--danger-rgb,220,38,38),0.12)",
-    color: "var(--danger, #C62828)"
+    color: "var(--danger)"
   }
 };
 
@@ -1549,7 +1549,7 @@ function DeliveryJobModal({
                   padding: "8px 14px",
                   cursor: "pointer",
                   background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.12)" : "var(--danger-surface)",
-                  color: job.is_paid ? "var(--success, #297C3B)" : "var(--primary-selected)",
+                  color: job.is_paid ? "var(--success)" : "var(--primary-selected)",
                   fontWeight: 600
                 }}>
                 
@@ -1759,7 +1759,7 @@ function DeliveryJobModal({
                 borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary)",
-                color: "var(--surface)",
+                color: "var(--onAccentText)",
                 padding: "10px 18px",
                 fontWeight: 600,
                 cursor: "pointer",

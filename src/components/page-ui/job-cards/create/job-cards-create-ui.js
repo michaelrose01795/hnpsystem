@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/job-cards/create/job-cards-create-ui.js
 import { useState } from "react";
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface";
+import BufferedInput from "@/components/ui/BufferedInput"; // local-state text input; notifies the parent on a debounce (flushes on blur)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
@@ -523,7 +524,7 @@ export default function CreateJobCardPageUi(props) {
                           <label htmlFor={input.type === "multi-select" ? undefined : `customer-${input.field}`}>
                             {input.label}
                           </label>
-                          {input.type === "textarea" ? <textarea id={`customer-${input.field}`} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={3} className="app-input app-input--textarea" /> : input.type === "multi-select" ? <div style={{
+                          {input.type === "textarea" ? <BufferedInput as="textarea" id={`customer-${input.field}`} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={3} className="app-input app-input--textarea" /> : input.type === "multi-select" ? <div style={{
                   display: "flex",
                   gap: "8px",
                   flexWrap: "wrap",
@@ -535,7 +536,7 @@ export default function CreateJobCardPageUi(props) {
                                      {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
                                    </Button>;
                   })}
-                            </div> : <input id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={e => handleCustomerFieldChange(input.field, e.target.value)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
+                            </div> : <BufferedInput id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
                         </div>)}
                     </div> : <div className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
               display: "grid",
@@ -752,7 +753,7 @@ export default function CreateJobCardPageUi(props) {
                     </button>)}
                 </div>
               </div>
-              {cosmeticDamagePresent && <textarea value={cosmeticNotes} onChange={e => setCosmeticNotes(e.target.value)} placeholder="Describe any scratches, dents, or cosmetic damage..." className="app-input app-input--textarea cosmetic-notes-active" />}
+              {cosmeticDamagePresent && <BufferedInput as="textarea" value={cosmeticNotes} onChange={next => setCosmeticNotes(next)} placeholder="Describe any scratches, dents, or cosmetic damage..." className="app-input app-input--textarea cosmetic-notes-active" />}
             </LayerTheme>
             <LayerTheme sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"

@@ -55,7 +55,7 @@ function Breakdown({ title, subtitle, map, labels, tones }) {
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)" }}
             >
               <Pill label={(labels && labels[key]) || key} tone={(tones && tones[key]) || "text-1"} strong />
-              <span style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--text-1)", fontFamily: "var(--font-mono, ui-monospace, monospace)" }}>
+              <span style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--text-1)", fontFamily: "var(--font-family-mono)" }}>
                 {count}
               </span>
             </SubSurface>

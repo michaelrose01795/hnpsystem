@@ -149,6 +149,7 @@ function TimelineCard({ item, isCompact, isEvent, isHighlighted, performer, isGr
 
   return (
     <LayerSurface
+      className={`job-tracker__card${isGroupChild ? " job-tracker__card--group-row" : ""}`}
       radius="var(--radius-xs)"
       padding="10px 12px"
       gap="6px"
@@ -178,7 +179,7 @@ function TimelineCard({ item, isCompact, isEvent, isHighlighted, performer, isGr
         >
           {displayTitle}
           <span
-            className={`app-badge ${isEvent ? "app-badge--accent-soft" : "app-badge--neutral"}`}
+            className={`app-badge job-tracker__row-status ${isEvent ? "app-badge--accent-soft" : "app-badge--neutral"}`}
             style={{
               textTransform: "uppercase",
               whiteSpace: "nowrap",
@@ -202,7 +203,7 @@ function TimelineCard({ item, isCompact, isEvent, isHighlighted, performer, isGr
           }}
         >
           <span style={{ fontWeight: 600 }}>{performerLabel}</span>
-          <span style={{ color: "var(--grey-accent-light)" }}>·</span>
+          <span style={{ color: "var(--surfaceTextMuted)" }}>·</span>
           <span>{formatTimestamp(item?.timestamp)}</span>
         </div>
 
@@ -271,7 +272,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
             left: isCompact ? "17px" : "24px",
             top: 0,
             width: "2.5px", // Thicker connector
-            height: "50%",
+            height: "22px",
             backgroundColor: connectorColor,
             zIndex: 1,
           }}
@@ -282,8 +283,9 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
       <span
         style={{
           position: "absolute",
-          left: isCompact ? "11px" : "18px",
-          top: "14px", // Position dot near the group header text
+          left: isCompact ? "17px" : "24px",
+          top: "22px", // Locked to the centre of the 44px group button
+          transform: "translate(-50%, -50%)",
           width: isCompact ? "12px" : "14px",
           height: isCompact ? "12px" : "14px",
           borderRadius: "var(--radius-full)",
@@ -300,9 +302,9 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
           style={{
             position: "absolute",
             left: isCompact ? "17px" : "24px",
-            top: "50%",
+            top: "22px",
+            bottom: isCompact ? "-4px" : "-6px",
             width: "2.5px", // Thicker connector
-            height: "calc(100% + 8px)",
             backgroundColor: connectorColor,
             zIndex: 1,
           }}
@@ -311,24 +313,18 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
 
       {/* Group header — clickable to expand/collapse */}
       <button
+        type="button"
         onClick={onToggle}
-        className="app-btn app-btn--sm app-btn--secondary"
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "8px",
-          boxShadow: group.phaseColor ? `inset 3px 0 0 0 ${group.phaseColor}` : "none",
-          fontFamily: "var(--font-family)",
-          textAlign: "left",
-        }}
+        className="app-btn app-btn--secondary job-tracker__group-button"
+        aria-expanded={isExpanded}
+        style={{ "--job-tracker-phase-color": group.phaseColor || "transparent" }}
       >
-        <span>{group.groupLabel}</span>
+        <span className="job-tracker__group-button-label">{group.groupLabel}</span>
         <span
+          aria-hidden="true"
+          className="job-tracker__group-chevron"
           style={{
             fontSize: "12px",
-            color: "var(--grey-accent)",
             transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
             transition: "transform 0.2s ease",
           }}
@@ -340,6 +336,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
       {/* Expanded group children */}
       {isExpanded && group.items && (
         <div
+          className="job-tracker__group-rows"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -584,6 +581,7 @@ export default function JobProgressTracker({
 
       {/* Timeline content grows naturally; the Job Tracker sidebar owns scrolling. */}
       <div
+        className={`job-tracker__timeline${isCompact ? " job-tracker__timeline--compact" : ""}`}
         style={{
           position: "relative",
           flex: "0 0 auto",
@@ -653,7 +651,7 @@ export default function JobProgressTracker({
                     left: isCompact ? "17px" : "24px",
                     top: 0,
                     width: "2.5px", // Thicker connector line
-                    height: "50%",
+                    height: "22px",
                     backgroundColor: connectorColor,
                     zIndex: 1,
                   }}
@@ -664,9 +662,9 @@ export default function JobProgressTracker({
               <span
                 style={{
                   position: "absolute",
-                  left: isCompact ? "11px" : "18px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
+                  left: isCompact ? "17px" : "24px",
+                  top: "22px",
+                  transform: "translate(-50%, -50%)",
                   width: isCompact ? "12px" : "14px",
                   height: isCompact ? "12px" : "14px",
                   borderRadius: "var(--radius-full)",
@@ -686,9 +684,9 @@ export default function JobProgressTracker({
                   style={{
                     position: "absolute",
                     left: isCompact ? "17px" : "24px",
-                    top: "50%",
+                    top: "22px",
+                    bottom: isCompact ? "-4px" : "-6px",
                     width: "2.5px", // Thicker connector line
-                    height: isCompact ? "calc(100% + 8px)" : "calc(100% + 10px)",
                     backgroundColor: connectorColor,
                     zIndex: 1,
                   }}

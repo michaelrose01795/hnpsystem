@@ -255,6 +255,18 @@ export const deleteFloatingNote = async (noteId) => {
     return { success: false, error: { message: "A valid note id is required" } };
   }
 
+  // The schema does not currently cascade floating_note_shares when its note
+  // is deleted, so clear those dependent rows first to avoid orphaned shares.
+  const { error: shareDeleteError } = await supabase
+    .from(SHARE_TABLE)
+    .delete()
+    .eq("note_id", numericNoteId);
+
+  if (shareDeleteError) {
+    console.error("Failed to clear floating note shares:", shareDeleteError);
+    return { success: false, error: { message: shareDeleteError.message } };
+  }
+
   const noteIdColumn = await resolveNoteIdColumn();
   const { error } = await supabase.from(TABLE).delete().eq(noteIdColumn, numericNoteId);
 
