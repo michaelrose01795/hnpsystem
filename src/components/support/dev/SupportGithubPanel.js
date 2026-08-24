@@ -102,7 +102,7 @@ export default function SupportGithubPanel({ reportId, report }) {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontSize: "var(--text-body-xs)",
+                fontSize: "var(--text-caption)",
                 color: "var(--accentText)",
                 background: "color-mix(in srgb, var(--accentText) 10%, transparent)",
                 borderRadius: "var(--radius-sm, 6px)",

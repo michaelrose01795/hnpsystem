@@ -1,0 +1,46 @@
+/* Login-only shell assembly. Transform/opacity animations stay composited, so
+   the established layout geometry and shared design system do not shift. */
+.topbarEntrance {
+  animation: topbar-entrance 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.sidebarEntrance {
+  animation: sidebar-entrance 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.contentEntrance {
+  animation: content-entrance 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes topbar-entrance {
+  from {
+    opacity: 0.82;
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes sidebar-entrance {
+  from {
+    opacity: 0.82;
+    transform: translate3d(-14px, 0, 0);
+  }
+}
+
+@keyframes content-entrance {
+  from {
+    opacity: 0.86;
+    transform: translate3d(0, 12px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbarEntrance,
+  .sidebarEntrance,
+  .contentEntrance {
+    animation: none;
+    will-change: auto;
+  }
+}

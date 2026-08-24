@@ -12,6 +12,7 @@ import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import SectionEditor from "../editors/SectionEditor";
 import {
   PRODUCT_SCHEMA,
@@ -334,17 +335,12 @@ function OrdersTab() {
                   <td style={{ ...cellStyle, color: "var(--text-1)" }}>{o.contact_email}</td>
                   <td style={cellStyle}>{formatGbp(o.total_pence)}</td>
                   <td style={cellStyle}>
-                    <select
-                      className="app-input"
+                    <DropdownField
                       value={o.status}
                       onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                    >
-                      {ORDER_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      options={ORDER_STATUSES}
+                      size="sm"
+                    />
                   </td>
                   <td style={cellStyle}>
                     <Button

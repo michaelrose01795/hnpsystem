@@ -9,8 +9,8 @@ const buttonStyle = {
   padding: "10px 16px",
   borderRadius: "var(--control-radius, 8px)",
   border: "none",
-  background: "var(--warning, #f59e0b)",
-  color: "#fff",
+  background: "var(--warning)",
+  color: "var(--onAccentText)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -26,7 +26,7 @@ const modalOverlayStyle = {
 };
 
 const modalStyle = {
-  background: "var(--surface, #fff)",
+  background: "var(--surface)",
   padding: "20px",
   borderRadius: "var(--radius-lg, 12px)",
   width: "min(480px, 92vw)",
@@ -85,7 +85,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--input-ring)" }}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--input-ring-color)" }}
                 placeholder="e.g. part not available on van, vehicle requires ramp access"
               />
             </label>

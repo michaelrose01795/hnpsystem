@@ -1075,7 +1075,7 @@ function SchedulerBoard({
         }
         .appt-sched-slot-overflow-btn:hover {
           background: var(--primary);
-          color: var(--surface);
+          color: var(--onAccentText);
         }
 
         /* Overflow modal */
@@ -1344,7 +1344,7 @@ export default function AppointmentsUi(props) {
               <option value="month">Month view</option>
               <option value="day">Day view</option>
             </DropdownField>
-            <input type="text" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} />
+            <input type="text" className="app-input" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} />
             <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time" options={timeSlots} />
             <Button variant="secondary" onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
               {isLoading ? "Booking..." : "Book Appointment"}
@@ -1636,7 +1636,7 @@ export default function AppointmentsUi(props) {
                       <td colSpan="9" style={{
                         padding: "40px",
                         textAlign: "center",
-                        color: "var(--grey-accent-light)",
+                        color: "var(--surfaceTextMuted)",
                         fontSize: "14px",
                         background: "var(--section-card-bg)"
                       }}>
@@ -1826,7 +1826,7 @@ export default function AppointmentsUi(props) {
                 <div style={{
                     fontSize: "20px",
                     marginBottom: "8px",
-                    color: "var(--grey-accent-light)",
+                    color: "var(--surfaceTextMuted)",
                     fontWeight: "300"
                   }}>—</div>
                 No approved absences for this day

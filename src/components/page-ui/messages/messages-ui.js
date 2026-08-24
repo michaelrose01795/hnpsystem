@@ -240,7 +240,7 @@ export default function MessagesPageUi(props) {
             {threadSelectionMode ? <>
                 <span style={{
             color: "var(--text-2)",
-            fontSize: "var(--text-small)",
+            fontSize: "var(--text-body-sm)",
             fontWeight: 700,
             whiteSpace: "nowrap"
           }}>
@@ -462,7 +462,7 @@ export default function MessagesPageUi(props) {
                       justifyContent: "center",
                       borderRadius: "var(--radius-full)",
                       backgroundColor: palette.accent,
-                      color: "var(--surface)",
+                      color: "var(--onAccentText)",
                       fontSize: "10px",
                       fontWeight: 700,
                       flex: "0 0 auto"
@@ -989,14 +989,9 @@ export default function MessagesPageUi(props) {
                         ×
                       </Button>
                     </div>}
-                  <textarea id="message-textarea" rows={3} value={messageDraft} onChange={handleMessageDraftChange} placeholder="Write an internal update… (type / for commands)" style={{
+                  <textarea id="message-textarea" className="app-input" rows={3} value={messageDraft} onChange={handleMessageDraftChange} placeholder="Write an internal update… (type / for commands)" style={{
               width: "100%",
-              borderRadius: radii.lg,
-              border: "none",
-              outline: "none",
-              padding: "12px 14px",
-              resize: "none",
-              backgroundColor: "var(--surface)"
+              resize: "none"
             }} />
                   <div style={{
               display: "flex",

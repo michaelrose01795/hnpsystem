@@ -1358,7 +1358,8 @@ export default function TechJobDetailPageUi(props) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: "16px"
+            gap: "16px",
+            paddingBlock: "10px" // Exact inset requested for this compact completed-VHC banner.
           }}>
                   <div>
                     <h2 className="vhc-toolbar__title">VHC Completed</h2>
@@ -1373,30 +1374,13 @@ export default function TechJobDetailPageUi(props) {
               alignItems: "center",
               gap: "10px"
             }}>
-                    <span
-                      title={vhcCustomerStatusMeta.detail}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 10px",
-                        borderRadius: "var(--control-radius)",
-                        backgroundColor: vhcCustomerStatusMeta.background,
-                        color: "var(--text-1)",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        textTransform: "uppercase"
-                      }}
-                    >
-                      Customer VHC: {vhcCustomerStatusMeta.label}
-                    </span>
-                    <CustomerVideoButton jobNumber={jobNumber} userId={dbUserId || user?.id} vhcContextLabel={activeSection || "vhc-summary"} vhcData={vhcData} onUploadComplete={() => {
+                    <CustomerVideoButton jobNumber={jobNumber} userId={dbUserId || user?.id} vhcContextLabel={activeSection || "vhc-summary"} vhcData={vhcData} buttonClassName="app-btn app-btn--primary app-btn--sm" onUploadComplete={() => {
                 fetchJobData();
                 bumpGallery();
               }} />
-                    <button type="button" className="vhc-btn" onClick={handleCompleteVhcClick}>
+                    <Button type="button" variant="secondary" size="sm" onClick={handleCompleteVhcClick}>
                       Reopen VHC
-                    </button>
+                    </Button>
                   </div>
                 </DevLayoutSection> : <>
                   {/* VHC Header with Save Status */}

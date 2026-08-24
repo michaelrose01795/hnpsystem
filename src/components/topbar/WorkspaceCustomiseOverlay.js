@@ -44,7 +44,7 @@ export default function WorkspaceCustomiseOverlay({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "16px" }}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accent)" }}>
+        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accentText)" }}>
           Customise workspace
         </h2>
         <button type="button" onClick={onClose} className="app-btn app-btn--ghost" aria-label="Close customise">

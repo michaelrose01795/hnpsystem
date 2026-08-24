@@ -217,19 +217,19 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Income"}
       subtitle="Selected month and year totals after tax"
-      accent="var(--success, #2e7d32)"
+      accent="var(--success)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <SummaryBlock
             label={`TOTAL AFTER TAX (${String(finance.model.selectedFinanceYear || "").toUpperCase()})`}
             value={formatCurrency(year.totalAfterTax)}
-            accent="var(--success, #2e7d32)"
+            accent="var(--success)"
           />
           <SummaryBlock
             label={`${String(monthLabel || "").toUpperCase()} TOTAL AFTER TAX`}
             value={formatCurrency(month.pay.afterTaxIncome)}
-            accent="var(--success, #2e7d32)"
+            accent="var(--success)"
           />
         </div>
       }
@@ -239,10 +239,10 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Year totals (Linked)</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill label="Tax" value={formatCurrency(year.totalTax)} accent="var(--danger, #c62828)" />
-              <MetricPill label="NI" value={formatCurrency(year.totalNationalInsurance)} accent="var(--danger, #c62828)" />
-              <MetricPill label="Hours worked" value={`${Number(year.hoursWorked || 0).toFixed(1)}h`} accent="var(--info, #1565c0)" />
-              <MetricPill label="Overtime" value={`${Number(year.overtimeHours || 0).toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
+              <MetricPill label="Tax" value={formatCurrency(year.totalTax)} accent="var(--danger)" />
+              <MetricPill label="NI" value={formatCurrency(year.totalNationalInsurance)} accent="var(--danger)" />
+              <MetricPill label="Hours worked" value={`${Number(year.hoursWorked || 0).toFixed(1)}h`} accent="var(--info)" />
+              <MetricPill label="Overtime" value={`${Number(year.overtimeHours || 0).toFixed(1)}h`} accent="var(--warning)" />
             </div>
           </div>
         </SurfacePanel>
@@ -285,7 +285,7 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
                   rightLabel="Overtime total"
                   rightValue={formatCurrency(month.pay.overtimePay)}
                 />
-                <MetricPill label="Other income" value={formatCurrency(month.totals.classicIncome)} accent="var(--info, #1565c0)" />
+                <MetricPill label="Other income" value={formatCurrency(month.totals.classicIncome)} accent="var(--info)" />
                 <InlineValuePair
                   leftLabel="Tax"
                   leftValue={formatCurrency(month.pay.tax)}
@@ -315,7 +315,7 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
             {(month.monthState.incomeAdjustments || 0) !== 0 ? (
               <DataRow label="Adjustment" value={formatCurrency(month.monthState.incomeAdjustments)} muted />
             ) : null}
-            <MetricPill label="Total after tax" value={formatCurrency(month.pay.afterTaxIncome)} accent="var(--success, #2e7d32)" />
+            <MetricPill label="Total after tax" value={formatCurrency(month.pay.afterTaxIncome)} accent="var(--success)" />
           </div>
         </SurfacePanel>
 
@@ -349,29 +349,29 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Work / Hours"}
       subtitle="Worked hours and overtime this month"
-      accent="var(--warning, #ef6c00)"
+      accent="var(--warning)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <SummaryBlock
             label="Total worked"
             value={`${totalWorkedHours.toFixed(1)}h`}
-            accent="var(--info, #1565c0)"
+            accent="var(--info)"
           />
           <SummaryBlock
             label="Total pay after tax"
             value={formatCurrency(month.pay.afterTaxIncome)}
-            accent="var(--success, #2e7d32)"
+            accent="var(--success)"
           />
           <SummaryBlock
             label="Total overtime"
             value={`${month.pay.overtimeHours.toFixed(1)}h`}
-            accent="var(--warning, #ef6c00)"
+            accent="var(--warning)"
           />
           <SummaryBlock
             label="Total overtime pay (before tax)"
             value={formatCurrency(month.pay.overtimePay)}
-            accent="var(--warning, #ef6c00)"
+            accent="var(--warning)"
           />
         </div>
       }
@@ -381,13 +381,13 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Linked summary</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill label="Attendance logged" value={month.pay.attendanceWorkedHours !== null ? `${month.pay.attendanceWorkedHours.toFixed(1)}h` : "—"} accent="var(--info, #1565c0)" />
-              <MetricPill label="Total OT hour" value={`${month.pay.overtimeHours.toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
-              <MetricPill label="Base pay (before tax)" value={formatCurrency(month.pay.basePay)} accent="var(--success, #2e7d32)" />
+              <MetricPill label="Attendance logged" value={month.pay.attendanceWorkedHours !== null ? `${month.pay.attendanceWorkedHours.toFixed(1)}h` : "—"} accent="var(--info)" />
+              <MetricPill label="Total OT hour" value={`${month.pay.overtimeHours.toFixed(1)}h`} accent="var(--warning)" />
+              <MetricPill label="Base pay (before tax)" value={formatCurrency(month.pay.basePay)} accent="var(--success)" />
               <MetricPill label="OT rate" value={formatCurrency(month.pay.overtimeRate)} accent="var(--text-1)" />
             </div>
             {month.pay.leaveDaysInMonth > 0 ? (
-              <DataRow label="Leave days this month" value={`${month.pay.leaveDaysInMonth}d`} accent="var(--info, #1565c0)" />
+              <DataRow label="Leave days this month" value={`${month.pay.leaveDaysInMonth}d`} accent="var(--info)" />
             ) : null}
           </div>
         </SurfacePanel>
@@ -428,13 +428,13 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Outgoings"}
       subtitle="Fixed costs, planned payments, and card impact"
-      accent="var(--danger, #c62828)"
+      accent="var(--danger)"
       onOpenSettings={onOpenSettings}
       headline={
         <Headline
           label="Total outgoings"
           value={formatCurrency(month.totals.totalOut)}
-          accent="var(--danger, #c62828)"
+          accent="var(--danger)"
         />
       }
     >
@@ -451,8 +451,8 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
                   : "repeat(4, minmax(0, 1fr))",
               }}
             >
-              <MetricPill label="Fixed" value={formatCurrency(month.totals.fixedOut)} accent="var(--danger, #c62828)" />
-              <MetricPill label="Planned" value={formatCurrency(month.totals.plannedOut)} accent="var(--warning, #ef6c00)" />
+              <MetricPill label="Fixed" value={formatCurrency(month.totals.fixedOut)} accent="var(--danger)" />
+              <MetricPill label="Planned" value={formatCurrency(month.totals.plannedOut)} accent="var(--warning)" />
               <MetricPill label="Card payments" value={formatCurrency(month.totals.creditCardOut)} accent="var(--accent-purple)" />
               <MetricPill label="Card balances" value={formatCurrency(month.totals.totalCardBalances)} accent="var(--accent-purple)" />
             </div>
@@ -529,19 +529,19 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Savings"}
       subtitle="Accounts, balances, and monthly activity"
-      accent="var(--info, #1565c0)"
+      accent="var(--info)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <SummaryBlock
             label="TOTAL BALANCE"
             value={formatCurrency(totalBalance)}
-            accent="var(--info, #1565c0)"
+            accent="var(--info)"
           />
           <SummaryBlock
             label="SAVED THIS MONTH"
             value={formatCurrency(month.totals.savingsTotal)}
-            accent="var(--success, #2e7d32)"
+            accent="var(--success)"
           />
         </div>
       }
@@ -576,7 +576,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
                         <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-1)" }}>{formatCurrency(group.currentBalance)}</span>
                         {group.monthActivity !== 0 ? (
-                          <span style={{ fontSize: "0.66rem", fontWeight: 600, color: group.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+                          <span style={{ fontSize: "0.66rem", fontWeight: 600, color: group.monthActivity > 0 ? "var(--success)" : "var(--danger)" }}>
                             {group.monthActivity > 0 ? "+" : ""}{formatCurrency(group.monthActivity)} this month
                           </span>
                         ) : (
@@ -621,7 +621,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                     <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
                       <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-1)" }}>{formatCurrency(account.currentBalance)}</span>
                       {account.monthActivity !== 0 ? (
-                        <span style={{ fontSize: "0.66rem", fontWeight: 600, color: account.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+                        <span style={{ fontSize: "0.66rem", fontWeight: 600, color: account.monthActivity > 0 ? "var(--success)" : "var(--danger)" }}>
                           {account.monthActivity > 0 ? "+" : ""}{formatCurrency(account.monthActivity)} this month
                         </span>
                       ) : (
@@ -716,13 +716,13 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
     <BaseWidget
       title={widget.config?.title || "Payments"}
       subtitle="Monthly payment summary against after-tax income"
-      accent="var(--warning, #ef6c00)"
+      accent="var(--warning)"
       onOpenSettings={onOpenSettings}
       headline={
         <Headline
           label="Total payments this month"
           value={formatCurrency(totalPayments)}
-          accent="var(--warning, #ef6c00)"
+          accent="var(--warning)"
         />
       }
     >
@@ -745,7 +745,7 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
             <DataRow
               label={moneyLeftAfterPayments >= 0 ? "Remaining after payments" : "Over after payments"}
               value={formatCurrency(Math.abs(moneyLeftAfterPayments))}
-              accent={moneyLeftAfterPayments >= 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+              accent={moneyLeftAfterPayments >= 0 ? "var(--success)" : "var(--danger)"}
             />
           </div>
         </SurfacePanel>
@@ -768,19 +768,19 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Fuel"}
       subtitle="Monthly fuel costs, litres, and average pump price"
-      accent="var(--warning, #ff8f00)"
+      accent="var(--warning)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <Headline
             label="Total fuel"
             value={formatCurrency(month.totals.fuelTotal || 0)}
-            accent="var(--warning, #ff8f00)"
+            accent="var(--warning)"
           />
           <Headline
             label="Total litres"
             value={`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`}
-            accent="var(--info, #1565c0)"
+            accent="var(--info)"
             size="medium"
           />
         </div>
@@ -791,12 +791,12 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Summary (Linked)</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              <MetricPill label="Spend" value={formatCurrency(month.totals.fuelTotal || 0)} accent="var(--warning, #ff8f00)" />
-              <MetricPill label="Litres" value={`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`} accent="var(--info, #1565c0)" />
+              <MetricPill label="Spend" value={formatCurrency(month.totals.fuelTotal || 0)} accent="var(--warning)" />
+              <MetricPill label="Litres" value={`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`} accent="var(--info)" />
               <MetricPill
                 label="Avg / litre"
                 value={month.totals.fuelAverageCostPerLitre > 0 ? `${Number(month.totals.fuelAverageCostPerLitre).toFixed(3)}` : "—"}
-                accent="var(--success, #2e7d32)"
+                accent="var(--success)"
               />
             </div>
           </div>
@@ -1053,19 +1053,19 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
     <BaseWidget
       title={widget.config?.title || "Holiday"}
       subtitle="Leave balances from the Work tab"
-      accent="var(--info, #00838f)"
+      accent="var(--info)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <Headline
             label="Days taken"
             value={`${leaveStats.workDaysTaken.toFixed(1)}d`}
-            accent="var(--warning, #ef6c00)"
+            accent="var(--warning)"
           />
           <Headline
             label="Holiday costs"
             value={formatCurrency(holidayCostTotal)}
-            accent="var(--info, #00838f)"
+            accent="var(--info)"
             size="medium"
           />
         </div>
@@ -1076,10 +1076,10 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Summary (Linked)</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill label="Work days" value={`${leaveStats.workDaysTaken.toFixed(1)}d`} accent="var(--warning, #ef6c00)" />
-              <MetricPill label="Calendar days" value={`${leaveStats.calendarDaysTaken.toFixed(0)}d`} accent="var(--info, #00838f)" />
-              <MetricPill label="Remaining" value={leaveStats.remaining ?? "—"} accent="var(--success, #2e7d32)" />
-              <MetricPill label="Cost this month" value={formatCurrency(holidayCostThisMonth)} accent="var(--info, #1565c0)" />
+              <MetricPill label="Work days" value={`${leaveStats.workDaysTaken.toFixed(1)}d`} accent="var(--warning)" />
+              <MetricPill label="Calendar days" value={`${leaveStats.calendarDaysTaken.toFixed(0)}d`} accent="var(--info)" />
+              <MetricPill label="Remaining" value={leaveStats.remaining ?? "—"} accent="var(--success)" />
+              <MetricPill label="Cost this month" value={formatCurrency(holidayCostThisMonth)} accent="var(--info)" />
             </div>
           </div>
         </SurfacePanel>
@@ -1144,7 +1144,7 @@ export function CustomWidget({ widget, widgetData, onOpenSettings }) {
       headline={
         <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <MetricPill label="Amount" value={formatCurrency(amount)} accent="var(--accent-purple)" />
-          <MetricPill label="Target" value={formatCurrency(target)} accent="var(--info, #1565c0)" />
+          <MetricPill label="Target" value={formatCurrency(target)} accent="var(--info)" />
         </div>
       }
     >
@@ -1183,7 +1183,7 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
     <BaseWidget
       title={widget.config?.title || "Net Position"}
       subtitle="What you keep after all income and outgoings"
-      accent={positive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+      accent={positive ? "var(--success)" : "var(--danger)"}
       monthLabel={finance.model.selectedMonthKey}
       onOpenSettings={onOpenSettings}
       headline={
@@ -1191,7 +1191,7 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
           <Headline
             label="Money left"
             value={formatCurrency(month.totals.difference)}
-            accent={positive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+            accent={positive ? "var(--success)" : "var(--danger)"}
           />
           <Headline
             label="After tax"
@@ -1207,9 +1207,9 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Breakdown (Linked)</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              <MetricPill label="Total in" value={formatCurrency(month.totals.totalIn)} accent="var(--success, #2e7d32)" />
-              <MetricPill label="Total out" value={formatCurrency(month.totals.totalOut)} accent="var(--danger, #c62828)" />
-              <MetricPill label="Savings" value={formatCurrency(month.totals.savingsTotal)} accent="var(--info, #1565c0)" />
+              <MetricPill label="Total in" value={formatCurrency(month.totals.totalIn)} accent="var(--success)" />
+              <MetricPill label="Total out" value={formatCurrency(month.totals.totalOut)} accent="var(--danger)" />
+              <MetricPill label="Savings" value={formatCurrency(month.totals.savingsTotal)} accent="var(--info)" />
             </div>
           </div>
         </SurfacePanel>
@@ -1221,7 +1221,7 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
             <DataRow
               label="Change"
               value={formatCurrency(delta)}
-              accent={delta >= 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+              accent={delta >= 0 ? "var(--success)" : "var(--danger)"}
             />
           </div>
         </SurfacePanel>
@@ -1229,14 +1229,14 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
         <SurfacePanel style={sectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Year to date ({finance.model.selectedFinanceYear})</SectionLabel>
-            <DataRow label="Year income" value={formatCurrency(year.totalIn)} accent="var(--success, #2e7d32)" />
-            <DataRow label="Year outgoings" value={formatCurrency(year.totalOut)} accent="var(--danger, #c62828)" />
+            <DataRow label="Year income" value={formatCurrency(year.totalIn)} accent="var(--success)" />
+            <DataRow label="Year outgoings" value={formatCurrency(year.totalOut)} accent="var(--danger)" />
             <DataRow
               label="Year difference"
               value={formatCurrency(year.difference)}
-              accent={year.difference >= 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+              accent={year.difference >= 0 ? "var(--success)" : "var(--danger)"}
             />
-            <DataRow label="Year overtime pay" value={formatCurrency(year.overtimePay)} accent="var(--warning, #ef6c00)" />
+            <DataRow label="Year overtime pay" value={formatCurrency(year.overtimePay)} accent="var(--warning)" />
           </div>
         </SurfacePanel>
       </div>
@@ -1354,7 +1354,7 @@ export function ChartWidget({
     <BaseWidget
       title={widget.config?.title || "Chart"}
       subtitle="Visual dashboard snapshot"
-      accent="var(--info, #1e88e5)"
+      accent="var(--info)"
       monthLabel={formatMonthLabel(widgetMonthKey)}
       statusLabel="Planned"
       onOpenSettings={onOpenSettings}
@@ -1576,7 +1576,7 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
 const OVERVIEW_MAX_VISIBLE_ACCOUNTS = 5;
 
 function OverviewAccountRow({ name, balance, negative = false }) {
-  const color = negative || balance < 0 ? "var(--danger, #c62828)" : "var(--text-1)";
+  const color = negative || balance < 0 ? "var(--danger)" : "var(--text-1)";
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem", padding: "2px 0" }}>
       <span style={{ color: "var(--text-1)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
@@ -1629,13 +1629,13 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
   return (
     <BaseWidget
       title={widget.config?.title || "Finance Overview"}
-      accent="var(--success, #2e7d32)"
+      accent="var(--success)"
       onOpenSettings={onOpenSettings}
       headline={
         <SummaryBlock
           label="INCOME AFTER TAX"
           value={formatCurrency(incomeAfterTax)}
-          accent="var(--success, #2e7d32)"
+          accent="var(--success)"
         />
       }
     >
@@ -1692,7 +1692,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                 ) : null}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total in accounts</span>
-                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: accountsTotal < 0 ? "var(--danger, #c62828)" : "var(--success, #2e7d32)" }}>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: accountsTotal < 0 ? "var(--danger)" : "var(--success)" }}>
                     {formatCurrency(accountsTotal)}
                   </span>
                 </div>
@@ -1719,7 +1719,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                 ))}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total owed</span>
-                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--danger, #c62828)" }}>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--danger)" }}>
                     {formatCurrency(creditCardTotal)}
                   </span>
                 </div>
@@ -1734,15 +1734,15 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
             <SectionLabel>Monthly totals</SectionLabel>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
               <span style={{ color: "var(--text-1)" }}>Total In</span>
-              <span style={{ fontWeight: 700, color: "var(--success, #2e7d32)" }}>{formatCurrency(totalIn)}</span>
+              <span style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(totalIn)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
               <span style={{ color: "var(--text-1)" }}>Total Out</span>
-              <span style={{ fontWeight: 700, color: "var(--danger, #c62828)" }}>{formatCurrency(totalOut)}</span>
+              <span style={{ fontWeight: 700, color: "var(--danger)" }}>{formatCurrency(totalOut)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
               <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Difference</span>
-              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: differencePositive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: differencePositive ? "var(--success)" : "var(--danger)" }}>
                 {formatCurrency(difference)}
               </span>
             </div>

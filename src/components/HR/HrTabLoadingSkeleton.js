@@ -61,7 +61,7 @@ function ListRows({ rows = 5 }) {
             flexDirection: "column",
             gap: "8px",
             paddingBottom: "12px",
-            borderBottom: index === rows - 1 ? "none" : "1px solid var(--separating-line)",
+            borderBottom: index === rows - 1 ? "none" : "1px solid var(--separating-line-color)",
           }}
         >
           <SkeletonBlock width="42%" height="14px" borderRadius="6px" />

@@ -15,8 +15,11 @@
  * Phase 3 of the layer sweep). They currently resolve to --surface so any
  * un-migrated consumer still renders correctly:
  *   --surfaceMain          → --surface  (legacy, never wired in this file but referenced in older docs)
- *   --section-card-bg      → --surface
  *   --page-card-bg         → --surface
+ *
+ * NOT an alias: --section-card-bg → --theme. A section card is the second rung
+ * of the ladder and alternates away from the page card above it. See the token
+ * itself for the full note.
  *   --row-background       → --surface
  *   --surface-gradient     → --surface
  *   --section-gradient-center → --surface
@@ -42,10 +45,28 @@
   --accentText: var(--primary);
   --text-accent: var(--accentText);
   --onAccentText: #ffffff;
-  --secondary: rgba(var(--accentMainRgb), 0.08);
-  --secondary-hover: rgba(var(--accentMainRgb), 0.14);
-  --secondary-pressed: rgba(var(--accentMainRgb), 0.2);
-  --theme: rgba(var(--accentMainRgb), 0.1);
+  /* The accent as a LABEL on an accent-tinted fill (Secondary / Ghost / Theme
+     buttons). The plain accent clears 4.5:1 on a plain card, but the tint
+     under it eats 0.3-0.6 of that. themeRuntime.js derives the real value
+     (accent shifted 22% away from the ground); this static fallback uses the
+     nearest existing token. */
+  --accent-text-on-tint: var(--primary-hover);
+  /* ── Light-mode surface ladder (2026-08 colour audit) ──
+     The same alpha over white yields roughly half the PERCEPTUAL step it
+     yields over near-black, so light mode cannot reuse dark's alphas. These
+     values put every light step at parity with dark, measured in CIE dL*:
+       theme layer on a card     .16 -> dL* 10.6  (dark .18 -> 11.0)
+       control fill on a card    .14 -> dL*  9.2  (dark .16 ->  9.9)
+       hover step from rest      .22 -> dL*  5.0  (dark .24 ->  4.8)
+       pressed step from rest    .30 -> dL*  9.0  (dark .32 ->  9.6)
+     Do not "simplify" these back to matching dark's numbers — they are
+     deliberately different so the two themes LOOK the same. The figures above
+     are for the red accent; the low-chroma accents (Stone, Slate) produce the
+     smallest steps, so they are what these alphas are actually sized for. */
+  --secondary: rgba(var(--accentMainRgb), 0.14);
+  --secondary-hover: rgba(var(--accentMainRgb), 0.22);
+  --secondary-pressed: rgba(var(--accentMainRgb), 0.3);
+  --theme: rgba(var(--accentMainRgb), 0.16);
   /* DEPRECATED — borders are now banned everywhere except table row separators
      (use --separating-line), inputs (--input-ring), checkboxes (--checkbox-ring),
      ghost buttons (--ghostbutton-ring) and focus rings (--focus-ring). All other
@@ -59,17 +80,32 @@
   --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  /* Row-separator line for tables / lists — the ONLY legitimate "border-like"
-     token outside inputs/checkboxes/ghost buttons/focus rings. */
-  --separating-line: 1px solid rgba(var(--accent-base-rgb), 0.14);
+  /* ── Ring / line tokens ──
+     Each use-case has TWO tokens and they are not interchangeable:
+       --*-ring-color  a bare COLOUR   -> `border: 1px solid var(--x-ring-color)`
+       --*-ring        a full SHORTHAND -> `border: var(--x-ring)`
+     Passing a shorthand token where a colour belongs expands to
+     "1px solid 1px solid rgba(…)", which is invalid CSS and is dropped
+     silently — the control then renders with no ring at all.
+     tools/scripts/check-borders.js fails the build on that pattern. Reach for
+     the -color token whenever you are writing your own width/style. */
+  --separating-line-color: rgba(var(--accent-base-rgb), 0.14);
+  --separating-line: 1px solid var(--separating-line-color);
   --table-border: var(--separating-line); /* legacy alias — prefer --separating-line */
-  /* Outline tokens (formerly *-border) for the four legitimate ring use-cases. */
-  --input-ring: 1px solid var(--secondary-hover);
-  --checkbox-ring: 2px solid var(--accent-strong);
+  --input-ring-color: var(--secondary-hover);
+  --input-ring: 1px solid var(--input-ring-color);
+  /* Focused inputs tighten the ring to the accent. The --focus-ring
+     box-shadow still renders outside it; this is the border half. */
+  --input-ring-focus-color: var(--accent-strong);
+  --checkbox-ring-color: var(--accent-strong);
+  --checkbox-ring: 2px solid var(--checkbox-ring-color);
   /* Softened from a full-strength primary hairline (which read as a harsh,
      slightly aliased "glitchy" red outline) to a muted accent ring that matches
      the rest of the ring/token family. */
-  --ghostbutton-ring: 1px solid rgba(var(--accentMainRgb), 0.35);
+  --ghostbutton-ring-color: rgba(var(--accentMainRgb), 0.35);
+  --ghostbutton-ring: 1px solid var(--ghostbutton-ring-color);
+  /* Focus is drawn as a box-shadow, never a border. --control-ring is a legacy
+     alias kept only so existing call sites keep working; use --focus-ring. */
   --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
   /* Canonical row + in-row action button heights. Demonstrated by the
      "Table States" section in /dev/user-diagnostic. Editing these tokens
@@ -80,14 +116,10 @@
   --text-1-rgb: 15, 15, 15;
   --text-2: var(--onAccentText);
   --text-2-rgb: 255, 255, 255;
-  --legacy-marker-purple: var(--primary);
-  --legacy-marker-purple-rgb: var(--accentMainRgb);
-  --legacy-marker-red: var(--primary);
-  --legacy-marker-red-rgb: var(--accentMainRgb);
   --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
   --accent-base-hover: var(--secondary-hover);
-  --theme-hover: rgba(var(--accentMainRgb), 0.16);
+  --theme-hover: rgba(var(--accentMainRgb), 0.24);
   --accent-strong: var(--primary);
   --primary-rgb: var(--accentMainRgb);
   --grey-accent: var(--text-1);
@@ -95,58 +127,66 @@
   --grey-accent-light: var(--surface);
   --grey-accent-light-rgb: var(--surface-rgb);
   --grey-accent-dark: var(--text-1);
-  --successMain: #22c55e;
-  --success-base: #22c55e;
-  --success-base-hover: #16a34a;
-  --success-strong: #15803d;
+  /* ── Light-mode status ramp (2026-08 colour audit) ──
+     The -base values are FILLS that carry --text-2 (white) in light mode, so
+     they have to be dark enough to hold it: the previous 500-weight tints
+     (#22c55e, #10b981, #0d9488, #f59e0b, #ef4444) scored 2.15:1 to 3.76:1.
+     Each ramp is now base -> base-hover -> strong, darkening in that order,
+     with white on -base at 5.0:1 or better and -strong on the matching
+     -surface at 5.3:1 or better. The dark-theme ramp is unchanged: it pairs
+     bright fills with near-black --text-2 and already scored 7:1 to 11:1. */
+  --successMain: var(--success-base);
+  --success-base: #15803d;
+  --success-base-hover: #166534;
+  --success-strong: #14532d;
   --success-surface: #dcfce7;
   --success-surface-hover: rgba(var(--success-rgb), 0.22);
-  --success-rgb: 34, 197, 94;
+  --success-rgb: 21, 128, 61;
   --success: var(--success-base);
   --success-dark: var(--success-strong);
   --success-text: var(--success-strong);
   --success-hover: var(--success-base-hover);
-  --authorisedMain: #10b981;
-  --authorised-base: #10b981;
-  --authorised-base-hover: #059669;
-  --authorised-strong: #047857;
+  --authorisedMain: var(--authorised-base);
+  --authorised-base: #047857;
+  --authorised-base-hover: #036249;
+  --authorised-strong: #024a37;
   --authorised-surface: #d1fae5;
   --authorised-surface-hover: rgba(var(--authorised-rgb), 0.22);
-  --authorised-rgb: 16, 185, 129;
+  --authorised-rgb: 4, 120, 87;
   --authorised: var(--authorised-base);
   --authorised-dark: var(--authorised-strong);
   --authorised-text: var(--authorised-strong);
   --authorised-hover: var(--authorised-base-hover);
-  --completeMain: #0d9488;
-  --complete-base: #0d9488;
-  --complete-base-hover: #0f766e;
-  --complete-strong: #115e59;
+  --completeMain: var(--complete-base);
+  --complete-base: #115e59;
+  --complete-base-hover: #0f4f4b;
+  --complete-strong: #0c403d;
   --complete-surface: #ccfbf1;
   --complete-surface-hover: rgba(var(--complete-rgb), 0.22);
-  --complete-rgb: 13, 148, 136;
+  --complete-rgb: 17, 94, 89;
   --complete: var(--complete-base);
   --complete-dark: var(--complete-strong);
   --complete-text: var(--complete-strong);
   --complete-hover: var(--complete-base-hover);
-  --warningMain: #f59e0b;
-  --warning-base: #f59e0b;
-  --warning-base-hover: #d97706;
-  --warning-strong: #b45309;
+  --warningMain: var(--warning-base);
+  --warning-base: #b45309;
+  --warning-base-hover: #96450a;
+  --warning-strong: #92400e;
   --warning-surface: #fef3c7;
   --warning-surface-hover: rgba(var(--warning-rgb), 0.24);
-  --warning-rgb: 245, 158, 11;
+  --warning-rgb: 180, 83, 9;
   --warning: var(--warning-base);
   --warning-dark: var(--warning-strong);
   --warning-text: #92400e;
   --warning-hover: var(--warning-base-hover);
-  --dangerMain: #ef4444;
-  --danger-base: #ef4444;
-  --danger-base-hover: #dc2626;
+  --dangerMain: var(--danger-base);
+  --danger-base: #c62b2b;
+  --danger-base-hover: #a82121;
   --danger-strong: #b91c1c;
   --danger-surface: #fee2e2;
   --danger-surface-hover: rgba(var(--danger-rgb), 0.24);
   --declined-section-bg: #fcd5d5;
-  --danger-rgb: 239, 68, 68;
+  --danger-rgb: 198, 43, 43;
   --danger: var(--danger-base);
   --danger-dark: var(--danger-strong);
   --danger-text: var(--danger-strong);
@@ -164,20 +204,10 @@
   --theme-status: rgba(var(--info-rgb), 0.18);
   --accent-purple: var(--primary);
   --accent-purple-rgb: var(--accentMainRgb);
-  --accent-layer-1: #ff00ff;
-  --accent-layer-2: #ff00ff;
-  --accent-layer-3: #ff00ff;
-  --accent-layer-4: #ff00ff;
-  --accent-layer-1-rgb: 255, 0, 255;
-  --accent-layer-2-rgb: 255, 0, 255;
-  --accent-layer-3-rgb: 255, 0, 255;
-  --accent-layer-4-rgb: 255, 0, 255;
   --profile-table-surface: var(--accent-base);
   --profile-table-alt-surface: var(--accent-base-hover);
   --accent-orange: var(--primary);
   --accent-orange-rgb: var(--accentMainRgb);
-  --accent-blue: var(--primary);
-  --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: none;
   --calendar-saturday-row-bg: var(--warning-surface);
   --calendar-amber-selected-bg: var(--warning-text);
@@ -192,7 +222,6 @@
   --overlay: rgba(15, 23, 42, 0.4);
   --overlay-muted: rgba(15, 23, 42, 0.24);
   --layer-section-level-3: var(--theme);
-  --layer-section-level-4: var(--primary);
   --row-background: var(--surface);
   --text-color: var(--text-1);
   --section-gradient-outer: var(--secondary-hover);
@@ -212,7 +241,13 @@
   --section-card-radius: var(--radius-md);
   --section-card-padding: 20px;
   --section-card-padding-sm: 16px;
-  --section-card-bg: var(--surface);
+  /* Section cards are the SECOND rung of the layer ladder, so they take the
+     theme layer — the page card above them is --surface. Both used to alias
+     --surface, which meant a section card inside a page card had literally
+     zero separation in either theme, and broke the alternation law in
+     CLAUDE.md 3.0. Nested section cards flip back to --surface; that rule
+     lives in families/cards.css. */
+  --section-card-bg: var(--theme);
   --section-card-border: none;
   --input-radius: var(--control-radius);
   --input-padding: var(--control-padding);
@@ -232,13 +267,21 @@
   --page-card-border: none;
   --page-card-bg: var(--surface);
   --page-accent-layer: var(--secondary);
-  --page-shell-bg: var(--secondary);
+  /* App background behind the page card. An OPAQUE blend of the accent into
+     the surface, not an alpha wash, so it stays a fixed plane no matter what
+     is behind it. Light uses 26% accent (dL* -17.4 from the white page card);
+     dark uses 22% (dL* +13.5 from the near-black card). themeRuntime.js
+     computes the identical value — keep the two ratios in step. */
+  --page-shell-bg: color-mix(in srgb, var(--primary) 26%, var(--surface));
   --nav-shell-bg: var(--secondary);
   --nav-shell-border: none;
   --tab-container-bg: var(--secondary);
-  --tab-item-bg: #f3f3f3;
-  --tab-item-bg-hover: #e5e7eb;
-  --tab-item-text: #0f0f0f;
+  /* Tab chips follow the shared control fill. They used to be hardcoded
+     neutral greys declared identically in BOTH themes, which rendered a
+     light-grey chip with near-black text in dark mode. */
+  --tab-item-bg: var(--secondary);
+  --tab-item-bg-hover: var(--secondary-hover);
+  --tab-item-text: var(--text-1);
   --nav-link-bg: var(--secondary);
   --nav-link-bg-hover: var(--secondary-hover);
   --nav-link-bg-active: var(--primary);
@@ -273,8 +316,33 @@
      "copy-not-link" decoupling; the linked tokens below carry the note.) */
   --primary-control-bg: var(--secondary);
   --primary-control-bg-hover: var(--secondary-hover);
+  --primary-control-bg-active: var(--secondary-pressed);
   --primary-control-color: var(--text-1);
   --primary-control-radius: 28px; /* rounder than --radius-xl (24px); pill-ends on 44px controls */
+
+  /* ── Controls sitting ON a theme layer ──
+     No single accent-alpha fill can separate from BOTH a --surface card and a
+     --theme layer: at .12 on a .16 tint the step is only dL* 2.7. So the
+     alternation law is extended from surfaces to controls — inside a theme
+     layer a control takes the surface fill instead, and its hover/active
+     steps walk back TOWARDS the accent. These are re-bound onto the
+     --primary-control-* chain by the scoping rules in families/cards.css;
+     nothing reads them directly. */
+  --control-on-theme-bg: var(--surface);
+  --control-on-theme-bg-hover: color-mix(in srgb, var(--surface) 88%, var(--accent-strong));
+  --control-on-theme-bg-active: color-mix(in srgb, var(--surface) 80%, var(--accent-strong));
+
+  /* Disabled controls keep their SHAPE and lose their affordance. The old
+     treatment was `opacity: .5` on the whole control, which in light mode
+     dropped an already-faint .12 fill to dL* 2.7 and erased the control
+     outline entirely. Derived from the text colour, not the accent, so a
+     disabled control desaturates instead of looking like a paler live one. */
+  --control-disabled-bg: rgba(var(--text-1-rgb), 0.07);
+  --control-disabled-text: rgba(var(--text-1-rgb), 0.55);
+  /* Switch track, OFF. A neutral grey rather than the accent control fill:
+     the knob has to read against it, and an accent tint at control strength
+     left a white knob at 1.2:1 in light mode. */
+  --toggle-track-off: rgba(var(--text-1-rgb), 0.25);
 
   --control-radius: var(--primary-control-radius); /* follows Primary radius */
   --control-radius-sm: var(--radius-sm);
@@ -298,13 +366,22 @@
   --control-border-focus: var(--secondary-hover); /* colour-only alias for focus ring */
   --control-bg: var(--primary-control-bg); /* follows Primary button */
   --control-bg-hover: var(--primary-control-bg-hover); /* follows Primary button */
-  --control-bg-active: var(--primary-control-bg-hover);
-  --textfieldbackground: #9ca3af;
+  --control-bg-active: var(--primary-control-bg-active); /* follows Primary button */
+  /* Placeholder TEXT (the token name is a legacy misnomer — it has never been
+     used as a background). Was a fixed #9ca3af, which scored 2.22:1 on the
+     light control fill. Deriving it from --text-1 makes it track whatever
+     surface the input is on, in either theme. */
+  --input-placeholder: rgba(var(--text-1-rgb), 0.6);
+  --textfieldbackground: var(--input-placeholder); /* legacy alias — prefer --input-placeholder */
+  /* Switch knob. Was --surface, i.e. exactly the card colour behind the
+     switch, so an "off" switch in light mode was a white knob on a near-white
+     track (1.14:1) and the position could not be read. */
+  --toggle-knob: #ffffff;
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
-  --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
+  --control-ring: var(--focus-ring); /* legacy alias — prefer --focus-ring */
   /* Dropdown / calendar / time-picker now LINK to the Primary control source
      (was copy-not-link from --secondary). Editing --primary-control-* re-skins
      these. Selected-state colour stays --accentText to keep the selected cue. */
@@ -414,6 +491,11 @@
   --shadow-lg: none;
   --shadow-xl: none;
 
+  /* Letterbox backdrop behind <video> preview surfaces. Intentionally the same
+     in both themes - a video frame reads correctly against a dark matte
+     regardless of the UI theme. Replaces the undefined --surface-dark. */
+  --media-letterbox-bg: #111111;
+
   /* ── Transition durations ── */
   --duration-fast: 0.12s;
   --duration-normal: 0.18s;
@@ -468,6 +550,12 @@
   --primary-hover: #fa9393;
   --primary-pressed: #fcb1b1;
   --primary-selected: var(--primary-pressed);
+  /* The runtime (themeRuntime.js) recomputes --accentMainRgb per mode, so the
+     dark alpha surfaces are tinted with the DARK accent once it paints. This
+     static block has to say the same thing or the pre-hydration paint tints
+     every dark surface with the light red. Keep the two in step. */
+  --accentMainRgb: 248, 113, 113;
+  --onAccentText: #0a0a0c;
   --secondary: rgba(var(--accentMainRgb), 0.16);
   --secondary-hover: rgba(var(--accentMainRgb), 0.24);
   --secondary-pressed: rgba(var(--accentMainRgb), 0.32);
@@ -480,22 +568,25 @@
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
   --primary-border: transparent; /* DEPRECATED — see light-theme note */
-  --separating-line: 1px solid rgba(var(--accent-base-rgb), 0.2);
+  --separating-line-color: rgba(var(--accent-base-rgb), 0.2);
+  --separating-line: 1px solid var(--separating-line-color);
   --table-border: var(--separating-line); /* legacy alias — prefer --separating-line */
-  --input-ring: 1px solid var(--secondary-hover);
-  --checkbox-ring: 2px solid var(--accent-strong);
+  --input-ring-color: var(--secondary-hover);
+  --input-ring: 1px solid var(--input-ring-color);
+  /* Focused inputs tighten the ring to the accent. The --focus-ring
+     box-shadow still renders outside it; this is the border half. */
+  --input-ring-focus-color: var(--accent-strong);
+  --checkbox-ring-color: var(--accent-strong);
+  --checkbox-ring: 2px solid var(--checkbox-ring-color);
   /* Dark theme: same softened ring, a touch stronger for contrast on dark. */
-  --ghostbutton-ring: 1px solid rgba(var(--accentMainRgb), 0.45);
+  --ghostbutton-ring-color: rgba(var(--accentMainRgb), 0.45);
+  --ghostbutton-ring: 1px solid var(--ghostbutton-ring-color);
   --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
   --text-1: var(--surfaceText);
   --text-1-rgb: 248, 247, 255;
   --text-2: #0a0a0c;
   --text-2-rgb: 10, 10, 12;
   --text-accent: var(--accentText);
-  --legacy-marker-purple: var(--primary);
-  --legacy-marker-purple-rgb: var(--accentMainRgb);
-  --legacy-marker-red: var(--primary);
-  --legacy-marker-red-rgb: var(--accentMainRgb);
   --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
   --theme-hover: rgba(var(--accentMainRgb), 0.26);
@@ -575,20 +666,10 @@
   --theme-status: rgba(var(--info-rgb), 0.26);
   --accent-purple: var(--primary);
   --accent-purple-rgb: var(--accentMainRgb);
-  --accent-layer-1: #ff00ff;
-  --accent-layer-2: #ff00ff;
-  --accent-layer-3: #ff00ff;
-  --accent-layer-4: #ff00ff;
-  --accent-layer-1-rgb: 255, 0, 255;
-  --accent-layer-2-rgb: 255, 0, 255;
-  --accent-layer-3-rgb: 255, 0, 255;
-  --accent-layer-4-rgb: 255, 0, 255;
   --profile-table-surface: var(--accent-base);
   --profile-table-alt-surface: var(--accent-base-hover);
   --accent-orange: var(--primary);
   --accent-orange-rgb: var(--accentMainRgb);
-  --accent-blue: var(--primary);
-  --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: none;
   --calendar-saturday-row-bg: var(--warning-surface);
   --calendar-amber-selected-bg: var(--warning-text);
@@ -603,7 +684,6 @@
   --overlay: rgba(2, 6, 23, 0.72);
   --overlay-muted: rgba(2, 6, 23, 0.5);
   --layer-section-level-3: var(--theme);
-  --layer-section-level-4: var(--primary);
   --row-background: var(--surface);
   --text-color: var(--text-1);
   --section-gradient-outer: var(--secondary-hover);
@@ -618,13 +698,17 @@
   --control-border-focus: var(--secondary-hover);
   --control-bg: var(--primary-control-bg); /* follows Primary button */
   --control-bg-hover: var(--primary-control-bg-hover); /* follows Primary button */
-  --control-bg-active: var(--primary-control-bg-hover);
-  --textfieldbackground: #a1a1aa;
+  --control-bg-active: var(--primary-control-bg-active); /* follows Primary button */
+  --input-placeholder: rgba(var(--text-1-rgb), 0.6);
+  --textfieldbackground: var(--input-placeholder); /* legacy alias — prefer --input-placeholder */
+  /* Dark: the knob reads against the tinted track, so it steps back from pure
+     white to avoid a hotspot. */
+  --toggle-knob: rgba(var(--text-1-rgb), 0.88);
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
-  --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
+  --control-ring: var(--focus-ring); /* legacy alias — prefer --focus-ring */
   /* Linked to the Primary control source — see base-theme note. */
   --dropdown-trigger-bg: var(--primary-control-bg);
   --dropdown-trigger-color: var(--primary-control-color);
@@ -663,12 +747,16 @@
   --page-card-border: none;
   --page-card-bg: var(--surface);
   --page-accent-layer: var(--secondary);
+  --page-shell-bg: color-mix(in srgb, var(--primary) 22%, var(--surface));
   --nav-shell-bg: var(--secondary);
   --nav-shell-border: none;
   --tab-container-bg: var(--secondary);
-  --tab-item-bg: #f3f3f3;
-  --tab-item-bg-hover: #e5e7eb;
-  --tab-item-text: #0f0f0f;
+  /* Tab chips follow the shared control fill. They used to be hardcoded
+     neutral greys declared identically in BOTH themes, which rendered a
+     light-grey chip with near-black text in dark mode. */
+  --tab-item-bg: var(--secondary);
+  --tab-item-bg-hover: var(--secondary-hover);
+  --tab-item-text: var(--text-1);
   --nav-link-bg: var(--secondary);
   --nav-link-bg-hover: var(--secondary-hover);
   --nav-link-bg-active: var(--primary);
@@ -678,4 +766,9 @@
   --shadow-md: none;
   --shadow-lg: none;
   --shadow-xl: none;
+
+  /* Letterbox backdrop behind <video> preview surfaces. Intentionally the same
+     in both themes - a video frame reads correctly against a dark matte
+     regardless of the UI theme. Replaces the undefined --surface-dark. */
+  --media-letterbox-bg: #111111;
 }

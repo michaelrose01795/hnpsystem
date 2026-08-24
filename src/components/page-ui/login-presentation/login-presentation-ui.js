@@ -96,7 +96,7 @@ export default function LoginPresentationPageUi(props = {}) {
               <path
                 d="M22 4 a18 18 0 0 1 18 18"
                 fill="none"
-                stroke="var(--accentMain)"
+                stroke="var(--primary)"
                 strokeWidth="3"
                 strokeLinecap="round" />
 

@@ -754,7 +754,7 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-marker
     .table-api,
     table
   ):not([data-dev-section="1"]) {
-  outline: 1px dashed rgba(var(--legacy-marker-purple-rgb), 0.95);
+  outline: 1px dashed rgba(var(--accentMainRgb), 0.95);
   outline-offset: 2px;
 }
 
@@ -1687,14 +1687,21 @@ html.staff-scope .app-input {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--input-radius);
-  border: none;
+  /* Form inputs are one of the five allowed ring use-cases (CLAUDE.md 3.0a).
+     This used to be `border: none`, so the only thing separating an input
+     from its card was the fill — which in light mode was a dL* 5.3 step, i.e.
+     barely there. The ~40 page-level attempts to add the ring back all wrote
+     `1px solid var(--input-ring)`, which is invalid and rendered nothing. */
+  border: var(--input-ring);
   background: var(--input-bg);
   font-family: inherit;
   font-size: var(--control-font-size);
   /* Value text stays in the surface body-text tone (black in light mode,
      white in dark mode) — never the accent. Locked with !important so no
-     page-level cascade can tint the value red. */
-  color: var(--text-1) !important;
+     page-level cascade can tint the value red. States (e.g. :disabled)
+     re-point --input-color rather than adding another !important. */
+  --input-color: var(--text-1);
+  color: var(--input-color) !important;
   outline: none;
   transition: var(--control-transition);
 }
@@ -1703,8 +1710,11 @@ html.staff-scope .app-input:hover {
 }
 html.staff-scope .app-input:focus {
   background: var(--control-bg-hover);
-  box-shadow: var(--control-ring);
+  border-color: var(--input-ring-focus-color);
+  box-shadow: var(--focus-ring);
 }
+/* The :disabled / [readonly] treatment lives in the canonical family file,
+   src/styles/families/inputs.css. */
 html.staff-scope .app-input::placeholder {
   color: var(--textfieldbackground);
 }
@@ -1909,7 +1919,12 @@ html.staff-scope .app-table-action-btn {
   font-size: var(--text-label);
   font-weight: 600;
   border-radius: var(--radius-xs);
-  background: var(--surface);
+  /* --control-bg, not --surface. Table rows are --surface too, so a --surface
+     action button was the same colour as the row it sat in. --control-bg is
+     context-aware (families/cards.css re-binds it inside a theme layer), so
+     the button separates from the row whether the table sits on a page card
+     or on a section card. */
+  background: var(--control-bg);
   color: var(--text-1);
   /* No border — table action buttons sit on the row separator alone.
      Borders are only allowed on inputs, checkboxes, ghost buttons, focus rings. */
@@ -1983,6 +1998,11 @@ html.staff-scope .app-badge--neutral {
   color: var(--text-1);
 }
 
+/* The --strong badges are solid status fills carrying --text-2 (white in
+   light, near-black in dark). They only work because the light-mode status
+   ramp in theme.css was darkened to hold white text — the previous
+   500-weight tints scored 2.15:1 to 3.76:1 here. Do not lighten
+   --success-base / --warning-base / --danger-base without re-checking these. */
 html.staff-scope .app-badge--accent-strong {
   background: var(--accent-strong);
   color: var(--text-2);
@@ -2025,9 +2045,12 @@ html.staff-scope .app-badge--warning-strong {
   color: var(--text-2);
 }
 
+/* Uses --success-dark, matching the danger and warning soft badges. It was the
+   one soft badge reading its own -base fill colour as text, which scored
+   2.07:1 on --success-surface where the other two scored 5.30 and 4.51. */
 html.staff-scope .app-badge--success {
   background: var(--success-surface);
-  color: var(--success);
+  color: var(--success-dark);
   border: none;
 }
 
@@ -3067,8 +3090,8 @@ html.staff-scope .dropdown-api__control:hover:not(:disabled),
 html.staff-scope .calendar-api__control:hover:not(:disabled),
 html.staff-scope .timepicker-api__control:hover:not(:disabled),
 html.staff-scope .searchbar-api:hover,
-html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
-html.staff-scope textarea:hover {
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover:not(:disabled),
+html.staff-scope textarea:hover:not(:disabled) {
   background: var(--control-bg-hover) !important;
 }
 
@@ -3093,7 +3116,11 @@ html.staff-scope .calendar-api__control:disabled,
 html.staff-scope .timepicker-api__control:disabled,
 html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):disabled,
 html.staff-scope textarea:disabled {
-  opacity: 0.5;
+  /* Shared desaturated fill rather than a blanket opacity — a 50% fade left a
+     light-mode control only dL* 2.7 from its card, so the control's shape
+     disappeared and only a ghost label remained. */
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
   cursor: not-allowed;
 }
 
@@ -4506,6 +4533,68 @@ html.staff-scope .status-sidebar__search-submit svg {
   width: 17px;
   height: 17px;
   fill: currentColor;
+}
+
+/* Job Tracker timeline: the sidebar remains the only scroll owner. Keeping a
+   stable gutter prevents the panel width shifting when a group adds enough
+   rows to require a scrollbar. */
+html.staff-scope .status-sidebar__scroll-region {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.staff-scope .job-tracker__timeline {
+  display: flex;
+  flex-direction: column;
+  overflow-anchor: none;
+}
+
+/* Group triggers retain the canonical .app-btn--secondary treatment while
+   using the full tracker column and allowing long phase labels to wrap. */
+html.staff-scope .job-tracker__group-button {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  text-align: left;
+  white-space: normal;
+}
+
+/* Phase stripe. The colour arrives as --job-tracker-phase-color from the
+   group data; the stripe geometry stays here. Deliberately NOT scoped with
+   .app-btn - this is tracker chrome, not a button-family declaration. */
+html.staff-scope .job-tracker__group-button {
+  box-shadow: inset 3px 0 0 0 var(--job-tracker-phase-color, transparent);
+}
+
+html.staff-scope .job-tracker__group-button-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .job-tracker__group-chevron {
+  flex: 0 0 auto;
+  color: inherit;
+}
+
+html.staff-scope .job-tracker__group-rows {
+  min-width: 0;
+}
+
+html.staff-scope .job-tracker__card {
+  min-width: 0;
+}
+
+/* Department/status pills in tracker rows use the same 32px density contract
+   as badges and actions inside .app-data-table. The shared token remains the
+   single source of truth if table density changes later. */
+html.staff-scope .job-tracker__row-status {
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
+  padding: 0 var(--space-3);
+  flex: 0 0 auto;
 }
 
 /* ========================================================= */
@@ -6835,7 +6924,7 @@ html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row td {
 /* context on tbody rows which can paint over the sticky thead.            */
 /* box-shadow never creates a stacking context, so sticky stays on top.    */
 html.staff-scope #appointments-auto-data-table-2 tbody tr:hover td {
-  box-shadow: inset 0 0 0 9999px rgba(var(--shadow-rgb), 0.07);
+  box-shadow: inset 0 0 0 9999px rgba(var(--text-1-rgb), 0.07);
   transition: box-shadow 0.15s ease;
 }
 
@@ -7194,7 +7283,7 @@ html.staff-scope .app-page-header__title {
 html.staff-scope .app-page-header__subtitle {
   margin: 4px 0 0;
   font-size: var(--text-body-sm);
-  color: var(--text-secondary, var(--text-1));
+  color: var(--text-1);
 }
 
 html.staff-scope .app-page-header__actions {
@@ -7235,7 +7324,7 @@ html.staff-scope .app-staff-card__title {
 html.staff-scope .app-staff-card__subtitle {
   margin-top: var(--space-xs);
   font-size: var(--text-body-sm);
-  color: var(--text-secondary, var(--text-1));
+  color: var(--text-1);
 }
 
 /* Staff tab bar — horizontal row of .app-btn nav tabs, wraps on mobile. */
@@ -7611,7 +7700,7 @@ html.staff-scope .app-alert__ref {
   opacity: 0.75;
 }
 html.staff-scope .app-alert__ref-code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-family-mono);
   font-weight: 700;
   letter-spacing: 0.04em;
   opacity: 1;
@@ -7733,7 +7822,7 @@ html.staff-scope .app-parts-request-row {
   gap: var(--layout-card-gap);
   min-height: var(--table-row-height);
   padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--separating-line);
+  border-bottom: 1px solid var(--separating-line-color);
 }
 
 html.staff-scope .app-vhc-row:last-child,
@@ -7745,7 +7834,6 @@ html.staff-scope .app-vhc-row__main,
 html.staff-scope .app-parts-request-row__main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
   min-width: 0;
 }
 
@@ -7793,7 +7881,6 @@ html.staff-scope .app-job-summary-panel__meta {
 html.staff-scope .app-job-summary-panel__meta-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
 }
 
 html.staff-scope .app-job-summary-panel__meta dt,
@@ -7853,7 +7940,7 @@ html.staff-scope .app-job-operations-row {
   gap: 0;
   min-width: 0;
   overflow: hidden;
-  background: var(--system, var(--surface)) !important;
+  background: var(--surface) !important;
   color: var(--text-1);
   transition: var(--control-transition);
 }

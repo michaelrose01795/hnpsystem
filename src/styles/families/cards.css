@@ -16,6 +16,84 @@
  * load-bearing and will migrate in a dedicated pass.
  */
 
+/* ========================================================================== */
+/* === Layer alternation (2026-08 colour audit)                           === */
+/* ========================================================================== */
+/*
+ * The ladder is: app shell -> page card (--surface) -> section card (--theme)
+ * -> anything nested inside that (--surface again) -> ...
+ *
+ * --section-card-bg used to alias --surface, exactly like --page-card-bg, so a
+ * section card inside a page card had ZERO separation in either theme. It now
+ * resolves to --theme (see src/styles/theme.css). The two rules below keep
+ * that honest as nesting deepens:
+ *
+ *   1. Controls sitting ON a theme layer take the --surface fill instead of
+ *      the accent fill. No single accent-alpha value can separate from both a
+ *      white card AND a theme tint - at .12 on a .16 tint the perceptual step
+ *      is only dL* 2.7, i.e. invisible. Swapping the fill gives dL* 10.6.
+ *      This is done by re-binding --primary-control-*, which is the single
+ *      source the whole control family reads from, so buttons, inputs,
+ *      dropdown triggers, calendar days and time-picker options all follow
+ *      with no per-component work.
+ *
+ *   2. A section surface nested inside another one alternates back to
+ *      --surface, so the translucent --theme tint never stacks on itself, and
+ *      its controls go back to the accent fill.
+ *
+ * No borders are involved in either rule - separation is carried entirely by
+ * the surface step, which is the point of the borderless system.
+ */
+
+html.staff-scope
+  :is(
+    .app-section-card,
+    .app-layout-section-shell,
+    .app-layout-surface-subtle,
+    .app-layout-surface-accent,
+    .app-layout-stat-card,
+    .app-profile-accent-card,
+    .app-layer-theme
+  ) {
+  --primary-control-bg: var(--control-on-theme-bg);
+  --primary-control-bg-hover: var(--control-on-theme-bg-hover);
+  --primary-control-bg-active: var(--control-on-theme-bg-active);
+  --tab-item-bg: var(--control-on-theme-bg);
+  --tab-item-bg-hover: var(--control-on-theme-bg-hover);
+  --tab-container-bg: var(--control-on-theme-bg);
+  --searchbar-clear-bg: var(--control-on-theme-bg);
+  --searchbar-clear-hover-bg: var(--control-on-theme-bg-hover);
+}
+
+html.staff-scope
+  :is(
+    .app-section-card,
+    .app-layout-section-shell,
+    .app-layout-surface-subtle,
+    .app-layout-surface-accent,
+    .app-layout-stat-card,
+    .app-profile-accent-card,
+    .app-layer-theme
+  )
+  :is(
+    .app-section-card,
+    .app-layout-section-shell,
+    .app-layout-surface-subtle,
+    .app-layout-surface-accent,
+    .app-layout-stat-card,
+    .app-profile-accent-card
+  ) {
+  background: var(--surface);
+  --primary-control-bg: var(--secondary);
+  --primary-control-bg-hover: var(--secondary-hover);
+  --primary-control-bg-active: var(--secondary-pressed);
+  --tab-item-bg: var(--secondary);
+  --tab-item-bg-hover: var(--secondary-hover);
+  --tab-container-bg: var(--secondary);
+  --searchbar-clear-bg: var(--secondary);
+  --searchbar-clear-hover-bg: var(--secondary-hover);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud green outlines on every card/surface element. */
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-section="1"])

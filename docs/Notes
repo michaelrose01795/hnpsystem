@@ -1,12 +1,9 @@
 --- 
+TODO
+check ui clean up 
 
 TODO
-npm i next@latest
-
-TODO
-Now carry out the real HNPSystem staff UI cleanup across all routes outside `/website` using the new governance rules and baselines, systematically migrate existing legacy implementations onto the canonical shared staff design system while preserving the current rendered appearance and behaviour as the visual reference unless a genuine bug is being fixed, reduce the baselined debt rather than increasing it, replace duplicated or one-off implementations with the existing shared components and semantic tokens where they can reproduce the same frontend result, prioritise the highest-value areas first including broken/undefined token usage, buttons and raw controls, inputs and labels, dropdowns, tabs, badges and status pills, tables, cards and layer primitives, modals and popups, typography, raw colours, arbitrary spacing/radius values and excessive `!important`, keep approved feature-specific and dealership-density exceptions intact, do not restyle components simply to make them look more uniform, do not change layout, colour, sizing, typography, spacing, interaction or responsive behaviour unless needed to preserve the existing design through the shared system, keep `/website` and `custglobal.css` completely separate and unchanged, work in safe groups so each migration can be verified before moving on, use the existing staff UI as the source of truth for visual output, and continue until all realistically removable legacy debt is migrated to the canonical system and any remaining exceptions are explicitly documented rather than left as accidental drift.
-
-
+check recent in codex chats and go throught them last 6ish
 
 TODO
 view the claude with rules etc 
@@ -14,7 +11,26 @@ view the claude with rules etc
 TODO
 view claude for speed data updates
 
+TODO sidebar
+Deeply investigate and fix why the authenticated staff sidebar remains permanently in `SidebarNavSkeleton` even though `/api/shell/bootstrap` returns a valid `sidebarAccess` list, trace the full user, session, role, workspace access and sidebar resolution flow from authentication through the relevant providers, hooks, manifest logic and StaffLayout conditions, determine exactly which state never reaches resolved and why, compare normal Keycloak login behaviour with any dev-login or local authentication path, investigate the relationship with the existing `src/config/workspace/manifest.test.js` nav/access parity failures, check for role-shape mismatches, stale or duplicated state, provider ordering issues, race conditions, hydration differences, failed role mapping or access calculations, confirm if the unresolved state affects anything beyond sidebar rendering such as page permissions, route visibility or page data loading, fix the root cause without weakening RBAC, bypassing permission checks or hardcoding Admin access, and once fixed verify the sidebar fully resolves for representative Admin, Manager, Workshop, Parts and Sales role states in both light and dark mode.
+
+
+TODO performance
+Take the next HNPSystem performance pass specifically on /tech/[jobNumber], which is now the heaviest important route at about 1.92 MB because it statically imports the 13,287-line job-card page to reuse three components, carry out the previously measured extraction of the required technician-facing job-card functionality into reusable shared components without importing the full job-card page, use the identified 22-symbol roughly 3,533-line dependency surface as the starting point but revalidate the exact dependency boundary against the current tree before moving anything, preserve the technician default Customer Requests workflow, VHC behaviour, clocking, permissions, state handling, styling, modal behaviour and all existing staffglobal.css integration exactly, keep primary-workflow controls such as the camera and customer-video buttons immediately available rather than deferring them merely to save bytes, update any generated development source mapping or governance metadata affected by the extraction, avoid duplicating business logic between the technician and job-card routes, measure the technician route before and after with the current bundle diagnostics and hnpPerf tooling and aim to remove the large job-card dependency so the route approaches the previously estimated roughly 1.1 MB first-load size, retain all Supabase dynamic-import, realtime coalescing, shell bootstrap, lhr1 and previous performance changes, and do not broaden the work into unrelated routes unless the extraction exposes a shared dependency whose removal produces a clear measured benefit without changing behaviour.
+
+
 ---
+
+CHECK
+have it so within the "Inspection" section within the customer video recording section this is to make sure the text doesnt clash with the background colour, atm when in light mode the ligth text is clashing etc 
+
+CHECK 
+wihtin the job tracker sidebar section 
+
+
+CHECK  
+Deep dive into the job tracker sidebar seciton with the scroll and left side lines conneting the sections
+
 
 
 TODO

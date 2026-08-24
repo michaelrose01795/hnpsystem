@@ -6,6 +6,7 @@
 
 import React from "react";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 const inputStyle = { width: "100%" };
 
@@ -85,36 +86,28 @@ export function renderField({ field, value, onChange, disabled }) {
 
     case "select":
       return (
-        <select
-          className="app-input"
+        <DropdownField
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          placeholder="Choose…"
+          options={field.options || []}
           style={inputStyle}
-        >
-          <option value="" disabled>
-            Choose…
-          </option>
-          {(field.options || []).map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        />
       );
 
     case "status":
       return (
-        <select
-          className="app-input"
+        <DropdownField
           value={value || "draft"}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          options={[
+            { value: "published", label: "Published" },
+            { value: "draft", label: "Draft" },
+          ]}
           style={inputStyle}
-        >
-          <option value="published">Published</option>
-          <option value="draft">Draft</option>
-        </select>
+        />
       );
 
     case "string_list":

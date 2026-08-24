@@ -240,7 +240,7 @@ export default function ViewJobCardsUi(props) {
                     </span>
                     {/* ✅ Prime/Sub-job badge */}
                     {popupJob.primeJobNumber && <span style={{
-                      backgroundColor: "var(--primary-surface)",
+                      backgroundColor: "var(--secondary)",
                       color: "var(--primary)",
                       padding: "8px 16px",
                       borderRadius: "var(--radius-xs)",
@@ -347,7 +347,7 @@ export default function ViewJobCardsUi(props) {
                     }}>
                           {req.text || req} 
                           {req.time && <span style={{
-                        color: "var(--grey-accent-light)"
+                        color: "var(--surfaceTextMuted)"
                       }}> ({req.time}h)</span>}
                           {req.paymentType && req.paymentType !== "Customer" && <span style={{
                         marginLeft: "8px",
@@ -454,19 +454,12 @@ export default function ViewJobCardsUi(props) {
                 }}>
                   Update Status
                 </label>
-                <select value={popupStatusLabel || ""} onChange={e => handleStatusChange(popupJob.id, e.target.value)} style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  fontSize: "14px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  backgroundColor: "var(--surface)",
-                  cursor: "pointer"
-                }}>
-                  {combinedStatusOptions.map(statusOption => <option key={statusOption} value={statusOption}>
-                      {statusOption}
-                    </option>)}
-                </select>
+                <DropdownField
+                  value={popupStatusLabel || ""}
+                  onChange={e => handleStatusChange(popupJob.id, e.target.value)}
+                  options={combinedStatusOptions}
+                  style={{ width: "100%" }}
+                />
               </div>
 
               {/* Action Buttons */}

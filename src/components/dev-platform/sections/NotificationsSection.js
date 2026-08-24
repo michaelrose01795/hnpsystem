@@ -168,7 +168,7 @@ export default function NotificationsSection() {
                   {n.body && (
                     <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85, wordBreak: "break-word" }}>{n.body}</div>
                   )}
-                  <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>
+                  <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
                     {n.created_at ? new Date(n.created_at).toLocaleString("en-GB") : ""}
                   </div>
                 </div>
@@ -201,7 +201,7 @@ export default function NotificationsSection() {
                     <Pill label={r.enabled ? "enabled" : "disabled"} tone={r.enabled ? "success-base" : "text-1"} />
                   </div>
                   {r.filters?.minSeverity && (
-                    <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                    <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                       Min severity: {r.filters.minSeverity}
                     </div>
                   )}
@@ -234,13 +234,13 @@ export default function NotificationsSection() {
         <SubSurface style={{ gap: "var(--space-md)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-md)" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+              <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
                 Event
               </span>
               <DropdownField options={EVENT_OPTIONS} value={ruleForm.event} onChange={(e) => setRule({ event: e.target.value })} />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+              <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
                 Minimum severity (optional)
               </span>
               <DropdownField options={MIN_SEVERITY_OPTIONS} value={ruleForm.minSeverity} onChange={(e) => setRule({ minSeverity: e.target.value })} />

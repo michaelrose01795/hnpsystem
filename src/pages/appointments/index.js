@@ -10,6 +10,7 @@ import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { isMobileTechnician } from "@/lib/auth/roles"; // Scope appointments view for mobile mechanics
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 import {
   createOrUpdateAppointment,
   getJobByNumberOrReg,
@@ -657,6 +658,21 @@ export default function Appointments() {
     fetchStaffAbsences();
   }, [dates, fetchStaffAbsences]);
 
+  // Realtime refresh, coalesced.
+  //
+  // `job_clocking` is the busiest table in the dealership and this page's
+  // handler is the most expensive reaction to it anywhere in the app:
+  // fetchTechAvailability() re-reads every clocking row across the whole
+  // 60-day window, with the user relation joined, for every technician. Firing
+  // that straight from an unfiltered `event: "*"` callback meant a single
+  // technician clocking on re-downloaded two months of clocking data on every
+  // browser with /appointments open.
+  //
+  // Same refreshes, scheduled through useCoalescedRefresh: a burst collapses to
+  // one call, and a hidden tab defers until it is looked at again.
+  const scheduleTechAvailabilityRefresh = useCoalescedRefresh(fetchTechAvailability);
+  const scheduleJobsRevalidate = useCoalescedRefresh(mutateJobs);
+
   useEffect(() => {
     if (!dates.length) return;
 
@@ -665,16 +681,14 @@ export default function Appointments() {
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
-      () => {
-        fetchTechAvailability();
-      }
+      scheduleTechAvailabilityRefresh
     ).
     subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [dates, fetchTechAvailability]);
+  }, [dates, scheduleTechAvailabilityRefresh]);
 
   // Real-time subscription for jobs and appointments tables — revalidate SWR when data changes
   useEffect(() => {
@@ -683,17 +697,17 @@ export default function Appointments() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
-      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
+      scheduleJobsRevalidate // trigger SWR revalidation (coalesced + deduplicated)
     ).
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
-      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
+      scheduleJobsRevalidate
     ).
     subscribe();
 
     return () => {supabase.removeChannel(channel);}; // clean up on unmount
-  }, [mutateJobs]);
+  }, [scheduleJobsRevalidate]);
 
   useEffect(() => {
     setJobParamActive(true);
@@ -1030,7 +1044,23 @@ export default function Appointments() {
   const formatDateNoYear = (dateObj) =>
   dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
-  const getDayTechSummary = (date) => {
+  // Per-day technician summary.
+  //
+  // This is a pure function of the six values in the cache key below, but it was
+  // being re-run from scratch once per visible date row — ~60 rows — on every
+  // single render of the page. Each call builds a Map of that day's absences,
+  // walks every stored technician doing a `roster.find(...)` inside the loop
+  // (O(techs x roster)), synthesises placeholders, sorts and reduces. Typing one
+  // character into the appointments search box paid for all of it, ~60 times
+  // over, before React could paint.
+  //
+  // The computation is unchanged. Results are cached per date key in a Map that
+  // is thrown away whenever any input changes, so the output is always identical
+  // to recomputing — it is simply computed once per day per input set instead of
+  // once per day per render.
+  const dayTechSummaryCacheRef = useRef({ inputs: null, map: new Map() });
+
+  const computeDayTechSummary = (date) => {
     if (!date) {
       return {
         dateKey: "",
@@ -1156,6 +1186,31 @@ export default function Appointments() {
       totalTechs: persistedDay?.technicians?.length ?? Math.max(finalTechs.length, expectedTechCount),
       totalAvailableHours: persistedDay?.totalHours ?? totalAvailableHours
     };
+  };
+
+  const getDayTechSummary = (date) => {
+    // Discard the cache the moment any input to computeDayTechSummary changes.
+    // Identity comparison is sufficient and exact: every one of these is either
+    // React state replaced wholesale on update, or a useMemo derived from state.
+    const inputs = [
+      techAvailability,
+      techHoursOverrides,
+      staffAbsences,
+      techUsers,
+      techUserNameMap,
+      capacityScheduleByDate,
+    ];
+    const cache = dayTechSummaryCacheRef.current;
+    if (!cache.inputs || inputs.some((value, index) => value !== cache.inputs[index])) {
+      cache.inputs = inputs;
+      cache.map = new Map();
+    }
+
+    const cacheKey = date ? date.toDateString() : "";
+    if (cache.map.has(cacheKey)) return cache.map.get(cacheKey);
+    const summary = computeDayTechSummary(date);
+    cache.map.set(cacheKey, summary);
+    return summary;
   };
 
   const getTechHoursForDay = (date) => getDayTechSummary(date).totalTechs;

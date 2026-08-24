@@ -44,18 +44,35 @@ import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
-import { getUserActiveJobs, clockOutFromJob, switchJob } from "@/lib/database/jobClocking";
+// Loaded on demand — see the note on loadTechnicianTopbar below. Every use of
+// these three is inside an async handler or a technician-gated effect, so none
+// of them is needed to render the shell.
+const loadJobClocking = () => import("@/lib/database/jobClocking");
 import {
   STATUSES as CLOCKING_STATUSES,
   WORK_TYPES as CLOCKING_WORK_TYPES,
 } from "@/lib/status/catalog/clocking";
-import { getTechnicianTopbarSnapshot } from "@/lib/database/technicianTopbar";
+// Loaded on demand.
+//
+// StaffLayout is the global staff shell, so anything it imports statically lands
+// in the first-load bundle of every staff route. Both this module and
+// jobClocking resolve `@/lib/database/client`, which re-exports the Supabase
+// browser client — 213 KB of @supabase/supabase-js, pulled onto pages that never
+// query the database from the browser.
+//
+// Neither is needed to paint the shell: this one is only ever called from inside
+// an SWR fetcher whose key is null unless the user is a technician on a
+// non-tablet viewport, and jobClocking only from clock-on/off handlers and a
+// technician-gated sync effect. Deferring the import changes nothing a user can
+// observe; the fetch still starts on the same tick the fetcher runs.
+const loadTechnicianTopbar = () => import("@/lib/database/technicianTopbar");
 import { buildTechnicianKpis } from "@/config/topbar/technicianKpis";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
+import entranceStyles from "@/components/layout/StaffLayoutEntrance.module.css";
 import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
@@ -72,8 +89,8 @@ const NAV_DRAWER_WIDTH = 260;
 // hiding entirely when "closed" (see StaffSidebar isCollapsed mode).
 const COLLAPSED_RAIL_WIDTH = 48;
 const STATUS_DRAWER_WIDTH = 560;
-const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
-const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
+const AUTH_LAYOUT_ENTRANCE_STORAGE_KEY = "hnp-auth-layout-entrance";
+const AUTH_LAYOUT_ENTRANCE_DURATION_MS = 360;
 // Fallback role union used only if /presentation is somehow rendered without
 // a chosen role from /loginPresentation (the provider redirects in that case,
 // but Layout sits outside the provider so this keeps it safe during the brief
@@ -105,11 +122,15 @@ export default function Layout({
     setStatus,
     currentJob,
     dbUserId,
+    sidebarAccessLoading,
     refreshCurrentJob,
   } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
-  const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
+  const [authEntranceActive, setAuthEntranceActive] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.sessionStorage.getItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY) === "1";
+  });
   // Optimistic sidebar highlight. Driven by router.events so the sidebar can
   // highlight the clicked item the instant a real navigation starts, before
   // router.asPath catches up (Pages Router only updates asPath on completion).
@@ -124,8 +145,7 @@ export default function Layout({
   const isCustomerRoute =
     customerPortalPath === "/customer" || customerPortalPath.startsWith("/customer/");
   const hideSidebar =
-    (router.pathname === "/login" && !showLoginShellLoading) ||
-    router.pathname === "/loginPresentation";
+    router.pathname === "/login" || router.pathname === "/loginPresentation";
   const showHrTabs =
     (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
     router.pathname.startsWith("/admin/users");
@@ -133,6 +153,9 @@ export default function Layout({
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
+  const [viewportReady, setViewportReady] = useState(false);
+  const authEntranceReady =
+    viewportReady && !userLoading && Boolean(user) && !sidebarAccessLoading;
   // NOTE: useMessagesBadge is intentionally NOT mounted here. Its result was
   // discarded at this level, so it only duplicated the request (and the realtime
   // channel) that StaffSidebar — the sole consumer of the count — already makes.
@@ -426,7 +449,7 @@ export default function Layout({
       : null;
   const { data: technicianTopbarSnapshot } = useSWR(
     technicianTopbarKey,
-    () => getTechnicianTopbarSnapshot(dbUserId),
+    () => loadTechnicianTopbar().then((m) => m.getTechnicianTopbarSnapshot(dbUserId)),
     {
       refreshInterval: 60000,
       revalidateOnFocus: true,
@@ -508,6 +531,7 @@ export default function Layout({
       const nextHeight = window.innerHeight || 900;
       setViewportWidth(nextWidth);
       setViewportHeight(nextHeight);
+      setViewportReady(true);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -515,26 +539,16 @@ export default function Layout({
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const readLoginShellLoading = () => {
-      const shouldShow =
-        router.pathname === "/login" &&
-        window.sessionStorage.getItem(LOGIN_SHELL_LOADING_STORAGE_KEY) === "1";
-      setShowLoginShellLoading(shouldShow);
-    };
-
-    readLoginShellLoading();
-    window.addEventListener(LOGIN_SHELL_LOADING_EVENT, readLoginShellLoading);
-    return () => window.removeEventListener(LOGIN_SHELL_LOADING_EVENT, readLoginShellLoading);
-  }, [router.pathname]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (router.pathname === "/login") return;
-    window.sessionStorage.removeItem(LOGIN_SHELL_LOADING_STORAGE_KEY);
-    setShowLoginShellLoading(false);
-  }, [router.pathname]);
+    if (!authEntranceActive || !authEntranceReady || typeof window === "undefined") {
+      return undefined;
+    }
+    window.sessionStorage.removeItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY);
+    const timer = window.setTimeout(
+      () => setAuthEntranceActive(false),
+      AUTH_LAYOUT_ENTRANCE_DURATION_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [authEntranceActive, authEntranceReady]);
 
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
@@ -698,7 +712,6 @@ export default function Layout({
   useEffect(() => {
     if (presentationShell) return;
     if (publicRoute) return;
-    if (showLoginShellLoading) return;
     if (userLoading) return;
     if (user === null && !hideSidebar) {
       trace("layout", "user is null on a gated route -> router.replace(/login)", {
@@ -706,7 +719,7 @@ export default function Layout({
       });
       router.replace("/login");
     }
-  }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute, showLoginShellLoading]);
+  }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute]);
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
@@ -733,6 +746,7 @@ export default function Layout({
 
   const loadActiveJobs = async () => {
     if (!dbUserId) return [];
+    const { getUserActiveJobs } = await loadJobClocking();
     const result = await getUserActiveJobs(dbUserId);
     if (!result?.success) {
       throw new Error(result?.error || "Unable to load active job clocking.");
@@ -741,6 +755,7 @@ export default function Layout({
   };
 
   const clockOffActiveJobs = async (activeJobs) => {
+    const { clockOutFromJob } = await loadJobClocking();
     for (const job of activeJobs) {
       const result = await clockOutFromJob({
         userId: dbUserId,
@@ -754,6 +769,7 @@ export default function Layout({
   };
 
   const switchActiveJobWorkType = async (activeJob, workType) => {
+    const { switchJob } = await loadJobClocking();
     const result = await switchJob({
       userId: dbUserId,
       currentJobId: activeJob.jobId,
@@ -826,6 +842,7 @@ export default function Layout({
 
     const syncStatus = async () => {
       try {
+        const { getUserActiveJobs } = await loadJobClocking();
         const { success, data: activeJobs } = await getUserActiveJobs(dbUserId);
 
         if (success) {
@@ -877,7 +894,7 @@ export default function Layout({
   // shared loading skeleton while keeping the layout shell mounted.
   useTraceValue("layout.route", router.pathname);
   useTraceValue("layout.isPreAuthLoading", isPreAuthLoading);
-  useTraceValue("layout.showLoginShellLoading", showLoginShellLoading);
+  useTraceValue("layout.authEntranceActive", authEntranceActive);
   useTraceValue("layout.hideSidebar", hideSidebar);
 
   useEffect(() => {
@@ -1291,6 +1308,10 @@ export default function Layout({
     return <>{children}</>;
   }
 
+  if (authEntranceActive && !authEntranceReady) {
+    return null;
+  }
+
   return (
     <DevLayoutSection
       sectionKey="app-layout-chrome"
@@ -1307,6 +1328,7 @@ export default function Layout({
           shell
           {...lockChromeInteraction}
           backgroundToken="app-sidebar-rail"
+          className={authEntranceActive ? entranceStyles.sidebarEntrance : undefined}
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
             minWidth: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
@@ -1323,7 +1345,7 @@ export default function Layout({
             flexDirection: "column",
             alignItems: "center",
             transition: `width ${sidebarMotion}, min-width ${sidebarMotion}`,
-            willChange: "width",
+            willChange: authEntranceActive ? "width, transform, opacity" : "width",
             position: "sticky",
             top: 0,
             overflow: "hidden",
@@ -1382,6 +1404,7 @@ export default function Layout({
           <>
             {/* 50/50 Tab-style navigation for smaller screens */}
             <div
+              className={authEntranceActive ? entranceStyles.sidebarEntrance : undefined}
               style={{
                 display: "flex",
                 width: "100%",
@@ -1502,6 +1525,7 @@ export default function Layout({
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
+            wrapperClassName={authEntranceActive ? entranceStyles.topbarEntrance : undefined}
             barRef={topbarBarRef}
             wrapperStyle={topbarWrapperStyle}
             barStyle={topbarBarStyle}
@@ -1515,7 +1539,10 @@ export default function Layout({
           sectionType="page-shell"
           shell
           backgroundToken="app-page-shell"
-          className="app-page-shell"
+          className={[
+            "app-page-shell",
+            authEntranceActive ? entranceStyles.contentEntrance : "",
+          ].filter(Boolean).join(" ")}
           style={{
             flex: 1,
             minHeight: 0,
@@ -1646,7 +1673,7 @@ export default function Layout({
             boxSizing: "border-box",
             border: "none",
             background: "var(--primary)",
-            color: "var(--surface)",
+            color: "var(--onAccentText)",
             fontSize: toggleFontSize,
             fontWeight: 700,
             boxShadow: "none",
@@ -1736,7 +1763,7 @@ export default function Layout({
               boxSizing: "border-box",
               border: "none",
               background: "var(--primary)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               fontSize: toggleFontSize,
               fontWeight: 700,
               boxShadow: "none",

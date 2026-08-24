@@ -35,31 +35,7 @@ const INTENTIONAL_NATIVE_SELECTS = new Map([
 // Transitional ceiling for staff files that pre-date the DropdownField rule.
 // Lower each count as the corresponding file is migrated; never increase it.
 const MIGRATION_BASELINE = new Map([
-  ["src/components/Admin/AdminUserForm.js", 2],
-  ["src/components/HR/tabs/EmployeesTab.js", 2],
-  ["src/components/JobCards/WriteUpForm.js", 1],
-  ["src/components/Parts/DeliverySchedulerModal.js", 1],
   ["src/components/VHC/VhcDetailsPanel.js", 1],
-  ["src/components/Workshop/JobClockingCard.js", 1],
-  ["src/components/page-ui/job-cards/ContactTab.js", 1],
-  ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 1],
-  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 1],
-  ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 1],
-  ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 1],
-  ["src/components/page-ui/stock-catalogue-ui.js", 4],
-  ["src/components/popups/InvoiceBuilderPopup.js", 1],
-  ["src/components/popups/NextActionPrompt.js", 2],
-  ["src/features/websiteManager/editors/fields.js", 2],
-  ["src/features/websiteManager/panels/ActivityPanel.js", 1],
-  ["src/features/websiteManager/panels/OverviewPanel.js", 1],
-  ["src/features/websiteManager/panels/PageContentPanel.js", 1],
-  ["src/features/websiteManager/panels/SeoPanel.js", 1],
-  ["src/features/websiteManager/panels/ShopPanel.js", 1],
-  ["src/pages/admin/compliance/breaches.js", 3],
-  ["src/pages/admin/compliance/dpias.js", 3],
-  ["src/pages/admin/compliance/ropa.js", 1],
-  ["src/pages/admin/compliance/sars.js", 1],
-  ["src/pages/profile/privacy.js", 1],
 ]);
 
 function walk(directory, files = []) {

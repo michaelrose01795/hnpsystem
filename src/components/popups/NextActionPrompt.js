@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react"; // import React helpers
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context hook
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
 import PopupModal from "@/components/popups/popupStyleApi";
@@ -200,46 +201,20 @@ export default function NextActionPrompt() {
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
                 Key Location
-                <select
+                <DropdownField
                   value={keyLocation}
                   onChange={(event) => setKeyLocation(event.target.value)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "var(--input-radius)",
-                    border: "none",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontWeight: 600,
-                  }}
-                >
-                  {KEY_LOCATIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  options={KEY_LOCATIONS}
+                />
               </label>
 
               <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
                 Vehicle Location
-                <select
+                <DropdownField
                   value={vehicleLocation}
                   onChange={(event) => setVehicleLocation(event.target.value)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "var(--input-radius)",
-                    border: "none",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontWeight: 600,
-                  }}
-                >
-                  {VEHICLE_LOCATIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  options={VEHICLE_LOCATIONS}
+                />
               </label>
 
               <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>

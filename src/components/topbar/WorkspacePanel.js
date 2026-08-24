@@ -94,7 +94,7 @@ export default function WorkspacePanel({
           borderBottom: "var(--separating-line)", // header rule (allowed list separator)
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accent)" }}>
+        <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accentText)" }}>
           My workspace
         </h2>
         <div style={{ display: "flex", gap: "8px" }}>

@@ -41,7 +41,7 @@ export default function JobTimeline({ jobNumber }) {
   }
 
   if (!timeline.length) {
-    return <p style={{ color: "var(--grey-accent-light)", padding: "10px" }}>No timeline data available.</p>;
+    return <p style={{ color: "var(--surfaceTextMuted)", padding: "10px" }}>No timeline data available.</p>;
   }
 
   return (

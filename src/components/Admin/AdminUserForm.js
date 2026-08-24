@@ -8,6 +8,7 @@ import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import InputField from "@/components/ui/InputField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import FieldError from "@/components/ui/FieldError";
 import FormErrorSummary from "@/components/ui/FormErrorSummary";
 import useFormValidation from "@/hooks/useFormValidation";
@@ -144,14 +145,11 @@ export default function AdminUserForm({
 
         <label style={labelStyle}>
           <span>Department</span>
-          <select className="app-input" {...form.getFieldProps("department")}>
-            <option value="">Select department (optional)</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
+          <DropdownField
+            placeholder="Select department (optional)"
+            options={departments}
+            {...form.getDropdownProps("department")}
+          />
         </label>
 
         <label style={labelStyle}>
@@ -159,13 +157,10 @@ export default function AdminUserForm({
             Role
             <span className="app-field-required" aria-hidden="true">{" *"}</span>
           </span>
-          <select className="app-input" {...form.getFieldProps("role")}>
-            {roles.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </select>
+          <DropdownField
+            options={roles}
+            {...form.getDropdownProps("role")}
+          />
           <FieldError id="field-role-error">{form.errors.role}</FieldError>
         </label>
 

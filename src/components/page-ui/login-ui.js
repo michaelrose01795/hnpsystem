@@ -7,7 +7,6 @@ export default function LoginPageUi(props) {
     Button,
     LoginCard,
     LoginDropdown,
-    PageSkeleton,
     allUsers,
     allowDevUserSelection,
     closeResetModal,
@@ -19,6 +18,7 @@ export default function LoginPageUi(props) {
     handleLoginIdentityInput,
     handlePasswordReset,
     handlePresentationSelect,
+    isRedirecting,
     isResettingPassword,
     loadingDevUsers,
     loginFullName,
@@ -44,9 +44,6 @@ export default function LoginPageUi(props) {
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
-    case "section1":
-      return <PageSkeleton />; // render extracted page section.
-
     case "section2":
       return <>
       <div
@@ -75,21 +72,21 @@ export default function LoginPageUi(props) {
               />
             </div>
             <LoginCard className="login-card--auth" title="Login">
-              <form onSubmit={handleDbLogin} className="login-form">
+              <form onSubmit={handleDbLogin} className="login-form" aria-busy={isRedirecting}>
                 <div className="login-identity-grid" aria-label="Login user lookup">
                   <label className="login-field login-identity-field" htmlFor="loginFullName">
                     <span className="login-label">Full name</span>
-                    <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" />
+                    <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" disabled={isRedirecting} />
                   </label>
 
                   <label className="login-field login-identity-field" htmlFor="loginUserId">
                     <span className="login-label">User id</span>
-                    <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" />
+                    <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" disabled={isRedirecting} />
                   </label>
 
                   <label className="login-field login-identity-field login-identity-field--email" htmlFor="email">
                     <span className="login-label">Email</span>
-                    <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required />
+                    <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required disabled={isRedirecting} />
                   </label>
                 </div>
 
@@ -97,7 +94,7 @@ export default function LoginPageUi(props) {
                   <label htmlFor="password" className="login-label">
                     Password
                   </label>
-                  <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
+                  <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required disabled={isRedirecting} />
                 </div>
 
                 {errorMessage && <p className="login-error" role="alert">
@@ -105,10 +102,10 @@ export default function LoginPageUi(props) {
                   </p>}
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--layout-card-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
-                  <Button type="submit" variant="primary" style={{ width: "100%" }}>
-                    Login
+                  <Button type="submit" variant="primary" style={{ width: "100%" }} disabled={isRedirecting}>
+                    {isRedirecting ? "Signing in..." : "Login"}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }}>
+                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }} disabled={isRedirecting}>
                     Reset password
                   </Button>
                 </div>
@@ -125,10 +122,10 @@ export default function LoginPageUi(props) {
                   </p>
 
 
-                  <Button type="button" onClick={handleDevLogin} variant="primary" style={{
+                  <Button type="button" onClick={handleDevLogin} variant="primary" disabled={isRedirecting} style={{
               width: "100%"
             }}>
-                    Dev Login
+                    {isRedirecting ? "Signing in..." : "Dev Login"}
                   </Button>
                 </div>
               </LoginCard>
@@ -159,13 +156,13 @@ export default function LoginPageUi(props) {
                   Thank you for taking the time to look at the system I have been creating
                 </h2>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   Please have a play with the system and explore how it supports each department.
                 </p>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   <strong>Note:</strong> All data and information in this demonstration is completely made up and nothing is real. You can use the system normally and explore it safely.
@@ -181,13 +178,13 @@ export default function LoginPageUi(props) {
                   What to do
                 </h3>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   In Developer Login, open the first dropdown. Select <strong>Retail</strong>, then choose Workshop Manager, Parts Manager, Techs, Valet Service, or Service. You can also select <strong>Sales</strong>, then choose Admin Manager.
                 </p>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   Once you are logged in, click your role at the bottom of the sidebar, below <strong>Account</strong>, to open your profile page.

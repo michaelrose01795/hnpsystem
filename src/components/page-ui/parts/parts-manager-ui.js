@@ -182,7 +182,7 @@ export default function PartsManagerDashboardUi(props) {
                 const deliveryDate = deliveryInfo?.delivery?.delivery_date;
                 const needsSchedule = needsDeliveryScheduling(row.waitingStatus);
                 return <tr key={`${row.jobNumber}-${row.advisor}-${row.jobId}`} style={{
-                  borderTop: "1px solid var(--separating-line)"
+                  borderTop: "1px solid var(--separating-line-color)"
                 }}>
                           <td style={{
                     padding: "12px 0"
@@ -206,7 +206,7 @@ export default function PartsManagerDashboardUi(props) {
                             {needsSchedule && <button type="button" onClick={() => openScheduleModalForRow(row)} style={{
                       marginTop: "6px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--ghostbutton-ring)",
+                      border: "1px solid var(--ghostbutton-ring-color)",
                       background: "var(--surface)",
                       color: "var(--accent-purple)",
                       padding: "4px 10px",
@@ -246,7 +246,7 @@ export default function PartsManagerDashboardUi(props) {
                   <div style={sectionTitleStyle}>Status Buckets</div>
                   {dashboardData.teamAvailability.map(bucket => <div key={bucket.name} style={{
               padding: "10px 0",
-              borderBottom: "1px solid var(--separating-line)"
+              borderBottom: "1px solid var(--separating-line-color)"
             }}>
                       <div style={{
                 fontWeight: 600
@@ -267,7 +267,7 @@ export default function PartsManagerDashboardUi(props) {
                   <div style={sectionTitleStyle}>Focus Items</div>
                   {dashboardData.focusItems.map(item => <div key={item.title} style={{
               padding: "10px 0",
-              borderBottom: "1px solid var(--separating-line)"
+              borderBottom: "1px solid var(--separating-line-color)"
             }}>
                       <div style={{
                 fontWeight: 600
@@ -312,7 +312,7 @@ export default function PartsManagerDashboardUi(props) {
                 </thead>
                 <tbody>
                   {teamPerformance.map(row => <tr key={row.name} style={{
-              borderTop: "1px solid var(--separating-line)"
+              borderTop: "1px solid var(--separating-line-color)"
             }}>
                       <td style={{
                 padding: "12px 0"
@@ -376,7 +376,7 @@ export default function PartsManagerDashboardUi(props) {
                   </thead>
                   <tbody>
                     {lowStockRows.map(part => <tr key={part.id} style={{
-              borderTop: "1px solid var(--separating-line)"
+              borderTop: "1px solid var(--separating-line-color)"
             }}>
                         <td style={{
                 padding: "12px 0"
@@ -453,7 +453,7 @@ export default function PartsManagerDashboardUi(props) {
               const sourceMeta = resolveSourceMeta(request.source);
               const statusMeta = resolveStatusStyles(request.status || "waiting_authorisation");
               return <tr key={request.request_id} style={{
-                borderTop: "1px solid var(--separating-line)"
+                borderTop: "1px solid var(--separating-line-color)"
               }}>
                           <td style={{
                   padding: "12px 0"

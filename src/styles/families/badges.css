@@ -13,6 +13,41 @@
  */
 
 /* -------------------------------------------------------------------------- */
+/* Count badge — a fixed circular counter that sits inside a nav or list row
+   without changing that row's height. The compound selector is deliberate: the
+   .app-badge base still lives in staffglobal.css, which is imported AFTER this
+   file, so .app-badge.app-badge--count is what lets the variant win on
+   specificity rather than on source order or !important.
+
+   Sized to --table-action-btn-height (32px), the approved dealership-density
+   row-action size, so the circle stays inside the 44px nav control. */
+html.staff-scope .app-badge.app-badge--count {
+  width: var(--table-action-btn-height);
+  min-width: var(--table-action-btn-height);
+  max-width: var(--table-action-btn-height);
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Companion container for an absolutely-positioned count badge: reserves the
+   badge's width so the row label can never run underneath it. */
+html.staff-scope .app-badge-slot {
+  position: relative;
+}
+
+html.staff-scope .app-badge-slot--counted {
+  padding-right: calc(var(--table-action-btn-height) + var(--space-sm));
+}
+
+/* -------------------------------------------------------------------------- */
 /* Trace mode — loud orange outlines on every badge/chip element. */
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-badge="1"])
   :where(

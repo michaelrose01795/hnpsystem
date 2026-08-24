@@ -8,6 +8,7 @@ import Head from "next/head";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 
@@ -96,7 +97,7 @@ function ProfileSummary({ profile }) {
             gridTemplateColumns: "minmax(140px, 1fr) minmax(0, 2fr)",
             gap: 12,
             padding: "8px 0",
-            borderBottom: "1px solid var(--separating-line)"
+            borderBottom: "1px solid var(--separating-line-color)"
           }}
         >
           <span style={{ color: "var(--surfaceTextMuted)" }}>{label}</span>
@@ -257,18 +258,12 @@ function SubjectRequestForm({ onCreated }) {
     >
       <label style={{ fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
         Request type
-        <select
+        <DropdownField
           value={requestType}
           onChange={(e) => setRequestType(e.target.value)}
-          className="app-input"
-          style={{ marginTop: 4, width: "100%", minHeight: 44 }}
-        >
-          {Object.entries(REQUEST_TYPE_LABELS).map(([v, label]) => (
-            <option key={v} value={v}>
-              {label}
-            </option>
-          ))}
-        </select>
+          options={Object.entries(REQUEST_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+          style={{ marginTop: 4, width: "100%" }}
+        />
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
         Details (optional)
@@ -326,10 +321,10 @@ function RequestsList({ requests }) {
           data-dev-section-parent="profile-privacy-requests-table"
         >
           <tr style={{ textAlign: "left", color: "var(--surfaceTextMuted)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>Type</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>Status</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>Filed</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line)" }}>Due by</th>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line-color)" }}>Type</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line-color)" }}>Status</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line-color)" }}>Filed</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>Due by</th>
           </tr>
         </thead>
         <tbody
@@ -340,16 +335,16 @@ function RequestsList({ requests }) {
         >
           {requests.map((row) => (
             <tr key={row.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line-color)" }}>
                 {REQUEST_TYPE_LABELS[row.request_type] || row.request_type}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line-color)" }}>
                 {STATUS_LABELS[row.status] || row.status}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line-color)" }}>
                 {formatDate(row.received_at)}
               </td>
-              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>
                 {formatDate(row.due_at)}
               </td>
             </tr>

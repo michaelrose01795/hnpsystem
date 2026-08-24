@@ -3,7 +3,14 @@
 
 import React, { useEffect, useState } from "react"; // React runtime + hooks
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getValetingDashboardData } from "@/lib/database/dashboard/valeting"; // fetch valet dashboard metrics
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/valeting");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -168,7 +175,7 @@ export default function ValetingDashboard() {
       setLoading(true); // show loading state
       setError(null); // clear previous errors
       try {
-        const payload = await getValetingDashboardData(); // call Supabase query
+        const payload = await (await loadDashboardData()).getValetingDashboardData(); // call Supabase query
         setData(payload); // update state with fetched data
       } catch (fetchError) {
         console.error("Failed to load valeting metrics", fetchError); // log error

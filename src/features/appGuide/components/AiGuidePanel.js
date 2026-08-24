@@ -19,6 +19,8 @@ import { useConfirmation } from "@/context/ConfirmationContext";
 import { getEntryByRoute } from "@/features/appGuide/queryEngine";
 import styles from "./AiGuidePanel.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -74,6 +76,18 @@ function renderMarkdown(text) {
       continue;
     }
 
+    // Compact numbered step — answers commonly use **1**Step text.
+    const compactNumberedMatch = line.match(/^\*\*(\d+)\*\*\s*(.*)$/);
+    if (compactNumberedMatch) {
+      elements.push(
+        <div key={key++} className={styles.mdStep}>
+          <span className={styles.mdStepNum}>{compactNumberedMatch[1]}</span>
+          <span className={styles.mdStepText}>{renderInline(compactNumberedMatch[2], key++)}</span>
+        </div>
+      );
+      continue;
+    }
+
     // Section heading — a line that is entirely bold
     const headingMatch = line.match(/^\*\*(.+)\*\*$/);
     if (headingMatch) {
@@ -110,12 +124,12 @@ function renderMarkdown(text) {
 
     // Empty line → spacing
     if (!line.trim()) {
-      elements.push(<div key={key++} style={{ height: "6px" }} />);
+      elements.push(<div key={key++} className={styles.mdSpacer} aria-hidden="true" />);
       continue;
     }
 
     // Normal paragraph line
-    elements.push(<div key={key++}>{renderInline(line, key++)}</div>);
+    elements.push(<div key={key++} className={styles.mdParagraph}>{renderInline(line, key++)}</div>);
   }
 
   return elements;
@@ -156,6 +170,15 @@ function renderInline(text, baseKey) {
       if (italicMatch[1]) parts.push(<React.Fragment key={partKey++}>{italicMatch[1]}</React.Fragment>);
       parts.push(<em key={partKey++}>{italicMatch[2]}</em>);
       remaining = italicMatch[3];
+      continue;
+    }
+
+    // Asterisk italic: *text* (after bold has already been handled).
+    const starItalicMatch = remaining.match(/^(.*?)\*([^*]+?)\*(.*)/s);
+    if (starItalicMatch) {
+      if (starItalicMatch[1]) parts.push(<React.Fragment key={partKey++}>{starItalicMatch[1]}</React.Fragment>);
+      parts.push(<em key={partKey++}>{starItalicMatch[2]}</em>);
+      remaining = starItalicMatch[3];
       continue;
     }
 
@@ -237,9 +260,10 @@ function SessionBarSkeleton() {
   return (
     <>
       <SkeletonKeyframes />
-      <SkeletonBlock width="100%" height="28px" borderRadius="6px" />
-      <SkeletonBlock width="28px" height="28px" borderRadius="6px" />
-      <SkeletonBlock width="54px" height="28px" borderRadius="6px" />
+      <div className={styles.sessionLoadingSelect}>
+        <SkeletonBlock width="100%" height="44px" borderRadius="6px" />
+      </div>
+      <SkeletonBlock width="44px" height="44px" borderRadius="50%" />
     </>
   );
 }
@@ -261,6 +285,27 @@ function MessagesSkeleton() {
         <SkeletonBlock width="100%" height="28px" borderRadius="8px" />
       </div>
     </div>
+  );
+}
+
+function DeleteChatIcon() {
+  return (
+    <svg
+      className={styles.deleteSessionIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 7h16" />
+      <path d="M9 7V4h6v3" />
+      <path d="m6 7 1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </svg>
   );
 }
 
@@ -405,7 +450,9 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // ─────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messageList = messagesEndRef.current?.parentElement;
+    if (!messageList) return;
+    messageList.scrollTo({ top: messageList.scrollHeight, behavior: "smooth" });
   }, [messages, isSending]);
 
   // ─────────────────────────────────────────────────────────────────────
@@ -638,16 +685,18 @@ export default function AiGuidePanel({ userId, userRoles }) {
         ) : (
           <>
             {/* Session dropdown — global Dropdown component for consistent theme */}
-            <Dropdown
-              options={sessionOptions}
-              value={currentSessionId}
-              onChange={handleSessionChange}
-              placeholder="New conversation"
-              size="sm"
-              ariaLabel="Select chat session"
-              style={{ flex: "1 1 auto", minWidth: 0 }}
-              disabled={sessions.length === 0}
-            />
+            <div className={styles.sessionSelectWrap}>
+              <Dropdown
+                options={sessionOptions}
+                value={currentSessionId}
+                onChange={handleSessionChange}
+                placeholder="New conversation"
+                size="sm"
+                ariaLabel="Select chat session"
+                style={{ width: "100%", minWidth: 0 }}
+                disabled={sessions.length === 0}
+              />
+            </div>
 
             {/* Delete current session */}
             <button
@@ -658,7 +707,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
               title="Delete this chat"
               aria-label="Delete session"
             >
-              ×
+              <DeleteChatIcon />
             </button>
           </>
         )}
@@ -669,8 +718,10 @@ export default function AiGuidePanel({ userId, userRoles }) {
           className={`app-btn app-btn--secondary ${styles.newChatButton}`}
           onClick={handleNewChat}
           disabled={isSending}
+          aria-label="Start a new chat"
         >
-          + New
+          <span aria-hidden="true">+</span>
+          <span className={styles.newChatLabel}>New</span>
         </button>
       </div>
 
@@ -689,7 +740,16 @@ export default function AiGuidePanel({ userId, userRoles }) {
       )}
 
       {/* Message list area */}
-      <div className={styles.messages} role="log" aria-live="polite" aria-label="Chat messages">
+      <LayerTheme
+        as="section"
+        className={`${styles.messages} themed-scrollbar`}
+        radius="var(--radius-md)"
+        padding="var(--space-3)"
+        gap="var(--space-3)"
+        role="log"
+        aria-live="polite"
+        aria-label="Chat messages"
+      >
         {/* Loading state */}
         {messagesLoading && <MessagesSkeleton />}
 
@@ -721,40 +781,53 @@ export default function AiGuidePanel({ userId, userRoles }) {
             const isLastAssistant = !isUser && isLast;
 
             return (
-              <div
+              <article
                 key={msg.id || index}
                 className={`${styles.messageBubble} ${isUser ? styles.messageUser : styles.messageAssistant}`}
               >
-                {/* Message content */}
-                <div className={styles.bubbleContent}>
-                  {isUser ? (
-                    // User messages: plain text
-                    msg.content
-                  ) : (
-                    // Assistant messages: rendered markdown
-                    renderMarkdown(msg.content)
-                  )}
+                <div className={styles.messageMeta}>
+                  <span className={styles.messageAuthor}>{isUser ? "You" : "App Guide"}</span>
+                  <time className={styles.messageTime} dateTime={msg.createdAt || undefined}>
+                    {formatTime(msg.createdAt)}
+                  </time>
                 </div>
+
+                {/* Message content */}
+                {isUser ? (
+                  <div className={styles.bubbleContent}>{msg.content}</div>
+                ) : (
+                  <LayerSurface
+                    className={styles.bubbleContent}
+                    radius="var(--radius-sm)"
+                    padding="var(--space-3) var(--space-4)"
+                    gap="var(--space-sm)"
+                  >
+                    {renderMarkdown(msg.content)}
+                  </LayerSurface>
+                )}
 
                 {/* Source citations under assistant messages */}
                 {!isUser && msg.sources && msg.sources.length > 0 && (
-                  <div className={styles.sources} aria-label="Sources">
-                    {msg.sources.map((src) => (
-                      <span
-                        key={src.id}
-                        className={`${styles.sourceTag} ${src.route ? styles.sourceTagLink : ""}`}
-                        title={src.route ? `Navigate to ${src.route}` : src.title}
-                        onClick={
-                          src.route
-                            ? () => {
-                                window.location.href = src.route;
-                              }
-                            : undefined
-                        }
-                      >
-                        {src.title}
-                      </span>
-                    ))}
+                  <div className={styles.sourceGroup}>
+                    <span className={styles.sourceLabel}>Related sections</span>
+                    <div className={styles.sources} aria-label="Related sections">
+                      {msg.sources.map((src) =>
+                        src.route ? (
+                          <a
+                            key={src.id}
+                            href={src.route}
+                            className={`${styles.sourceTag} ${styles.sourceTagLink}`}
+                            title={`Navigate to ${src.route}`}
+                          >
+                            {src.title}
+                          </a>
+                        ) : (
+                          <span key={src.id} className={styles.sourceTag}>
+                            {src.title}
+                          </span>
+                        )
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -774,11 +847,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
                   </div>
                 )}
 
-                {/* Timestamp */}
-                <span className={styles.messageTime}>
-                  {formatTime(msg.createdAt)}
-                </span>
-              </div>
+              </article>
             );
           })}
 
@@ -795,7 +864,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
-      </div>
+      </LayerTheme>
 
       {/* Send error */}
       {sendError && (

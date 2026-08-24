@@ -1164,7 +1164,7 @@ function RecurringRulesEditor({ isMobile }) {
           </div>
 
           {message ? (
-            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger, #c62828)" }}>
+            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger)" }}>
               {message}
             </div>
           ) : null}
@@ -1973,7 +1973,7 @@ function UserAccountsEditor({ finance, isMobile }) {
       ) : null}
 
       {validationError ? (
-        <div style={{ fontSize: "0.78rem", color: "var(--danger, #c62828)", lineHeight: 1.4 }}>{validationError}</div>
+        <div style={{ fontSize: "0.78rem", color: "var(--danger)", lineHeight: 1.4 }}>{validationError}</div>
       ) : null}
 
       <Button type="button" variant="secondary" size="sm" pill onClick={handleAdd} style={{ justifySelf: "start" }}>

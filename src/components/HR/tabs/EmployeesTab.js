@@ -34,7 +34,7 @@ const primaryButtonStyle = {
 
 const accentFieldSurface = {
   background: "var(--surface)",
-  border: "1px solid var(--input-ring)",
+  border: "1px solid var(--input-ring-color)",
 };
 
 const buildUniqueList = (items = []) => {
@@ -1185,7 +1185,7 @@ function SearchableMultiSelect({
           minHeight: "42px",
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "none" : "1px solid var(--input-ring)",
+          border: hasError ? "none" : "1px solid var(--input-ring-color)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           background: "var(--surface)",
           display: "flex",
@@ -1355,7 +1355,7 @@ function EmployeeDetailsFields({
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--input-ring)",
+    border: "1px solid var(--input-ring-color)",
     background: "var(--surface)",
     color: "var(--text-1)",
   };
@@ -1453,19 +1453,20 @@ function EmployeeDetailsFields({
             />
           </FormField>
           <FormField label="Employment Type" errorMessage={fieldErrors.employmentType}>
-            <select value={values.employmentType} onChange={update("employmentType")} style={applyFieldErrorStyle("employmentType")}>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-              <option value="Temporary">Temporary</option>
-            </select>
+            <DropdownField
+              value={values.employmentType}
+              onChange={update("employmentType")}
+              options={["Full-time", "Part-time", "Contract", "Temporary"]}
+              hasError={Boolean(fieldErrors.employmentType)}
+            />
           </FormField>
           <FormField label="Employment Status" errorMessage={fieldErrors.status}>
-            <select value={values.status} onChange={update("status")} style={applyFieldErrorStyle("status")}>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="On Leave">On Leave</option>
-            </select>
+            <DropdownField
+              value={values.status}
+              onChange={update("status")}
+              options={["Active", "Inactive", "On Leave"]}
+              hasError={Boolean(fieldErrors.status)}
+            />
           </FormField>
           <FormField label="Start Date" errorMessage={fieldErrors.startDate}>
             <div style={applyFieldErrorStyle("startDate", { borderRadius: "var(--radius-xs)" })}>
@@ -1625,7 +1626,7 @@ function AddressSearchField({ value, onChange }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--input-ring)",
+    border: "1px solid var(--input-ring-color)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1727,7 +1728,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--input-ring)",
+    border: "1px solid var(--input-ring-color)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1811,7 +1812,7 @@ const buttonStylePrimary = {
 
 const buttonStyleGhost = {
   ...surfaceButtonStyle,
-  border: "1px solid var(--ghostbutton-ring)",
+  border: "1px solid var(--ghostbutton-ring-color)",
   color: "var(--primary)",
 };
 
@@ -1842,7 +1843,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         style={{
           padding: "12px",
           borderRadius: "var(--input-radius)",
-          border: "1px solid var(--input-ring)",
+          border: "1px solid var(--input-ring-color)",
           background: "var(--surface)",
           resize: "vertical",
         }}

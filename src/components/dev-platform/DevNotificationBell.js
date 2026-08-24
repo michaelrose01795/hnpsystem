@@ -100,11 +100,11 @@ export default function DevNotificationBell() {
             <strong style={{ color: "var(--accentText)", fontSize: "var(--text-body)" }}>Notifications</strong>
             <div style={{ display: "flex", gap: "6px" }}>
               {unread > 0 && (
-                <button type="button" onClick={markAllRead} className="app-btn app-btn--ghost" style={{ minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-body-xs)", background: toneTint("accentText", 10), color: "var(--accentText)", cursor: "pointer" }}>
+                <button type="button" onClick={markAllRead} className="app-btn app-btn--ghost" style={{ minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-caption)", background: toneTint("accentText", 10), color: "var(--accentText)", cursor: "pointer" }}>
                   Mark all read
                 </button>
               )}
-              <Link href="/dev/notifications" onClick={() => setOpen(false)} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-body-xs)", background: toneTint("text-1", 10), color: "var(--text-1)" }}>
+              <Link href="/dev/notifications" onClick={() => setOpen(false)} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-caption)", background: toneTint("text-1", 10), color: "var(--text-1)" }}>
                 Settings
               </Link>
             </div>
@@ -130,10 +130,10 @@ export default function DevNotificationBell() {
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontSize: "var(--text-body-sm)", fontWeight: n.read_at ? 500 : 700, color: "var(--text-1)" }}>{n.title}</div>
-                      {n.body ? <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>{n.body}</div> : null}
+                      {n.body ? <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>{n.body}</div> : null}
                     </div>
                     {!n.read_at && (
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" style={{ background: "transparent", cursor: "pointer", color: "var(--accentText)", opacity: 0.8, fontSize: "var(--text-body-xs)", fontWeight: 700, alignSelf: "flex-start", whiteSpace: "nowrap" }}>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" style={{ background: "transparent", cursor: "pointer", color: "var(--accentText)", opacity: 0.8, fontSize: "var(--text-caption)", fontWeight: 700, alignSelf: "flex-start", whiteSpace: "nowrap" }}>
                         Read
                       </button>
                     )}

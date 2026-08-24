@@ -39,7 +39,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/dashboard/parts/index.js", 3],
   ["src/pages/dashboard/service/index.js", 4],
   ["src/pages/dev/user-diagnostic.js", 5],
-  ["src/pages/job-cards/[jobNumber].js", 18],
+  ["src/pages/job-cards/[jobNumber].js", 17],
   ["src/pages/jobs/index.js", 3],
   ["src/pages/mobile/dashboard.js", 4],
   ["src/pages/nextjobs.js", 1],

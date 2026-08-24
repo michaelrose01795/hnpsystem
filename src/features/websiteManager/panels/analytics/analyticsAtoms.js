@@ -144,7 +144,7 @@ export function BarList({ items = [], format = formatNumber, emptyMessage = "No 
           >
             <div
               style={{
-                background: "var(--accentMain)",
+                background: "var(--primary)",
                 height: "100%",
                 width: `${Math.max(2, ((Number(item.value) || 0) / max) * 100)}%`,
                 borderRadius: "var(--radius-sm, 6px)",

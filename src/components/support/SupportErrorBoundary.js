@@ -397,7 +397,7 @@ function RecoveryDiagnostics({ error, componentStack, referenceCode, captureDiag
           type="button"
           className="app-btn app-btn--ghost"
           onClick={copyDiagnostics}
-          style={{ minHeight: "44px", marginTop: "8px" }}
+          style={{ marginTop: "8px" }}
         >
           {copied ? "Copied ✓" : "Copy diagnostics"}
         </button>

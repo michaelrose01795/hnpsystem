@@ -574,7 +574,7 @@ const MessageBubble = ({
               padding: "6px 10px",
               borderRadius: radii.pill,
               backgroundColor: "rgba(var(--accent-purple-rgb), 0.12)",
-              boxShadow: "0 0 0 3px rgba(var(--accent-purple-rgb), 0.1), 0 12px 28px rgba(var(--shadow-rgb), 0.16)",
+              boxShadow: "var(--shadow-lg)",
               marginTop: "8px"
             }}>
 

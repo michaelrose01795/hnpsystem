@@ -3,7 +3,14 @@
 
 import React, { useEffect, useState } from "react";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getMotDashboardData } from "@/lib/database/dashboard/mot";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/mot");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md section 3.0)
 import MotDashboardUi from "@/components/page-ui/dashboard/mot/dashboard-mot-ui"; // Extracted presentation layer.
@@ -76,7 +83,7 @@ export default function MotDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getMotDashboardData();
+        const payload = await (await loadDashboardData()).getMotDashboardData();
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load MOT dashboard", fetchError);

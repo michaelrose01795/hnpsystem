@@ -5,7 +5,14 @@
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getManagersDashboardData } from "@/lib/database/dashboard/managers";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/managers");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
@@ -175,7 +182,7 @@ export default function ManagersDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getManagersDashboardData();
+        const payload = await (await loadDashboardData()).getManagersDashboardData();
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load managers dashboard", fetchError);

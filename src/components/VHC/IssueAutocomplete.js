@@ -30,7 +30,7 @@ const dropdownStyle = {
   borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--surface)",
-  boxShadow: "0 8px 24px rgba(var(--shadow-rgb), 0.12)",
+  boxShadow: "var(--shadow-md)",
   maxHeight: "220px",
   overflowY: "auto",
   zIndex: 30,

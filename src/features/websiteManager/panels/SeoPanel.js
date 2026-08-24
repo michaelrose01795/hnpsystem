@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { EmptyState, cellStyle, headCellStyle } from "../helpers";
 
 const labelStyle = {
@@ -76,17 +77,11 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
           >
             Website page
           </span>
-          <select
-            className="app-input"
+          <DropdownField
             value={selectedPageKey}
             onChange={(e) => setSelectedPageKey(e.target.value)}
-          >
-            {pages.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+            options={pages.map((p) => ({ value: p.key, label: p.name }))}
+          />
         </label>
 
         {!selectedPage ? (

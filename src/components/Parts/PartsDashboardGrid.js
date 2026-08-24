@@ -90,7 +90,7 @@ export default function PartsDashboardGrid({
             <div style={sectionTitleStyle}>Active Job Queue</div>
             <table style={tableStyle}>
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--grey-accent-light)", fontSize: "0.85rem" }}>
+                <tr style={{ textAlign: "left", color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>
                   <th style={{ paddingBottom: "8px" }}>Job</th>
                   <th style={{ paddingBottom: "8px" }}>Advisor</th>
                   <th style={{ paddingBottom: "8px" }}>Needed</th>
@@ -180,7 +180,7 @@ export default function PartsDashboardGrid({
                 key={item.title}
                 style={{
                   padding: "10px 0",
-                  borderBottom: "1px solid var(--separating-line)"
+                  borderBottom: "1px solid var(--separating-line-color)"
                 }}>
 
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
@@ -221,7 +221,7 @@ export default function PartsDashboardGrid({
               key={delivery.reference}
               style={{
                 padding: "10px 0",
-                borderBottom: "1px solid var(--separating-line)"
+                borderBottom: "1px solid var(--separating-line-color)"
               }}>
 
                 <div style={{ fontWeight: 600 }}>{delivery.supplier}</div>

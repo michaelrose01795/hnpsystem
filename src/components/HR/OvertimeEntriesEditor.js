@@ -222,7 +222,7 @@ const labelStyle = {
 const inputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-xs)",
-  border: "1px solid var(--input-ring)",
+  border: "1px solid var(--input-ring-color)",
   fontWeight: 500,
 };
 

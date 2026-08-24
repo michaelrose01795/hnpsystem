@@ -189,7 +189,7 @@ export default function AssistantPanel({
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accent)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accentText)" }}>
             Operational assistant
           </h2>
           {headline?.text && (

@@ -1432,7 +1432,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
               padding: "8px 14px",
               borderRadius: "var(--input-radius)",
               background: "var(--primary)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               fontWeight: 600,
               cursor: onOpen ? "pointer" : "not-allowed",
               opacity: onOpen ? 1 : 0.6,
@@ -4987,7 +4987,7 @@ export default function VhcDetailsPanel({
             disabled={selectedSet.size === 0}
             style={{
               ...buttonBaseStyle,
-              border: "1px solid var(--ghostbutton-ring)",
+              border: "1px solid var(--ghostbutton-ring-color)",
               backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
               color: "var(--text-accent)",
               cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
@@ -5004,7 +5004,7 @@ export default function VhcDetailsPanel({
                 disabled={selectedSet.size === 0}
                 style={{
                   ...buttonBaseStyle,
-                  border: "1px solid var(--ghostbutton-ring)",
+                  border: "1px solid var(--ghostbutton-ring-color)",
                   backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
                   color: "var(--text-accent)",
                   cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
@@ -5441,6 +5441,7 @@ export default function VhcDetailsPanel({
                       borderBottom: "var(--separating-line)",
                       background: getExplicitBackground(),
                       transition: "background 0.2s ease",
+                      verticalAlign: "middle",
                     }}
                   >
                     <td style={{ padding: "12px 8px", color: "var(--text-accent)", wordWrap: "break-word", overflow: "hidden" }}>
@@ -5562,7 +5563,7 @@ export default function VhcDetailsPanel({
                             fontStyle: "italic",
                             color: "var(--text-1)",
                             background: "transparent",
-                            border: "1px dashed var(--ghostbutton-ring)",
+                            border: "1px dashed var(--ghostbutton-ring-color)",
                             borderRadius: "var(--radius-xs)",
                             padding: "4px 8px",
                             textAlign: "left",
@@ -5761,22 +5762,23 @@ export default function VhcDetailsPanel({
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
-                        <input
-                          ref={(node) => {
-                            if (node) {
-                              labourSuggestionInputRefs.current[item.id] = node;
-                            } else {
-                              delete labourSuggestionInputRefs.current[item.id];
-                            }
-                          }}
-                          className="labour-hours-input"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={labourInputDisplayValue}
-                          onChange={(event) => {
+                    <td style={{ padding: "12px 8px", verticalAlign: "middle" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", position: "relative" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "nowrap", minHeight: "44px" }}>
+                          <input
+                            ref={(node) => {
+                              if (node) {
+                                labourSuggestionInputRefs.current[item.id] = node;
+                              } else {
+                                delete labourSuggestionInputRefs.current[item.id];
+                              }
+                            }}
+                            className="labour-hours-input"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={labourInputDisplayValue}
+                            onChange={(event) => {
                             // Don't allow changes in authorized/declined sections
                             if (
                               severity === "authorized" ||
@@ -5801,8 +5803,8 @@ export default function VhcDetailsPanel({
                               latestValue: value,
                             };
                             queuePersistLabourHours(item.id, value);
-                          }}
-                          onBlur={(event) => {
+                            }}
+                            onBlur={(event) => {
                             // Don't persist in authorized/declined sections
                             if (
                               severity === "authorized" ||
@@ -5833,8 +5835,8 @@ export default function VhcDetailsPanel({
                             }
                             delete labourEditSessionRef.current[item.id];
                             setOpenLabourSuggestionItemId((prev) => (prev === item.id ? null : prev));
-                          }}
-                          onFocus={() => {
+                            }}
+                            onFocus={() => {
                             setOpenLabourSuggestionItemId(item.id);
                             labourEditSessionRef.current[item.id] = {
                               initialValue: String(resolvedLabourHours ?? ""),
@@ -5844,59 +5846,64 @@ export default function VhcDetailsPanel({
                               itemId: item.id,
                               description: labourSuggestionDescription,
                             });
-                          }}
-                          placeholder="h"
-                          style={{
-                            width: "50px",
-                            padding: "4px 6px",
-                            borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--input-ring)",
-                            fontSize: "13px",
-                          }}
-                          disabled={
-                            readOnly ||
-                            severity === "authorized" ||
-                            severity === "declined"
-                          }
-                        />
-                        {showSavedBadge ? (
-                          <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 600 }}>Saved</span>
-                        ) : null}
-                        {labourPersistError ? (
-                          <span role="alert" style={{ fontSize: "11px", color: "var(--danger)", fontWeight: 600 }}>
-                            Not saved — edit or leave the field to retry
-                          </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => openLabourCostModal(item.id, resolvedLabourHours)}
-                          aria-label={`Edit labour cost, currently £${labourCost.toFixed(2)}`}
-                          title="Edit labour cost"
-                          disabled={
-                            readOnly ||
-                            severity === "authorized" ||
-                            severity === "declined"
-                          }
-                          style={{
-                            minWidth: "44px",
-                            minHeight: "44px",
-                            padding: "0 4px",
-                            border: "none",
-                            background: "transparent",
-                            color: "var(--text-1)",
-                            fontSize: "12px",
-                            fontWeight: 600,
-                            whiteSpace: "nowrap",
-                            cursor:
+                            }}
+                            placeholder="h"
+                            style={{
+                              width: "50px",
+                              padding: "4px 6px",
+                              borderRadius: "var(--radius-xs)",
+                              border: "1px solid var(--input-ring-color)",
+                              fontSize: "13px",
+                            }}
+                            disabled={
                               readOnly ||
                               severity === "authorized" ||
                               severity === "declined"
-                                ? "default"
-                                : "pointer",
-                          }}
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => openLabourCostModal(item.id, resolvedLabourHours)}
+                            aria-label={`Edit labour cost, currently £${labourCost.toFixed(2)}`}
+                            title="Edit labour cost"
+                            disabled={
+                              readOnly ||
+                              severity === "authorized" ||
+                              severity === "declined"
+                            }
+                            style={{
+                              minWidth: "44px",
+                              minHeight: "44px",
+                              padding: "0 4px",
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--text-1)",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                              cursor:
+                                readOnly ||
+                                severity === "authorized" ||
+                                severity === "declined"
+                                  ? "default"
+                                  : "pointer",
+                            }}
+                          >
+                            £{labourCost.toFixed(2)}
+                          </button>
+                        </div>
+                        <div
+                          aria-live="polite"
+                          style={{ minHeight: "14px", fontSize: "11px", lineHeight: "14px", fontWeight: 600 }}
                         >
-                          £{labourCost.toFixed(2)}
-                        </button>
+                          {labourPersistError ? (
+                            <span role="alert" style={{ color: "var(--danger)" }}>
+                              Not saved — edit or leave the field to retry
+                            </span>
+                          ) : showSavedBadge ? (
+                            <span style={{ color: "var(--success)" }}>Saved</span>
+                          ) : null}
+                        </div>
                         {labourSuggestionOpen &&
                         labourSuggestionPosition?.itemId === item.id &&
                         typeof document !== "undefined"
@@ -5988,15 +5995,16 @@ export default function VhcDetailsPanel({
                           : null}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 8px" }}>
+                    <td style={{ padding: "12px 8px", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", flexWrap: "nowrap" }}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", width: "70px", flex: "0 0 70px" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={totalEditItemId === item.id ? totalEditValue : totalDisplayValue}
-                            onFocus={() => {
+                          <div style={{ display: "flex", alignItems: "center", minHeight: "44px" }}>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={totalEditItemId === item.id ? totalEditValue : totalDisplayValue}
+                              onFocus={() => {
                             // When the user clicks in, seed the edit buffer with the current
                             // displayed value so they see the same number they were looking at.
                             setTotalEditItemId(item.id);
@@ -6005,15 +6013,15 @@ export default function VhcDetailsPanel({
                                 ? String(entry.totalOverride)
                                 : (() => { const r = parseFloat(totalCost.toFixed(2)); return Number.isInteger(r) ? String(r) : r.toFixed(2); })()
                             );
-                            }}
-                            onChange={(event) => {
+                              }}
+                              onChange={(event) => {
                             // Keep the edit buffer in sync so the input shows exactly what
                             // the user is typing (including empty string — no snap-back).
                             totalOverrideTouchedRef.current.add(String(item.id));
                             setTotalEditValue(event.target.value);
                             updateEntryValue(item.id, "totalOverride", event.target.value);
-                            }}
-                            onBlur={() => {
+                              }}
+                              onBlur={() => {
                             const rawValue = totalEditItemId === item.id
                               ? totalEditValue
                               : entry.totalOverride;
@@ -6049,34 +6057,29 @@ export default function VhcDetailsPanel({
                                 );
                               })
                               .catch((error) => console.error("Failed to save total override", error));
-                            }}
-                            placeholder="0.00"
-                            className="vhc-total-input"
-                            style={{
-                              width: "70px",
-                              boxSizing: "border-box",
-                              padding: "4px 6px",
-                              borderRadius: "var(--radius-xs)",
-                              border: "1px solid var(--input-ring)",
-                              fontSize: "13px",
-                              fontWeight: totalResolution.hasManualOverride ? 600 : 700,
-                              color: totalResolution.hasManualOverride ? "var(--text-accent)" : "var(--info-dark)",
-                            }}
-                            disabled={readOnly}
-                          />
-                          {totalResolution.hasManualOverride ? (
-                            <span
-                              style={{
-                                fontSize: "9px",
-                                lineHeight: 1.2,
-                                fontWeight: 600,
-                                color: "var(--warning)",
-                                whiteSpace: "nowrap",
                               }}
-                            >
-                              Manual override
-                            </span>
-                          ) : null}
+                              placeholder="0.00"
+                              className="vhc-total-input"
+                              style={{
+                                width: "70px",
+                                boxSizing: "border-box",
+                                padding: "4px 6px",
+                                borderRadius: "var(--radius-xs)",
+                                border: "1px solid var(--input-ring-color)",
+                                fontSize: "13px",
+                                fontWeight: totalResolution.hasManualOverride ? 600 : 700,
+                                color: totalResolution.hasManualOverride ? "var(--text-accent)" : "var(--info-dark)",
+                              }}
+                              disabled={readOnly}
+                            />
+                          </div>
+                          <div style={{ minHeight: "14px", fontSize: "9px", lineHeight: "14px", fontWeight: 600 }}>
+                            {totalResolution.hasManualOverride ? (
+                              <span style={{ color: "var(--warning)", whiteSpace: "nowrap" }}>
+                                Manual override
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                         {isWarranty && (
                           <span
@@ -6088,7 +6091,7 @@ export default function VhcDetailsPanel({
                               height: "24px",
                               borderRadius: "var(--radius-xs)",
                               background: "var(--primary)",
-                              color: "var(--surface)",
+                              color: "var(--onAccentText)",
                               fontSize: "12px",
                               fontWeight: 700,
                               letterSpacing: "0.05em",
@@ -6269,7 +6272,7 @@ export default function VhcDetailsPanel({
           flexDirection: "column",
           gap: "10px",
           padding: "14px 16px",
-          borderBottom: "1px solid var(--separating-line)",
+          borderBottom: "1px solid var(--separating-line-color)",
           background: getRowBackground(),
         }}
       >
@@ -8642,7 +8645,7 @@ export default function VhcDetailsPanel({
                   <tr
                     onClick={() => handleVhcItemRowClick(vhcId)}
                     style={{
-                      borderBottom: isExpanded ? "none" : "1px solid var(--separating-line)",
+                      borderBottom: isExpanded ? "none" : "1px solid var(--separating-line-color)",
                       background: rowBackground,
                       cursor: "pointer",
                       transition: "background 0.2s ease",
@@ -8822,7 +8825,7 @@ export default function VhcDetailsPanel({
                   {/* Expandable Details Row */}
                   {isExpanded && (
                     <tr>
-                      <td colSpan="6" style={{ padding: "0", borderBottom: "1px solid var(--separating-line)" }}>
+                      <td colSpan="6" style={{ padding: "0", borderBottom: "1px solid var(--separating-line-color)" }}>
                         <div
                           className="vhc-parts-identified-expanded"
                           data-dev-section="1"
@@ -8871,7 +8874,7 @@ export default function VhcDetailsPanel({
                                       const surcharge = details.surcharge || false;
 
                                       return (
-                                        <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
+                                        <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--separating-line-color)" }}>
                                           <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
                                             {partName}
                                           </td>
@@ -8993,7 +8996,7 @@ export default function VhcDetailsPanel({
                   <tr
                     key={partItem.id}
                     style={{
-                      borderBottom: "1px solid var(--separating-line)",
+                      borderBottom: "1px solid var(--separating-line-color)",
                       background: "var(--surface)",
                     }}
                   >
@@ -9158,7 +9161,7 @@ export default function VhcDetailsPanel({
                                   borderRadius: "var(--radius-xs)",
                                   border: "none",
                                   background: "var(--success)",
-                                  color: "var(--surface)",
+                                  color: "var(--onAccentText)",
                                   fontWeight: 600,
                                   cursor: "pointer",
                                   fontSize: "12px",
@@ -9813,7 +9816,7 @@ export default function VhcDetailsPanel({
             padding: "6px 12px",
             borderRadius: "var(--radius-pill)",
             background: "var(--primary)",
-            color: "var(--surface)",
+            color: "var(--onAccentText)",
             fontWeight: 600,
             textTransform: "capitalize",
           }}
@@ -11223,576 +11226,465 @@ export default function VhcDetailsPanel({
         ) : null}
       </VHCModalShell>
 
-      <VHCModalShell
+      <PopupModal
         isOpen={isAddPartsModalOpen}
-        title={addPartsModalTitle}
-        width="960px"
-        height="720px"
-        overlayStyle={{
-          "--surface": "var(--theme)",
-          background: "rgba(0, 0, 0, 0.6)",
-          zIndex: "var(--z-modal)",
-          padding: "20px",
-        }}
-        onClose={closeAddPartsModal}
-        hideCloseButton
-        footer={
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-1)" }}>{addPartsMessage}</span>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                type="button"
-                onClick={closeAddPartsModal}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAddSelectedParts}
-                disabled={addingParts || selectedParts.length === 0}
-                style={{
-                  padding: "10px 18px",
-                  borderRadius: "var(--radius-xs)",
-                  background: addingParts || selectedParts.length === 0 ? "var(--surface)" : "var(--primary)",
-                  color: addingParts || selectedParts.length === 0 ? "var(--info)" : "var(--surface)",
-                  fontWeight: 700,
-                  cursor: addingParts || selectedParts.length === 0 ? "not-allowed" : "pointer",
-                }}
-              >
-                {addingParts ? "Adding…" : "Add Parts"}
-              </button>
-            </div>
-          </div>
-        }
+        onClose={addingParts ? undefined : closeAddPartsModal}
+        closeOnBackdrop={!addingParts}
+        ariaLabel={addPartsModalTitle}
+        cardClassName="app-settings-popup-card"
+        cardStyle={{ width: "min(960px, 100%)", overflow: "hidden" }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-          <div>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Search parts catalogue
-            </label>
-            <div style={{ display: "flex", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
-              <input
-                type="text"
-                value={addPartsSearch}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  setAddPartsSearch(nextValue);
-                  if (String(selectedSuggestionQuery || "").trim().toLowerCase() !== nextValue.trim().toLowerCase()) {
-                    setSelectedSuggestionQuery("");
-                  }
-                }}
-                placeholder="Search by part number or description"
-                style={{
-                  flex: 1,
-                  minWidth: "220px",
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
-                  background: "var(--surface)",
-                  fontSize: "14px",
-                  color: "var(--text-1)",
-                }}
-              />
-              <button
+        <div
+          className="app-settings-popup"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+            overflow: "hidden",
+            padding: "var(--page-card-padding)",
+            boxSizing: "border-box",
+          }}
+        >
+          <header className="app-popup-compact-header">
+            <h2>{addPartsModalTitle}</h2>
+            <div className="app-popup-compact-header__actions">
+              <Button
                 type="button"
-                onClick={handleOpenNewPart}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--ghostbutton-ring)",
-                  background: "var(--surface)",
-                  color: "var(--text-accent)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
+                variant="primary"
+                size="sm"
+                busy={addingParts}
+                disabled={selectedParts.length === 0}
+                onClick={handleAddSelectedParts}
               >
-                {showNewPartForm ? "Close new part" : "Add new part"}
-              </button>
-              <button
-                type="button"
-                onClick={runPartsSuggestions}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-                title="Refresh search suggestions"
-              >
-                ↻
-              </button>
+                Add Parts
+              </Button>
+              <Button type="button" variant="secondary" size="sm" disabled={addingParts} onClick={closeAddPartsModal}>
+                Close
+              </Button>
             </div>
-            {partsSearchSuggestions.length > 0 && (
-              <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-accent)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Search suggestions
-                </span>
-                {partsSearchSuggestions.map((suggestion) => (
-                  <button
-                    key={`parts-search-suggestion-${suggestion.id}-${suggestion.query}`}
-                    type="button"
-                    onClick={() => {
-                      const query = String(suggestion.query || "").trim();
-                      if (!query) return;
-                      setAddPartsSearch(query);
-                      setSelectedSuggestionQuery(query);
-                      savePartsSearchLearning({
-                        finalQuery: query,
-                        selectedSuggestion: query,
-                      });
-                    }}
-                    style={{
-                      borderRadius: "var(--radius-pill)",
-                      padding: "6px 10px",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {suggestion.query}
-                  </button>
-                ))}
-              </div>
-            )}
-            {partsSearchSuggestionsLoading && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--text-1)" }}>
-                Loading suggestions…
-              </div>
-            )}
-            {partsLearningSavedAt && Date.now() - partsLearningSavedAt < 2500 && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--success)", fontWeight: 600 }}>
-                Saved
-              </div>
-            )}
-            {addPartsLoading && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--text-1)" }}>
-                Searching…
-              </div>
-            )}
-            {addPartsError && !addPartsLoading && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--danger)" }}>
-                {addPartsError}
-              </div>
-            )}
-          </div>
+          </header>
 
-          {showNewPartForm && (
-            <div style={{ border: "none", borderRadius: "var(--radius-sm)", padding: "16px", background: "var(--surface)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <h2 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>Add part</h2>
-              </div>
-              {newPartError && (
-                <div
-                  style={{
-                    border: "none",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "10px 14px",
-                    color: "var(--danger)",
-                    background: "var(--danger-surface)",
-                    marginBottom: "12px",
-                  }}
-                >
-                  {newPartError}
-                </div>
-              )}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Part number</label>
-                  <input
-                    type="text"
-                    value={newPartForm.partNumber}
-                    onChange={(event) => handleNewPartFieldChange("partNumber", event.target.value)}
-                    placeholder="e.g., FPAD1"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Quantity</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newPartForm.quantity}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      handleNewPartFieldChange("quantity", nextValue === "" ? "" : Number(nextValue));
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Bin location</label>
-                  <input
-                    type="text"
-                    value={newPartForm.binLocation}
-                    onChange={(event) => handleNewPartFieldChange("binLocation", event.target.value)}
-                    placeholder="A1"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Discount code</label>
-                  <input
-                    type="text"
-                    value={newPartForm.discountCode}
-                    onChange={(event) => handleNewPartFieldChange("discountCode", event.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Description</label>
-                  <textarea
-                    value={newPartForm.description}
-                    onChange={(event) => handleNewPartFieldChange("description", event.target.value)}
-                    rows={2}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      resize: "vertical",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Retail price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPartForm.retailPrice}
-                    onChange={(event) => handleNewPartFieldChange("retailPrice", event.target.value)}
-                    placeholder="0.00"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Cost price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPartForm.costPrice}
-                    onChange={(event) => handleNewPartFieldChange("costPrice", event.target.value)}
-                    placeholder="0.00"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--input-ring)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                    }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "12px" }}>
-                <button
-                  type="button"
-                  onClick={() => setNewPartForm(createDefaultNewPartForm())}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    background: "var(--surface)",
-                    color: "var(--text-1)",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  disabled={newPartSaving}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateNewPart}
-                  disabled={newPartSaving}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    background: newPartSaving ? "var(--surface)" : "var(--primary)",
-                    color: newPartSaving ? "var(--info)" : "var(--surface)",
-                    fontWeight: 700,
-                    cursor: newPartSaving ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {newPartSaving ? "Adding…" : "Add part"}
-                </button>
-              </div>
+          {addPartsMessage && (
+            <div className="app-status-message app-status-message--warning" role="status" aria-live="polite">
+              {addPartsMessage}
             </div>
           )}
 
-          <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
-              Search results
-            </div>
-            {addPartsResults.length === 0 ? (
-              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--text-1)" }}>
-                {addPartsLoading ? "Loading results…" : "No parts to show yet."}
-              </div>
-            ) : (
-              <div style={{ maxHeight: "200px", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Number</th>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px" }}>Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {addPartsResults.map((part) => (
-                      <tr
-                        key={part.id}
-                        onClick={() => handleSelectSearchPart(part)}
-                        style={{
-                          cursor: "pointer",
-                          borderBottom: "1px solid var(--separating-line)",
-                        }}
-                        onMouseEnter={(event) => {
-                          event.currentTarget.style.background = "var(--theme)";
-                        }}
-                        onMouseLeave={(event) => {
-                          event.currentTarget.style.background = "transparent";
-                        }}
-                      >
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
-                          {part.name || "Part"}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                          {part.part_number || "—"}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                          {part.storage_location || "—"}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
-                          {part.qty_in_stock ?? 0}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
-              Selected parts
-            </div>
-            {existingPartsForModal.length > 0 && (
-              <div style={{ padding: "12px" }}>
-                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)", marginBottom: "8px" }}>
-                  Already added to this VHC item
+          <div
+            style={{
+              minHeight: 0,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--page-stack-gap)",
+            }}
+          >
+            <LayerTheme
+              as="section"
+              sectionKey="vhc-add-parts-search"
+              parentKey="shared-popup-card"
+              gap="var(--layout-card-gap)"
+            >
+              <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
+              <div style={{ display: "flex", gap: "var(--control-gap)", flexWrap: "wrap", alignItems: "end" }}>
+                <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+                  <label htmlFor="vhc-add-parts-search">Part number or description</label>
+                  <input
+                    id="vhc-add-parts-search"
+                    type="search"
+                    className="app-input app-input--search"
+                    value={addPartsSearch}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setAddPartsSearch(nextValue);
+                      if (String(selectedSuggestionQuery || "").trim().toLowerCase() !== nextValue.trim().toLowerCase()) {
+                        setSelectedSuggestionQuery("");
+                      }
+                    }}
+                    placeholder="Search by part number or description"
+                  />
                 </div>
-                <div style={{ border: "none", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <Button type="button" variant="secondary" size="sm" onClick={handleOpenNewPart}>
+                  {showNewPartForm ? "Close new part" : "Add new part"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={runPartsSuggestions}
+                  title="Refresh search suggestions"
+                  aria-label="Refresh search suggestions"
+                >
+                  Refresh
+                </Button>
+              </div>
+
+              {partsSearchSuggestions.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--control-gap)", alignItems: "center" }}>
+                  <span>Search suggestions</span>
+                  {partsSearchSuggestions.map((suggestion) => (
+                    <Button
+                      key={`parts-search-suggestion-${suggestion.id}-${suggestion.query}`}
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      pill
+                      onClick={() => {
+                        const query = String(suggestion.query || "").trim();
+                        if (!query) return;
+                        setAddPartsSearch(query);
+                        setSelectedSuggestionQuery(query);
+                        savePartsSearchLearning({
+                          finalQuery: query,
+                          selectedSuggestion: query,
+                        });
+                      }}
+                    >
+                      {suggestion.query}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              {partsSearchSuggestionsLoading && <small role="status">Loading suggestions…</small>}
+              {partsLearningSavedAt && Date.now() - partsLearningSavedAt < 2500 && (
+                <div className="app-status-message app-status-message--success" role="status">
+                  Search preference saved.
+                </div>
+              )}
+              {addPartsLoading && <small role="status">Searching…</small>}
+              {addPartsError && !addPartsLoading && (
+                <div className="app-status-message app-status-message--danger" role="alert">
+                  {addPartsError}
+                </div>
+              )}
+            </LayerTheme>
+
+            {showNewPartForm && (
+              <LayerTheme
+                as="section"
+                sectionKey="vhc-add-parts-new-part"
+                parentKey="shared-popup-card"
+                gap="var(--layout-card-gap)"
+              >
+                <h3 style={{ margin: 0 }}>Add part</h3>
+                {newPartError && (
+                  <div className="app-status-message app-status-message--danger" role="alert">
+                    {newPartError}
+                  </div>
+                )}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                    gap: "var(--layout-card-gap)",
+                  }}
+                >
+                  <div>
+                    <label htmlFor="vhc-new-part-number">Part number</label>
+                    <input
+                      id="vhc-new-part-number"
+                      type="text"
+                      className="app-input"
+                      value={newPartForm.partNumber}
+                      onChange={(event) => handleNewPartFieldChange("partNumber", event.target.value)}
+                      placeholder="e.g., FPAD1"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vhc-new-part-quantity">Quantity</label>
+                    <input
+                      id="vhc-new-part-quantity"
+                      type="number"
+                      className="app-input"
+                      min="0"
+                      value={newPartForm.quantity}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        handleNewPartFieldChange("quantity", nextValue === "" ? "" : Number(nextValue));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vhc-new-part-location">Bin location</label>
+                    <input
+                      id="vhc-new-part-location"
+                      type="text"
+                      className="app-input"
+                      value={newPartForm.binLocation}
+                      onChange={(event) => handleNewPartFieldChange("binLocation", event.target.value)}
+                      placeholder="A1"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vhc-new-part-discount">Discount code</label>
+                    <input
+                      id="vhc-new-part-discount"
+                      type="text"
+                      className="app-input"
+                      value={newPartForm.discountCode}
+                      onChange={(event) => handleNewPartFieldChange("discountCode", event.target.value)}
+                    />
+                  </div>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label htmlFor="vhc-new-part-description">Description</label>
+                    <textarea
+                      id="vhc-new-part-description"
+                      className="app-input app-input--textarea"
+                      value={newPartForm.description}
+                      onChange={(event) => handleNewPartFieldChange("description", event.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vhc-new-part-retail-price">Retail price</label>
+                    <input
+                      id="vhc-new-part-retail-price"
+                      type="number"
+                      className="app-input"
+                      min="0"
+                      step="0.01"
+                      value={newPartForm.retailPrice}
+                      onChange={(event) => handleNewPartFieldChange("retailPrice", event.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vhc-new-part-cost-price">Cost price</label>
+                    <input
+                      id="vhc-new-part-cost-price"
+                      type="number"
+                      className="app-input"
+                      min="0"
+                      step="0.01"
+                      value={newPartForm.costPrice}
+                      onChange={(event) => handleNewPartFieldChange("costPrice", event.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="app-popup-compact-header__actions">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    busy={newPartSaving}
+                    onClick={handleCreateNewPart}
+                  >
+                    Add part
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={newPartSaving}
+                    onClick={() => setNewPartForm(createDefaultNewPartForm())}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </LayerTheme>
+            )}
+
+            <LayerTheme
+              as="section"
+              sectionKey="vhc-add-parts-results"
+              parentKey="shared-popup-card"
+              gap="var(--layout-card-gap)"
+            >
+              <h3 style={{ margin: 0 }}>Search results</h3>
+              {addPartsResults.length === 0 ? (
+                <p style={{ margin: 0 }}>{addPartsLoading ? "Loading results…" : "No parts to show yet."}</p>
+              ) : (
+                <div style={{ maxHeight: "200px", overflow: "auto" }}>
+                  <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "560px" }}>
                     <thead>
-                      <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
-                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
-                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
-                        <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
-                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
-                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Warranty</th>
-                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Back Order</th>
-                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Surcharge</th>
-                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Remove</th>
+                      <tr>
+                        <th>Part</th>
+                        <th>Number</th>
+                        <th>Location</th>
+                        <th style={{ textAlign: "right" }}>Stock</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {existingPartsForModal.map((part) => {
-                        const partKey = `${addPartsTarget?.vhcId}-${part.id}`;
-                        const details = partDetails[partKey] || {};
-                        return (
-                          <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
-                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
-                              {part.part?.name || "Part"}
-                            </td>
-                            <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                              {part.part?.description || "—"}
-                            </td>
-                            <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
-                              £{Number(part.unit_price || part.part?.unit_price || 0).toFixed(2)}
-                            </td>
-                            <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                              {part.storage_location || part.part?.storage_location || "—"}
-                            </td>
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <input
-                                type="checkbox"
-                                checked={details.warranty || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked, part.id)}
-                              />
-                            </td>
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <input
-                                type="checkbox"
-                                checked={details.backOrder || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked, part.id)}
-                              />
-                            </td>
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <input
-                                type="checkbox"
-                                checked={details.surcharge || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked, part.id)}
-                              />
-                            </td>
-                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                              <button
-                                type="button"
-                                onClick={() => handleRemovePart(part, addPartsTarget?.vhcId)}
-                                style={{
-                                  padding: "6px 10px",
-                                  borderRadius: "var(--radius-xs)",
-                                  border: "none",
-                                  background: "var(--danger-surface)",
-                                  color: "var(--danger)",
-                                  fontWeight: 600,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {addPartsResults.map((part) => (
+                        <tr
+                          key={part.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleSelectSearchPart(part)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleSelectSearchPart(part);
+                            }
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td style={{ fontWeight: 600 }}>{part.name || "Part"}</td>
+                          <td>{part.part_number || "—"}</td>
+                          <td>{part.storage_location || "—"}</td>
+                          <td style={{ textAlign: "right" }}>{part.qty_in_stock ?? 0}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
-            {selectedParts.length === 0 ? (
-              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--text-1)" }}>
-                No parts selected yet.
-              </div>
-            ) : (
-              <div style={{ maxHeight: "240px", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
-                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
-                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Warranty</th>
-                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Back Order</th>
-                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Surcharge</th>
-                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedParts.map((entry) => (
-                      <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--separating-line)" }}>
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
-                          {entry.part?.name || "Part"}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                          {entry.part?.description || "—"}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
-                          £{Number(entry.part?.unit_price || 0).toFixed(2)}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
-                          {entry.part?.storage_location || "—"}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={entry.warranty}
-                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "warranty", event.target.checked)}
-                          />
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={entry.backOrder}
-                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "backOrder", event.target.checked)}
-                          />
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={entry.surcharge}
-                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "surcharge", event.target.checked)}
-                          />
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSelectedPart(entry.part?.id)}
-                            style={{
-                              padding: "6px 10px",
-                              borderRadius: "var(--radius-xs)",
-                              border: "none",
-                              background: "var(--danger-surface)",
-                              color: "var(--danger)",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </td>
+              )}
+            </LayerTheme>
+
+            <LayerTheme
+              as="section"
+              sectionKey="vhc-add-parts-selected"
+              parentKey="shared-popup-card"
+              gap="var(--layout-card-gap)"
+            >
+              <h3 style={{ margin: 0 }}>Selected parts</h3>
+              {existingPartsForModal.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+                  <h4 style={{ margin: 0 }}>Already added to this VHC item</h4>
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "880px" }}>
+                      <thead>
+                        <tr>
+                          <th>Part</th>
+                          <th>Description</th>
+                          <th style={{ textAlign: "right" }}>Cost</th>
+                          <th>Location</th>
+                          <th style={{ textAlign: "center" }}>Warranty</th>
+                          <th style={{ textAlign: "center" }}>Back Order</th>
+                          <th style={{ textAlign: "center" }}>Surcharge</th>
+                          <th style={{ textAlign: "center" }}>Remove</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {existingPartsForModal.map((part) => {
+                          const partKey = `${addPartsTarget?.vhcId}-${part.id}`;
+                          const details = partDetails[partKey] || {};
+                          return (
+                            <tr key={`existing-${part.id}`}>
+                              <td style={{ fontWeight: 600 }}>{part.part?.name || "Part"}</td>
+                              <td>{part.part?.description || "—"}</td>
+                              <td style={{ textAlign: "right" }}>
+                                £{Number(part.unit_price || part.part?.unit_price || 0).toFixed(2)}
+                              </td>
+                              <td>{part.storage_location || part.part?.storage_location || "—"}</td>
+                              <td style={{ textAlign: "center" }}>
+                                <input
+                                  className="app-toggle app-toggle--checkbox"
+                                  type="checkbox"
+                                  aria-label={`Warranty for ${part.part?.name || "part"}`}
+                                  checked={details.warranty || false}
+                                  onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked, part.id)}
+                                />
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <input
+                                  className="app-toggle app-toggle--checkbox"
+                                  type="checkbox"
+                                  aria-label={`Back order for ${part.part?.name || "part"}`}
+                                  checked={details.backOrder || false}
+                                  onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked, part.id)}
+                                />
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <input
+                                  className="app-toggle app-toggle--checkbox"
+                                  type="checkbox"
+                                  aria-label={`Surcharge for ${part.part?.name || "part"}`}
+                                  checked={details.surcharge || false}
+                                  onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked, part.id)}
+                                />
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <Button
+                                  type="button"
+                                  variant="danger"
+                                  size="xs"
+                                  onClick={() => handleRemovePart(part, addPartsTarget?.vhcId)}
+                                >
+                                  Remove
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {selectedParts.length === 0 ? (
+                <p style={{ margin: 0 }}>No parts selected yet.</p>
+              ) : (
+                <div style={{ maxHeight: "240px", overflow: "auto" }}>
+                  <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "880px" }}>
+                    <thead>
+                      <tr>
+                        <th>Part</th>
+                        <th>Description</th>
+                        <th style={{ textAlign: "right" }}>Cost</th>
+                        <th>Location</th>
+                        <th style={{ textAlign: "center" }}>Warranty</th>
+                        <th style={{ textAlign: "center" }}>Back Order</th>
+                        <th style={{ textAlign: "center" }}>Surcharge</th>
+                        <th style={{ textAlign: "center" }}>Remove</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {selectedParts.map((entry) => (
+                        <tr key={entry.part?.id}>
+                          <td style={{ fontWeight: 600 }}>{entry.part?.name || "Part"}</td>
+                          <td>{entry.part?.description || "—"}</td>
+                          <td style={{ textAlign: "right" }}>£{Number(entry.part?.unit_price || 0).toFixed(2)}</td>
+                          <td>{entry.part?.storage_location || "—"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <input
+                              className="app-toggle app-toggle--checkbox"
+                              type="checkbox"
+                              aria-label={`Warranty for ${entry.part?.name || "part"}`}
+                              checked={entry.warranty}
+                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "warranty", event.target.checked)}
+                            />
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <input
+                              className="app-toggle app-toggle--checkbox"
+                              type="checkbox"
+                              aria-label={`Back order for ${entry.part?.name || "part"}`}
+                              checked={entry.backOrder}
+                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "backOrder", event.target.checked)}
+                            />
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <input
+                              className="app-toggle app-toggle--checkbox"
+                              type="checkbox"
+                              aria-label={`Surcharge for ${entry.part?.name || "part"}`}
+                              checked={entry.surcharge}
+                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "surcharge", event.target.checked)}
+                            />
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="xs"
+                              onClick={() => handleRemoveSelectedPart(entry.part?.id)}
+                            >
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </LayerTheme>
           </div>
         </div>
-      </VHCModalShell>
+      </PopupModal>
 
       {labourCostModal.open && (
         <PopupModal
@@ -11843,16 +11735,16 @@ export default function VhcDetailsPanel({
                         width: "100%",
                         padding: "12px 16px",
                         borderRadius: "var(--radius-sm)",
-                        border: "2px solid var(--input-ring)",
+                        border: "2px solid var(--input-ring-color)",
                         backgroundColor: "var(--surface)",
                         fontSize: "15px",
                         transition: "border-color 0.2s",
                       }}
                       onFocus={(event) => {
-                        event.target.style.borderColor = "var(--focus-ring)";
+                        event.target.style.borderColor = "var(--accent-strong)";
                       }}
                       onBlur={(event) => {
-                        event.target.style.borderColor = "var(--input-ring)";
+                        event.target.style.borderColor = "var(--input-ring-color)";
                       }}
                     />
                   </div>
@@ -11877,16 +11769,16 @@ export default function VhcDetailsPanel({
                         width: "100%",
                         padding: "12px 16px",
                         borderRadius: "var(--radius-sm)",
-                        border: "2px solid var(--input-ring)",
+                        border: "2px solid var(--input-ring-color)",
                         backgroundColor: "var(--surface)",
                         fontSize: "15px",
                         transition: "border-color 0.2s",
                       }}
                       onFocus={(event) => {
-                        event.target.style.borderColor = "var(--focus-ring)";
+                        event.target.style.borderColor = "var(--accent-strong)";
                       }}
                       onBlur={(event) => {
-                        event.target.style.borderColor = "var(--input-ring)";
+                        event.target.style.borderColor = "var(--input-ring-color)";
                       }}
                     />
                   </div>

@@ -52,6 +52,13 @@ async function handler(req, res, session) {
             notes,
             performedBy,
             vehicleStatus,
+            // "job_status_change" is the automatic movement fired from the
+            // /tracking realtime subscription, which runs in every browser with
+            // the page open. Without this, one status change wrote one key event
+            // and one vehicle event per viewer, each credited to a different
+            // member of staff. Every other actionType is an explicit user action
+            // in one browser and keeps the unconditional insert.
+            deduplicate: actionType === "job_status_change",
           });
 
     if (!result.success) {

@@ -172,7 +172,7 @@ export default function InvestigationsSection() {
                   {a.regressions > 0 && <Pill label={`${a.regressions} regression`} tone="danger-base" strong />}
                 </div>
               </div>
-              {a.sectionKey && <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>section: {a.sectionKey}</div>}
+              {a.sectionKey && <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>section: {a.sectionKey}</div>}
               {a.sourceFile && <SourceRef file={a.sourceFile} line={a.sourceLine} />}
             </SubSurface>
           ))
@@ -205,7 +205,7 @@ export default function InvestigationsSection() {
                     <Pill label={`sev ${c.maxSeverity}`} tone={SEV_TONE[c.maxSeverity] || "text-1"} />
                   </div>
                 </div>
-                <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7, wordBreak: "break-word" }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7, wordBreak: "break-word" }}>
                   {c.routes.join(", ") || "—"}
                   {c.versions.length ? ` · versions ${c.versions.join(", ")}` : ""}
                 </div>

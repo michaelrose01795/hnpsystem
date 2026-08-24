@@ -116,7 +116,7 @@ function ReleasesView() {
             <SubSurface key={t.key} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, color: "var(--accentText)" }}>{t.version || t.key}</div>
-                <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                   {t.commit ? `${t.commit.slice(0, 8)} · ` : ""}{t.firstSeen ? new Date(t.firstSeen).toLocaleDateString() : ""} · {t.reportCount} report(s)
                 </div>
               </div>
@@ -137,7 +137,7 @@ function ReleasesView() {
           <SubSurface key={rl.key} style={{ flexDirection: "row", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, color: "var(--text-1)" }}>{rl.version || rl.key}</div>
-              <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>{rl.ref || rl.commit || ""}</div>
+              <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>{rl.ref || rl.commit || ""}</div>
             </div>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
               <Pill label={`${rl.reportCount} reports`} tone="text-1" />
@@ -164,7 +164,7 @@ function ReleasesView() {
                   {inc.open > 0 && <Pill label={`${inc.open} open`} tone="accentText" />}
                 </div>
               </div>
-              <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+              <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                 {inc.firstVersion || "?"} → {inc.lastVersion || "?"}
                 {inc.versions.length ? ` · seen on ${inc.versions.join(", ")}` : ""}
               </div>

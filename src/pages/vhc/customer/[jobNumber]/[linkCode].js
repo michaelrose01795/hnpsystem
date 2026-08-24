@@ -40,6 +40,20 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
   const refetchTimerRef = useRef(null);
   const validateAndFetchRef = useRef(null);
 
+  // Single coalescing point for background reconciliation.
+  //
+  // Both the realtime channel and the customer's own decisions want to re-sync
+  // from the server. Previously each decision fired an immediate full refetch
+  // AND the channel fired another one 400ms later for the same write — two full
+  // job payloads and two rebuilds of the quote model per tap. Routing both
+  // through one debounce collapses a burst of decisions into a single refetch.
+  const scheduleReconcile = useCallback(() => {
+    if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+    refetchTimerRef.current = setTimeout(() => {
+      validateAndFetchRef.current?.({ silent: true });
+    }, 400);
+  }, []);
+
   // Fetch job data via the public share-link API
   useEffect(() => {
     if (!jobNumber || !linkCode) return;
@@ -119,12 +133,9 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
     const jobId = job?.id;
     if (!jobId) return undefined;
 
-    const scheduleRefetch = () => {
-      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
-      refetchTimerRef.current = setTimeout(() => {
-        validateAndFetchRef.current?.({ silent: true });
-      }, 400);
-    };
+    // Shared with the decision handler so a customer's own write and its
+    // realtime echo collapse into one refetch rather than two.
+    const scheduleRefetch = scheduleReconcile;
 
     const channel = supabase
       .channel(`vhc-customer-${jobId}`)
@@ -154,7 +165,7 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
       if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [job?.id]);
+  }, [job?.id, scheduleReconcile]);
 
   // ===== Severity / totals derivation (mirrors customer-preview logic) =====
 
@@ -170,7 +181,11 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
   }, [vhcChecksData, job?.checksheet]);
 
   const builderSummary = useMemo(() => summariseTechnicianVhc(vhcData || {}), [vhcData]);
-  const sections = builderSummary.sections || [];
+  // Memoised because `builderSummary.sections || []` produced a NEW array
+  // identity on every render whenever sections was absent, which invalidated the
+  // quoteViewModel memo below on every render — so the full quote model was
+  // rebuilt for every keystroke, tab change and spinner tick on this page.
+  const sections = useMemo(() => builderSummary.sections || [], [builderSummary]);
 
   const quoteViewModel = useMemo(
     () =>
@@ -186,12 +201,22 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
       }),
     [job, sections, vhcChecksData, partsJobItems, vhcIdAliases, authorizedViewRows]
   );
-  const displaySeverityLists = quoteViewModel.severityLists || {
-    red: [], amber: [], green: [], authorized: [], declined: []
-  };
-  const displayTotals = quoteViewModel.totals || {
-    red: 0, amber: 0, green: 0, authorized: 0, declined: 0
-  };
+  // Stable identities: these are passed straight down to VhcCustomerView, and a
+  // fresh object literal per render would defeat any memoisation there.
+  const displaySeverityLists = useMemo(
+    () =>
+      quoteViewModel.severityLists || {
+        red: [], amber: [], green: [], authorized: [], declined: []
+      },
+    [quoteViewModel]
+  );
+  const displayTotals = useMemo(
+    () =>
+      quoteViewModel.totals || {
+        red: 0, amber: 0, green: 0, authorized: 0, declined: 0
+      },
+    [quoteViewModel]
+  );
 
   // Photos / videos
   const photoFiles = useMemo(() => {
@@ -217,7 +242,50 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
     async (itemId, newStatus) => {
       if (isReadOnlyShare) return;
       if (!itemId || !jobNumber || !linkCode) return;
+
+      // TRUE optimistic update.
+      //
+      // This previously awaited the PATCH and then triggered a FULL refetch of
+      // the job before the customer saw anything change, so one tap on
+      // Authorise/Decline cost a round trip, a second round trip, and a re-render
+      // of the whole view before the next paint. That is the interaction this
+      // route's INP is made of.
+      //
+      // The same fields the server writes are applied locally first (see
+      // /api/vhc/share-update-item-status), so the row flips immediately. The
+      // request still goes out, the realtime channel still reconciles, and any
+      // failure restores the previous rows exactly.
+      const nextStatus = newStatus || "pending";
+      const targetId = String(itemId);
+      const previousChecks = vhcChecksData;
+      const previousAuthorizedRows = authorizedViewRows;
+      const rollback = () => {
+        setVhcChecksData(previousChecks);
+        setAuthorizedViewRows(previousAuthorizedRows);
+      };
+
+      const applyLocalDecision = (rows) =>
+        (rows || []).map((row) => {
+          if (String(row?.vhc_id) !== targetId) return row;
+          const decided = nextStatus === "authorized" || nextStatus === "declined";
+          return {
+            ...row,
+            approval_status: nextStatus,
+            authorization_state: nextStatus,
+            display_status: decided ? nextStatus : row.severity || null,
+            approved_at: decided ? new Date().toISOString() : null,
+            approved_by: decided ? "customer" : null,
+          };
+        });
+
+      setVhcChecksData(applyLocalDecision);
+      setAuthorizedViewRows((rows) =>
+        applyLocalDecision(rows).filter(
+          (c) => c.approval_status === "authorized" || c.approval_status === "completed"
+        )
+      );
       setUpdatingStatus((prev) => new Set(prev).add(itemId));
+
       try {
         const response = await fetch("/api/vhc/share-update-item-status", {
           method: "PATCH",
@@ -226,18 +294,22 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
             jobNumber,
             linkCode,
             vhcItemId: itemId,
-            approvalStatus: newStatus || "pending"
+            approvalStatus: nextStatus
           })
         });
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
+          rollback(); // restore exactly what was there before the tap
           alert(body?.message || "Could not update — please refresh and try again.");
         } else {
-          // Optimistic refresh — channel will also push, but this gives instant feedback
-          validateAndFetchRef.current?.({ silent: true });
+          // Reconcile in the background, coalesced with the realtime echo of
+          // this same write, so one tap costs one refetch rather than two. The
+          // optimistic state is already on screen either way.
+          scheduleReconcile();
         }
       } catch (err) {
         console.error("Customer update failed:", err);
+        rollback();
         alert("Could not update — please check your connection and try again.");
       } finally {
         setUpdatingStatus((prev) => {
@@ -247,12 +319,12 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
         });
       }
     },
-    [isReadOnlyShare, jobNumber, linkCode]
+    [isReadOnlyShare, jobNumber, linkCode, vhcChecksData, authorizedViewRows, scheduleReconcile]
   );
 
   const customerPageStyle = {
     background: "var(--surface)",
-    color: "var(--txt-bright)",
+    color: "var(--text-1)",
     fontSize: "16px",
     lineHeight: 1.5,
     minHeight: "100vh"
@@ -301,10 +373,10 @@ export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--txt-bright)", marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-1)", marginBottom: 8 }}>
             Unable to load report
           </div>
-          <div style={{ fontSize: 14, color: "var(--txt-soft)" }}>{error}</div>
+          <div style={{ fontSize: 14, color: "var(--text-1)" }}>{error}</div>
         </div>
       </div>
     );

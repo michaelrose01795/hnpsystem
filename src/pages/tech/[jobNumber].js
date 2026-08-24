@@ -38,14 +38,21 @@ import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { fetchTrackingEntryForJob } from "@/lib/database/tracking";
 import { supabase } from "@/lib/database/supabaseClient";
-import WriteUpForm from "@/components/JobCards/WriteUpForm";
-import NotesTabNew from "@/components/NotesTab";
+// Non-default tab bodies and on-demand widgets, code-split.
+//
+// Same reasoning as the six VHC modals above: these render only inside a tab or
+// a popup the technician has to open, but they were static imports, so every
+// technician job card downloaded roughly 300 KB of source it usually never
+// showed. The render guards that decide when they appear are unchanged.
+const techChunkLoading = () => <InlineLoading />;
+const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false, loading: techChunkLoading });
+const NotesTabNew = dynamic(() => import("@/components/NotesTab"), { ssr: false, loading: techChunkLoading });
 import {
   CustomerRequestsTab,
   LocationUpdateModal,
   WriteUpWorkspace
 } from "@/pages/job-cards/[jobNumber]";
-import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+const DocumentsUploadPopup = dynamic(() => import("@/components/popups/DocumentsUploadPopup"), { ssr: false });
 import ModalPortal from "@/components/popups/ModalPortal";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
 import { createJobNote, getNotesByJob } from "@/lib/database/notes";
@@ -61,7 +68,7 @@ import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
 import { getWriteUpCompletionState } from "@/features/jobCards/workflow/selectors";
-import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
+const VhcAssistantPanel = dynamic(() => import("@/features/vhcAssistant/components/VhcAssistantPanel"), { ssr: false, loading: techChunkLoading });
 import {
   normaliseDecisionStatus,
   projectVhcItems,
@@ -1351,11 +1358,39 @@ export default function TechJobDetailPage() {
 
   useEffect(() => {
     if (!hasActiveClocking) return undefined;
+
+    // `clockingNow` has exactly two consumers: clockedMinutesTotal, rendered as
+    // `Xh Ymins` (whole minutes), and workspaceClockingEntries.hoursWorked,
+    // rounded to two decimal places of an hour (36-second granularity). A
+    // one-second tick re-rendered this 5,800-line page — the largest route in
+    // the app, and the one a technician leaves open at the ramp all day — many
+    // times more often than either value could change.
+    //
+    // The tick still runs every second and still updates the moment either
+    // displayed value moves; it just no longer commits state when neither has.
+    const signatureAt = (now) => {
+      const minutes = calculateClockingMinutesTotal(clockingRows, now);
+      const hours = clockingRows
+        .map((row) => {
+          if (row?.clock_out) return "";
+          const startedAt = row?.clock_in ? Date.parse(row.clock_in) : Number.NaN;
+          if (!Number.isFinite(startedAt) || now <= startedAt) return "";
+          return ((now - startedAt) / (1000 * 60 * 60)).toFixed(2);
+        })
+        .join(",");
+      return `${minutes}|${hours}`;
+    };
+
+    let lastSignature = signatureAt(Date.now());
     const intervalId = setInterval(() => {
-      setClockingNow(Date.now());
+      const now = Date.now();
+      const signature = signatureAt(now);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      setClockingNow(now);
     }, 1000);
     return () => clearInterval(intervalId);
-  }, [hasActiveClocking]);
+  }, [hasActiveClocking, clockingRows]);
 
   useEffect(() => {
     if (!jobCardId) return undefined;
@@ -5430,7 +5465,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "6px 10px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--input-ring)",
+                    border: "1px solid var(--input-ring-color)",
                     fontSize: "14px", fontWeight: 600,
                     color: "var(--text-1)",
                     backgroundColor: "rgba(var(--surface-rgb), 0.78)",
@@ -5531,7 +5566,7 @@ function DocumentsTab({
                 src={previewDoc.url || previewDoc.file_url || ""}
                 controls
                 title="Video preview"
-                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--surface-dark, #111)" }} /> :
+                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--media-letterbox-bg)" }} /> :
 
 
               <iframe
@@ -5675,7 +5710,7 @@ function DocumentsTab({
                   border: "none",
                   padding: 0,
                   cursor: docUrl ? "pointer" : "default",
-                  backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                  backgroundColor: isImage ? "var(--media-letterbox-bg)" : typeMeta.bg,
                   flexShrink: 0
                 }}>
                 

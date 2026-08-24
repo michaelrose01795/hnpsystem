@@ -163,19 +163,18 @@ const ensureInvoicingPrereqs = async (jobId) => {
    AUTO UPDATE STATUS: BOOKED
    Called when appointment is created
 ============================================ */
-export const autoSetBookedStatus = async (jobId) => {
+export const autoSetBookedStatus = async (jobId, bookedBy = null) => {
   console.log("📅 Auto-setting status to Booked for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
       status: "Booked",
       status_updated_at: new Date().toISOString(),
-      status_updated_by: "SYSTEM_APPOINTMENT"
+      status_updated_by: bookedBy || "SYSTEM_APPOINTMENT"
     });
     
     if (result.success) {
       console.log("✅ Status auto-updated to Booked");
-      await logStatusChange(jobId, null, "Booked", "SYSTEM", "Appointment created");
     }
     
     return result;

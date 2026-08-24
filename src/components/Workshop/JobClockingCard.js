@@ -2,6 +2,7 @@
 // file location: src/components/Workshop/JobClockingCard.js
 
 import React, { useState, useEffect } from "react"; // React hooks for state and effects
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useUser } from "@/context/UserContext"; // Get logged-in user
 import { isInactiveJobStatus } from "@/lib/status/statusHelpers"; // Centralized job status check
 import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
@@ -363,7 +364,7 @@ export default function JobClockingCard() {
             <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
               Not clocked into any jobs
             </p>
-            <p style={{ fontSize: "14px", color: "var(--grey-accent-light)", marginTop: "8px" }}>
+            <p style={{ fontSize: "14px", color: "var(--surfaceTextMuted)", marginTop: "8px" }}>
               Select a job below to start working
             </p>
           </div>
@@ -397,7 +398,7 @@ export default function JobClockingCard() {
                     display: "flex",
                     gap: "12px",
                     fontSize: "13px",
-                    color: "var(--grey-accent-light)"
+                    color: "var(--surfaceTextMuted)"
                   }}>
                     <span>
                       <strong>Clocked in:</strong> {new Date(job.clockIn).toLocaleTimeString()}
@@ -506,22 +507,15 @@ export default function JobClockingCard() {
             onBlur={(e) => e.target.style.borderColor = "var(--surface)"}
           />
 
-          <select
+          <DropdownField
             value={workType}
             onChange={(e) => setWorkType(e.target.value)}
             disabled={loading}
-            style={{
-              padding: "12px 16px",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              fontSize: "14px",
-              cursor: "pointer",
-              outline: "none"
-            }}
-          >
-            <option value="initial">Initial Work</option>
-            <option value="additional">Additional Work</option>
-          </select>
+            options={[
+              { value: "initial", label: "Initial Work" },
+              { value: "additional", label: "Additional Work" },
+            ]}
+          />
 
           <button
             onClick={handleClockIn}
@@ -590,7 +584,7 @@ export default function JobClockingCard() {
                       <td colSpan="6" style={{
                         padding: "40px",
                         textAlign: "center",
-                        color: "var(--grey-accent-light)"
+                        color: "var(--surfaceTextMuted)"
                       }}>
                         No jobs found
                       </td>
@@ -600,7 +594,7 @@ export default function JobClockingCard() {
                       <tr
                         key={job.id}
                         style={{
-                          borderBottom: "1px solid var(--separating-line)",
+                          borderBottom: "1px solid var(--separating-line-color)",
                           transition: "background-color 0.2s"
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--theme)"}
@@ -697,7 +691,7 @@ const tableHeaderStyle = {
   color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
-  borderBottom: "2px solid var(--separating-line)",
+  borderBottom: "2px solid var(--separating-line-color)",
   // Opaque header cell (matches the sticky thead) so rows can't show through
   // behind the heading when the table body scrolls.
   backgroundColor: "var(--surface)",

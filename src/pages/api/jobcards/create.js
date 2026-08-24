@@ -100,6 +100,11 @@ async function handler(req, res, session) {
         vhcRequired: !!jobCard.vhcRequired, // VHC flag
         washRequired: !!jobCard.washRequired, // wash flag
         isFirstJob: true, // single job creation
+        bookedBy:
+          session?.user?.userId ||
+          session?.user?.user_id ||
+          session?.user?.id ||
+          null, // authenticated advisor who created the job
       },
     });
 
@@ -153,7 +158,7 @@ async function handler(req, res, session) {
       jobCard: { // job card details
         jobNumber: jobNumber, // assigned job number
         createdAt: jobCard.createdAt || new Date().toISOString(), // creation timestamp
-        status: "Open", // initial status (corrected from legacy 'pending')
+        status: "Booked", // saving the job creates the single initial Booked milestone
         vehicleReg: jobCard.vehicle.reg, // vehicle registration
         customerId: customerId, // customer id
         description: description, // combined description

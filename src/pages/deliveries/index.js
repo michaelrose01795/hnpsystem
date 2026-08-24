@@ -79,7 +79,7 @@ const statusChipStyle = (status) => {
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.15)", color: "var(--danger-dark)" },
     en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
-    completed: { background: "rgba(var(--success-rgb,34,139,34),0.25)", color: "var(--success, #297C3B)" }
+    completed: { background: "rgba(var(--success-rgb,34,139,34),0.25)", color: "var(--success)" }
   };
   return {
     padding: "4px 12px",
@@ -468,7 +468,7 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
             fontWeight: 600,
             alignSelf: "flex-start",
             background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.15)" : "rgba(var(--warning-rgb),0.2)",
-            color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+            color: job.is_paid ? "var(--success)" : "var(--danger-dark)"
           }}>
           
           {paidLabel}
@@ -577,7 +577,7 @@ function DeliveryJobViewModal({ job, onClose }) {
                     borderRadius: "var(--radius-pill)",
                     fontSize: "0.7rem",
                     background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.2)",
-                    color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+                    color: job.is_paid ? "var(--success)" : "var(--danger-dark)"
                   }}>
                   
                 {job.is_paid ? "Paid" : "Unpaid"}

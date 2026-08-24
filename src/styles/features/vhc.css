@@ -129,12 +129,12 @@ html.staff-scope .vhc-btn {
 
 html.staff-scope .vhc-btn:hover {
   background: var(--accent-purple);
-  color: var(--surface);
+  color: var(--onAccentText);
 }
 
 html.staff-scope .vhc-btn--active {
   background: var(--accent-purple);
-  color: var(--surface);
+  color: var(--onAccentText);
 }
 
 html.staff-scope .vhc-btn--active:hover {

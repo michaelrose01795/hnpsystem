@@ -154,6 +154,52 @@ const buildVehicleNotes = ({ notes }) => {
   return notes ? notes : null;
 };
 
+// Auto-movement de-duplication.
+//
+// /tracking subscribes to every `jobs` UPDATE and, when the new status matches an
+// auto-movement rule, POSTs to /api/tracking/next-action. That runs in *every*
+// browser with the page open, so a single status change produced one key event
+// and one vehicle event per viewer — duplicate rows in the tracking timeline,
+// each attributed to whichever staff member happened to have the tab open rather
+// than to whoever changed the status.
+//
+// This collapses that burst to the first writer. The check is deliberately
+// narrow: it is keyed on job + vehicle status + key action, so a genuinely
+// different transition still writes, and it fails open — if the lookup errors we
+// insert as before, because losing a tracking event is worse than duplicating
+// one. It is scoped to the automatic path only (see `deduplicate` below); manual
+// location updates and every other actionType are untouched.
+const AUTO_MOVEMENT_DEDUPE_WINDOW_MS = 30000;
+
+const hasMatchingRecentEvent = async ({ jobId, status, action }) => {
+  if (!jobId) return false;
+  const since = new Date(Date.now() - AUTO_MOVEMENT_DEDUPE_WINDOW_MS).toISOString();
+  try {
+    const [vehicleResult, keyResult] = await Promise.all([
+      supabase
+        .from("vehicle_tracking_events")
+        .select("event_id")
+        .eq("job_id", jobId)
+        .eq("status", status)
+        .gte("occurred_at", since)
+        .limit(1),
+      supabase
+        .from("key_tracking_events")
+        .select("key_event_id")
+        .eq("job_id", jobId)
+        .eq("action", action)
+        .gte("occurred_at", since)
+        .limit(1),
+    ]);
+    if (vehicleResult.error || keyResult.error) return false;
+    // Both halves must already exist, otherwise a half-written burst would never
+    // be completed.
+    return (vehicleResult.data || []).length > 0 && (keyResult.data || []).length > 0;
+  } catch {
+    return false;
+  }
+};
+
 export const logNextActionEvents = async ({
   actionType,
   jobId,
@@ -165,6 +211,9 @@ export const logNextActionEvents = async ({
   notes,
   performedBy,
   vehicleStatus,
+  // Set by the automatic status-change path only. Every other caller keeps the
+  // previous unconditional insert.
+  deduplicate = false,
 }) => {
   const keyPayload = {
     job_id: jobId || null,
@@ -182,6 +231,19 @@ export const logNextActionEvents = async ({
     notes: buildVehicleNotes({ notes }),
     created_by: performedBy || null,
   };
+
+  if (deduplicate) {
+    const alreadyLogged = await hasMatchingRecentEvent({
+      jobId,
+      status: vehiclePayload.status,
+      action: keyPayload.action,
+    });
+    if (alreadyLogged) {
+      // Another viewer's browser already wrote this movement. Report success so
+      // the caller still refreshes its view — the data it needs is there.
+      return { success: true, data: { keyEvent: null, vehicleEvent: null, deduplicated: true } };
+    }
+  }
 
   const [{ data: keyEvent, error: keyError }, { data: vehicleEvent, error: vehicleError }] = await Promise.all([
     supabase.from("key_tracking_events").insert(keyPayload).select().single(),

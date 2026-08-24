@@ -95,7 +95,7 @@ export default function SectionEditor({
       ))}
 
       {error && (
-        <div style={{ color: "var(--danger-base, #b00)", fontSize: "0.85rem" }}>
+        <div style={{ color: "var(--danger-base)", fontSize: "0.85rem" }}>
           {error}
         </div>
       )}

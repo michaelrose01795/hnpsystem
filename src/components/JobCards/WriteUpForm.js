@@ -22,6 +22,7 @@ import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -2738,7 +2739,7 @@ function WriteUpForm({
                       <button
                         type="button"
                         onClick={addCauseRow}
-                        style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--surface)" }}
+                        style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--onAccentText)" }}
                       >
                         + Add Cause
                       </button>
@@ -2755,18 +2756,16 @@ function WriteUpForm({
                           return (
                             <div key={entry.id} style={causeRowStyle}>
                               <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                                <select
+                                <DropdownField
                                   value={entry.requestKey}
                                   onChange={handleCauseRequestChange(entry.id)}
-                                  style={{ ...modernSelectStyle, flex: "0 0 38%" }}
-                                >
-                                  <option value="">Select a job request…</option>
-                                  {dropdownOptions.map((request) => (
-                                    <option key={request.sourceKey} value={request.sourceKey}>
-                                      {request.label}
-                                    </option>
-                                  ))}
-                                </select>
+                                  placeholder="Select a job request…"
+                                  options={dropdownOptions.map((request) => ({
+                                    value: request.sourceKey,
+                                    label: request.label,
+                                  }))}
+                                  style={{ flex: "0 0 38%" }}
+                                />
                                 <textarea
                                   placeholder="Describe the cause..."
                                   value={entry.text}
@@ -2901,8 +2900,8 @@ function WriteUpForm({
                           flex: 1,
                           backgroundColor: "var(--theme)",
                         }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring-color)")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring-color)")}
                       />
                     ) : (
                       <input
@@ -2914,8 +2913,8 @@ function WriteUpForm({
                           flex: 1,
                           backgroundColor: "var(--theme)",
                         }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring-color)")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring-color)")}
                       />
                     )}
                 </div>

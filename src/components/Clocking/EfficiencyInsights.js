@@ -509,7 +509,7 @@ export default function EfficiencyInsights({
         :global(.efficiency-lost-time-grid > div span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         :global(.efficiency-lost-time-grid > div strong) { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
         .efficiency-alert-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); padding: 0; margin: 0; }
-        .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line); }
+        .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line-color); }
         .efficiency-alert-list li:last-child { border-bottom: 0; }
         .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
         .efficiency-alert-list li div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }

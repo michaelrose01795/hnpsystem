@@ -191,7 +191,7 @@ function Switch({ checked, onChange, disabled }) {
         width: 48,
         height: 44,
         borderRadius: "var(--control-radius)",
-        border: "1px solid var(--checkbox-ring)",
+        border: "1px solid var(--checkbox-ring-color)",
         background: checked ? "rgba(59,130,246,0.85)" : "rgba(255,255,255,0.12)",
         cursor: disabled ? "not-allowed" : "pointer",
         transition: "background 160ms ease",

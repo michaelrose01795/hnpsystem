@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -93,18 +94,12 @@ function NewBreachForm({ onCreated }) {
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Severity
-        <select
+        <DropdownField
           value={severity}
           onChange={(e) => setSeverity(e.target.value)}
-          className="app-input"
-          style={{ marginTop: 4, width: "100%", minHeight: 40 }}
-        >
-          {SEVERITIES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          options={SEVERITIES}
+          style={{ marginTop: 4, width: "100%" }}
+        />
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Root cause / what happened
@@ -117,7 +112,7 @@ function NewBreachForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Creating..." : "Create"}
@@ -186,7 +181,7 @@ export default function BreachesPage() {
 
       <Section title="Breach Register">
         {error && (
-          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>
+          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>
             {error}
           </p>
         )}
@@ -218,37 +213,29 @@ export default function BreachesPage() {
                       <td style={{
                         padding: 8,
                         borderBottom: "var(--separating-line)",
-                        color: overdue ? "var(--danger-base, #ef4444)" : "inherit",
+                        color: overdue ? "var(--danger-base)" : "inherit",
                         fontWeight: overdue ? 700 : 400,
                       }}>
                         {elapsed}h{overdue ? " ⚠" : ""}
                       </td>
                       <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.category || "—"}</td>
                       <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
-                        <select
+                        <DropdownField
                           value={row.severity || "medium"}
                           disabled={busyId === row.id}
                           onChange={(e) => patch(row.id, { severity: e.target.value })}
-                          className="app-input"
-                          style={{ minHeight: 32 }}
-                        >
-                          {SEVERITIES.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
+                          options={SEVERITIES}
+                          size="sm"
+                        />
                       </td>
                       <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
-                        <select
+                        <DropdownField
                           value={row.status}
                           disabled={busyId === row.id}
                           onChange={(e) => patch(row.id, { status: e.target.value })}
-                          className="app-input"
-                          style={{ minHeight: 32 }}
-                        >
-                          {STATUSES.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
+                          options={STATUSES}
+                          size="sm"
+                        />
                       </td>
                       <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                         <input

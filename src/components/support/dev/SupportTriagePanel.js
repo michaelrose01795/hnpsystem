@@ -23,7 +23,7 @@ export default function SupportTriagePanel({ report, patch }) {
     <Panel title="Triage" sectionKey="support-detail-triage">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
         <div>
-          <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7, marginBottom: 4 }}>Status</div>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7, marginBottom: 4 }}>Status</div>
           <DropdownField
             options={STATUS_OPTIONS}
             value={report.status}
@@ -31,7 +31,7 @@ export default function SupportTriagePanel({ report, patch }) {
           />
         </div>
         <div>
-          <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7, marginBottom: 4 }}>Severity</div>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7, marginBottom: 4 }}>Severity</div>
           <DropdownField
             options={SEVERITY_OPTIONS}
             value={report.severity}
@@ -58,7 +58,7 @@ export default function SupportTriagePanel({ report, patch }) {
           value={
             report.duplicate_of ? (
               <span style={{ display: "inline-flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                <a href={`/dev/support-reports/${report.duplicate_of}`} style={{ color: "var(--accentText)", fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)" }}>
+                <a href={`/dev/support-reports/${report.duplicate_of}`} style={{ color: "var(--accentText)", fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)" }}>
                   {String(report.duplicate_of).slice(0, 8)}…
                 </a>
                 <DevButton small variant="ghost" tone="text-1" onClick={() => patch({ duplicateOf: null })}>Clear</DevButton>
@@ -90,7 +90,7 @@ export default function SupportTriagePanel({ report, patch }) {
         />
       </KeyValueGrid>
 
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
         Current: <Pill label={STATUS_META[report.status]?.label || report.status} tone={STATUS_META[report.status]?.tone} /> ·{" "}
         <Pill label={SEVERITY_META[report.severity]?.label || report.severity} tone={SEVERITY_META[report.severity]?.tone} />
       </div>

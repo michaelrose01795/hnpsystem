@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -195,25 +196,16 @@ export default function DeliverySchedulerModal({
             </div>
           </div>
           {scheduleMode === "existing" && (
-            <select
+            <DropdownField
               value={selectedDeliveryId}
               onChange={(event) => setSelectedDeliveryId(event.target.value)}
-              style={{
-                width: "100%",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                padding: "10px 12px",
-                fontWeight: 600,
-                color: "var(--text-1)",
-              }}
-            >
-              <option value="">Select a delivery</option>
-              {deliveries.map((delivery) => (
-                <option key={delivery.id} value={delivery.id}>
-                  {delivery.delivery_date || "Unscheduled"} · {delivery.vehicle_reg || "Vehicle"}
-                </option>
-              ))}
-            </select>
+              placeholder="Select a delivery"
+              options={deliveries.map((delivery) => ({
+                value: delivery.id,
+                label: `${delivery.delivery_date || "Unscheduled"} · ${delivery.vehicle_reg || "Vehicle"}`,
+              }))}
+              style={{ width: "100%" }}
+            />
           )}
           {scheduleMode === "new" && (
             <>

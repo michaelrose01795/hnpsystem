@@ -7,7 +7,14 @@ import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import PaintingDashboardUi from "@/components/page-ui/dashboard/painting/dashboard-painting-ui";
 import { LayerSurface, LayerTheme } from "@/components/ui";
-import { getPaintingDashboardData } from "@/lib/database/dashboard/painting";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/painting");
 
 // Metric cards live inside themed dashboard sections, so they render on --surface.
 const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
@@ -108,7 +115,7 @@ export default function PaintingDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getPaintingDashboardData();
+        const payload = await (await loadDashboardData()).getPaintingDashboardData();
         setData(payload);
       } catch (fetchError) {
         console.error("Failed to load painting dashboard", fetchError);

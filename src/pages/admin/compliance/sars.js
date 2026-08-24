@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -81,7 +82,7 @@ export default function SarsPage() {
     <ComplianceLayout title="Subject Requests">
       <Section title="Subject Requests">
         {error && (
-          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>
+          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>
             {error}
           </p>
         )}
@@ -112,19 +113,13 @@ export default function SarsPage() {
                       {row.subject_email || `#${row.subject_user_id || "—"}`}
                     </td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
-                      <select
+                      <DropdownField
                         value={row.status}
                         disabled={busyId === row.id}
                         onChange={(e) => updateStatus(row.id, e.target.value)}
-                        className="app-input"
-                        style={{ minHeight: 32 }}
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                        options={STATUSES}
+                        size="sm"
+                      />
                     </td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.received_at)}</td>
                     <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.due_at)}</td>

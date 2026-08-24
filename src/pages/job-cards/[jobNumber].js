@@ -26,7 +26,33 @@ import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 // Redesigned Service History tab (summary / tree / detail / mileage trend).
 // Replaces the legacy inline ServiceHistoryTab that lived in this file.
-import ServiceHistoryTab from "@/components/page-ui/job-cards/ServiceHistoryTab";
+// Non-default tab bodies, code-split.
+//
+// The job card opens on "customer-requests". Everything below belongs to a tab
+// or popup the user has to choose before it can render, yet all of it was in the
+// route's first-load bundle: 476 KB of source across Parts, Invoice, Notes,
+// Service history, Contact, the documents upload popup and the clocking history
+// section. That is paid on every job card opened, by every user, whether or not
+// they ever leave the first tab — and this page is opened dozens of times a day.
+//
+// ssr:false matches the tabs that were already dynamic here (VHC panel, write-up
+// form, photo/video editors): these are client-only, and the page itself is
+// behind auth and renders from client-side data.
+//
+// Each keeps a skeleton of roughly the right height so opening a tab for the
+// first time shows the same shaped placeholder the rest of the app uses, not a
+// collapse-and-jump. After the first open the chunk is cached for the session.
+const tabChunkLoading = () => (
+  <>
+    <SkeletonKeyframes />
+    <SkeletonBlock height="320px" />
+  </>
+);
+
+const ServiceHistoryTab = dynamic(() => import("@/components/page-ui/job-cards/ServiceHistoryTab"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
 import {
   normalizeRequests,
   mapCustomerJobsToHistory } from
@@ -54,7 +80,10 @@ const VhcDetailsPanel = dynamic(() => import("@/components/VHC/VhcDetailsPanel")
     </>
   ),
 });
-import InvoiceSection from "@/components/Invoices/InvoiceSection";
+const InvoiceSection = dynamic(() => import("@/components/Invoices/InvoiceSection"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 // Phase 1 of the VHC refactor: route all VHC status reads through the canonical
 // engine. normaliseDecisionStatus is re-exported from the engine (legacy-permissive
@@ -74,9 +103,15 @@ import {
   getJobClockingEntries,
   sumJobClockingHours
 } from "@/lib/database/jobClocking";
-import PartsTabNew from "@/components/PartsTab";
-import NotesTabNew from "@/components/NotesTab";
-import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+const PartsTabNew = dynamic(() => import("@/components/PartsTab"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
+const NotesTabNew = dynamic(() => import("@/components/NotesTab"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
+const DocumentsUploadPopup = dynamic(() => import("@/components/popups/DocumentsUploadPopup"), { ssr: false });
 // Media editors: heavy, and only ever used after a user picks a document to
 // edit. They were mounted unconditionally with `isOpen={false}` (VHCModalShell
 // returns null when closed), so they shipped and mounted on every job card.
@@ -97,7 +132,10 @@ import {
   JobProgressSection,
   CustomerUpdatesSection,
 } from "@/components/page-ui/job-cards/SchedulingTab";
-import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
+const ClockingHistorySection = dynamic(() => import("@/components/JobCards/ClockingHistorySection"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import {
   ensureJobCustomerThread,
@@ -134,7 +172,11 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // real WriteUpForm shape (tab bar + content grid) so switching tabs never
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
-import ContactTab from "@/components/page-ui/job-cards/ContactTab"; // Redesigned Contact tab — one file per tab (CLAUDE.md §4.3).
+// Contact tab — one file per tab (CLAUDE.md §4.3), code-split with the others.
+const ContactTab = dynamic(() => import("@/components/page-ui/job-cards/ContactTab"), {
+  ssr: false,
+  loading: tabChunkLoading,
+});
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 
 function RequestCompleteIcon() {
@@ -2478,7 +2520,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         const PRE_BOOKED_STATUSES = new Set(["", "open", "pending", "new", "booked"]);
         if (PRE_BOOKED_STATUSES.has(currentJobStatus)) {
           try {
-            await autoSetBookedStatus(jobData.id);
+            const bookingActorId = dbUserId || user?.user_id || user?.id || null;
+            await autoSetBookedStatus(jobData.id, bookingActorId);
             // Mirror the transition onto sub-jobs the prime job created
             // appointments for, so they stay in lockstep with the prime.
             if (jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0) {
@@ -2487,7 +2530,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                 const subStatus = String(subJob?.status || "").trim().toLowerCase();
                 if (PRE_BOOKED_STATUSES.has(subStatus)) {
                   try {
-                    await autoSetBookedStatus(subJob.id);
+                    await autoSetBookedStatus(subJob.id, bookingActorId);
                   } catch (subStatusErr) {
                     console.warn(`Warning: Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
                   }
@@ -6601,7 +6644,7 @@ export function CustomerRequestsTab({
             <p style={{ color: "var(--grey-accent)", fontStyle: "italic", margin: 0 }}>Select a request to view details.</p>}
           </div>
         </div> :
-        <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>)
+        <p style={{ color: "var(--surfaceTextMuted)", fontStyle: "italic" }}>No requests logged.</p>)
         }
 
         <style jsx global>{`
@@ -8326,7 +8369,7 @@ export function WriteUpWorkspace({
             <p style={{ color: "var(--grey-accent)", fontStyle: "italic", margin: 0 }}>Select a request to view details.</p>}
           </div>
         </div> :
-        <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>)
+        <p style={{ color: "var(--surfaceTextMuted)", fontStyle: "italic" }}>No requests logged.</p>)
         }
 
         <style jsx global>{`
@@ -12207,24 +12250,15 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             {isJustClockState && selectedTechnicianId ?
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleJustClock}
               disabled={!canEdit || submitting}
-              style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                backgroundColor: "var(--success)",
-                color: "var(--text-2)",
-                padding: "12px 20px",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: !canEdit || submitting ? "not-allowed" : "pointer",
-                opacity: !canEdit || submitting ? 0.6 : 1
-              }}>
+              busy={submitting}>
 
                 {submitting ? "Clocking..." : "Just clock"}
-              </button> :
+              </Button> :
             null}
             <Button
               type="submit"
@@ -12454,7 +12488,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 style={{
                   padding: "10px 20px",
                   borderRadius: "var(--control-radius-xs)",
-                  border: "1px solid var(--ghostbutton-ring)",
+                  border: "1px solid var(--ghostbutton-ring-color)",
                   backgroundColor: "transparent",
                   color: "var(--text-1)",
                   fontWeight: 600,
@@ -12870,7 +12904,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "6px 10px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--input-ring)",
+                    border: "1px solid var(--input-ring-color)",
                     fontSize: "14px", fontWeight: 600,
                     color: "var(--text-1)",
                     backgroundColor: "rgba(var(--surface-rgb), 0.78)",
@@ -12972,7 +13006,7 @@ function DocumentsTab({
                 src={previewDoc.url || previewDoc.file_url || ""}
                 controls
                 title="Video preview"
-                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--surface-dark, #111)" }} /> :
+                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--media-letterbox-bg)" }} /> :
 
 
               <iframe
@@ -13135,7 +13169,7 @@ function DocumentsTab({
                   border: "none",
                   padding: 0,
                   cursor: docUrl ? "pointer" : "default",
-                  backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                  backgroundColor: isImage ? "var(--media-letterbox-bg)" : typeMeta.bg,
                   flexShrink: 0
                 }}>
 

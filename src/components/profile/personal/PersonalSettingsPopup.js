@@ -328,7 +328,7 @@ function RecurringRulesSection() {
           </div>
 
           {message ? (
-            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger, #c62828)" }}>
+            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger)" }}>
               {message}
             </div>
           ) : null}

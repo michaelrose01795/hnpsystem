@@ -43,14 +43,14 @@ function EventRow({ time, primary, secondary, tone }) {
         gap: "10px",
         alignItems: "baseline",
         // Row rule uses the ONLY allowed list separator token (Border Law).
-        borderBottom: "1px solid var(--separating-line)",
+        borderBottom: "1px solid var(--separating-line-color)",
         padding: "6px 0",
       }}
     >
       <span
         style={{
-          fontFamily: "var(--font-mono, ui-monospace, monospace)",
-          fontSize: "var(--text-body-xs)",
+          fontFamily: "var(--font-family-mono)",
+          fontSize: "var(--text-caption)",
           color: "var(--text-1)",
           opacity: 0.6,
           whiteSpace: "nowrap",
@@ -63,7 +63,7 @@ function EventRow({ time, primary, secondary, tone }) {
           {primary}
         </span>
         {secondary ? (
-          <span style={{ display: "block", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, wordBreak: "break-word" }}>
+          <span style={{ display: "block", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, wordBreak: "break-word" }}>
             {secondary}
           </span>
         ) : null}

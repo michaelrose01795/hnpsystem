@@ -156,7 +156,7 @@ function PasscodeModal({
               borderRadius: "14px",
               padding: "10px 12px",
               background: "rgba(198, 40, 40, 0.08)",
-              color: "var(--danger, #c62828)",
+              color: "var(--danger)",
               fontSize: "0.84rem",
             }}
           >
@@ -861,7 +861,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
                 borderRadius: "10px",
                 padding: "10px 12px",
                 background: "rgba(198, 40, 40, 0.08)",
-                color: "var(--danger, #c62828)",
+                color: "var(--danger)",
                 fontSize: "0.84rem",
                 lineHeight: 1.5,
               }}

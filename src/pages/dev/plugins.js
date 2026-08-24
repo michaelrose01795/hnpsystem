@@ -70,11 +70,11 @@ function PluginRow({ plugin }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          <Pill label={plugin.id} tone="text-1" style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)" }} />
+          <Pill label={plugin.id} tone="text-1" style={{ fontFamily: "var(--font-family-mono)" }} />
           <strong style={{ fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>{plugin.label}</strong>
         </div>
         {plugin.description ? (
-          <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.8, wordBreak: "break-word" }}>
+          <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8, wordBreak: "break-word" }}>
             {plugin.description}
           </span>
         ) : null}
@@ -180,7 +180,7 @@ function PluginsView() {
           analysis during triage. A <strong style={{ color: "var(--accentText)" }}>tool</strong> plugin
           surfaces an engineering utility or navigation area on the platform itself and never captures data.
           Any HNPSystem module registers with{" "}
-          <code style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", color: "var(--accentText)" }}>
+          <code style={{ fontFamily: "var(--font-family-mono)", color: "var(--accentText)" }}>
             registerPlugin({"{ kind, id, ... }"})
           </code>{" "}
           — new plugins slot in <strong style={{ color: "var(--accentText)" }}>without editing the core</strong>,
