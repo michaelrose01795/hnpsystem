@@ -50,7 +50,12 @@ const logProxyCheck = (message, details = {}) => {
 const redirectToLogin = (req, pathname) => {
   const loginUrl = new URL("/login", req.url);
   if (pathname !== "/") {
-    loginUrl.searchParams.set("redirectedFrom", pathname);
+    // Include the query string: a staff route often carries the state the user
+    // was actually looking at (?tab=, ?status=), and dropping it returns them to
+    // the right page in the wrong place. login.js re-authorises whatever lands
+    // here against the user who signs in, so this is a hint, never a grant.
+    const search = req.nextUrl?.search || "";
+    loginUrl.searchParams.set("redirectedFrom", `${pathname}${search}`);
   }
   return NextResponse.redirect(loginUrl);
 };

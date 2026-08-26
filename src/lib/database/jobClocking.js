@@ -99,31 +99,13 @@ const calculateHoursWorked = (clockIn, clockOut) => {
   return Number(hours.toFixed(2));
 };
 
-export const sumJobClockingHours = (entries = []) => {
-  if (!Array.isArray(entries)) {
-    return 0;
-  }
+// Both of these are pure and now live in @/lib/jobClocking/totals so a component
+// that calls them during render does not have to import this module (and with it
+// the Supabase browser client). Re-exported here so every existing import site,
+// including the tests, keeps working unchanged.
+export { sumJobClockingHours, resolveClockingDisplayWindow } from "@/lib/jobClocking/totals";
 
-  const total = entries.reduce((sum, entry) => {
-    const hours = Number(entry?.hoursWorked ?? entry?.hours_worked ?? 0);
-    return Number.isFinite(hours) && hours > 0 ? sum + hours : sum;
-  }, 0);
 
-  return Number(total.toFixed(2));
-};
-
-export const resolveClockingDisplayWindow = ({ clockIn = null, clockOut = null, now = Date.now() } = {}) => {
-  const isActive = !clockOut;
-  const completedClockOut = isActive ? null : clockOut;
-  const durationEnd = completedClockOut || new Date(now).toISOString();
-
-  return {
-    clockIn,
-    completedClockOut,
-    durationEnd,
-    isActive,
-  };
-};
 
 const formatCustomerName = (customer = {}) => {
   const first =

@@ -8,16 +8,12 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 2147483000;
+  z-index: var(--z-overlay);
 }
 
 /* ========================================================= */
 /* === Floating bubble                                     === */
 /* ========================================================= */
-/* Specificity note: `html.staff-scope .app-btn--primary` (buttons.css) sets a
-   near-transparent tinted background with !important, so the bubble rules are
-   written as `.wrapper .bubble.bubble` to out-specify it without touching the
-   shared button family. */
 .wrapper .bubble.bubble {
   position: fixed;
   /* Perfect 44px circle — the minimum touch target, no padding to grow it. */
@@ -27,13 +23,6 @@
   min-width: 0 !important;
   min-height: 0 !important;
   border-radius: 50% !important;
-  /* Frosted accent glass: heavier tint than the shared control token so the
-     icon stays legible, with the blur doing the see-through work. */
-  background: rgba(var(--accentMainRgb), 0.55) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  color: var(--onAccentText) !important;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
   cursor: grab;
   pointer-events: auto;
   user-select: none;
@@ -41,16 +30,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: var(--control-transition);
   isolation: isolate;
   z-index: 1;
 }
 
 .wrapper .bubble.bubble:hover,
 .wrapper .bubble.bubble:focus-visible {
-  background: rgba(var(--accentMainRgb), 0.7) !important;
   transform: translateY(-2px);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.3);
 }
 
 .wrapper .bubble.bubble:active {
@@ -66,19 +53,6 @@
   color: currentColor;
 }
 
-/* Open state drops the glass for the solid accent fill. */
-.wrapper .bubble.bubbleOpen {
-  background: var(--primary) !important;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  color: var(--onAccentText) !important;
-}
-
-.bubbleOpen .bubbleLabel,
-.bubble:active .bubbleLabel {
-  color: var(--onAccentText);
-}
-
 /* ========================================================= */
 /* === Panel shell                                         === */
 /* ========================================================= */
@@ -88,10 +62,7 @@
   /* Full card carries a single rounded radius; overflow:hidden clips the
      themed header and editor surfaces to the same corner. */
   border-radius: var(--section-card-radius);
-  box-shadow:
-    0 30px 64px -22px rgba(0, 0, 0, 0.38),
-    0 18px 34px -18px rgba(0, 0, 0, 0.28),
-    0 6px 14px -8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   color: var(--text-1);
   overflow: hidden;
   box-sizing: border-box;
@@ -195,14 +166,13 @@
 .tab {
   width: max-content;
   max-width: none;
-  min-width: 44px;
   white-space: nowrap;
   gap: var(--space-xs);
   position: relative;
   z-index: 1;
-  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
+/* Keep the shared tab above adjacent panel content while hovered or focused. */
 .tab:hover,
 .tab:focus-visible {
   z-index: var(--hover-surface-z, 80);
@@ -212,7 +182,15 @@
   flex: 0 0 auto !important;
 }
 
+/* Floating-note tabs use the compact 32px browser-tab variant while retaining
+   the canonical tab-api colours, type, radius and interaction states. */
+.wrapper .tabBar > button.tab {
+  height: 32px;
+  min-height: 32px !important;
+}
+
 .tabTitle {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -228,17 +206,14 @@
 
 /* Add-tab control — accent-filled square matching the bubble. */
 .tabAdd {
-  min-width: 35px;
-  max-width: 35px;
-  width: 35px;
-  height: 35px;
+  min-width: 32px;
+  max-width: 32px;
+  width: 32px;
   padding: 0;
   justify-content: center;
-  background: var(--primary) !important;
-  color: var(--onAccentText) !important;
 }
 
-/* The glyph grows independently of the fixed 35px tab control. */
+/* The glyph grows independently of the fixed 32px tab control. */
 .tabAddGlyph {
   display: block;
   font-size: 27px;
@@ -247,88 +222,105 @@
   transform: translateY(-1px);
 }
 
-/* A note tab groups its selector with a dedicated 44px delete target. */
+/* A note title and its close action form one browser-style tab. Keeping the
+   buttons as siblings avoids invalid nested-button markup while presenting one
+   continuous control. */
 .noteTab {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto !important;
   min-width: 0;
-  height: 44px;
-  padding-left: var(--space-sm);
+  height: 32px;
+  position: relative;
   border-radius: var(--control-radius);
   background: var(--tab-button-bg);
   color: var(--tab-button-color);
   overflow: hidden;
+  transition: var(--control-transition);
 }
 
-.noteTab:global(.is-active) {
-  background: var(--primary);
-  color: var(--onAccentText);
+.noteTab:hover:not(.noteTabActive):not([data-deleting="true"]) {
+  background: var(--tab-button-hover-bg);
 }
 
-.noteTabSelect {
+.noteTabActive {
+  background: var(--tab-button-selected-bg);
+  color: var(--tab-button-selected-color);
+}
+
+.noteTab:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.wrapper .tabBar button.noteTabSelect {
   display: inline-flex;
   align-items: center;
-  align-self: stretch;
+  gap: var(--space-xs);
+  height: 32px;
+  min-height: 32px !important;
   min-width: 0;
-  max-width: 150px;
-  padding: 0;
-  background: transparent;
-  color: currentColor;
-  cursor: pointer;
+  max-width: 158px;
+  padding: 0 var(--space-xs) 0 var(--space-sm);
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+/* Shared notes use a favicon-like leading mark inside the browser-style tab.
+   It stays decorative because the tab's accessible name also announces it. */
+.sharedNoteIcon {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  opacity: 0.82;
 }
 
 .noteTabSelect:focus-visible,
 .tabDelete:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring);
 }
 
-.tabDelete {
+.wrapper button.tabDelete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 !important;
-  border-radius: 50% !important;
-  background: transparent !important;
-  color: inherit;
-  cursor: pointer;
-  box-shadow: none;
-  transition:
-    box-shadow 0.14s ease;
-}
-
-.tabDeleteGlyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 32px;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: var(--danger);
-  color: var(--text-2);
-  transition: background-color 0.14s ease, transform 0.14s ease;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  cursor: pointer;
+  box-shadow: none;
+  opacity: 0.72;
+  transition: var(--control-transition);
 }
 
-.tabDelete:hover .tabDeleteGlyph,
-.tabDelete:focus-visible .tabDeleteGlyph {
-  background: var(--danger-hover);
-  transform: scale(1.04);
+.wrapper button.tabDelete:hover:not(:disabled),
+.wrapper button.tabDelete:focus-visible:not(:disabled) {
+  background: var(--danger-surface) !important;
+  color: var(--danger) !important;
+  opacity: 1;
 }
 
-.tabDelete:active .tabDeleteGlyph {
-  transform: scale(0.96);
+.wrapper button.tabDelete:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.wrapper button.tabDelete:active:not(:disabled) .deleteNoteIcon {
+  transform: scale(0.9);
 }
 
 .deleteNoteIcon {
   flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.14s ease;
 }
 
 /* ========================================================= */
@@ -370,14 +362,6 @@
   flex: 1 1 180px;
   min-width: 140px;
   max-width: 100%;
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.titleInput::placeholder {
-  color: var(--grey-accent);
-  font-weight: 400;
 }
 
 .titleActions {
@@ -430,6 +414,12 @@
   word-break: break-word;
   overflow-wrap: anywhere;
   transition: var(--control-transition);
+}
+
+/* contentEditable is not covered by staffglobal.css's borderless textarea rule,
+   so match that shared field treatment at the same staff-scope specificity. */
+:global(html.staff-scope) .richEditor {
+  border: none !important;
 }
 
 .richEditor * {
@@ -588,131 +578,11 @@
   opacity: 0.55;
 }
 
-/* ========================================================= */
-/* === Share modal                                         === */
-/* ========================================================= */
-.shareOverlay {
-  position: fixed;
-  inset: 0;
-  background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.28));
-  z-index: 2147483001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  padding: 14px;
-}
-
-.shareModal {
-  width: 480px;
-  max-width: calc(100vw - 28px);
-  max-height: calc(100dvh - 28px);
-  box-shadow: var(--dropdown-menu-shadow);
-  overflow: hidden;
-}
-
-.shareModalHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--layout-card-gap);
-}
-
-.shareHeading {
-  min-width: 0;
-}
-
-.shareHeading h2 {
-  margin: 0;
-  color: var(--text-1);
-  font-size: var(--text-h3);
-  line-height: 1.2;
-  text-wrap: balance;
-}
-
-.shareHeading p {
-  margin: var(--space-xs) 0 0;
-  max-width: 38ch;
-  color: var(--surfaceTextMuted);
-  font-size: var(--text-caption);
-  line-height: 1.4;
-}
-
-.shareSearchWrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.shareSearch {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.shareSelectedCount {
-  flex: 0 0 auto;
-  font-size: var(--text-caption);
-  color: var(--surfaceTextMuted);
-  white-space: nowrap;
-}
-
-.shareCloseButton {
-  flex: 0 0 auto;
-}
-
-.shareUserList {
-  overflow-y: auto;
-  min-height: 180px;
-  max-height: min(340px, calc(100dvh - 230px));
-}
-
-.shareUserRow {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 2px var(--space-sm);
-  align-items: center;
-  padding: var(--space-2) var(--space-2);
-  border-bottom: 1px solid var(--separating-line-color);
-  min-height: 44px;
-  cursor: pointer;
-  transition: background-color 0.12s ease;
-}
-
-.shareUserRow:hover {
-  background: var(--control-bg-hover);
-}
-
-.shareUserRow:last-child {
-  border-bottom: 0;
-}
-
-.shareUserName {
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-1);
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shareUserEmail {
-  grid-column: 2 / 3;
-  font-size: var(--text-caption);
-  color: var(--surfaceTextMuted);
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shareEmpty {
-  padding: var(--space-3);
-  font-size: var(--text-caption);
-  color: var(--surfaceTextMuted);
-  text-align: center;
-}
+/* NOTE: the Share note popup now lives in
+   src/components/GlobalNotes/ShareNotePopup.js and owns its own stylesheet,
+   src/components/GlobalNotes/ShareNotePopup.module.css. Its styles are NOT
+   here — read the specificity contract at the top of that file before
+   changing how the share rows look. */
 
 /* ========================================================= */
 /* === Responsive                                          === */
@@ -731,18 +601,5 @@
 
   .richEditor {
     min-height: 132px;
-  }
-
-  .shareModalHeader {
-    gap: var(--space-sm);
-  }
-
-  .shareSearchWrap {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .shareSelectedCount {
-    align-self: flex-start;
   }
 }

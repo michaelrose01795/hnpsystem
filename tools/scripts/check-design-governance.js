@@ -131,10 +131,52 @@ function checkCanonicalManifest() {
   if (problems.length) return problems;
 
   const app = read(CANONICAL.appEntry);
-  for (const required of [CANONICAL.tokens, CANONICAL.staffGlobal, CANONICAL.customerGlobal]) {
+  for (const required of [CANONICAL.tokens, CANONICAL.staffGlobal]) {
     const alias = "@/" + required.replace(/^src\//, "");
     if (!app.includes(alias)) {
       problems.push(`${CANONICAL.appEntry}: must import ${alias} - it is a canonical stylesheet.`);
+    }
+  }
+
+  // custglobal.css is canonical but is NOT imported by _app any more.
+  //
+  // Every rule in it is anchored on `html.website-scope`, which only /website
+  // routes set, yet importing it from _app put 82 KB of render-blocking CSS on
+  // all 162 routes. It is now emitted as a standalone static asset and linked
+  // only from the routes that use it. The requirement is unchanged in substance
+  // — it must still be wired up, and reachable on the customer routes — so this
+  // asserts the replacement wiring rather than the import.
+  {
+    const emitter = "tools/scripts/emit-route-scoped-css.js";
+    const manifestPath = "src/config/routeScopedCss.generated.json";
+
+    if (!exists(emitter)) {
+      problems.push(`${emitter}: missing - it emits custglobal.css as a route-scoped stylesheet.`);
+    } else if (!read(emitter).includes(CANONICAL.customerGlobal)) {
+      problems.push(`${emitter}: must emit ${CANONICAL.customerGlobal} - it is a canonical stylesheet.`);
+    }
+
+    if (!exists(manifestPath)) {
+      problems.push(`${manifestPath}: missing - run \`npm run css:route-scoped\`.`);
+    } else {
+      let manifestJson = null;
+      try {
+        manifestJson = JSON.parse(read(manifestPath));
+      } catch {
+        problems.push(`${manifestPath}: is not valid JSON - run \`npm run css:route-scoped\`.`);
+      }
+      if (manifestJson && !manifestJson.website) {
+        problems.push(`${manifestPath}: missing the "website" entry for custglobal.css.`);
+      }
+    }
+
+    // Both link sites must exist, or a customer route paints unstyled.
+    if (!read(CANONICAL.appEntry).includes("ensureRouteScopedStylesheet")) {
+      problems.push(`${CANONICAL.appEntry}: must link route-scoped CSS on client navigation (ensureRouteScopedStylesheet).`);
+    }
+    const documentEntry = "src/pages/_document.js";
+    if (!exists(documentEntry) || !read(documentEntry).includes("routeScopedCssFor")) {
+      problems.push(`${documentEntry}: must emit route-scoped CSS links for a first paint (routeScopedCssFor).`);
     }
   }
 

@@ -3,6 +3,7 @@ import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
 import WarrantyTab from "@/components/page-ui/job-cards/WarrantyTab"; // redesigned Warranty tab — one file per tab (CLAUDE.md §4.3)
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import Button from "@/components/ui/Button";
 
 export default function JobCardDetailPageUi(props) {
   const {
@@ -207,20 +208,9 @@ export default function JobCardDetailPageUi(props) {
       display: "flex",
       gap: "10px"
     }}>
-            <button onClick={() => router.push("/jobs")} style={{
-        padding: "var(--control-padding)",
-        backgroundColor: "var(--primary)",
-        color: "var(--text-2)",
-        border: "none",
-        borderRadius: "var(--control-radius)",
-        cursor: "pointer",
-        fontWeight: "600",
-        fontSize: "var(--control-font-size)",
-        minHeight: "var(--control-height)",
-        transition: "background-color 0.2s"
-      }} onMouseEnter={e => e.target.style.backgroundColor = "var(--primary-selected)"} onMouseLeave={e => e.target.style.backgroundColor = "var(--primary)"}>
+            <Button type="button" variant="primary" onClick={() => router.push("/jobs")}>
               View All Job Cards
-            </button>
+            </Button>
           </div>
         </div>
       </>; // render extracted page section.
@@ -315,55 +305,25 @@ export default function JobCardDetailPageUi(props) {
               </>}
             {/* Link Job — hidden once job reaches Invoiced / Released / Archived (read-only). */}
             {!isInvoiceOrBeyondReadOnly && !isArchiveMode &&
-            <button className="app-btn app-btn--sm app-btn--primary" onClick={() => setIsLinkPopupOpen(true)}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setIsLinkPopupOpen(true)}>
                 Link Job
-              </button>}
+              </Button>}
             {/* Archive — replaces Link Job once the job is Released (awaits archival). */}
             {jobReleased && !isArchiveMode &&
-            <button className="app-btn app-btn--sm app-btn--primary" onClick={handleArchiveJob}>
+            <Button type="button" variant="danger" size="sm" onClick={handleArchiveJob}>
                 Archive Job
-              </button>}
-            {(isOpenStatus || isBookedStatus) && !isCheckedIn && <button onClick={handleCheckIn} disabled={checkingIn || !canEdit} style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: checkingIn || !canEdit ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              transition: "background-color 0.2s",
-              opacity: checkingIn || !canEdit ? 0.7 : 1
-            }} onMouseEnter={e => {
-              if (!checkingIn && canEdit) {
-                e.target.style.backgroundColor = "var(--primary-hover)";
-              }
-            }} onMouseLeave={e => {
-              if (!checkingIn && canEdit) {
-                e.target.style.backgroundColor = "var(--primary)";
-              }
-            }}>
+              </Button>}
+            {(isOpenStatus || isBookedStatus) && !isCheckedIn && <Button type="button" variant="primary" size="sm" onClick={handleCheckIn} busy={checkingIn} disabled={!canEdit}>
                 {checkingIn ? "Checking In..." : "Check In"}
-              </button>}
-            {showReleaseButton && <button onClick={async () => {
+              </Button>}
+            {showReleaseButton && <Button type="button" variant="primary" size="sm" onClick={async () => {
               const result = await handleReleaseJob();
               if (!result?.success) {
                 alert(result?.error || "Unable to release vehicle");
               }
-            }} style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--success)",
-              color: "var(--text-2)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)"
             }}>
                 Release
-              </button>}
+              </Button>}
             </div>
           </div>
 
@@ -1022,16 +982,16 @@ export default function JobCardDetailPageUi(props) {
           gap: "8px",
           justifyContent: "flex-end"
         }}>
-              <button className="app-btn app-btn--secondary" onClick={() => {
+              <Button type="button" variant="secondary" onClick={() => {
             setIsLinkPopupOpen(false);
             setLinkJobInput("");
             setLinkError(null);
           }}>
                 Cancel
-              </button>
-              <button className="app-btn app-btn--primary" onClick={handleLinkJob} disabled={isLinking}>
+              </Button>
+              <Button type="button" variant="primary" onClick={handleLinkJob} busy={isLinking}>
                 {isLinking ? "Linking…" : "Link"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>}

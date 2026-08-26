@@ -3,11 +3,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
 import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
-import { fetchTrackingSnapshot } from "@/lib/database/tracking";
+import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table; the write itself is server-owned
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -24,9 +25,26 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface inner-section primitive
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summary-tile primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
-import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
-import TrackingMapModal from "@/features/tracking/map/TrackingMapModal"; // CSS-only dealership site map overlay
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import useIdleWarm from "@/hooks/useIdleWarm";
+
+// Two surfaces on this route render nothing on arrival, and both were the
+// heaviest things in its eager import graph.
+//
+// `LoanCarSchedulePanel` (78 kB of source, plus FuelGauge and the calendar
+// family it pulls in) only mounts when the Loan Cars tab is selected, and that
+// tab only exists for workshop controllers — every other role downloaded it and
+// could never reach it. `TrackingMapModal` only mounts while the Key/Parking
+// map overlay is open.
+//
+// Both are code-split and warmed on idle, so a workshop controller who switches
+// to Loan Cars, or anyone who presses Map, finds the chunk already in cache
+// rather than waiting on a request. Same DOM, same effects, same behaviour.
+const loadLoanCarSchedulePanel = () => import("@/components/LoanCars/LoanCarSchedulePanel");
+const loadTrackingMapModal = () => import("@/features/tracking/map/TrackingMapModal");
+
+const LoanCarSchedulePanel = dynamic(loadLoanCarSchedulePanel, { ssr: false });
+const TrackingMapModal = dynamic(loadTrackingMapModal, { ssr: false });
 
 const CAR_LOCATIONS = [
 { id: "na", label: "N/A" },
@@ -109,29 +127,9 @@ const ensureDropdownOption = (options = [], value = "") => {
 
 };
 
-const AUTO_MOVEMENT_RULES = {
-  "workshop in progress": {
-    keyLocation: "Workshop Cupboard – Jobs in Progress",
-    vehicleLocation: "In Workshop",
-    vehicleStatus: "In Workshop"
-  },
-  wash: {
-    keyLocation: "Workshop Cupboard – Wash",
-    vehicleStatus: "Wash"
-  },
-  complete: {
-    keyLocation: "Workshop Cupboard – Complete",
-    vehicleLocation: "Ready for Release",
-    vehicleStatus: "Ready for Release"
-  }
-};
-
-const getAutoMovementRule = (status) => {
-  if (!status) return null;
-  return AUTO_MOVEMENT_RULES[status.trim().toLowerCase()] || null;
-};
-
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
+
+const TRACKING_SNAPSHOT_ENDPOINT = "/api/tracking/snapshot";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -1849,6 +1847,13 @@ export default function TrackingDashboard() {
     return base;
   }, [isWorkshopManager]);
   const [activeTab, setActiveTab] = useState("tracker");
+
+  // The map overlay is reachable by every role on this page, so its chunk is
+  // warmed unconditionally. The loan-car schedule is workshop-controller only
+  // and is warmed alongside their other deferred work below — `useIdleWarm`
+  // deliberately runs once per mount, and `isWorkshopManager` is still false on
+  // the first render while UserContext resolves.
+  useIdleWarm([loadTrackingMapModal]);
   const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
   const [activeTopUpId, setActiveTopUpId] = useState(null);
@@ -1887,13 +1892,25 @@ export default function TrackingDashboard() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
+  // Read through the API rather than calling `fetchTrackingSnapshot()` in the
+  // browser.
+  //
+  // The direct call ran two deeply-joined Supabase queries from the page under
+  // the public anon key, which (a) put the whole of lib/database/tracking.js —
+  // loan-car helpers included — into this route's first-load bundle, (b) made
+  // the route's data load invisible to the Server-Timing/hnpPerf instrumentation
+  // every other hot route now reports through, and (c) required the tracking
+  // tables to stay readable by anon. /api/tracking/snapshot already existed,
+  // is role-guarded, runs the identical query under the service role and
+  // returns the identical shape.
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const snapshot = await fetchTrackingSnapshot();
-      if (!snapshot.success) {
-        throw new Error(snapshot.error?.message || "Failed to load tracking data");
+      const response = await fetch(buildApiUrl(TRACKING_SNAPSHOT_ENDPOINT));
+      const snapshot = await response.json().catch(() => null);
+      if (!response.ok || !snapshot?.success) {
+        throw new Error(snapshot?.message || "Failed to load tracking data");
       }
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
@@ -1996,10 +2013,44 @@ export default function TrackingDashboard() {
     }
   }, [isWorkshopManager]);
 
+  // Equipment and oil/stock belong to other tabs, but both were fetched during
+  // mount for every workshop controller — two API round trips racing the
+  // tracking snapshot on the critical path, for data the landing tab never
+  // shows.
+  //
+  // They are now deferred to idle rather than removed. Loading them on tab
+  // activation would be cheaper still, but neither tab has a loading state, so
+  // the first switch would flash "Equipment service list is empty." — a visible
+  // change. Warming on idle keeps the data present the moment anyone switches
+  // while leaving the cold load to the snapshot alone. Same pattern as
+  // useIdleWarm, applied to requests instead of chunks.
   useEffect(() => {
-    if (!isWorkshopManager) return;
-    loadEquipmentChecks();
-    loadOilChecks();
+    if (!isWorkshopManager) return undefined;
+    if (typeof window === "undefined") return undefined;
+
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) return;
+      loadEquipmentChecks();
+      loadOilChecks();
+      // Workshop controllers are the only role with a Loan Cars tab; warm its
+      // chunk here, where `isWorkshopManager` is known, rather than in the
+      // mount-once useIdleWarm above.
+      loadLoanCarSchedulePanel().catch(() => {});
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback?.(id);
+      };
+    }
+    const timer = window.setTimeout(warm, 1500); // Safari / older browsers
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [isWorkshopManager, loadEquipmentChecks, loadOilChecks]);
 
   const sharedSearchValue = useMemo(() => {
@@ -2255,44 +2306,20 @@ export default function TrackingDashboard() {
   // and skipped entirely while the tab is hidden.
   const scheduleEntriesRefresh = useCoalescedRefresh(loadEntries);
 
-  const handleAutoMovement = useCallback(
-    async (job, rule, newStatus) => {
-      try {
-        const payload = {
-          actionType: "job_status_change",
-          jobId: job.id || job.job_id || null,
-          jobNumber: (job.job_number || job.jobNumber || "").toString().trim().toUpperCase(),
-          vehicleId: job.vehicle_id || job.vehicleId || null,
-          vehicleReg: (job.vehicle_reg || job.reg || "").toString().trim().toUpperCase(),
-          keyLocation: rule.keyLocation,
-          vehicleLocation: rule.vehicleLocation,
-          vehicleStatus: rule.vehicleStatus,
-          notes: `Auto-sync from status "${newStatus}"`,
-          performedBy: dbUserId || null
-        };
-
-        const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          const errorPayload = await response.
-          json().
-          catch(() => ({ message: "Failed to auto-sync locations" }));
-          console.error("Auto movement failed", errorPayload?.message || response.statusText);
-          return;
-        }
-
-        scheduleEntriesRefresh();
-      } catch (autoError) {
-        console.error("Auto movement error", autoError);
-      }
-    },
-    [dbUserId, scheduleEntriesRefresh]
-  );
-
+  // This page is a *viewer* of automatic movement, not its owner.
+  //
+  // It used to answer this subscription by POSTing the movement itself, which
+  // meant the write only happened when somebody had this page open, happened
+  // once per open tab, and was attributed to whoever was watching rather than
+  // to whoever changed the status. That write now belongs to the status change
+  // (`updateJob` and /api/status/update, via
+  // `recordAutomaticMovementForStatus`), so all this subscription has to do is
+  // notice that the underlying data moved and refresh the list.
+  //
+  // The subscription stays unfiltered by design — any job in the workshop can
+  // trip a rule — so on a busy day it fires often. The refresh is coalesced and
+  // skipped entirely while the tab is hidden, and the callback now does no
+  // network work of its own.
   useEffect(() => {
     const channel = supabaseClient.
     channel("tracking-job-status").
@@ -2305,9 +2332,10 @@ export default function TrackingDashboard() {
         if (!newJob?.status || newJob.status === oldJob?.status) {
           return;
         }
-        const rule = getAutoMovementRule(newJob.status);
-        if (!rule) return;
-        handleAutoMovement(newJob, rule, newJob.status);
+        // Gated on the same rule table as before, so the refresh cadence this
+        // page has today is unchanged — only the write has moved away.
+        if (!getAutoMovementRule(newJob.status)) return;
+        scheduleEntriesRefresh();
       }
     ).
     subscribe();
@@ -2315,7 +2343,7 @@ export default function TrackingDashboard() {
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [handleAutoMovement]);
+  }, [scheduleEntriesRefresh]);
 
   // Priority audit: this page previously sorted assigned-to-me jobs first, then
   // newest movement. Keep that useful personal tie-breaker, but put location

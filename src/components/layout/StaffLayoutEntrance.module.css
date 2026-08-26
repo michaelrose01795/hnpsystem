@@ -1,38 +1,50 @@
 /* Login-only shell assembly. Transform/opacity animations stay composited, so
    the established layout geometry and shared design system do not shift. */
 .topbarEntrance {
-  animation: topbar-entrance 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: topbar-entrance 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .sidebarEntrance {
-  animation: sidebar-entrance 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: sidebar-entrance 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .contentEntrance {
-  animation: content-entrance 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: content-entrance 580ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes topbar-entrance {
   from {
-    opacity: 0.82;
-    transform: translate3d(0, -10px, 0);
+    opacity: 0.72;
+    transform: translate3d(0, -16px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes sidebar-entrance {
   from {
-    opacity: 0.82;
-    transform: translate3d(-14px, 0, 0);
+    opacity: 0.72;
+    transform: translate3d(-20px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes content-entrance {
   from {
-    opacity: 0.86;
-    transform: translate3d(0, 12px, 0);
+    opacity: 0.76;
+    transform: translate3d(0, 24px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -41,6 +53,5 @@
   .sidebarEntrance,
   .contentEntrance {
     animation: none;
-    will-change: auto;
   }
 }

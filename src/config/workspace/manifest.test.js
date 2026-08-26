@@ -132,6 +132,11 @@ function buildGoldenSidebarSections() {
         { label: "Next Jobs", href: "/nextjobs", roles: ["admin manager"] },
         { label: "Job Cards", href: "/jobs", roles: ["admin manager"] },
         { label: "User Admin", href: "/admin/users", roles: ["admin manager"] },
+        {
+          label: "User Activity",
+          href: "/admin/activity-log",
+          roles: ["admin", "admin manager", "general manager", "manager", "dev"],
+        },
         { label: "Compliance", href: "/admin/compliance", roles: ["admin manager"] },
         {
           label: "Website Manager",
@@ -488,7 +493,8 @@ describe("workspace manifest - module bundle placement", () => {
     ).toEqual([
       { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
       { key: "department-management", hrefs: [
-        "/dashboard/managers", "/dashboard/admin", "/admin/users", "/admin/compliance",
+        "/dashboard/managers", "/dashboard/admin", "/admin/users",
+        "/admin/activity-log", "/admin/compliance",
         "/hr/manager", "/website-manager", "/website-manager?tab=preview",
         "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
         "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",

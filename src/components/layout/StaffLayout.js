@@ -21,6 +21,7 @@ const JobCardModal = dynamic(() => import("@/components/JobCards/JobCardModal"),
 const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSidebar"), { ssr: false });
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
+import { isRestorableRoute } from "@/lib/auth/returnRoute";
 import StaffTopbar from "@/components/layout/StaffTopbar";
 import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
@@ -39,7 +40,6 @@ import { resolveDepartmentForRoles } from "@/lib/reporting/config/departments";
 import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
 import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
-import { useContinueContext } from "@/hooks/useContinueContext";
 import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -90,7 +90,6 @@ const NAV_DRAWER_WIDTH = 260;
 const COLLAPSED_RAIL_WIDTH = 48;
 const STATUS_DRAWER_WIDTH = 560;
 const AUTH_LAYOUT_ENTRANCE_STORAGE_KEY = "hnp-auth-layout-entrance";
-const AUTH_LAYOUT_ENTRANCE_DURATION_MS = 360;
 // Fallback role union used only if /presentation is somehow rendered without
 // a chosen role from /loginPresentation (the provider redirects in that case,
 // but Layout sits outside the provider so this keeps it safe during the brief
@@ -127,10 +126,11 @@ export default function Layout({
   } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
-  const [authEntranceActive, setAuthEntranceActive] = useState(() => {
+  const [authEntranceActive] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.sessionStorage.getItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY) === "1";
   });
+  const authEntranceStartedRef = useRef(false);
   // Optimistic sidebar highlight. Driven by router.events so the sidebar can
   // highlight the clicked item the instant a real navigation starts, before
   // router.asPath catches up (Pages Router only updates asPath on completion).
@@ -469,13 +469,6 @@ export default function Layout({
     canUseServiceActions,
     hasPartsAccess,
   });
-  // Phase 2.3: Continue Where You Left Off.
-  const continueContext = useContinueContext(router.asPath, {
-    // Technicians already have the live current-job action in the topbar.
-    // Recording /tech as generic history creates a duplicate, less accurate
-    // resume link beside "Open Job <number>".
-    enabled: !presentationShell && !isTech,
-  });
   // Two most-used pages for the topbar quick-access buttons. READ-ONLY: the visit
   // counting is already done by WorkspaceCommandCenter's behaviour model (mounted
   // below), so this instance only reads the shared per-user model — record: false
@@ -543,11 +536,7 @@ export default function Layout({
       return undefined;
     }
     window.sessionStorage.removeItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY);
-    const timer = window.setTimeout(
-      () => setAuthEntranceActive(false),
-      AUTH_LAYOUT_ENTRANCE_DURATION_MS
-    );
-    return () => window.clearTimeout(timer);
+    return undefined;
   }, [authEntranceActive, authEntranceReady]);
 
   useEffect(() => {
@@ -717,7 +706,16 @@ export default function Layout({
       trace("layout", "user is null on a gated route -> router.replace(/login)", {
         route: router.pathname,
       });
-      router.replace("/login");
+      // Carry the route the user was on. This bounce covers every gated route
+      // rendered in the staff shell — including the ones the edge guard treats
+      // as always-allowed, such as /newsfeed — so without this a session that
+      // expires there loses the user's place before /login can read it.
+      const current = router.asPath || "";
+      router.replace(
+        isRestorableRoute(current)
+          ? `/login?redirectedFrom=${encodeURIComponent(current)}`
+          : "/login"
+      );
     }
   }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute]);
 
@@ -1308,7 +1306,11 @@ export default function Layout({
     return <>{children}</>;
   }
 
-  if (authEntranceActive && !authEntranceReady) {
+  if (authEntranceActive && authEntranceReady) {
+    authEntranceStartedRef.current = true;
+  }
+
+  if (authEntranceActive && !authEntranceStartedRef.current) {
     return null;
   }
 
@@ -1345,7 +1347,7 @@ export default function Layout({
             flexDirection: "column",
             alignItems: "center",
             transition: `width ${sidebarMotion}, min-width ${sidebarMotion}`,
-            willChange: authEntranceActive ? "width, transform, opacity" : "width",
+            willChange: "width",
             position: "sticky",
             top: 0,
             overflow: "hidden",
@@ -1521,7 +1523,6 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            resumeItem={isTech ? null : continueContext.mostRecent}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}

@@ -143,7 +143,8 @@ export const ALWAYS_ALLOWED_PREFIXES = [
   "/password-reset/",
   "/presentation/",
   "/slideshow",
-  "/vhc/customer/",
+  "/report/", // customer VHC report link (public, code-authenticated)
+  "/vhc/customer/", // legacy link shape - kept alive until issued links expire
   "/vhc/customer-preview/",
   "/vhc/customer-view/",
   "/vhc/share/",

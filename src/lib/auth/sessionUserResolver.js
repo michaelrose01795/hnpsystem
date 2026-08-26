@@ -91,9 +91,27 @@ async function findUserIdByName(name) {
   return data?.user_id || null;
 }
 
+// Distinguishes "this session has no users row" (a settled, permanent answer —
+// synthetic dev-platform / cookie-bypass sessions, or a staff account HR has not
+// linked to a users row yet) from "the lookup itself failed" (transient: a
+// database error or a dropped connection). Callers must not treat the two the
+// same: the first means there is no per-user record to wait for, the second
+// means the answer is still unknown and must be retried.
+export const USER_PROFILE_NOT_FOUND = "USER_PROFILE_NOT_FOUND";
+
+export class UserProfileNotFoundError extends Error {
+  constructor(message = "User profile not found. Ask HR to link your account to a user record.") {
+    super(message);
+    this.name = "UserProfileNotFoundError";
+    this.code = USER_PROFILE_NOT_FOUND;
+  }
+}
+
+export const isUserProfileNotFound = (error) => error?.code === USER_PROFILE_NOT_FOUND;
+
 export async function resolveSessionUserId(session) {
   if (!session?.user) {
-    throw new Error("Authentication required");
+    throw new UserProfileNotFoundError("Authentication required");
   }
 
   const sessionUser = session.user;
@@ -113,6 +131,6 @@ export async function resolveSessionUserId(session) {
   const nameUserId = await findUserIdByName(asNonEmptyString(sessionUser.name));
   if (nameUserId) return nameUserId;
 
-  throw new Error("User profile not found. Ask HR to link your account to a user record.");
+  throw new UserProfileNotFoundError();
 }
 

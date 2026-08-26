@@ -6,12 +6,43 @@ import React, { createContext, useContext, useMemo } from "react"; // React prim
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext"; // access current user
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with caching and auto-refresh
-import { addJobToDatabase, updateJobStatus } from "@/lib/database/jobs"; // database mutation functions
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation helper
+
+// Loaded on demand.
+//
+// JobsProvider sits in StaffProviders, so anything it imports statically lands in
+// the first-load bundle of every route in the app. @/lib/database/jobs resolves
+// @/lib/database/client, which re-exports the Supabase browser client — 213 kB of
+// @supabase/supabase-js (postgrest + realtime + GoTrue). StaffLayout and
+// useMessagesBadge were already deferred for exactly this reason; this edge was
+// missed.
+//
+// Neither function is needed to render anything: both run only from inside the
+// addJob / updateJob handlers below, i.e. after a user click. Deferring the
+// import changes nothing observable — the request still starts on the same tick
+// the handler runs.
+const loadJobMutations = () => import("@/lib/database/jobs");
 
 // Create the Jobs context
 const JobsContext = createContext();
-const JOBS_CONTEXT_ROUTES = new Set(["/new-job", "/tech/dashboard"]);
+
+// Routes whose components actually READ `jobs` off this context.
+//
+// It is currently empty, and that is deliberate. The two routes previously
+// listed here do not consume the list:
+//   * /new-job destructures only `fetchJobs` (new-job/index.js:118) and never
+//     touches `jobs` — it was paying for the whole list to trigger a revalidation.
+//   * /tech/dashboard calls getAllJobs() itself (tech/dashboard.js:11) and does
+//     not use this context at all.
+// The one component that did read `jobs` (components/dashboards/TechDashboard.js)
+// is not imported anywhere.
+//
+// fetchJobs() below still works with no local subscription: revalidateAllJobs()
+// goes through SWR's global mutate on the shared "jobs:all" key, so a save on
+// /new-job still refreshes /appointments and /jobs exactly as before.
+//
+// Add a pathname back here the moment a page needs `jobs` from this provider.
+const JOBS_CONTEXT_ROUTES = new Set([]);
 
 // Hook for using jobs context
 export const useJobs = () => useContext(JobsContext);
@@ -46,6 +77,7 @@ export function JobsProvider({ children }) {
     const jobWithDefaults = { ...defaultJobFields, ...job }; // merge defaults with provided fields
 
     try {
+      const { addJobToDatabase } = await loadJobMutations(); // deferred — click-time only
       const { success, data, error } = await addJobToDatabase(jobWithDefaults); // insert into database
       if (!success) throw error; // throw on failure
       // Optimistically add the new job to the SWR cache
@@ -61,6 +93,7 @@ export function JobsProvider({ children }) {
   // Update existing job status in the database and refresh the cache
   const updateJob = async (updatedJob) => {
     try {
+      const { updateJobStatus } = await loadJobMutations(); // deferred — click-time only
       const { success, data, error } = await updateJobStatus(
         updatedJob.id, // job id
         updatedJob.status // new status

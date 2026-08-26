@@ -18,6 +18,8 @@ import {
   getVhcCompletionUpdatesFromWriteUpTasks,
 } from "@/features/jobCards/workflow/selectors";
 import { selectCurrentAppointment } from "@/lib/jobCards/utils";
+import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared automatic tracking movement rules
+import { buildApiUrl } from "@/utils/apiClient"; // honours NEXT_PUBLIC_BASE_PATH / API base
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import {
   getVehicleRegistration,
@@ -360,6 +362,18 @@ export const getAllJobs = ({ throwOnError = false, cacheKey = "jobs:all" } = {})
 ============================================ */
 export const JOBS_WORKLOAD_DEFAULT_LIMIT = 400;
 
+// NOTE: this template literal is sent verbatim to PostgREST as the `select`
+// parameter. It is NOT JavaScript — a `//` comment inside it is transmitted as
+// part of the column list and the whole query fails with PGRST100. Annotate
+// columns here, above the string, never inside it.
+//
+// Two columns are read by /appointments but not by /jobs, so they were absent
+// when this query was written for the jobs list alone:
+//   service_mode  — formatJobData defaults a missing value to "workshop", so
+//                   omitting it made every job look like a workshop job and hid
+//                   every mobile booking from the mobile-technician view
+//                   (appointments/index.js filters on serviceMode === "mobile").
+//   vehicle.year  — rendered in the appointments job rows.
 const JOBS_WORKLOAD_SELECT = `
   id,
   job_number,
@@ -388,6 +402,7 @@ const JOBS_WORKLOAD_SELECT = `
   queue_position,
   vhc_completed_at,
   vhc_sent_at,
+  service_mode,
   created_at,
   updated_at,
   next_update_due,
@@ -402,6 +417,7 @@ const JOBS_WORKLOAD_SELECT = `
     make,
     model,
     make_model,
+    year,
     vin,
     mileage,
     customer:customer_id(
@@ -443,10 +459,23 @@ const JOBS_WORKLOAD_SELECT = `
   )
 `;
 
-const _getJobsWorkloadUncached = async ({ limit = JOBS_WORKLOAD_DEFAULT_LIMIT, throwOnError = false } = {}) => {
-  const { data, error } = await supabase
-    .from("jobs")
-    .select(JOBS_WORKLOAD_SELECT)
+const _getJobsWorkloadUncached = async ({
+  limit = JOBS_WORKLOAD_DEFAULT_LIMIT,
+  throwOnError = false,
+  assignedTo = null,
+} = {}) => {
+  let query = supabase.from("jobs").select(JOBS_WORKLOAD_SELECT);
+
+  // Optional technician scope. jobs.assigned_to is an integer column and the
+  // `technician:assigned_to(...)` join is derived from it, so filtering here is
+  // exactly equivalent to the client-side
+  // `assignedTo === id || assignedTech?.id === id` test the technician screens
+  // used to run over every job in the database — assignedTech.id IS
+  // technician.user_id, and the string-fallback branch of that derivation always
+  // yields id: null, which can never match a real user id.
+  if (assignedTo !== null) query = query.eq("assigned_to", assignedTo);
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -469,19 +498,30 @@ export const getJobsWorkload = ({
   throwOnError = false,
   noCache = false,
   cacheKey = "jobs:workload",
+  assignedTo = null,
 } = {}) => {
+  const numericAssignedTo = Number(assignedTo);
+  const scopedTo =
+    Number.isInteger(numericAssignedTo) && numericAssignedTo > 0 ? numericAssignedTo : null;
+
   if (noCache) {
     invalidateCache(`${cacheKey}:`);
-    return _getJobsWorkloadUncached({ limit, throwOnError });
+    return _getJobsWorkloadUncached({ limit, throwOnError, assignedTo: scopedTo });
   }
-  // `shared: true` — the workload list is the same for every staff viewer (it is
-  // not filtered by session, role or user id), so a short server-side dedupe
-  // window is safe. See the note in lib/database/queryCache.js.
+
+  // `shared` is true ONLY for the unscoped list, which is identical for every
+  // staff viewer. A technician-scoped result is derived from a user id, so it
+  // must never be cached in the process-global map on the server — see the
+  // IS_SERVER note in lib/database/queryCache.js, which drops straight through
+  // to the fetcher when shared is false.
+  //
+  // The key still starts with "jobs:workload:" so revalidateAllJobs()'s
+  // invalidateCache("jobs:") continues to clear it.
   return cachedQuery(
-    `${cacheKey}:${limit}`,
-    () => _getJobsWorkloadUncached({ limit, throwOnError }),
+    `${cacheKey}:${limit}:${scopedTo ?? "all"}`,
+    () => _getJobsWorkloadUncached({ limit, throwOnError, assignedTo: scopedTo }),
     undefined,
-    { shared: true }
+    { shared: scopedTo === null }
   );
 };
 
@@ -2107,107 +2147,18 @@ const deriveAuthorisedWorkItems = (authorizationRows = []) => {
     .filter(Boolean);
 };
 
-// ✅ Normalise stored task status values
-const sanitiseTaskStatus = (status) =>
-  status === true
-    ? "complete"
-    : status === false
-    ? "additional_work"
-    : status === "complete" || status === "inprogress"
-    ? status
-    : "additional_work";
+// Pure task helpers now live in @/lib/jobCards/writeUpTasks so a component can
+// call them during render without importing this module. Re-exported below so
+// the public API of this module is unchanged.
+import {
+  sanitiseTaskStatus,
+  normalizeRequestTaskLabel,
+  isCompleteRequestStatus,
+  isMotRequestLike,
+  summarizeWriteUpTasks,
+} from "@/lib/jobCards/writeUpTasks";
 
-const normalizeRequestTaskLabel = (value = "") =>
-  String(value || "")
-    .replace(/^Request\s*\d+\s*:\s*/i, "")
-    .trim()
-    .toLowerCase();
-
-const isCompleteRequestStatus = (value) => {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  return normalized === "complete" || normalized === "completed" || normalized === "done";
-};
-
-const normalizeSearchValue = (value = "") =>
-  String(value || "")
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-export const isMotRequestLike = (request = {}) => {
-  const haystack = [
-    request?.description,
-    request?.jobType,
-    request?.job_type,
-    request?.serviceType,
-    request?.service_type,
-    request?.requestSource,
-    request?.request_source,
-    request?.label,
-    request?.raw,
-    request?.noteText,
-    request?.note_text,
-  ]
-    .map((value) => normalizeSearchValue(value))
-    .filter(Boolean)
-    .join(" ");
-
-  return haystack.includes("mot");
-};
-
-const isTaskComplete = (task = {}) =>
-  typeof task?.checked === "boolean" ? task.checked : sanitiseTaskStatus(task?.status) === "complete";
-
-export const summarizeWriteUpTasks = (tasks = []) => {
-  const normalizedTasks = (Array.isArray(tasks) ? tasks : [])
-    .filter((task) => task && typeof task === "object")
-    .map((task) => {
-      const source = String(task?.source || "request").trim().toLowerCase();
-      const checked = isTaskComplete(task);
-      const isMot = Boolean(task?.isMot) || (source === "request" && isMotRequestLike(task));
-
-      return {
-        source,
-        sourceKey: task?.sourceKey || task?.source_key || `${source}-${task?.label || "task"}`,
-        label: (task?.label || "").toString().trim(),
-        checked,
-        status: checked ? "complete" : "additional_work",
-        isMot,
-        requestId:
-          task?.requestId !== null && task?.requestId !== undefined
-            ? Number(task.requestId)
-            : task?.request_id !== null && task?.request_id !== undefined
-            ? Number(task.request_id)
-            : null,
-        sortOrder:
-          task?.sortOrder !== null && task?.sortOrder !== undefined
-            ? Number(task.sortOrder)
-            : task?.sort_order !== null && task?.sort_order !== undefined
-            ? Number(task.sort_order)
-            : null,
-      };
-    });
-
-  const pendingTasks = normalizedTasks.filter((task) => !task.checked);
-  const pendingMotTasks = pendingTasks.filter((task) => task.isMot);
-  const pendingNonMotTasks = pendingTasks.filter((task) => !task.isMot);
-
-  return {
-    totalCount: normalizedTasks.length,
-    allTasksComplete: normalizedTasks.length > 0 && pendingTasks.length === 0,
-    technicianTasksComplete: normalizedTasks.length > 0 && pendingNonMotTasks.length === 0,
-    hasPendingMotOnly: pendingMotTasks.length > 0 && pendingNonMotTasks.length === 0,
-    pendingCount: pendingTasks.length,
-    pendingMotCount: pendingMotTasks.length,
-    pendingNonMotCount: pendingNonMotTasks.length,
-    pendingTasks,
-    pendingMotTasks,
-    pendingNonMotTasks,
-  };
-};
+export { isMotRequestLike, summarizeWriteUpTasks };
 
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
@@ -3286,6 +3237,39 @@ const stableStringify = (value) => {
   return String(value);
 };
 
+// Records the automatic tracking movement for a status change. See the call
+// site inside `updateJob` for why it lives here rather than on /tracking.
+//
+// Both branches are lazy on purpose: `@/lib/database/tracking` is a server-side
+// helper and must not be pulled into the eager client graph of every page that
+// imports this module. The rule check comes first so the common case (a status
+// with no movement rule) costs nothing at all — no import, no request.
+const recordStatusMovement = async (jobId, status, statusUpdatedBy) => {
+  try {
+    if (!jobId || !getAutoMovementRule(status)) return;
+
+    if (typeof window === "undefined") {
+      const { recordAutomaticMovementForStatus } = await import("@/lib/database/tracking");
+      await recordAutomaticMovementForStatus({
+        jobId,
+        status,
+        performedBy: statusUpdatedBy,
+      });
+      return;
+    }
+
+    await fetch(buildApiUrl("/api/tracking/next-action"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // No `performedBy`: the endpoint resolves the actor from the session.
+      body: JSON.stringify({ actionType: "job_status_change", jobId, status }),
+    });
+  } catch (movementError) {
+    // Never fail a job update because a tracking event could not be written.
+    console.error("Auto tracking movement failed", movementError);
+  }
+};
+
 export const updateJob = async (jobId, updates) => {
   try {
     console.log("🔄 Updating job:", jobId, "with updates:", updates);
@@ -3425,6 +3409,25 @@ export const updateJob = async (jobId, updates) => {
     }
 
     console.log("✅ Job updated successfully:", data);
+
+    // Automatic tracking movement is owned by the status change, not by an open
+    // /tracking tab.
+    //
+    // Previously the movement was written by a Supabase Realtime subscription
+    // inside src/pages/tracking/index.js: it only fired if somebody happened to
+    // have that page open, it fired once per open tab, and `performed_by` was
+    // the viewer's user id rather than the person who changed the status. This
+    // is the point where every status change funnels through, and it already
+    // knows both the new status and the actor.
+    //
+    // In the browser the write is handed to /api/tracking/next-action, which
+    // resolves the actor from the session — so attribution is server-decided
+    // and the tracking tables can eventually be closed to the anon key. On the
+    // server the helper is called directly. Either way it is fire-and-forget:
+    // a tracking event must never fail a job update.
+    if (hasStatusUpdate && data) {
+      void recordStatusMovement(jobId, payload.status, updates.status_updated_by);
+    }
 
     // Report meaningful jobcard edits on the Job Tracker timeline. Non-blocking:
     // a logging failure must never fail the underlying save.

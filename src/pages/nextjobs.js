@@ -7,15 +7,13 @@ import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
-import {
-  assignTechnicianToJob,
-  getJobRequestCapacityProgress,
-  unassignTechnicianFromJob,
-  updateJobPosition } from
-"@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
-import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
+// Loaded on demand - both resolve the 213 KB Supabase browser client, and every
+// function below runs from a drag/assign handler or an async fetch callback,
+// never during render.
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadUsersDb = () => import("@/lib/database/users");
 import { normalizeDisplayName } from "@/utils/nameUtils";
-import { supabase } from "@/lib/database/supabaseClient";
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
@@ -687,7 +685,7 @@ export default function NextJobsPage() {
     jobsFetchSequenceRef.current = fetchSequence;
     setLoading(true); // Start loading to show spinner
 
-    const { data, error } = await supabase.
+    const { data, error } = await (await loadSupabaseClient()).
     from("jobs").
     select(
       `
@@ -744,9 +742,10 @@ export default function NextJobsPage() {
 
   const fetchTechnicians = useCallback(async () => {// Wrap technician lookup in stable callback
     try {
+      const usersDb = await loadUsersDb();
       const [techList, testerList] = await Promise.all([
-      getTechnicianUsers(), // Load technician list
-      getMotTesterUsers() // Load MOT tester list
+      usersDb.getTechnicianUsers(), // Load technician list
+      usersDb.getMotTesterUsers() // Load MOT tester list
       ]);
       setDbTechnicians(techList); // Cache technicians
       setDbMotTesters(testerList); // Cache MOT testers
@@ -757,7 +756,7 @@ export default function NextJobsPage() {
 
   const fetchActiveClockings = useCallback(async () => {
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabaseClient()).
       from("job_clocking").
       select(
         `
@@ -841,7 +840,7 @@ export default function NextJobsPage() {
     }
 
     try {
-      setJobProgressByJobId(await getJobRequestCapacityProgress(jobIds));
+      setJobProgressByJobId(await (await loadJobsDb()).getJobRequestCapacityProgress(jobIds));
     } catch (error) {
       console.error("❌ Error fetching job request capacity progress:", error);
     }
@@ -857,7 +856,7 @@ export default function NextJobsPage() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (await loadSupabaseClient())
         .from("job_clocking")
         .select("id, job_id, job_number, clock_in, clock_out")
         .in("job_id", jobIds);
@@ -944,52 +943,47 @@ export default function NextJobsPage() {
   const scheduleRequestProgressRefresh = useCoalescedRefresh(fetchJobRequestProgress);
 
   useEffect(() => {// Subscribe to Supabase changes for live updates
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-waiting-jobs").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "jobs" },
       scheduleJobsRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    subscribe()
+    );
   }, [scheduleJobsRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-active-clocking").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "job_clocking" },
       scheduleClockingRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    subscribe()
+    );
   }, [scheduleClockingRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-technician-capacity").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "technician_capacity_overrides" },
       scheduleCapacityRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    subscribe()
+    );
   }, [scheduleCapacityRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-labour-progress").
     on(
       "postgres_changes",
@@ -1001,11 +995,8 @@ export default function NextJobsPage() {
       { event: "*", schema: "public", table: "vhc_checks" },
       scheduleJobsRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    subscribe()
+    );
   }, [scheduleRequestProgressRefresh, scheduleJobsRefresh]);
 
   const techIdSet = useMemo(() => {
@@ -1413,7 +1404,7 @@ export default function NextJobsPage() {
     // Use the dedicated helper function - it now returns formatted job data or null
     let updatedJob;
     try {
-      updatedJob = await unassignTechnicianFromJob(jobId, { status: "In Progress" });
+      updatedJob = await (await loadJobsDb()).unassignTechnicianFromJob(jobId, { status: "In Progress" });
     } catch (err) {
       console.error("❌ Exception unassigning technician:", err);
       setFeedbackMessage({
@@ -1518,6 +1509,7 @@ export default function NextJobsPage() {
       position: index + 1
     }));
 
+    const { updateJobPosition } = await loadJobsDb();
     await Promise.all(
       reindexed.
       filter((job) => job?.id).
@@ -1546,7 +1538,7 @@ export default function NextJobsPage() {
         tech.id && Number.isInteger(Number(tech.id)) ?
         Number(tech.id) :
         tech.id || tech.name;
-        const assignmentResult = await assignTechnicianToJob(
+        const assignmentResult = await (await loadJobsDb()).assignTechnicianToJob(
           job.id,
           identifier,
           tech.name,
@@ -1645,7 +1637,7 @@ export default function NextJobsPage() {
       }
 
       if (isAssigned || needsQueuePromotion) {
-        const unassignmentResult = await unassignTechnicianFromJob(job.id, {
+        const unassignmentResult = await (await loadJobsDb()).unassignTechnicianFromJob(job.id, {
           status: "In Progress"
         });
         if (!unassignmentResult?.success) {

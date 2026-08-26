@@ -8,7 +8,7 @@ import { SectionShell, StatCard } from "@/components/ui";
 import { PageSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
-import { getAllJobs } from "@/lib/database/jobs";
+import { fetchJobsWorkload } from "@/hooks/useJobsList";
 // Loaded on demand — this module resolves the Supabase browser client, and its
 // single use here is one await inside a mount effect.
 const loadClocking = () => import("@/lib/database/clocking");
@@ -178,7 +178,20 @@ export default function TechsDashboard() {
       setLoading(true);
 
       try {
-        const fetchedJobs = await getAllJobs();
+        // Scoped server-side to this technician rather than downloading the whole
+        // jobs table and filtering in the browser. isAssignedToTechnician is
+        // still applied below: the server filter is equivalent (assigned_to is
+        // the column both of its branches resolve to), so this is belt-and-braces
+        // and keeps the page correct if the endpoint ever returns a wider set.
+        //
+        // The limit is raised above the list default deliberately. getAllJobs()
+        // had no .limit() and no .order(), so PostgREST silently capped it at
+        // 1000 arbitrary rows — the "assigned jobs" stat below was therefore
+        // counting a random subset (~110) of a technician's real total, and
+        // changed between loads. Scoped and ordered, the busiest technician has
+        // 545 jobs, so 1000 returns all of them and the count is finally both
+        // complete and stable.
+        const fetchedJobs = await fetchJobsWorkload({ assignedTo: dbUserId, limit: 1000 });
         const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
         const sortedJobs = assignedJobs.sort((a, b) => {
           if (a.createdAt && b.createdAt) {

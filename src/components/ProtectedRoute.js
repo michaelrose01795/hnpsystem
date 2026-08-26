@@ -6,6 +6,7 @@ import { useUser } from "@/context/UserContext";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { isRestorableRoute } from "@/lib/auth/returnRoute";
 
 // Resolve, synchronously, whether the current auth state grants access. This
 // mirrors the redirect effect's decision so the *render* never has to wait for a
@@ -66,7 +67,16 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     }
 
     if (status === "unauthenticated") {
-      router.replace("/login");
+      // A session that expires while the tab is open (or is restored without a
+      // valid cookie) used to land on a bare "/login", which threw the route
+      // away before the login page could read it — the user came back at
+      // /newsfeed. Carry it the same way the edge guard does.
+      const current = router.asPath || "";
+      router.replace(
+        isRestorableRoute(current)
+          ? `/login?redirectedFrom=${encodeURIComponent(current)}`
+          : "/login"
+      );
     }
   }, [loading, status, session, user, allowedRoles, router]);
 

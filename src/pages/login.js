@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { readRememberedStaffRoute, resolveReturnRoute } from "@/lib/auth/returnRoute";
 
 const LoginDropdown = dynamic(() => import("@/components/LoginDropdown"));
 
@@ -90,13 +91,46 @@ const getDefaultPostLoginRoute = (activeUser) => {
   return DEFAULT_STAFF_POST_LOGIN_ROUTE;
 };
 
-const getPostLoginRoute = (router, activeUser) => {
-  const redirectedFrom = router?.query?.redirectedFrom;
-  const defaultRoute = getDefaultPostLoginRoute(activeUser);
-  if (defaultRoute === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE && isSafeLocalRoute(redirectedFrom)) {
-    return redirectedFrom;
+// /login is statically optimised (autoExport), so router.query starts EMPTY and
+// is only filled once Next hydrates the query string. The post-login redirect can
+// fire before that, which silently dropped ?redirectedFrom= and sent the user to
+// the role default instead of the page they asked for. window.location is correct
+// from the first render, so read that first and keep the router as the fallback
+// (it is the only source during SSR).
+const readRedirectedFrom = (router) => {
+  if (typeof window !== "undefined") {
+    const fromUrl = new URLSearchParams(window.location.search).get("redirectedFrom");
+    if (fromUrl) return fromUrl;
   }
-  return defaultRoute;
+  const fromRouter = router?.query?.redirectedFrom;
+  return typeof fromRouter === "string" ? fromRouter : null;
+};
+
+const getPostLoginRoute = (router, activeUser) => {
+  const redirectedFrom = readRedirectedFrom(router);
+  const defaultRoute = getDefaultPostLoginRoute(activeUser);
+
+  // The customer site keeps its own simpler rule: it has no staff manifest to
+  // authorise against, and its only protected surface is the profile page.
+  if (defaultRoute === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE) {
+    return isSafeLocalRoute(redirectedFrom) ? redirectedFrom : defaultRoute;
+  }
+
+  // Staff: return the user to the page they were actually on. Precedence is
+  // requested route > remembered route > role default, and EVERY candidate is
+  // re-checked against this user's own permissions (see returnRoute.js), so a
+  // carried-over or remembered route can never widen access. The sidebar-access
+  // snapshot is not loaded yet at this point; a null snapshot resolves to the
+  // role-derived set and PageAccessGuard still polices the route after landing.
+  const roles = []
+    .concat(activeUser?.roles || [])
+    .concat(activeUser?.role ? [activeUser.role] : []);
+  return resolveReturnRoute({
+    redirectedFrom: typeof redirectedFrom === "string" ? redirectedFrom : null,
+    remembered: readRememberedStaffRoute(activeUser?.id ?? activeUser?.user_id ?? null),
+    roles,
+    fallback: defaultRoute,
+  });
 };
 
 const prepareAuthenticatedLayoutEntrance = (target) => {

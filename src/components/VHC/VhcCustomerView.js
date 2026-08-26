@@ -2,6 +2,17 @@
 // Shared customer-facing VHC view used by /vhc/customer-preview/[jobNumber],
 // /vhc/customer-view/[jobNumber], /vhc/share/[jobNumber]/[linkCode], and
 // /vhc/customer/[jobNumber]/[linkCode]. Mobile-first, full-width, customer-friendly.
+//
+// Design system (2026-08 pass): these routes are staff-scope routes — _app.js
+// puts `staff-scope` on <html> for anything outside /website — so the whole
+// staffglobal.css family system applies here and is what this file now uses:
+//   tabs    → .app-layout-tab-row + .app-tab/.app-tab--pill
+//   buttons → <Button> / .app-btn variants
+//   cards   → <LayerSurface> / <LayerTheme> with strict alternation
+//   popup   → <ModalPortal> + .popup-backdrop / .popup-card
+//   empty   → .app-empty-state
+// Severity colour comes from the approved tone utilities (.app-tone-*), not
+// from local fills.
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -22,6 +33,8 @@ const optimisedPhotoSrc = (url) => {
 };
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -29,14 +42,19 @@ const formatCurrency = (value) => {
   return `£${num.toFixed(2)}`;
 };
 
+// toneClass tints the rows; headerClass is the solid version of the same colour
+// so the section heading reads as a banner above its own rows rather than
+// dissolving into them.
 const SEVERITY_THEME = {
-  red: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Red Items", toneClass: "app-tone-danger" },
-  amber: { bg: "var(--warning-surface)", text: "var(--warning)", label: "Amber Items", toneClass: "app-tone-warning" },
-  green: { bg: "var(--success-surface)", text: "var(--success)", label: "Green Items", toneClass: "app-tone-success" },
-  authorized: { bg: "var(--success-surface)", text: "var(--success)", label: "Authorised", toneClass: "app-tone-success" },
-  declined: { bg: "var(--danger-surface)", text: "var(--danger)", label: "Declined", toneClass: "app-tone-danger" }
+  red: { label: "Red Items", toneClass: "app-tone-danger", headerClass: "app-tone-danger-strong" },
+  amber: { label: "Amber Items", toneClass: "app-tone-warning", headerClass: "app-tone-warning-strong" },
+  green: { label: "Green Items", toneClass: "app-tone-success", headerClass: "app-tone-success-strong" },
+  authorized: { label: "Authorised", toneClass: "app-tone-success", headerClass: "app-tone-success-strong" },
+  declined: { label: "Declined", toneClass: "app-tone-danger", headerClass: "app-tone-danger-strong" }
 };
 
+// Row rule between list items — the one allowed "line within a list" (CLAUDE.md
+// §3.0a). Uses --separating-line-color, not a hand-mixed accent alpha.
 function CustomerDivider() {
   return (
     <div
@@ -46,7 +64,7 @@ function CustomerDivider() {
         width: "100%",
         height: 1,
         flexShrink: 0,
-        background: "color-mix(in srgb, var(--primary) 16%, transparent)"
+        background: "var(--separating-line-color)"
       }}
     />
   );
@@ -100,41 +118,35 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
   // Green items are passing checks — only show description, no pricing or actions
   const isGreen = severity === "green";
 
-  const originalSeverity = item.severityKey || item.rawSeverity;
-  const rowBg =
-    severity === "authorized"
-      ? "var(--success-surface)"
-      : severity === "declined"
-      ? "var(--danger-surface)"
-      : (isAuthorized || isDeclined)
-      ? originalSeverity === "red"
-        ? "var(--danger-surface)"
-        : originalSeverity === "amber"
-        ? "var(--warning-surface)"
-        : "transparent"
-      : "transparent";
+  // Every row carries its section's severity tint — a Red row is red, an Amber
+  // row amber, a Green row green — so the customer can tell at a glance what
+  // they are looking at without reading the heading. The fill comes from the
+  // approved tone utilities (.app-tone-*), never a local colour.
+  const rowToneClass = SEVERITY_THEME[severity]?.toneClass || "";
 
   return (
     <div
+      className={rowToneClass}
       style={{
-        padding: "14px 14px",
-        background: rowBg,
+        padding: "clamp(12px, 3.5vw, 16px)",
         display: "flex",
         flexDirection: "column",
         gap: 10
       }}
     >
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-1)", marginTop: 2 }}>
+        <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--text-1)" }}>
           {reportedDescription}
         </div>
         {measurement && (
-          <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", marginTop: 4 }}>{measurement}</div>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)", marginTop: 4 }}>
+            {measurement}
+          </div>
         )}
         {supplementaryRows.length > 0 && (
           <div style={{ display: "grid", gap: 3, marginTop: 6 }}>
             {supplementaryRows.map((row) => (
-              <div key={row} style={{ fontSize: 12, color: "var(--text-1)", lineHeight: 1.35 }}>
+              <div key={row} style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", lineHeight: 1.35 }}>
                 {row}
               </div>
             ))}
@@ -146,26 +158,25 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 8,
-            fontSize: 12
+            gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
+            gap: 8
           }}
         >
           <div>
-            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Parts</div>
-            <div style={{ fontWeight: 600, color: "var(--text-1)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: "var(--text-caption)" }}>Parts</div>
+            <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
               {formatCurrency(partsCost)}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Labour</div>
-            <div style={{ fontWeight: 600, color: "var(--text-1)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: "var(--text-caption)" }}>Labour</div>
+            <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
               {labourHours > 0 ? `${labourHours}h · ${formatCurrency(labourCost)}` : "—"}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--surfaceTextMuted)", fontSize: 11 }}>Total</div>
-            <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
+            <div style={{ color: "var(--surfaceTextMuted)", fontSize: "var(--text-caption)" }}>Total</div>
+            <div style={{ fontWeight: 700, color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
               {formatCurrency(total)}
             </div>
           </div>
@@ -173,71 +184,42 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
       )}
 
       {interactive && !isGreen && (
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
+        // Wraps to a stack below ~260px of row width so the two 44px targets
+        // never squash on a narrow phone in portrait.
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <Button
+            variant={isAuthorized ? "primary" : "secondary"}
+            size="sm"
             disabled={isUpdating}
+            aria-pressed={isAuthorized}
+            style={{ flex: "1 1 120px", touchAction: "manipulation" }}
             onClick={() => {
               if (isAuthorized) onUpdateStatus?.(item.id, null);
               else onRequestAuthorise?.(item);
             }}
-            style={{
-              flex: 1,
-              minHeight: 44,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--success-surface)",
-              color: "var(--success)",
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1,
-              boxShadow: isAuthorized ? "inset 0 0 0 2px var(--success)" : "inset 0 0 0 1px var(--success)",
-              touchAction: "manipulation"
-            }}
           >
             {isAuthorized ? "✓ Authorised" : "Authorise"}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant={isDeclined ? "danger" : "ghost"}
+            size="sm"
             disabled={isUpdating}
+            aria-pressed={isDeclined}
+            style={{ flex: "1 1 120px", touchAction: "manipulation" }}
             onClick={() => onUpdateStatus?.(item.id, isDeclined ? null : "declined")}
-            style={{
-              flex: 1,
-              minHeight: 44,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--danger-surface)",
-              color: "var(--danger)",
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1,
-              boxShadow: isDeclined ? "inset 0 0 0 2px var(--danger)" : "inset 0 0 0 1px var(--danger)",
-              touchAction: "manipulation"
-            }}
           >
             {isDeclined ? "✗ Declined" : "Decline"}
-          </button>
+          </Button>
         </div>
       )}
 
-      {hasDivider && (
-        <div
-          aria-hidden="true"
-          style={{
-            height: 1,
-            background: "var(--surface)",
-            marginTop: 2
-          }}
-        />
-      )}
+      {hasDivider && <CustomerDivider />}
     </div>
   );
 }
 
 function Section({ title, items, severity, interactive, onUpdateStatus, onRequestAuthorise, updatingIds }) {
-  const theme = SEVERITY_THEME[severity] || { bg: "var(--theme)", text: "var(--text-1)" };
+  const theme = SEVERITY_THEME[severity] || { toneClass: "", headerClass: "" };
   let authorizedTotal = 0;
   let declinedTotal = 0;
   items.forEach((item) => {
@@ -249,47 +231,53 @@ function Section({ title, items, severity, interactive, onUpdateStatus, onReques
     }
   });
 
+  // Page background is --surface, so a section card is the next rung down:
+  // LayerSurface here, LayerTheme for anything nested inside it.
   return (
-    <div
-      className={theme.toneClass || ""}
-      style={{
-        borderRadius: "var(--radius-md)",
-        overflow: "hidden",
-        marginBottom: 14
-      }}
+    <LayerSurface
+      radius="var(--radius-md)"
+      padding="0"
+      gap="0"
+      style={{ overflow: "hidden" }}
     >
       <div
+        className={theme.headerClass}
         style={{
-          padding: "12px 14px",
+          padding: "clamp(10px, 3vw, 14px)",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          fontSize: 12,
+          fontSize: "var(--text-caption)",
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "space-between",
-          gap: 8,
+          gap: "4px 12px",
           alignItems: "center"
         }}
       >
         <span>{title}</span>
         {(authorizedTotal > 0 || declinedTotal > 0) && (
-          <div style={{ display: "flex", gap: 12, fontSize: 11, textTransform: "none", fontWeight: 600 }}>
-            {authorizedTotal > 0 && (
-              <span style={{ color: "var(--success)" }}>
-                Authorised: {formatCurrency(authorizedTotal)}
-              </span>
-            )}
-            {declinedTotal > 0 && (
-              <span style={{ color: "var(--danger)" }}>
-                Declined: {formatCurrency(declinedTotal)}
-              </span>
-            )}
+          // Inherits the header's on-tone text colour: a second colour here
+          // would be unreadable on the solid severity fill.
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "2px 12px",
+              fontSize: "var(--text-caption)",
+              textTransform: "none",
+              fontWeight: 600
+            }}
+          >
+            {authorizedTotal > 0 && <span>Authorised: {formatCurrency(authorizedTotal)}</span>}
+            {declinedTotal > 0 && <span>Declined: {formatCurrency(declinedTotal)}</span>}
           </div>
         )}
       </div>
       {items.length === 0 ? (
-        <div style={{ padding: 14, fontSize: 13, color: "var(--surfaceTextMuted)" }}>No items recorded.</div>
+        <div className="app-empty-state app-empty-state--bare">
+          <p className="app-empty-state__description">No items recorded.</p>
+        </div>
       ) : (
         items.map((item, index) => (
           <Row
@@ -304,28 +292,23 @@ function Section({ title, items, severity, interactive, onUpdateStatus, onReques
           />
         ))
       )}
-    </div>
+    </LayerSurface>
   );
 }
 
 function TotalsGrid({ totals }) {
   const items = [
-    { label: "Red Work", value: totals.red, color: "var(--danger)", statusClass: "app-status-message--danger" },
-    { label: "Amber Work", value: totals.amber, color: "var(--warning)", statusClass: "app-status-message--warning" },
-    { label: "Authorised", value: totals.authorized, color: "var(--success)", statusClass: "app-status-message--success" },
-    { label: "Declined", value: totals.declined, color: "var(--danger)", statusClass: "app-status-message--danger" }
+    { label: "Red Work", value: totals.red, color: "var(--danger-text)", statusClass: "app-status-message--danger" },
+    { label: "Amber Work", value: totals.amber, color: "var(--warning-text)", statusClass: "app-status-message--warning" },
+    { label: "Authorised", value: totals.authorized, color: "var(--success-text)", statusClass: "app-status-message--success" },
+    { label: "Declined", value: totals.declined, color: "var(--danger-text)", statusClass: "app-status-message--danger" }
   ];
   return (
-    <LayerSurface
-      radius="var(--radius-md)"
-      padding="0"
-      gap="0"
-      style={{ marginBottom: 14, overflow: "hidden" }}
-    >
+    <LayerSurface radius="var(--radius-md)" padding="0" gap="0" style={{ overflow: "hidden" }}>
       <div
         style={{
           padding: "12px 14px",
-          fontSize: 12,
+          fontSize: "var(--text-caption)",
           fontWeight: 700,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
@@ -339,8 +322,7 @@ function TotalsGrid({ totals }) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 8,
-          padding: 0
+          gap: 8
         }}
       >
         {items.map((it) => (
@@ -349,23 +331,14 @@ function TotalsGrid({ totals }) {
             className={`app-status-message ${it.statusClass}`}
             style={{
               minHeight: 72,
-              padding: "12px 14px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
-              gap: 4,
-              borderRadius: "var(--radius-sm)"
+              gap: 4
             }}
           >
-            <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>{it.label}</div>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: it.color,
-                lineHeight: 1.2
-              }}
-            >
+            <div style={{ fontSize: "var(--text-caption)", fontWeight: 600 }}>{it.label}</div>
+            <div style={{ fontSize: "var(--text-h4)", fontWeight: 700, color: it.color, lineHeight: 1.2 }}>
               {formatCurrency(it.value)}
             </div>
           </div>
@@ -378,10 +351,10 @@ function TotalsGrid({ totals }) {
 function AccessNotice({ accessMode }) {
   if (accessMode !== "share") return null;
   return (
-    <LayerSurface radius="var(--radius-md)" padding="12px 14px" gap="4px" style={{ marginBottom: 14 }}>
+    <div className="app-status-message app-status-message--info">
       <div
         style={{
-          fontSize: 12,
+          fontSize: "var(--text-caption)",
           fontWeight: 700,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
@@ -390,27 +363,31 @@ function AccessNotice({ accessMode }) {
       >
         Read-only share
       </div>
-      <div style={{ fontSize: 13, color: "var(--text-1)" }}>
+      <div style={{ fontSize: "var(--text-body-sm)", fontWeight: 500, marginTop: 4 }}>
         This shared link can view the report, photos and videos. Authorising or declining work is only available from the customer view.
       </div>
-    </LayerSurface>
+    </div>
+  );
+}
+
+function MediaEmptyState({ title, description }) {
+  return (
+    <div className="app-empty-state app-empty-state--inline">
+      <div className="app-empty-state__copy">
+        <p className="app-empty-state__title">{title}</p>
+        <p className="app-empty-state__description">{description}</p>
+      </div>
+    </div>
   );
 }
 
 function PhotosTab({ photoFiles }) {
   if (photoFiles.length === 0) {
     return (
-      <div
-        style={{
-          padding: 18,
-          borderRadius: "var(--radius-sm)",
-          background: "var(--theme)",
-          color: "var(--surfaceTextMuted)",
-          fontSize: 13
-        }}
-      >
-        No photos have been uploaded for this job.
-      </div>
+      <MediaEmptyState
+        title="No photos yet"
+        description="No photos have been uploaded for this job."
+      />
     );
   }
   return (
@@ -422,13 +399,14 @@ function PhotosTab({ photoFiles }) {
       }}
     >
       {photoFiles.map((file) => (
-        <div
+        // Media tiles sit on the page's --surface background, so the tile is a
+        // LayerSurface and the letterbox behind the image is its --theme nest.
+        <LayerSurface
           key={file.file_id}
-          style={{
-            background: "var(--theme)",
-            borderRadius: "var(--radius-sm)",
-            overflow: "hidden"
-          }}
+          radius="var(--radius-sm)"
+          padding="0"
+          gap="0"
+          style={{ overflow: "hidden" }}
         >
           {/* These are technician phone photos straight from Supabase Storage —
               routinely 2-5MB each — rendered into a ~160px grid cell on a
@@ -437,7 +415,7 @@ function PhotosTab({ photoFiles }) {
               `optimisedPhotoSrc` returns null for any URL outside the host
               configured in next.config.mjs `images.remotePatterns`, in which case
               we fall back to the plain <img> rather than throwing. */}
-          <div style={{ position: "relative", paddingTop: "75%", background: "var(--theme-hover)" }}>
+          <LayerTheme radius="0" padding="0" gap="0" style={{ position: "relative", paddingTop: "75%" }}>
             {optimisedPhotoSrc(file.file_url) ? (
               <Image
                 src={file.file_url}
@@ -463,11 +441,11 @@ function PhotosTab({ photoFiles }) {
                 }}
               />
             )}
-          </div>
+          </LayerTheme>
           <div style={{ padding: "8px 10px" }}>
             <div
               style={{
-                fontSize: 12,
+                fontSize: "var(--text-caption)",
                 fontWeight: 500,
                 color: "var(--text-1)",
                 wordBreak: "break-word"
@@ -476,7 +454,7 @@ function PhotosTab({ photoFiles }) {
               {file.file_name || "Unnamed photo"}
             </div>
           </div>
-        </div>
+        </LayerSurface>
       ))}
     </div>
   );
@@ -485,17 +463,10 @@ function PhotosTab({ photoFiles }) {
 function VideosTab({ videoFiles }) {
   if (videoFiles.length === 0) {
     return (
-      <div
-        style={{
-          padding: 18,
-          borderRadius: "var(--radius-sm)",
-          background: "var(--theme)",
-          color: "var(--surfaceTextMuted)",
-          fontSize: 13
-        }}
-      >
-        No videos have been uploaded for this job.
-      </div>
+      <MediaEmptyState
+        title="No videos yet"
+        description="No videos have been uploaded for this job."
+      />
     );
   }
   return (
@@ -507,15 +478,14 @@ function VideosTab({ videoFiles }) {
       }}
     >
       {videoFiles.map((file) => (
-        <div
+        <LayerSurface
           key={file.file_id}
-          style={{
-            background: "var(--theme)",
-            borderRadius: "var(--radius-sm)",
-            overflow: "hidden"
-          }}
+          radius="var(--radius-sm)"
+          padding="0"
+          gap="0"
+          style={{ overflow: "hidden" }}
         >
-          <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--theme-hover)" }}>
+          <LayerTheme radius="0" padding="0" gap="0" style={{ position: "relative", paddingTop: "56.25%" }}>
             <video
               src={file.file_url}
               controls
@@ -529,11 +499,11 @@ function VideosTab({ videoFiles }) {
                 objectFit: "contain"
               }}
             />
-          </div>
+          </LayerTheme>
           <div style={{ padding: "8px 10px" }}>
             <div
               style={{
-                fontSize: 12,
+                fontSize: "var(--text-caption)",
                 fontWeight: 500,
                 color: "var(--text-1)",
                 wordBreak: "break-word"
@@ -542,15 +512,17 @@ function VideosTab({ videoFiles }) {
               {file.file_name || "Unnamed video"}
             </div>
           </div>
-        </div>
+        </LayerSurface>
       ))}
     </div>
   );
 }
 
+// Canonical popup shell: ModalPortal (body scroll lock + portal node) wrapping
+// the shared .popup-backdrop / .popup-card chrome from staffglobal.css, so this
+// dialog gets the same backdrop, viewport gap and portrait handling as every
+// other popup in the app.
 function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline, onClose, isUpdating }) {
-  if (!item) return null;
-
   const itemTotal = Number(item.total_gbp ?? item.total ?? 0);
   const currentAuthorizedTotal = Number(authorizedTotal);
   const safeItemTotal = Number.isFinite(itemTotal) ? itemTotal : 0;
@@ -564,158 +536,110 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
   const reportedDescription = detailContent || detailLabel;
 
   return (
-    <div
-      role="presentation"
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: "var(--z-modal)",
-        background: "color-mix(in srgb, var(--surface) 78%, transparent)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16
-      }}
-    >
-      <LayerSurface
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="vhc-authorise-confirm-title"
-        radius="var(--radius-md)"
-        padding="18px"
-        gap="14px"
-        onClick={(event) => event.stopPropagation()}
-        style={{
-          width: "min(100%, 460px)",
-          boxShadow: "var(--shadow-lg)"
-        }}
-      >
-        <div>
-          <div
-            id="vhc-authorise-confirm-title"
-            style={{
-              fontSize: 18,
-              fontWeight: 800,
-              color: "var(--text-1)",
-              lineHeight: 1.25
-            }}
-          >
-            Confirm authorisation
+    <ModalPortal>
+      <div className="popup-backdrop" role="presentation" onClick={onClose}>
+        <LayerSurface
+          className="popup-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="vhc-authorise-confirm-title"
+          radius="var(--radius-lg)"
+          padding="18px"
+          gap="14px"
+          onClick={(event) => event.stopPropagation()}
+          style={{ width: "min(100%, 460px)" }}
+        >
+          <div>
+            <div
+              id="vhc-authorise-confirm-title"
+              style={{
+                fontSize: "var(--text-h3)",
+                fontWeight: 800,
+                color: "var(--text-1)",
+                lineHeight: 1.25
+              }}
+            >
+              Confirm authorisation
+            </div>
+            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", marginTop: 6 }}>
+              Please confirm this work before it is sent to the workshop.
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: "var(--text-1)", marginTop: 6 }}>
-            Please confirm this work before it is sent to the workshop.
-          </div>
-        </div>
 
-        <LayerTheme radius="var(--radius-sm)" padding="14px" gap="8px">
-          <div style={{ fontSize: 15, color: "var(--text-1)", fontWeight: 700 }}>
-            {reportedDescription}
-          </div>
-        </LayerTheme>
+          <LayerTheme radius="var(--radius-sm)" padding="14px" gap="8px">
+            <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
+              {reportedDescription}
+            </div>
+          </LayerTheme>
 
-        <LayerTheme radius="var(--radius-sm)" padding="14px" gap="10px">
-          <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", fontWeight: 700 }}>
-            Total to authorise
-          </div>
+          <LayerTheme radius="var(--radius-sm)" padding="14px" gap="10px">
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)", fontWeight: 700 }}>
+              Total to authorise
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                gap: 8
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)" }}>Current authorised</div>
+                <div style={{ fontSize: "var(--text-h4)", fontWeight: 800, color: "var(--text-1)" }}>
+                  {formatCurrency(safeCurrentAuthorizedTotal)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)" }}>This item</div>
+                <div style={{ fontSize: "var(--text-h4)", fontWeight: 800, color: "var(--success-text)" }}>
+                  {formatCurrency(safeItemTotal)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)" }}>New total</div>
+                <div style={{ fontSize: "var(--text-h2)", lineHeight: 1.1, fontWeight: 800, color: "var(--success-text)" }}>
+                  {formatCurrency(newAuthorizedTotal)}
+                </div>
+              </div>
+            </div>
+          </LayerTheme>
+
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
               gap: 8
             }}
           >
-            <div>
-              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>Current authorised</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-1)" }}>
-                {formatCurrency(safeCurrentAuthorizedTotal)}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>This item</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--success)" }}>
-                {formatCurrency(safeItemTotal)}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>New total</div>
-              <div style={{ fontSize: 22, lineHeight: 1.1, fontWeight: 800, color: "var(--success)" }}>
-                {formatCurrency(newAuthorizedTotal)}
-              </div>
-            </div>
+            <Button
+              variant="primary"
+              disabled={isUpdating}
+              onClick={onConfirm}
+              style={{ touchAction: "manipulation" }}
+            >
+              Confirm authorise
+            </Button>
+            <Button
+              variant="danger"
+              disabled={isUpdating}
+              onClick={onDecline}
+              style={{ touchAction: "manipulation" }}
+            >
+              Decline item
+            </Button>
           </div>
-        </LayerTheme>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: 8
-          }}
-        >
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             disabled={isUpdating}
-            onClick={onConfirm}
-            style={{
-              minHeight: 44,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--success-surface)",
-              color: "var(--success)",
-              boxShadow: "inset 0 0 0 1px var(--success)",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1,
-              touchAction: "manipulation"
-            }}
+            onClick={onClose}
+            style={{ touchAction: "manipulation" }}
           >
-            Confirm authorise
-          </button>
-          <button
-            type="button"
-            disabled={isUpdating}
-            onClick={onDecline}
-            style={{
-              minHeight: 44,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--danger-surface)",
-              color: "var(--danger)",
-              boxShadow: "inset 0 0 0 1px var(--danger)",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: isUpdating ? "not-allowed" : "pointer",
-              opacity: isUpdating ? 0.6 : 1,
-              touchAction: "manipulation"
-            }}
-          >
-            Decline item
-          </button>
-        </div>
-
-        <button
-          type="button"
-          disabled={isUpdating}
-          onClick={onClose}
-          style={{
-            minHeight: 44,
-            padding: "10px 12px",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--theme-hover)",
-            color: "var(--text-1)",
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: isUpdating ? "not-allowed" : "pointer",
-            opacity: isUpdating ? 0.6 : 1,
-            touchAction: "manipulation"
-          }}
-        >
-          Back to report
-        </button>
-      </LayerSurface>
-    </div>
+            Back to report
+          </Button>
+        </LayerSurface>
+      </div>
+    </ModalPortal>
   );
 }
 
@@ -763,6 +687,14 @@ export default function VhcCustomerView({
     setPendingAuthoriseItem(null);
   };
 
+  const severitySections = [
+    { key: "red", title: "Red Items" },
+    { key: "amber", title: "Amber Items" },
+    { key: "authorized", title: "Authorised" },
+    { key: "declined", title: "Declined" },
+    { key: "green", title: "Green Items" }
+  ];
+
   return (
     <>
       <Head>
@@ -771,8 +703,8 @@ export default function VhcCustomerView({
       </Head>
 
       <div
+        className="app-page-shell"
         style={{
-          minHeight: "100vh",
           minHeight: "100dvh",
           background: "var(--surface)",
           color: "var(--text-1)",
@@ -788,8 +720,7 @@ export default function VhcCustomerView({
             background: "var(--surface)",
             position: "sticky",
             top: 0,
-            zIndex: 50,
-            padding: 0
+            zIndex: 50
           }}
         >
           <div
@@ -801,57 +732,29 @@ export default function VhcCustomerView({
               padding: "12px 12px 0"
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap"
-              }}
-            >
-            <BrandLogo alt="HP Logo" width={84} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "var(--text-1)",
-                  lineHeight: 1.2
-                }}
-              >
-                Vehicle Health Check
-              </div>
-              <div style={{ fontSize: 12, color: "var(--text-1)", marginTop: 2 }}>
-                Job #{jobNumber}
-                {vehicleInfo?.registration ? ` · ${vehicleInfo.registration}` : ""}
-                {vehicleInfo?.make || vehicleInfo?.model
-                  ? ` · ${[vehicleInfo?.make, vehicleInfo?.model].filter(Boolean).join(" ")}`
-                  : ""}
-              </div>
-              {customerInfo?.name && (
-                <div style={{ fontSize: 12, color: "var(--surfaceTextMuted)", marginTop: 1 }}>
-                  {customerInfo.name}
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <BrandLogo alt="HP Logo" width={84} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.2 }}>
+                  Vehicle Health Check
                 </div>
-              )}
-            </div>
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                style={{
-                  flexShrink: 0,
-                  minHeight: 36,
-                  padding: "8px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  background: "var(--theme-hover)",
-                  color: "var(--text-1)",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: "pointer"
-                }}
-              >
-                ← Back
-              </button>
+                <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", marginTop: 2 }}>
+                  Job #{jobNumber}
+                  {vehicleInfo?.registration ? ` · ${vehicleInfo.registration}` : ""}
+                  {vehicleInfo?.make || vehicleInfo?.model
+                    ? ` · ${[vehicleInfo?.make, vehicleInfo?.model].filter(Boolean).join(" ")}`
+                    : ""}
+                </div>
+                {customerInfo?.name && (
+                  <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)", marginTop: 1 }}>
+                    {customerInfo.name}
+                  </div>
+                )}
+              </div>
+              {onBack && (
+                <Button variant="ghost" size="sm" onClick={onBack} style={{ flexShrink: 0 }}>
+                  ← Back
+                </Button>
               )}
             </div>
 
@@ -859,8 +762,10 @@ export default function VhcCustomerView({
               <CustomerDivider />
             </div>
 
-            {/* Tab switcher */}
-            <nav
+            {/* Tab switcher — canonical tab family (.app-layout-tab-row + .app-tab) */}
+            <div
+              className="app-layout-tab-row"
+              role="tablist"
               aria-label="Vehicle health check sections"
               style={{
                 display: "flex",
@@ -874,30 +779,25 @@ export default function VhcCustomerView({
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
+                  className="app-tab app-tab--pill"
                   onClick={() => setActiveTab(tab.id)}
-                  aria-current={activeTab === tab.id ? "page" : undefined}
-                  style={{
-                    minHeight: 44,
-                    padding: "10px 16px",
-                    borderRadius: "var(--radius-sm)",
-                    background: activeTab === tab.id ? "var(--theme)" : "transparent",
-                    fontWeight: activeTab === tab.id ? 700 : 500,
-                    fontSize: 13,
-                    color: activeTab === tab.id ? "var(--accentText)" : "var(--surfaceTextMuted)",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap"
-                  }}
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`vhc-tabpanel-${tab.id}`}
+                  id={`vhc-tab-${tab.id}`}
+                  style={{ minHeight: 44 }}
                 >
                   {tab.label}
                 </button>
               ))}
-            </nav>
+            </div>
             <CustomerDivider />
           </div>
         </header>
 
         {/* Main content — full width with light side padding only */}
         <main
+          className="app-page-stack"
           style={{
             flex: 1,
             padding: "18px 12px 28px",
@@ -908,88 +808,54 @@ export default function VhcCustomerView({
           }}
         >
           {activeTab === "summary" && (
-            <>
+            <div
+              id="vhc-tabpanel-summary"
+              role="tabpanel"
+              aria-labelledby="vhc-tab-summary"
+              className="app-page-stack"
+            >
               <AccessNotice accessMode={accessMode} />
               <TotalsGrid totals={totals} />
 
-              {severityLists.red?.length > 0 && (
-                <Section
-                  title="Red Items"
-                  items={severityLists.red}
-                  severity="red"
-                  interactive={interactive}
-                  onUpdateStatus={onUpdateStatus}
-                  onRequestAuthorise={setPendingAuthoriseItem}
-                  updatingIds={updatingIds}
-                />
+              {severitySections.map(({ key, title }) =>
+                severityLists[key]?.length > 0 ? (
+                  <Section
+                    key={key}
+                    title={title}
+                    items={severityLists[key]}
+                    severity={key}
+                    interactive={interactive}
+                    onUpdateStatus={onUpdateStatus}
+                    onRequestAuthorise={setPendingAuthoriseItem}
+                    updatingIds={updatingIds}
+                  />
+                ) : null
               )}
-              {severityLists.amber?.length > 0 && (
-                <Section
-                  title="Amber Items"
-                  items={severityLists.amber}
-                  severity="amber"
-                  interactive={interactive}
-                  onUpdateStatus={onUpdateStatus}
-                  onRequestAuthorise={setPendingAuthoriseItem}
-                  updatingIds={updatingIds}
-                />
-              )}
-              {severityLists.authorized?.length > 0 && (
-                <Section
-                  title="Authorised"
-                  items={severityLists.authorized}
-                  severity="authorized"
-                  interactive={interactive}
-                  onUpdateStatus={onUpdateStatus}
-                  onRequestAuthorise={setPendingAuthoriseItem}
-                  updatingIds={updatingIds}
-                />
-              )}
-              {severityLists.declined?.length > 0 && (
-                <Section
-                  title="Declined"
-                  items={severityLists.declined}
-                  severity="declined"
-                  interactive={interactive}
-                  onUpdateStatus={onUpdateStatus}
-                  onRequestAuthorise={setPendingAuthoriseItem}
-                  updatingIds={updatingIds}
-                />
-              )}
-              {severityLists.green?.length > 0 && (
-                <Section
-                  title="Green Items"
-                  items={severityLists.green}
-                  severity="green"
-                  interactive={interactive}
-                  onUpdateStatus={onUpdateStatus}
-                  onRequestAuthorise={setPendingAuthoriseItem}
-                  updatingIds={updatingIds}
-                />
-              )}
-            </>
+            </div>
           )}
 
-          {activeTab === "photos" && <PhotosTab photoFiles={photoFiles} />}
-          {activeTab === "videos" && <VideosTab videoFiles={videoFiles} />}
+          {activeTab === "photos" && (
+            <div id="vhc-tabpanel-photos" role="tabpanel" aria-labelledby="vhc-tab-photos">
+              <PhotosTab photoFiles={photoFiles} />
+            </div>
+          )}
+          {activeTab === "videos" && (
+            <div id="vhc-tabpanel-videos" role="tabpanel" aria-labelledby="vhc-tab-videos">
+              <VideosTab videoFiles={videoFiles} />
+            </div>
+          )}
         </main>
 
-        <footer
-          style={{
-            background: "var(--surface)",
-            padding: "12px 14px",
-            textAlign: "center"
-          }}
-        >
+        <footer style={{ background: "var(--surface)", padding: "12px 14px", textAlign: "center" }}>
           <div style={{ margin: "-12px -14px 12px" }}>
             <CustomerDivider />
           </div>
-          <div style={{ fontSize: 11, color: "var(--surfaceTextMuted)" }}>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)" }}>
             Vehicle Health Check Report · Job #{jobNumber}
             {expiresAt && (
               <>
                 {" · "}
-                <span style={{ color: "var(--danger)" }}>
+                <span style={{ color: "var(--danger-text)" }}>
                   Link expires {new Date(expiresAt).toLocaleString()}
                 </span>
               </>
@@ -998,14 +864,16 @@ export default function VhcCustomerView({
         </footer>
       </div>
 
-      <AuthoriseConfirmModal
-        item={pendingAuthoriseItem}
-        authorizedTotal={totals?.authorized}
-        onConfirm={confirmAuthorise}
-        onDecline={declineFromConfirm}
-        onClose={closeAuthoriseConfirm}
-        isUpdating={isConfirmUpdating}
-      />
+      {pendingAuthoriseItem && (
+        <AuthoriseConfirmModal
+          item={pendingAuthoriseItem}
+          authorizedTotal={totals?.authorized}
+          onConfirm={confirmAuthorise}
+          onDecline={declineFromConfirm}
+          onClose={closeAuthoriseConfirm}
+          isUpdating={isConfirmUpdating}
+        />
+      )}
     </>
   );
 }

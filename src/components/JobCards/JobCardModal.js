@@ -6,14 +6,16 @@ import { useRouter } from "next/router"; // Next.js router for navigation
 import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
-import {
-  // Job clocking functions to start/stop time on jobs
-  clockInToJob,
-  clockOutFromJob,
-  getUserActiveJobs
-} from "@/lib/database/jobClocking"; // DB: job clocking
-import { getAllJobs, getJobRequestsForClocking } from "@/lib/database/jobs"; // DB: fetch jobs and their clocking requests
-import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
+// Loaded on demand - all three resolve the Supabase browser client (213 KB).
+//
+// This modal is imported by the staff shell and by the technician screens, so a
+// static import here put the client into the first load of every page that can
+// open it. Nothing below runs until the modal is actually open: the component
+// returns null while `isOpen` is false, and every call site sits inside an
+// isOpen-guarded effect or a button handler.
+const loadJobClockingDb = () => import("@/lib/database/jobClocking");
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadDevUsers = () => import("@/lib/users/devUsers");
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
@@ -122,7 +124,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           setRequestOptions(fallbackOptions);
           return;
         }
-        const data = await getJobRequestsForClocking(jobMatch.id);
+        const data = await (await loadJobsDb()).getJobRequestsForClocking(jobMatch.id);
         if (!isMounted) return;
         setRequestOptions(buildRequestOptions(trimmed, data || []));
       } catch (err) {
@@ -181,16 +183,16 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(""); // Clear any prior error
 
         // ✅ DEV: Ensure a users row exists and get integer user_id (no email needed)
-        const realId = await ensureDevDbUserAndGetId(user); // Create/find users row
+        const realId = await (await loadDevUsers()).ensureDevDbUserAndGetId(user); // Create/find users row
         if (!mounted) return; // Stop if unmounted
         setDbUserId(realId); // Save integer users.user_id
 
         // Fetch active jobs for this DB user
-        const act = await getUserActiveJobs(realId); // Query open clock-ins
+        const act = await (await loadJobClockingDb()).getUserActiveJobs(realId); // Query open clock-ins
         if (act.success) setActiveJobs(act.data); // Put into state
 
         // Fetch all jobs, keep only active ones, normalize shape
-        const allJobsRaw = await getAllJobs(); // Fetch jobs list
+        const allJobsRaw = await (await loadJobsDb()).getAllJobs(); // Fetch jobs list
         const allJobs = Array.isArray(allJobsRaw) ? allJobsRaw : []; // Safe array
         const activeOnly = allJobs
           .filter(
@@ -255,7 +257,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       }
 
       // Do the clock-in with real integer ids
-      const res = await clockInToJob(
+      const res = await (await loadJobClockingDb()).clockInToJob(
         dbUserId,
         Number(job.id),
         job.jobNumber,
@@ -289,7 +291,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
     setLoading(true); // Start loader
     try {
-      const res = await clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
+      const res = await (await loadJobClockingDb()).clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
       if (res.success) { // If OK
         alert(`✅ Clocked out from Job ${jobNumText}\n\nHours worked: ${res.hoursWorked}h`); // Show hours
         setJobNumber(""); // Clear job number input for next open
@@ -320,9 +322,9 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     setLoading(true); // Start loader
     setError(""); // Clear
     try {
-      const act = await getUserActiveJobs(dbUserId); // Active clock-ins
+      const act = await (await loadJobClockingDb()).getUserActiveJobs(dbUserId); // Active clock-ins
       if (act.success) setActiveJobs(act.data); // Save
-      const raw = await getAllJobs(); // All jobs
+      const raw = await (await loadJobsDb()).getAllJobs(); // All jobs
       const all = Array.isArray(raw) ? raw : []; // Safe array
       const list = all
         .filter(

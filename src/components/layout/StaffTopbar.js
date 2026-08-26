@@ -10,8 +10,8 @@
 // identity block, the Pinned Shortcuts strip and the standalone (screen-reader)
 // Notifications region were removed. The remaining capability is laid out, left
 // to right, as: Live KPI Widgets → Role-specific Quick Actions (incl. all
-// technician controls) → Smart Insight → Continue Where You Left Off → Most-Used
-// Pages → Global Search & Help. Height, styling, spacing, tokens and the shell
+// technician controls) → Smart Insight → Most-Used Pages → Global Search &
+// Help. Height, styling, spacing, tokens and the shell
 // are unchanged; only the content and its ordering/width balance moved.
 //
 // Most-Used Pages: the Live KPI + Smart Insight "stats" no longer flex-grow apart
@@ -92,8 +92,6 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
-  // Continue-Where-You-Left-Off (Phase 2.3): the resume target or null.
-  resumeItem = null,
   overlay = false,
   // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
   // search is in use (focused or its results list showing).
@@ -316,29 +314,7 @@ export default function StaffTopbar({
           </div>
         )}
 
-        {/* 4 — Continue Where You Left Off (Phase 2.3). Its own section now, after
-            Smart Insight; on tablet it wraps to the next row under the actions. */}
-        {resumeItem && (
-          <div
-            className="app-topbar-action-group"
-            style={{
-              ...actionGroupStyle,
-              flex: isVerticalPhone ? "0 0 auto" : isTablet ? "1 1 100%" : "0 1 auto",
-              minWidth: isVerticalPhone ? "max-content" : 0,
-            }}
-          >
-            <Link
-              href={resumeItem.href}
-              prefetch={false}
-              className="app-btn app-btn--secondary"
-              title={`Resume ${resumeItem.type}: ${resumeItem.label}`}
-            >
-              {`Resume: ${resumeItem.label}`}
-            </Link>
-          </div>
-        )}
-
-        {/* 5 — Most-Used Pages + Global Search & Help. Hidden on tablet/mobile
+        {/* 4 — Most-Used Pages + Global Search & Help. Hidden on tablet/mobile
             (search is shown below the tab buttons there). The whole cluster is
             pushed hard-right via marginLeft:auto — the "stats" sections no longer
             grow, so this replaces the previous grow-to-fill behaviour and keeps
@@ -352,7 +328,7 @@ export default function StaffTopbar({
               gap: "10px",
               minWidth: 0,
               justifyContent: "flex-end",
-              // Pins the cluster to the right edge. The KPI/insight/resume sections
+              // Pins the cluster to the right edge. The KPI/insight sections
               // are content-sized (no longer flex-grow), so an explicit auto margin
               // — not a growing neighbour — is what holds this to the far right.
               marginLeft: isVerticalPhone ? 0 : "auto",

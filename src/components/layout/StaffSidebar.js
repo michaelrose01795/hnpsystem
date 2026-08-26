@@ -30,6 +30,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { canShowDevPages } from "@/lib/dev-tools/config";
+import { clearRememberedStaffRoute } from "@/lib/auth/returnRoute";
 import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
 import {
   isOverlayHidden as readOverlayHidden,
@@ -428,6 +429,11 @@ export default function Sidebar({
       return;
     }
     if (typeof window !== "undefined") {
+      // Signing out deliberately ends the session's "place": the next sign-in
+      // should start at the role default rather than being thrown back into the
+      // page this user chose to leave. This path hard-replaces the location and
+      // never reaches UserContext.logout, so it has to clear it itself.
+      clearRememberedStaffRoute();
       window.sessionStorage.setItem(
         LOGOUT_BARRIER_STORAGE_KEY,
         String(Date.now() + LOGOUT_BARRIER_MS)
@@ -690,8 +696,13 @@ export default function Sidebar({
               // offered on the desktop-download card) rather than the wide wordmark.
               // Routed through BrandLogo so the icon recolours to the active theme
               // accent, matching the expanded wordmark instead of staying a fixed red.
+              // icon-256 rather than the 1254x1254 desktop.png: this rail renders
+              // at 60-75px, and BrandLogo downloads the raw file at full size to
+              // recolour it on a canvas — so the source was 806 KB for a 75px
+              // icon. 256px keeps >3x headroom at any DPR. Same image, generated
+              // from the same source.
               <BrandLogo
-                src="/images/logo/desktop.png"
+                src="/images/logo/icon-256.png"
                 alt="H&P"
                 style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
               />

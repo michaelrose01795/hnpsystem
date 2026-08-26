@@ -16,15 +16,17 @@ import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
-import { supabase } from "@/lib/database/supabaseClient";
-import { updateJob } from "@/lib/database/jobs";
-import { createJobNote, getNotesByJob } from "@/lib/database/notes";
-import {
-  ensureWarrantyClaim,
-  updateWarrantyClaim,
-  createWarrantyRequest,
-  updateWarrantyRequest,
-} from "@/lib/database/warranty";
+// Loaded on demand - 213 KB of @supabase/supabase-js.
+//
+// This tab is always mounted by the job-card page (it is hidden with
+// display:none rather than unmounted), so a static import here put the client
+// into the first load of the heaviest route in the app. Its single query runs
+// inside loadWarrantyJobs, an async callback, so nothing here is needed to
+// render the tab.
+const loadSupabase = async () => (await import("@/lib/database/supabaseClient")).supabase;
+const loadJobsDb = () => import("@/lib/database/jobs"); // deferred - link/unlink handlers only
+const loadNotesDb = () => import("@/lib/database/notes"); // deferred - handler-time only
+const loadWarrantyDb = () => import("@/lib/database/warranty"); // deferred - save handlers only
 import { formatCurrency, DASH } from "./historyFormat";
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -48,7 +50,7 @@ function WarrantyLinkPanel({
     if (!canEdit) return;
     setLoadingJobs(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (await loadSupabase())
         .from("jobs")
         .select(
           "id, job_number, status, job_source, vehicle_reg, vehicle_make_model, warranty_linked_job_id"
@@ -110,7 +112,7 @@ function WarrantyLinkPanel({
     setLinking(true);
     setLinkError("");
 
-    const currentUpdate = await updateJob(jobData.id, {
+    const currentUpdate = await (await loadJobsDb()).updateJob(jobData.id, {
       warranty_linked_job_id: numericJobId,
       warranty_vhc_master_job_id: masterJobId,
     });
@@ -120,13 +122,13 @@ function WarrantyLinkPanel({
       return;
     }
 
-    const targetUpdate = await updateJob(numericJobId, {
+    const targetUpdate = await (await loadJobsDb()).updateJob(numericJobId, {
       warranty_linked_job_id: jobData.id,
       warranty_vhc_master_job_id: masterJobId,
       status: jobData.status,
     });
     if (!targetUpdate?.success) {
-      await updateJob(jobData.id, {
+      await (await loadJobsDb()).updateJob(jobData.id, {
         warranty_linked_job_id: null,
         warranty_vhc_master_job_id: null,
       });
@@ -1071,7 +1073,7 @@ function WarrantyNotesPanel({
     if (!warrantyJobId) return;
     setLoading(true);
     try {
-      const data = await getNotesByJob(warrantyJobId);
+      const data = await (await loadNotesDb()).getNotesByJob(warrantyJobId);
       setNotes(Array.isArray(data) ? data : []);
     } finally {
       setLoading(false);
@@ -1087,7 +1089,7 @@ function WarrantyNotesPanel({
     if (!text || !warrantyJobId) return;
     setSaving(true);
     try {
-      const res = await createJobNote({
+      const res = await (await loadNotesDb()).createJobNote({
         job_id: warrantyJobId,
         user_id: actingUserId,
         note_text: text,
@@ -1219,7 +1221,7 @@ export default function WarrantyTab({
       try {
         let claimId = claim?.id;
         if (!claimId) {
-          const created = await ensureWarrantyClaim(
+          const created = await (await loadWarrantyDb()).ensureWarrantyClaim(
             warrantyJobId,
             jobData?.id || null,
             actingUserId
@@ -1242,7 +1244,7 @@ export default function WarrantyTab({
   const handleUpdateClaim = useCallback(
     (patch) =>
       withClaim(async (claimId) => {
-        const res = await updateWarrantyClaim(claimId, patch, actingUserId);
+        const res = await (await loadWarrantyDb()).updateWarrantyClaim(claimId, patch, actingUserId);
         if (!res?.success) alert(res?.error?.message || "Failed to update warranty claim.");
       }),
     [withClaim, actingUserId, alert]
@@ -1251,7 +1253,7 @@ export default function WarrantyTab({
   const handleAddRequest = useCallback(
     ({ requestType, amount, note }) =>
       withClaim(async (claimId) => {
-        const res = await createWarrantyRequest({
+        const res = await (await loadWarrantyDb()).createWarrantyRequest({
           claimId,
           warrantyJobId,
           requestType,
@@ -1268,7 +1270,7 @@ export default function WarrantyTab({
     async (requestId, patch) => {
       setBusy(true);
       try {
-        const res = await updateWarrantyRequest(requestId, patch);
+        const res = await (await loadWarrantyDb()).updateWarrantyRequest(requestId, patch);
         if (!res?.success) {
           alert(res?.error?.message || "Failed to update warranty request.");
           return;

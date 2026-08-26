@@ -159,6 +159,36 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   const { user, dbUserId, authUserId } = useUser() || {};
   const normalizedDefault = normalizeMode(defaultMode);
 
+  // The theme-load effect below keys off WHO the user is, not off the identity of
+  // the `user` object. UserContext rebuilds that object several times while it
+  // resolves (bootstrap payload → NextAuth session → roster), and each new object
+  // re-ran the effect and issued another identical
+  // GET /api/profile/theme-preferences. Measured against production that was four
+  // identical requests per page load — 72 across 18 pages, median 126 ms, worst
+  // 925 ms — all on the critical path of painting the theme.
+  //
+  // These three memos capture everything the effect actually branches on, as
+  // primitives, so it runs once per real identity change and no more.
+  const numericUserId = useMemo(() => {
+    const fromDb = Number(dbUserId);
+    if (Number.isInteger(fromDb) && fromDb > 0) return fromDb;
+    const fromUser = Number(user?.id);
+    return Number.isInteger(fromUser) && fromUser > 0 ? fromUser : null;
+  }, [dbUserId, user?.id]);
+
+  const hasUser = Boolean(user);
+
+  // isSyntheticDevPlatformUser() reads exactly these three fields, so a signature
+  // built from them changes if and only if its answer can change.
+  const syntheticUserSignature = Array.isArray(user?.roles)
+    ? `${user?.id}|${user?.isDevLogin}|${user.roles.join(",")}`
+    : `${user?.id}|${user?.isDevLogin}|${user?.roles ?? ""}`;
+  const isSyntheticDevUser = useMemo(
+    () => isSyntheticDevPlatformUser(user),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [syntheticUserSignature]
+  );
+
   // `mode` / `accent` always hold the user's TRUE preference — never an override.
   const [mode, setMode] = useState(() => {
     if (typeof document !== "undefined") {
@@ -308,14 +338,10 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     };
 
     const fetchPreference = async () => {
-      const numericUserId =
-        Number.isInteger(Number(dbUserId)) && Number(dbUserId) > 0
-          ? Number(dbUserId)
-          : Number.isInteger(Number(user?.id)) && Number(user?.id) > 0
-          ? Number(user.id)
-          : null;
-
-      if (!user && !numericUserId && !authUserId) {
+      // numericUserId / hasUser / isSyntheticDevUser are the memoised primitives
+      // hoisted above; the derivation is unchanged, it simply no longer depends
+      // on the identity of the `user` object.
+      if (!hasUser && !numericUserId && !authUserId) {
         applyLocalPreference();
         setLoading(false);
         return;
@@ -325,7 +351,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         setLoading(false);
         return;
       }
-      if (isSyntheticDevPlatformUser(user)) {
+      if (isSyntheticDevUser) {
         // The Developer Platform identity deliberately has no users row. Its
         // theme is device-local, so do not ask the employee profile endpoint to
         // resolve a database identity that cannot exist.
@@ -387,7 +413,9 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     return () => {
       cancelled = true;
     };
-  }, [user, dbUserId, authUserId, normalizedDefault]);
+    // Keyed on resolved identity, not on the `user` object's identity — see the
+    // memo block where these are derived.
+  }, [hasUser, numericUserId, authUserId, isSyntheticDevUser, normalizedDefault]);
 
   const toggleTheme = useCallback(() => {
     const currentIndex = THEME_SEQUENCE.indexOf(mode);

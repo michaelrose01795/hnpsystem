@@ -5,6 +5,7 @@
 /* ─── Outer shell ─────────────────────────────────────────────────────────── */
 
 .panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
@@ -22,12 +23,19 @@
 
 /* ─── Session sidebar ─────────────────────────────────────────────────────── */
 
-.sessionBar {
+/* SPECIFICITY: scoped by .panel on purpose. `html.staff-scope * { padding: 0 }`
+   in staffglobal.css is (0,1,0) — the same weight as a bare module class — and
+   wins on source order, so `.sessionBar { padding: … }` alone is dropped
+   silently. Two classes = (0,2,0) and the padding actually lands. */
+.panel .sessionBar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px auto;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 0 var(--space-sm);
+  /* 10px between this toolbar (title box, history, + New) and the chat area
+     below. --space-xs of that comes from .panel's flex gap, so only the
+     remainder is padding here. */
+  padding: 0 0 calc(var(--space-2) - var(--space-xs));
   flex-shrink: 0;
   width: 100%;
   max-width: 100%;
@@ -35,13 +43,25 @@
   box-sizing: border-box;
 }
 
-.sessionSelectWrap,
-.sessionLoadingSelect {
+.sessionLoadingTitle {
   width: 100%;
   min-width: 0;
   overflow: hidden;
 }
 
+
+/* The conversation title field's visual contract belongs entirely to the
+   global .app-input family (via the shared <InputField>). These rules only let
+   that canonical control shrink safely inside the session toolbar grid —
+   nothing here restyles the box itself. */
+.sessionTitleField {
+  min-width: 0;
+  width: 100%;
+}
+
+.sessionBar :global(.app-input) {
+  min-width: 0;
+}
 
 .newChatButton {
   flex-shrink: 0;
@@ -52,7 +72,7 @@
   gap: var(--space-xs);
 }
 
-.deleteSessionButton {
+.historyButton {
   flex-shrink: 0;
   width: 44px;
   min-width: 44px;
@@ -63,36 +83,189 @@
   transition: color 0.12s ease;
 }
 
-.deleteSessionIcon {
+.historyIcon {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
 }
 
-.deleteSessionButton:hover {
+.historyPopupContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.historyToolbar {
+  width: 100%;
+  min-width: 0;
+}
+
+.historySearch {
+  flex: 1 1 var(--control-min-width);
+  min-width: 0;
+}
+
+.historyCount {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.historyDate {
+  color: var(--surfaceTextMuted);
+  font-size: var(--text-caption);
+  line-height: 1.35;
+}
+
+.historyDeleteButton {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+.historyList {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Keep the canonical popup centred and assign overflow to the conversation
+     list, matching the Share Note people list at every viewport size. */
+  max-height: min(360px, 46dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.historyRow {
+  display: grid;
+  /* The 49px action track preserves the 44px touch target and adds the
+     explicitly requested 5px breathing room at the row's right edge. */
+  grid-template-columns: minmax(0, 1fr) 49px;
+  align-items: center;
+  min-width: 0;
+  border-bottom: 1px solid var(--separating-line-color);
+}
+
+.historyRow:last-child {
+  border-bottom: 0;
+}
+
+.historyRowActive {
+  background: var(--theme-hover);
+}
+
+.historySessionButton {
+  appearance: none;
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--space-xs) var(--space-sm);
+  background: transparent;
+  color: var(--text-1);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+:global(html.staff-scope) .historySessionButton {
+  --btn-bg: transparent;
+  --btn-color: var(--text-1);
+  --btn-ring: none;
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  justify-content: stretch;
+  text-align: left;
+}
+
+:global(html.staff-scope) .historySessionButton:hover {
+  --btn-bg: var(--control-bg-hover);
+}
+
+.historySessionButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.historyTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-sm);
+  font-weight: 650;
+}
+
+.historyMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.historyCurrent {
+  color: var(--accentText);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.historyDate:empty {
+  display: none;
+}
+
+.historyDeleteButton {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  justify-self: start;
+}
+
+.historyDeleteButton:hover {
+  background: var(--danger-surface) !important;
   color: var(--danger);
 }
 
-.deleteSessionButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.historyDeleteIcon {
+  width: 18px;
+  height: 18px;
 }
 
 /* ─── Message list ────────────────────────────────────────────────────────── */
 
 .messages {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
+  gap: var(--space-3);
   width: 100%;
   max-width: 100%;
   min-height: 0;
   min-width: 0;
+  padding: var(--space-3);
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
   contain: layout paint;
   overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
   scroll-padding-block: var(--space-3);
   scroll-behavior: smooth;
+}
+
+.messages:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* Empty / placeholder state */
@@ -341,59 +514,6 @@
 
 /* ─── Sources citations ──────────────────────────────────────────────────── */
 
-.sourceGroup {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  width: min(94%, 68ch);
-  padding-inline: var(--space-xs);
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.sourceLabel {
-  color: var(--surfaceTextMuted);
-  font-size: var(--text-caption);
-  font-weight: 600;
-}
-
-.sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  width: 100%;
-  min-width: 0;
-}
-
-.sourceTag {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  max-width: 100%;
-  font-size: var(--text-caption);
-  border-radius: var(--radius-pill);
-  background: rgba(var(--primary-rgb), 0.1);
-  color: var(--text-1);
-  padding: 0 var(--space-3);
-  line-height: 1.25;
-  text-decoration: none;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.sourceTagLink {
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  transition: text-decoration-color 0.1s ease, color 0.1s ease;
-}
-
-.sourceTagLink:hover {
-  color: var(--primary);
-  text-decoration-color: var(--primary);
-}
-
 /* ─── Follow-up suggestions after assistant reply ────────────────────────── */
 
 .followUpRow {
@@ -524,7 +644,6 @@
 
   .messageUser .bubbleContent,
   .messageAssistant .bubbleContent,
-  .sourceGroup,
   .followUpRow {
     max-width: 100%;
     width: 100%;
@@ -557,7 +676,9 @@
     gap: 0;
   }
 
-  .sessionBar {
+  /* Two classes so this still outranks the base .panel .sessionBar rule above
+     and collapses the 10px gap when the panel is squeezed this short. */
+  .panel .sessionBar {
     padding-bottom: 0;
   }
 

@@ -37,6 +37,19 @@ import Button from "@/components/ui/Button"; // canonical staffglobal button fam
 // jobs. Styling lives in the appt-sched-* classes in the <style jsx global>
 // block at the foot of this file.
 // ===========================================================================
+// Date-cell formatters, built once at module load.
+//
+// The schedule board renders ~60 day columns, and each one called
+// date.toLocaleDateString() twice — every one of those calls constructs a fresh
+// Intl.DateTimeFormat, so a single render built ~120 formatters, and every
+// keystroke in the search box paid for all of them again. A CPU profile of
+// production put this page's chunk at 1,323 ms of self-time, the largest block
+// on the slowest page in the app.
+//
+// Same locale, same options, same output — one instance instead of 120.
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-GB", { weekday: "short" });
+const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+
 const DAY_START_MIN = 8 * 60; // 08:00
 const DAY_END_MIN = 17 * 60; // 17:00
 const SLOT_MINUTES = 15;
@@ -369,10 +382,9 @@ function SchedulerBoard({
               {SLOTS.map((label, i) => {
                 const minutes = DAY_START_MIN + i * SLOT_MINUTES;
                 const isHour = minutes % 60 === 0;
-                // Label only the hour + half-hour columns so the axis stays
-                // readable once it's fit to the card width (15-min columns still
-                // exist for bar positioning, just unlabelled).
-                const showLabel = minutes % 30 === 0;
+                const isHalfHour = minutes % 60 === 30;
+                // Full hours stay labelled; half-hours use a centred 32px marker.
+                // Quarter-hour columns remain available for bar positioning only.
                 const edgeClass =
                   i === 0
                     ? " appt-sched-head-cell-first"
@@ -382,9 +394,10 @@ function SchedulerBoard({
                 return (
                   <div
                     key={`head-${label}`}
-                    className={`appt-sched-head-cell${isHour ? " appt-sched-head-cell-hour" : ""}${edgeClass}`}
+                    className={`appt-sched-head-cell${isHour ? " appt-sched-head-cell-hour" : ""}${isHalfHour ? " appt-sched-head-cell-half-hour" : ""}${edgeClass}`}
+                    aria-label={isHalfHour ? label : undefined}
                   >
-                    {showLabel ? label : ""}
+                    {isHour ? label : ""}
                   </div>
                 );
               })}
@@ -441,10 +454,10 @@ function SchedulerBoard({
                 >
                   <div className="appt-sched-date-head">
                     <span className="appt-sched-date-weekday">
-                      {date.toLocaleDateString("en-GB", { weekday: "short" })}
+                      {WEEKDAY_FORMATTER.format(date)}
                     </span>
                     <span className="appt-sched-date-day">
-                      {date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                      {DAY_MONTH_FORMATTER.format(date)}
                     </span>
                   </div>
                   <div className="appt-sched-summary-grid" aria-label="Day capacity summary">
@@ -716,6 +729,9 @@ function SchedulerBoard({
           display: flex;
           width: 100%;
           min-width: 0;
+          /* One continuous theme-aware rule separates the header from the day
+             rows without reusing either scheduler background colour. */
+          border-bottom: var(--separating-line);
           /* Fully OPAQUE backstop so day rows scrolling up are hidden behind the
              sticky header instead of showing through it. --theme is only 10%
              opaque, so we stack it over the opaque --surface; the children then
@@ -732,11 +748,8 @@ function SchedulerBoard({
           flex: 0 0 var(--sched-date-col);
           width: var(--sched-date-col);
           height: var(--sched-header-h);
-          /* header: 6% brand-red tint + 0.18 brand-red bottom hairline
-             (matches the nextjobs board group header) */
+          /* header: 6% brand-red tint (matches the nextjobs board group header) */
           background: rgba(var(--accent-base-rgb), 0.06);
-          box-shadow: inset -1px 0 0 var(--separating-line),
-            inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
         }
         .appt-sched-head-track {
           flex: 1 1 0;
@@ -757,21 +770,29 @@ function SchedulerBoard({
           /* match the nextjobs "Technicians" board header colour */
           color: var(--accent-strong);
           white-space: nowrap;
-          /* let the sparse hour/half-hour labels spill into the blank quarter
-             columns instead of clipping inside their own narrow cell */
+          /* Let the sparse hour labels spill into the blank quarter columns
+             instead of clipping inside their own narrow cell. */
           overflow: visible;
-          box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18);
         }
         .appt-sched-head-cell-first {
           justify-content: flex-start;
+          padding-left: var(--space-sm);
         }
         .appt-sched-head-cell-last {
           justify-content: flex-end;
+          padding-right: var(--space-sm);
         }
         .appt-sched-head-cell-hour {
           color: var(--accent-strong);
-          box-shadow: inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.18),
-            inset 1px 0 0 var(--separating-line);
+        }
+        /* The flex-centred 32px marker extends exactly 16px either side of the
+           header midpoint and replaces each former half-hour text label. */
+        .appt-sched-head-cell-half-hour::before {
+          content: "";
+          display: block;
+          width: 1px;
+          height: 32px;
+          background: var(--separating-line-color);
         }
 
         .appt-sched-row {
@@ -1210,6 +1231,8 @@ function SchedulerBoard({
            the values in sync with the base rules above.
            ─────────────────────────────────────────────────────────────── */
         html.staff-scope .appt-sched-head-cell { padding: 0 2px; }
+        html.staff-scope .appt-sched-head-cell-first { padding-left: var(--space-sm); }
+        html.staff-scope .appt-sched-head-cell-last { padding-right: var(--space-sm); }
         html.staff-scope .appt-sched-date-cell { padding: 16px; }
         html.staff-scope .appt-sched-timeline { padding: 3px 0; }
         html.staff-scope .appt-sched-bar { margin: 0 3px; padding: 0 8px; }
@@ -1309,7 +1332,10 @@ export default function AppointmentsUi(props) {
           data-dev-section-type="page-shell"
           data-dev-background-token="transparent"
           data-dev-text-preview="Appointments planner"
-          style={{ height: "100%" }}
+          style={{
+            height: "100%",
+            gap: "10px" // Exact local toolbar-to-scheduler spacing requested for this planner.
+          }}
         >
           {/* Booking toolbar — search · calendar date picker · view filter
               (month/day) · job number · time · Book button. The date picker

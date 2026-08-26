@@ -7,16 +7,10 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import StatusMessage from "@/components/ui/StatusMessage";
 import FuelGauge, { fuelLevelDisplayLabel } from "@/components/LoanCars/FuelGauge";
-import {
-  deleteLoanCar,
-  deleteLoanCarBooking,
-  getLoanCarFuelHistory,
-  getLoanCarScheduleBookings,
-  getLoanCars,
-  saveLoanCar,
-  saveLoanCarBooking,
-  searchLoanCarBookingTargets,
-} from "@/lib/database/tracking";
+// Loaded on demand - @/lib/database/tracking resolves the Supabase browser
+// client. Every function below runs from a panel effect or a save handler,
+// never during render.
+const loadTrackingDb = () => import("@/lib/database/tracking");
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LOOK_BACK_DAYS = 14;
@@ -821,7 +815,7 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
     }
     let active = true;
     setHistoryLoading(true);
-    getLoanCarFuelHistory(loanCarId).then((rows) => {
+    loadTrackingDb().then((m) => m.getLoanCarFuelHistory(loanCarId)).then((rows) => {
       if (!active) return;
       setFuelHistory(rows);
       setHistoryLoading(false);
@@ -1137,7 +1131,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
     }
     setBookingLoading(true);
     showBookingMessage("");
-    const rows = await searchLoanCarBookingTargets(term);
+    const rows = await (await loadTrackingDb()).searchLoanCarBookingTargets(term);
     setBookingMatches(rows);
     setBookingLoading(false);
     if (rows.length === 0) {
@@ -1370,7 +1364,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const runSearch = async () => {
-    const rows = await searchLoanCarBookingTargets(searchTerm);
+    const rows = await (await loadTrackingDb()).searchLoanCarBookingTargets(searchTerm);
     setMatches(rows);
   };
 
@@ -1404,7 +1398,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
     }
     setSaving(true);
     setMessage("");
-    const result = await saveLoanCarBooking(form);
+    const result = await (await loadTrackingDb()).saveLoanCarBooking(form);
     setSaving(false);
     if (result.success) {
       onSaved();
@@ -1417,7 +1411,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const handleDelete = async () => {
     if (!form.bookingId && !form.id) return;
     setSaving(true);
-    const result = await deleteLoanCarBooking(form.bookingId || form.id);
+    const result = await (await loadTrackingDb()).deleteLoanCarBooking(form.bookingId || form.id);
     setSaving(false);
     if (result.success) {
       onSaved();
@@ -1655,8 +1649,8 @@ export default function LoanCarSchedulePanel({
     const firstDay = dateRows[0]?.key;
     const lastDay = dateRows[dateRows.length - 1]?.key;
     const [nextCars, nextBookings] = await Promise.all([
-      getLoanCars(),
-      getLoanCarScheduleBookings({ startDate: firstDay, endDate: lastDay }),
+      loadTrackingDb().then((m) => m.getLoanCars()),
+      loadTrackingDb().then((m) => m.getLoanCarScheduleBookings({ startDate: firstDay, endDate: lastDay })),
     ]);
     setCars(nextCars);
     setBookings(nextBookings);
@@ -1725,7 +1719,7 @@ export default function LoanCarSchedulePanel({
 
   const handleSaveCar = async (car) => {
     const isNewCar = !(car.loanCarId || car.id);
-    const result = await saveLoanCar(car);
+    const result = await (await loadTrackingDb()).saveLoanCar(car);
     if (result.success) {
       await loadData();
       if (isNewCar && scrollRef.current) {
@@ -1736,13 +1730,13 @@ export default function LoanCarSchedulePanel({
   };
 
   const handleDeleteCar = async (loanCarId) => {
-    const result = await deleteLoanCar(loanCarId);
+    const result = await (await loadTrackingDb()).deleteLoanCar(loanCarId);
     if (result.success) loadData();
     return result;
   };
 
   const handleSaveBooking = async (booking) => {
-    const result = await saveLoanCarBooking(booking);
+    const result = await (await loadTrackingDb()).saveLoanCarBooking(booking);
     if (result.success) {
       await loadData();
     }
