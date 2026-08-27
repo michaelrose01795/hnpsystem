@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import { buildConcernRef } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import Button from "@/components/ui/Button";
 import IssueReportPopup, {
   IssueReportAddSection,
@@ -638,6 +639,22 @@ export default function ServiceIndicatorDetailsModal({
                     onSeverityChange={(status) => updateConcern(concern._globalIndex, { status })}
                     onDelete={() => deleteConcern(concern._globalIndex)}
                     disabled={locked}
+                    mediaAction={canShowCamera ? (
+                      <SectionCameraButton
+                        iconOnly
+                        sectionKey="service"
+                        concern={buildConcernRef({
+                          section: "service",
+                          index: concern._globalIndex,
+                          concern,
+                        })}
+                        jobId={jobId}
+                        jobNumber={jobNumber}
+                        userId={userId}
+                        disabled={locked}
+                        onUploadComplete={onSectionMediaUploaded}
+                      />
+                    ) : null}
                   />
                 ))}
           </IssueReportList>

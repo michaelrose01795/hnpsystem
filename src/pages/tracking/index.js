@@ -10,14 +10,13 @@ import { buildApiUrl } from "@/utils/apiClient";
 import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table; the write itself is server-owned
 import { supabaseClient } from "@/lib/database/supabaseClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { Button, InputField, StatusMessage } from "@/components/ui";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
+import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -766,32 +765,21 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 
 };
 const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
-  useBodyModalLock(true);
-
   const [query, setQuery] = useState("");
   const filtered = options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div
-      className="popup-backdrop"
-      role="dialog"
-      aria-modal="true"
-      style={{
-        ...popupOverlayStyles,
-        zIndex: "var(--z-modal)"
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Search location"
+      cardStyle={{
+        width: "min(100%, 600px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
       }}>
-
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(600px, 100%)",
-          background: "var(--search-surface)",
-          padding: "26px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-          color: "var(--search-text)"
-        }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -858,8 +846,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
         </div>
 
         {/* TODO: Replace static location lists with DB-driven results */}
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
@@ -888,8 +875,6 @@ const buildOilFormState = (data = null) => {
 };
 
 const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => buildEquipmentFormState(initialData));
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -949,13 +934,14 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={initialData ? "Edit equipment or tools" : "Add equipment or tools"}
+      cardStyle={{ width: "min(100%, 600px)", padding: "var(--section-card-padding)" }}>
       <form
         onSubmit={handleSubmit}
         style={{
-          ...popupCardStyles,
-          width: "min(600px, 100%)",
-          padding: "28px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1048,13 +1034,11 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
 
-    </div>);
+    </PopupModal>);
 
 };
 
 const EquipmentHistoryModal = ({ item, onClose }) => {
-  useBodyModalLock(Boolean(item));
-
   if (!item) return null;
 
   const rows = [
@@ -1066,16 +1050,17 @@ const EquipmentHistoryModal = ({ item, onClose }) => {
   ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(520px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={`${item.name} equipment history`}
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
           <div style={{ minWidth: 0 }}>
@@ -1106,14 +1091,11 @@ const EquipmentHistoryModal = ({ item, onClose }) => {
             </div>
           )}
         </LayerSurface>
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => buildOilFormState(initialData));
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -1178,13 +1160,14 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={initialData ? "Edit oil or stock" : "Add oil or stock"}
+      cardStyle={{ width: "min(100%, 650px)", padding: "var(--section-card-padding)" }}>
       <form
         onSubmit={handleSubmit}
         style={{
-          ...popupCardStyles,
-          width: "min(650px, 100%)",
-          padding: "28px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1285,13 +1268,11 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
 
-    </div>);
+    </PopupModal>);
 
 };
 
 const OilStockHistoryModal = ({ item, onClose }) => {
-  useBodyModalLock(Boolean(item));
-
   if (!item) return null;
 
   const status = getOilStockStatus(item);
@@ -1306,16 +1287,17 @@ const OilStockHistoryModal = ({ item, onClose }) => {
   ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(520px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={`${item.title} oil or stock history`}
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
           <div style={{ minWidth: 0 }}>
@@ -1346,14 +1328,11 @@ const OilStockHistoryModal = ({ item, onClose }) => {
             </div>
           )}
         </LayerSurface>
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => ({
     jobNumber: initialData?.jobNumber || "",
     reg: initialData?.reg || "",
@@ -1434,16 +1413,17 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true">
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(800px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Vehicle and key tracking"
+      cardStyle={{
+        width: "min(100%, 800px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -1585,14 +1565,11 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             </Button>
           </form>
         }
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries = [] }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     ...entry,
@@ -1679,18 +1656,19 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true">
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={entry || matchedExisting ? "Edit existing tracking entry" : "Log new tracking entry"}
+      cardStyle={{
+        width: "min(100%, 640px)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+      }}>
       <form
         onSubmit={handleSubmit}
-        className="popup-card"
         style={{
-          borderRadius: "var(--radius-xl)",
-          width: "100%",
-          maxWidth: "640px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          border: "none",
-          padding: "32px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1814,7 +1792,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
 
         {/* TODO: Persist vehicle/key updates via API endpoint */}
       </form>
-    </div>);
+    </PopupModal>);
 
 };
 

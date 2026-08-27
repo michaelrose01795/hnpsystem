@@ -91,8 +91,8 @@ export default function CustomerVideoButton({
   userId, // Uploading user id
   vhcContextLabel = "", // Optional VHC section label for analytics
   vhcData = null, // Raw VHC state — used to build the left panel
-  buttonStyle, // Optional style override (kept for callers that need it, but the default look now comes from the global `.vhc-btn` class so this button matches "Reopen VHC" etc.)
-  buttonClassName = "vhc-btn", // Global VHC button class — override only when a caller has a good reason
+  buttonStyle, // Optional style override (kept for callers that need it — the default look comes from the global button family)
+  buttonClassName = "app-btn app-btn--secondary app-btn--sm", // Canonical secondary button — override only when a caller has a good reason
   onUploadComplete, // Invoked after a successful upload
 }) {
   useIdleWarm([loadFullScreenCapture, loadVideoEditorModal]);

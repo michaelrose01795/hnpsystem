@@ -8,7 +8,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
@@ -2402,36 +2402,32 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
       {/* Part Removal Popup Modal */}
       {showPrePickPopup && (
-        <ModalPortal>
-          <div
-            className="popup-backdrop"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowPrePickPopup(false);
-              }
-            }}
-            style={{ zIndex: 10000 }}
-          >
-            <div
-              className="popup-card"
-              style={{
-                borderRadius: "var(--radius-xl)",
-                width: "100%",
-                maxWidth: "560px",
-                border: "none",
-                background: "var(--surface)",
-                padding: "var(--page-card-padding)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--primary)" }}>
-                Set Picked Location
-              </div>
+        <PopupModal
+          isOpen
+          onClose={() => setShowPrePickPopup(false)}
+          ariaLabel="Set picked location"
+          cardStyle={{
+            width: "min(100%, 560px)",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+          }}>
+              <header className="app-popup-compact-header">
+                <h2>Set Picked Location</h2>
+                <div className="app-popup-compact-header__actions">
+                  <Button type="button" variant="primary" onClick={handleSubmitPrePickPopup} disabled={!selectedPrePickPartId} busy={savingPrePick}>
+                    Save Location
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => {
+                    setShowPrePickPopup(false);
+                    setSelectedPrePickPartId("");
+                    setSelectedPrePickLocation("");
+                  }}>
+                    Close
+                  </Button>
+                </div>
+              </header>
               <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                 Choose a part already added to this job and assign the location it has been picked to.
               </div>
@@ -2454,31 +2450,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 className="prepick-popup-dropdown"
               />
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowPrePickPopup(false);
-                    setSelectedPrePickPartId("");
-                    setSelectedPrePickLocation("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleSubmitPrePickPopup}
-                  disabled={!selectedPrePickPartId || savingPrePick}
-                  busy={savingPrePick}
-                >
-                  Save Location
-                </Button>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
 
       <AddNewJobPartPopup
@@ -2495,36 +2467,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       />
 
       {partPopup.open && partPopup.part && (
-        <ModalPortal>
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "var(--z-modal)",
-            }}
-            onClick={() => setPartPopup({ open: false, part: null })}
-          >
-            <LayerSurface
-              radius="var(--radius-sm)"
-              padding="var(--section-card-padding)"
-              gap="var(--layout-card-gap)"
-              style={{
-                width: "min(92vw, 680px)",
-                maxWidth: "680px",
-                maxHeight: "calc(100dvh - 48px)",
-                overflowY: "auto",
-                boxShadow: "var(--shadow-xl)",
-                color: "var(--text-1)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+        <PopupModal
+          isOpen
+          onClose={() => setPartPopup({ open: false, part: null })}
+          ariaLabel="Part details"
+          cardStyle={{
+            width: "min(100%, 680px)",
+            maxHeight: "calc(100dvh - 48px)",
+            overflowY: "auto",
+            padding: "var(--section-card-padding)",
+          }}>
               <div
                 style={{
                   display: "flex",
@@ -2807,9 +2759,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }
               `}</style>
 
-            </LayerSurface>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
     </>
   );

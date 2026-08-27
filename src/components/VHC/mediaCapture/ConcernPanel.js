@@ -1,5 +1,5 @@
 // file location: src/components/VHC/mediaCapture/ConcernPanel.js
-// Left-side panel rendered as a glass overlay on top of the full-screen
+// Left-side panel rendered as a translucent overlay on top of the full-screen
 // camera view. Rows are toggles: tapping a row either drops a widget at
 // the centre of the capture area or removes the existing one for that
 // row. The panel reflects this with an "on" visual state on any row
@@ -16,32 +16,24 @@ import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 
 const STATUS_STYLES = {
   red: {
-    bg: "rgba(var(--danger-rgb), 0.22)",
-    bgActive: "rgba(var(--danger-rgb), 0.34)",
-    accent: "transparent",
-    label: "rgba(var(--danger-rgb), 0.85)",
-    title: "Red",
+    bg: "var(--danger)",
+    bgActive: "var(--danger-hover)",
+    text: "var(--text-2)",
   },
   amber: {
-    bg: "rgba(var(--warning-rgb), 0.20)",
-    bgActive: "rgba(var(--warning-rgb), 0.34)",
-    accent: "transparent",
-    label: "rgba(var(--warning-rgb), 0.9)",
-    title: "Amber",
+    bg: "var(--warning)",
+    bgActive: "var(--warning-hover)",
+    text: "var(--text-2)",
   },
   green: {
-    bg: "rgba(var(--success-rgb), 0.18)",
-    bgActive: "rgba(var(--success-rgb), 0.32)",
-    accent: "transparent",
-    label: "rgba(var(--success-rgb), 0.9)",
-    title: "Green",
+    bg: "var(--success)",
+    bgActive: "var(--success-hover)",
+    text: "var(--text-2)",
   },
   default: {
-    bg: "rgba(var(--accentMainRgb), 0.18)",
-    bgActive: "rgba(var(--accentMainRgb), 0.32)",
-    accent: "rgba(var(--accentMainRgb), 0.60)",
-    label: "rgba(var(--accentMainRgb), 0.9)",
-    title: "Info",
+    bg: "var(--surfaceMutedToken)",
+    bgActive: "var(--surfaceHover)",
+    text: "var(--text-1)",
   },
 };
 
@@ -53,7 +45,8 @@ function concernLabelFontSize(label) {
 }
 
 function ConcernRow({ row, onInsert, isActive }) {
-  const status = STATUS_STYLES[row.status] || STATUS_STYLES.default;
+  const statusKey = String(row.status || "").trim().toLowerCase();
+  const status = STATUS_STYLES[statusKey] || STATUS_STYLES.default;
   const measurement = String(row.measurement || "").trim();
   const showMeasurementPill = measurement.length > 0;
 
@@ -76,11 +69,11 @@ function ConcernRow({ row, onInsert, isActive }) {
         padding: "var(--space-2) var(--space-3)",
         borderRadius: "var(--radius-sm)",
         background: isActive ? status.bgActive : status.bg,
-        color: "var(--hud-text)",
+        // Match staffglobal.css's strong status badges: solid semantic fill
+        // with --text-2, whose contrast is maintained by the theme ramps.
+        color: status.text,
         cursor: "pointer",
         transition: "var(--control-transition), transform var(--duration-fast) var(--ease-default)",
-        backdropFilter: "blur(2px)",
-        WebkitBackdropFilter: "blur(2px)",
         boxShadow: isActive ? "0 0 0 1px var(--hud-border) inset" : "none",
         fontFamily: "var(--font-family)",
       }}
@@ -94,8 +87,8 @@ function ConcernRow({ row, onInsert, isActive }) {
           width: 10,
           height: 10,
           borderRadius: "var(--radius-pill)",
-          background: isActive ? "var(--hud-text)" : status.accent,
-          boxShadow: isActive ? `0 0 0 2px ${status.accent}` : "none",
+          background: status.text,
+          opacity: isActive ? 1 : 0.62,
         }}
       />
 
@@ -299,11 +292,17 @@ export default function ConcernPanel({
         flexDirection: "column",
         gap: 0,
         padding: "var(--space-3) var(--space-2)",
-        background: "var(--hud-surface-strong)",
+        // The fallback follows the forced dark --surface token. Supporting
+        // browsers then remove its residual chroma while preserving the same
+        // lightness, producing a genuinely neutral grey panel.
+        backgroundColor: "rgba(var(--surface-rgb), 0.9)",
+        background: "oklch(from var(--surface) l 0 h / 0.9)",
         borderRadius: "var(--radius-lg)",
         border: "none",
-        backdropFilter: "var(--hud-blur-strong)",
-        WebkitBackdropFilter: "var(--hud-blur-strong)",
+        // Desaturate the camera feed before blurring it so transparency can
+        // affect texture/lightness but can never tint the panel blue.
+        backdropFilter: "var(--hud-blur) grayscale(1)",
+        WebkitBackdropFilter: "var(--hud-blur) grayscale(1)",
         boxShadow: "var(--hud-shadow-lg)",
         overflow: "hidden",
         fontFamily: "var(--font-family)",

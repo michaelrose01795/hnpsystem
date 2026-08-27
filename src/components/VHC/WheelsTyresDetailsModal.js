@@ -7,6 +7,7 @@ import IssueReportPopup, {
   IssueReportRow,
 } from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import { buildConcernRef } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import Button from "@/components/ui/Button";
 import themeConfig, {
   vhcModalContentStyles,
@@ -1238,6 +1239,25 @@ export default function WheelsTyresDetailsModal({
                 onSeverityChange={(status) => updateConcernSeverity(index, status)}
                 onDelete={() => deleteConcernAt(index)}
                 disabled={locked}
+                mediaAction={canShowCamera ? (
+                  <SectionCameraButton
+                    iconOnly
+                    sectionKey="wheels"
+                    concern={buildConcernRef({
+                      section: "wheels",
+                      category: concernTarget,
+                      // Matches the label map in collectSectionConcerns.
+                      categoryLabel: `${concernTarget} tyre`,
+                      index,
+                      concern,
+                    })}
+                    jobId={jobId}
+                    jobNumber={jobNumber}
+                    userId={userId}
+                    disabled={locked}
+                    onUploadComplete={onSectionMediaUploaded}
+                  />
+                ) : null}
               />
             ))}
           </IssueReportList>

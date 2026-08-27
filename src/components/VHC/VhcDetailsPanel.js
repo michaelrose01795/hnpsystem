@@ -17,7 +17,11 @@ import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 // Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
 // owned by the DB helper module per CLAUDE.md §5.
 import { loadVhcFallbackBundle } from "@/lib/database/vhc";
-import { classifyVhcMedia, groupVhcMedia } from "@/lib/vhc/buildVhcMediaLibrary";
+import {
+  classifyVhcMedia,
+  groupVhcMedia,
+  prioritiseRowsWithMedia,
+} from "@/lib/vhc/buildVhcMediaLibrary";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -1933,33 +1937,44 @@ export default function VhcDetailsPanel({
     [onJobDataRefresh]
   );
 
+  // SectionCameraButton hands back a single file for a one-shot capture and an
+  // array when a batch capture session uploads several items at once, so both
+  // shapes have to land in job_files or the batch's media never appears against
+  // its concern row until the next full job refresh.
   const handleSectionMediaUploaded = useCallback(
     (uploadedFile, concern = null) => {
-      if (uploadedFile) {
-        const concernLink =
-          uploadedFile.vhc_concern_link ||
-          (concern
-            ? {
-                section: concern.section,
-                category: concern.category || null,
-                categoryLabel: concern.categoryLabel || null,
-                concernId: concern.concernId,
-                index: concern.index,
-                label: concern.label,
-                status: concern.status,
-              }
-            : null);
-        const enrichedFile = {
-          ...uploadedFile,
-          ...(concernLink ? { vhc_concern_link: concernLink } : {}),
-        };
+      const uploadedFiles = (Array.isArray(uploadedFile) ? uploadedFile : [uploadedFile]).filter(Boolean);
+
+      if (uploadedFiles.length > 0) {
+        const fallbackConcernLink = concern
+          ? {
+              section: concern.section,
+              category: concern.category || null,
+              categoryLabel: concern.categoryLabel || null,
+              concernId: concern.concernId,
+              index: concern.index,
+              label: concern.label,
+              status: concern.status,
+            }
+          : null;
+
+        const enrichedFiles = uploadedFiles.map((file) => {
+          const concernLink = file.vhc_concern_link || fallbackConcernLink;
+          return {
+            ...file,
+            ...(concernLink ? { vhc_concern_link: concernLink } : {}),
+          };
+        });
 
         setJob((prev) => {
           if (!prev) return prev;
           const currentFiles = Array.isArray(prev.job_files) ? prev.job_files : [];
-          const nextFiles = currentFiles.some((file) => String(file?.file_id) === String(enrichedFile.file_id))
-            ? currentFiles.map((file) => (String(file?.file_id) === String(enrichedFile.file_id) ? { ...file, ...enrichedFile } : file))
-            : [enrichedFile, ...currentFiles];
+          const nextFiles = enrichedFiles.reduce((files, enrichedFile) => {
+            const matches = (file) => String(file?.file_id) === String(enrichedFile.file_id);
+            return files.some(matches)
+              ? files.map((file) => (matches(file) ? { ...file, ...enrichedFile } : file))
+              : [enrichedFile, ...files];
+          }, currentFiles);
           return { ...prev, job_files: nextFiles };
         });
       }
@@ -6599,6 +6614,25 @@ export default function VhcDetailsPanel({
     [],
   );
 
+  const handleRemoveMainVideo = useCallback(
+    async (file) => {
+      if (file?.file_id === undefined || file?.file_id === null) return;
+
+      const confirmed = await confirm({
+        title: "Move media",
+        message: "Move this video out of Customer Video?",
+        description:
+          "The video will stay on the job and return to its linked media row, or Unlinked media if it has no linked item.",
+        confirmLabel: "Move Media",
+        cancelLabel: "Cancel",
+      });
+
+      if (!confirmed) return;
+      await handleToggleMainVideo(file.file_id, false);
+    },
+    [confirm, handleToggleMainVideo],
+  );
+
   const handleOpenPhotoPreview = useCallback((file) => {
     setPhotoPreviewFile(file || null);
     setPhotoPreviewMessage("");
@@ -9450,28 +9484,51 @@ export default function VhcDetailsPanel({
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
             {renderThumbIndex(index)}
-          </div>
-          {!readOnly ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-              <button
+            {!readOnly && isMainRow ? (
+              <Button
                 type="button"
-                onClick={() => handleToggleMainVideo(file.file_id, !isMainRow)}
+                variant="secondary"
+                size="xs"
+                className="app-btn--icon"
+                onClick={() => handleRemoveMainVideo(file)}
                 disabled={saving}
-                style={{
-                  padding: "4px 8px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  background: "rgba(var(--primary-rgb), 0.10)",
-                  color: "var(--primary-selected)",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: saving ? "wait" : "pointer",
-                  opacity: saving ? 0.65 : 1,
-                  whiteSpace: "nowrap",
-                }}
+                aria-busy={saving || undefined}
+                aria-label="Move video out of Customer Video"
+                title="Move video out of Customer Video"
+                style={{ position: "absolute", top: "8px", right: "8px" }}
               >
-                {saving ? "Saving..." : isMainRow ? "Remove from main" : "Set as main video"}
-              </button>
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v5" />
+                  <path d="M14 11v5" />
+                </svg>
+              </Button>
+            ) : null}
+          </div>
+          {!readOnly && !isMainRow ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+              <Button
+                type="button"
+                variant="primary"
+                size="xs"
+                onClick={() => handleToggleMainVideo(file.file_id, true)}
+                busy={saving}
+              >
+                Set as main video
+              </Button>
             </div>
           ) : null}
         </figure>
@@ -9604,42 +9661,23 @@ export default function VhcDetailsPanel({
             {showControls ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={() => handleRowAddMediaClick(concern)}
-                    disabled={uploading}
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: "rgba(var(--primary-rgb), 0.10)",
-                      color: "var(--primary-selected)",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      cursor: uploading ? "wait" : "pointer",
-                      opacity: uploading ? 0.65 : 1,
-                      whiteSpace: "nowrap",
-                    }}
+                    busy={uploading}
                   >
-                    {uploading ? "Uploading…" : "+ Add media"}
-                  </button>
-                  <button
+                    + Add media
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={() => setMoveMediaPickerConcernId((current) => (current === key ? null : key))}
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: pickerOpen ? "rgba(var(--primary-rgb), 0.14)" : "rgba(var(--primary-rgb), 0.06)",
-                      color: "var(--text-1)",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
                   >
                     {pickerOpen ? "Close" : "⇄ Move media"}
-                  </button>
+                  </Button>
                 </div>
 
                 {pickerOpen ? (
@@ -9730,9 +9768,10 @@ export default function VhcDetailsPanel({
       concern: null,
     };
     const hasUnlinkedMedia = unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
-    const requestRows = hasUnlinkedMedia
-      ? [unlinkedRow, ...concernRows]
-      : [...concernRows, unlinkedRow];
+    // Customer Video is rendered separately above this list. Within the
+    // remaining rows, surface every row carrying media first while preserving
+    // the existing concern/severity order inside both partitions.
+    const requestRows = prioritiseRowsWithMedia([...concernRows, unlinkedRow]);
 
     const hasRequestMedia = concernRows.length > 0 || hasUnlinkedMedia;
 
@@ -9776,6 +9815,7 @@ export default function VhcDetailsPanel({
     reportedConcerns,
     readOnly,
     handleToggleMainVideo,
+    handleRemoveMainVideo,
     handleOpenPhotoPreview,
     mainVideoSavingId,
     rowMediaUploadConcernId,
@@ -10082,7 +10122,7 @@ export default function VhcDetailsPanel({
                   />
                   <Button
                     type="button"
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     busy={photoUploading}
                     onClick={() => photoUploadInputRef.current?.click()}
@@ -11133,11 +11173,11 @@ export default function VhcDetailsPanel({
             {/* Action buttons use the shared .app-btn family (staffglobal.css)
                 so they share one height and sit centred in the footer. */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" className="app-btn app-btn--secondary" onClick={handleCopyPhotoLink}>
+              <Button type="button" variant="secondary" onClick={handleCopyPhotoLink}>
                 Copy link
-              </button>
+              </Button>
               {photoPreviewFile?.file_url ? (
-                <a className="app-btn app-btn--ghost" href={photoPreviewFile.file_url} target="_blank" rel="noreferrer">
+                <a className="app-btn app-btn--secondary" href={photoPreviewFile.file_url} target="_blank" rel="noreferrer">
                   Open original
                 </a>
               ) : null}
@@ -11218,14 +11258,15 @@ export default function VhcDetailsPanel({
                           onChange={(event) => setNewMediaLocationName(event.target.value)}
                           onKeyDown={(event) => { if (event.key === "Enter") handleCreateMediaLocation(photoPreviewFile); }}
                         />
-                        <button
+                        <Button
                           type="button"
-                          className="app-btn app-btn--primary app-btn--sm"
+                          variant="primary"
+                          size="sm"
                           disabled={mediaLinkSaving || !newMediaLocationName.trim()}
                           onClick={() => handleCreateMediaLocation(photoPreviewFile)}
                         >
                           {mediaLinkSaving ? "Saving…" : "Create"}
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
                   </>

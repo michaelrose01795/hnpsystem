@@ -68,7 +68,6 @@ export default function LoginPageUi(props) {
                 className="login-logo"
                 priority
                 sizes="(max-width: 390px) 200px, (max-width: 640px) 230px, (max-width: 820px) 380px, 452px"
-                recolor={false}
               />
             </div>
             <LoginCard className="login-card--auth" title="Login">

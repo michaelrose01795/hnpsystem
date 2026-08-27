@@ -1,7 +1,11 @@
 // file location: src/components/VHC/VhcCameraButton.js
-// Standalone VHC capture launcher that now saves media immediately after capture.
+// Standalone VHC capture launcher. Captures accumulate inside the capture
+// screen rather than ending it: each shot lands in the tray in the bottom-left
+// corner and the camera stays live. Tapping a thumbnail opens that item's
+// editor over the camera; pressing Done hands the whole session over and each
+// file is confirmed and uploaded in turn.
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Button from "@/components/ui/Button";
 import useIdleWarm from "@/hooks/useIdleWarm";
@@ -31,9 +35,11 @@ export default function VhcCameraButton({
   buttonStyle,
 }) {
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
-  const [showVideoEditor, setShowVideoEditor] = useState(false);
-  const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+  // Captures handed over by Done, confirmed and uploaded one at a time.
+  const [uploadQueue, setUploadQueue] = useState([]);
+  // The capture currently open in an editor over the live camera, if any.
+  const [trayEdit, setTrayEdit] = useState(null);
+  const trayEditResolverRef = useRef(null);
 
   useIdleWarm([
     loadCameraCaptureModal,
@@ -42,83 +48,63 @@ export default function VhcCameraButton({
     loadVideoEditorModal,
   ]);
 
-  const [capturedMedia, setCapturedMedia] = useState(null);
-  const [editedMedia, setEditedMedia] = useState(null);
-  const [mediaType, setMediaType] = useState(null);
-
-  const resetFlow = () => {
-    setShowCameraModal(false);
-    setShowPhotoEditor(false);
-    setShowVideoEditor(false);
-    setShowUploadConfirm(false);
-    setCapturedMedia(null);
-    setEditedMedia(null);
-    setMediaType(null);
-  };
-
   const handleCameraClick = () => {
     setShowCameraModal(true);
   };
 
-  const handleCapture = (file, type) => {
-    // Hand the local File straight to the editor so trimming /
-    // captureStream() works without remote-URL CORS issues. We only
-    // upload the final (edited or original) file once the user
-    // confirms in MediaUploadConfirmModal.
-    setCapturedMedia(file);
-    setEditedMedia(file);
-    setMediaType(type);
+  // Tapping a thumbnail in the capture tray opens that item's editor without
+  // closing the camera. FullScreenCapture awaits the promise: a File keeps the
+  // technician's work, null leaves the capture exactly as it was.
+  const handleTrayEdit = (entry) =>
+    new Promise((resolve) => {
+      trayEditResolverRef.current = resolve;
+      setTrayEdit({
+        file: entry.file,
+        type: entry.meta?.type === "video" ? "video" : "photo",
+      });
+    });
+
+  const resolveTrayEdit = (file) => {
+    const resolve = trayEditResolverRef.current;
+    trayEditResolverRef.current = null;
+    setTrayEdit(null);
+    resolve?.(file || null);
+  };
+
+  const handleBatchDone = (batch) => {
     setShowCameraModal(false);
-    if (type === "photo") {
-      setShowPhotoEditor(true);
-    } else {
-      setShowVideoEditor(true);
-    }
+    const items = (batch || [])
+      .filter((entry) => entry?.file)
+      .map((entry) => ({
+        file: entry.file,
+        type: entry.meta?.type === "video" ? "video" : "photo",
+      }));
+    setUploadQueue(items);
   };
 
-  const handlePhotoEditorSave = (file) => {
-    setEditedMedia(file);
-    setShowPhotoEditor(false);
-    setShowUploadConfirm(true);
-  };
-
-  const handlePhotoEditorSkip = (file) => {
-    setEditedMedia(file);
-    setShowPhotoEditor(false);
-    setShowUploadConfirm(true);
-  };
-
-  const handleVideoEditorSave = (file) => {
-    setEditedMedia(file);
-    setShowVideoEditor(false);
-    setShowUploadConfirm(true);
-  };
-
-  const handleVideoEditorSkip = (file) => {
-    setEditedMedia(file);
-    setShowVideoEditor(false);
-    setShowUploadConfirm(true);
-  };
+  // Local Files are handed straight to the editor and the confirm modal so
+  // trimming / captureStream() work without remote-URL CORS issues. Nothing is
+  // uploaded until the technician confirms that individual file.
+  const activeUpload = uploadQueue[0] || null;
 
   const handleUploadComplete = (fileRecord) => {
     onUploadComplete?.(fileRecord);
-    resetFlow();
+    setUploadQueue((current) => current.slice(1));
+  };
+
+  // Cancelling drops just this file — the rest of the session still gets its
+  // turn, so one unwanted shot does not discard the others.
+  const handleUploadCancel = () => {
+    setUploadQueue((current) => current.slice(1));
   };
 
   return (
     <>
       <Button
-        variant="primary"
+        variant="secondary"
         size="sm"
         onClick={handleCameraClick}
-        style={{
-          padding: "var(--space-sm) var(--space-md)",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "var(--space-1)",
-          fontSize: "var(--text-body-sm)",
-          ...(buttonStyle || {}),
-        }}
+        style={buttonStyle}
         title="Capture VHC photo or video"
       >
         Camera
@@ -127,36 +113,38 @@ export default function VhcCameraButton({
       {showCameraModal && <CameraCaptureModal
         isOpen={showCameraModal}
         onClose={() => setShowCameraModal(false)}
-        onCapture={handleCapture}
         initialMode="photo"
+        batchMode
+        onDone={handleBatchDone}
+        onEditCapture={handleTrayEdit}
       />}
 
-      {showPhotoEditor && <PhotoEditorModal
-        isOpen={showPhotoEditor}
-        photoFile={capturedMedia}
-        onSave={handlePhotoEditorSave}
-        onSkip={handlePhotoEditorSkip}
-        onCancel={resetFlow}
+      {trayEdit?.type === "photo" && <PhotoEditorModal
+        isOpen
+        photoFile={trayEdit.file}
+        onSave={(file) => resolveTrayEdit(file)}
+        onSkip={(file) => resolveTrayEdit(file)}
+        onCancel={() => resolveTrayEdit(null)}
       />}
 
-      {showVideoEditor && <VideoEditorModal
-        isOpen={showVideoEditor}
-        videoFile={capturedMedia}
-        onSave={handleVideoEditorSave}
-        onSkip={handleVideoEditorSkip}
-        onCancel={resetFlow}
+      {trayEdit?.type === "video" && <VideoEditorModal
+        isOpen
+        videoFile={trayEdit.file}
+        onSave={(file) => resolveTrayEdit(file)}
+        onSkip={(file) => resolveTrayEdit(file)}
+        onCancel={() => resolveTrayEdit(null)}
       />}
 
-      {showUploadConfirm && <MediaUploadConfirmModal
-        isOpen={showUploadConfirm}
-        mediaFile={editedMedia}
-        mediaType={mediaType}
+      {activeUpload && <MediaUploadConfirmModal
+        isOpen
+        mediaFile={activeUpload.file}
+        mediaType={activeUpload.type}
         existingFileId={null}
         jobId={jobId}
         jobNumber={jobNumber}
         userId={userId}
         onUploadComplete={handleUploadComplete}
-        onCancel={resetFlow}
+        onCancel={handleUploadCancel}
       />}
     </>
   );

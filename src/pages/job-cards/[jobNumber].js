@@ -123,6 +123,8 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
+import PopupModal from "@/components/popups/popupStyleApi";
 // Scheduling dashboard sections (Scheduling tab redesign) — one file per tab (CLAUDE.md §4.3).
 import {
   TechnicianAssignmentSection,
@@ -5153,41 +5155,31 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
   };
 
   return (
-    <div className="popup-backdrop">
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={isEdit ? "Edit existing tracking entry" : "Log new tracking entry"}
+      cardStyle={{
+        width: "min(100%, 500px)",
+        maxHeight: "96vh",
+        overflowY: "visible",
+        padding: "var(--section-card-padding)",
+      }}>
       <form
         onSubmit={handleSubmit}
         style={{
-          ...popupCardStyles,
-          width: "min(500px, 100%)",
-          maxHeight: "96vh",
-          overflowY: "visible",
-          padding: "20px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
         }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ margin: 0 }}>{isEdit ? "Edit existing" : "Log new"}</h2>
+        <header className="app-popup-compact-header">
+          <h2>{isEdit ? "Edit existing" : "Log new"}</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary">Update</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "var(--control-height-sm)",
-              height: "var(--control-height-sm)",
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-1)",
-              cursor: "pointer",
-              fontWeight: 700
-            }}>
-
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
+        </header>
 
         <div
           style={{
@@ -5213,16 +5205,11 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               }
               </label>
               <input
+              className="app-input"
               value={form[input.field]}
               onChange={(event) => handleChange(input.field, event.target.value)}
               placeholder={input.placeholder}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                fontSize: "var(--control-font-size)",
-                minHeight: "var(--control-height)"
-              }} />
+              style={{ width: "100%" }} />
 
             </div>
           )}
@@ -5266,24 +5253,8 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
           </div>
         </div>
 
-        <button
-          type="submit"
-          style={{
-            padding: "var(--control-padding)",
-            borderRadius: "var(--control-radius)",
-            border: "none",
-            background: "var(--primary)",
-            color: "var(--text-2)",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontSize: "var(--control-font-size)",
-            minHeight: "var(--control-height)"
-          }}>
-
-          Update
-        </button>
       </form>
-    </div>);
+    </PopupModal>);
 
 }
 
@@ -9275,19 +9246,6 @@ function getPreviewHeading(doc = {}) {
   return "Document preview";
 }
 
-const previewHeaderButtonStyle = {
-  padding: "6px 14px",
-  borderRadius: "var(--input-radius)",
-  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-  color: "var(--text-2)",
-  fontSize: "13px",
-  fontWeight: 600,
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-  backdropFilter: "blur(12px)",
-  WebkitBackdropFilter: "blur(12px)"
-};
-
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -9364,182 +9322,131 @@ function DocumentsTab({
     <div>
       {/* Document preview popup — portalled to document.body so position:fixed is
             always relative to the viewport, not any transformed ancestor */}
-      {previewDoc && typeof document !== "undefined" && createPortal(
-        <div
-          onClick={() => setPreviewDoc(null)}
-          style={{
-            position: "fixed", inset: 0, zIndex: "var(--z-modal)",
-            backgroundColor: "var(--overlay)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "24px"
-          }}>
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "var(--surface)",
-              borderRadius: "var(--radius-xl)",
-              overflow: "hidden",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              maxWidth: "min(92vw, 1000px)",
-              maxHeight: "90vh",
-              width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
-            }}>
-
-            {/* Header */}
-            <div
-              style={{
-                display: "flex", alignItems: "center", gap: "10px",
-                padding: "16px 20px",
-                backgroundColor: "rgba(var(--surface-rgb), 0.9)",
-                backdropFilter: "blur(18px)",
-                WebkitBackdropFilter: "blur(18px)",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 2
-              }}>
-
-              {isRenamingPreview ?
-              <>
+      {previewDoc ? (
+        <PopupModal
+          isOpen
+          onClose={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+          ariaLabel={getPreviewHeading(previewDoc)}
+          cardClassName="app-settings-popup-card"
+          cardStyle={{ width: "min(1000px, 100%)", overflow: "hidden" }}
+        >
+          <div className="app-settings-popup app-media-editor-popup">
+            <header className="app-popup-compact-header">
+              {isRenamingPreview ? (
+                <>
                   <input
-                  autoFocus
-                  value={previewRenameValue}
-                  onChange={(e) => setPreviewRenameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const trimmed = previewRenameValue.trim();
-                      if (trimmed && typeof onRenameDocument === "function") {
-                        onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
-                        setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                    autoFocus
+                    value={previewRenameValue}
+                    onChange={(e) => setPreviewRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
                       }
-                      setIsRenamingPreview(false);
-                    }
-                    if (e.key === "Escape") setIsRenamingPreview(false);
-                  }}
-                  style={{
-                    flex: 1, padding: "6px 10px",
-                    borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--input-ring-color)",
-                    fontSize: "14px", fontWeight: 600,
-                    color: "var(--text-1)",
-                    backgroundColor: "rgba(var(--surface-rgb), 0.78)",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                    outline: "none"
-                  }} />
-
-                  <button
-                  type="button"
-                  onClick={() => {
-                    const trimmed = previewRenameValue.trim();
-                    if (trimmed && typeof onRenameDocument === "function") {
-                      onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
-                      setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
-                    }
-                    setIsRenamingPreview(false);
-                  }}
-                  style={previewHeaderButtonStyle}>
-
-                    Save
-                  </button>
-                  <button
-                  type="button"
-                  onClick={() => setIsRenamingPreview(false)}
-                  style={previewHeaderButtonStyle}>
-
-                    Cancel
-                  </button>
-                </> :
-
-              <>
-                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>
-                    {getPreviewHeading(previewDoc)}
-                  </span>
-                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
-                <button
-                  type="button"
-                  onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
-                  style={previewHeaderButtonStyle}>
-
-                      Edit
-                    </button>
-                }
-                  {typeof onRenameDocument === "function" &&
-                <button
-                  type="button"
-                  onClick={() => {
-                    const currentName = previewDoc.name || previewDoc.file_name || "";
-                    setPreviewRenameValue(currentName);
-                    setIsRenamingPreview(true);
-                  }}
-                  style={previewHeaderButtonStyle}>
-
-                      Rename
-                    </button>
-                }
+                      if (e.key === "Escape") setIsRenamingPreview(false);
+                    }}
+                    aria-label="Document name"
+                    style={{ flex: "1 1 auto", minWidth: 0 }}
+                  />
+                  <div className="app-popup-compact-header__actions">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setIsRenamingPreview(false)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </>
-              }
-              <button
-                type="button"
-                onClick={() => {setPreviewDoc(null);setIsRenamingPreview(false);}}
-                style={{
-                  width: "44px", height: "44px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  border: "none", borderRadius: "var(--control-radius)",
-                  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-                  color: "var(--text-2)",
-                  fontSize: "18px", lineHeight: 1,
-                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)"
-                }}
-                aria-label="Close preview">
+              ) : (
+                <>
+                  <h2>{getPreviewHeading(previewDoc)}</h2>
+                  <div className="app-popup-compact-header__actions">
+                    {typeof onReplaceDocument === "function" &&
+                    (isImageMime(previewDoc.type || previewDoc.file_type || "") ||
+                      isVideoMime(previewDoc.type || previewDoc.file_type || "")) ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => { setEditingDoc(previewDoc); setPreviewDoc(null); }}
+                        >
+                          Edit
+                        </Button>
+                      ) : null}
+                    {typeof onRenameDocument === "function" ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setPreviewRenameValue(previewDoc.name || previewDoc.file_name || "");
+                          setIsRenamingPreview(true);
+                        }}
+                      >
+                        Rename
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </header>
 
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-
-            {/* Content */}
-            <div
+            <LayerTheme
+              radius="var(--radius-md)"
+              padding="0"
               style={{
-                flex: 1, overflow: "auto",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: "var(--surface)",
-                minHeight: "300px"
-              }}>
-
-              {isImageDocument(previewDoc) ?
-              <img
-                src={previewDoc.url || previewDoc.file_url || ""}
-                alt="Document preview"
-                style={{
-                  maxWidth: "100%", maxHeight: "90vh",
-                  objectFit: "contain", display: "block"
-                }} /> :
-              isVideoDocument(previewDoc) ?
-              <video
-                src={previewDoc.url || previewDoc.file_url || ""}
-                controls
-                title="Video preview"
-                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--media-letterbox-bg)" }} /> :
-
-
-              <iframe
-                src={previewDoc.url || previewDoc.file_url || ""}
-                title="Document preview"
-                style={{ width: "100%", height: "80vh", border: "none", display: "block" }} />
-
-              }
-            </div>
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "1 1 auto",
+                minHeight: 0,
+                overflow: "auto",
+              }}
+            >
+              {isImageDocument(previewDoc) ? (
+                <img
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  alt="Document preview"
+                  style={{ display: "block", maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
+              ) : isVideoDocument(previewDoc) ? (
+                <video
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  controls
+                  title="Video preview"
+                  style={{ display: "block", width: "100%", maxHeight: "100%" }}
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  title="Document preview"
+                  style={{ width: "100%", height: "100%", minHeight: "60vh", display: "block" }}
+                />
+              )}
+            </LayerTheme>
           </div>
-        </div>,
-        document.body
-      )}
+        </PopupModal>
+      ) : null}
 
       {/* Valet upload strip */}
       {valetMode &&
@@ -9601,19 +9508,11 @@ function DocumentsTab({
           aria-label="Search documents"
           style={{ flex: "1 1 200px", minWidth: "160px", maxWidth: "360px", padding: "var(--control-padding)", fontSize: "14px" }} />
 
-        {typeof onManageDocuments === "function" &&
-        <button
-          type="button"
-          onClick={onManageDocuments}
-          style={{
-            padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
-            backgroundColor: "var(--primary)", color: "var(--text-2)",
-            fontWeight: "600", fontSize: "14px", cursor: "pointer"
-          }}>
-
+        {typeof onManageDocuments === "function" ? (
+          <Button variant="primary" size="sm" onClick={onManageDocuments}>
             Upload Documents
-          </button>
-        }
+          </Button>
+        ) : null}
       </div>
 
       {/* Empty state */}

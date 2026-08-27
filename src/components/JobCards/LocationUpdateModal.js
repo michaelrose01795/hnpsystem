@@ -7,6 +7,8 @@
 
 import { useMemo, useState } from "react";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import {
   CAR_LOCATIONS,
   KEY_LOCATIONS,
@@ -44,18 +46,20 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
   };
 
   return (
-    <div className="popup-backdrop">
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Edit vehicle and key location"
+      cardStyle={{
+        width: "min(100%, 460px)",
+        maxHeight: "96vh",
+        overflowY: "visible",
+        padding: "var(--section-card-padding)",
+      }}
+    >
       <form
         onSubmit={handleSubmit}
-        className="popup-card"
         style={{
-          borderRadius: "var(--radius-xl)",
-          width: "100%",
-          maxWidth: "460px",
-          maxHeight: "96vh",
-          overflowY: "visible",
-          border: "none",
-          padding: "22px",
           display: "flex",
           flexDirection: "column",
           gap: "16px"
@@ -64,39 +68,19 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
         <div className="app-popup-compact-header">
           <h2 style={{ margin: 0, color: "var(--text-1)" }}>Edit existing</h2>
           <div className="app-popup-compact-header__actions">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                cursor: "pointer",
-                fontWeight: 600,
-                color: "var(--primary-selected)",
-                fontSize: "var(--control-font-size)",
-                minHeight: "var(--control-height)"
-              }}>
-
+            >
               Close
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                background: "var(--primary)",
-                color: "var(--text-2)",
-                fontWeight: 600,
-                fontSize: "var(--control-font-size)",
-                minHeight: "var(--control-height)",
-                cursor: "pointer"
-              }}>
-
+              variant="primary"
+            >
               Update
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -144,7 +128,7 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
         `}</style>
 
       </form>
-    </div>);
+    </PopupModal>);
 
 }
 

@@ -15,7 +15,6 @@
 // Drag-and-drop reuses the page pointer engine (`nextjobs.js`) via the data-dnd-*
 // attribute contract and `handleCardPointerDown`.
 import React from "react";
-import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
@@ -523,17 +522,20 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
       : { background: "rgba(var(--accent-base-rgb), 0.08)", color: "var(--text-1)" };
 
   return (
-    <div className="popup-backdrop" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: "560px", maxHeight: "90vh", overflow: "hidden" }}>
-        <LayerSurface
-          className="popup-card"
-          sectionKey="workshop-queue-job-modal"
-          sectionType="content-card"
-          backgroundToken="surface"
-          radius="var(--radius-xl)"
-          padding="28px"
-          style={{ width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}
-        >
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={`Job ${job.jobNumber} details`}
+      cardStyle={{
+        width: "min(100%, 560px)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
           <header className="app-popup-compact-header wqp-job-modal-header">
             <div style={{ minWidth: 0 }}>
               <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
@@ -599,9 +601,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
             </LayerTheme>
           </div>
 
-        </LayerSurface>
-      </div>
-    </div>
+    </PopupModal>
   );
 }
 

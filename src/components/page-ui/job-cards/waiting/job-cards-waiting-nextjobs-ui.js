@@ -1,8 +1,9 @@
 // file location: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js
 
 import React from "react"; // support extracted fragments.
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical "theme" layer primitive (alternates with LayerSurface)
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 
 const toDevSectionKey = (value) =>
 String(value || "unknown").
@@ -43,9 +44,6 @@ export default function NextJobsPageUi(props) {
     hoveredRequestJobNumber,
     isDragActive,
     jobCardRefs,
-    jobDetailsPopupPrimaryButtonStyle,
-    jobDetailsPopupSecondaryButtonStyle,
-    jobDetailsPopupWarningButtonStyle,
     matchesDropIndicator,
     motPanelList,
     outstandingJobs,
@@ -423,22 +421,33 @@ export default function NextJobsPageUi(props) {
       const detailsRows = Array.isArray(rawDetailsRows) ? rawDetailsRows : [];
       const hasScrollableDetails = detailsRows.length > 5;
       const assignedToName = selectedJob.assignedTech?.name || "Unassigned";
-      return <div className="popup-backdrop" onClick={handleCloseJobDetails}>
-            <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: "500px", maxHeight: "90vh", overflow: "hidden" }}>
-              <LayerSurface className="popup-card" sectionKey="nextjobs-job-details-popup" sectionType="content-card" backgroundToken="surface" radius="var(--radius-xl)" padding="32px" style={{
-          width: "100%",
+      return <PopupModal
+        isOpen
+        onClose={handleCloseJobDetails}
+        ariaLabel="Job details"
+        cardStyle={{
+          width: "min(100%, 500px)",
           maxHeight: "90vh",
           overflowY: "auto",
-          position: "relative"
-        }}>
-              <h3 style={{
-            fontWeight: "700",
-            marginBottom: "16px",
-            fontSize: "20px",
-            color: "var(--primary)"
-          }}>
-                Job Details
-              </h3>
+          padding: "var(--section-card-padding)",
+        }}
+      >
+              <header className="app-popup-compact-header">
+                <h3>Job Details</h3>
+                <div className="app-popup-compact-header__actions">
+                  <Button variant="primary" onClick={handleViewSelectedJobCard}>
+                    View Job Card
+                  </Button>
+                  {selectedJob.assignedTech && (
+                    <Button variant="danger" onClick={unassignTechFromJob}>
+                      Unassign
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={handleCloseJobDetails}>
+                    Close
+                  </Button>
+                </div>
+              </header>
               
               {feedbackMessage && <div style={{
             marginBottom: "16px",
@@ -592,44 +601,7 @@ export default function NextJobsPageUi(props) {
                 </div>
               </div>
 
-              <div style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${selectedJob?.assignedTech ? 3 : 2}, minmax(0, 1fr))`,
-            gap: "12px"
-          }}>
-                <button style={jobDetailsPopupPrimaryButtonStyle} onClick={handleViewSelectedJobCard} onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--primary-selected)";
-              e.currentTarget.style.borderColor = "var(--primary-selected)";
-            }} onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "var(--accent-purple)";
-              e.currentTarget.style.borderColor = "var(--accent-purple)";
-            }}>
-                  View Job Card
-                </button>
-                {selectedJob.assignedTech && <button style={jobDetailsPopupWarningButtonStyle} onClick={unassignTechFromJob} // Unassign technician
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--warning)";
-              e.currentTarget.style.color = "var(--text-2)";
-            }} onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "var(--warning-surface)";
-              e.currentTarget.style.color = "var(--warning-dark)";
-            }}>
-                    Unassign
-                  </button>}
-                <button style={jobDetailsPopupSecondaryButtonStyle} onClick={handleCloseJobDetails} // Close popup
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--surface)";
-              e.currentTarget.style.borderColor = "var(--accent-purple)";
-            }} onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "var(--theme)";
-              e.currentTarget.style.borderColor = "var(--accent-purple)";
-            }}>
-                  Close
-                </button>
-              </div>
-            </LayerSurface>
-            </div>
-          </div>;
+          </PopupModal>;
     })()}
         <style jsx>{`
           .outstanding-grid {

@@ -18,7 +18,7 @@ const AMBIGUOUS_TEXT_RE = /color\s*:\s*["'`]?var\(--text-2\)["'`]?/g;
 const MIGRATION_BASELINE = new Map([
   ["src/components/HR/tabs/EmployeesTab.js", 1],
   ["src/components/JobCards/CustomerRequestsTab.js", 3],
-  ["src/components/JobCards/LocationUpdateModal.js", 1],
+  ["src/components/JobCards/LocationUpdateModal.js", 0],
   ["src/components/JobCards/WriteUpWorkspace.js", 4],
   ["src/components/Parts/DeliverySchedulerModal.js", 1],
   ["src/components/VHC/VhcDetailsPanel.js", 1],
@@ -26,7 +26,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/layout/WorkspaceBreadcrumbs.js", 1],
   ["src/components/layout/WorkspaceHeader.js", 1],
   ["src/components/popups/CheckSheetPopup.js", 2],
-  ["src/components/popups/ConfirmationDialog.js", 1],
+  ["src/components/popups/ConfirmationDialog.js", 0],
   ["src/components/page-ui/dashboard/parts/dashboard-parts-ui.js", 8],
   ["src/components/page-ui/dashboard/service/dashboard-service-ui.js", 6],
   ["src/components/page-ui/dashboard/workshop/dashboard-workshop-ui.js", 1],
@@ -42,11 +42,11 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/dashboard/parts/index.js", 3],
   ["src/pages/dashboard/service/index.js", 4],
   ["src/pages/dev/user-diagnostic.js", 5],
-  ["src/pages/job-cards/[jobNumber].js", 9],
+  ["src/pages/job-cards/[jobNumber].js", 5],
   ["src/pages/jobs/index.js", 3],
   ["src/pages/mobile/dashboard.js", 4],
   ["src/pages/nextjobs.js", 1],
-  ["src/pages/tech/[jobNumber].js", 4],
+  ["src/pages/tech/[jobNumber].js", 1],
 ]);
 
 function walk(directory, files = []) {

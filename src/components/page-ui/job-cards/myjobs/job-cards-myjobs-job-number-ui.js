@@ -4,6 +4,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import useIsMobile from "@/hooks/useIsMobile";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
+import PopupModal from "@/components/popups/popupStyleApi";
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 import {
   TECHNICIAN_JOB_TAB_LABELS,
@@ -150,7 +151,6 @@ export default function TechJobDetailPageUi(props) {
     InlineLoading,
     InternalElectricsDetailsModal,
     LocationUpdateModal,
-    ModalPortal,
     MyJobCardShellSkeleton,
     NotesTabNew,
     ServiceIndicatorDetailsModal,
@@ -1396,41 +1396,6 @@ export default function TechJobDetailPageUi(props) {
                 alignItems: "center",
                 gap: "12px"
               }}>
-                      <div
-                        title={vhcCustomerStatusMeta.detail}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          gap: "4px",
-                          minWidth: "112px"
-                        }}
-                      >
-                        <span style={{
-                          fontSize: "10px",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                          color: "var(--text-1)",
-                          fontWeight: 700
-                        }}>
-                          Customer VHC
-                        </span>
-                        <span style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: "5px 10px",
-                          borderRadius: "var(--control-radius)",
-                          backgroundColor: vhcCustomerStatusMeta.background,
-                          color: "var(--text-1)",
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          minHeight: "24px"
-                        }}>
-                          {vhcCustomerStatusMeta.label}
-                        </span>
-                      </div>
                       {saveStatus === "saving" && <span style={{
                   fontSize: "13px",
                   color: "var(--text-1)"
@@ -1443,31 +1408,16 @@ export default function TechJobDetailPageUi(props) {
                   fontSize: "13px",
                   color: "var(--text-1)"
                 }}>{saveError || "Save failed"}</span>}
-                      <button type="button" className={`vhc-btn${showVhcSummary ? " vhc-btn--active" : ""}`} onClick={() => setShowVhcSummary(prev => !prev)}>
+                      <Button type="button" variant={showVhcSummary ? "primary" : "secondary"} size="sm" onClick={() => setShowVhcSummary(prev => !prev)}>
                         {showVhcSummary ? "Close VHC summary" : "Show Summary"}
-                      </button>
+                      </Button>
 
-                      {(() => {
-                  const isCompleteDisabled = !showVhcReopenButton && !canCompleteVhc;
-                  const isCompleteActive = !showVhcReopenButton && canCompleteVhc;
-                  return <button type="button" className={`vhc-btn${isCompleteActive ? " vhc-btn--active" : ""}`} style={{ color: isCompleteActive ? "var(--text-2)" : "var(--text-1)" }} onClick={handleCompleteVhcClick} disabled={!showVhcReopenButton && !canCompleteVhc} title={showVhcReopenButton ? "Reopen the Vehicle Health Check to make additional changes" : canCompleteVhc ? "Mark the Vehicle Health Check as complete" : "Complete all mandatory sections to finish the VHC"}>
+                      <Button type="button" variant="primary" size="sm" onClick={handleCompleteVhcClick} disabled={!showVhcReopenButton && !canCompleteVhc} title={showVhcReopenButton ? "Reopen the Vehicle Health Check to make additional changes" : canCompleteVhc ? "Mark the Vehicle Health Check as complete" : "Complete all mandatory sections to finish the VHC"}>
                         {showVhcReopenButton ? "Reopen" : "Complete VHC"}
-                      </button>;
-                })()}
+                      </Button>
 
                       {/* Camera Button - Always visible for technicians */}
-                      {jobNumber && <VhcCameraButton jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id} buttonStyle={{
-                  minHeight: "var(--control-height)",
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  fontWeight: 600,
-                  fontSize: "12px",
-                  lineHeight: 1,
-                  background: "var(--theme)",
-                  color: "var(--text-1)",
-                  transition: "all 0.18s ease"
-                }} onUploadComplete={() => {
+                      {jobNumber && <VhcCameraButton jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id} onUploadComplete={() => {
                   console.log("VHC media uploaded, refreshing job data...");
                   fetchJobData();
                   bumpGallery();
@@ -2209,49 +2159,27 @@ export default function TechJobDetailPageUi(props) {
         onClose={() => setTrackerQuickModalOpen(false)}
         onSave={handleTrackerSave}
       />}
-      {showJobTypesPopup && <ModalPortal>
-          <div className="popup-backdrop" onClick={event => {
-      if (event.target === event.currentTarget) {
-        setShowJobTypesPopup(false);
-      }
-    }}>
-            <div className="popup-card" style={{
-        borderRadius: "var(--radius-xl)",
-        width: "100%",
-        maxWidth: "560px",
-        maxHeight: "88vh",
-        overflowY: "auto",
-        border: "none"
-      }} onClick={event => event.stopPropagation()}>
-              <div style={{
-          padding: "28px"
-        }}>
-                <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px"
-          }}>
-                  <h3 style={{
-              margin: 0,
-              fontSize: "18px",
-              fontWeight: 700,
-              color: "var(--text-1)",
-              letterSpacing: "0.02em"
-            }}>
+      {showJobTypesPopup && <PopupModal
+        isOpen
+        onClose={() => setShowJobTypesPopup(false)}
+        ariaLabel="Job requests"
+        cardStyle={{
+          width: "min(100%, 560px)",
+          maxHeight: "88vh",
+          overflowY: "auto",
+          padding: "var(--section-card-padding)",
+        }}
+      >
+                <header className="app-popup-compact-header">
+                  <h3>
                     Job Requests
                   </h3>
-                  <button type="button" onClick={() => setShowJobTypesPopup(false)} style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: "22px",
-              lineHeight: 1,
-              color: "var(--text-1)"
-            }} aria-label="Close job requests popup">
-                    ×
-                  </button>
-                </div>
+                  <div className="app-popup-compact-header__actions">
+                    <Button type="button" variant="secondary" onClick={() => setShowJobTypesPopup(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </header>
 
                 <div style={{
             display: "grid",
@@ -2286,10 +2214,7 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </LayerTheme>)}
                 </div>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

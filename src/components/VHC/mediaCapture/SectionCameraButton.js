@@ -9,7 +9,9 @@ import Button from "@/components/ui/Button";
 import CameraCaptureModal from "@/components/VHC/CameraCaptureModal";
 import ConcernPickerModal from "@/components/VHC/mediaCapture/ConcernPickerModal";
 import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
-import VHCModalShell from "@/components/VHC/VHCModalShell";
+import VideoEditorModal from "@/components/VHC/VideoEditorModal";
+import PopupModal from "@/components/popups/popupStyleApi";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { collectSectionConcerns } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 import { uploadSectionCaptureQueue } from "@/lib/vhc/sectionCaptureSession";
@@ -33,7 +35,7 @@ function CameraGlyph({ size = 16 }) {
   );
 }
 
-function PhotoHighlightPrompt({ isOpen, file, onYes, onNo }) {
+function PhotoHighlightPrompt({ isOpen, file, onYes, onNo, position = null }) {
   const previewUrl = useMemo(
     () => (isOpen && file ? URL.createObjectURL(file) : ""),
     [file, isOpen],
@@ -46,48 +48,54 @@ function PhotoHighlightPrompt({ isOpen, file, onYes, onNo }) {
     [previewUrl],
   );
 
-  const footer = (
-    <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", width: "100%" }}>
-      <Button variant="secondary" size="sm" onClick={onNo}>
-        No, keep original
-      </Button>
-      <Button variant="primary" size="sm" onClick={onYes}>
-        Yes, highlight it
-      </Button>
-    </div>
-  );
-
   return (
-    <VHCModalShell
+    <PopupModal
       isOpen={isOpen}
-      title="Highlight this photo?"
-      subtitle="You can draw a circle, box, line or arrow onto the image before it is saved."
-      width="680px"
-      height="min(88vh, 680px)"
-      hideCloseButton
-      footer={footer}
-      sectionKey="section-photo-highlight-prompt"
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      ariaLabel="Highlight this photo?"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{ width: "min(680px, 100%)", overflow: "hidden" }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "min(54vh, 440px)",
-          overflow: "hidden",
-          borderRadius: "var(--radius-md)",
-          background: "var(--surfaceMutedToken)",
-        }}
-      >
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt="Newly captured photo"
-            style={{ display: "block", width: "100%", height: "100%", maxHeight: "54vh", objectFit: "contain" }}
-          />
-        ) : null}
+      <div className="app-settings-popup app-media-editor-popup">
+        <header className="app-popup-compact-header">
+          <h2>
+            {position
+              ? `Highlight this photo? · ${position.index + 1} of ${position.total}`
+              : "Highlight this photo?"}
+          </h2>
+          <div className="app-popup-compact-header__actions">
+            <Button variant="primary" size="sm" onClick={onYes}>
+              Yes, highlight it
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onNo}>
+              No, keep original
+            </Button>
+          </div>
+        </header>
+
+        <LayerTheme
+          radius="var(--radius-md)"
+          padding="0"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "1 1 auto",
+            minHeight: 0,
+            overflow: "hidden",
+          }}
+        >
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="Newly captured photo"
+              style={{ display: "block", maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            />
+          ) : null}
+        </LayerTheme>
       </div>
-    </VHCModalShell>
+    </PopupModal>
   );
 }
 
@@ -104,103 +112,84 @@ function CaptureReviewModal({
   errorMessage,
 }) {
   const selected = items.find((item) => item.id === selectedId) || items[0] || null;
-  const photoCount = items.filter((item) => item.type === "photo").length;
-  const videoCount = items.filter((item) => item.type === "video").length;
-
-  const footer = (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "var(--space-3)",
-        width: "100%",
-        flexWrap: "wrap",
-      }}
-    >
-      <Button variant="secondary" size="sm" onClick={onTakeAnother} disabled={uploading}>
-        Take another
-      </Button>
-      <Button variant="primary" size="sm" onClick={onDone} disabled={uploading || items.length === 0}>
-        {uploading ? `Uploading ${items.length}…` : `Done · Upload ${items.length}`}
-      </Button>
-    </div>
-  );
 
   return (
-    <VHCModalShell
+    <PopupModal
       isOpen={isOpen}
-      title="Review captured media"
-      subtitle={`${photoCount} photo${photoCount === 1 ? "" : "s"} · ${videoCount} video${videoCount === 1 ? "" : "s"} — nothing uploads until Done is pressed.`}
-      width="900px"
-      height="min(92vh, 760px)"
+      closeOnBackdrop={false}
       onClose={() => {
         if (!uploading) onDiscard();
       }}
-      footer={footer}
-      sectionKey="section-capture-review"
+      ariaLabel="Review captured media"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{ width: "min(900px, 100%)", overflow: "hidden" }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
-          gap: "var(--layout-card-gap)",
-          height: "100%",
-          minHeight: 0,
-        }}
-      >
-        <div
+      <div className="app-settings-popup app-media-editor-popup">
+        <header className="app-popup-compact-header">
+          <h2>Review captured media</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button variant="primary" size="sm" onClick={onDone} disabled={uploading || items.length === 0}>
+              {uploading ? `Uploading ${items.length}…` : `Done · Upload ${items.length}`}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onTakeAnother} disabled={uploading}>
+              Take another
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (!uploading) onDiscard();
+              }}
+              disabled={uploading}
+            >
+              Close
+            </Button>
+          </div>
+        </header>
+
+        <LayerTheme
+          radius="var(--radius-md)"
           style={{
-            display: "flex",
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
-            minHeight: 0,
-            overflow: "hidden",
-            borderRadius: "var(--radius-md)",
-            background: "var(--surfaceMutedToken)",
+            gap: "var(--layout-card-gap)",
+            flex: "0 0 auto",
+            minWidth: 0,
+            flexWrap: "wrap",
           }}
         >
-          {selected?.type === "video" ? (
-            <video
-              src={selected.previewUrl}
-              controls
-              playsInline
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
-          ) : selected ? (
-            <img
-              src={selected.previewUrl}
-              alt={selected.file?.name || "Captured photo"}
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
-          ) : (
-            <span style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
-              Take a photo to begin.
-            </span>
-          )}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minHeight: 0 }}>
-          <div style={{ display: "grid", gap: "var(--space-2)", overflowY: "auto", minHeight: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-2)",
+              flex: "1 1 240px",
+              minWidth: 0,
+              overflowX: "auto",
+              overflowY: "hidden",
+              paddingBottom: "var(--space-1)",
+            }}
+          >
             {items.map((item, index) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => onSelect(item.id)}
                 aria-pressed={item.id === selected?.id}
+                title={`${item.type === "video" ? "Video" : "Photo"} ${index + 1}`}
+                className={
+                  item.id === selected?.id
+                    ? "app-btn app-btn--primary app-btn--sm"
+                    : "app-btn app-btn--secondary app-btn--sm"
+                }
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "64px minmax(0, 1fr)",
+                  display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: "var(--space-3)",
-                  width: "100%",
-                  minHeight: "64px",
-                  padding: "var(--space-2)",
-                  borderRadius: "var(--radius-sm)",
-                  background: item.id === selected?.id ? "var(--dropdown-option-selected-bg)" : "var(--surface)",
-                  color: "var(--text-1)",
-                  cursor: "pointer",
-                  textAlign: "left",
+                  justifyContent: "center",
+                  gap: "var(--space-1)",
+                  flex: "0 0 auto",
+                  width: "104px",
+                  minHeight: "var(--control-height)",
                 }}
               >
                 {item.type === "video" ? (
@@ -208,38 +197,32 @@ function CaptureReviewModal({
                     src={item.previewUrl}
                     muted
                     playsInline
-                    style={{ width: "64px", height: "52px", objectFit: "cover", borderRadius: "var(--radius-xs)" }}
+                    style={{ width: "88px", height: "56px", objectFit: "cover", borderRadius: "var(--radius-xs)" }}
                   />
                 ) : (
                   <img
                     src={item.previewUrl}
                     alt=""
-                    style={{ width: "64px", height: "52px", objectFit: "cover", borderRadius: "var(--radius-xs)" }}
+                    style={{ width: "88px", height: "56px", objectFit: "cover", borderRadius: "var(--radius-xs)" }}
                   />
                 )}
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", fontWeight: 700, fontSize: "var(--text-body-sm)" }}>
-                    {item.type === "video" ? "Video" : "Photo"} {index + 1}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      fontSize: "var(--text-caption)",
-                      opacity: 0.7,
-                    }}
-                  >
-                    {item.file?.name}
-                  </span>
+                <span
+                  style={{
+                    display: "block",
+                    maxWidth: "100%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.type === "video" ? "Video" : "Photo"} {index + 1}
                 </span>
               </button>
             ))}
           </div>
 
           {selected ? (
-            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", flex: "0 0 auto" }}>
               <a
                 href={selected.previewUrl}
                 target="_blank"
@@ -253,25 +236,45 @@ function CaptureReviewModal({
               </Button>
             </div>
           ) : null}
+        </LayerTheme>
 
-          {errorMessage ? (
-            <div
-              role="alert"
-              style={{
-                padding: "var(--space-3)",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--danger-surface)",
-                color: "var(--danger-text)",
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 600,
-              }}
-            >
-              {errorMessage}
-            </div>
-          ) : null}
-        </div>
+        {errorMessage ? (
+          <div role="alert" className="app-alert app-alert--danger" style={{ flex: "0 0 auto" }}>
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <LayerTheme
+          radius="var(--radius-md)"
+          padding="0"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "1 1 auto",
+            minHeight: 0,
+            overflow: "hidden",
+          }}
+        >
+          {selected?.type === "video" ? (
+            <video
+              src={selected.previewUrl}
+              controls
+              playsInline
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          ) : selected ? (
+            <img
+              src={selected.previewUrl}
+              alt={`Photo ${items.indexOf(selected) + 1}`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          ) : (
+            <span style={{ color: "var(--text-1)" }}>Take a photo to begin.</span>
+          )}
+        </LayerTheme>
       </div>
-    </VHCModalShell>
+    </PopupModal>
   );
 }
 
@@ -284,18 +287,30 @@ export default function SectionCameraButton({
   userId,
   onUploadComplete,
   initialMode = "photo",
+  // When a single concern is supplied the picker is skipped entirely and the
+  // capture session binds to that one issue. Used by the per-row camera button
+  // inside the Reported Issues list.
+  concern: fixedConcern = null,
+  iconOnly = false,
+  label = "Camera",
+  disabled = false,
 }) {
   const concerns = useMemo(
-    () => collectSectionConcerns(sectionKey, vhcData),
-    [sectionKey, vhcData],
+    () => (fixedConcern ? [fixedConcern] : collectSectionConcerns(sectionKey, vhcData)),
+    [fixedConcern, sectionKey, vhcData],
   );
   const concernCount = concerns.length;
-  const isEnabled = concernCount > 0;
+  const isEnabled = concernCount > 0 && !disabled;
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [highlightPromptOpen, setHighlightPromptOpen] = useState(false);
   const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
+  const [videoEditorOpen, setVideoEditorOpen] = useState(false);
+  // One capture session can produce several photos and videos. They are held
+  // here and taken through the highlight / edit step one at a time.
+  const [editQueue, setEditQueue] = useState([]);
+  const [editIndex, setEditIndex] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [activeConcern, setActiveConcern] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
@@ -303,6 +318,10 @@ export default function SectionCameraButton({
   const [selectedMediaId, setSelectedMediaId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  // In-capture tray editing. FullScreenCapture awaits a File (or null), so the
+  // resolver is parked here while the editor popup is open over the camera.
+  const [trayEdit, setTrayEdit] = useState(null);
+  const trayEditResolverRef = useRef(null);
   const pendingMediaRef = useRef([]);
   const captureCompletedRef = useRef(false);
 
@@ -322,6 +341,7 @@ export default function SectionCameraButton({
     setCaptureOpen(false);
     setHighlightPromptOpen(false);
     setPhotoEditorOpen(false);
+    setVideoEditorOpen(false);
     setReviewOpen(false);
   };
 
@@ -331,8 +351,29 @@ export default function SectionCameraButton({
     setPendingMedia([]);
     setSelectedMediaId(null);
     setCapturedPhoto(null);
+    setEditQueue([]);
+    setEditIndex(0);
     setActiveConcern(null);
     setErrorMessage("");
+  };
+
+  // Tapping a thumbnail in the capture tray opens that item's editor without
+  // closing the camera. The promise resolves when the technician leaves the
+  // editor: a File keeps their work, null leaves the capture as it was.
+  const handleTrayEdit = (entry) =>
+    new Promise((resolve) => {
+      trayEditResolverRef.current = resolve;
+      setTrayEdit({
+        file: entry.file,
+        type: entry.meta?.type === "video" ? "video" : "photo",
+      });
+    });
+
+  const resolveTrayEdit = (file) => {
+    const resolve = trayEditResolverRef.current;
+    trayEditResolverRef.current = null;
+    setTrayEdit(null);
+    resolve?.(file || null);
   };
 
   const openCaptureFor = (concern) => {
@@ -352,20 +393,110 @@ export default function SectionCameraButton({
     setPickerOpen(true);
   };
 
+  const buildPendingItem = (file, type) => ({
+    id: `capture-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    file,
+    type: type === "video" ? "video" : "photo",
+    previewUrl: URL.createObjectURL(file),
+  });
+
   const queueMedia = (file, type) => {
     if (!file) return;
-    const item = {
-      id: `capture-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      file,
-      type: type === "video" ? "video" : "photo",
-      previewUrl: URL.createObjectURL(file),
-    };
+    const item = buildPendingItem(file, type);
     setPendingMedia((current) => [...current, item]);
     setSelectedMediaId(item.id);
     setCapturedPhoto(null);
     setHighlightPromptOpen(false);
     setPhotoEditorOpen(false);
     setReviewOpen(true);
+  };
+
+  // Everything that came out of the highlight / edit pass lands in the review
+  // queue together, so the technician sees one list before uploading.
+  const finishEditQueue = (queue) => {
+    const items = queue
+      .filter((entry) => entry.file)
+      .map((entry) => buildPendingItem(entry.file, entry.type));
+    setEditQueue([]);
+    setEditIndex(0);
+    setCapturedPhoto(null);
+    setHighlightPromptOpen(false);
+    setPhotoEditorOpen(false);
+    setVideoEditorOpen(false);
+    if (items.length === 0) {
+      setReviewOpen(pendingMediaRef.current.length > 0);
+      return;
+    }
+    setPendingMedia((current) => [...current, ...items]);
+    setSelectedMediaId(items[0].id);
+    setReviewOpen(true);
+  };
+
+  // Open the right surface for the item at `index`: photos are offered the
+  // highlight prompt first, videos go straight into the video editor.
+  // `preferEditor` keeps the technician in the editor when they use Back / Next
+  // from inside it, instead of bouncing them back through the highlight prompt.
+  const openEditStage = (index, queue, preferEditor = false) => {
+    const item = queue[index];
+    if (!item) {
+      finishEditQueue(queue);
+      return;
+    }
+    setEditQueue(queue);
+    setEditIndex(index);
+    if (item.type === "video") {
+      setCapturedPhoto(null);
+      setHighlightPromptOpen(false);
+      setPhotoEditorOpen(false);
+      setVideoEditorOpen(true);
+      return;
+    }
+    setVideoEditorOpen(false);
+    setCapturedPhoto(item.file);
+    setPhotoEditorOpen(preferEditor);
+    setHighlightPromptOpen(!preferEditor);
+  };
+
+  // Replace the current item's file (an applied edit) and move by `step`.
+  const commitAndMove = (file, step, preferEditor = false) => {
+    const queue = editQueue.map((entry, idx) => (
+      idx === editIndex && file ? { ...entry, file } : entry
+    ));
+    openEditStage(editIndex + step, queue, preferEditor);
+  };
+
+  // Batch hand-off from the capture screen's Done button.
+  const handleCaptureBatchDone = (batch) => {
+    captureCompletedRef.current = true;
+    setCaptureOpen(false);
+    if (!activeConcern) return;
+    const entries = (batch || []).filter((entry) => entry?.file);
+    const stamp = Date.now();
+
+    // Captures the technician already opened from the tray have had their edit
+    // decision made, so they go straight to review. Only the untouched ones
+    // still get the highlight / edit pass.
+    const settled = entries
+      .filter((entry) => entry.edited)
+      .map((entry) => buildPendingItem(entry.file, entry.meta?.type));
+    const queue = entries
+      .filter((entry) => !entry.edited)
+      .map((entry, idx) => ({
+        id: `edit-${stamp}-${idx}`,
+        file: entry.file,
+        type: entry.meta?.type === "video" ? "video" : "photo",
+      }));
+
+    if (settled.length > 0) {
+      setPendingMedia((current) => [...current, ...settled]);
+      setSelectedMediaId((current) => current || settled[0].id);
+    }
+
+    if (queue.length === 0) {
+      if (settled.length > 0 || pendingMediaRef.current.length > 0) setReviewOpen(true);
+      return;
+    }
+    openEditStage(0, queue);
   };
 
   const handleCapture = (file, type) => {
@@ -446,35 +577,38 @@ export default function SectionCameraButton({
     setUploading(false);
   };
 
-  const countLabel = concernCount > 0 ? ` · ${concernCount}` : "";
+  const countLabel = fixedConcern || concernCount === 0 ? "" : ` · ${concernCount}`;
+  const buttonTitle = uploading
+    ? "Uploading…"
+    : !isEnabled
+      ? fixedConcern
+        ? "Capture unavailable for this issue"
+        : "Record a concern first to enable section capture"
+      : concernCount === 1
+        ? `Capture for: ${concerns[0].label}`
+        : `Pick from ${concernCount} concerns to capture`;
 
   return (
     <>
       <Button
-        variant="primary"
+        variant={iconOnly ? "secondary" : "primary"}
         size="sm"
+        className={iconOnly ? "app-btn--icon" : undefined}
         onClick={handleClick}
         disabled={!isEnabled || uploading}
         aria-disabled={!isEnabled || uploading}
-        title={
-          uploading
-            ? "Uploading…"
-            : !isEnabled
-              ? "Record a concern first to enable section capture"
-              : concernCount === 1
-                ? `Capture for: ${concerns[0].label}`
-                : `Pick from ${concernCount} concerns to capture`
-        }
+        aria-label={iconOnly ? buttonTitle : undefined}
+        title={buttonTitle}
         style={{
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: "var(--space-2)",
+          gap: iconOnly ? 0 : "var(--space-2)",
           cursor: !isEnabled || uploading ? "not-allowed" : "pointer",
         }}
       >
         <CameraGlyph size={16} />
-        {uploading ? "Uploading…" : `Camera${countLabel}`}
+        {iconOnly ? null : uploading ? "Uploading…" : `${label}${countLabel}`}
       </Button>
 
       <ConcernPickerModal
@@ -490,26 +624,78 @@ export default function SectionCameraButton({
         initialMode={initialMode}
         onClose={handleCaptureClose}
         onCapture={handleCapture}
+        batchMode
+        onDone={handleCaptureBatchDone}
+        onEditCapture={handleTrayEdit}
+      />
+
+      {/* Editors for the in-capture tray. Separate instances from the post-Done
+          queue below: these sit on top of the live camera and resolve a promise
+          rather than advancing a queue. */}
+      <PhotoEditorModal
+        isOpen={trayEdit?.type === "photo"}
+        photoFile={trayEdit?.type === "photo" ? trayEdit.file : null}
+        onSave={(file) => resolveTrayEdit(file)}
+        onSkip={(file) => resolveTrayEdit(file)}
+        onCancel={() => resolveTrayEdit(null)}
+      />
+
+      <VideoEditorModal
+        isOpen={trayEdit?.type === "video"}
+        videoFile={trayEdit?.type === "video" ? trayEdit.file : null}
+        onSave={(file) => resolveTrayEdit(file)}
+        onSkip={(file) => resolveTrayEdit(file)}
+        onCancel={() => resolveTrayEdit(null)}
       />
 
       <PhotoHighlightPrompt
         isOpen={highlightPromptOpen}
         file={capturedPhoto}
+        position={editQueue.length > 1 ? { index: editIndex, total: editQueue.length } : null}
         onYes={() => {
           setHighlightPromptOpen(false);
           setPhotoEditorOpen(true);
         }}
-        onNo={() => queueMedia(capturedPhoto, "photo")}
+        onNo={() => {
+          // Keep the original and move on to the next capture in the session.
+          if (editQueue.length > 0) {
+            commitAndMove(null, 1);
+            return;
+          }
+          queueMedia(capturedPhoto, "photo");
+        }}
       />
 
       <PhotoEditorModal
         isOpen={photoEditorOpen}
         photoFile={capturedPhoto}
-        onSave={(file) => queueMedia(file, "photo")}
+        queueIndex={editIndex}
+        queueTotal={editQueue.length}
+        onSave={(file) => {
+          if (editQueue.length > 0) {
+            commitAndMove(file, 1);
+            return;
+          }
+          queueMedia(file, "photo");
+        }}
+        onBack={editQueue.length > 1 && editIndex > 0 ? (file) => commitAndMove(file, -1, true) : undefined}
+        onNext={editQueue.length > 1 && editIndex < editQueue.length - 1 ? (file) => commitAndMove(file, 1, true) : undefined}
         onCancel={() => {
           setPhotoEditorOpen(false);
           setHighlightPromptOpen(true);
         }}
+      />
+
+      <VideoEditorModal
+        isOpen={videoEditorOpen}
+        videoFile={editQueue[editIndex]?.file || null}
+        queueIndex={editIndex}
+        queueTotal={editQueue.length}
+        onSave={(file) => commitAndMove(file, 1)}
+        onSkip={() => commitAndMove(null, 1)}
+        onBack={editQueue.length > 1 && editIndex > 0 ? (file) => commitAndMove(file, -1, true) : undefined}
+        onNext={editQueue.length > 1 && editIndex < editQueue.length - 1 ? (file) => commitAndMove(file, 1, true) : undefined}
+        onCancel={discardSession}
       />
 
       <CaptureReviewModal

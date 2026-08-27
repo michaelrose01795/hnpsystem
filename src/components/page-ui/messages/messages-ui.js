@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/messages/messages-ui.js
 
 import React from "react"; // support extracted fragments.
+import PopupModal from "@/components/popups/popupStyleApi";
 
 export default function MessagesPageUi(props) {
   const {
@@ -13,7 +14,6 @@ export default function MessagesPageUi(props) {
     InputField,
     MessageBubble,
     MessageBubblesSkeleton,
-    ModalPortal,
     SearchBar,
     StatusMessage,
     ThreadRowsSkeleton,
@@ -1022,27 +1022,25 @@ export default function MessagesPageUi(props) {
         </DevLayoutSection>
       </DevLayoutSection>
 
-      {leaveDeclineModal.open && <ModalPortal>
-          <div style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "var(--overlay)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px",
-      zIndex: "var(--z-modal)"
-    }}>
-            <div style={{
-        width: "min(520px, 100%)",
-        backgroundColor: "var(--surface)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: shadows.lg,
-        padding: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "14px"
-      }}>
+      {leaveDeclineModal.open && <PopupModal
+        isOpen
+        onClose={() => {
+          if (leaveDecisionBusy) return;
+          setLeaveDeclineModal({ open: false, message: null });
+          setLeaveDeclineReason("");
+          setLeaveDecisionError("");
+        }}
+        closeOnBackdrop={!leaveDecisionBusy}
+        closeOnEscape={!leaveDecisionBusy}
+        ariaLabel="Decline leave request"
+        cardStyle={{
+          width: "min(100%, 520px)",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
               <div>
                 <h3 style={{
             margin: 0,
@@ -1086,33 +1084,22 @@ export default function MessagesPageUi(props) {
                   {leaveDecisionBusy ? "Declining..." : "Decline request"}
                 </Button>
               </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
 
-      {groupEditModalOpen && isGroupChat && <ModalPortal>
-          <div style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "var(--overlay)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px",
-      zIndex: "var(--z-modal)"
-    }}>
-            <div style={{
-        width: "min(560px, 100%)",
-        maxHeight: "90vh",
-        overflowY: "auto",
-        backgroundColor: "var(--surface)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: shadows.lg,
-        padding: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px"
-      }}>
+      {groupEditModalOpen && isGroupChat && <PopupModal
+        isOpen
+        onClose={closeGroupEditModal}
+        ariaLabel="Edit group chat"
+        cardStyle={{
+          width: "min(100%, 560px)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
             <div>
               <h3 style={{
             margin: 0,
@@ -1270,20 +1257,20 @@ export default function MessagesPageUi(props) {
                 {groupEditBusy ? "Saving…" : "Save changes"}
               </Button>
             </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
 
-      {newChatModalOpen && <ModalPortal>
-          <div className="popup-backdrop start-new-chat-backdrop">
-            <div className="popup-card start-new-chat-popup" style={{
-        borderRadius: "var(--radius-xl)",
-        width: "100%",
-        maxWidth: "640px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-        border: "none"
-      }}>
+      {newChatModalOpen && <PopupModal
+        isOpen
+        onClose={closeNewChatModal}
+        ariaLabel="Start new chat"
+        backdropClassName="start-new-chat-backdrop"
+        cardClassName="start-new-chat-popup"
+        cardStyle={{
+          width: "min(100%, 640px)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
+      >
               <div style={{
           padding: "32px",
           display: "flex",
@@ -1416,29 +1403,23 @@ export default function MessagesPageUi(props) {
               </Button>
             </div>
               </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
 
       {/* Command Help Modal */}
-      {commandHelpOpen && <ModalPortal>
-          <div onClick={() => setCommandHelpOpen(false)} style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "var(--overlay)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: "var(--z-modal)"
-    }}>
-            <div onClick={e => e.stopPropagation()} style={{
-        ...cardStyle,
-        maxWidth: "600px",
-        width: "90%",
-        maxHeight: "80vh",
-        overflowY: "auto",
-        gap: "20px"
-      }}>
+      {commandHelpOpen && <PopupModal
+        isOpen
+        onClose={() => setCommandHelpOpen(false)}
+        ariaLabel="Slash commands help"
+        cardStyle={{
+          width: "min(100%, 600px)",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
             <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -1576,29 +1557,23 @@ export default function MessagesPageUi(props) {
               </div>
               </div>
             </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
 
       {/* Group Members Modal */}
-      {groupMembersModalOpen && activeThread && isGroupChat && <ModalPortal>
-          <div onClick={() => setGroupMembersModalOpen(false)} style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "var(--overlay)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: "var(--z-modal)"
-    }}>
-            <div onClick={e => e.stopPropagation()} style={{
-        ...cardStyle,
-        maxWidth: "500px",
-        width: "90%",
-        maxHeight: "70vh",
-        overflowY: "auto",
-        gap: "20px"
-      }}>
+      {groupMembersModalOpen && activeThread && isGroupChat && <PopupModal
+        isOpen
+        onClose={() => setGroupMembersModalOpen(false)}
+        ariaLabel={`${activeThread.title || "Group chat"} members`}
+        cardStyle={{
+          width: "min(100%, 500px)",
+          maxHeight: "70vh",
+          overflowY: "auto",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
             <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -1663,9 +1638,7 @@ export default function MessagesPageUi(props) {
                   </div>)}
               </div>
             </div>
-            </div>
-          </div>
-        </ModalPortal>}
+        </PopupModal>}
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

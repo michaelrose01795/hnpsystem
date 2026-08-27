@@ -19,7 +19,8 @@ import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
@@ -2934,96 +2935,35 @@ function WriteUpForm({
       )}
 
       {showDocumentsPopup && (
-        <ModalPortal>
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(var(--accent-purple-rgb), 0.65)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "var(--z-modal)",
-            }}
-            onClick={closeDocumentsPopup}
-          >
-            <div
-              onClick={(event) => event.stopPropagation()}
-              style={{
-                width: "480px",
-                maxWidth: "90%",
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--radius-lg)",
-                padding: "32px",
-                              display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <PopupModal
+          isOpen
+          onClose={closeDocumentsPopup}
+          ariaLabel="Vehicle documents"
+          cardStyle={{
+            width: "min(100%, 480px)",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+          }}>
+            <header className="app-popup-compact-header">
               <div>
                 <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>Vehicle Documents</h3>
                 <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
                   View or upload documents tied to this vehicle. Documents generated during job creation appear here.
                 </p>
               </div>
-              <button
-                onClick={closeDocumentsPopup}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  color: closeButtonColor,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  padding: "4px 0",
-                }}
-              >
-                Close
-              </button>
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                type="button"
-                onClick={() => {
+              <div className="app-popup-compact-header__actions">
+                <Button type="button" variant="primary" onClick={() => {
                   router.push(`/job-cards/${jobNumber}/car-details`);
                   closeDocumentsPopup();
-                }}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  borderRadius: "var(--control-radius-xs)",
-                  padding: "12px 16px",
-                  background: "var(--info)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Open vehicle viewer
-              </button>
-              <button
-                type="button"
-                onClick={closeDocumentsPopup}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  borderRadius: "var(--control-radius-xs)",
-                  padding: "12px 16px",
-                  background: "var(--surface)",
-                  color: "var(--accent-purple)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Close
-              </button>
+                }}>Open vehicle viewer</Button>
+                <Button type="button" variant="secondary" onClick={closeDocumentsPopup}>Close</Button>
+              </div>
+            </header>
+            <div style={{ display: "flex", gap: "12px" }}>
             </div>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
     </div>
   );

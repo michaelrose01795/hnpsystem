@@ -4,4 +4,4 @@
 // Hash-only companion to sectionSourceMap.generated.js. Kept separate so the
 // client boot path can stamp a report with the deployed map's hash without
 // importing the map itself.
-export const DEV_LAYOUT_SECTION_SOURCE_MAP_HASH = "1gtdhbc";
+export const DEV_LAYOUT_SECTION_SOURCE_MAP_HASH = "1t1dn74";

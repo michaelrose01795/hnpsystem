@@ -19,6 +19,7 @@ const loadDevUsers = () => import("@/lib/users/devUsers");
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -352,18 +353,18 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   if (!isOpen) return null; // Do not render when closed
 
   return (
-    <div className="popup-backdrop" onClick={onClose}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Start Job"
+      cardStyle={{
+        width: "100%",
+        maxWidth: "600px",
+        padding: "var(--section-card-padding)",
+      }}
+    >
       <div
-        className="popup-card"
         data-draft-ignore="true"
-        style={{
-          width: "100%",
-          maxWidth: "600px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "var(--section-card-padding)",
-        }}
-        onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >
         <div
           className="app-popup-compact-header"
@@ -539,6 +540,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
         </LayerTheme>
       </div>
-    </div>
+    </PopupModal>
   );
 }

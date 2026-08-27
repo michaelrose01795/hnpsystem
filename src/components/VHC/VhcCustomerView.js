@@ -34,7 +34,7 @@ const optimisedPhotoSrc = (url) => {
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -518,10 +518,7 @@ function VideosTab({ videoFiles }) {
   );
 }
 
-// Canonical popup shell: ModalPortal (body scroll lock + portal node) wrapping
-// the shared .popup-backdrop / .popup-card chrome from staffglobal.css, so this
-// dialog gets the same backdrop, viewport gap and portrait handling as every
-// other popup in the app.
+// Canonical PopupModal supplies the staffglobal backdrop, card and body lock.
 function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline, onClose, isUpdating }) {
   const itemTotal = Number(item.total_gbp ?? item.total ?? 0);
   const currentAuthorizedTotal = Number(authorizedTotal);
@@ -536,19 +533,18 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
   const reportedDescription = detailContent || detailLabel;
 
   return (
-    <ModalPortal>
-      <div className="popup-backdrop" role="presentation" onClick={onClose}>
-        <LayerSurface
-          className="popup-card"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="vhc-authorise-confirm-title"
-          radius="var(--radius-lg)"
-          padding="18px"
-          gap="14px"
-          onClick={(event) => event.stopPropagation()}
-          style={{ width: "min(100%, 460px)" }}
-        >
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabelledBy="vhc-authorise-confirm-title"
+      cardStyle={{
+        width: "min(100%, 460px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
           <div>
             <div
               id="vhc-authorise-confirm-title"
@@ -637,9 +633,7 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
           >
             Back to report
           </Button>
-        </LayerSurface>
-      </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }
 

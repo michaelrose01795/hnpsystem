@@ -19,7 +19,7 @@ import {
   calculateOverallTotals,
 } from "@/lib/database/efficiency";
 import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -1966,104 +1966,55 @@ export default function EfficiencyTab({
 
       {/* Detail Popup - shows entries for a tech from the overall tab */}
       {detailPopupTechId && detailPopupSummary && (
-        <ModalPortal>
-          <div
-            className="popup-backdrop"
-            style={{ zIndex: 1100 }}
-            onClick={(e) => { if (e.target === e.currentTarget) closeDetailPopup(); }}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div
-              className="popup-card"
-              style={{
-                borderRadius: "var(--radius-xl)",
-                width: "100%",
-                maxWidth: "820px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                border: "none",
-                padding: "32px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-              }}
-            >
+        <PopupModal
+          isOpen
+          onClose={closeDetailPopup}
+          ariaLabel="Efficiency detail"
+          cardStyle={{
+            width: "min(100%, 820px)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+          }}
+        >
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <header className="app-popup-compact-header">
                 <div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                    Efficiency Detail
-                  </p>
-                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
+                  <h3>
                     {detailPopupSummary.tech.first_name} - {MONTHS[selectedMonth - 1]} {selectedYear}
                   </h3>
                 </div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <div className="app-popup-compact-header__actions">
                   {isDetailPopupEditable && (
-                    <button
+                    <Button
                       type="button"
+                      variant="primary"
                       onClick={() => openAddModalForTech(detailPopupTechId)}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: "var(--input-radius)",
-                        border: "none",
-                        background: "var(--primary)",
-                        color: "var(--onAccentText)",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        cursor: "pointer",
-                      }}
                     >
-                      + Add Job Entry
-                    </button>
+                      Add Job Entry
+                    </Button>
                   )}
                   {isDetailPopupEditable && (
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
                       onClick={detailEditMode ? cancelDetailEdit : startDetailEdit}
-                      aria-label={detailEditMode ? "Cancel edit" : "Edit details"}
-                      style={{
-                        width: "var(--control-height-xs)",
-                        height: "var(--control-height-xs)",
-                        borderRadius: "var(--input-radius)",
-                        background: detailEditMode ? "var(--primary)" : "var(--surface)",
-                        color: detailEditMode ? "var(--surface)" : "var(--primary)",
-                        fontSize: "0.95rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      title={detailEditMode ? "Cancel edit" : "Edit target & weight"}
                     >
-                      &#9998;
-                    </button>
+                      {detailEditMode ? "Cancel edit" : "Edit details"}
+                    </Button>
                   )}
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={closeDetailPopup}
-                    aria-label="Close"
-                    style={{
-                      width: "var(--control-height-xs)",
-                      height: "var(--control-height-xs)",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--info)",
-                      fontSize: "1.1rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
                   >
-                    &times;
-                  </button>
+                    Close
+                  </Button>
                 </div>
-              </div>
+              </header>
 
               {/* Edit target & weight inline form */}
               {detailEditMode && (
@@ -2273,66 +2224,50 @@ export default function EfficiencyTab({
                   </table>
                 </div>
               </div>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
 
       {/* Add/Edit Modal */}
       {modalOpen && (
-        <ModalPortal>
-          <div
-            className="efficiency-modal-overlay"
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              zIndex: "var(--z-modal)",
-            }}
-            onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div
-              className="efficiency-job-modal"
-              style={{
-                width: "min(580px, 100%)",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                borderRadius: "var(--radius-lg)",
-                background: "var(--surface)",
-                border: "none",
-                boxShadow: "var(--shadow-xl)",
-                padding: "28px 32px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-              }}
-            >
+        <PopupModal
+          isOpen
+          onClose={closeModal}
+          ariaLabel={editingEntry ? "Edit job entry" : "New job entry"}
+          backdropClassName="efficiency-modal-overlay"
+          cardClassName="efficiency-job-modal"
+          cardStyle={{
+            width: "min(100%, 580px)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+          }}
+        >
               {/* Modal header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <header className="app-popup-compact-header">
                 <div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--grey-accent)" }}>
-                    Job Entry
-                  </p>
-                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
+                  <h3>
                     {editingEntry ? (editingEntry._source ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
                   </h3>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={closeModal}
-                  aria-label="Close"
-                >
-                  &times;
-                </Button>
-              </div>
+                <div className="app-popup-compact-header__actions">
+                  {!editingEntry?._source && (
+                    <Button type="submit" form="efficiency-job-entry-form" variant="primary" busy={formSubmitting}>
+                      {editingEntry ? "Update Job Entry" : "Add Job Entry"}
+                    </Button>
+                  )}
+                  {editingEntry && !editingEntry._source && (
+                    <Button type="button" variant="danger" busy={deleteSubmitting} onClick={handleDeleteFromEditModal}>
+                      Delete Entry
+                    </Button>
+                  )}
+                  <Button type="button" variant="secondary" onClick={closeModal}>
+                    Close
+                  </Button>
+                </div>
+              </header>
 
               {formError && (
                 <div style={{
@@ -2347,7 +2282,7 @@ export default function EfficiencyTab({
                 </div>
               )}
 
-              <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <form id="efficiency-job-entry-form" onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                 {editingEntry?._source && (
                   <div style={{
                     borderRadius: "var(--radius-md)",
@@ -2550,35 +2485,8 @@ export default function EfficiencyTab({
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", paddingTop: "4px" }}>
-                  <div>
-                    {editingEntry && !editingEntry._source && (
-                      <Button
-                        type="button"
-                        variant="danger"
-                        onClick={handleDeleteFromEditModal}
-                        disabled={deleteSubmitting}
-                      >
-                        {deleteSubmitting ? "Deleting..." : "Delete Entry"}
-                      </Button>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <Button type="button" variant="ghost" onClick={closeModal}>
-                      Cancel
-                    </Button>
-                    {!editingEntry?._source && (
-                      <Button type="submit" variant="primary" disabled={formSubmitting}>
-                        {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
               </form>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
       <style jsx>{`
         :global(.efficiency-page) {
