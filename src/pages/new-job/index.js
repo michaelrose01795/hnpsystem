@@ -3,6 +3,7 @@
 // ✅ Database linked through /src/lib/database
 "use client"; // enables client-side rendering for Next.js
 
+import dynamic from "next/dynamic";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { flushSync } from "react-dom";
 import { useRouter } from "next/router"; // for navigation
@@ -10,19 +11,35 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
 import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
 import { isMobileTechnician } from "@/lib/auth/roles"; // role helper to gate mobile-mechanic-only saves
-import {
-  addCustomerToDatabase,
-  checkCustomerExists,
-  getCustomerById,
-  getCustomerVehicles,
-  updateCustomer } from
-"@/lib/database/customers";
-import { getVehicleByReg } from "@/lib/database/vehicles";
-import { getJobByNumber } from "@/lib/database/jobs";
-import { createFullJobBatch } from "@/lib/services/createJobService"; // consolidated job creation service
-import { supabase } from "@/lib/database/supabaseClient"; // import supabase client for signature lookups
-import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
-import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
+// Loaded on demand - both modules resolve the Supabase browser client.
+//
+// Every function imported from them is called from an async submit/lookup
+// handler (customer select, save edits, contact preference, reg lookup), never
+// during render, so deferring them keeps /new-job off the 213 KB client while
+// leaving behaviour identical.
+const loadCustomersDb = () => import("@/lib/database/customers");
+const loadVehiclesDb = () => import("@/lib/database/vehicles");
+const loadJobsDb = () => import("@/lib/database/jobs"); // deferred - only used by the prime-job lookup below
+const loadCreateJobService = () => import("@/lib/services/createJobService"); // deferred - runs only from handleSaveJob
+// Loaded on demand — 213 KB of @supabase/supabase-js.
+//
+// This page uses the browser client for exactly two things: uploading a
+// signature image and saving the check-sheet file, both inside async submit
+// handlers (handleSignatureUpload / saveCheckSheetData). It opens no realtime
+// channel, so nothing here needs the client to render. Importing it statically
+// put the whole client in /new-job's first load — the heaviest page in the app
+// and the one with the most Speed Insights samples.
+//
+// Same pattern as useMessagesBadge and StaffLayout, which already defer it.
+const loadSupabase = async () => (await import("@/lib/database/supabaseClient")).supabase;
+// Deferred modal. It is only rendered behind `showNewCustomer &&` in the UI
+// layer, but importing it statically pulled lib/database/customers - and with
+// it the 213 KB Supabase browser client - into /new-job's first load. Same
+// next/dynamic treatment the global modals in _app.js already use.
+const NewCustomerPopup = dynamic(() => import("@/components/popups/NewCustomerPopup"), { ssr: false });
+// Deferred for the same reason as NewCustomerPopup above - rendered only behind
+// `showExistingCustomer &&`, but statically reached the Supabase client.
+const ExistingCustomerPopup = dynamic(() => import("@/components/popups/ExistingCustomerPopup"), { ssr: false });
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import QuestionPromptsPopup from "@/components/JobCards/QuestionPromptsPopup";
@@ -514,7 +531,7 @@ export default function CreateJobCardPage() {
 
     const fetchPrimeJob = async () => {
       console.log("📋 Sub-job mode: fetching prime job", primeJobNumber);
-      const result = await getJobByNumber(primeJobNumber);
+      const result = await (await loadJobsDb()).getJobByNumber(primeJobNumber);
       if (result.success && result.data) {
         setPrimeJobData(result.data);
         setIsSubJobMode(true);
@@ -837,7 +854,7 @@ export default function CreateJobCardPage() {
 
     const lookupVehicle = async () => {
       try {
-        const storedVehicle = await getVehicleByReg(regTrimmed); // query Supabase for existing vehicle row
+        const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(regTrimmed); // query Supabase for existing vehicle row
         lastVehicleLookupRef.current = regTrimmed; // mark lookup as completed for this reg
         if (!cancelled && storedVehicle) {
           hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: false }); // hydrate local form state
@@ -895,7 +912,7 @@ export default function CreateJobCardPage() {
         contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email"
       };
 
-      const result = await updateCustomer(customer.id, updatePayload);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, updatePayload);
       if (!result?.success || !result?.data) {
         throw new Error(result?.error?.message || "Failed to update contact preference.");
       }
@@ -980,7 +997,7 @@ export default function CreateJobCardPage() {
         contact_preference: toNullable(customerForm.contactPreference) || "email"
       };
 
-      const result = await updateCustomer(customer.id, updatePayload);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, updatePayload);
 
       if (!result?.success || !result?.data) {
         throw new Error(result?.error?.message || "Failed to update customer.");
@@ -1086,6 +1103,7 @@ export default function CreateJobCardPage() {
       return;
     }
 
+    const supabase = await loadSupabase(); // deferred client — handler-time only
     setIsUploadingSignature(true);
     try {
       const ext = file.name?.split(".").pop() || "png";
@@ -1123,6 +1141,7 @@ export default function CreateJobCardPage() {
       return; // nothing to save when no sheet selected
     }
 
+    const supabase = await loadSupabase(); // deferred client — handler-time only
     try {
       const ext = checkSheetFile.name?.split(".").pop() || "png";
       const storagePath = `jobs/${jobId}/checksheets/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -1196,7 +1215,7 @@ export default function CreateJobCardPage() {
 
       if (providedId) {// when popup sent an ID we just hydrate the row
         console.log("Existing customer selected by ID:", providedId);
-        const hydratedCustomer = await getCustomerById(providedId);
+        const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(providedId);
         const recordToUse = hydratedCustomer || customerData;
         resolvedCustomer = normalizeCustomerRecord(recordToUse);
         if (!resolvedCustomer?.id) {
@@ -1219,19 +1238,19 @@ export default function CreateJobCardPage() {
           contact_preference: customerData.contactPreference || customerData.contact_preference || "email"
         };
 
-        const { exists, customer: existingCustomer } = await checkCustomerExists(
+        const { exists, customer: existingCustomer } = await (await loadCustomersDb()).checkCustomerExists(
           normalizedPayload.email,
           normalizedPayload.mobile
         );
 
         if (exists && existingCustomer?.id) {
           console.log("Customer already exists in database:", existingCustomer);
-          const hydratedCustomer = await getCustomerById(existingCustomer.id);
+          const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(existingCustomer.id);
           const recordToUse = hydratedCustomer || existingCustomer;
           resolvedCustomer = normalizeCustomerRecord(recordToUse);
         } else {
           console.log("Customer not found, creating new customer...");
-          const insertedCustomer = await addCustomerToDatabase(normalizedPayload);
+          const insertedCustomer = await (await loadCustomersDb()).addCustomerToDatabase(normalizedPayload);
           resolvedCustomer = normalizeCustomerRecord(insertedCustomer);
           showNotification("customer", "success", "✓ New customer saved successfully!");
         }
@@ -1243,7 +1262,7 @@ export default function CreateJobCardPage() {
 
       setCustomer(resolvedCustomer);
       try {
-        const vehicles = await getCustomerVehicles(resolvedCustomer.id);
+        const vehicles = await (await loadCustomersDb()).getCustomerVehicles(resolvedCustomer.id);
         const latestVehicle = vehicles?.[0];
         if (latestVehicle) {
           setVehicle({
@@ -1287,7 +1306,7 @@ export default function CreateJobCardPage() {
     try {
       const regUpper = requestedRegistration; // keep this request tied to the registration that initiated it
 
-      const storedVehicle = await getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
+      const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
 
       if (currentVehicleRegistrationRef.current !== requestedRegistration) {
         return;
@@ -1433,7 +1452,7 @@ export default function CreateJobCardPage() {
       console.log("✓ All validations passed. Starting save job process via createJobService...");
 
       // ===== DATABASE OPERATIONS PHASE (via service layer) =====
-      const batchResult = await createFullJobBatch({
+      const batchResult = await (await loadCreateJobService()).createFullJobBatch({
         customer: { // normalized customer object
           id: customer.id,
           firstName: customerForm.firstName,

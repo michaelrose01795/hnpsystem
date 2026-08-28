@@ -25,6 +25,7 @@ import { getReportingFlag } from "@/lib/reporting/config/flags";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { DYNAMIC_DETAIL_EXTENDS } from "@/config/routeAccess";
 import { isWorkspaceNavEnabled } from "./flags";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
 import {
   ROLE_WORKSPACE_DEFAULTS,
   WORKSPACE_ROLE_DEFAULT_NAMES,
@@ -86,6 +87,24 @@ function normalizeRoleSet(roles) {
 }
 
 // ---------------------------------------------------------------------------
+// ALL ACCESS DEMO ROLE (see src/lib/auth/allAccessSession.js).
+//
+// The synthetic `all access` role is a demonstration login: it is granted every
+// workspace group and every group page so the whole app can be walked through
+// from one session. The ONE exception is the Developer group — the Developer
+// Platform stays strictly `dev`-only (🔒 DEVELOPER SIDEBAR LOCK), so all-access
+// never widens /dev and the lock's invariant is untouched.
+// ---------------------------------------------------------------------------
+const hasAllAccess = (roleSet) => roleSet.has(ALL_ACCESS_ROLE);
+
+// Is this nav item restricted to the developer role alone? Those stay out of the
+// all-access grant.
+const isDeveloperOnlyItem = (item) =>
+  Array.isArray(item?.roles) &&
+  item.roles.length > 0 &&
+  item.roles.every((role) => String(role).toLowerCase() === "dev");
+
+// ---------------------------------------------------------------------------
 // WORKSPACE GROUP PERMISSION MODEL — the DEFAULT permission boundary (Phase 8).
 //
 // The Workspace Group (a page's section `department`) is the primary permission
@@ -138,6 +157,7 @@ const GROUP_ROLE_INDEX = (() => {
 // Does the workspace group grant this role set? Group-wide pages inherit this.
 function groupGrantsRole(departmentKey, roleSet) {
   if (!departmentKey || !GROUP_ROLE_INDEX.has(departmentKey)) return false;
+  if (hasAllAccess(roleSet)) return departmentKey !== DEVELOPER_GROUP_LOCK.key;
   const groupRoles = GROUP_ROLE_INDEX.get(departmentKey);
   if (groupRoles === null) return true; // assigned to every authenticated user
   for (const role of roleSet) {
@@ -166,6 +186,9 @@ export function getWorkspaceGroupRoles(departmentKey) {
 //     tabs, quick actions), an un-roled item stays visible to all — matching the
 //     legacy "empty roles ⇒ everyone" rule for those non-group surfaces.
 function itemVisibleTo(item, roleSet, departmentKey = null) {
+  if (hasAllAccess(roleSet)) {
+    return departmentKey !== DEVELOPER_GROUP_LOCK.key && !isDeveloperOnlyItem(item);
+  }
   if (item.roles && item.roles.length > 0) {
     return item.roles.some((required) => roleSet.has(String(required).toLowerCase()));
   }
@@ -346,9 +369,8 @@ export function getAllSidebarItems() {
 
 // Flat catalogue used by role defaults and the developer layout editor. It is
 // still assembled from the canonical manifest, so a role layout can only point
-// at an existing staff Page or dashboard shortcut. Orphan dashboards such as
-// Paint are included even when their department is not a selectable legacy
-// Group.
+// at an existing staff Page or dashboard shortcut. Orphan dashboards are
+// included even when their department is not a selectable legacy Group.
 export function getWorkspacePageCatalog() {
   const seen = new Set();
   const items = [];
@@ -390,8 +412,42 @@ export function getSidebarModuleCatalog() {
   }));
 }
 
+// Every page in the manifest, bucketed into one module per workspace group.
+// This is the sidebar layout for the All Access demo role: the module library
+// (SIDEBAR_MODULE_LIBRARY) is a curated subset, so it is deliberately NOT used
+// here — the point of this login is that nothing is missing.
+function allAccessModuleLabel(departmentKey) {
+  const fromDepartment = WORKSPACE_DEPARTMENTS.find((department) => department.key === departmentKey)?.label;
+  if (fromDepartment) return fromDepartment;
+  // Departments with pages but no department entry yet (tech) already have
+  // a human label in the module library; fall back to it before the generic one.
+  const fromLibrary = SIDEBAR_MODULE_LIBRARY.find(
+    (navigationModule) => navigationModule.department === departmentKey
+  )?.label;
+  if (fromLibrary) return fromLibrary;
+  return moduleBundleLabel(departmentKey);
+}
+
+function allAccessDefaultModules() {
+  const modules = new Map();
+  for (const item of getWorkspacePageCatalog()) {
+    if (item.department === DEVELOPER_GROUP_LOCK.key) continue;
+    // Profile/Logout are the sidebar's persistent bottom controls, not a module.
+    if (item.department === "account" || standaloneSidebarHrefs.has(item.href)) continue;
+    if (isDeveloperOnlyItem(item)) continue;
+    const key = moduleBundleKey(item.department);
+    if (!modules.has(key)) {
+      modules.set(key, { key, label: allAccessModuleLabel(item.department), hrefs: [] });
+    }
+    const bundle = modules.get(key);
+    if (!bundle.hrefs.includes(item.href)) bundle.hrefs.push(item.href);
+  }
+  return Array.from(modules.values());
+}
+
 function roleDefaultModules(roles) {
   const roleList = Array.from(normalizeRoleSet(roles));
+  if (roleList.includes(ALL_ACCESS_ROLE)) return allAccessDefaultModules();
   const moduleMap = new Map();
   for (const role of roleList.length > 0 ? roleList : [""]) {
     for (const configuredModule of getConfiguredRoleDefault(role)) {

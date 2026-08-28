@@ -17,7 +17,11 @@ import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 // Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
 // owned by the DB helper module per CLAUDE.md §5.
 import { loadVhcFallbackBundle } from "@/lib/database/vhc";
-import { classifyVhcMedia, groupVhcMedia } from "@/lib/vhc/buildVhcMediaLibrary";
+import {
+  classifyVhcMedia,
+  groupVhcMedia,
+  prioritiseRowsWithMedia,
+} from "@/lib/vhc/buildVhcMediaLibrary";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -56,6 +60,7 @@ import {
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
 import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
 import { isValidUuid } from "@/features/labourTimes/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
@@ -95,13 +100,20 @@ const isPartAddedToJob = (part = {}) => {
 
 const createDefaultNewPartForm = () => ({
   partNumber: "",
-  quantity: 1,
   binLocation: "",
   discountCode: "",
   description: "",
   retailPrice: "",
   costPrice: "",
 });
+
+const sanitisePartQuantityInput = (value) =>
+  String(value ?? "").replace(/\D/g, "").slice(0, 2);
+
+const resolvePartQuantity = (value) => {
+  const parsed = Number.parseInt(sanitisePartQuantityInput(value), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 99) : 1;
+};
 
 const extractPartMeta = (requestNotes) => {
   if (!requestNotes || typeof requestNotes !== "string") return {};
@@ -131,19 +143,6 @@ const TAB_OPTIONS = [
   { id: "media", label: "Media" },
 ];
 
-const VHC_COMPACT_STAT_TILE_STYLE = {
-  borderRadius: "var(--radius-sm)",
-  padding: "8px 10px",
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  justifyContent: "space-between",
-  columnGap: "8px",
-  rowGap: "2px",
-  minWidth: 0,
-  minHeight: "44px",
-};
-
 const VHC_COMPACT_STAT_LABEL_STYLE = {
   fontSize: "10px",
   fontWeight: 700,
@@ -161,6 +160,15 @@ const VHC_COMPACT_STAT_VALUE_STYLE = {
   fontWeight: 800,
   color: "var(--accentText)",
   lineHeight: 1,
+};
+
+// Fixed height keeps all compact VHC metrics aligned and avoids the shared 110px dashboard-card minimum.
+const VHC_TOOLBAR_STAT_TILE_STYLE = {
+  minHeight: "44px",
+  maxHeight: "44px",
+  boxSizing: "border-box",
+  justifyContent: "center",
+  overflow: "hidden",
 };
 
 const PRE_PICK_LOCATION_OPTIONS_FULL = [
@@ -687,16 +695,6 @@ const getWearColor = (wornPercent) => {
   return "var(--success)";
 };
 
-const PANEL_SECTION_STYLE = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-lg)",
-  border: "none",
-
-  padding: "24px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-};
 const TAB_CONTENT_STYLE = {
   display: "flex",
   flexDirection: "column",
@@ -1939,33 +1937,44 @@ export default function VhcDetailsPanel({
     [onJobDataRefresh]
   );
 
+  // SectionCameraButton hands back a single file for a one-shot capture and an
+  // array when a batch capture session uploads several items at once, so both
+  // shapes have to land in job_files or the batch's media never appears against
+  // its concern row until the next full job refresh.
   const handleSectionMediaUploaded = useCallback(
     (uploadedFile, concern = null) => {
-      if (uploadedFile) {
-        const concernLink =
-          uploadedFile.vhc_concern_link ||
-          (concern
-            ? {
-                section: concern.section,
-                category: concern.category || null,
-                categoryLabel: concern.categoryLabel || null,
-                concernId: concern.concernId,
-                index: concern.index,
-                label: concern.label,
-                status: concern.status,
-              }
-            : null);
-        const enrichedFile = {
-          ...uploadedFile,
-          ...(concernLink ? { vhc_concern_link: concernLink } : {}),
-        };
+      const uploadedFiles = (Array.isArray(uploadedFile) ? uploadedFile : [uploadedFile]).filter(Boolean);
+
+      if (uploadedFiles.length > 0) {
+        const fallbackConcernLink = concern
+          ? {
+              section: concern.section,
+              category: concern.category || null,
+              categoryLabel: concern.categoryLabel || null,
+              concernId: concern.concernId,
+              index: concern.index,
+              label: concern.label,
+              status: concern.status,
+            }
+          : null;
+
+        const enrichedFiles = uploadedFiles.map((file) => {
+          const concernLink = file.vhc_concern_link || fallbackConcernLink;
+          return {
+            ...file,
+            ...(concernLink ? { vhc_concern_link: concernLink } : {}),
+          };
+        });
 
         setJob((prev) => {
           if (!prev) return prev;
           const currentFiles = Array.isArray(prev.job_files) ? prev.job_files : [];
-          const nextFiles = currentFiles.some((file) => String(file?.file_id) === String(enrichedFile.file_id))
-            ? currentFiles.map((file) => (String(file?.file_id) === String(enrichedFile.file_id) ? { ...file, ...enrichedFile } : file))
-            : [enrichedFile, ...currentFiles];
+          const nextFiles = enrichedFiles.reduce((files, enrichedFile) => {
+            const matches = (file) => String(file?.file_id) === String(enrichedFile.file_id);
+            return files.some(matches)
+              ? files.map((file) => (matches(file) ? { ...file, ...enrichedFile } : file))
+              : [enrichedFile, ...files];
+          }, currentFiles);
           return { ...prev, job_files: nextFiles };
         });
       }
@@ -2566,6 +2575,7 @@ export default function VhcDetailsPanel({
               vat: existing?.vat ?? vatAmount,
               totalWithVat: existing?.totalWithVat ?? priceWithVat,
               inStock: existing?.inStock ?? (part.part?.qty_in_stock || 0) > 0,
+              quantity: existing?.quantity ?? String(resolvePartQuantity(part.quantity_requested)),
               backOrder: existing?.backOrder ?? Boolean(meta.backOrder),
               warranty: existing?.warranty ?? Boolean(meta.warranty),
               surcharge: existing?.surcharge ?? Boolean(meta.surcharge),
@@ -3383,6 +3393,14 @@ export default function VhcDetailsPanel({
       (part) => String(part?.vhc_item_id || "") === String(canonicalId)
     );
   }, [addPartsTarget?.vhcId, partsIdentified, resolveCanonicalVhcId]);
+
+  const combinedPartsForModal = useMemo(
+    () => [
+      ...existingPartsForModal.map((part) => ({ kind: "existing", id: `existing-${part.id}`, part })),
+      ...selectedParts.map((entry) => ({ kind: "selected", id: `selected-${entry.part?.id}`, entry })),
+    ],
+    [existingPartsForModal, selectedParts]
+  );
 
   const addPartsModalTitle = useMemo(() => {
     const target = addPartsTarget || {};
@@ -6596,6 +6614,25 @@ export default function VhcDetailsPanel({
     [],
   );
 
+  const handleRemoveMainVideo = useCallback(
+    async (file) => {
+      if (file?.file_id === undefined || file?.file_id === null) return;
+
+      const confirmed = await confirm({
+        title: "Move media",
+        message: "Move this video out of Customer Video?",
+        description:
+          "The video will stay on the job and return to its linked media row, or Unlinked media if it has no linked item.",
+        confirmLabel: "Move Media",
+        cancelLabel: "Cancel",
+      });
+
+      if (!confirmed) return;
+      await handleToggleMainVideo(file.file_id, false);
+    },
+    [confirm, handleToggleMainVideo],
+  );
+
   const handleOpenPhotoPreview = useCallback((file) => {
     setPhotoPreviewFile(file || null);
     setPhotoPreviewMessage("");
@@ -7327,6 +7364,15 @@ export default function VhcDetailsPanel({
     );
   }, []);
 
+  const handleSelectedPartQuantityChange = useCallback((partId, value) => {
+    const quantity = sanitisePartQuantityInput(value);
+    setSelectedParts((prev) =>
+      prev.map((entry) =>
+        entry.part?.id === partId ? { ...entry, quantity } : entry
+      )
+    );
+  }, []);
+
   const handleOpenNewPart = useCallback(() => {
     const trimmed = addPartsSearch.trim();
     setShowNewPartForm((prev) => !prev);
@@ -7412,7 +7458,7 @@ export default function VhcDetailsPanel({
             ...prev,
             {
               part: newPart,
-              quantity: newPartForm.quantity || 1,
+              quantity: 1,
               warranty: false,
               backOrder: false,
               surcharge: false,
@@ -7596,6 +7642,64 @@ export default function VhcDetailsPanel({
     },
     [job?.parts_job_items]
   );
+
+  const handleExistingPartQuantityChange = useCallback((partKey, value) => {
+    const quantity = sanitisePartQuantityInput(value);
+    setPartDetails((prev) => ({
+      ...prev,
+      [partKey]: {
+        ...(prev[partKey] || {}),
+        quantity,
+      },
+    }));
+  }, []);
+
+  const handleExistingPartQuantityCommit = useCallback(async (partKey, partId, value, fallbackQuantity) => {
+    if (!partId) return;
+    const quantity = resolvePartQuantity(value);
+    const previousQuantity = resolvePartQuantity(fallbackQuantity);
+
+    setPartDetails((prev) => ({
+      ...prev,
+      [partKey]: {
+        ...(prev[partKey] || {}),
+        quantity: String(quantity),
+      },
+    }));
+
+    if (quantity === previousQuantity) return;
+
+    try {
+      const response = await fetch(`/api/parts/job-items/${partId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantityRequested: quantity }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || payload?.message || "Failed to update part quantity");
+      }
+
+      setJob((prev) => {
+        if (!prev) return prev;
+        const updatedParts = Array.isArray(prev.parts_job_items)
+          ? prev.parts_job_items.map((part) =>
+              part.id === partId ? { ...part, quantity_requested: quantity } : part
+            )
+          : prev.parts_job_items;
+        return { ...prev, parts_job_items: updatedParts };
+      });
+    } catch (error) {
+      setPartDetails((prev) => ({
+        ...prev,
+        [partKey]: {
+          ...(prev[partKey] || {}),
+          quantity: String(previousQuantity),
+        },
+      }));
+      setAddPartsMessage(error.message || "Unable to update part quantity.");
+    }
+  }, []);
 
   // Handler for updating part detail fields
   const handlePartDetailChange = useCallback(
@@ -7851,7 +7955,7 @@ export default function VhcDetailsPanel({
           body: JSON.stringify({
             jobId: job.id,
             partId: part.id,
-            quantityRequested: entry.quantity || 1,
+            quantityRequested: resolvePartQuantity(entry.quantity),
             allocateFromStock: false,
             storageLocation: part.storage_location || null,
             status: "pending",
@@ -8793,9 +8897,10 @@ export default function VhcDetailsPanel({
                           })}
                           {/* Add a part to this VHC item (disabled once locked). */}
                           {!declined && (
-                            <button
+                            <Button
                               type="button"
-                              className="app-table-action-btn app-table-action-btn--primary"
+                              variant="primary"
+                              size="xs"
                               style={{ width: "100%" }}
                               disabled={!canAddPart}
                               onClick={() => {
@@ -8804,18 +8909,19 @@ export default function VhcDetailsPanel({
                               title={isLocked ? "Cannot add parts to authorised, declined or completed items" : "Add a part to this VHC item"}
                             >
                               Add Part
-                            </button>
+                            </Button>
                           )}
                           {/* Mark "not required" when nothing has been linked yet. */}
                           {!hasParts && !isLocked && (
-                            <button
+                            <Button
                               type="button"
-                              className="app-table-action-btn"
+                              variant="secondary"
+                              size="xs"
                               style={{ width: "100%" }}
                               onClick={() => handlePartsNotRequiredToggle(vhcId)}
                             >
                               {isPartsNotRequired ? "✓ Not Required" : "Not required?"}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -9378,28 +9484,51 @@ export default function VhcDetailsPanel({
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
             {renderThumbIndex(index)}
-          </div>
-          {!readOnly ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-              <button
+            {!readOnly && isMainRow ? (
+              <Button
                 type="button"
-                onClick={() => handleToggleMainVideo(file.file_id, !isMainRow)}
+                variant="secondary"
+                size="xs"
+                className="app-btn--icon"
+                onClick={() => handleRemoveMainVideo(file)}
                 disabled={saving}
-                style={{
-                  padding: "4px 8px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  background: "rgba(var(--primary-rgb), 0.10)",
-                  color: "var(--primary-selected)",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: saving ? "wait" : "pointer",
-                  opacity: saving ? 0.65 : 1,
-                  whiteSpace: "nowrap",
-                }}
+                aria-busy={saving || undefined}
+                aria-label="Move video out of Customer Video"
+                title="Move video out of Customer Video"
+                style={{ position: "absolute", top: "8px", right: "8px" }}
               >
-                {saving ? "Saving..." : isMainRow ? "Remove from main" : "Set as main video"}
-              </button>
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v5" />
+                  <path d="M14 11v5" />
+                </svg>
+              </Button>
+            ) : null}
+          </div>
+          {!readOnly && !isMainRow ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+              <Button
+                type="button"
+                variant="primary"
+                size="xs"
+                onClick={() => handleToggleMainVideo(file.file_id, true)}
+                busy={saving}
+              >
+                Set as main video
+              </Button>
             </div>
           ) : null}
         </figure>
@@ -9532,42 +9661,23 @@ export default function VhcDetailsPanel({
             {showControls ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={() => handleRowAddMediaClick(concern)}
-                    disabled={uploading}
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: "rgba(var(--primary-rgb), 0.10)",
-                      color: "var(--primary-selected)",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      cursor: uploading ? "wait" : "pointer",
-                      opacity: uploading ? 0.65 : 1,
-                      whiteSpace: "nowrap",
-                    }}
+                    busy={uploading}
                   >
-                    {uploading ? "Uploading…" : "+ Add media"}
-                  </button>
-                  <button
+                    + Add media
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="xs"
                     onClick={() => setMoveMediaPickerConcernId((current) => (current === key ? null : key))}
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: pickerOpen ? "rgba(var(--primary-rgb), 0.14)" : "rgba(var(--primary-rgb), 0.06)",
-                      color: "var(--text-1)",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
                   >
                     {pickerOpen ? "Close" : "⇄ Move media"}
-                  </button>
+                  </Button>
                 </div>
 
                 {pickerOpen ? (
@@ -9658,9 +9768,10 @@ export default function VhcDetailsPanel({
       concern: null,
     };
     const hasUnlinkedMedia = unlinkedPhotos.length > 0 || unlinkedVideos.length > 0;
-    const requestRows = hasUnlinkedMedia
-      ? [unlinkedRow, ...concernRows]
-      : [...concernRows, unlinkedRow];
+    // Customer Video is rendered separately above this list. Within the
+    // remaining rows, surface every row carrying media first while preserving
+    // the existing concern/severity order inside both partitions.
+    const requestRows = prioritiseRowsWithMedia([...concernRows, unlinkedRow]);
 
     const hasRequestMedia = concernRows.length > 0 || hasUnlinkedMedia;
 
@@ -9704,6 +9815,7 @@ export default function VhcDetailsPanel({
     reportedConcerns,
     readOnly,
     handleToggleMainVideo,
+    handleRemoveMainVideo,
     handleOpenPhotoPreview,
     mainVideoSavingId,
     rowMediaUploadConcernId,
@@ -9845,25 +9957,22 @@ export default function VhcDetailsPanel({
       data-dev-active-tab-label={activeTabLabel || undefined}
     >
       {showNavigation && (
-        <div style={PANEL_SECTION_STYLE}>
+        <LayerSurface radius="var(--radius-lg)" padding="24px" gap="18px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => router.push("/jobs")}
-                style={{
-                borderRadius: "var(--input-radius)",
-                padding: "8px 14px",
-                background: "var(--surface)",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              ← Back
-            </button>
+              >
+                ← Back
+              </Button>
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
               {/* Button to redirect to car and key tracking page with job details pre-filled */}
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => {
                   const params = new URLSearchParams({
                     jobNumber: job?.job_number || "",
@@ -9875,44 +9984,30 @@ export default function VhcDetailsPanel({
                   });
                   router.push(`/tracking?${params.toString()}`);
                 }}
-                style={{
-                  borderRadius: "var(--input-radius)",
-                  padding: "8px 18px",
-                  background: "var(--primary)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
                 disabled={!job?.job_number}
               >
                 Car and Key Tracker
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => {
                   const target = job?.job_number ? `/job-cards/${encodeURIComponent(job.job_number)}` : "/job-cards";
                   router.push(target);
                 }}
-                style={{
-                  borderRadius: "var(--input-radius)",
-                  padding: "8px 18px",
-                  background: "var(--primary)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
                 disabled={!job?.job_number}
               >
                 View job card →
-              </button>
+              </Button>
             </div>
           </div>
           {jobHeader}
-        </div>
+        </LayerSurface>
       )}
 
       {!activeSection && (
-      <div style={PANEL_SECTION_STYLE}>
+      <LayerSurface radius="var(--radius-lg)" padding="24px" gap="18px">
         {enableTabs ? (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }} data-dev-section="1" data-dev-section-key="vhc-tabs-row" data-dev-section-type="toolbar">
@@ -9955,12 +10050,12 @@ export default function VhcDetailsPanel({
                   }}
                 >
                   {vhcPartsToolbarMoneyTiles.map((tile) => (
-                    <div
+                    <LayerTheme
                       key={tile.key}
-                      className="app-layout-stat-card"
-                      style={{
-                        ...VHC_COMPACT_STAT_TILE_STYLE,
-                      }}
+                      radius="var(--radius-sm)"
+                      padding="var(--space-1) var(--space-3)"
+                      gap="var(--space-1)"
+                      style={VHC_TOOLBAR_STAT_TILE_STYLE}
                     >
                       <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
                         {tile.label}
@@ -9968,7 +10063,7 @@ export default function VhcDetailsPanel({
                       <span style={{ ...VHC_COMPACT_STAT_VALUE_STYLE, color: tile.tone }}>
                         {tile.value}
                       </span>
-                    </div>
+                    </LayerTheme>
                   ))}
                 </div>
               ) : null}
@@ -9988,12 +10083,12 @@ export default function VhcDetailsPanel({
                   }}
                 >
                   {vhcMediaToolbarStatTiles.map((tile) => (
-                    <div
+                    <LayerTheme
                       key={tile.label}
-                      className="app-layout-stat-card"
-                      style={{
-                        ...VHC_COMPACT_STAT_TILE_STYLE,
-                      }}
+                      radius="var(--radius-sm)"
+                      padding="var(--space-1) var(--space-3)"
+                      gap="var(--space-1)"
+                      style={VHC_TOOLBAR_STAT_TILE_STYLE}
                     >
                       <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
                         {tile.label}
@@ -10001,7 +10096,7 @@ export default function VhcDetailsPanel({
                       <span style={VHC_COMPACT_STAT_VALUE_STYLE}>
                         {tile.value}
                       </span>
-                    </div>
+                    </LayerTheme>
                   ))}
                 </div>
               ) : null}
@@ -10025,25 +10120,15 @@ export default function VhcDetailsPanel({
                     onChange={handlePhotoTabUpload}
                     style={{ display: "none" }}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
+                    busy={photoUploading}
                     onClick={() => photoUploadInputRef.current?.click()}
-                    disabled={photoUploading}
-                    style={{
-                      padding: "8px 18px",
-                      borderRadius: "var(--input-radius)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "var(--text-2)",
-                      fontWeight: 600,
-                      fontSize: "var(--control-font-size)",
-                      minHeight: "var(--control-height)",
-                      cursor: photoUploading ? "wait" : "pointer",
-                      opacity: photoUploading ? 0.65 : 1,
-                    }}
                   >
                     {photoUploading ? "Uploading..." : "Upload Media"}
-                  </button>
+                  </Button>
                 </div>
               ) : null}
               {customActions && (
@@ -10052,11 +10137,12 @@ export default function VhcDetailsPanel({
                 </div>
               )}
             </div>
-            <div
+            <LayerTheme
               style={TAB_CONTENT_STYLE}
-              data-dev-section="1"
-              data-dev-section-key="vhc-tab-content"
-              data-dev-section-type="section-shell"
+              sectionKey="vhc-tab-content"
+              sectionType="section-shell"
+              padding="var(--section-card-padding)"
+              gap="24px"
               data-dev-active-tab={activeTab}
               data-dev-active-tab-label={activeTabLabel || undefined}
             >
@@ -10087,40 +10173,36 @@ export default function VhcDetailsPanel({
                   ];
                   return (
                     <div
+                      className="app-summary-section"
                       data-dev-section="1"
                       data-dev-section-key="vhc-summary-tiles"
                       data-dev-section-type="toolbar"
                       data-dev-section-parent="vhc-summary-stack"
-                      style={{
-                        display: "grid",
-                        gridAutoFlow: "column",
-                        gridAutoColumns: "minmax(96px, 1fr)",
-                        gap: "8px",
-                        overflowX: "auto",
-                        paddingBottom: "2px",
-                      }}
                     >
-                      {tiles.map((tile) => (
-                        <div
-                          key={tile.key}
-                          style={{
-                            ...VHC_COMPACT_STAT_TILE_STYLE,
-                            background: tile.bg,
-                          }}
-                        >
-                          <span style={VHC_COMPACT_STAT_LABEL_STYLE}>
-                            {tile.label}
-                          </span>
-                          <span style={VHC_COMPACT_STAT_VALUE_STYLE}>
-                            {tile.count}
-                          </span>
-                          {tile.value !== null ? (
-                            <span style={{ flexBasis: "100%", fontSize: "12px", fontWeight: 700, color: tile.color, lineHeight: 1.1, textAlign: "right", whiteSpace: "nowrap" }}>
-                              {formatCurrency(tile.value)}
+                      <div className="app-summary-grid">
+                        {tiles.map((tile) => (
+                          <LayerSurface
+                            key={tile.key}
+                            className="app-summary-item"
+                            radius="var(--radius-sm)"
+                            padding="8px 10px"
+                            gap="2px var(--space-sm)"
+                            style={{ flexDirection: "row" }}
+                          >
+                            <span className="app-summary-label">
+                              {tile.label}
                             </span>
-                          ) : null}
-                        </div>
-                      ))}
+                            <span className="app-summary-value">
+                              {tile.count}
+                            </span>
+                            {tile.value !== null ? (
+                              <span style={{ flexBasis: "100%", fontSize: "12px", fontWeight: 700, color: tile.color, lineHeight: 1.1, textAlign: "right", whiteSpace: "nowrap" }}>
+                                {formatCurrency(tile.value)}
+                              </span>
+                            ) : null}
+                          </LayerSurface>
+                        ))}
+                      </div>
                     </div>
                   );
                 })()}
@@ -10626,7 +10708,7 @@ export default function VhcDetailsPanel({
                   {renderMediaTab()}
                 </div>
               )}
-            </div>
+            </LayerTheme>
           </>
         ) : (
           <>
@@ -10978,7 +11060,7 @@ export default function VhcDetailsPanel({
             </div>
           </>
         )}
-      </div>
+      </LayerSurface>
       )}
 
       {activeSection === "wheelsTyres" && (
@@ -11091,11 +11173,11 @@ export default function VhcDetailsPanel({
             {/* Action buttons use the shared .app-btn family (staffglobal.css)
                 so they share one height and sit centred in the footer. */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" className="app-btn app-btn--secondary" onClick={handleCopyPhotoLink}>
+              <Button type="button" variant="secondary" onClick={handleCopyPhotoLink}>
                 Copy link
-              </button>
+              </Button>
               {photoPreviewFile?.file_url ? (
-                <a className="app-btn app-btn--ghost" href={photoPreviewFile.file_url} target="_blank" rel="noreferrer">
+                <a className="app-btn app-btn--secondary" href={photoPreviewFile.file_url} target="_blank" rel="noreferrer">
                   Open original
                 </a>
               ) : null}
@@ -11176,14 +11258,15 @@ export default function VhcDetailsPanel({
                           onChange={(event) => setNewMediaLocationName(event.target.value)}
                           onKeyDown={(event) => { if (event.key === "Enter") handleCreateMediaLocation(photoPreviewFile); }}
                         />
-                        <button
+                        <Button
                           type="button"
-                          className="app-btn app-btn--primary app-btn--sm"
+                          variant="primary"
+                          size="sm"
                           disabled={mediaLinkSaving || !newMediaLocationName.trim()}
                           onClick={() => handleCreateMediaLocation(photoPreviewFile)}
                         >
                           {mediaLinkSaving ? "Saving…" : "Create"}
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
                   </>
@@ -11288,11 +11371,11 @@ export default function VhcDetailsPanel({
               <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
               <div style={{ display: "flex", gap: "var(--control-gap)", flexWrap: "wrap", alignItems: "end" }}>
                 <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-                  <label htmlFor="vhc-add-parts-search">Part number or description</label>
                   <input
                     id="vhc-add-parts-search"
                     type="search"
                     className="app-input app-input--search"
+                    aria-label="Part number or description"
                     value={addPartsSearch}
                     onChange={(event) => {
                       const nextValue = event.target.value;
@@ -11304,12 +11387,12 @@ export default function VhcDetailsPanel({
                     placeholder="Search by part number or description"
                   />
                 </div>
-                <Button type="button" variant="secondary" size="sm" onClick={handleOpenNewPart}>
+                <Button type="button" variant="primary" size="sm" onClick={handleOpenNewPart}>
                   {showNewPartForm ? "Close new part" : "Add new part"}
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   onClick={runPartsSuggestions}
                   title="Refresh search suggestions"
@@ -11388,20 +11471,6 @@ export default function VhcDetailsPanel({
                       value={newPartForm.partNumber}
                       onChange={(event) => handleNewPartFieldChange("partNumber", event.target.value)}
                       placeholder="e.g., FPAD1"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="vhc-new-part-quantity">Quantity</label>
-                    <input
-                      id="vhc-new-part-quantity"
-                      type="number"
-                      className="app-input"
-                      min="0"
-                      value={newPartForm.quantity}
-                      onChange={(event) => {
-                        const nextValue = event.target.value;
-                        handleNewPartFieldChange("quantity", nextValue === "" ? "" : Number(nextValue));
-                      }}
                     />
                   </div>
                   <div>
@@ -11500,32 +11569,31 @@ export default function VhcDetailsPanel({
                     <thead>
                       <tr>
                         <th>Part</th>
-                        <th>Number</th>
-                        <th>Location</th>
-                        <th style={{ textAlign: "right" }}>Stock</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {addPartsResults.map((part) => (
-                        <tr
-                          key={part.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleSelectSearchPart(part)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              handleSelectSearchPart(part);
-                            }
-                          }}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <td style={{ fontWeight: 600 }}>{part.name || "Part"}</td>
-                          <td>{part.part_number || "—"}</td>
-                          <td>{part.storage_location || "—"}</td>
-                          <td style={{ textAlign: "right" }}>{part.qty_in_stock ?? 0}</td>
-                        </tr>
-                      ))}
+                         <th>Number</th>
+                         <th>Location</th>
+                         <th style={{ textAlign: "right" }}>Stock</th>
+                         <th style={{ textAlign: "center" }}>Action</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {addPartsResults.map((part) => (
+                         <tr key={part.id}>
+                           <td style={{ fontWeight: 600 }}>{part.name || "Part"}</td>
+                           <td>{part.part_number || "—"}</td>
+                           <td>{part.storage_location || "—"}</td>
+                           <td style={{ textAlign: "right" }}>{part.qty_in_stock ?? 0}</td>
+                           <td style={{ textAlign: "center" }}>
+                             <Button
+                               type="button"
+                               variant="secondary"
+                               size="xs"
+                               onClick={() => handleSelectSearchPart(part)}
+                             >
+                               Select
+                             </Button>
+                           </td>
+                         </tr>
+                       ))}
                     </tbody>
                   </table>
                 </div>
@@ -11539,144 +11607,155 @@ export default function VhcDetailsPanel({
               gap="var(--layout-card-gap)"
             >
               <h3 style={{ margin: 0 }}>Selected parts</h3>
-              {existingPartsForModal.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
-                  <h4 style={{ margin: 0 }}>Already added to this VHC item</h4>
-                  <div style={{ overflowX: "auto" }}>
-                    <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "880px" }}>
-                      <thead>
-                        <tr>
-                          <th>Part</th>
-                          <th>Description</th>
-                          <th style={{ textAlign: "right" }}>Cost</th>
-                          <th>Location</th>
-                          <th style={{ textAlign: "center" }}>Warranty</th>
-                          <th style={{ textAlign: "center" }}>Back Order</th>
-                          <th style={{ textAlign: "center" }}>Surcharge</th>
-                          <th style={{ textAlign: "center" }}>Remove</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {existingPartsForModal.map((part) => {
-                          const partKey = `${addPartsTarget?.vhcId}-${part.id}`;
-                          const details = partDetails[partKey] || {};
-                          return (
-                            <tr key={`existing-${part.id}`}>
-                              <td style={{ fontWeight: 600 }}>{part.part?.name || "Part"}</td>
-                              <td>{part.part?.description || "—"}</td>
-                              <td style={{ textAlign: "right" }}>
-                                £{Number(part.unit_price || part.part?.unit_price || 0).toFixed(2)}
-                              </td>
-                              <td>{part.storage_location || part.part?.storage_location || "—"}</td>
-                              <td style={{ textAlign: "center" }}>
-                                <input
-                                  className="app-toggle app-toggle--checkbox"
-                                  type="checkbox"
-                                  aria-label={`Warranty for ${part.part?.name || "part"}`}
-                                  checked={details.warranty || false}
-                                  onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked, part.id)}
-                                />
-                              </td>
-                              <td style={{ textAlign: "center" }}>
-                                <input
-                                  className="app-toggle app-toggle--checkbox"
-                                  type="checkbox"
-                                  aria-label={`Back order for ${part.part?.name || "part"}`}
-                                  checked={details.backOrder || false}
-                                  onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked, part.id)}
-                                />
-                              </td>
-                              <td style={{ textAlign: "center" }}>
-                                <input
-                                  className="app-toggle app-toggle--checkbox"
-                                  type="checkbox"
-                                  aria-label={`Surcharge for ${part.part?.name || "part"}`}
-                                  checked={details.surcharge || false}
-                                  onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked, part.id)}
-                                />
-                              </td>
-                              <td style={{ textAlign: "center" }}>
-                                <Button
-                                  type="button"
-                                  variant="danger"
-                                  size="xs"
-                                  onClick={() => handleRemovePart(part, addPartsTarget?.vhcId)}
-                                >
-                                  Remove
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {selectedParts.length === 0 ? (
+              {combinedPartsForModal.length === 0 ? (
                 <p style={{ margin: 0 }}>No parts selected yet.</p>
               ) : (
-                <div style={{ maxHeight: "240px", overflow: "auto" }}>
-                  <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "880px" }}>
+                <div style={{ width: "100%", minWidth: 0, maxHeight: "240px", overflowY: "auto", overflowX: "hidden" }}>
+                  <table
+                    className="app-data-table app-data-table--compact app-data-table--rounded"
+                    style={{ width: "100%", minWidth: 0, tableLayout: "fixed" }}
+                    >
+                    <colgroup>
+                      <col style={{ width: "16%" }} />
+                      <col style={{ width: "21%" }} />
+                      <col style={{ width: "8%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "13%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "11%" }} />
+                    </colgroup>
                     <thead>
                       <tr>
                         <th>Part</th>
                         <th>Description</th>
+                        <th style={{ textAlign: "center" }}>Quantity</th>
                         <th style={{ textAlign: "right" }}>Cost</th>
                         <th>Location</th>
                         <th style={{ textAlign: "center" }}>Warranty</th>
                         <th style={{ textAlign: "center" }}>Back Order</th>
                         <th style={{ textAlign: "center" }}>Surcharge</th>
-                        <th style={{ textAlign: "center" }}>Remove</th>
+                         <th style={{ textAlign: "center" }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedParts.map((entry) => (
-                        <tr key={entry.part?.id}>
-                          <td style={{ fontWeight: 600 }}>{entry.part?.name || "Part"}</td>
-                          <td>{entry.part?.description || "—"}</td>
-                          <td style={{ textAlign: "right" }}>£{Number(entry.part?.unit_price || 0).toFixed(2)}</td>
-                          <td>{entry.part?.storage_location || "—"}</td>
-                          <td style={{ textAlign: "center" }}>
-                            <input
-                              className="app-toggle app-toggle--checkbox"
-                              type="checkbox"
-                              aria-label={`Warranty for ${entry.part?.name || "part"}`}
-                              checked={entry.warranty}
-                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "warranty", event.target.checked)}
-                            />
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <input
-                              className="app-toggle app-toggle--checkbox"
-                              type="checkbox"
-                              aria-label={`Back order for ${entry.part?.name || "part"}`}
-                              checked={entry.backOrder}
-                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "backOrder", event.target.checked)}
-                            />
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <input
-                              className="app-toggle app-toggle--checkbox"
-                              type="checkbox"
-                              aria-label={`Surcharge for ${entry.part?.name || "part"}`}
-                              checked={entry.surcharge}
-                              onChange={(event) => handleSelectedPartChange(entry.part?.id, "surcharge", event.target.checked)}
-                            />
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size="xs"
-                              onClick={() => handleRemoveSelectedPart(entry.part?.id)}
-                            >
-                              Remove
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
+                      {combinedPartsForModal.map((row) => {
+                        const isExisting = row.kind === "existing";
+                        const partRecord = isExisting ? row.part : null;
+                        const entry = isExisting ? null : row.entry;
+                        const catalogPart = isExisting ? partRecord?.part || {} : entry?.part || {};
+                        const partKey = isExisting ? `${addPartsTarget?.vhcId}-${partRecord.id}` : null;
+                        const details = isExisting ? partDetails[partKey] || {} : entry;
+                        const quantity = isExisting
+                          ? details.quantity ?? String(resolvePartQuantity(partRecord.quantity_requested))
+                          : String(entry.quantity ?? 1);
+                        const partName = catalogPart.name || "Part";
+                        return (
+                          <tr key={row.id}>
+                            <td style={{ fontWeight: 600, overflowWrap: "anywhere" }}>{partName}</td>
+                            <td style={{ overflowWrap: "anywhere" }}>{catalogPart.description || "—"}</td>
+                            <td style={{ textAlign: "center" }}>
+                              <input
+                                className="app-input"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]{1,2}"
+                                maxLength={2}
+                                aria-label={`Quantity for ${partName}`}
+                                value={quantity}
+                                onChange={(event) => {
+                                  if (isExisting) {
+                                    handleExistingPartQuantityChange(partKey, event.target.value);
+                                  } else {
+                                    handleSelectedPartQuantityChange(catalogPart.id, event.target.value);
+                                  }
+                                }}
+                                onBlur={(event) => {
+                                  if (isExisting) {
+                                    handleExistingPartQuantityCommit(
+                                      partKey,
+                                      partRecord.id,
+                                      event.target.value,
+                                      partRecord.quantity_requested
+                                    );
+                                  } else if (!event.target.value) {
+                                    handleSelectedPartQuantityChange(catalogPart.id, "1");
+                                  }
+                                }}
+                                style={{ width: "100%", maxWidth: "52px", margin: "0 auto", textAlign: "center" }}
+                              />
+                            </td>
+                            <td style={{ textAlign: "right" }}>
+                              £{Number(partRecord?.unit_price || catalogPart.unit_price || 0).toFixed(2)}
+                            </td>
+                            <td style={{ overflowWrap: "anywhere" }}>
+                              {partRecord?.storage_location || catalogPart.storage_location || "—"}
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <input
+                                className="app-toggle app-toggle--checkbox"
+                                type="checkbox"
+                                aria-label={`Warranty for ${partName}`}
+                                checked={Boolean(details?.warranty)}
+                                onChange={(event) => {
+                                  if (isExisting) {
+                                    handlePartDetailChange(partKey, "warranty", event.target.checked, partRecord.id);
+                                  } else {
+                                    handleSelectedPartChange(catalogPart.id, "warranty", event.target.checked);
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <input
+                                className="app-toggle app-toggle--checkbox"
+                                type="checkbox"
+                                aria-label={`Back order for ${partName}`}
+                                checked={Boolean(details?.backOrder)}
+                                onChange={(event) => {
+                                  if (isExisting) {
+                                    handlePartDetailChange(partKey, "backOrder", event.target.checked, partRecord.id);
+                                  } else {
+                                    handleSelectedPartChange(catalogPart.id, "backOrder", event.target.checked);
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <input
+                                className="app-toggle app-toggle--checkbox"
+                                type="checkbox"
+                                aria-label={`Surcharge for ${partName}`}
+                                checked={Boolean(details?.surcharge)}
+                                onChange={(event) => {
+                                  if (isExisting) {
+                                    handlePartDetailChange(partKey, "surcharge", event.target.checked, partRecord.id);
+                                  } else {
+                                    handleSelectedPartChange(catalogPart.id, "surcharge", event.target.checked);
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="xs"
+                                onClick={() => {
+                                  if (isExisting) {
+                                    handleRemovePart(partRecord, addPartsTarget?.vhcId);
+                                  } else {
+                                    handleRemoveSelectedPart(catalogPart.id);
+                                  }
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

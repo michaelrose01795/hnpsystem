@@ -143,7 +143,8 @@ export const ALWAYS_ALLOWED_PREFIXES = [
   "/password-reset/",
   "/presentation/",
   "/slideshow",
-  "/vhc/customer/",
+  "/report/", // customer VHC report link (public, code-authenticated)
+  "/vhc/customer/", // legacy link shape - kept alive until issued links expire
   "/vhc/customer-preview/",
   "/vhc/customer-view/",
   "/vhc/share/",
@@ -220,13 +221,18 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/deliveries": ["/deliveries"],
   "/deliveries/[deliveryId]": ["/deliveries"],
   "/goods-in/[goodsInNumber]": ["/goods-in"],
+  // /parts and /parts-manager inherit from the parts-desk pages, deliberately
+  // NOT from /deliveries. A Parts Driver's only page is the delivery diary, so
+  // inheriting off /deliveries would have handed them the Parts Manager screen
+  // as a side effect of being given their own run sheet. Parts and Parts
+  // Manager both carry /jobs, /goods-in and /stock-catalogue in their
+  // navigation, so neither loses anything by the source list changing.
   "/parts": [
     "/jobs",
     "/goods-in",
-    "/deliveries",
     "/stock-catalogue",
   ],
-  "/parts-manager": ["/deliveries"],
+  "/parts-manager": ["/goods-in", "/stock-catalogue"],
   "/tech/dashboard": ["/tech"],
   "/workshop": ["/consumables-tracker"],
   "/newpage": ["/consumables-tracker"],

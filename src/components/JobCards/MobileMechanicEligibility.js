@@ -124,24 +124,36 @@ export default function MobileMechanicEligibility({
           gap: "6px",
         }}
       >
-        {verdict.rules.map((rule) => (
-          <li
-            key={rule.id}
-            className="job-cards-create-mobile-eligibility-grid__rule"
-            style={{
-              display: "grid",
-              gap: 0,
-            }}
-          >
-            <label className="job-cards-create-mobile-eligibility-grid__rule-label">
-              {rule.label}
-            </label>
-            <div className="app-input job-cards-create-mobile-eligibility-grid__rule-detail">
-              <RuleIcon ok={rule.ok} />
-              <span>{rule.detail || "Not available"}</span>
-            </div>
-          </li>
-        ))}
+        {verdict.rules.map((rule) => {
+          const inputId = `mobile-mechanic-rule-${rule.id}`;
+
+          return (
+            <li
+              key={rule.id}
+              className="job-cards-create-mobile-eligibility-grid__rule"
+              style={{
+                display: "grid",
+                gap: 0,
+              }}
+            >
+              <label
+                htmlFor={inputId}
+                className="job-cards-create-mobile-eligibility-grid__rule-label"
+              >
+                {rule.label}
+              </label>
+              <div className="job-cards-create-mobile-eligibility-grid__rule-detail">
+                <RuleIcon ok={rule.ok} />
+                <input
+                  id={inputId}
+                  className="app-input"
+                  value={rule.detail || "Not available"}
+                  readOnly
+                />
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {isMobileMechanic && verdict.eligible ? (

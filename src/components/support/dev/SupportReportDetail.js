@@ -31,6 +31,7 @@ import { STATUS_META, SEVERITY_META, CATEGORY_META, deriveBadges } from "@/lib/s
 import { buildGithubIssue, buildDevBundle, buildMarkdownReport, reportDeepLink } from "@/lib/support/supportExport";
 import SupportAssistedPanel from "@/components/support/dev/SupportAssistedPanel";
 import SupportGithubPanel from "@/components/support/dev/SupportGithubPanel";
+import { useUser } from "@/context/UserContext";
 
 const arr = (v) => (Array.isArray(v) ? v : []);
 const fmt = (iso) => {
@@ -314,38 +315,225 @@ function DiagnosticsExplorer({ diagnostics }) {
 }
 
 function CommentsPanel({ comments, onAdd }) {
+  const { dbUserId, user } = useUser();
   const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const messages = arr(comments);
+  const currentUserId = Number(dbUserId);
+  const currentUsername = String(user?.username || "").trim().toLowerCase();
+
   const submit = async () => {
     const t = text.trim();
-    if (!t) return;
-    const ok = await onAdd(t);
-    if (ok) setText("");
+    if (!t || submitting) return;
+    setSubmitting(true);
+    try {
+      const ok = await onAdd(t);
+      if (ok) setText("");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
   return (
-    <Panel title={`Developer notes (${arr(comments).length})`} sectionKey="support-detail-comments">
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
-        {arr(comments).length === 0 ? <div style={{ opacity: 0.55, fontSize: "var(--text-body-sm)" }}>No notes yet.</div> : null}
-        {arr(comments).map((c) => (
-          <SubSurface key={c.id} style={{ gap: "2px", opacity: c._pending ? 0.6 : 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
-              <span>{c.author_username || (c.author_id ? `User #${c.author_id}` : "Unknown")}</span>
-              <span>{fmt(c.created_at)}</span>
-            </div>
-            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{c.body}</div>
-          </SubSurface>
-        ))}
+    <Panel title={`Support chat (${messages.length})`} sectionKey="support-detail-comments">
+      <div
+        className="support-chat-log"
+        role="log"
+        aria-label="Support chat messages"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        {messages.length === 0 ? (
+          <div className="support-chat-empty">
+            No messages yet. Start the support conversation below.
+          </div>
+        ) : null}
+        {messages.map((c, index) => {
+          const createdAt = new Date(c.created_at);
+          const previous = index > 0 ? messages[index - 1] : null;
+          const next = index < messages.length - 1 ? messages[index + 1] : null;
+          const previousDate = previous ? new Date(previous.created_at) : null;
+          const nextDate = next ? new Date(next.created_at) : null;
+          const sameDayAsPrevious = previousDate && previousDate.toDateString() === createdAt.toDateString();
+          const sameDayAsNext = nextDate && nextDate.toDateString() === createdAt.toDateString();
+          const previousAuthor = previous?.author_id ?? previous?.author_username;
+          const nextAuthor = next?.author_id ?? next?.author_username;
+          const currentAuthor = c.author_id ?? c.author_username;
+          const sameAuthorAsPrevious = previous && previousAuthor === currentAuthor && createdAt - previousDate < 5 * 60 * 1000;
+          const sameAuthorAsNext = next && nextAuthor === currentAuthor && nextDate - createdAt < 5 * 60 * 1000;
+          const isFirstInGroup = !sameDayAsPrevious || !sameAuthorAsPrevious;
+          const isLastInGroup = !sameDayAsNext || !sameAuthorAsNext;
+          const showDayDivider = !sameDayAsPrevious;
+          const isMine = Boolean(
+            c._pending ||
+            (Number.isInteger(currentUserId) && currentUserId > 0 && Number(c.author_id) === currentUserId) ||
+            (!c.author_id && currentUsername && String(c.author_username || "").trim().toLowerCase() === currentUsername)
+          );
+          const author = isMine ? "You" : c.author_username || (c.author_id ? `User #${c.author_id}` : "Unknown");
+          const dayLabel = Number.isNaN(createdAt.getTime())
+            ? "Unknown date"
+            : createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+          const timeLabel = Number.isNaN(createdAt.getTime())
+            ? ""
+            : createdAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+          const radius = isMine
+            ? `18px ${isFirstInGroup ? "18px" : "4px"} ${isLastInGroup ? "6px" : "4px"} 18px`
+            : `${isFirstInGroup ? "18px" : "4px"} 18px 18px ${isLastInGroup ? "6px" : "4px"}`;
+
+          return (
+            <React.Fragment key={c.id}>
+              {showDayDivider ? (
+                <div className="support-chat-divider" aria-label={dayLabel}>
+                  <div className="support-chat-divider-line" aria-hidden="true" />
+                  <span className="support-chat-date">{dayLabel}</span>
+                  <div className="support-chat-divider-line" aria-hidden="true" />
+                </div>
+              ) : null}
+              <div className="support-chat-message-row" style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
+                <SubSurface
+                  className="support-chat-bubble"
+                  radius={radius}
+                  padding="10px 14px"
+                  style={{
+                    alignItems: isMine ? "flex-end" : "flex-start",
+                    opacity: c._pending ? 0.65 : 1,
+                  }}
+                >
+                  <div className="support-chat-meta" style={{ flexDirection: isMine ? "row-reverse" : "row" }}>
+                    <span className="support-chat-author">{author}</span>
+                    <span className="support-chat-time">
+                      {c._pending ? "Sending…" : timeLabel}
+                    </span>
+                  </div>
+                  <div className="support-chat-body">
+                    {c.body}
+                  </div>
+                </SubSurface>
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
-      <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
+      <form
+        className="support-chat-composer"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
         <textarea
-          className="app-input"
-          placeholder="Add an internal note…"
+          className="app-input support-chat-input"
+          aria-label="Support message"
+          placeholder="Write a support message…"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+            event.preventDefault();
+            void submit();
+          }}
           rows={2}
-          style={{ flex: "1 1 260px", padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--surface)", color: "var(--text-1)", resize: "vertical", minHeight: 44 }}
+          disabled={submitting}
         />
-        <DevButton variant="solid" onClick={submit} disabled={!text.trim()}>Add note</DevButton>
-      </div>
+        <DevButton type="submit" variant="solid" disabled={!text.trim() || submitting}>{submitting ? "Sending…" : "Send"}</DevButton>
+      </form>
+      {/* Scoped styles keep the chat responsive without adding global one-off classes. */}
+      <style jsx>{`
+        .support-chat-log {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-sm);
+          min-width: 0;
+        }
+        .support-chat-empty {
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          color: var(--text-1);
+          opacity: 0.65;
+          font-size: var(--text-body-sm);
+        }
+        .support-chat-divider {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+        }
+        .support-chat-divider-line {
+          flex: 1;
+          height: 1px;
+          background-color: var(--separating-line-color);
+        }
+        .support-chat-date,
+        .support-chat-author {
+          color: var(--accentText);
+          font-size: var(--text-caption);
+          font-weight: 700;
+        }
+        .support-chat-message-row {
+          display: flex;
+          width: 100%;
+          min-width: 0;
+        }
+        :global(.support-chat-bubble) {
+          box-sizing: border-box;
+          gap: 4px;
+          min-height: 44px;
+          width: fit-content;
+          max-width: min(75%, 720px);
+          justify-content: center;
+          box-shadow: var(--shadow-md);
+        }
+        .support-chat-meta {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: var(--space-sm);
+          width: 100%;
+          min-width: 0;
+        }
+        .support-chat-author,
+        .support-chat-body {
+          overflow-wrap: anywhere;
+        }
+        .support-chat-time {
+          color: var(--text-1);
+          font-size: var(--text-caption);
+          font-variant-numeric: tabular-nums;
+          opacity: 0.65;
+          white-space: nowrap;
+        }
+        .support-chat-body {
+          color: var(--text-1);
+          font-size: var(--text-body-sm);
+          line-height: 1.45;
+          text-align: left;
+          white-space: pre-wrap;
+          width: 100%;
+        }
+        .support-chat-composer {
+          display: flex;
+          align-items: flex-end;
+          gap: var(--space-xs);
+          flex-wrap: wrap;
+        }
+        .support-chat-input {
+          flex: 1 1 min(100%, 260px);
+          min-height: 44px;
+          padding: 8px 12px;
+          border-radius: var(--radius-md);
+          color: var(--text-1);
+          resize: vertical;
+        }
+        @media (max-width: 767px) {
+          :global(.support-chat-bubble) {
+            max-width: 86%;
+          }
+          .support-chat-composer :global(button) {
+            width: 100%;
+          }
+        }
+      `}</style>
     </Panel>
   );
 }

@@ -2,12 +2,13 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 
 export default function DeliveryRoutePageUi(props) {
   const {
     InlineLoading,
     Link,
-    ModalPortal,
     STATUS_META,
     SkeletonBlock,
     SkeletonKeyframes,
@@ -270,58 +271,30 @@ export default function DeliveryRoutePageUi(props) {
           </span>
         </div>
 
-        {modalOpen && <ModalPortal>
-            <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(var(--accent-purple-rgb), 0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 40,
-        padding: "24px"
-      }}>
-              <div style={{
-          background: "var(--surface)",
-          borderRadius: "var(--radius-md)",
-          width: "min(540px, 100%)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-              <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px"
+        {modalOpen && <PopupModal
+          isOpen
+          onClose={savingStop ? undefined : handleCloseModal}
+          closeOnBackdrop={!savingStop}
+          closeOnEscape={!savingStop}
+          ariaLabel="Add delivery stop"
+          cardStyle={{
+            width: "min(100%, 540px)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "var(--section-card-padding)",
           }}>
-                <h2 style={{
-              margin: 0,
-              color: "var(--primary)",
-              fontSize: "1.3rem"
-            }}>Add stop</h2>
-                <button type="button" onClick={handleCloseModal} style={{
-              border: "none",
-              background: "transparent",
-              color: "var(--info)",
-              cursor: "pointer",
-              fontWeight: 600
-            }}>
-                  Close
-                </button>
-              </div>
+              <header className="app-popup-compact-header">
+                <h2>Add stop</h2>
+                <div className="app-popup-compact-header__actions">
+                  <Button type="button" variant="primary" busy={savingStop} onClick={handleSaveStop}>Save stop</Button>
+                  <Button type="button" variant="secondary" disabled={savingStop} onClick={handleCloseModal}>Close</Button>
+                </div>
+              </header>
               <label style={{
             fontWeight: 600,
             color: "var(--info)"
           }}>Search customer</label>
-              <input type="text" placeholder="Type name or company" value={customerQuery} onChange={event => setCustomerQuery(event.target.value)} style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "10px 12px"
-          }} />
+              <input className="app-input" type="text" placeholder="Type name or company" value={customerQuery} onChange={event => setCustomerQuery(event.target.value)} />
               {customerSearchLoading && <InlineLoading width={120} label="Searching" />}
               {customerResults.length > 0 && <ul style={{
             listStyle: "none",
@@ -362,60 +335,22 @@ export default function DeliveryRoutePageUi(props) {
             fontWeight: 600,
             color: "var(--info)"
           }}>Job number (optional)</label>
-              <input type="text" value={jobNumberInput} onChange={event => setJobNumberInput(event.target.value)} placeholder="e.g. 00001" style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "10px 12px"
-          }} />
+              <input className="app-input" type="text" value={jobNumberInput} onChange={event => setJobNumberInput(event.target.value)} placeholder="e.g. 00001" />
               <label style={{
             fontWeight: 600,
             color: "var(--info)"
           }}>Address</label>
-              <textarea rows={3} value={addressInput} onChange={event => setAddressInput(event.target.value)} placeholder="Customer address…" style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "10px 12px",
-            resize: "vertical"
-          }} />
+              <textarea className="app-input" rows={3} value={addressInput} onChange={event => setAddressInput(event.target.value)} placeholder="Customer address…" />
               <label style={{
             fontWeight: 600,
             color: "var(--info)"
           }}>Postcode</label>
-              <input type="text" value={postcodeInput} onChange={event => setPostcodeInput(event.target.value)} placeholder="Postcode" style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "10px 12px"
-          }} />
+              <input className="app-input" type="text" value={postcodeInput} onChange={event => setPostcodeInput(event.target.value)} placeholder="Postcode" />
               {modalError && <p style={{
             color: "var(--danger)",
             margin: 0
           }}>{modalError}</p>}
-              <div style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-            flexWrap: "wrap"
-          }}>
-                <button type="button" onClick={handleCloseModal} style={{
-              ...buttonStyle,
-              background: "var(--surface)",
-              border: "none",
-              color: "var(--primary-selected)"
-            }}>
-                  Cancel
-                </button>
-                <button type="button" onClick={handleSaveStop} disabled={savingStop} style={{
-              ...buttonStyle,
-              background: "var(--info-dark)",
-              color: "var(--onAccentText)",
-              opacity: savingStop ? 0.6 : 1
-            }}>
-                  {savingStop ? "Saving…" : "Save stop"}
-                </button>
-              </div>
-              </div>
-            </div>
-          </ModalPortal>}
+          </PopupModal>}
 
         <section style={{
       display: "flex",

@@ -23,7 +23,6 @@ import { dashboardManagersSlide } from "./definitions/dashboardManagers";
 import { dashboardAccountsSlide } from "./definitions/dashboardAccounts";
 import { dashboardAdminSlide } from "./definitions/dashboardAdmin";
 import { dashboardMotSlide } from "./definitions/dashboardMot";
-import { dashboardPaintingSlide } from "./definitions/dashboardPainting";
 import { dashboardPartsSlide } from "./definitions/dashboardParts";
 import { dashboardServiceSlide } from "./definitions/dashboardService";
 import { dashboardValetingSlide } from "./definitions/dashboardValeting";
@@ -151,7 +150,6 @@ export const ALL_SLIDES = [
   dashboardAccountsSlide,
   dashboardAdminSlide,
   dashboardMotSlide,
-  dashboardPaintingSlide,
   dashboardPartsSlide,
   dashboardServiceSlide,
   dashboardValetingSlide,

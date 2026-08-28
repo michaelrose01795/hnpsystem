@@ -1,11 +1,11 @@
 // file location: src/components/page-ui/newsfeed-ui.js
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 export default function NewsFeedUi(props) {
   const {
     AVAILABLE_DEPARTMENTS,
-    ModalPortal,
     MultiSelectDropdown,
     SkeletonBlock,
     SkeletonKeyframes,
@@ -145,146 +145,105 @@ export default function NewsFeedUi(props) {
         </div>
       </div>
 
-      {modalOpen && <ModalPortal>
-          <div className="popup-backdrop" onClick={e => {
-      if (e.target === e.currentTarget) {
-        setModalOpen(false);
-        resetModal();
-      }
-    }}>
-            <div className="popup-card" role="dialog" aria-modal="true" style={{
-        borderRadius: "var(--radius-xl)",
-        width: "100%",
-        maxWidth: "650px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-        border: "none"
-      }} onClick={e => e.stopPropagation()}>
-            {/* Content */}
-            <div style={{
-          padding: "32px"
-        }}>
-              {/* Heading row with Departments dropdown */}
-              <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-            marginBottom: "24px"
-          }}>
-                <h3 style={{
-              margin: 0,
-              fontSize: "28px",
-              fontWeight: "bold",
-              color: "var(--primary)"
-            }}>
-                  Share an Update
-                </h3>
-                <div style={{
-              display: "flex",
-              justifyContent: "flex-start",
-              minWidth: "260px"
-            }}>
-                  <MultiSelectDropdown searchPlaceholder="Visible to Departments" placeholder="Visible to Departments" options={AVAILABLE_DEPARTMENTS} value={formState.departments} onChange={selectedDepartments => {
-                setFormState(prev => ({
-                  ...prev,
-                  departments: selectedDepartments
-                }));
-              }} emptyState="No departments available" />
-                </div>
-              </div>
-
-              {/* Title Field */}
-              <div style={{
-            marginBottom: "24px"
-          }}>
-                <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "14px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--primary)"
-            }} htmlFor="news-title">
-                  Title
-                </label>
-                <input id="news-title" type="text" placeholder="Enter update title..." value={formState.title} onChange={event => setFormState(previous => ({
-              ...previous,
-              title: event.target.value
-            }))} style={{
-              width: "100%",
-              padding: "12px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--theme)",
-              fontSize: "15px"
-            }} />
-              </div>
-
-              {/* Description Field */}
-              <div style={{
-            marginBottom: "24px"
-          }}>
-                <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "14px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--primary)"
-            }} htmlFor="news-content">
-                  Description
-                </label>
-                <textarea id="news-content" rows={5} placeholder="Write your update details..." value={formState.content} onChange={event => setFormState(previous => ({
-              ...previous,
-              content: event.target.value
-            }))} style={{
-              width: "100%",
-              padding: "12px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--theme)",
-              fontSize: "15px",
-              resize: "none"
-            }} />
-              </div>
-
-              {/* Error Message */}
-              {notificationError && <div style={{
-            padding: "12px 16px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            backgroundColor: "var(--danger-surface)",
-            color: "var(--danger)",
-            fontSize: "13px",
-            fontWeight: "600"
-          }}>
-                  {notificationError}
-                </div>}
-            </div>
-
-            {/* Footer Actions */}
-            <div style={{
-          padding: "24px 32px",
+      <PopupModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          resetModal();
+        }}
+        closeOnBackdrop={!saving}
+        ariaLabel="Share an update"
+        cardStyle={{
+          width: "min(100%, 650px)",
+          padding: "var(--page-card-padding)"
+        }}
+      >
+        <div style={{
           display: "flex",
-          justifyContent: "flex-end",
-          gap: "12px"
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)"
         }}>
-              <Button type="button" variant="secondary" onClick={() => {
-            setModalOpen(false);
-            resetModal();
-          }}>
-                Cancel
-              </Button>
-              <Button type="button" variant="primary" onClick={handleCreateUpdate} disabled={saving}>
+          <header className="app-popup-compact-header">
+            <h3>Share an Update</h3>
+            <div className="app-popup-compact-header__actions">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                busy={saving}
+                onClick={handleCreateUpdate}
+              >
                 {saving ? "Publishing…" : "Publish Update"}
               </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setModalOpen(false);
+                  resetModal();
+                }}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
             </div>
-            </div>
+          </header>
+
+          <div>
+            <label htmlFor="news-title">Title</label>
+            <input
+              className="app-input"
+              id="news-title"
+              type="text"
+              placeholder="Enter update title..."
+              value={formState.title}
+              onChange={event => setFormState(previous => ({
+                ...previous,
+                title: event.target.value
+              }))}
+            />
           </div>
-        </ModalPortal>}
+
+          <div>
+            <label htmlFor="news-content">Description</label>
+            <textarea
+              className="app-input"
+              id="news-content"
+              rows={5}
+              placeholder="Write your update details..."
+              value={formState.content}
+              onChange={event => setFormState(previous => ({
+                ...previous,
+                content: event.target.value
+              }))}
+            />
+          </div>
+
+          <MultiSelectDropdown
+            id="news-departments"
+            label="Visible to departments"
+            searchPlaceholder="Search departments"
+            placeholder="Select departments"
+            options={AVAILABLE_DEPARTMENTS}
+            value={formState.departments}
+            onChange={selectedDepartments => {
+              setFormState(prev => ({
+                ...prev,
+                departments: selectedDepartments
+              }));
+            }}
+            emptyState="No departments available"
+            usePortal
+          />
+
+          {notificationError && (
+            <div className="app-status-message app-status-message--danger" role="alert">
+              {notificationError}
+            </div>
+          )}
+        </div>
+      </PopupModal>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

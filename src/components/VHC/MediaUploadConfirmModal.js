@@ -1,30 +1,16 @@
 // file location: src/components/VHC/MediaUploadConfirmModal.js
-// Final confirmation modal that replaces an existing VHC media record
-// when edits are saved. Rendered inside the shared VHCModalShell so
-// the header / footer / overlay behaviour matches every other VHC
-// modal. All colour / radius / spacing / typography values resolve
-// through the global design tokens in src/styles/theme.css.
+// Final confirmation modal that replaces an existing VHC media record when
+// edits are saved. Canonical popup and layer primitives keep all visuals under
+// staffglobal.css and the shared theme token system.
+/* eslint-disable @next/next/no-img-element -- local blob previews cannot use next/image */
 
-import React, { useEffect, useMemo, useState } from "react";
-import VHCModalShell from "./VHCModalShell";
+import React, { useEffect, useState } from "react";
+import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
-
-const PANEL_STYLE = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-md)",
-  padding: "var(--space-4)",
-};
-
-const LABEL_STYLE = {
-  fontSize: "var(--text-label)",
-  color: "var(--text-1)",
-  textTransform: "uppercase",
-  letterSpacing: "var(--tracking-caps)",
-  fontWeight: 700,
-};
 
 export default function MediaUploadConfirmModal({
   isOpen,
@@ -40,19 +26,29 @@ export default function MediaUploadConfirmModal({
   const [visibleToCustomer, setVisibleToCustomer] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewError, setPreviewError] = useState(false);
 
-  const previewUrl = useMemo(() => {
-    if (!isOpen || !mediaFile) return "";
-    return URL.createObjectURL(mediaFile);
+  useEffect(() => {
+    if (!isOpen || !mediaFile) {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(mediaFile);
+    setPreviewUrl(nextPreviewUrl);
+    setPreviewError(false);
+
+    return () => {
+      URL.revokeObjectURL(nextPreviewUrl);
+    };
   }, [isOpen, mediaFile]);
 
   useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+    if (!isOpen) return;
+    setVisibleToCustomer(true);
+    setError("");
+  }, [isOpen, mediaFile]);
 
   const handleUpload = async () => {
     const hasJobReference =
@@ -96,172 +92,105 @@ export default function MediaUploadConfirmModal({
     }
   };
 
-  const fileSizeMb = Number.isFinite(mediaFile?.size)
-    ? `${(mediaFile.size / (1024 * 1024)).toFixed(2)} MB`
-    : "Unknown size";
-
-  const footer = (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: "var(--space-3)",
-        width: "100%",
-        flexWrap: "wrap",
-      }}
-    >
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onCancel}
-        disabled={uploading}
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-      >
-        Cancel
-      </Button>
-
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={handleUpload}
-        disabled={uploading || !mediaFile}
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-      >
-        {uploading ? "Saving…" : "Save to VHC"}
-      </Button>
-    </div>
-  );
+  const mimeType = String(mediaFile?.type || "").toLowerCase();
+  const isVideo = mediaType === "video" || mimeType.startsWith("video/");
+  const isPhoto = !isVideo && (mediaType === "photo" || mimeType.startsWith("image/"));
 
   return (
-    <VHCModalShell
+    <PopupModal
       isOpen={isOpen}
-      title="Review Media"
-      subtitle="Choose whether this media is visible to the customer before finishing."
-      width="760px"
-      height="min(92vh, 760px)"
-      onClose={onCancel}
-      footer={footer}
+      onClose={uploading ? undefined : onCancel}
+      closeOnBackdrop={!uploading}
+      closeOnEscape={!uploading}
+      ariaLabelledBy="review-media-title"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{ width: "min(760px, 100%)", overflow: "hidden" }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.2fr) minmax(260px, 0.8fr)",
-          gap: "var(--space-5)",
-          height: "100%",
-          minHeight: 0,
-        }}
-      >
-        <div
+      <div className="app-settings-popup app-media-editor-popup">
+        <header className="app-popup-compact-header">
+          <h2 id="review-media-title">Review media</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleUpload}
+              disabled={!mediaFile}
+              busy={uploading}
+            >
+              Save to VHC
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onCancel} disabled={uploading}>
+              Close
+            </Button>
+          </div>
+        </header>
+
+        <LayerTheme
+          as="label"
+          padding="0 var(--section-card-padding)"
           style={{
-            background: "var(--surfaceMutedToken)",
-            borderRadius: "var(--radius-md)",
-            overflow: "hidden",
-            display: "flex",
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
-            minHeight: 320,
+            width: "100%",
+            height: "50px",
+            minHeight: "50px",
+            flex: "0 0 50px",
+            boxSizing: "border-box",
+            cursor: uploading ? "not-allowed" : "pointer",
+            opacity: uploading ? 0.7 : 1,
           }}
         >
-          {previewUrl && mediaType === "photo" ? (
+          <input
+            type="checkbox"
+            checked={visibleToCustomer}
+            onChange={(event) => setVisibleToCustomer(event.target.checked)}
+            disabled={uploading}
+          />
+          <strong>Visible to customer</strong>
+        </LayerTheme>
+
+        <LayerTheme
+          as="section"
+          aria-label={`${isVideo ? "Video" : "Photo"} preview`}
+          padding="0"
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            flex: "1 1 auto",
+            minHeight: "240px",
+            overflow: "hidden",
+          }}
+        >
+          {previewUrl && isPhoto && !previewError ? (
             <img
               src={previewUrl}
-              alt="Media preview"
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              alt="Media awaiting upload"
+              onError={() => setPreviewError(true)}
+              style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
             />
-          ) : previewUrl && mediaType === "video" ? (
+          ) : previewUrl && isVideo && !previewError ? (
             <video
               src={previewUrl}
               controls
               playsInline
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              aria-label="Media awaiting upload"
+              onError={() => setPreviewError(true)}
+              style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
             />
           ) : (
-            <div style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
+            <span style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
               Preview unavailable
-            </div>
+            </span>
           )}
-        </div>
+        </LayerTheme>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-md)",
-            minHeight: 0,
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              ...PANEL_STYLE,
-              display: "grid",
-              gap: "var(--space-2)",
-            }}
-          >
-            <div style={LABEL_STYLE}>File details</div>
-            <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
-              {mediaFile?.name || "Captured media"}
-            </div>
-            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
-              {mediaFile?.type || "Unknown type"}
-            </div>
-            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
-              {fileSizeMb}
-            </div>
+        {error ? (
+          <div role="alert" className="app-alert app-alert--danger">
+            {error}
           </div>
-
-          <label
-            style={{
-              ...PANEL_STYLE,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "var(--space-3)",
-              cursor: uploading ? "not-allowed" : "pointer",
-              opacity: uploading ? 0.7 : 1,
-              transition: "var(--control-transition)",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={visibleToCustomer}
-              onChange={(event) => setVisibleToCustomer(event.target.checked)}
-              disabled={uploading}
-              style={{
-                marginTop: 2,
-                width: 18,
-                height: 18,
-                accentColor: "var(--primary)",
-                cursor: "inherit",
-              }}
-            />
-            <div style={{ display: "grid", gap: "var(--space-xs)" }}>
-              <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
-                Visible to customer
-              </div>
-              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
-                Turn this off to keep the media internal-only for workshop staff.
-              </div>
-            </div>
-          </label>
-
-          {error ? (
-            <div
-              role="alert"
-              style={{
-                borderRadius: "var(--radius-sm)",
-                background: "var(--danger-surface)",
-                color: "var(--danger-text)",
-                border: "none",
-                padding: "var(--space-sm) var(--space-3)",
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 600,
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-    </VHCModalShell>
+    </PopupModal>
   );
 }

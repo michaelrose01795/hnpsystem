@@ -9,6 +9,14 @@ const NEWS_UPDATES_TABLE = "news_updates";
 const NEWS_UPDATE_COLUMNS = "id, title, content, departments, author, created_at";
 const NEWS_UPDATES_CACHE_KEY = "hnp-news-feed-v1";
 let pendingNewsUpdatesRequest = null;
+let warmedNewsUpdatesCache = null;
+
+// Memory-only cache used during the client-side login hand-off. Unlike
+// sessionStorage, this is empty on a hard-load hydration pass, so it can seed
+// the newsfeed without creating server/client markup differences.
+export function peekWarmedNewsUpdatesCache() {
+  return warmedNewsUpdatesCache;
+}
 
 export function readCachedNewsUpdates() {
   if (typeof window === "undefined") return null;
@@ -22,7 +30,9 @@ export function readCachedNewsUpdates() {
 }
 
 export function cacheNewsUpdates(rows) {
-  if (typeof window === "undefined" || !Array.isArray(rows)) return;
+  if (!Array.isArray(rows)) return;
+  warmedNewsUpdatesCache = rows;
+  if (typeof window === "undefined") return;
   try {
     window.sessionStorage.setItem(NEWS_UPDATES_CACHE_KEY, JSON.stringify(rows));
   } catch {

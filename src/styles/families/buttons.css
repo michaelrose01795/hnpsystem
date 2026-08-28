@@ -38,8 +38,8 @@
  * `background`/`color` declarations to variants — they will be overridden.
  */
 html.staff-scope .app-btn {
-  --btn-bg: var(--primary-control-bg);
-  --btn-color: var(--primary-control-color);
+  --btn-bg: var(--primary);
+  --btn-color: var(--onAccentText);
   --btn-ring: none;
   min-height: var(--control-height);
   padding: var(--control-padding);
@@ -132,36 +132,43 @@ html.staff-scope .app-btn--icon {
 /* === page-level inline style cannot drift the palette).   === */
 /* ========================================================= */
 
-/* Primary is the single source of truth for the form-control family.
-   Background / hover / active / text colour come from --primary-control-*
-   (theme.css); editing those tokens re-skins text inputs, dropdowns, calendar
-   and time pickers too. Inside a --theme layer those same tokens are re-bound
-   to the surface fill by families/cards.css, so a Primary button stays
-   visible on a section card as well as on a page card. */
+/* Buttons deliberately do not consume --primary-control-* / --control-bg.
+   Those form-control tokens are rebound to --surface inside a --theme layer,
+   which made actions flip between white-on-black and black-on-white depending
+   on colour mode. Primary actions instead use the brand fill in every layer.
+
+   Primary sits one accent step DEEPER than the flat --primary fill. The
+   is-active / aria-pressed / aria-selected paint further down this file uses
+   --primary + --onAccentText, so a Primary button on --primary was pixel-
+   identical to a selected one and read as permanently selected. Using the
+   deeper step keeps Primary the boldest control on the page while leaving the
+   flat brand fill to mean "selected". Hover brightens back to --primary,
+   press goes deepest — all three states stay distinct. */
 html.staff-scope .app-btn--primary {
-  --btn-bg: var(--primary-control-bg);
-  --btn-color: var(--primary-control-color);
+  --btn-bg: var(--primary-hover);
+  --btn-color: var(--onAccentText);
 }
 html.staff-scope .app-btn--primary:hover,
 html.staff-scope .app-btn--primary:focus-visible {
-  --btn-bg: var(--primary-control-bg-hover);
+  --btn-bg: var(--primary);
 }
 html.staff-scope .app-btn--primary:active {
-  --btn-bg: var(--primary-control-bg-active);
+  --btn-bg: var(--primary-pressed);
 }
 
-/* Secondary shares Primary's fill but carries the accent as its label, so the
-   two read as a pair rather than as two unrelated buttons. */
+/* Secondary uses the accent tint directly. Unlike --control-bg, this token is
+   not rebound to a neutral surface by card nesting, so it remains recognisably
+   Secondary in both light and dark modes. */
 html.staff-scope .app-btn--secondary {
-  --btn-bg: var(--control-bg);
+  --btn-bg: var(--secondary);
   --btn-color: var(--accent-text-on-tint);
 }
 html.staff-scope .app-btn--secondary:hover,
 html.staff-scope .app-btn--secondary:focus-visible {
-  --btn-bg: var(--control-bg-hover);
+  --btn-bg: var(--secondary-hover);
 }
 html.staff-scope .app-btn--secondary:active {
-  --btn-bg: var(--control-bg-active);
+  --btn-bg: var(--secondary-pressed);
 }
 
 html.staff-scope .app-btn--ghost {
@@ -172,10 +179,10 @@ html.staff-scope .app-btn--ghost {
 }
 html.staff-scope .app-btn--ghost:hover,
 html.staff-scope .app-btn--ghost:focus-visible {
-  --btn-bg: var(--control-bg);
+  --btn-bg: var(--secondary);
 }
 html.staff-scope .app-btn--ghost:active {
-  --btn-bg: var(--control-bg-hover);
+  --btn-bg: var(--secondary-hover);
 }
 
 /* Theme — a quieter filled button for in-card actions (e.g. the technician
@@ -220,10 +227,10 @@ html.staff-scope .app-btn--danger:active {
 /* === Not for production code.                             === */
 /* ========================================================= */
 html.staff-scope .app-btn[data-demo-state="hover"] {
-  --btn-bg: var(--primary-control-bg-hover);
+  --btn-bg: var(--primary-hover);
 }
 html.staff-scope .app-btn[data-demo-state="active"] {
-  --btn-bg: var(--primary-control-bg-active);
+  --btn-bg: var(--primary-pressed);
 }
 html.staff-scope .app-btn[data-demo-state="disabled"] {
   --btn-bg: var(--control-disabled-bg);

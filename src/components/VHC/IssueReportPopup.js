@@ -121,6 +121,9 @@ export function IssueReportRow({
   onDelete,
   disabled = false,
   overlay = null,
+  // Per-row camera launcher. Rendered first in the action group so media
+  // capture sits next to the issue it attaches to.
+  mediaAction = null,
 }) {
   const reportedTime = formatIssueReportedTime(issue);
 
@@ -137,6 +140,7 @@ export function IssueReportRow({
         {reportedTime ? <span className="vhc-issue-report__time">{reportedTime}</span> : null}
       </div>
       <div className="vhc-issue-report__row-actions">
+        {mediaAction}
         <DropdownField
           value={severity}
           onChange={(event) => onSeverityChange?.(event.target.value)}

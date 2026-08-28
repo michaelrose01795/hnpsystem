@@ -10,9 +10,17 @@ import { useRouter } from "next/router"; // for navigation
 // The jobs list no longer imports getAllJobs: it fetches the narrow, bounded
 // workload through /api/jobs/workload so the query runs server-side and the
 // query module stays out of this page's client bundle.
-import { subscribeToJobsOverviewChanges, updateJobStatus } from "@/lib/database/jobs";
+// Loaded on demand - each of these resolves the Supabase browser client.
+//
+// Nothing here is needed to render the list: the status write runs from a
+// handler, the roster and note reads from async callbacks, and the realtime
+// subscription from an effect after mount.
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadNotesDb = () => import("@/lib/database/notes");
+const loadUsersDb = () => import("@/lib/database/users");
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -26,9 +34,8 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import LayerSurface from "@/components/ui/LayerSurface";
 import { reportError } from "@/lib/notifications/report"; // Phase 3 reporting helper (Phase 10 migration).
 import { buildJobOperationalStatusCounts, buildJobRowSummary, buildTechnicianWorkloadMap, findNextJobsTechnician } from "@/lib/jobCards/jobRowSummary";
-import { createJobNote, getNotesByJob } from "@/lib/database/notes";
-import { getMotTesterUsers, getTechnicianUsers } from "@/lib/database/users";
 import { invalidateCache } from "@/lib/database/queryCache";
+import { subscribeViaDeferredModule } from "@/lib/database/realtimeClient";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -232,7 +239,9 @@ export default function ViewJobCards() {
     filter(Boolean);
   }, [user]);
   const canViewOrdersTab = useMemo(
-    () => userRoles.some((role) => role === "parts" || role === "parts manager"),
+    () =>
+    hasAllAccessRole(userRoles) ||
+    userRoles.some((role) => role === "parts" || role === "parts manager"),
     [userRoles]
   );
 
@@ -297,9 +306,10 @@ export default function ViewJobCards() {
 
   const fetchNextJobsRoster = useCallback(async () => {
     try {
+      const usersDb = await loadUsersDb();
       const [technicians, motTesters] = await Promise.all([
-        getTechnicianUsers(),
-        getMotTesterUsers(),
+        usersDb.getTechnicianUsers(),
+        usersDb.getMotTesterUsers(),
       ]);
       setNextJobsTechnicians([
         ...(Array.isArray(technicians) ? technicians : []),
@@ -353,10 +363,11 @@ export default function ViewJobCards() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeToJobsOverviewChanges("jobs-page", (payload, table) => {
+    const unsubscribe = subscribeViaDeferredModule(loadJobsDb, (m) =>
+      m.subscribeToJobsOverviewChanges("jobs-page", (payload, table) => {
       if (table === "users") void fetchNextJobsRoster();
       if (table === "job_notes" && quickNoteJob?.id) {
-        void getNotesByJob(quickNoteJob.id).then((notes) => {
+        void loadNotesDb().then((m) => m.getNotesByJob(quickNoteJob.id)).then((notes) => {
           setQuickNoteNotes(Array.isArray(notes) ? notes : []);
         });
       }
@@ -383,7 +394,8 @@ export default function ViewJobCards() {
       jobsRealtimeRefreshRef.current = window.setTimeout(() => {
         void fetchJobs({ showLoading: false });
       }, JOBS_REALTIME_REFRESH_DELAY_MS);
-    });
+      })
+    );
 
     return () => {
       unsubscribe();
@@ -400,7 +412,8 @@ export default function ViewJobCards() {
     let isActive = true;
     setQuickNoteLoading(true);
     setQuickNoteError("");
-    getNotesByJob(quickNoteJob.id)
+    loadNotesDb()
+      .then((m) => m.getNotesByJob(quickNoteJob.id))
       .then((notes) => {
         if (isActive) setQuickNoteNotes(Array.isArray(notes) ? notes : []);
       })
@@ -439,7 +452,7 @@ export default function ViewJobCards() {
     setQuickNoteSaving(true);
     setQuickNoteError("");
     try {
-      const result = await createJobNote({
+      const result = await (await loadNotesDb()).createJobNote({
         job_id: quickNoteJob.id,
         user_id: dbUserId || null,
         note_text: noteText,
@@ -514,7 +527,7 @@ export default function ViewJobCards() {
   };
 
   const handleStatusChange = async (jobId, newStatus) => {
-    const result = await updateJobStatus(jobId, newStatus, dbUserId || null); // update status in database
+    const result = await (await loadJobsDb()).updateJobStatus(jobId, newStatus, dbUserId || null); // update status in database
     if (result?.success && result.data) {
       fetchJobs(); // refresh jobs list after update
       revalidateAllJobs(); // sync status change to other pages via SWR

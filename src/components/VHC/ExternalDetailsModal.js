@@ -7,6 +7,7 @@ import IssueReportPopup, {
   IssueReportRow,
 } from "@/components/VHC/IssueReportPopup";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import { buildConcernRef } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import Button from "@/components/ui/Button";
 import {
   vhcModalContentStyles,
@@ -374,6 +375,23 @@ export default function ExternalDetailsModal({
                       onSeverityChange={(status) => updateConcern(activeConcern.category, idx, "status", status)}
                       onDelete={() => deleteConcern(activeConcern.category, idx)}
                       disabled={rowLocked}
+                      mediaAction={canShowCamera ? (
+                        <SectionCameraButton
+                          iconOnly
+                          sectionKey="external"
+                          concern={buildConcernRef({
+                            section: "external",
+                            category: activeConcern.category,
+                            index: idx,
+                            concern,
+                          })}
+                          jobId={jobId}
+                          jobNumber={jobNumber}
+                          userId={userId}
+                          disabled={rowLocked}
+                          onUploadComplete={onSectionMediaUploaded}
+                        />
+                      ) : null}
                       overlay={rowLocked && lockReason ? (
                         <div style={lockedRowOverlayStyle}>
                           <span style={lockedRowBadgeStyle(isDeclined)}>

@@ -164,3 +164,30 @@ export function collectSectionConcerns(sectionKey, vhcData = {}) {
 export function sectionHasActionableConcern(sectionKey, vhcData = {}) {
   return collectSectionConcerns(sectionKey, vhcData).length > 0;
 }
+
+// Build the same concern shape as `collectSectionConcerns` for a single row,
+// straight from the row's own coordinates. The per-row camera button uses this
+// so a technician can attach media to the issue they are looking at without
+// going through the section-wide picker. The `concernId` formula is identical
+// to `mapKeyedCategories` / `collectService` so both entry points group into
+// the same media-library row.
+export function buildConcernRef({
+  section,
+  category = "",
+  categoryLabel = "",
+  index,
+  concern = {},
+}) {
+  return {
+    concernId: category
+      ? `${section}-${category}-${index}`
+      : `${section}-${index}`,
+    section,
+    category: category || "",
+    categoryLabel: categoryLabel || category || "",
+    label: pickLabel(concern),
+    description: String(concern?.description || "").trim(),
+    status: normaliseStatus(concern?.status) || "green",
+    index,
+  };
+}

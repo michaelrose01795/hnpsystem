@@ -15,6 +15,8 @@ import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { readRememberedStaffRoute, resolveReturnRoute } from "@/lib/auth/returnRoute";
+import { ALL_ACCESS_USER_ID } from "@/lib/auth/allAccessSession";
 
 const LoginDropdown = dynamic(() => import("@/components/LoginDropdown"));
 
@@ -90,13 +92,46 @@ const getDefaultPostLoginRoute = (activeUser) => {
   return DEFAULT_STAFF_POST_LOGIN_ROUTE;
 };
 
-const getPostLoginRoute = (router, activeUser) => {
-  const redirectedFrom = router?.query?.redirectedFrom;
-  const defaultRoute = getDefaultPostLoginRoute(activeUser);
-  if (defaultRoute === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE && isSafeLocalRoute(redirectedFrom)) {
-    return redirectedFrom;
+// /login is statically optimised (autoExport), so router.query starts EMPTY and
+// is only filled once Next hydrates the query string. The post-login redirect can
+// fire before that, which silently dropped ?redirectedFrom= and sent the user to
+// the role default instead of the page they asked for. window.location is correct
+// from the first render, so read that first and keep the router as the fallback
+// (it is the only source during SSR).
+const readRedirectedFrom = (router) => {
+  if (typeof window !== "undefined") {
+    const fromUrl = new URLSearchParams(window.location.search).get("redirectedFrom");
+    if (fromUrl) return fromUrl;
   }
-  return defaultRoute;
+  const fromRouter = router?.query?.redirectedFrom;
+  return typeof fromRouter === "string" ? fromRouter : null;
+};
+
+const getPostLoginRoute = (router, activeUser) => {
+  const redirectedFrom = readRedirectedFrom(router);
+  const defaultRoute = getDefaultPostLoginRoute(activeUser);
+
+  // The customer site keeps its own simpler rule: it has no staff manifest to
+  // authorise against, and its only protected surface is the profile page.
+  if (defaultRoute === DEFAULT_CUSTOMER_POST_LOGIN_ROUTE) {
+    return isSafeLocalRoute(redirectedFrom) ? redirectedFrom : defaultRoute;
+  }
+
+  // Staff: return the user to the page they were actually on. Precedence is
+  // requested route > remembered route > role default, and EVERY candidate is
+  // re-checked against this user's own permissions (see returnRoute.js), so a
+  // carried-over or remembered route can never widen access. The sidebar-access
+  // snapshot is not loaded yet at this point; a null snapshot resolves to the
+  // role-derived set and PageAccessGuard still polices the route after landing.
+  const roles = []
+    .concat(activeUser?.roles || [])
+    .concat(activeUser?.role ? [activeUser.role] : []);
+  return resolveReturnRoute({
+    redirectedFrom: typeof redirectedFrom === "string" ? redirectedFrom : null,
+    remembered: readRememberedStaffRoute(activeUser?.id ?? activeUser?.user_id ?? null),
+    roles,
+    fallback: defaultRoute,
+  });
 };
 
 const prepareAuthenticatedLayoutEntrance = (target) => {
@@ -405,6 +440,62 @@ export default function LoginPage() {
       setRedirectInProgress(false);
     }
   }, [allowDevUserSelection, router, setRedirectInProgress]);
+
+  // "All access" demo login. Mints the synthetic `all access` role via the
+  // NextAuth credentials provider (server-gated by isDevAuthAllowed()), then
+  // lands on the normal staff home. No user or department is chosen — the role
+  // is created in code and never assigned to a real staff member. It exists so
+  // the app can be shown end to end from one login, with every module and page
+  // in the sidebar, instead of signing in as a different user per department.
+  const handleAllAccessLogin = React.useCallback(async () => {
+    if (!allowDevUserSelection) {
+      setErrorMessage("All access login is disabled in this environment.");
+      return;
+    }
+    if (devLoginInProgressRef.current) return;
+    devLoginInProgressRef.current = true;
+    setRedirectInProgress(true);
+    setIsRedirecting(true);
+    setErrorMessage("");
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
+      window.localStorage.removeItem("devUser");
+      document.cookie = "hnp-dev-roles=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+    const result = await signIn("credentials", {
+      allAccess: "1",
+      callbackUrl: DEFAULT_STAFF_POST_LOGIN_ROUTE,
+      redirect: false,
+    });
+    if (result?.error || !result?.ok) {
+      setErrorMessage("All access login is disabled in this environment.");
+      devLoginInProgressRef.current = false;
+      setRedirectInProgress(false);
+      setIsRedirecting(false);
+      return;
+    }
+    prepareAuthenticatedLayoutEntrance(DEFAULT_STAFF_POST_LOGIN_ROUTE);
+    void warmStaffLandingPage();
+    // The demo account has a real users row, so the session carries its numeric
+    // id. Read it back and warm the same per-user caches an ordinary login does,
+    // so the profile, clock and message badge are ready on arrival.
+    const refreshedSession = await getSession();
+    const demoUserId = refreshedSession?.user?.id ?? ALL_ACCESS_USER_ID;
+    const numericDemoId = Number(demoUserId);
+    await Promise.all([
+      Number.isInteger(numericDemoId) && numericDemoId > 0
+        ? commitUserTheme(numericDemoId)
+        : Promise.resolve(),
+      warmAuthenticatedShell(demoUserId),
+    ]);
+    const navigated = await router.replace(DEFAULT_STAFF_POST_LOGIN_ROUTE);
+    setRedirectInProgress(false);
+    if (!navigated) {
+      clearAuthenticatedLayoutEntrance();
+      setIsRedirecting(false);
+      setRedirectInProgress(false);
+    }
+  }, [allowDevUserSelection, commitUserTheme, router, setRedirectInProgress]);
 
   // Developer login routes through NextAuth's credentials provider with the
   // picked user's database id. Server-side Supabase access is reliable, so the
@@ -728,7 +819,7 @@ export default function LoginPage() {
     }
   }, [rosterLoading]);
 
-  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleDevPlatformSelect={handleDevPlatformSelect} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} handlePresentationSelect={handlePresentationSelect} isRedirecting={isRedirecting} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} handleAllAccessLogin={handleAllAccessLogin} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleDevPlatformSelect={handleDevPlatformSelect} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} handlePresentationSelect={handlePresentationSelect} isRedirecting={isRedirecting} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
 

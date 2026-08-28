@@ -23,11 +23,27 @@ const fetcher = async (url) => {
 // must agree with it.
 export { buildJobCardKey };
 
+/**
+ * @param {string} jobNumber
+ * @param {{ archive?: boolean, revalidateOnMount?: boolean }} [options]
+ *   revalidateOnMount — pass false when the CALLER owns the initial fetch and
+ *   seeds this cache itself. The hook then still returns anything already in the
+ *   SWR cache (a prefetch on hover, or a previous visit) for an instant paint,
+ *   and `mutate` still works, but it does not issue a request of its own.
+ *
+ *   The job-card page needs this: it loads the card through fetchJobData() and
+ *   writes the result back with mutate(..., { revalidate: false }). Because that
+ *   uses a plain fetch() rather than going through SWR, SWR's dedupingInterval
+ *   could not collapse the two, so a cold visit fired /api/jobcards/[jobNumber]
+ *   TWICE about 100ms apart — and every request that depends on the loaded job
+ *   (status snapshot, parts on order, invoices, messages) doubled with it.
+ */
 export function useJob(jobNumber, options = {}) {
-  const { archive = false } = options; // whether to fetch from archive
+  const { archive = false, revalidateOnMount } = options; // whether to fetch from archive
   const key = buildJobCardKey(jobNumber, { archive }); // null key = don't fetch (SWR convention)
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(key, fetcher, {
+    ...(revalidateOnMount === undefined ? {} : { revalidateOnMount }),
     revalidateOnFocus: true, // refresh when user tabs back
     dedupingInterval: 5000, // don't re-fetch within 5 seconds of last fetch
     // Stale-while-revalidate. SWR's cache is keyed per job, so reopening a card

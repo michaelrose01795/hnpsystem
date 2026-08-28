@@ -1,618 +1,579 @@
-// file location: src/pages/parts/deliveries.js
-import { useCallback, useEffect, useMemo, useState } from "react";
+// file location: src/pages/deliveries/index.js
+//
+// The parts delivery diary — the daily control screen for the van run.
+//
+// This file is the logic layer only; every element it renders lives in
+// src/components/page-ui/parts/parts-deliveries-ui.js (the house page-ui split)
+// and in src/components/Deliveries/*.
+//
+// What changed from the previous version, and why:
+//   * All Supabase access moved behind /api/parts/delivery-diary/* (CLAUDE.md
+//     §5) — the page used to query and UPDATE `parts_delivery_jobs` straight
+//     from the browser, so no role could be enforced on a write and nothing was
+//     audited.
+//   * One SWR key for the whole day instead of a refetch per interaction.
+//   * The up/down reorder buttons became drag-and-drop with a keyboard
+//     equivalent on the same handle, saving the full ordered list in one call.
+//   * The three-value status chip became the real workflow in
+//     src/features/deliveries/deliveryStatus.js.
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/database/supabaseClient";
-import { useTheme } from "@/styles/themeProvider";
-import { CalendarField } from "@/components/ui/calendarAPI";
-import ModalPortal from "@/components/popups/ModalPortal";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import Button from "@/components/ui/Button";
+import useIsMobile from "@/hooks/useIsMobile";
+import { hasAllAccessRole } from "@/lib/auth/roles";
+import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report";
+import useDeliveryDiary, { useDeliveryRouteMap } from "@/hooks/useDeliveryDiary";
+import {
+  DELIVERY_STATUS,
+  DELIVERY_STATUS_META,
+  DELIVERY_STATUS_ORDER,
+  normaliseDeliveryStatus,
+  resolveDeliveryCapabilities,
+} from "@/features/deliveries/deliveryStatus";
+import { todayIso } from "@/features/deliveries/deliveryFormatting";
 import PartsDeliveriesPageUi from "@/components/page-ui/parts/parts-deliveries-ui"; // Extracted presentation layer.
 
-const pageStyles = {
-  container: {
-    width: "100%",
-    maxWidth: "100%",
-    padding: "8px 0",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px"
-  },
-  headerCard: {
-    gap: "16px"
-  },
-  listCard: {
-    gap: "14px"
-  },
-  controls: {
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    gap: "12px",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%"
-  },
-  dateControls: {
-    display: "flex",
-    flexWrap: "nowrap",
-    gap: "10px",
-    alignItems: "center"
-  },
-  // Data-row with state-indicator background (completed vs scheduled).
-  // Background is data-driven so it stays here; cosmetic border removed.
-  jobRow: (isCompleted) => ({
-    borderRadius: "var(--radius-md)",
-    padding: "var(--section-card-padding)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.08)" : "var(--surface)",
-    width: "100%"
-  }),
-  jobInfoButton: {
-    border: "none",
-    background: "transparent",
-    padding: 0,
-    margin: 0,
-    textAlign: "left",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    cursor: "pointer"
-  },
-  jobActions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    alignItems: "stretch",
-    justifyContent: "space-between"
-  },
-  reorderGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    minWidth: "160px"
-  }
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// The five figures the parts desk reads first, in the order the workflow runs.
+// Each one is also a filter: clicking a tile narrows the list to that state.
+const SUMMARY_TILES = [
+  { key: DELIVERY_STATUS.PLANNED, label: "Planned" },
+  { key: DELIVERY_STATUS.READY, label: "Ready" },
+  { key: DELIVERY_STATUS.OUT_FOR_DELIVERY, label: "Out for delivery" },
+  { key: DELIVERY_STATUS.DELIVERED, label: "Delivered" },
+  { key: DELIVERY_STATUS.FAILED, label: "Failed" },
+];
+
+
+const matchesSearch = (delivery, term) => {
+  if (!term) return true;
+  const haystack = [
+    delivery.customerDisplayName,
+    delivery.customer_name,
+    delivery.invoice_number,
+    delivery.order_reference,
+    delivery.jobNumber,
+    delivery.addressLine,
+    delivery.postcodeValue,
+    delivery.contactPhone,
+    delivery.part_name,
+    delivery.part_number,
+    delivery.driver_name,
+    delivery.vehicle_reg,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(term);
 };
-
-const statusChipStyle = (status) => {
-  const variants = {
-    scheduled: { background: "rgba(var(--warning-rgb),0.15)", color: "var(--danger-dark)" },
-    en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
-    completed: { background: "rgba(var(--success-rgb,34,139,34),0.25)", color: "var(--success)" }
-  };
-  return {
-    padding: "4px 12px",
-    borderRadius: "var(--radius-pill)",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
-    ...(variants[status] || variants.scheduled)
-  };
-};
-
-const modalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "16px",
-  zIndex: "var(--z-modal)"
-};
-
-const modalContentStyle = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-lg)",
-  padding: "var(--page-card-padding)",
-  width: "min(780px, 100%)",
-  maxHeight: "90vh",
-  overflowY: "auto",
-  border: "none",
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px"
-};
-
-const statusWeight = {
-  scheduled: 0,
-  en_route: 1,
-  completed: 2
-};
-
-const formatCurrency = (value) => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "£0.00";
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(value));
-};
-
-const formatIsoDate = (value) => {
-  try {
-    const date = value ? new Date(value) : new Date();
-    return new Intl.DateTimeFormat("en-GB", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    }).format(date);
-  } catch {
-    return "—";
-  }
-};
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
-
-const adjustIsoDate = (isoDate, delta) => {
-  const base = isoDate ? new Date(isoDate) : new Date();
-  base.setDate(base.getDate() + delta);
-  return base.toISOString().slice(0, 10);
-};
-
-const normalizeJobRecord = (job = {}) => ({
-  ...job,
-  delivery_date: job.delivery_date || todayIso(),
-  items: Array.isArray(job.items) ? job.items : [],
-  status: job.status || "scheduled"
-});
 
 export default function PartsDeliveriesPage() {
+  const router = useRouter();
   const { user } = useUser();
-  const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasAccess = roles.includes("parts") || roles.includes("parts manager");
+  const isMobile = useIsMobile(900);
 
-  const [selectedDate, setSelectedDate] = useState(todayIso());
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [viewJob, setViewJob] = useState(null);
-  const [rowActionId, setRowActionId] = useState("");
+  const roles = useMemo(
+    () => (user?.roles || []).map((role) => String(role).toLowerCase()),
+    [user?.roles]
+  );
+  // The API is authoritative and returns its own capability set; this local
+  // copy only decides what to render before the first response arrives.
+  const localCapabilities = useMemo(
+    () => resolveDeliveryCapabilities(roles, hasAllAccessRole(roles)),
+    [roles]
+  );
 
-  const fetchJobs = useCallback(async () => {
-    if (!hasAccess) return;
-    setLoading(true);
-    setError("");
-    try {
-      let query = supabase.
-      from("parts_delivery_jobs").
-      select("*").
-      order("status", { ascending: true }).
-      order("sort_order", { ascending: true }).
-      order("created_at", { ascending: true });
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  // The list is the only view. The route map moved into the detail panel
+  // (always on screen next to the selected stop) and the week strip is a
+  // toggle above the route rather than a mode that replaces it.
+  const [weekOpen, setWeekOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [driverFilter, setDriverFilter] = useState("all");
+  const [vehicleFilter, setVehicleFilter] = useState("all");
+  const [selectedId, setSelectedId] = useState("");
+  const [busy, setBusy] = useState(null); // { id, action }
+  const [proofTarget, setProofTarget] = useState(null);
+  const [failureTarget, setFailureTarget] = useState(null);
+  const [modalError, setModalError] = useState("");
+  const [modalSaving, setModalSaving] = useState(false);
+  const [draggingId, setDraggingId] = useState("");
+  const [dropTargetId, setDropTargetId] = useState("");
+  const [routeAnnouncement, setRouteAnnouncement] = useState("");
 
-      if (selectedDate) {
-        query = query.eq("delivery_date", selectedDate);
-      }
+  // A deep link (?date=2026-08-28) opens straight on that day, which is what
+  // the topbar alerts and the dashboard tiles link to.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const queryDate = String(router.query.date || "");
+    if (ISO_DATE_RE.test(queryDate)) setSelectedDate(queryDate);
+  }, [router.isReady, router.query.date]);
 
-      const { data, error: fetchError } = await query;
-      if (fetchError) throw fetchError;
-      setJobs((data || []).map((record) => normalizeJobRecord(record)));
-    } catch (fetchErr) {
-      console.error("Failed to load deliveries:", fetchErr);
-      setError(fetchErr?.message || "Unable to load delivery list");
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDate, hasAccess]);
+  const {
+    deliveries,
+    events,
+    summary,
+    drivers,
+    vehicles,
+    week,
+    capabilities: serverCapabilities,
+    migrationPending,
+    loading,
+    refreshing,
+    error,
+    mutate,
+    applyDeliveryToCache,
+    applyRouteToCache,
+  } = useDeliveryDiary({ date: selectedDate, enabled: localCapabilities.view });
+
+  const capabilities = serverCapabilities || localCapabilities;
+
+  const { map, loading: mapLoading, error: mapError } = useDeliveryRouteMap({
+    date: selectedDate,
+    enabled: localCapabilities.view,
+  });
+
+  // Route order is rendered from a local copy while a drag is being saved, so
+  // the list does not snap back to the server order mid-gesture.
+  const [orderOverride, setOrderOverride] = useState(null);
+  const orderedDeliveries = useMemo(() => {
+    if (!orderOverride) return deliveries;
+    const byId = new Map(deliveries.map((row) => [row.id, row]));
+    const ordered = orderOverride.map((id) => byId.get(id)).filter(Boolean);
+    // Anything the override does not know about (a stop added by someone else
+    // while the drag was in flight) keeps its place at the end.
+    const missing = deliveries.filter((row) => !orderOverride.includes(row.id));
+    return [...ordered, ...missing];
+  }, [deliveries, orderOverride]);
 
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    setOrderOverride(null);
+  }, [selectedDate]);
 
-  const sortedJobs = useMemo(() => {
-    return [...jobs].sort((a, b) => {
-      const statusDiff = (statusWeight[a.status] ?? 0) - (statusWeight[b.status] ?? 0);
-      if (statusDiff !== 0) return statusDiff;
-      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  const driverOptions = useMemo(
+    () => [
+      { value: "all", label: "All drivers" },
+      { value: "unassigned", label: "Unassigned" },
+      ...drivers.map((driver) => ({ value: String(driver.userId), label: driver.name })),
+    ],
+    [drivers]
+  );
+
+  const vehicleOptions = useMemo(
+    () => [
+      { value: "all", label: "All vehicles" },
+      { value: "none", label: "No vehicle" },
+      ...vehicles.map((vehicle) => ({ value: vehicle.reg, label: vehicle.label })),
+    ],
+    [vehicles]
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "all", label: "All statuses" },
+      ...DELIVERY_STATUS_ORDER.map((status) => ({
+        value: status,
+        label: DELIVERY_STATUS_META[status].label,
+      })),
+    ],
+    []
+  );
+
+  const filteredDeliveries = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return orderedDeliveries.filter((delivery) => {
+      if (statusFilter !== "all" && normaliseDeliveryStatus(delivery.status) !== statusFilter) {
+        return false;
+      }
+      if (driverFilter === "unassigned" && delivery.driver_id) return false;
+      if (
+        driverFilter !== "all" &&
+        driverFilter !== "unassigned" &&
+        String(delivery.driver_id || "") !== driverFilter
+      ) {
+        return false;
+      }
+      if (vehicleFilter === "none" && delivery.vehicle_reg) return false;
+      if (vehicleFilter !== "all" && vehicleFilter !== "none" && delivery.vehicle_reg !== vehicleFilter) {
+        return false;
+      }
+      return matchesSearch(delivery, term);
     });
-  }, [jobs]);
+  }, [orderedDeliveries, searchTerm, statusFilter, driverFilter, vehicleFilter]);
 
-  const pendingCount = sortedJobs.filter((job) => job.status !== "completed").length;
-  const completedCount = sortedJobs.length - pendingCount;
+  const selectedDelivery = useMemo(
+    () => orderedDeliveries.find((row) => row.id === selectedId) || null,
+    [orderedDeliveries, selectedId]
+  );
 
-  const handleMarkDelivered = async (job) => {
-    if (!job || job.status === "completed") return;
-    setRowActionId(job.id);
-    setError("");
-    try {
-      const completedSort = (sortedJobs.length + 1) * 100 + (job.sort_order ?? 0);
-      const { error: updateError } = await supabase.
-      from("parts_delivery_jobs").
-      update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        sort_order: completedSort
-      }).
-      eq("id", job.id);
-      if (updateError) throw updateError;
-      setJobs((prev) =>
-      prev.map((item) =>
-      item.id === job.id ?
-      { ...item, status: "completed", completed_at: new Date().toISOString(), sort_order: completedSort } :
-      item
-      )
+  const filtersActive =
+    statusFilter !== "all" ||
+    driverFilter !== "all" ||
+    vehicleFilter !== "all" ||
+    searchTerm.trim().length > 0;
+
+  // Reordering while a filter hides part of the route would renumber stops the
+  // user cannot see, so it is disabled until the filters are cleared.
+  const reorderEnabled = capabilities.reorder && !filtersActive;
+
+  const clearFilters = useCallback(() => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setDriverFilter("all");
+    setVehicleFilter("all");
+  }, []);
+
+  const changeDate = useCallback(
+    (nextDate) => {
+      if (!ISO_DATE_RE.test(nextDate || "")) return;
+      setSelectedDate(nextDate);
+      setSelectedId("");
+      // Keep the URL in step so the day can be shared or reloaded, without
+      // pushing a history entry for every arrow press.
+      router.replace(
+        { pathname: router.pathname, query: { ...router.query, date: nextDate } },
+        undefined,
+        { shallow: true }
       );
-    } catch (actionError) {
-      console.error("Failed to mark delivered:", actionError);
-      setError(actionError?.message || "Unable to update job status");
-    } finally {
-      setRowActionId("");
+    },
+    [router]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mutations
+  // ---------------------------------------------------------------------------
+  const sendPatch = useCallback(
+    async (delivery, payload) => {
+      const response = await fetch(`/api/parts/delivery-diary/${delivery.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || json?.success === false) {
+        throw new Error(json?.message || "The delivery could not be updated.");
+      }
+      return json.data;
+    },
+    []
+  );
+
+  const runAction = useCallback(
+    async (delivery, actionKey) => {
+      // The two actions that need more than a click open their own dialogue
+      // first, then come back through confirmProof / confirmFailure.
+      if (actionKey === "mark_delivered") {
+        setModalError("");
+        setProofTarget(delivery);
+        return;
+      }
+      if (actionKey === "mark_failed") {
+        setModalError("");
+        setFailureTarget(delivery);
+        return;
+      }
+
+      setBusy({ id: delivery.id, action: actionKey });
+      try {
+        const data = await sendPatch(delivery, { action: actionKey });
+        applyDeliveryToCache(data.delivery, data.events);
+        (data.syncNotes || []).forEach((note) => reportSuccess(note));
+      } catch (actionError) {
+        reportError("The delivery could not be updated.", actionError, {
+          source: "deliveries",
+          deliveryId: delivery.id,
+          action: actionKey,
+        });
+      } finally {
+        setBusy(null);
+      }
+    },
+    [applyDeliveryToCache, sendPatch]
+  );
+
+  const patchDelivery = useCallback(
+    async (delivery, patch) => {
+      setBusy({ id: delivery.id, action: "patch" });
+      try {
+        const data = await sendPatch(delivery, { patch });
+        applyDeliveryToCache(data.delivery, data.events);
+      } catch (patchError) {
+        reportError("That change could not be saved.", patchError, {
+          source: "deliveries",
+          deliveryId: delivery.id,
+          fields: Object.keys(patch),
+        });
+      } finally {
+        setBusy(null);
+      }
+    },
+    [applyDeliveryToCache, sendPatch]
+  );
+
+  const uploadProofFiles = useCallback(async (delivery, { photo, signature, recipientName }) => {
+    if (!photo && !signature) return null;
+    const form = new FormData();
+    form.append("deliveryJobId", delivery.id);
+    if (recipientName) form.append("recipientName", recipientName);
+    if (photo) form.append("photo", photo);
+    if (signature) form.append("signature", signature);
+    const response = await fetch("/api/parts/delivery-diary/proof", {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    const json = await response.json().catch(() => null);
+    if (!response.ok || json?.success === false) {
+      throw new Error(json?.message || "Proof of delivery could not be stored.");
     }
-  };
+    return json.data;
+  }, []);
 
-  const handleMoveJob = async (jobId, direction) => {
-    const currentIndex = sortedJobs.findIndex((job) => job.id === jobId);
-    if (currentIndex === -1) return;
-    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= sortedJobs.length) return;
-    const currentJob = sortedJobs[currentIndex];
-    const targetJob = sortedJobs[targetIndex];
-    setRowActionId(jobId);
-    setError("");
-    try {
-      const [firstResult, secondResult] = await Promise.all([
-      supabase.
-      from("parts_delivery_jobs").
-      update({ sort_order: targetJob.sort_order ?? targetIndex }).
-      eq("id", currentJob.id),
-      supabase.
-      from("parts_delivery_jobs").
-      update({ sort_order: currentJob.sort_order ?? currentIndex }).
-      eq("id", targetJob.id)]
-      );
-      if (firstResult.error) throw firstResult.error;
-      if (secondResult.error) throw secondResult.error;
-      setJobs((prev) =>
-      prev.map((job) => {
-        if (job.id === currentJob.id) {
-          return { ...job, sort_order: targetJob.sort_order ?? targetIndex };
+  const confirmProof = useCallback(
+    async (details) => {
+      if (!proofTarget) return;
+      setModalSaving(true);
+      setModalError("");
+      try {
+        // The delivery is recorded first. The photo/signature upload is a
+        // separate, best-effort step: a van on a weak connection must still be
+        // able to complete the stop.
+        const data = await sendPatch(proofTarget, {
+          action: "mark_delivered",
+          payload: {
+            recipientName: details.recipientName,
+            podNotes: details.podNotes,
+            coreCollected: details.coreCollected,
+          },
+        });
+        applyDeliveryToCache(data.delivery, data.events);
+        (data.syncNotes || []).forEach((note) => reportSuccess(note));
+        setProofTarget(null);
+
+        try {
+          const proof = await uploadProofFiles(proofTarget, details);
+          if (proof?.delivery) applyDeliveryToCache(proof.delivery, proof.events);
+        } catch (uploadError) {
+          reportWarning(
+            "Delivery recorded, but the photo or signature could not be stored. Add it again from the delivery panel."
+          );
+          console.warn("Proof upload failed:", uploadError);
         }
-        if (job.id === targetJob.id) {
-          return { ...job, sort_order: currentJob.sort_order ?? currentIndex };
+      } catch (proofError) {
+        setModalError(proofError?.message || "The delivery could not be recorded.");
+      } finally {
+        setModalSaving(false);
+      }
+    },
+    [applyDeliveryToCache, proofTarget, sendPatch, uploadProofFiles]
+  );
+
+  const confirmFailure = useCallback(
+    async (details) => {
+      if (!failureTarget) return;
+      setModalSaving(true);
+      setModalError("");
+      try {
+        const data = await sendPatch(failureTarget, {
+          action: "mark_failed",
+          payload: details,
+        });
+        applyDeliveryToCache(data.delivery, data.events);
+        setFailureTarget(null);
+      } catch (failError) {
+        setModalError(failError?.message || "The failure could not be recorded.");
+      } finally {
+        setModalSaving(false);
+      }
+    },
+    [applyDeliveryToCache, failureTarget, sendPatch]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Route ordering
+  // ---------------------------------------------------------------------------
+  const saveTimer = useRef(null);
+
+  const persistOrder = useCallback(
+    async (orderedIds, movedId) => {
+      try {
+        const response = await fetch("/api/parts/delivery-diary/route-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ date: selectedDate, orderedIds, movedId }),
+        });
+        const json = await response.json().catch(() => null);
+        if (!response.ok || json?.success === false) {
+          throw new Error(json?.message || "The route order could not be saved.");
         }
-        return job;
-      })
-      );
-    } catch (moveError) {
-      console.error("Failed to reorder deliveries:", moveError);
-      setError(moveError?.message || "Unable to reorder deliveries");
-    } finally {
-      setRowActionId("");
-    }
-  };
+        applyRouteToCache(json.data.deliveries, { revalidate: false });
+        setOrderOverride(null);
+      } catch (orderError) {
+        // Drop the optimistic order and re-read, so the list always shows what
+        // is actually stored rather than a save that did not happen.
+        setOrderOverride(null);
+        mutate();
+        reportError("The route order could not be saved.", orderError, {
+          source: "deliveries",
+          date: selectedDate,
+        });
+      }
+    },
+    [applyRouteToCache, mutate, selectedDate]
+  );
 
-  if (!hasAccess) {
-    return <PartsDeliveriesPageUi view="section1" />;
+  // The order saves itself; the short debounce coalesces a burst of keyboard
+  // moves into one write rather than one per keystroke.
+  const commitOrder = useCallback(
+    (orderedIds, movedId) => {
+      setOrderOverride(orderedIds);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => persistOrder(orderedIds, movedId), 400);
+    },
+    [persistOrder]
+  );
 
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
 
+  const moveStop = useCallback(
+    (deliveryId, targetIndex) => {
+      const currentIds = orderedDeliveries.map((row) => row.id);
+      const fromIndex = currentIds.indexOf(deliveryId);
+      if (fromIndex === -1) return;
+      const bounded = Math.max(0, Math.min(currentIds.length - 1, targetIndex));
+      if (bounded === fromIndex) return;
+      const next = [...currentIds];
+      next.splice(fromIndex, 1);
+      next.splice(bounded, 0, deliveryId);
+      commitOrder(next, deliveryId);
+      setRouteAnnouncement(`Moved to stop ${bounded + 1} of ${next.length}`);
+    },
+    [commitOrder, orderedDeliveries]
+  );
 
+  const handleKeyboardMove = useCallback(
+    (deliveryId, delta) => {
+      const currentIds = orderedDeliveries.map((row) => row.id);
+      const fromIndex = currentIds.indexOf(deliveryId);
+      if (fromIndex === -1) return;
+      moveStop(deliveryId, fromIndex + delta);
+    },
+    [moveStop, orderedDeliveries]
+  );
 
+  const handleDragStart = useCallback((event, deliveryId) => {
+    setDraggingId(deliveryId);
+    event.dataTransfer.effectAllowed = "move";
+    // Firefox will not start a drag unless some data is set.
+    event.dataTransfer.setData("text/plain", deliveryId);
+  }, []);
 
+  const handleDragOver = useCallback(
+    (event, deliveryId) => {
+      if (!draggingId || deliveryId === draggingId) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDropTargetId(deliveryId);
+    },
+    [draggingId]
+  );
 
+  const handleDrop = useCallback(
+    (event, deliveryId) => {
+      event.preventDefault();
+      const sourceId = draggingId || event.dataTransfer.getData("text/plain");
+      setDraggingId("");
+      setDropTargetId("");
+      if (!sourceId || sourceId === deliveryId) return;
+      const currentIds = orderedDeliveries.map((row) => row.id);
+      moveStop(sourceId, currentIds.indexOf(deliveryId));
+    },
+    [draggingId, moveStop, orderedDeliveries]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingId("");
+    setDropTargetId("");
+  }, []);
+
+  if (!localCapabilities.view) {
+    return <PartsDeliveriesPageUi view="no-access" />;
   }
 
-  return <PartsDeliveriesPageUi view="section2" adjustIsoDate={adjustIsoDate} CalendarField={CalendarField} completedCount={completedCount} DeliveryJobRow={DeliveryJobRow} DeliveryJobViewModal={DeliveryJobViewModal} error={error} formatIsoDate={formatIsoDate} handleMarkDelivered={handleMarkDelivered} handleMoveJob={handleMoveJob} loading={loading} pageStyles={pageStyles} pendingCount={pendingCount} rowActionId={rowActionId} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setViewJob={setViewJob} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} sortedJobs={sortedJobs} viewJob={viewJob} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}
-
-function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, actionDisabled }) {
-  const isCompleted = job.status === "completed";
-  const qty =
-  job.quantity || (
-  Array.isArray(job.items) ?
-  job.items.reduce((totalQty, item) => totalQty + (Number(item.quantity) || 0), 0) :
-  0) ||
-  1;
-  const paidLabel = job.is_paid ? "Paid" : "Awaiting payment";
-
   return (
-    <article style={pageStyles.jobRow(isCompleted)}>
-      <button type="button" style={pageStyles.jobInfoButton} onClick={() => onView(job)}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-          <div style={{ fontWeight: 700, color: "var(--primary-selected)" }}>{job.invoice_number || "Invoice"}</div>
-          <span style={statusChipStyle(job.status)}>
-            {job.status === "completed" ? "Completed" : job.status === "en_route" ? "En Route" : "Scheduled"}
-          </span>
-        </div>
-        <div style={{ color: "var(--info-dark)", fontSize: "0.9rem" }}>
-          Deliver on {formatIsoDate(job.delivery_date)} · Qty {qty} · {formatCurrency(job.total_price)}
-        </div>
-        <div style={{ fontWeight: 600 }}>{job.part_name || "Parts order"}</div>
-        <div style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
-          {job.customer_name || "Customer"} · {job.contact_phone || job.contact_email || "No contact"}
-        </div>
-        <div style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-          {job.address || "Address not provided"}
-        </div>
-        <span
-          style={{
-            padding: "4px 10px",
-            borderRadius: "var(--radius-pill)",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            alignSelf: "flex-start",
-            background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.15)" : "rgba(var(--warning-rgb),0.2)",
-            color: job.is_paid ? "var(--success)" : "var(--danger-dark)"
-          }}>
-          
-          {paidLabel}
-        </span>
-      </button>
-      <div style={pageStyles.jobActions}>
-        <div style={pageStyles.reorderGroup}>
-          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Reorder</span>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onMove(job.id, "up")}
-              disabled={index === 0 || actionDisabled}
-              aria-label="Move job up">
-              ↑
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onMove(job.id, "down")}
-              disabled={index === total - 1 || actionDisabled}
-              aria-label="Move job down">
-              ↓
-            </Button>
-          </div>
-        </div>
-        <Button
-          variant={isCompleted ? "secondary" : "primary"}
-          onClick={() => onMarkDelivered(job)}
-          disabled={isCompleted || actionDisabled}
-          style={{ flex: "1 1 180px" }}>
-          {isCompleted ? "Delivered" : "Mark as delivered"}
-        </Button>
-      </div>
-    </article>);
-
-}
-
-function DeliveryJobViewModal({ job, onClose }) {
-  const items = Array.isArray(job.items) ? job.items : [];
-
-  return (
-    <ModalPortal>
-      <div style={modalOverlayStyle}>
-        <div style={modalContentStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-          <div>
-            <p
-                style={{
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.8rem",
-                  color: "var(--info-dark)"
-                }}>
-                
-              Delivery details
-            </p>
-            <h3 style={{ margin: "6px 0 0", color: "var(--primary-selected)" }}>{job.invoice_number || "Invoice"}</h3>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close delivery details">
-            Close
-          </Button>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Part number</span>
-            <div style={{ fontWeight: 600 }}>{job.part_number || "—"}</div>
-          </div>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Part name</span>
-            <div style={{ fontWeight: 600 }}>{job.part_name || "Parts order"}</div>
-          </div>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Price</span>
-            <div style={{ fontWeight: 600 }}>{formatCurrency(job.total_price)}</div>
-          </div>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Delivery date</span>
-            <div style={{ fontWeight: 600 }}>{formatIsoDate(job.delivery_date)}</div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Customer</span>
-            <div style={{ fontWeight: 600 }}>{job.customer_name || "Customer"}</div>
-          </div>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Contact details</span>
-            <div style={{ fontWeight: 600 }}>
-              {job.contact_phone || "No phone"}
-              <br />
-              {job.contact_email || ""}
-            </div>
-          </div>
-          <div>
-            <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Payment</span>
-            <div style={{ fontWeight: 600, display: "flex", gap: "8px", alignItems: "center" }}>
-              {job.payment_method || "Not set"}
-              <span
-                  style={{
-                    padding: "2px 8px",
-                    borderRadius: "var(--radius-pill)",
-                    fontSize: "0.7rem",
-                    background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.2)",
-                    color: job.is_paid ? "var(--success)" : "var(--danger-dark)"
-                  }}>
-                  
-                {job.is_paid ? "Paid" : "Unpaid"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Address</span>
-          <p style={{ margin: "4px 0 0", whiteSpace: "pre-line" }}>{job.address || "No address provided"}</p>
-        </div>
-
-        <div>
-          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Items</span>
-          {items.length === 0 ?
-            <p style={{ color: "var(--info)", margin: 0 }}>Invoice items not available.</p> :
-
-            <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--primary-selected)" }}>
-              {items.map((item) =>
-              <li key={item.key || `${item.description}-${item.quantity || 1}`}>
-                  {item.description} · Qty {item.quantity || 1} · {formatCurrency(item.total || 0)}
-                </li>
-              )}
-            </ul>
-            }
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="secondary" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-        </div>
-      </div>
-    </ModalPortal>);
-
+    <PartsDeliveriesPageUi
+      view="diary"
+      busy={busy}
+      capabilities={capabilities}
+      changeDate={changeDate}
+      clearFilters={clearFilters}
+      confirmFailure={confirmFailure}
+      confirmProof={confirmProof}
+      deliveries={filteredDeliveries}
+      driverFilter={driverFilter}
+      driverOptions={driverOptions}
+      drivers={drivers}
+      draggingId={draggingId}
+      dropTargetId={dropTargetId}
+      error={error}
+      events={events}
+      failureTarget={failureTarget}
+      filtersActive={filtersActive}
+      handleDragEnd={handleDragEnd}
+      handleDragOver={handleDragOver}
+      handleDragStart={handleDragStart}
+      handleDrop={handleDrop}
+      handleKeyboardMove={handleKeyboardMove}
+      isMobile={isMobile}
+      loading={loading}
+      map={map}
+      mapError={mapError}
+      mapLoading={mapLoading}
+      migrationPending={migrationPending}
+      modalError={modalError}
+      modalSaving={modalSaving}
+      onCloseFailure={() => setFailureTarget(null)}
+      onCloseProof={() => setProofTarget(null)}
+      onOpenProof={(delivery) => {
+        setModalError("");
+        setProofTarget(delivery);
+      }}
+      patchDelivery={patchDelivery}
+      proofTarget={proofTarget}
+      refreshing={refreshing}
+      reorderEnabled={reorderEnabled}
+      routeAnnouncement={routeAnnouncement}
+      runAction={runAction}
+      searchTerm={searchTerm}
+      selectDelivery={(delivery) =>
+        setSelectedId((current) => (current === delivery.id ? "" : delivery.id))
+      }
+      selectedDate={selectedDate}
+      selectedDelivery={selectedDelivery}
+      selectedId={selectedId}
+      setDriverFilter={setDriverFilter}
+      setSearchTerm={setSearchTerm}
+      setStatusFilter={setStatusFilter}
+      setVehicleFilter={setVehicleFilter}
+      toggleWeek={() => setWeekOpen((open) => !open)}
+      statusFilter={statusFilter}
+      statusOptions={statusOptions}
+      summary={summary}
+      summaryTiles={SUMMARY_TILES}
+      todayIso={todayIso}
+      totalStops={orderedDeliveries.length}
+      vehicleFilter={vehicleFilter}
+      vehicleOptions={vehicleOptions}
+      vehicles={vehicles}
+      weekOpen={weekOpen}
+      week={week}
+    />
+  );
 }

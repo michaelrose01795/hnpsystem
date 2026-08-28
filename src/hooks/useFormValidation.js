@@ -109,6 +109,31 @@ export default function useFormValidation(config = {}) {
     if (name) setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   }, []);
 
+  // Props to spread onto a field (native control OR <InputField>). Supplies the
+  // controlled value, change/blur handlers, focus ref, id, and the a11y wiring.
+  const getFieldProps = useCallback(
+    (name, options = {}) => {
+      const id = options.id || `field-${name}`;
+      const hasError = Boolean(errors[name]);
+      const props = {
+        id,
+        name,
+        value: values[name] == null ? "" : values[name],
+        onChange: handleChange,
+        onBlur: handleBlur,
+        ref: getRef(name),
+        "aria-invalid": hasError ? "true" : undefined,
+        "aria-describedby": hasError ? `${id}-error` : undefined,
+      };
+      // Success state: touched + validated + non-empty + no error.
+      if (live && touched[name] && !hasError && props.value !== "") {
+        props["data-valid"] = "true";
+      }
+      return props;
+    },
+    [values, errors, touched, live, handleChange, handleBlur, getRef]
+  );
+
   const getDropdownProps = useCallback(
     (name, options = {}) => {
       const props = getFieldProps(name, options);
@@ -175,31 +200,6 @@ export default function useFormValidation(config = {}) {
     setSubmitted(false);
     setSubmitting(false);
   }, []);
-
-  // Props to spread onto a field (native control OR <InputField>). Supplies the
-  // controlled value, change/blur handlers, focus ref, id, and the a11y wiring.
-  const getFieldProps = useCallback(
-    (name, options = {}) => {
-      const id = options.id || `field-${name}`;
-      const hasError = Boolean(errors[name]);
-      const props = {
-        id,
-        name,
-        value: values[name] == null ? "" : values[name],
-        onChange: handleChange,
-        onBlur: handleBlur,
-        ref: getRef(name),
-        "aria-invalid": hasError ? "true" : undefined,
-        "aria-describedby": hasError ? `${id}-error` : undefined,
-      };
-      // Success state: touched + validated + non-empty + no error.
-      if (live && touched[name] && !hasError && props.value !== "") {
-        props["data-valid"] = "true";
-      }
-      return props;
-    },
-    [values, errors, touched, live, handleChange, handleBlur, getRef]
-  );
 
   const summaryErrors = useMemo(
     () =>

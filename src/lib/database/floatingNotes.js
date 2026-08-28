@@ -1,56 +1,72 @@
 import { supabase } from "@/lib/database/supabaseClient";
+import { CUSTOMER_ROLES, isCustomerRole } from "@/lib/auth/roles";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const TABLE = "floating_notes";
 const SHARE_TABLE = "floating_note_shares";
 let resolvedGlobalColumn = null;
 let resolvedNoteIdColumn = null;
 
-const mapRow = (row = {}, globalColumn = "is_global", noteIdColumn = "note_id") => ({
+const mapRow = (
+  row = {},
+  globalColumn = "is_global",
+  noteIdColumn = "note_id",
+  sharing = {}
+) => ({
   noteId: row[noteIdColumn],
   userId: row.user_id,
   title: row.title || "",
   description: row.description || "",
   isGlobal: Boolean(row[globalColumn]),
+  isShared: Boolean(row[globalColumn]) || Boolean(sharing.isShared),
+  sharedWithCurrentUser: Boolean(sharing.sharedWithCurrentUser),
+  sharedUserCount: Number(sharing.sharedUserCount) || 0,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
 
+const invalidIdResult = (message) => ({ success: false, error: { message } });
+const inaccessibleNoteResult = () => ({
+  success: false,
+  error: {
+    code: "NOTE_NOT_ACCESSIBLE",
+    message: "Note not found or you do not have permission",
+  },
+});
+
+// These two used to be discovered at runtime: each issued `limit 1` probe
+// queries against floating_notes to find out whether the table keys on `note_id`
+// or `id`, and whether the global flag is `is_global` or the legacy
+// `shared_all_users`. Because the widget mounts in the global shell, those probes
+// ran from the browser on EVERY page load in every session — measured against
+// production, up to four extra Supabase round trips per page before the widget
+// could ask for a single note.
+//
+// The schema is fixed and known at build time
+// (lib/database/schema/schemaReference.sql:1603):
+//
+//   note_id          bigint  GENERATED ALWAYS AS IDENTITY  → PRIMARY KEY
+//   is_global        boolean NOT NULL DEFAULT false
+//   shared_all_users boolean NOT NULL DEFAULT false        ← legacy, still present
+//   id               bigint  GENERATED ALWAYS AS IDENTITY  ← legacy, still present
+//
+// Both legacy columns still exist, so the first probe in each pair always
+// succeeded — the answer was never in doubt, it just cost four requests to
+// re-confirm it on every page. Pinning them keeps every downstream query byte
+// for byte the same.
+//
+// The functions stay async so the nine `await resolve…()` call sites below are
+// untouched.
+const NOTE_ID_COLUMN = "note_id";
+const GLOBAL_COLUMN = "is_global";
+
 const resolveGlobalColumn = async () => {
-  if (resolvedGlobalColumn) return resolvedGlobalColumn;
-  const noteIdColumn = await resolveNoteIdColumn();
-
-  const tryIsGlobal = await supabase.from(TABLE).select(`${noteIdColumn}, is_global`).limit(1);
-  if (!tryIsGlobal.error) {
-    resolvedGlobalColumn = "is_global";
-    return resolvedGlobalColumn;
-  }
-
-  const tryLegacy = await supabase.from(TABLE).select(`${noteIdColumn}, shared_all_users`).limit(1);
-  if (!tryLegacy.error) {
-    resolvedGlobalColumn = "shared_all_users";
-    return resolvedGlobalColumn;
-  }
-
-  resolvedGlobalColumn = "is_global";
+  resolvedGlobalColumn = GLOBAL_COLUMN;
   return resolvedGlobalColumn;
 };
 
 const resolveNoteIdColumn = async () => {
-  if (resolvedNoteIdColumn) return resolvedNoteIdColumn;
-
-  const tryNoteId = await supabase.from(TABLE).select("note_id").limit(1);
-  if (!tryNoteId.error) {
-    resolvedNoteIdColumn = "note_id";
-    return resolvedNoteIdColumn;
-  }
-
-  const tryId = await supabase.from(TABLE).select("id").limit(1);
-  if (!tryId.error) {
-    resolvedNoteIdColumn = "id";
-    return resolvedNoteIdColumn;
-  }
-
-  resolvedNoteIdColumn = "note_id";
+  resolvedNoteIdColumn = NOTE_ID_COLUMN;
   return resolvedNoteIdColumn;
 };
 
@@ -59,7 +75,12 @@ const selectColumns = (noteIdColumn, globalColumn) =>
 
 export const getFloatingNotesForUser = async (userId) => {
   const numericUserId = Number(userId);
-  if (!Number.isInteger(numericUserId)) return [];
+  // `> 0`, not just isInteger. Number(null) is 0, which IS an integer, so an
+  // unresolved user id sailed through this guard and issued a real query for
+  // user_id=0 — visible in production as a guaranteed-empty
+  // floating_note_shares?user_id=eq.0 request on every page load. users.user_id
+  // is a positive identity column, so 0 can never match a row.
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) return [];
 
   const noteIdColumn = await resolveNoteIdColumn();
   const globalColumn = await resolveGlobalColumn();
@@ -92,13 +113,58 @@ export const getFloatingNotesForUser = async (userId) => {
     return [];
   }
 
-  return (data || []).map((row) => mapRow(row, globalColumn, noteIdColumn));
+  const visibleRows = data || [];
+  const visibleNoteIds = visibleRows
+    .map((row) => Number(row[noteIdColumn]))
+    .filter((noteId) => Number.isInteger(noteId));
+  const sharedUserCounts = new Map();
+
+  if (visibleNoteIds.length > 0) {
+    const { data: visibleShareRows, error: visibleShareError } = await supabase
+      .from(SHARE_TABLE)
+      .select("note_id, user_id")
+      .in("note_id", visibleNoteIds);
+
+    if (!visibleShareError) {
+      for (const shareRow of visibleShareRows || []) {
+        const sharedNoteId = Number(shareRow.note_id);
+        if (!Number.isInteger(sharedNoteId)) continue;
+        sharedUserCounts.set(sharedNoteId, (sharedUserCounts.get(sharedNoteId) || 0) + 1);
+      }
+    }
+  }
+
+  const directlySharedNoteIds = new Set(sharedNoteIds);
+  return visibleRows.map((row) => {
+    const noteId = Number(row[noteIdColumn]);
+    const sharedUserCount = sharedUserCounts.get(noteId) || 0;
+    return mapRow(row, globalColumn, noteIdColumn, {
+      isShared: directlySharedNoteIds.has(noteId) || sharedUserCount > 0,
+      sharedWithCurrentUser: directlySharedNoteIds.has(noteId),
+      sharedUserCount,
+    });
+  });
 };
 
-export const getShareableUsers = async () => {
+// Customers live in the same `users` table as staff, so sharing is restricted to
+// staff accounts. `isCustomerRole` only matches the exact configured customer
+// roles, so also reject any variant of them ("Customer Portal", "customer") and
+// any account with no role at all.
+const isShareableStaffRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  if (!normalized) return false;
+  if (isCustomerRole(role)) return false;
+  return !CUSTOMER_ROLES.some((customerRole) =>
+    normalized.includes(String(customerRole).trim().toLowerCase())
+  );
+};
+
+const getShareableUsers = async () => {
   const { data, error } = await supabase
     .from("users")
-    .select("user_id, first_name, last_name, email")
+    .select("user_id, first_name, last_name, email, role, is_active")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
+    .eq("is_active", true)
     .order("first_name", { ascending: true })
     .order("last_name", { ascending: true });
 
@@ -107,15 +173,36 @@ export const getShareableUsers = async () => {
     return [];
   }
 
-  return (data || []).map((row) => ({
-    userId: row.user_id,
-    firstName: row.first_name || "",
-    lastName: row.last_name || "",
-    email: row.email || "",
-  }));
+  return (data || [])
+    .filter((row) => isShareableStaffRole(row.role))
+    .map((row) => ({
+      userId: row.user_id,
+      firstName: row.first_name || "",
+      lastName: row.last_name || "",
+      email: row.email || "",
+    }));
 };
 
-export const getNoteSharedUserIds = async (noteId) => {
+const getValidStaffUserIds = async (userIds = []) => {
+  if (userIds.length === 0) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("user_id, role, is_active")
+    .in("user_id", userIds)
+    .eq("is_active", true);
+
+  if (error) return { data: [], error };
+  return {
+    data: (data || [])
+      .filter((row) => isShareableStaffRole(row.role))
+      .map((row) => Number(row.user_id))
+      .filter((userId) => Number.isInteger(userId)),
+    error: null,
+  };
+};
+
+const getNoteSharedUserIds = async (noteId) => {
   const numericNoteId = Number(noteId);
   if (!Number.isInteger(numericNoteId)) return [];
 
@@ -134,25 +221,76 @@ export const getNoteSharedUserIds = async (noteId) => {
     .filter((userId) => Number.isInteger(userId));
 };
 
-export const setNoteSharedUsers = async ({ noteId, sharedByUserId, userIds = [] }) => {
+const getOwnedNote = async (noteId, ownerUserId) => {
   const numericNoteId = Number(noteId);
-  const numericSharedBy = Number(sharedByUserId);
-
-  if (!Number.isInteger(numericNoteId)) {
-    return { success: false, error: { message: "A valid note id is required" } };
+  const numericOwnerUserId = Number(ownerUserId);
+  if (!Number.isInteger(numericNoteId) || !Number.isInteger(numericOwnerUserId)) {
+    return { data: null, error: null };
   }
 
-  if (!Number.isInteger(numericSharedBy)) {
-    return { success: false, error: { message: "A valid user id is required" } };
+  const noteIdColumn = await resolveNoteIdColumn();
+  return supabase
+    .from(TABLE)
+    .select(`${noteIdColumn}, user_id`)
+    .eq(noteIdColumn, numericNoteId)
+    .eq("user_id", numericOwnerUserId)
+    .maybeSingle();
+};
+
+export const getFloatingNoteShareOptions = async (noteId, ownerUserId) => {
+  const ownedNote = await getOwnedNote(noteId, ownerUserId);
+  if (ownedNote.error) {
+    return { success: false, error: { message: ownedNote.error.message } };
+  }
+  if (!ownedNote.data) return inaccessibleNoteResult();
+
+  const [users, sharedUserIds] = await Promise.all([
+    getShareableUsers(),
+    getNoteSharedUserIds(noteId),
+  ]);
+  const numericOwnerUserId = Number(ownerUserId);
+  const availableUserIds = new Set(users.map((userRow) => Number(userRow.userId)));
+
+  return {
+    success: true,
+    data: {
+      users: users.filter((userRow) => Number(userRow.userId) !== numericOwnerUserId),
+      sharedUserIds: sharedUserIds.filter((userId) => availableUserIds.has(Number(userId))),
+    },
+  };
+};
+
+export const setNoteSharedUsers = async ({ noteId, ownerUserId, userIds = [] }) => {
+  const numericNoteId = Number(noteId);
+  const numericOwnerUserId = Number(ownerUserId);
+
+  if (!Number.isInteger(numericNoteId)) {
+    return invalidIdResult("A valid note id is required");
+  }
+
+  if (!Number.isInteger(numericOwnerUserId)) {
+    return invalidIdResult("A valid user id is required");
   }
 
   const cleanedUserIds = Array.from(
     new Set(
       (userIds || [])
         .map((value) => Number(value))
-        .filter((value) => Number.isInteger(value))
+        .filter((value) => Number.isInteger(value) && value > 0 && value !== numericOwnerUserId)
     )
   );
+
+  const ownedNote = await getOwnedNote(numericNoteId, numericOwnerUserId);
+  if (ownedNote.error) {
+    return { success: false, error: { message: ownedNote.error.message } };
+  }
+  if (!ownedNote.data) return inaccessibleNoteResult();
+
+  const validStaffUsers = await getValidStaffUserIds(cleanedUserIds);
+  if (validStaffUsers.error) {
+    return { success: false, error: { message: validStaffUsers.error.message } };
+  }
+  const staffUserIds = validStaffUsers.data;
 
   const { error: deleteError } = await supabase.from(SHARE_TABLE).delete().eq("note_id", numericNoteId);
   if (deleteError) {
@@ -160,14 +298,14 @@ export const setNoteSharedUsers = async ({ noteId, sharedByUserId, userIds = [] 
     return { success: false, error: { message: deleteError.message } };
   }
 
-  if (cleanedUserIds.length === 0) {
+  if (staffUserIds.length === 0) {
     return { success: true, data: [] };
   }
 
-  const payload = cleanedUserIds.map((userId) => ({
+  const payload = staffUserIds.map((userId) => ({
     note_id: numericNoteId,
     user_id: userId,
-    shared_by: numericSharedBy,
+    shared_by: numericOwnerUserId,
   }));
 
   const { error: insertError } = await supabase.from(SHARE_TABLE).insert(payload);
@@ -176,10 +314,10 @@ export const setNoteSharedUsers = async ({ noteId, sharedByUserId, userIds = [] 
     return { success: false, error: { message: insertError.message } };
   }
 
-  return { success: true, data: cleanedUserIds };
+  return { success: true, data: staffUserIds };
 };
 
-export const createFloatingNote = async ({ userId, title, description, isGlobal = false }) => {
+export const createFloatingNote = async ({ userId, title, description }) => {
   const numericUserId = Number(userId);
   if (!Number.isInteger(numericUserId)) {
     return { success: false, error: { message: "A valid user id is required" } };
@@ -191,7 +329,8 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
     user_id: numericUserId,
     title: String(title ?? "").slice(0, 200),
     description: String(description ?? ""),
-    [globalColumn]: Boolean(isGlobal),
+    // New notes always start private. Sharing is a separate, deliberate owner action.
+    [globalColumn]: false,
   };
 
   const { data, error } = await supabase
@@ -208,10 +347,14 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
   return { success: true, data: mapRow(data, globalColumn, noteIdColumn) };
 };
 
-export const updateFloatingNote = async (noteId, updates = {}) => {
+export const updateFloatingNote = async (noteId, ownerUserId, updates = {}) => {
   const numericNoteId = Number(noteId);
+  const numericOwnerUserId = Number(ownerUserId);
   if (!Number.isInteger(numericNoteId)) {
-    return { success: false, error: { message: "A valid note id is required" } };
+    return invalidIdResult("A valid note id is required");
+  }
+  if (!Number.isInteger(numericOwnerUserId)) {
+    return invalidIdResult("A valid user id is required");
   }
 
   const noteIdColumn = await resolveNoteIdColumn();
@@ -238,22 +381,36 @@ export const updateFloatingNote = async (noteId, updates = {}) => {
     .from(TABLE)
     .update(payload)
     .eq(noteIdColumn, numericNoteId)
+    .eq("user_id", numericOwnerUserId)
     .select(selectColumns(noteIdColumn, globalColumn))
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Failed to update floating note:", error);
     return { success: false, error: { message: error.message } };
   }
+  if (!data) return inaccessibleNoteResult();
 
   return { success: true, data: mapRow(data, globalColumn, noteIdColumn) };
 };
 
-export const deleteFloatingNote = async (noteId) => {
+export const deleteFloatingNote = async (noteId, ownerUserId) => {
   const numericNoteId = Number(noteId);
+  const numericOwnerUserId = Number(ownerUserId);
   if (!Number.isInteger(numericNoteId)) {
-    return { success: false, error: { message: "A valid note id is required" } };
+    return invalidIdResult("A valid note id is required");
   }
+  if (!Number.isInteger(numericOwnerUserId)) {
+    return invalidIdResult("A valid user id is required");
+  }
+
+  // Authorise before touching dependent share rows. The browser can request a
+  // note id, but only the server-resolved owner may mutate that note.
+  const ownedNote = await getOwnedNote(numericNoteId, numericOwnerUserId);
+  if (ownedNote.error) {
+    return { success: false, error: { message: ownedNote.error.message } };
+  }
+  if (!ownedNote.data) return inaccessibleNoteResult();
 
   // The schema does not currently cascade floating_note_shares when its note
   // is deleted, so clear those dependent rows first to avoid orphaned shares.
@@ -268,7 +425,11 @@ export const deleteFloatingNote = async (noteId) => {
   }
 
   const noteIdColumn = await resolveNoteIdColumn();
-  const { error } = await supabase.from(TABLE).delete().eq(noteIdColumn, numericNoteId);
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq(noteIdColumn, numericNoteId)
+    .eq("user_id", numericOwnerUserId);
 
   if (error) {
     console.error("Failed to delete floating note:", error);

@@ -3,8 +3,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { supabase } from "@/lib/database/supabaseClient";
-import { clockOutFromJob, resolveClockingDisplayWindow } from "@/lib/database/jobClocking";
+// Loaded on demand - the queries and the realtime channel below all run after
+// mount, so the 213 KB client does not belong in this component's first load.
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
+import { resolveClockingDisplayWindow } from "@/lib/jobClocking/totals"; // pure helper
+const loadJobClockingDb = () => import("@/lib/database/jobClocking"); // deferred - clock-out handler only
 import { WORK_TYPES as CLOCKING_WORK_TYPES } from "@/lib/status/catalog/clocking";
 
 const formatDate = (value) => {
@@ -68,7 +71,7 @@ export default function ClockingHistorySection({
     setLoading(true);
     setError("");
     try {
-      const { data, error: queryError } = await supabase
+      const { data, error: queryError } = await (await loadSupabaseClient())
         .from("job_clocking")
         .select(`
           id,
@@ -147,7 +150,7 @@ export default function ClockingHistorySection({
     let isMounted = true;
     const loadAllocatedTotal = async () => {
       try {
-        const { data, error: queryError } = await supabase
+        const { data, error: queryError } = await (await loadSupabaseClient())
           .from("job_requests")
           .select("hours")
           .eq("job_id", jobId);
@@ -175,7 +178,8 @@ export default function ClockingHistorySection({
   useEffect(() => {
     if (!jobId) return;
     const channelName = `job-clock-history-${jobId}`;
-    const channel = supabase
+    return subscribeWithDeferredClient((supabase) =>
+      supabase
       .channel(channelName)
       .on(
         "postgres_changes",
@@ -189,11 +193,8 @@ export default function ClockingHistorySection({
           fetchEntries();
         }
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      .subscribe()
+    );
   }, [jobId, fetchEntries]);
 
   useEffect(() => {
@@ -323,7 +324,7 @@ export default function ClockingHistorySection({
     setClockOffSubmitting(true);
     setClockOffError("");
     try {
-      const result = await clockOutFromJob({
+      const result = await (await loadJobClockingDb()).clockOutFromJob({
         userId,
         jobId: targetJobId,
         clockingId,

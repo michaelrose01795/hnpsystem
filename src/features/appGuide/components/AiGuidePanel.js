@@ -9,18 +9,22 @@
 //   - Conversational context — follow-up questions understand prior messages
 //   - Session management — save, load, and delete chat sessions
 //   - Markdown-style rendering (bold, code, horizontal rule)
-//   - Follow-up question chips and cited sources
+//   - Follow-up question chips
 //   - Role-aware — answers reflect the user's own access level
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Dropdown from "@/components/ui/dropdownAPI/Dropdown";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { getEntryByRoute } from "@/features/appGuide/queryEngine";
 import styles from "./AiGuidePanel.module.css";
+import Button from "@/components/ui/Button";
+import InputField from "@/components/ui/InputField";
+import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
+import StatusMessage from "@/components/ui/StatusMessage";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -38,6 +42,15 @@ const STARTER_QUESTIONS = [
 
 // Maximum characters in the input field
 const MAX_INPUT_LENGTH = 2000;
+
+// Match the Share Note popup geometry while retaining the canonical popup shell.
+const HISTORY_POPUP_CARD_STYLE = {
+  width: "min(100%, 520px)",
+  maxWidth: "520px",
+  padding: "var(--page-card-padding)",
+  overflow: "hidden",
+  boxSizing: "border-box",
+};
 
 function titleFromRoute(route) {
   const path = String(route || "").split("?")[0].split("#")[0];
@@ -204,6 +217,20 @@ function formatTime(isoString) {
   }
 }
 
+function formatSessionDate(isoString) {
+  if (!isoString) return "";
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleDateString([], {
+      day: "numeric",
+      month: "short",
+      year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+    });
+  } catch (_) {
+    return "";
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -223,6 +250,17 @@ async function createNewSession(title = "New Chat") {
     body: JSON.stringify({ title }),
   });
   if (!res.ok) throw new Error("Failed to create session");
+  const json = await res.json();
+  return json.data;
+}
+
+async function updateSessionTitleApi(sessionId, title) {
+  const res = await fetch("/api/ai/guide-sessions", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: sessionId, title }),
+  });
+  if (!res.ok) throw new Error("Failed to update session title");
   const json = await res.json();
   return json.data;
 }
@@ -260,7 +298,7 @@ function SessionBarSkeleton() {
   return (
     <>
       <SkeletonKeyframes />
-      <div className={styles.sessionLoadingSelect}>
+      <div className={styles.sessionLoadingTitle}>
         <SkeletonBlock width="100%" height="44px" borderRadius="6px" />
       </div>
       <SkeletonBlock width="44px" height="44px" borderRadius="50%" />
@@ -288,10 +326,30 @@ function MessagesSkeleton() {
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg
+      className={styles.historyIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
 function DeleteChatIcon() {
   return (
     <svg
-      className={styles.deleteSessionIcon}
+      className={styles.historyDeleteIcon}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -323,6 +381,11 @@ export default function AiGuidePanel({ userId, userRoles }) {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [isTitleSaving, setIsTitleSaving] = useState(false);
   // false = tables not created yet; queries still work but history won't save
   const [dbReady, setDbReady] = useState(true);
 
@@ -343,6 +406,10 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // ── Refs ───────────────────────────────────────────────────────────────
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const titleInputRef = useRef(null);
+  const titleSaveRef = useRef(false);
+  const cancelTitleEditRef = useRef(false);
+  const historyButtonRef = useRef(null);
 
   const currentPage = useMemo(() => {
     const route = router?.asPath || router?.pathname || "";
@@ -355,6 +422,18 @@ export default function AiGuidePanel({ userId, userRoles }) {
       entryId: entry?.id || "",
     };
   }, [router?.asPath, router?.pathname]);
+
+  const currentSession = useMemo(
+    () => sessions.find((session) => session.id === currentSessionId) || null,
+    [currentSessionId, sessions]
+  );
+
+  const currentSessionTitle = currentSession?.title || "New conversation";
+  const filteredHistorySessions = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    if (!query) return sessions;
+    return sessions.filter((session) => String(session.title || "Untitled chat").toLowerCase().includes(query));
+  }, [historySearch, sessions]);
 
   const starterQuestions = useMemo(() => {
     if (!currentPage.title) {
@@ -373,6 +452,22 @@ export default function AiGuidePanel({ userId, userRoles }) {
       "How do slash commands work in Floating Notes?",
     ];
   }, [currentPage.title]);
+
+  useEffect(() => {
+    if (!isEditingTitle) setTitleDraft(currentSessionTitle);
+  }, [currentSessionTitle, isEditingTitle]);
+
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setIsHistoryOpen(false);
+      setHistorySearch("");
+      requestAnimationFrame(() => historyButtonRef.current?.focus());
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isHistoryOpen]);
 
   // ─────────────────────────────────────────────────────────────────────
   // Load sessions on mount
@@ -521,12 +616,17 @@ export default function AiGuidePanel({ userId, userRoles }) {
       // Show follow-up question chips for this reply
       setLatestSuggestedQuestions(result.suggestedQuestions || []);
 
-      // Update session title in the sidebar list if it auto-renamed
+      // Keep a manually edited title stable. Only a newly created session is
+      // auto-titled from its first question; later messages update recency.
       if (result.sessionId) {
         setSessions((prev) =>
           prev.map((s) =>
             s.id === result.sessionId
-              ? { ...s, title: text.slice(0, 60), updatedAt: new Date().toISOString() }
+              ? {
+                  ...s,
+                  ...(result.sessionId !== currentSessionId ? { title: text.slice(0, 60) } : {}),
+                  updatedAt: new Date().toISOString(),
+                }
               : s
           )
         );
@@ -577,7 +677,98 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // Start a new chat
   // ─────────────────────────────────────────────────────────────────────
 
+  // The title field is always mounted, so "editing" simply means focused. The
+  // flag stops the effect below from overwriting the draft mid-type.
+  const startEditingSessionTitle = () => {
+    setIsHistoryOpen(false);
+    setHistorySearch("");
+    setIsEditingTitle(true);
+    titleInputRef.current?.select();
+  };
+
+  const saveSessionTitle = async () => {
+    if (titleSaveRef.current) return;
+
+    const nextTitle = titleDraft.trim().replace(/\s+/g, " ").slice(0, 120);
+    if (!nextTitle) {
+      setTitleDraft(currentSessionTitle);
+      setIsEditingTitle(false);
+      return;
+    }
+    if (currentSessionId && nextTitle === currentSessionTitle) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    titleSaveRef.current = true;
+    setIsTitleSaving(true);
+    setSessionsError("");
+    try {
+      if (currentSessionId) {
+        const updatedSession = await updateSessionTitleApi(currentSessionId, nextTitle);
+        setSessions((previous) => previous.map((session) => (
+          session.id === currentSessionId
+            ? { ...session, ...updatedSession, title: updatedSession?.title || nextTitle }
+            : session
+        )));
+      } else {
+        const createdSession = await createNewSession(nextTitle);
+        setSessions((previous) => [createdSession, ...previous]);
+        setCurrentSessionId(createdSession.id);
+      }
+      setTitleDraft(nextTitle);
+      setIsEditingTitle(false);
+    } catch (error) {
+      setSessionsError(error.message || "Failed to update the conversation title");
+    } finally {
+      titleSaveRef.current = false;
+      setIsTitleSaving(false);
+    }
+  };
+
+  const handleTitleBlur = () => {
+    if (cancelTitleEditRef.current) {
+      cancelTitleEditRef.current = false;
+      return;
+    }
+    saveSessionTitle();
+  };
+
+  const handleTitleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.currentTarget.blur();
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      // The field stays mounted now, so cancel by reverting the draft and
+      // blurring — the flag stops that blur from saving.
+      cancelTitleEditRef.current = true;
+      setTitleDraft(currentSessionTitle);
+      setIsEditingTitle(false);
+      event.currentTarget.blur();
+    }
+  };
+
+  const closeHistory = () => {
+    setIsHistoryOpen(false);
+    setHistorySearch("");
+    requestAnimationFrame(() => historyButtonRef.current?.focus());
+  };
+
+  const toggleHistory = () => {
+    if (isHistoryOpen) {
+      closeHistory();
+      return;
+    }
+    setHistorySearch("");
+    setIsHistoryOpen(true);
+  };
+
   const handleNewChat = async () => {
+    setIsHistoryOpen(false);
+    setHistorySearch("");
+    setIsEditingTitle(false);
     // Just clear the UI — a session will be created on first message
     setCurrentSessionId(null);
     setMessages([]);
@@ -590,51 +781,46 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // Delete the current session
   // ─────────────────────────────────────────────────────────────────────
 
-  const handleDeleteSession = async () => {
-    if (!currentSessionId) return;
+  const handleDeleteSession = async (sessionId) => {
+    if (!sessionId) return;
+    const sessionToDelete = sessions.find((session) => session.id === sessionId);
     const confirmed = await confirm({
       title: "Delete chat session",
-      message: "Delete this chat session? This cannot be undone.",
+      message: `Delete "${sessionToDelete?.title || "Untitled chat"}"? This cannot be undone.`,
       confirmLabel: "Delete",
       cancelLabel: "Cancel",
     });
     if (!confirmed) return;
 
     try {
-      await deleteSessionApi(currentSessionId);
-      setSessions((prev) => prev.filter((s) => s.id !== currentSessionId));
-      // Switch to next session, or clear
-      setCurrentSessionId((prev) => {
-        const remaining = sessions.filter((s) => s.id !== prev);
-        return remaining.length > 0 ? remaining[0].id : null;
-      });
-      setMessages([]);
-      setLatestSuggestedQuestions([]);
+      await deleteSessionApi(sessionId);
+      const remainingSessions = sessions.filter((session) => session.id !== sessionId);
+      setSessions(remainingSessions);
+      if (sessionId === currentSessionId) {
+        setCurrentSessionId(remainingSessions[0]?.id || null);
+        setMessages([]);
+        setLatestSuggestedQuestions([]);
+      }
     } catch (err) {
-      setSendError(err.message || "Failed to delete session");
+      setSessionsError(err.message || "Failed to delete session");
     }
   };
 
   // ─────────────────────────────────────────────────────────────────────
-  // Switch session — called by the Dropdown onChange
-  // raw is the original option object: { value: session.id, label: session.title }
+  // Switch to a session selected from the history popup.
   // ─────────────────────────────────────────────────────────────────────
 
-  const handleSessionChange = useCallback((raw) => {
-    const selectedId = Number(raw?.value ?? raw?.id ?? null);
+  const handleSessionChange = useCallback((sessionId) => {
+    const selectedId = Number(sessionId);
     if (Number.isInteger(selectedId) && selectedId > 0) {
       setCurrentSessionId(selectedId);
+      setIsHistoryOpen(false);
+      setHistorySearch("");
     } else {
       setCurrentSessionId(null);
       setMessages([]);
     }
   }, []);
-
-  // Build the options list for the Dropdown from the current sessions array
-  const sessionOptions = useMemo(
-    () => sessions.map((s) => ({ value: s.id, label: s.title || "Untitled chat" })),
-    [sessions]
-  );
 
   // ─────────────────────────────────────────────────────────────────────
   // Suggestion chip click
@@ -684,30 +870,40 @@ export default function AiGuidePanel({ userId, userRoles }) {
           <SessionBarSkeleton />
         ) : (
           <>
-            {/* Session dropdown — global Dropdown component for consistent theme */}
-            <div className={styles.sessionSelectWrap}>
-              <Dropdown
-                options={sessionOptions}
-                value={currentSessionId}
-                onChange={handleSessionChange}
-                placeholder="New conversation"
-                size="sm"
-                ariaLabel="Select chat session"
-                style={{ width: "100%", minWidth: 0 }}
-                disabled={sessions.length === 0}
-              />
-            </div>
+            {/* The title is always a real text box — the canonical InputField,
+                so it carries the staffglobal .app-input treatment (height,
+                padding, radius, fill, focus ring) in every state. It used to
+                render as a bare heading button until clicked, which is why it
+                did not look like a field. Edits still save on blur / Enter and
+                revert on Escape. */}
+            <InputField
+              ref={titleInputRef}
+              type="text"
+              className={styles.sessionTitleField}
+              style={{ minWidth: 0 }}
+              value={titleDraft}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              onFocus={startEditingSessionTitle}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
+              maxLength={120}
+              placeholder="Conversation title"
+              aria-label="Conversation title"
+              title="Edit conversation title"
+              disabled={isTitleSaving}
+            />
 
-            {/* Delete current session */}
             <button
+              ref={historyButtonRef}
               type="button"
-              className={`app-btn app-btn--secondary ${styles.deleteSessionButton}`}
-              onClick={handleDeleteSession}
-              disabled={!currentSessionId}
-              title="Delete this chat"
-              aria-label="Delete session"
+              className={`app-btn app-btn--secondary ${styles.historyButton}`}
+              onClick={toggleHistory}
+              title="Chat history"
+              aria-label="Open chat history"
+              aria-haspopup="dialog"
+              aria-expanded={isHistoryOpen}
             >
-              <DeleteChatIcon />
+              <HistoryIcon />
             </button>
           </>
         )}
@@ -725,6 +921,100 @@ export default function AiGuidePanel({ userId, userRoles }) {
         </button>
       </div>
 
+      {isHistoryOpen && (
+        <PopupModal
+          isOpen
+          onClose={closeHistory}
+          ariaLabel="Chat history"
+          cardStyle={HISTORY_POPUP_CARD_STYLE}
+        >
+          <div className={styles.historyPopupContent}>
+            <header className="app-popup-compact-header">
+              <h3>Chat history</h3>
+              <div className="app-popup-compact-header__actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={closeHistory}
+                >
+                  Close
+                </Button>
+              </div>
+            </header>
+
+            {sessionsError && <StatusMessage tone="danger">{sessionsError}</StatusMessage>}
+
+            <div className={`app-layout-toolbar-row ${styles.historyToolbar}`}>
+              <SearchBar
+                type="search"
+                className={styles.historySearch}
+                value={historySearch}
+                onChange={(event) => setHistorySearch(event.target.value)}
+                onClear={() => setHistorySearch("")}
+                placeholder="Search conversations"
+                ariaLabel="Search conversations"
+              />
+              <span className={`app-badge app-badge--accent-soft ${styles.historyCount}`} aria-live="polite">
+                {sessions.length} {sessions.length === 1 ? "conversation" : "conversations"}
+              </span>
+            </div>
+
+            <LayerTheme
+              className={`${styles.historyList} themed-scrollbar`}
+              radius="var(--radius-sm)"
+              padding="0"
+              gap="0"
+              role="list"
+              aria-label="Conversations"
+            >
+              {filteredHistorySessions.length === 0 ? (
+                <EmptyState
+                  variant="bare"
+                  role="status"
+                  title={historySearch ? "No matching conversations" : "No saved conversations"}
+                  description={historySearch ? "Try a different conversation title." : "Start a new chat and it will appear here automatically."}
+                />
+              ) : filteredHistorySessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`${styles.historyRow} ${session.id === currentSessionId ? styles.historyRowActive : ""}`}
+                  role="listitem"
+                >
+                  <button
+                    type="button"
+                    className={`app-btn ${styles.historySessionButton}`}
+                    onClick={() => handleSessionChange(session.id)}
+                    aria-current={session.id === currentSessionId ? "true" : undefined}
+                  >
+                    <span className={styles.historyTitle}>{session.title || "Untitled chat"}</span>
+                    <span className={styles.historyMeta}>
+                      <time
+                        className={styles.historyDate}
+                        dateTime={session.updatedAt || session.createdAt || undefined}
+                      >
+                        {formatSessionDate(session.updatedAt || session.createdAt)}
+                      </time>
+                      {session.id === currentSessionId && <span className={styles.historyCurrent}>Current</span>}
+                    </span>
+                  </button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className={styles.historyDeleteButton}
+                    onClick={() => handleDeleteSession(session.id)}
+                    title="Delete chat"
+                    aria-label={`Delete ${session.title || "Untitled"} chat`}
+                  >
+                    <DeleteChatIcon />
+                  </Button>
+                </div>
+              ))}
+            </LayerTheme>
+          </div>
+        </PopupModal>
+      )}
+
       {sessionsError && (
         <div className={styles.errorBanner}>{sessionsError}</div>
       )}
@@ -740,15 +1030,12 @@ export default function AiGuidePanel({ userId, userRoles }) {
       )}
 
       {/* Message list area */}
-      <LayerTheme
-        as="section"
-        className={`${styles.messages} themed-scrollbar`}
-        radius="var(--radius-md)"
-        padding="var(--space-3)"
-        gap="var(--space-3)"
+      <div
+        className={styles.messages}
         role="log"
         aria-live="polite"
         aria-label="Chat messages"
+        tabIndex={0}
       >
         {/* Loading state */}
         {messagesLoading && <MessagesSkeleton />}
@@ -796,39 +1083,14 @@ export default function AiGuidePanel({ userId, userRoles }) {
                 {isUser ? (
                   <div className={styles.bubbleContent}>{msg.content}</div>
                 ) : (
-                  <LayerSurface
+                  <LayerTheme
                     className={styles.bubbleContent}
                     radius="var(--radius-sm)"
                     padding="var(--space-3) var(--space-4)"
                     gap="var(--space-sm)"
                   >
                     {renderMarkdown(msg.content)}
-                  </LayerSurface>
-                )}
-
-                {/* Source citations under assistant messages */}
-                {!isUser && msg.sources && msg.sources.length > 0 && (
-                  <div className={styles.sourceGroup}>
-                    <span className={styles.sourceLabel}>Related sections</span>
-                    <div className={styles.sources} aria-label="Related sections">
-                      {msg.sources.map((src) =>
-                        src.route ? (
-                          <a
-                            key={src.id}
-                            href={src.route}
-                            className={`${styles.sourceTag} ${styles.sourceTagLink}`}
-                            title={`Navigate to ${src.route}`}
-                          >
-                            {src.title}
-                          </a>
-                        ) : (
-                          <span key={src.id} className={styles.sourceTag}>
-                            {src.title}
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
+                  </LayerTheme>
                 )}
 
                 {/* Follow-up suggestions after the last assistant message */}
@@ -864,7 +1126,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
-      </LayerTheme>
+      </div>
 
       {/* Send error */}
       {sendError && (

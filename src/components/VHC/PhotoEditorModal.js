@@ -4,8 +4,9 @@
 // preset colour palette.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import VHCModalShell from "./VHCModalShell";
+import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const TOOLS = [
   { id: "circle", label: "Circle" },
@@ -36,12 +37,6 @@ function resolvePresetColors() {
   });
 }
 
-const PANEL_STYLE = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-md)",
-  padding: "var(--space-4)",
-};
-
 const SECTION_LABEL_STYLE = {
   fontSize: "var(--text-label)",
   fontWeight: 700,
@@ -52,23 +47,24 @@ const SECTION_LABEL_STYLE = {
   display: "block",
 };
 
-const TOOL_BUTTON_STYLE = {
-  padding: "var(--space-sm) var(--space-3)",
-  borderRadius: "var(--radius-sm)",
-  fontSize: "var(--text-body-sm)",
-  fontFamily: "var(--font-family)",
-  cursor: "pointer",
-  textAlign: "center",
-  transition: "var(--control-transition)",
-  userSelect: "none",
-};
-
-export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, onSkip }) {
+export default function PhotoEditorModal({
+  isOpen,
+  photoFile,
+  onSave,
+  onCancel,
+  onSkip,
+  // Queue navigation. Supplied when several photos were captured in one
+  // session: each receives the current edit flattened into a file so the
+  // work is kept when the technician cycles to another photo.
+  onBack,
+  onNext,
+  queueIndex = 0,
+  queueTotal = 0,
+}) {
   const [tool, setTool] = useState("circle");
   const presetColors = useMemo(() => {
     void isOpen;
     return resolvePresetColors();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   const [color, setColor] = useState(() => resolvePresetColors()[0]);
   const [history, setHistory] = useState([]);
@@ -171,7 +167,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, photoFile]);
 
   const restoreFromHistory = (step) => {
@@ -332,7 +327,10 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     compose();
   };
 
-  const exportImage = () => {
+  // Flatten the annotations into a JPEG and hand it to `deliver`. Every exit
+  // from the editor (Save, Back, Next) goes through here so an in-progress
+  // edit is never silently dropped.
+  const exportImage = (deliver) => {
     compose();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -342,7 +340,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
         if (blob) {
           const fileName = `edited_${Date.now()}.jpg`;
           const file = new File([blob], fileName, { type: "image/jpeg" });
-          onSave(file);
+          deliver(file);
         }
       },
       "image/jpeg",
@@ -350,19 +348,18 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     );
   };
 
+  const handleSavePress = () => exportImage((file) => onSave?.(file));
+  const handleBackPress = () => exportImage((file) => onBack?.(file));
+  const handleNextPress = () => exportImage((file) => onNext?.(file));
+
   const canUndo = historyStep > 0;
   const canRedo = historyStep < history.length - 1;
 
   const headerActions = (
-    <div
-      style={{
-        display: "flex",
-        gap: "var(--space-2)",
-        flexWrap: "wrap",
-        justifyContent: "flex-end",
-        userSelect: "none",
-      }}
-    >
+    <div className="app-popup-compact-header__actions">
+      <Button variant="primary" size="sm" onClick={handleSavePress} disabled={!imageLoaded}>
+        Save Edit
+      </Button>
       {onSkip && (
         <Button variant="secondary" size="sm" onClick={() => onSkip(photoFile)} disabled={!imageLoaded}>
           Skip Edit
@@ -371,8 +368,8 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
       <Button variant="secondary" size="sm" onClick={resetToOriginal} disabled={historyStep === 0}>
         Reset
       </Button>
-      <Button variant="primary" size="sm" onClick={exportImage} disabled={!imageLoaded}>
-        Save Edit
+      <Button variant="secondary" size="sm" onClick={onCancel}>
+        Close
       </Button>
     </div>
   );
@@ -380,191 +377,203 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
   const renderToolButton = (t) => {
     const active = tool === t.id;
     return (
-      <button
+      <Button
         key={t.id}
         type="button"
+        variant={active ? "primary" : "secondary"}
+        size="sm"
         onClick={() => setTool(t.id)}
         aria-pressed={active}
-        style={{
-          ...TOOL_BUTTON_STYLE,
-          background: active ? "var(--secondary-hover)" : "var(--surface)",
-          color: active ? "var(--primary)" : "var(--text-1)",
-          fontWeight: active ? 700 : 500,
-        }}
+        style={{ width: "100%" }}
       >
         {t.label}
-      </button>
+      </Button>
     );
   };
 
   return (
-    <VHCModalShell
+    <PopupModal
       isOpen={isOpen}
-      title="Edit Photo"
-      width="1000px"
-      height="750px"
       onClose={onCancel}
-      headerActions={headerActions}
-      overlayStyle={{ userSelect: "none", WebkitUserSelect: "none" }}
+      closeOnBackdrop={false}
+      ariaLabel="Edit photo"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{ width: "min(1000px, 100%)", overflow: "hidden" }}
     >
       <div
+        className="app-settings-popup app-media-editor-popup"
         style={{
-          display: "grid",
-          gridTemplateColumns: "220px 1fr",
-          gap: "var(--space-4)",
-          height: "100%",
           minHeight: 0,
           userSelect: "none",
           WebkitUserSelect: "none",
         }}
       >
-        <aside
-          style={{
-            ...PANEL_STYLE,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-5)",
-            overflowY: "auto",
-          }}
-        >
-          <div>
-            <span style={SECTION_LABEL_STYLE}>Shape</span>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-sm)" }}>
-              {TOOLS.map(renderToolButton)}
-            </div>
-          </div>
-
-          <div>
-            <span style={SECTION_LABEL_STYLE}>Colour</span>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "var(--space-sm)",
-              }}
-            >
-              {presetColors.map((c) => {
-                const active = color === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    aria-label={`Choose colour ${c}`}
-                    aria-pressed={active}
-                    style={{
-                      width: "100%",
-                      height: 44,
-                      borderRadius: "var(--control-radius)",
-                      background: c,
-                      border: active
-                        ? "3px solid var(--checkbox-ring-color)"
-                        : "1px solid var(--checkbox-ring-color)",
-                      cursor: "pointer",
-                      transition: "var(--control-transition)",
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-            <button
-              type="button"
-              onClick={undo}
-              disabled={!canUndo}
-              style={{
-                flex: 1,
-                padding: "var(--space-sm)",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--surface)",
-                color: canUndo ? "var(--text-1)" : "var(--text-1)",
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 600,
-                cursor: canUndo ? "pointer" : "not-allowed",
-                opacity: canUndo ? 1 : 0.55,
-                fontFamily: "var(--font-family)",
-                transition: "var(--control-transition)",
-                userSelect: "none",
-              }}
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              onClick={redo}
-              disabled={!canRedo}
-              style={{
-                flex: 1,
-                padding: "var(--space-sm)",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--surface)",
-                color: canRedo ? "var(--text-1)" : "var(--text-1)",
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 600,
-                cursor: canRedo ? "pointer" : "not-allowed",
-                opacity: canRedo ? 1 : 0.55,
-                fontFamily: "var(--font-family)",
-                transition: "var(--control-transition)",
-                userSelect: "none",
-              }}
-            >
-              Redo
-            </button>
-          </div>
-        </aside>
+        <header className="app-popup-compact-header">
+          <h2>{queueTotal > 1 ? `Edit Photo · ${queueIndex + 1} of ${queueTotal}` : "Edit Photo"}</h2>
+          {headerActions}
+        </header>
 
         <div
           style={{
-            background: "var(--surfaceMutedToken)",
-            borderRadius: "var(--radius-md)",
-            overflow: "hidden",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
+            flexDirection: "column",
+            gap: 10,
+            flex: "1 1 auto",
             minHeight: 0,
+            overflowY: "auto",
           }}
         >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
+          {/* Controls run full width along the top of the popup, under the header
+              actions and above the preview. Two rows maximum: the groups wrap as
+              units rather than growing the bar. */}
+          <LayerTheme
+            as="aside"
+            sectionKey="photo-editor-shape-colour"
+            parentKey="shared-popup-card"
+            gap="var(--space-sm)"
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              cursor: "crosshair",
-              touchAction: "none",
-              visibility: imageLoaded ? "visible" : "hidden",
-              userSelect: "none",
-              WebkitUserSelect: "none",
+              flex: "0 0 auto",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "flex-end",
+              columnGap: "var(--space-5)",
             }}
-          />
-          {!imageLoaded && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                color: "var(--text-1)",
-                pointerEvents: "none",
-                fontSize: "var(--text-body-sm)",
-              }}
-            >
-              Loading image...
+          >
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <span style={SECTION_LABEL_STYLE}>Shape</span>
+              {/* Two columns: Circle / Square on the first row, Line under Circle
+                  and Arrow under Square on the second. */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                {TOOLS.map(renderToolButton)}
+              </div>
             </div>
-          )}
+
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <span style={SECTION_LABEL_STYLE}>Colour</span>
+              {/* Same two-column grid: red / green on the first row, white under
+                  red and black under green on the second. */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {presetColors.map((c) => {
+                  const active = color === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      aria-label={`Choose colour ${c}`}
+                      aria-pressed={active}
+                      style={{
+                        width: "100%",
+                        height: 44,
+                        borderRadius: "var(--control-radius)",
+                        background: c,
+                        border: active
+                          ? "3px solid var(--checkbox-ring-color)"
+                          : "1px solid var(--checkbox-ring-color)",
+                        cursor: "pointer",
+                        transition: "var(--control-transition)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Same two-column grid again: Undo / Redo on the first row, Back
+                under Undo and Next under Redo on the second. */}
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                <Button type="button" variant="secondary" size="sm" onClick={undo} disabled={!canUndo} style={{ width: "100%" }}>
+                  Undo
+                </Button>
+                <Button type="button" variant="secondary" size="sm" onClick={redo} disabled={!canRedo} style={{ width: "100%" }}>
+                  Redo
+                </Button>
+                {/* Cycle through a multi-photo capture session. Disabled when this
+                    editor was opened for a single photo. */}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleBackPress}
+                  disabled={!onBack || !imageLoaded}
+                  style={{ width: "100%" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleNextPress}
+                  disabled={!onNext || !imageLoaded}
+                  style={{ width: "100%" }}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </LayerTheme>
+
+          {/* Media preview stays on the popup card's own --surface layer so it reads as
+              a separate card from the --theme shape and colour panel (ladder, §3.0a-2). */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              overflow: "hidden",
+              flex: "1 1 auto",
+              minHeight: 240,
+              minWidth: 0,
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+              onTouchStart={startDrawing}
+              onTouchMove={draw}
+              onTouchEnd={stopDrawing}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                cursor: "crosshair",
+                touchAction: "none",
+                visibility: imageLoaded ? "visible" : "hidden",
+                userSelect: "none",
+                WebkitUserSelect: "none",
+              }}
+            />
+            {!imageLoaded && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  color: "var(--text-1)",
+                  pointerEvents: "none",
+                  fontSize: "var(--text-body-sm)",
+                }}
+              >
+                Loading image...
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </VHCModalShell>
+    </PopupModal>
   );
 }

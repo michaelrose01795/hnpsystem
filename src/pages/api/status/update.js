@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/update.js
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { recordAutomaticMovementForStatus } from "@/lib/database/tracking"; // automatic tracking movement, owned by the status change
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory to optionally use service role credentials
 import { supabase as browserSupabase } from "@/lib/database/supabaseClient"; // Import shared Supabase client for fallback usage
 import {
@@ -221,6 +222,23 @@ async function handler(req, res) {
     if (historyError) {
       throw historyError; // Surface insert failures to caller
     }
+
+    // Automatic tracking movement, owned by this status change.
+    //
+    // This route writes `jobs.status` directly rather than through `updateJob`,
+    // so it needs its own call to the same helper — otherwise a transition made
+    // here would produce no movement now that /tracking no longer writes one on
+    // every viewer's behalf. Attribution is the `userId` that performed the
+    // transition. Fire-and-forget: a tracking event must not fail the status
+    // change or delay the response, and `logNextActionEvents` still de-duplicates
+    // within its 30s window if another chokepoint also fires.
+    void recordAutomaticMovementForStatus({
+      jobId: jobRow.id,
+      status: targetStatusLabel,
+      performedBy: userId,
+    }).catch((movementError) =>
+      console.error("Auto tracking movement failed", movementError)
+    );
 
     if (statusMetadata?.notifyDepartment) {
       console.log(

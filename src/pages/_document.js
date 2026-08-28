@@ -2,6 +2,7 @@
 // Custom Next.js document that boots the shared semantic theme tokens before React hydrates.
 
 import Document, { Html, Head, Main, NextScript } from "next/document";
+import ROUTE_SCOPED_CSS from "@/config/routeScopedCss.generated.json";
 import {
   ACCENT_PALETTES,
   DEFAULT_ACCENT,
@@ -198,6 +199,21 @@ function buildClientRuntimeExpression() {
   return `(${buildThemeTokens.toString()})(resolvedMode, resolvedAccent)`;
 }
 
+// Route-scoped stylesheets for a first paint on this path.
+//
+// These two used to be imported by _app, which meant all 162 routes downloaded
+// them. They are emitted as static assets instead and linked only here (initial
+// HTML) and from _app's scope effect (client-side navigation). Keep the two
+// predicates in step with isWebsitePath / isTrackingPath in _app.js.
+const routeScopedCssFor = (pathname = "") => {
+  const keys = [];
+  if (pathname === "/website" || pathname.startsWith("/website/")) keys.push("website");
+  if (pathname === "/tracking" || pathname.startsWith("/tracking/")) keys.push("trackingMap");
+  return keys
+    .map((key) => ({ key, href: ROUTE_SCOPED_CSS[key] }))
+    .filter((entry) => Boolean(entry.href));
+};
+
 class MyDocument extends Document {
   static async getInitialProps(ctx) {
     const initialProps = await Document.getInitialProps(ctx);
@@ -206,11 +222,16 @@ class MyDocument extends Document {
       ...initialProps,
       bootTheme: getBootTheme(cookies, ctx?.pathname || ""),
       hasAuthCookie: hasAuthenticatedCookie(cookies),
+      // Which route-scoped stylesheets this document needs (see
+      // tools/scripts/emit-route-scoped-css.js). Resolved here rather than in
+      // _app so the <link> is in the initial HTML and the route paints styled.
+      routeCss: routeScopedCssFor(ctx?.pathname || ""),
     };
   }
 
   render() {
     const bootTheme = this.props.bootTheme || getBootTheme({});
+    const routeCss = Array.isArray(this.props.routeCss) ? this.props.routeCss : [];
 
     return (
       <Html
@@ -222,10 +243,23 @@ class MyDocument extends Document {
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <meta name="theme-color" content={bootTheme.background} />
-          {/* The desktop/sidebar icon is the canonical app icon so both stay in sync. */}
-          <link rel="icon" type="image/png" href="/images/logo/desktop.png" />
-          <link rel="shortcut icon" type="image/png" href="/images/logo/desktop.png" />
-          <link rel="apple-touch-icon" href="/images/logo/desktop.png" />
+          {/* Tab and home-screen icons, generated from the canonical
+              /images/logo/desktop.png so they stay visually in sync with the
+              desktop app icon and the sidebar rail.
+
+              These used to point straight at desktop.png — a 1254x1254 PNG that
+              is 806 KB over the wire, requested by every browser on every page
+              just to draw a 16px tab icon. Serving each size at its own size
+              takes that to ~2 KB for the tab and ~15 KB for the home-screen
+              icon. Regenerate with sharp from desktop.png if the logo changes. */}
+          <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/icon-32.png" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/images/logo/icon-192.png" />
+          <link rel="shortcut icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/icon-180.png" />
+          {/* Route-scoped global CSS — see routeScopedCssFor above. */}
+          {routeCss.map(({ key, href }) => (
+            <link key={key} rel="stylesheet" href={href} data-route-css={key} />
+          ))}
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

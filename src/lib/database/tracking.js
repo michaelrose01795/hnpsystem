@@ -1,6 +1,7 @@
 // file location: src/lib/database/tracking.js
 import { getDatabaseClient } from "@/lib/database/client"; // import supabase service client
 import { apiRequest } from "@/lib/api/client";
+import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table (client + server)
 
 const supabase = getDatabaseClient(); // create singleton client
 
@@ -265,6 +266,78 @@ export const logNextActionEvents = async ({
       vehicleEvent,
     },
   };
+};
+
+// Automatic movement, owned by the status change itself.
+//
+// This is the replacement for the client-owned path described in
+// src/lib/tracking/autoMovement.js. It is called from the code that performs the
+// status change (`updateJob`, and /api/tracking/next-action for browser-side
+// callers) rather than from a page's realtime subscription, so:
+//
+//   * the movement happens whether or not anybody has /tracking open; and
+//   * `performedBy` is the member of staff who changed the status.
+//
+// It is non-blocking by contract: the caller must never fail a status change
+// because a tracking event could not be written. Every exit path returns a
+// result object and nothing throws.
+//
+// `deduplicate` is left on. The server-side duplicate protection was added to
+// contain the old multi-viewer burst and is kept as a safety layer while both
+// paths can theoretically fire (a legacy client, a status change routed through
+// two chokepoints). It is keyed on job + vehicle status + key action inside a
+// 30s window, so a genuinely different transition still writes.
+// `jobs.status_updated_by` is a text column and carries sentinels such as
+// "SYSTEM_CLOCKING" alongside real user ids. `performed_by` / `created_by` are
+// integer FKs to public.users, so anything that is not a positive integer must
+// become NULL rather than 0 — `toNullableInteger` above would map a
+// digit-free sentinel to 0 and break the foreign key.
+const toUserIdOrNull = (value) => {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+export const recordAutomaticMovementForStatus = async ({
+  jobId,
+  status,
+  performedBy = null,
+  job = null,
+}) => {
+  const rule = getAutoMovementRule(status);
+  if (!rule || !jobId) return { success: true, data: { skipped: true } };
+
+  try {
+    let row = job;
+    if (!row || row.vehicle_id === undefined || row.job_number === undefined) {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id, job_number, vehicle_id, vehicle_reg")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (error) {
+        console.error("Auto movement: unable to read job", error);
+        return { success: false, error };
+      }
+      row = data || {};
+    }
+
+    return await logNextActionEvents({
+      actionType: "job_status_change",
+      jobId,
+      jobNumber: String(row.job_number || "").trim().toUpperCase(),
+      vehicleId: row.vehicle_id || null,
+      vehicleReg: String(row.vehicle_reg || "").trim().toUpperCase(),
+      keyLocation: rule.keyLocation,
+      vehicleLocation: rule.vehicleLocation,
+      vehicleStatus: rule.vehicleStatus,
+      notes: `Auto-sync from status "${status}"`,
+      performedBy: toUserIdOrNull(performedBy),
+      deduplicate: true,
+    });
+  } catch (error) {
+    console.error("Auto movement error", error);
+    return { success: false, error };
+  }
 };
 
 export const getLoanCarScheduleBookings = async ({ startDate, endDate } = {}) => {
@@ -601,6 +674,41 @@ const fetchLatestEvent = async (table, idField, idValue, selectFields) => {
   return { data: data?.[0] || null, error };
 };
 
+// Manual location update — APPEND, never rewrite.
+//
+// This used to run `update(payload).eq("job_id", jobId)`, with an insert only as
+// a fallback when the update matched nothing. PostgREST applies that UPDATE to
+// *every* matching row, so one manual location change rewrote the whole of that
+// job's key and vehicle history: every historical row had its
+// action/status/location/notes/performed_by replaced with the new values and its
+// `occurred_at` restamped to now. A job's movement timeline collapsed into N
+// identical entries dated at the moment of the last edit, the "Added to parking
+// & key tracking" marker that /api/status/getHistory derives from the oldest row
+// moved with it, and every row was re-attributed to whoever made the edit —
+// destroying the audit trail.
+//
+// These tables are append-only event logs (`key_tracking_events`,
+// `vehicle_tracking_events` — one row per movement, ordered by `occurred_at`).
+// The current tracker location is *derived* from the newest row, so recording a
+// new location is an INSERT. Nothing pre-existing is ever mutated.
+//
+// Per-side addressing is preserved: a caller that passes only `keyLocation`
+// writes only a key row, and vice versa — `undefined` means "not addressed".
+//
+// Status carry-forward: the /tracking location form does not send a vehicle
+// status, and `statusLabelForAction("location_update")` falls through to
+// "Ready For Collection". Under the old mass-update that label was stamped over
+// the job's entire history; as a plain append it would silently become the job's
+// current status. A location change is not a status change, so when the caller
+// does not supply one we carry forward the status of the latest existing vehicle
+// event, falling back to the action label only when the job has no tracking
+// history at all.
+//
+// De-duplication is deliberately NOT applied here. It is scoped to the
+// automatic status-change path (`logNextActionEvents({ deduplicate: true })`),
+// which could fire once per open browser tab. A manual update is one deliberate
+// action by one member of staff, and a correction made twice within the window
+// must still be recorded.
 export const updateTrackingLocations = async ({
   actionType,
   jobId,
@@ -623,95 +731,63 @@ export const updateTrackingLocations = async ({
     return { success: false, error: { message: "Missing jobId or vehicleId for tracking update" } };
   }
 
-  const nextKeyAction = buildKeyActionLabel(actionType, keyLocation);
-  const nextVehicleStatus = vehicleStatus || statusLabelForAction(actionType);
-
-  const keyPayload =
-    keyLocation !== undefined
-      ? {
-          action: nextKeyAction,
-          notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
-          performed_by: performedBy || null,
-          occurred_at: timestamp,
-        }
-      : null;
-  const vehiclePayload =
-    vehicleLocation !== undefined
-      ? {
-          status: nextVehicleStatus,
-          location: vehicleLocation || null,
-          notes: buildVehicleNotes({ notes }),
-          created_by: performedBy || null,
-          occurred_at: timestamp,
-        }
-      : null;
-
   let keyResult = { data: null, error: null };
   let vehicleResult = { data: null, error: null };
 
-  if (keyPayload) {
-    const { data, error } = await supabase
+  if (keyLocation !== undefined) {
+    keyResult = await supabase
       .from("key_tracking_events")
-      .update(keyPayload)
-      .eq(filterField, filterValue)
-      .select();
-    if (error) {
-      console.error("Failed to update key tracking entries", error);
-      return { success: false, error };
-    }
-    if (!data || data.length === 0) {
-      const insertRes = await supabase
-        .from("key_tracking_events")
-        .insert({
-          job_id: targetJobId,
-          vehicle_id: targetVehicleId,
-          action: nextKeyAction,
-          notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
-          performed_by: performedBy || null,
-        })
-        .select()
-        .single();
-      keyResult = insertRes;
-    } else {
-      keyResult = { data: data[0], error: null };
+      .insert({
+        job_id: targetJobId,
+        vehicle_id: targetVehicleId,
+        action: buildKeyActionLabel(actionType, keyLocation),
+        notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
+        performed_by: performedBy || null,
+        occurred_at: timestamp,
+      })
+      .select()
+      .single();
+    if (keyResult.error) {
+      console.error("Failed to append key tracking entry", keyResult.error);
+      return { success: false, error: keyResult.error };
     }
   }
 
-  if (vehiclePayload) {
-    const { data, error } = await supabase
+  if (vehicleLocation !== undefined) {
+    let nextVehicleStatus = vehicleStatus || null;
+    if (!nextVehicleStatus) {
+      const { data: latestVehicleEvent, error: latestVehicleError } = await fetchLatestEvent(
+        "vehicle_tracking_events",
+        filterField,
+        filterValue,
+        "event_id, status, occurred_at"
+      );
+      // Fail open: a lookup error must not stop the movement being recorded.
+      if (latestVehicleError) {
+        console.error("Failed to read latest vehicle tracking status", latestVehicleError);
+      }
+      nextVehicleStatus = latestVehicleEvent?.status || statusLabelForAction(actionType);
+    }
+
+    vehicleResult = await supabase
       .from("vehicle_tracking_events")
-      .update(vehiclePayload)
-      .eq(filterField, filterValue)
-      .select();
-    if (error) {
-      console.error("Failed to update vehicle tracking entries", error);
-      return { success: false, error };
-    }
-    if (!data || data.length === 0) {
-      const insertRes = await supabase
-        .from("vehicle_tracking_events")
-        .insert({
-          job_id: targetJobId,
-          vehicle_id: targetVehicleId,
-          status: nextVehicleStatus,
-          location: vehicleLocation || null,
-          notes: buildVehicleNotes({ notes }),
-          created_by: performedBy || null,
-        })
-        .select()
-        .single();
-      vehicleResult = insertRes;
-    } else {
-      vehicleResult = { data: data[0], error: null };
+      .insert({
+        job_id: targetJobId,
+        vehicle_id: targetVehicleId,
+        status: nextVehicleStatus,
+        location: vehicleLocation || null,
+        notes: buildVehicleNotes({ notes }),
+        created_by: performedBy || null,
+        occurred_at: timestamp,
+      })
+      .select()
+      .single();
+    if (vehicleResult.error) {
+      console.error("Failed to append vehicle tracking entry", vehicleResult.error);
+      return { success: false, error: vehicleResult.error };
     }
   }
 
-  if (keyResult.error || vehicleResult.error) {
-    console.error("Failed to update tracking entries", keyResult.error || vehicleResult.error);
-    return { success: false, error: keyResult.error || vehicleResult.error };
-  }
-
-  // Debug logs removed after troubleshooting.
   return {
     success: true,
     data: {
@@ -805,6 +881,45 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
   });
 };
 
+// Rows scanned per table when building the tracking list.
+//
+// This was 50. Under the old behaviour a manual location update rewrote a job's
+// existing rows instead of adding one, so row growth was driven only by
+// automatic movements and 50 rows covered comfortably more jobs than the
+// workshop holds. Now that every movement is a genuine append (see
+// `updateTrackingLocations`), a single actively-moved job can occupy several
+// rows in the window, and a 50-row scan would start dropping whole jobs off the
+// list. The window is widened so the newest-row-per-job collapse below still
+// sees every active job; the queries stay bounded and indexed on occurred_at.
+const TRACKING_SNAPSHOT_EVENT_LIMIT = 400;
+
+// The tracking list shows one row per job: its CURRENT key and vehicle location.
+// The underlying tables are append-only event logs, so "current" means the newest
+// row for that job — every older row is history and must not influence the list.
+//
+// `mergeEntry` is last-write-wins for the mutable fields (status, locations,
+// notes), and the queries below come back `occurred_at` DESC, so feeding it every
+// row made the OLDEST event win and the list showed a stale location. That was
+// masked while manual updates rewrote a job's whole history to identical values;
+// once those became true appends (see `updateTrackingLocations`) it would have
+// pinned the list to each job's first ever movement. Collapse to the newest row
+// per key here, before merging.
+const newestEventPerKey = (events, keyOf) => {
+  const seen = new Set();
+  const newest = [];
+  // Input is already occurred_at DESC, so the first row seen for a key is its
+  // latest. Sort defensively rather than trusting the caller's ordering.
+  [...(events || [])]
+    .sort((a, b) => new Date(b?.occurred_at || 0).getTime() - new Date(a?.occurred_at || 0).getTime())
+    .forEach((event) => {
+      const key = keyOf(event);
+      if (seen.has(key)) return;
+      seen.add(key);
+      newest.push(event);
+    });
+  return newest;
+};
+
 export const fetchTrackingSnapshot = async () => {
   const [{ data: keyEvents, error: keyError }, { data: vehicleEvents, error: vehicleError }] = await Promise.all([
     supabase
@@ -813,14 +928,14 @@ export const fetchTrackingSnapshot = async () => {
         "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, assigned_to, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
-      .limit(50),
+      .limit(TRACKING_SNAPSHOT_EVENT_LIMIT),
     supabase
       .from("vehicle_tracking_events")
       .select(
         "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, assigned_to, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
-      .limit(50),
+      .limit(TRACKING_SNAPSHOT_EVENT_LIMIT),
   ]);
 
   if (keyError || vehicleError) {
@@ -830,7 +945,7 @@ export const fetchTrackingSnapshot = async () => {
 
   const entryMap = new Map();
 
-  (vehicleEvents || []).forEach((event) => {
+  newestEventPerKey(vehicleEvents, (event) => event.job_id || `vehicle-${event.event_id}`).forEach((event) => {
     const join = normaliseJobJoin(event.jobs);
     const fallbackMakeModel =
       event.vehicle?.make_model ||
@@ -862,7 +977,7 @@ export const fetchTrackingSnapshot = async () => {
     });
   });
 
-  (keyEvents || []).forEach((event) => {
+  newestEventPerKey(keyEvents, (event) => event.job_id || `key-${event.key_event_id}`).forEach((event) => {
     const join = normaliseJobJoin(event.jobs);
     const fallbackMakeModel =
       event.vehicle?.make_model ||
@@ -876,7 +991,14 @@ export const fetchTrackingSnapshot = async () => {
       serviceType: join.serviceType,
       makeModel: join.makeModel || fallbackMakeModel,
       colour: join.colour || event.vehicle?.colour || "",
-      status: statusLabelForAction("job_complete"),
+      // Vehicle status is owned by vehicle_tracking_events. This used to pass
+      // the constant statusLabelForAction("job_complete") — "Ready For
+      // Collection" — which, because mergeEntry is last-write-wins on status and
+      // the key loop runs after the vehicle loop, overwrote the real status of
+      // every job that had a key event and drove getTrackerLocationFlags to
+      // classify them all as "collection". Leave it unset; the entry keeps
+      // jobStatus below and the UI already falls back to it.
+      status: null,
       jobStatus: event.jobs?.status || null,
       assignedTo: join.assignedTo ?? null,
       vehicleLocation: null,

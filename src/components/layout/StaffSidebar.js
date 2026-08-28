@@ -30,7 +30,8 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { canShowDevPages } from "@/lib/dev-tools/config";
-import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
+import { clearRememberedStaffRoute } from "@/lib/auth/returnRoute";
+import { DEV_PLATFORM_ROLE, hasAllAccessRole } from "@/lib/auth/roles";
 import {
   isOverlayHidden as readOverlayHidden,
   setOverlayHidden as writeOverlayHidden,
@@ -243,16 +244,6 @@ export default function Sidebar({
     color: "var(--success-text)",
     border: "none",
   };
-  const successControlStyle = {
-    background: "var(--success-surface)",
-    color: "var(--success-text)",
-    border: "none",
-  };
-  const dangerControlStyle = {
-    background: "var(--danger-surface)",
-    color: "var(--danger-text)",
-    border: "none",
-  };
   const handleShowOverlay = useCallback(() => {
     writeOverlayHidden(false);
   }, []);
@@ -263,6 +254,7 @@ export default function Sidebar({
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
   const isDevRole = userRoles.includes(DEV_PLATFORM_ROLE);
+  const hasFullAccess = hasAllAccessRole(userRoles); // All Access demo login
   const canShowDevPagesLink =
     Boolean(user) && !inPresentationMode && canShowDevPages();
   const canShowDevOverlayControl =
@@ -311,6 +303,7 @@ export default function Sidebar({
     if (isRouteAllowed && shortcut.href && !isRouteAllowed(shortcut.href)) return false;
     if (inPresentationMode && isRouteAllowed && shortcut.href) return true;
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
+    if (hasFullAccess) return true; // All Access demo login
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
   const headerLogoStyle = {
@@ -343,6 +336,7 @@ export default function Sidebar({
       if (inPresentationMode) return true;
     }
     if (!item.roles || item.roles.length === 0) return true;
+    if (hasFullAccess) return true; // All Access demo login
     // Check if any of the item's required roles match the user's roles (case-insensitive)
     const access = item.roles.some((requiredRole) =>
       userRoles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase())
@@ -428,6 +422,11 @@ export default function Sidebar({
       return;
     }
     if (typeof window !== "undefined") {
+      // Signing out deliberately ends the session's "place": the next sign-in
+      // should start at the role default rather than being thrown back into the
+      // page this user chose to leave. This path hard-replaces the location and
+      // never reaches UserContext.logout, so it has to clear it itself.
+      clearRememberedStaffRoute();
       window.sessionStorage.setItem(
         LOGOUT_BARRIER_STORAGE_KEY,
         String(Date.now() + LOGOUT_BARRIER_MS)
@@ -690,8 +689,13 @@ export default function Sidebar({
               // offered on the desktop-download card) rather than the wide wordmark.
               // Routed through BrandLogo so the icon recolours to the active theme
               // accent, matching the expanded wordmark instead of staying a fixed red.
+              // icon-256 rather than the 1254x1254 desktop.png: this rail renders
+              // at 60-75px, and BrandLogo downloads the raw file at full size to
+              // recolour it on a canvas — so the source was 806 KB for a 75px
+              // icon. 256px keeps >3x headroom at any DPR. Same image, generated
+              // from the same source.
               <BrandLogo
-                src="/images/logo/desktop.png"
+                src="/images/logo/icon-256.png"
                 alt="H&P"
                 style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
               />
@@ -985,25 +989,19 @@ export default function Sidebar({
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       {canUseEmployeeClock && (
                         <button
-                          className="app-btn"
+                          className={`app-btn ${
+                            isClockedIn ? "app-btn--secondary" : "app-btn--primary"
+                          }`}
                           type="button"
                           onClick={handleClockToggle}
                           disabled={clockLoading}
-                          style={
-                            isClockedIn
-                              ? { flex: 1, opacity: clockLoading ? 0.6 : 1, ...dangerControlStyle }
-                              : {
-                                  flex: 1,
-                                  opacity: clockLoading ? 0.6 : 1,
-                                  ...successControlStyle,
-                                }
-                          }
+                          style={{ flex: 1 }}
                         >
                           {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
                         </button>
                       )}
                       <button
-                        className="app-btn app-tone-danger"
+                        className="app-btn app-btn--secondary"
                         type="button"
                         onClick={handleLogout}
                         data-presentation-allow-interaction="true"
@@ -1023,7 +1021,7 @@ export default function Sidebar({
                       >
                         {canShowDevPagesLink && (
                           <Link
-                            className="app-btn app-btn--ghost"
+                            className="app-btn app-btn--secondary"
                             href="/dev/user-diagnostic"
                             prefetch={inPresentationMode ? false : undefined}
                             style={{ flex: 1 }}
@@ -1038,9 +1036,11 @@ export default function Sidebar({
                             role="switch"
                             aria-checked={devOverlayEnabled}
                             aria-label="Toggle dev layout overlay"
-                            className="app-btn"
+                            className={`app-btn ${
+                              devOverlayEnabled ? "app-btn--primary" : "app-btn--secondary"
+                            }`}
                             onClick={toggleDevOverlay}
-                            style={{ flex: 1, ...(devOverlayEnabled ? successGhostControlStyle : ghostControlStyle) }}
+                            style={{ flex: 1 }}
                           >
                             Overlay
                           </button>

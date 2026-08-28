@@ -58,14 +58,42 @@ export const toAppointmentTimestamp = (date, time) => {
   return londonDateTime.toISOString();
 };
 
+// One formatter, built once at module load, reused for every call.
+//
+// formatAppointmentTimestamp is called once per job row from formatJobData
+// (lib/database/jobs.js), so it runs hundreds of times per list render. The
+// previous implementation used dayjs(value).tz(...), and the dayjs timezone
+// plugin constructs a fresh Intl.DateTimeFormat on every single call — CPU
+// profiles of production put `l.tz` at 219 ms of self-time on /appointments and
+// 245 ms on /new-job, the second-largest block on both pages.
+//
+// Intl.DateTimeFormat is what dayjs.tz uses underneath, so hoisting one instance
+// and reading formatToParts() produces byte-identical output for the same input.
+// hourCycle "h23" (rather than hour12: false) is deliberate: hour12:false can
+// render midnight as "24" on some engines, which would silently corrupt times.
+const LONDON_PARTS = new Intl.DateTimeFormat("en-GB", {
+  timeZone: APPOINTMENT_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 export const formatAppointmentTimestamp = (value) => {
   if (!value) return { date: "", time: "" };
 
-  const londonDateTime = dayjs(value).tz(APPOINTMENT_TIME_ZONE);
-  if (!londonDateTime.isValid()) return { date: "", time: "" };
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return { date: "", time: "" };
+
+  const parts = {};
+  for (const part of LONDON_PARTS.formatToParts(parsed)) {
+    parts[part.type] = part.value;
+  }
 
   return {
-    date: londonDateTime.format("YYYY-MM-DD"),
-    time: londonDateTime.format("HH:mm"),
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
   };
 };

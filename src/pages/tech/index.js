@@ -5,15 +5,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useRoster } from "@/context/RosterContext";
-import { getAllJobs, subscribeToJobChanges } from "@/lib/database/jobs";
+// Loaded on demand - these modules resolve the Supabase browser client.
+//
+// The job list read runs inside an async callback and both subscriptions run
+// from effects after mount, so none of this is needed to render the page.
+//
+// NOTE: this page deliberately still reads the FULL job list rather than the
+// technician-scoped workload query used by /tech/dashboard. Its filter is
+// wider than "assigned to me": a mobile technician sees every mobile job
+// booked for today whoever it belongs to, and a bench technician also sees MOT
+// hand-off jobs. Scoping the query would silently drop both.
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadJobClockingDb = () => import("@/lib/database/jobClocking");
 import { invalidateCache } from "@/lib/database/queryCache";
+import { subscribeViaDeferredModule } from "@/lib/database/realtimeClient";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
-import {
-  getOpenJobClockingByJobIds,
-  getUserActiveJobs,
-  subscribeToUserClockingChanges
-} from "@/lib/database/jobClocking";
 import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import { compareJobsForBoard } from "@/lib/jobCards/utils";
 import { normalizeDisplayName } from "@/utils/nameUtils";
@@ -240,11 +248,12 @@ export default function MyJobsPage() {
   [user.role] :
   [];
 
-  const hasRoleAccess = userRoles.some((roleName) => {
+  const hasFullAccess = hasAllAccessRole(userRoles); // All Access demo login
+  const hasRoleAccess = hasFullAccess || userRoles.some((roleName) => {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
-  const hasMotRoleAccess = userRoles.some((roleName) =>
+  const hasMotRoleAccess = hasFullAccess || userRoles.some((roleName) =>
   String(roleName).toLowerCase().includes("mot")
   );
   const isMobileTech = userRoles.some(
@@ -326,8 +335,8 @@ export default function MyJobsPage() {
 
     try {
       if (forceFresh) invalidateCache("jobs:");
-      const fetchedJobs = await getAllJobs();
-      const clockingMap = await getOpenJobClockingByJobIds(
+      const fetchedJobs = await (await loadJobsDb()).getAllJobs();
+      const clockingMap = await (await loadJobClockingDb()).getOpenJobClockingByJobIds(
         fetchedJobs.map((job) => job?.id).filter(Boolean)
       ).catch((error) => {
         console.error("[MyJobs] failed to fetch open job clocking:", error);
@@ -407,7 +416,7 @@ export default function MyJobsPage() {
     }
 
     try {
-      const result = await getUserActiveJobs(dbUserId);
+      const result = await (await loadJobClockingDb()).getUserActiveJobs(dbUserId);
       if (result.success) {
         const ids = new Set(result.data.map((entry) => Number(entry.jobId)));
         activeJobIdsRef.current = ids;
@@ -438,7 +447,8 @@ export default function MyJobsPage() {
       return normalized ? normalizedUserNames.has(normalized) : false;
     };
 
-    const unsubscribe = subscribeToJobChanges(`myjobs-${dbUserId}`, (payload) => {
+    const unsubscribe = subscribeViaDeferredModule(loadJobsDb, (m) =>
+      m.subscribeToJobChanges(`myjobs-${dbUserId}`, (payload) => {
       const nextRow = payload?.new || {};
       const previousRow = payload?.old || {};
       const jobId = Number(nextRow.id ?? previousRow.id);
@@ -459,7 +469,8 @@ export default function MyJobsPage() {
           void fetchJobsForTechnician({ showLoading: false, forceFresh: true });
         }, 120);
       }
-    });
+      })
+    );
 
     return () => {
       if (queueRefreshTimerRef.current) window.clearTimeout(queueRefreshTimerRef.current);
@@ -470,9 +481,11 @@ export default function MyJobsPage() {
 
   useEffect(() => {
     if (!dbUserId) return;
-    return subscribeToUserClockingChanges(dbUserId, () => {
-      void fetchActiveJobs();
-    });
+    return subscribeViaDeferredModule(loadJobClockingDb, (m) =>
+      m.subscribeToUserClockingChanges(dbUserId, () => {
+        void fetchActiveJobs();
+      })
+    );
   }, [dbUserId, fetchActiveJobs]);
 
   // Apply filters when filter or search changes

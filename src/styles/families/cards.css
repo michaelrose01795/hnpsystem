@@ -28,14 +28,13 @@
  * resolves to --theme (see src/styles/theme.css). The two rules below keep
  * that honest as nesting deepens:
  *
- *   1. Controls sitting ON a theme layer take the --surface fill instead of
- *      the accent fill. No single accent-alpha value can separate from both a
- *      white card AND a theme tint - at .12 on a .16 tint the perceptual step
+ *   1. Form controls sitting ON a theme layer take the --surface fill instead
+ *      of the accent fill. No single accent-alpha value can separate from both
+ *      a white card AND a theme tint - at .12 on a .16 tint the perceptual step
  *      is only dL* 2.7, i.e. invisible. Swapping the fill gives dL* 10.6.
- *      This is done by re-binding --primary-control-*, which is the single
- *      source the whole control family reads from, so buttons, inputs,
- *      dropdown triggers, calendar days and time-picker options all follow
- *      with no per-component work.
+ *      This is done by re-binding --primary-control-* for inputs, dropdown
+ *      triggers, calendar days and time-picker options. Action buttons are
+ *      intentionally independent and retain their primary/secondary palette.
  *
  *   2. A section surface nested inside another one alternates back to
  *      --surface, so the translucent --theme tint never stacks on itself, and

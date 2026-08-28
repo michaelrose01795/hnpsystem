@@ -334,13 +334,6 @@ export const WORKSPACE_DASHBOARD_SHORTCUTS = Object.freeze([
     department: "valeting",
   },
   {
-    label: "Painting Dashboard",
-    href: "/dashboard/painting",
-    roles: ["painters"],
-    description: "Bodyshop priorities, colour matching, and cycle times",
-    department: "paint",
-  },
-  {
     label: "Accounts Dashboard",
     href: "/dashboard/accounts",
     roles: ACCOUNT_WORKSPACE_ROLES,
@@ -589,7 +582,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       { label: "Job Cards", href: "/jobs", roles: ["service"] },
-      { label: "Goods In", href: "/goods-in", roles: ["service"] },
       { label: "New Job", href: "/new-job", roles: ["service"] },
     ],
   },
@@ -602,7 +594,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     items: [
       { label: "Next Jobs", href: "/nextjobs", roles: ["service manager"] },
       { label: "Job Cards", href: "/jobs", roles: ["service manager"] },
-      { label: "Goods In", href: "/goods-in", roles: ["service manager"] },
       { label: "Mobile Appointments", href: "/appointments", roles: ["service manager"] },
       { label: "New Job", href: "/new-job", roles: ["service manager"] },
     ],
@@ -637,7 +628,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     items: [
       { label: "Next Jobs", href: "/nextjobs", roles: ["aftersales manager"] },
       { label: "Job Cards", href: "/jobs", roles: ["aftersales manager"] },
-      { label: "Goods In", href: "/goods-in", roles: ["aftersales manager"] },
     ],
   },
   {
@@ -704,6 +694,21 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
+    ],
+  },
+  {
+    department: "parts",
+    order: 115,
+    label: "Parts Driver",
+    category: "departments",
+    flag: null,
+    items: [
+      // The van run is a driver's whole shift, so the delivery diary is the one
+      // page they land on. The page itself scopes what they can do — load,
+      // dispatch, delivered, failed and proof of delivery — via
+      // resolveDeliveryCapabilities in src/features/deliveries/deliveryStatus.js.
+      // They cannot assign work, edit picking fields or reopen a closed stop.
+      { label: "Deliveries", href: "/deliveries", roles: ["parts driver"] },
     ],
   },
   {
@@ -898,7 +903,6 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
       "/reports/overview",
     ],
   },
-  { key: "department-paint", label: "Paint", department: "paint", hrefs: ["/dashboard/painting"] },
   {
     key: "department-tech",
     label: "Tech",
@@ -913,7 +917,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
 export const WORKSPACE_MODULES = Object.freeze({
   general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking", "/archive"] }],
   management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager", "/admin/users"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }, { key: "operations", label: "Operations", hrefs: ["/nextjobs", "/jobs"] }],
-  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }, { key: "shared-operations", label: "Shared Operations", hrefs: ["/goods-in"] }],
+  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }],
   workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
   parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/new-order"] }],

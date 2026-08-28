@@ -11,6 +11,7 @@ import React, {
 "react";
 import { useRouter } from "next/router"; // Next.js router for reading query params
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { hasCustomerBookingRequestAccess } from "@/lib/auth/serviceActionRoles";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { supabase } from "@/lib/database/supabaseClient";
@@ -974,6 +975,7 @@ const getAvailableCommands = (userRoles = []) => {
 
 
   // Filter commands based on user roles
+  if (hasAllAccessRole(normalizedRoles)) return allCommands; // All Access demo login
   return allCommands.filter((cmd) => {
     if (cmd.roles.includes('all')) return true;
     return cmd.roles.some((role) => normalizedRoles.includes(role));

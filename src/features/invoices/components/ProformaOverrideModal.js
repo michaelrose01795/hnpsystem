@@ -8,7 +8,8 @@
 // (recomputing header totals) and then refreshes from the server via
 // `onDataRefresh`, matching the original InvoiceDetail behaviour.
 import React, { useCallback, useState } from "react";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 export const BILLING_OPTIONS = [
@@ -207,47 +208,35 @@ export default function ProformaOverrideModal({
   onSave,
 }) {
   return (
-    <ModalPortal>
-      <div
-        role="dialog"
-        aria-modal="true"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) {
-            onClose();
-          }
-        }}
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "rgba(15, 23, 42, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1200,
-          padding: "16px",
-        }}
-      >
-        <div
-          onMouseDown={(event) => event.stopPropagation()}
-          style={{
-            width: "min(760px, 100%)",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "none",
-            padding: "18px",
-            display: "grid",
-            gap: "12px",
-          }}
-        >
-          <h3 style={{ margin: 0 }}>
+    <PopupModal
+      isOpen
+      onClose={overrideSaving ? undefined : onClose}
+      closeOnBackdrop={!overrideSaving}
+      closeOnEscape={!overrideSaving}
+      ariaLabel="Edit proforma override"
+      cardStyle={{
+        width: "min(100%, 760px)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+        display: "grid",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
+          <header className="app-popup-compact-header">
+          <h3>
             {editingRequest.request_label || `Request ${editingRequest.request_number}`}
           </h3>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="primary" busy={overrideSaving} onClick={onSave}>Save Proforma Override</Button>
+            <Button type="button" variant="secondary" disabled={overrideSaving} onClick={onClose}>Close</Button>
+          </div>
+          </header>
           <div style={{ display: "grid", gap: "8px" }}>
             <label style={{ display: "grid", gap: "4px" }}>
               <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Description Override</span>
               <textarea
+                className="app-input"
                 rows={2}
                 value={overrideForm.titleOverride}
                 onChange={(event) =>
@@ -289,6 +278,7 @@ export default function ProformaOverrideModal({
               <label key={key} style={{ display: "grid", gap: "4px" }}>
                 <span style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>{label}</span>
                 <input
+                  className="app-input"
                   type="text"
                   inputMode="decimal"
                   value={overrideForm[key]}
@@ -301,32 +291,11 @@ export default function ProformaOverrideModal({
                       [key]: toFixedInput(event.target.value, "0.00"),
                     }))
                   }
-                  style={{
-                    padding: "6px 8px",
-                    fontSize: "0.85rem",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    appearance: "textfield",
-                    MozAppearance: "textfield",
-                  }}
+                  style={{ width: "100%", appearance: "textfield", MozAppearance: "textfield" }}
                 />
               </label>
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ background: "var(--surface)", color: "var(--text-1)" }}
-            >
-              Cancel
-            </button>
-            <button type="button" onClick={onSave} disabled={overrideSaving}>
-              {overrideSaving ? "Saving..." : "Save Proforma Override"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }

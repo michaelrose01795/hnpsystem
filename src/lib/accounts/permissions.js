@@ -1,5 +1,5 @@
 // file location: src/lib/accounts/permissions.js // path header for clarity
-import { normalizeRoles } from "@/lib/auth/roles"; // reuse the shared role normalizer so RBAC stays consistent
+import { hasAllAccessRole, normalizeRoles } from "@/lib/auth/roles"; // reuse the shared role normalizer so RBAC stays consistent
 const ADMIN_ROLES = new Set(["admin", "admin manager"]);
 const ACCOUNT_ROLES = new Set(["accounts", "accounts manager"]);
 const MANAGER_KEYWORDS = ["manager", "director"];
@@ -11,12 +11,16 @@ const matchesKeyword = (role = "", keywordList = []) => keywordList.some((keywor
 const hasKeywordMatch = (roles = [], keywords = []) => roles.some((role) => matchesKeyword(role, keywords));
 export function deriveAccountPermissions(inputRoles = []) {
   const normalizedRoles = normalizeRoles(inputRoles || []);
-  const hasAdmin = normalizedRoles.some((role) => ADMIN_ROLES.has(role));
-  const hasAccounts = normalizedRoles.some((role) => ACCOUNT_ROLES.has(role));
-  const hasManager = normalizedRoles.some((role) => MANAGER_KEYWORDS.some((keyword) => role.includes(keyword))) && !normalizedRoles.some((role) => role === "parts manager");
-  const hasSales = hasKeywordMatch(normalizedRoles, SALES_KEYWORDS);
-  const hasWorkshop = hasKeywordMatch(normalizedRoles, WORKSHOP_KEYWORDS);
-  const hasParts = hasKeywordMatch(normalizedRoles, PARTS_KEYWORDS);
+  // All Access demo login: the widest accounts profile (admin + accounts + manager)
+  // so nothing is hidden. The keyword buckets stay false on purpose — they only
+  // ever NARROW the view (restrictedAccountTypes / restrictInvoicesToJobs).
+  const allAccess = hasAllAccessRole(normalizedRoles);
+  const hasAdmin = allAccess || normalizedRoles.some((role) => ADMIN_ROLES.has(role));
+  const hasAccounts = allAccess || normalizedRoles.some((role) => ACCOUNT_ROLES.has(role));
+  const hasManager = allAccess || (normalizedRoles.some((role) => MANAGER_KEYWORDS.some((keyword) => role.includes(keyword))) && !normalizedRoles.some((role) => role === "parts manager"));
+  const hasSales = !allAccess && hasKeywordMatch(normalizedRoles, SALES_KEYWORDS);
+  const hasWorkshop = !allAccess && hasKeywordMatch(normalizedRoles, WORKSHOP_KEYWORDS);
+  const hasParts = !allAccess && hasKeywordMatch(normalizedRoles, PARTS_KEYWORDS);
   const canViewAccounts = hasAdmin || hasAccounts || hasManager || hasSales;
   const canCreateAccount = hasAdmin || hasAccounts;
   const canEditAccount = hasAdmin || hasAccounts || hasManager;

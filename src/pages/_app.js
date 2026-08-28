@@ -4,19 +4,17 @@ import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "@/styles/staffglobal.css"; // staff/admin app global base styles
-import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
-// PERFORMANCE NOTE — this import costs 82KB of render-blocking CSS on all 163
-// routes even though every rule inside is scoped to `html.website-scope`, which
-// only the ~7 customer-facing routes ever set. Moving it onto those routes was
-// attempted and reverted: Next's Pages Router still refuses global CSS imported
-// from anywhere but _app ("Global CSS cannot be imported from files other than
-// your Custom <App>"), so it cannot simply be imported by `useWebsiteScope()`.
-// The two viable routes out are (a) convert custglobal.css to a CSS Module with
-// every selector wrapped in `:global(...)`, or (b) emit it as a static asset and
-// <link> it from the customer layout. Both are mechanical but touch all ~650
-// rules, so they are left for the in-flight design-governance work rather than
-// bundled into a performance pass.
-import "@/features/tracking/map/trackingMap.css"; // /tracking site-map diagram (Pages Router requires plain-CSS imports here)
+// custglobal.css (/website) and trackingMap.css (/tracking) are NOT imported
+// here any more. Both were costing 82 KB of render-blocking CSS on all 162
+// routes, because anything _app imports lands in the stylesheet every route
+// loads — and neither can match anything outside its own routes.
+//
+// Option (b) from the note that used to sit here is now implemented: they are
+// emitted as standalone static assets by tools/scripts/emit-route-scoped-css.js
+// and linked only where they apply — from _document.js on first paint (so there
+// is no unstyled flash) and from ensureRouteScopedStylesheet() below on client
+// navigation into those routes.
+import ROUTE_SCOPED_CSS from "@/config/routeScopedCss.generated.json";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -48,9 +46,14 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
+import { isAllAccessUser } from "@/lib/auth/allAccessSession";
+import { rememberStaffRoute } from "@/lib/auth/returnRoute";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 import { installPerfConsole, startJourney, stage } from "@/lib/perf/stageTimings";
+// STATIC, deliberately — see the note above StaffProviders/Layout below.
+import StaffProviders from "@/components/App/StaffProviders";
+import Layout from "@/components/Layout";
 
 // Keep staff-only providers, shell code and global listeners out of the login
 // route's initial JavaScript. These chunks are requested only when rendered.
@@ -62,8 +65,33 @@ const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overl
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
-const StaffProviders = dynamic(() => import("@/components/App/StaffProviders"));
-const Layout = dynamic(() => import("@/components/Layout"));
+// StaffProviders and Layout are imported STATICALLY (at the top of this file) and
+// must stay that way.
+//
+// They were `dynamic(..., { ssr: true })`, which wraps them in a React.lazy
+// boundary. The boundary is server-rendered, but its chunk is not loaded when
+// hydration starts: React suspends there, drops the server-rendered chrome out
+// of its tree WITHOUT removing it from the DOM, and renders a second chrome
+// beside it. The orphan keeps whatever the server painted — always the pre-auth
+// shell, i.e. SidebarNavSkeleton — so the user is left looking at a frozen
+// skeleton sidebar with the real, fully resolved one behind it. Measured on
+// production builds: orphaned shell in 12/12 loads code-split, 0/12 static.
+//
+// Three alternatives were built and measured before settling here:
+//
+//   dynamic + ssr:true   correct only by luck (loses the hydration race).
+//   dynamic + ssr:false  also 0/12 orphans and keeps /login small, but nothing
+//                        is server-rendered any more: /newsfeed FCP 656ms vs
+//                        156ms and /profile FCP 740ms vs 144ms, and staff
+//                        routes get BIGGER (+80KB) from the extra chunking.
+//   static (this)        0/12 orphans, fastest staff routes.
+//
+// The cost is real and lands on /login, which no longer code-splits the shell
+// away: first-load JS 325KB -> 444KB (+119KB transferred), hydration 338ms ->
+// 448ms. FCP/LCP there are unchanged within noise (168ms vs 184ms). Staff
+// routes — where users actually spend the day — are better off on every metric:
+// FCP -500ms (/newsfeed) and -596ms (/profile), LCP -80ms and -176ms, and 80KB
+// less JavaScript. Sign-in happens once; the shell renders on every page.
 const RouteProgressBar = dynamic(() => import("@/components/layout/RouteProgressBar"), { ssr: false });
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
@@ -74,6 +102,31 @@ const RouteProgressBar = dynamic(() => import("@/components/layout/RouteProgress
 const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
 const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
+const isTrackingPath = (path = "") => path === "/tracking" || path.startsWith("/tracking/");
+
+// Add a route-scoped stylesheet once, if it is not already in the document.
+//
+// _document.js emits the same <link> (same href) server-side for a direct hit on
+// one of these routes, so on a first paint this finds it already present and does
+// nothing. It only actually inserts anything when the user arrives by client-side
+// navigation from another route, where no new document is rendered.
+//
+// The link is deliberately never removed: it is a handful of KB, it keeps a
+// return visit to the route instant, and removing it mid-session risks
+// unstyling a page that is still animating out.
+const ensureRouteScopedStylesheet = (key) => {
+  if (typeof document === "undefined") return;
+  const href = ROUTE_SCOPED_CSS?.[key];
+  if (!href) return;
+  if (document.querySelector(`link[data-route-css="${key}"]`)) return;
+  if (document.querySelector(`link[rel="stylesheet"][href="${href}"]`)) return;
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.setAttribute("data-route-css", key);
+  document.head.appendChild(link);
+};
 const isAllowedPresentationNavigation = (url = "") => {
   try {
     const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
@@ -106,6 +159,7 @@ function AppWrapper({ Component, pageProps }) {
     isPublicVhcReportPath(asPathClean) ||
     Component.hideGlobalNotesWidget === true;
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
+  const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   const hideNotesWidget =
     isPresentationRoute ||
@@ -142,6 +196,10 @@ function AppWrapper({ Component, pageProps }) {
   // under html.website-scope.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
+    // Attach the route's own stylesheet before flipping its scope class, so the
+    // rules exist by the time the selector they hang off starts matching.
+    if (isWebsiteRoute) ensureRouteScopedStylesheet("website");
+    if (isTrackingRoute) ensureRouteScopedStylesheet("trackingMap");
     const root = document.documentElement;
     const body = document.body;
     root.classList.toggle("website-scope", isWebsiteRoute);
@@ -151,7 +209,7 @@ function AppWrapper({ Component, pageProps }) {
     body?.classList.toggle("staff-scope", !isWebsiteRoute);
     body?.classList.toggle("dev-scope", isDevRoute);
     return undefined;
-  }, [isWebsiteRoute, isDevRoute]);
+  }, [isWebsiteRoute, isTrackingRoute, isDevRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.
@@ -636,7 +694,7 @@ function AppWrapper({ Component, pageProps }) {
 // src/lib/auth/pageAccess.js for the rule.
 function PageAccessGuard({ pathname }) {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, sidebarAccessReady } = useUser();
   useEffect(() => {
     if (loading) return; // wait for user context to resolve
     if (!user) return; // unauthenticated → existing auth guards handle redirect
@@ -644,12 +702,26 @@ function PageAccessGuard({ pathname }) {
     // audits (Staff Style Review, layout overlay) can run against the real
     // screens. It gains no roles, so its own sidebar/nav is unchanged.
     if (hasDevPlatformPageAccess(user)) return;
+    // All Access demo login: same reasoning. Every page in its sidebar already
+    // passes canAccessPath below; this keeps it consistent with the edge guard
+    // and ProtectedRoute, which also let this synthetic session through.
+    if (isAllAccessUser(user)) return;
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
-    if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) return;
+    if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) {
+      // This route has just been authorised for this user, so it is safe to
+      // offer back on a cold start that arrives with no route of its own (a
+      // pinned "/" tab, a bookmarked /login). Recorded only once the per-user
+      // sidebar-access snapshot has resolved — before that canAccessPath is
+      // running on the broader role-derived set, and remembering then could
+      // store a route the snapshot goes on to deny. `pathname` is the route
+      // PATTERN the check needs; asPath is the real URL worth returning to.
+      if (sidebarAccessReady) rememberStaffRoute(user.id, router.asPath);
+      return;
+    }
     if (router.pathname === "/newsfeed") return;
     router.replace("/newsfeed");
-  }, [pathname, user, loading, router]);
+  }, [pathname, user, loading, router, sidebarAccessReady]);
   return null;
 }
 

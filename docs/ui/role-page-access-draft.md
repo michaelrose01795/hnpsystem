@@ -105,7 +105,6 @@ Format to edit:
 
 ## Painters
 
-- /dashboard/painting
 - /job-cards/myjobs
 - /job-cards/myjobs/[jobNumber]
 - /job-cards/[jobNumber]

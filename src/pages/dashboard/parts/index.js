@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 // Loaded on demand.
 //
@@ -23,7 +24,7 @@ const MetricCard = ({ label, value, helper }) => (
   <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{helper}</p>}
   </LayerSurface>
 );
 
@@ -57,11 +58,11 @@ const ListBlock = ({ title, items }) => (
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {(items || []).length === 0 ?
-      <p style={{ margin: 0, color: "var(--text-2)" }}>No records yet.</p> :
+      <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No records yet.</p> :
       items.map((entry) =>
         <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
           Request <strong style={{ color: "var(--text-accent)" }}>{entry.request_id}</strong>
-          <span style={{ color: "var(--text-2)" }}> · {humanizeStatusLabel(entry.status)}</span>
+          <span style={{ color: "var(--surfaceTextMuted)" }}> · {humanizeStatusLabel(entry.status)}</span>
         </div>
       )
     }
@@ -72,7 +73,10 @@ const ListBlock = ({ title, items }) => (
 export default function PartsDashboard() {
   const { user } = useUser();
   const roleLabels = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasAccess = roleLabels.includes("parts") || roleLabels.includes("parts manager");
+  const hasAccess =
+    hasAllAccessRole(roleLabels) ||
+    roleLabels.includes("parts") ||
+    roleLabels.includes("parts manager");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

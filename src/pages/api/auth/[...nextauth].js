@@ -11,6 +11,9 @@
 
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+// Plain constants only — safe at module scope (no DB / bcrypt / audit imports).
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
+import { ALL_ACCESS_SESSION_USER } from "@/lib/auth/allAccessSession";
 // NOTE: the heavy, login-only dependencies (Supabase client, bcrypt password
 // helpers, rate limiting, audit logging) are intentionally NOT imported at
 // module scope. They are dynamically imported inside `authorize` instead, so the
@@ -52,6 +55,7 @@ const buildAuthOptions = (req) => ({
         password: { label: "Password", type: "password" },
         userId: { label: "User ID", type: "text" },
         devPlatform: { label: "Developer Platform", type: "text" },
+        allAccess: { label: "All Access Demo", type: "text" },
       },
       async authorize(credentials) {
         // Lazy-load login-only dependencies here (see module-top note). These
@@ -125,6 +129,72 @@ const buildAuthOptions = (req) => ({
               roles: ["dev"],
               department: "Development",
               isDevLogin: true,
+            };
+          }
+
+          // All Access demo login — mints the synthetic `all access` role.
+          // Same gate as the dev-by-id / dev-platform logins (isDevAuthAllowed():
+          // false in production unless ALLOW_DEV_AUTH=1). The role is created in
+          // code here and never comes from a users row, so it can never be
+          // assigned to a real staff member. It exists purely so the app can be
+          // demonstrated from one login with every module and page available.
+          if (credentials?.allAccess === "1") {
+            if (!isDevAuthAllowed()) {
+              await recordAttempt({
+                endpoint: "login",
+                email: null,
+                ip,
+                userAgent,
+                succeeded: false,
+                failureReason: "all_access_disabled",
+              });
+              return null;
+            }
+            // The demo account has a real `users` row, with made-up details, so
+            // every per-user feature (profile, clocking, messages, payslips,
+            // personal dashboard) has something to read. The row is created on
+            // first use. Its stored password is 'unset', so this row can never
+            // be signed into through the email/password form — only here.
+            // If the database is unreachable the session still opens, using the
+            // fully synthetic identity; only per-user data is missing.
+            let demoUser = null;
+            try {
+              const { ensureAllAccessUser } = await import("@/lib/database/allAccessUser");
+              demoUser = await ensureAllAccessUser();
+            } catch (demoUserError) {
+              console.warn(
+                "[auth] All Access demo user unavailable; falling back to the synthetic session:",
+                demoUserError?.message || demoUserError
+              );
+            }
+            const demoUserId = Number(demoUser?.user_id);
+            const hasDemoRow = Number.isInteger(demoUserId) && demoUserId > 0;
+            await writeAuditLog({
+              action: "all_access_session",
+              actorUserId: hasDemoRow ? demoUserId : null,
+              actorRole: ALL_ACCESS_ROLE,
+              entityType: "all_access",
+              entityId: hasDemoRow ? demoUserId : null,
+              diff: { event: "session_start", linked: hasDemoRow },
+              ip,
+              userAgent,
+            }).catch(() => {});
+            return {
+              ...ALL_ACCESS_SESSION_USER,
+              // The ROLE stays the code-minted `all access` marker regardless of
+              // what the row says — the row supplies identity, never permissions.
+              roles: [...ALL_ACCESS_SESSION_USER.roles],
+              ...(hasDemoRow
+                ? {
+                    id: String(demoUserId),
+                    name:
+                      demoUser.name ||
+                      [demoUser.first_name, demoUser.last_name].filter(Boolean).join(" ") ||
+                      ALL_ACCESS_SESSION_USER.name,
+                    email: demoUser.email || "",
+                    department: demoUser.department || ALL_ACCESS_SESSION_USER.department,
+                  }
+                : {}),
             };
           }
 

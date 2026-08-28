@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
@@ -142,7 +143,7 @@ export default function PartsJobCardPage() {
   const { resolvedMode } = useTheme();
   const { user } = useUser();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
+  const hasPartsAccess = hasAllAccessRole(roles) || roles.includes("parts") || roles.includes("parts manager");
   const isDarkMode = resolvedMode === "dark";
 
   const router = useRouter();

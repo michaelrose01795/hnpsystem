@@ -1400,31 +1400,6 @@ html.staff-scope div.news-card {
   }
 }
 
-/* Shared ConfirmationDialog colour contract.
-   The dialog's two direct action buttons both use the component's 96px
-   minimum width, which scopes these rules without recolouring other popups or
-   the semantic detail tiles between the header and actions. */
-html.staff-scope
-  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
-  > div:first-child
-  p {
-  color: var(--text-1) !important;
-}
-
-html.staff-scope
-  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
-  > div:last-child
-  > button:first-child {
-  color: var(--text-1) !important;
-}
-
-html.staff-scope
-  .popup-card:has(> div:last-child > button[style*="min-width: 96px"])
-  > div:last-child
-  > button:last-child {
-  color: var(--text-2) !important;
-}
-
 /* Compact staff popup/section header convention.
    New operational popups and sections use one clear title plus actions only.
    Do not add eyebrow/kicker labels or descriptive header paragraphs. Put any
@@ -1456,6 +1431,20 @@ html.staff-scope .app-settings-popup-card {
 html.staff-scope .app-settings-popup {
   height: 100%;
   min-height: 0;
+}
+
+/* Media editor popup convention (Edit photo / Edit video).
+   Opt in with app-media-editor-popup alongside app-settings-popup. Owns the
+   popup content chrome so the editors carry no one-off inline padding: the
+   compact header sits on the popup card's own --surface layer and the control
+   panels below are their own --theme cards. */
+html.staff-scope .app-media-editor-popup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  padding: var(--page-card-padding);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Popup action convention.
@@ -1540,8 +1529,8 @@ html.staff-scope button:not(.app-btn) {
      should use <Button>, but any remaining raw button now inherits the same
      Primary control source instead of drifting onto the old accent palette.
      Purpose-built API controls override this block in their family rules. */
-  background: var(--primary-control-bg);
-  color: var(--primary-control-color);
+  background: var(--primary);
+  color: var(--onAccentText);
   border: none;
   border-radius: var(--control-radius);
   min-height: var(--control-height);
@@ -1559,7 +1548,7 @@ html.staff-scope button:not(.app-btn) {
   z-index: 0;
 }
 html.staff-scope button:not(.app-btn):hover {
-  background: var(--primary-control-bg-hover);
+  background: var(--primary-hover);
 }
 html.staff-scope button:not(.app-btn):disabled {
   opacity: 0.5;
@@ -1919,13 +1908,11 @@ html.staff-scope .app-table-action-btn {
   font-size: var(--text-label);
   font-weight: 600;
   border-radius: var(--radius-xs);
-  /* --control-bg, not --surface. Table rows are --surface too, so a --surface
-     action button was the same colour as the row it sat in. --control-bg is
-     context-aware (families/cards.css re-binds it inside a theme layer), so
-     the button separates from the row whether the table sits on a page card
-     or on a section card. */
-  background: var(--control-bg);
-  color: var(--text-1);
+  /* Table actions use the canonical Secondary palette. Form-control fills are
+     rebound to --surface inside theme layers and would recreate the neutral
+     black/white inversion that action buttons must not use. */
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
   /* No border — table action buttons sit on the row separator alone.
      Borders are only allowed on inputs, checkboxes, ghost buttons, focus rings. */
   border: none;
@@ -1950,15 +1937,15 @@ html.staff-scope .app-table-action-btn--danger {
    .app-table-action-btn but wears the .app-btn--primary fill. */
 html.staff-scope .app-data-table .app-table-action-btn--primary,
 html.staff-scope .app-table-action-btn--primary {
-  background: var(--input-bg);
-  color: var(--text-1);
+  background: var(--primary);
+  color: var(--onAccentText);
   border: none;
 }
 html.staff-scope .app-data-table .app-table-action-btn--primary:hover,
 html.staff-scope .app-data-table .app-table-action-btn--primary:focus-visible,
 html.staff-scope .app-table-action-btn--primary:hover,
 html.staff-scope .app-table-action-btn--primary:focus-visible {
-  background: var(--control-bg-hover);
+  background: var(--primary-hover);
 }
 
 /* Canonical home: src/styles/families/badges.css
@@ -6178,9 +6165,16 @@ html.staff-scope [data-dev-section-type="content-card"] {
 }
 
 html.staff-scope .popup-card {
+  /* Popup chrome is owned here, not by per-popup inline objects. No !important
+     is needed: PopupModal (popupStyleApi.js) strips every visual style key out
+     of cardStyle before it reaches this element, and no other rule paints the
+     popup card, so these declarations already win outright. */
   background-color: var(--surface);
+  background-image: none;
+  color: var(--text-1);
   border: none;
   border-radius: var(--radius-lg);
+  box-shadow: none;
   position: relative;
   width: min(100%, 960px);
   max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
@@ -8623,5 +8617,45 @@ html.staff-scope .report-graph__empty {
   html.staff-scope .report-graph__line,
   html.staff-scope .report-graph__value {
     transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Delivery day controls (/deliveries — parts-deliveries-controls)
+   The previous/next day stepper was removed, so the month picker is the only
+   day control. Layout and picker sizing live here rather than as inline styles
+   on the page so every day-picker row reads the same.
+   ------------------------------------------------------------------------ */
+html.staff-scope .app-delivery-day-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-delivery-month-picker {
+  flex: 0 1 220px; /* picker width: no token covers control widths */
+  min-width: 0;
+}
+
+html.staff-scope .app-delivery-month-picker .calendar-api__control {
+  width: 100%;
+  min-height: var(--control-height);
+  justify-content: space-between;
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .app-delivery-day-controls {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  html.staff-scope .app-delivery-month-picker {
+    flex: 1 1 100%;
   }
 }

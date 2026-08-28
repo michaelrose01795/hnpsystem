@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import ModalPortal from "@/components/popups/ModalPortal";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -14,6 +14,7 @@ import {
   cacheNewsUpdates,
   createNewsUpdate,
   getNewsUpdates,
+  peekWarmedNewsUpdatesCache,
   readCachedNewsUpdates,
   subscribeToNewsUpdates,
 } from "@/lib/database/newsUpdates";
@@ -88,6 +89,8 @@ const normalizeDepartments = (input) => {
 };
 
 const deriveDepartmentsFromRoles = (roles = []) => {
+  // All Access demo login: every department's feed, not a role-derived subset.
+  if (hasAllAccessRole(roles)) return [...AVAILABLE_DEPARTMENTS];
   const canonicalDepartments = new Map(
     AVAILABLE_DEPARTMENTS.map((department) => [department.toLowerCase(), department])
   );
@@ -162,7 +165,7 @@ const formatTimeAgo = (value) => {
 };
 
 const isManagerRole = (roles = []) =>
-roles.some((role) => /(manager|director)/i.test(role));
+hasAllAccessRole(roles) || roles.some((role) => /(manager|director)/i.test(role));
 
 const matchesSection = (update, section) => {
   const payload = Array.isArray(update.departments) ? update.departments : [];
@@ -172,12 +175,35 @@ const matchesSection = (update, section) => {
   return payload.includes(section);
 };
 
+const haveSameUpdates = (current, next) => {
+  if (current === next) return true;
+  if (!Array.isArray(current) || !Array.isArray(next) || current.length !== next.length) {
+    return false;
+  }
+  return current.every((update, index) => {
+    const candidate = next[index];
+    return (
+      String(update?.id ?? "") === String(candidate?.id ?? "") &&
+      update?.title === candidate?.title &&
+      update?.content === candidate?.content &&
+      update?.author === candidate?.author &&
+      update?.created_at === candidate?.created_at &&
+      JSON.stringify(update?.departments || []) === JSON.stringify(candidate?.departments || [])
+    );
+  });
+};
+
 export default function NewsFeed() {
   const { user, dbUserId } = useUser();
-  const [updates, setUpdates] = useState(FALLBACK_UPDATES);
-  // The feed always has useful content on first paint. Cached live updates are
-  // restored immediately after mount and refreshed silently in the background.
-  const loading = false;
+  const [updates, setUpdates] = useState(
+    () => peekWarmedNewsUpdatesCache() || []
+  );
+  // Login normally warms the in-memory cache before this page mounts. If that
+  // request is still in flight (or this is a hard load), render the newsfeed's
+  // own card-shaped skeleton inside the completed app shell. Placeholder news
+  // cards are never painted and replaced, which previously looked like the
+  // page entrance animation had restarted.
+  const [loading, setLoading] = useState(() => peekWarmedNewsUpdatesCache() == null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formState, setFormState] = useState({
@@ -196,7 +222,8 @@ export default function NewsFeed() {
     setShowPresentationNotesDemo(isPresentationMode());
     const cachedUpdates = readCachedNewsUpdates();
     if (cachedUpdates) {
-      setUpdates(cachedUpdates);
+      setUpdates((current) => haveSameUpdates(current, cachedUpdates) ? current : cachedUpdates);
+      setLoading(false);
     }
   }, []);
 
@@ -216,11 +243,13 @@ export default function NewsFeed() {
         created_at: row.created_at,
         departments: normalizeDepartments(row.departments)
       }));
-      setUpdates(nextUpdates);
+      setUpdates((current) => haveSameUpdates(current, nextUpdates) ? current : nextUpdates);
       cacheNewsUpdates(nextUpdates);
     } catch (err) {
       console.error("Failed to load news updates:", err);
+      setUpdates((current) => current.length > 0 ? current : FALLBACK_UPDATES);
     } finally {
+      setLoading(false);
       trace("newsfeed", "fetchUpdates: done");
     }
   }, []);
@@ -276,7 +305,7 @@ export default function NewsFeed() {
 
   return (
     <>
-      <NewsFeedUi view="section1" accessibleUpdates={accessibleUpdates} AVAILABLE_DEPARTMENTS={AVAILABLE_DEPARTMENTS} canManageUpdates={canManageUpdates} formatTimeAgo={formatTimeAgo} formState={formState} handleCreateUpdate={handleCreateUpdate} loading={loading} modalOpen={modalOpen} ModalPortal={ModalPortal} MultiSelectDropdown={MultiSelectDropdown} notificationError={notificationError} resetModal={resetModal} saving={saving} setFormState={setFormState} setModalOpen={setModalOpen} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />
+      <NewsFeedUi view="section1" accessibleUpdates={accessibleUpdates} AVAILABLE_DEPARTMENTS={AVAILABLE_DEPARTMENTS} canManageUpdates={canManageUpdates} formatTimeAgo={formatTimeAgo} formState={formState} handleCreateUpdate={handleCreateUpdate} loading={loading} modalOpen={modalOpen} MultiSelectDropdown={MultiSelectDropdown} notificationError={notificationError} resetModal={resetModal} saving={saving} setFormState={setFormState} setModalOpen={setModalOpen} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />
       {showPresentationNotesDemo && <GlobalNotesWidget presentationDemo />}
     </>
   );

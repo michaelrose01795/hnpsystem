@@ -35,7 +35,7 @@ const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 const MIGRATION_BASELINE = new Map([
   ["src/components/accounts/AccountTable.js", 2],
   ["src/components/Clocking/CapacitySettingsPopup.js", 1],
-  ["src/components/Clocking/EfficiencyTab.js", 8],
+  ["src/components/Clocking/EfficiencyTab.js", 5],
   ["src/components/companyAccounts/CompanyAccountForm.js", 3],
   ["src/components/Consumables/StockCheckPopup.js", 7],
   ["src/components/CookieBanner.js", 5],
@@ -45,7 +45,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/dev-platform/sections/InvestigationsSection.js", 1],
   ["src/components/dev-platform/sections/PreferencesSection.js", 2],
   ["src/components/dev-platform/sections/SupportOverviewSection.js", 2],
-  ["src/components/GlobalNotesWidget.js", 1],
   ["src/components/GlobalSearch.js", 3],
   ["src/components/HR/EmployeeProfilePanel.js", 2],
   ["src/components/HR/OvertimeEntriesEditor.js", 1],
@@ -54,9 +53,12 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/HR/tabs/AttendanceTab.js", 1],
   ["src/components/HR/tabs/EmployeesTab.js", 27],
   ["src/components/JobCards/ClockingHistorySection.js", 2],
+  ["src/components/JobCards/CustomerRequestsTab.js", 4],
   ["src/components/JobCards/JobCardModal.js", 1],
+  ["src/components/JobCards/LocationUpdateModal.js", 0],
   ["src/components/JobCards/RequestPresetAutosuggestInput.js", 2],
-  ["src/components/JobCards/WriteUpForm.js", 17],
+  ["src/components/JobCards/WriteUpForm.js", 14],
+  ["src/components/JobCards/WriteUpWorkspace.js", 3],
   ["src/components/layout/StaffLayout.js", 2],
   ["src/components/LoanCars/FuelGauge.js", 1],
   ["src/components/LoanCars/LoanCarSchedulePanel.js", 3],
@@ -69,22 +71,21 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/clocking/clocking-technician-slug-ui.js", 3],
   ["src/components/page-ui/dev/dev-status-snapshot-ui.js", 2],
   ["src/components/page-ui/dev/dev-user-diagnostic-ui.js", 4],
-  ["src/components/page-ui/job-cards/job-cards-job-number-ui.js", 4],
-  ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 8],
+  ["src/components/page-ui/job-cards/job-cards-job-number-ui.js", 1],
+  ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 6],
   ["src/components/page-ui/job-cards/SchedulingTab.js", 1],
   ["src/components/page-ui/job-cards/ServiceHistoryTab.js", 2],
   ["src/components/page-ui/job-cards/ServiceHistoryTab.test.js", 1],
   ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 4],
-  ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 3],
+  ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 0],
   ["src/components/page-ui/job-cards/WarrantyTab.js", 2],
   ["src/components/page-ui/messages/messages-ui.js", 4],
-  ["src/components/page-ui/newsfeed-ui.js", 2],
   ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 31],
-  ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 21],
+  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 30],
+  ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
   ["src/components/page-ui/parts/parts-goods-in-ui.js", 49],
-  ["src/components/page-ui/parts/parts-manager-ui.js", 1],
+  ["src/components/page-ui/parts/parts-manager-ui.js", 0],
   ["src/components/page-ui/stock-catalogue-ui.js", 10],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
   ["src/components/page-ui/valet/valet-ui.js", 2],
@@ -95,7 +96,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/Parts/PartDeliveryLogModal.js", 9],
   ["src/components/PartsTab.js", 3],
   ["src/components/popups/CheckSheetPopup.js", 3],
-  ["src/components/popups/ConfirmationDialog.js", 2],
+  ["src/components/popups/ConfirmationDialog.js", 0],
   ["src/components/popups/ExistingCustomerPopup.js", 1],
   ["src/components/popups/InvoiceBuilderPopup.js", 9],
   ["src/components/popups/NewCustomerPopup.js", 1],
@@ -113,7 +114,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/support/dev/SupportAssistedPanel.js", 1],
   ["src/components/support/dev/supportDevUi.js", 1],
   ["src/components/support/dev/SupportGithubPanel.js", 1],
-  ["src/components/support/dev/SupportReportDetail.js", 1],
   ["src/components/support/dev/SupportTriagePanel.js", 1],
   ["src/components/support/dev/SupportWorkspace.js", 3],
   ["src/components/support/SupportErrorBoundary.js", 1],
@@ -145,18 +145,18 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/VHC/IssueAutocomplete.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPanel.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPickerModal.js", 1],
-  ["src/components/VHC/mediaCapture/FullScreenCapture.js", 10],
-  ["src/components/VHC/mediaCapture/SectionCameraButton.js", 1],
+  ["src/components/VHC/mediaCapture/FullScreenCapture.js", 8],
+  ["src/components/VHC/mediaCapture/SectionCameraButton.js", 0],
   ["src/components/VHC/MediaUploadConfirmModal.js", 1],
   ["src/components/VHC/photoEditor/ShapeToolbar.js", 2],
-  ["src/components/VHC/PhotoEditorModal.js", 4],
+  ["src/components/VHC/PhotoEditorModal.js", 1],
   ["src/components/VHC/ServiceIndicatorDetailsModal.js", 5],
   ["src/components/VHC/TyreDiagram.js", 2],
   ["src/components/VHC/TyresSection.js", 1],
   ["src/components/VHC/UndersideDetailsModal.js", 3],
-  ["src/components/VHC/VhcCustomerDescriptionModal.js", 4],
-  ["src/components/VHC/VhcCustomerView.js", 7],
-  ["src/components/VHC/VhcDetailsPanel.js", 48],
+  ["src/components/VHC/VhcCustomerDescriptionModal.js", 1],
+  ["src/components/VHC/VhcCustomerView.js", 1],
+  ["src/components/VHC/VhcDetailsPanel.js", 39],
   ["src/components/VHC/videoEditor/TimelineTrimControl.js", 2],
   ["src/components/VHC/videoEditor/VideoMetaPanel.js", 2],
   ["src/components/VHC/WheelsHubsModal.js", 4],
@@ -167,7 +167,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/features/invoices/components/InvoiceDetail.js", 3],
   ["src/features/invoices/components/InvoicePaymentModal.js", 3],
   ["src/features/invoices/components/InvoiceWorkspace.js", 1],
-  ["src/features/invoices/components/ProformaOverrideModal.js", 4],
+  ["src/features/invoices/components/ProformaOverrideModal.js", 0],
   ["src/features/payslips/PayslipsCard.js", 1],
   ["src/features/payslips/PayslipsListPopup.js", 1],
   ["src/features/roleTreeDemo/components/RoleTreeDemo.js", 1],
@@ -186,21 +186,21 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/admin/compliance/dpias.js", 1],
   ["src/pages/admin/compliance/ropa.js", 1],
   ["src/pages/customers/[customerSlug].js", 3],
-  ["src/pages/deliveries/index.js", 1],
+  ["src/pages/deliveries/index.js", 0],
   ["src/pages/delivery-planner.js", 16],
   ["src/pages/dev/knowledge.js", 1],
   ["src/pages/dev/user-diagnostic.js", 27],
-  ["src/pages/goods-in/index.js", 19],
+  ["src/pages/goods-in/index.js", 11],
   ["src/pages/hr/disciplinary.js", 1],
   ["src/pages/hr/performance.js", 1],
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
-  ["src/pages/job-cards/[jobNumber].js", 43],
+  ["src/pages/job-cards/[jobNumber].js", 25],
   ["src/pages/messages/index.js", 1],
   ["src/pages/new-order/[orderNumber].js", 1],
   ["src/pages/password-reset/new.js", 2],
   ["src/pages/stock-catalogue.js", 31],
-  ["src/pages/tech/[jobNumber].js", 11],
+  ["src/pages/tech/[jobNumber].js", 5],
   ["src/pages/valet/index.js", 3],
   ["src/pages/vhc/customer-preview/[jobNumber].js", 2],
 ]);
@@ -443,6 +443,87 @@ if (dayJobsStart < 0 || dayJobsEnd < 0) {
 
 const staffGlobalPath = "src/styles/staffglobal.css";
 const staffGlobalSource = fs.readFileSync(path.join(ROOT, staffGlobalPath), "utf8");
+const buttonFamilyPath = "src/styles/families/buttons.css";
+const buttonFamilySource = fs.readFileSync(path.join(ROOT, buttonFamilyPath), "utf8");
+
+function cssRuleBody(source, selector) {
+  const start = source.indexOf(selector);
+  if (start < 0) return null;
+  const open = source.indexOf("{", start);
+  const close = source.indexOf("}", open);
+  if (open < 0 || close < 0) return null;
+  return source.slice(open + 1, close);
+}
+
+// Action buttons must retain their semantic brand/tint variants in every
+// layer. Form-control tokens are intentionally rebound to --surface inside
+// LayerTheme and must never be reused for buttons: doing so recreates the
+// black/white mode inversion that previously affected Goods In Supplier Search.
+const buttonContracts = [
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--primary",
+    // The fill may be the flat brand step or the deeper --primary-hover step:
+    // Primary sits one step deeper so it is not pixel-identical to the
+    // is-active / aria-selected paint, which uses flat --primary. Either is a
+    // brand accent; what matters is that it is never a form-control token.
+    required: [["--btn-bg: var(--primary)", "--btn-bg: var(--primary-hover)"], "--btn-color: var(--onAccentText)"],
+  },
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--secondary",
+    required: ["--btn-bg: var(--secondary)", "--btn-color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope button:not(.app-btn)",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn",
+    required: ["background: var(--secondary)", "color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn--primary",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+];
+const forbiddenButtonFillTokens = [
+  "var(--primary-control-bg)",
+  "var(--primary-control-color)",
+  "var(--control-bg)",
+  "var(--input-bg)",
+  "var(--surface)",
+  "var(--text-1)",
+  "var(--surfaceText)",
+];
+
+for (const contract of buttonContracts) {
+  const body = cssRuleBody(contract.source, contract.selector);
+  if (body == null) {
+    violations.push(`${contract.path}: canonical button rule ${contract.selector} could not be located`);
+    continue;
+  }
+  for (const fragment of contract.required) {
+    const alternatives = Array.isArray(fragment) ? fragment : [fragment];
+    if (!alternatives.some((alternative) => body.includes(alternative))) {
+      const expected = alternatives.map((alternative) => JSON.stringify(alternative)).join(" or ");
+      violations.push(`${contract.path}: ${contract.selector} missing ${expected}`);
+    }
+  }
+  for (const token of forbiddenButtonFillTokens) {
+    if (body.includes(token)) {
+      violations.push(`${contract.path}: ${contract.selector} must not use inverse/form-control token ${token}`);
+    }
+  }
+}
 
 // The canonical data-table row-control density contract. It lives in
 // staffglobal.css today (see the family-ownership ratchet in

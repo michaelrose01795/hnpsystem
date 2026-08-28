@@ -7,7 +7,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function VhcCustomerDescriptionModal({
   open,
@@ -33,16 +35,7 @@ export default function VhcCustomerDescriptionModal({
     }
   }, [open, initialCustomerDescription]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose?.();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open || typeof document === "undefined") return null;
+  if (!open) return null;
 
   const handleSave = async () => {
     setSaving(true);
@@ -61,234 +54,63 @@ export default function VhcCustomerDescriptionModal({
     setValue("");
   };
 
-  const modal = (
-    <div
-      className="popup-backdrop"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "var(--overlay, rgba(15, 23, 42, 0.4))",
+  return (
+    <PopupModal
+      isOpen
+      onClose={saving ? undefined : onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      ariaLabel="Edit customer description"
+      cardStyle={{
+        width: "min(100%, 640px)",
+        padding: "var(--section-card-padding)",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: "var(--z-modal)",
-        padding: 20,
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
       }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Edit customer description"
-        onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 640,
-          background: "var(--page-card-bg, var(--surface))",
-          color: "var(--text-1)",
-          border: "none",
-          borderRadius: "var(--radius-sm)",
-          boxShadow: "0 24px 60px rgba(15, 23, 42, 0.24)",
-          padding: 0,
-          display: "flex",
-          flexDirection: "column",
-          maxHeight: "calc(100vh - 32px)",
-          overflowY: "auto",
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            padding: "18px 20px 14px",
-            borderBottom: "none",
-            background: "var(--theme, var(--surface))",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--text-1)",
-              opacity: 0.72,
-            }}
-          >
-            {categoryLabel || "Customer description"}
-          </div>
-          <h2
-            style={{
-              margin: "4px 0 0",
-              fontSize: "1.05rem",
-              fontWeight: 700,
-              color: "var(--text-1)",
-            }}
-          >
-            {itemLabel || "Edit customer description"}
-          </h2>
-        </div>
-
-        <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-1)", lineHeight: 1.5 }}>
-            This is the customer-facing wording used in the Summary tab, preview,
-            share link and send flows. The technician's original VHC note stays unchanged.
-          </p>
-
-          {technicianDescription ? (
-            <div
-              style={{
-                padding: "12px 14px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--theme, var(--surface))",
-                border: "none",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  color: "var(--text-1)",
-                  opacity: 0.72,
-                  marginBottom: 4,
-                }}
-              >
-                Technician's description
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-1)", lineHeight: 1.45 }}>
-                {technicianDescription}
-              </div>
-            </div>
-          ) : null}
-
-          <label
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              fontSize: 12,
-              color: "var(--text-1)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Customer description
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              disabled={saving}
-              rows={5}
-              placeholder="Leave empty to use the technician's description"
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "12px 14px",
-                minHeight: 130,
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                background: "var(--theme, var(--surface))",
-                color: "var(--text-1)",
-                fontSize: 14,
-                lineHeight: 1.5,
-                fontFamily: "inherit",
-                resize: "vertical",
-              }}
-            />
-          </label>
-
-          {error ? (
-            <div
-              style={{
-                padding: "8px 10px",
-                borderRadius: "var(--radius-xs)",
-                background: "var(--danger-surface, rgba(239,68,68,0.1))",
-                border: "none",
-                color: "var(--danger)",
-                fontSize: 13,
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 8,
-            flexWrap: "wrap",
-            padding: "14px 20px 18px",
-            borderTop: "none",
-            background: "var(--theme, var(--surface))",
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleResetToTech}
-            disabled={saving}
-            style={{
-              padding: "10px 14px",
-              minHeight: 40,
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              background: "var(--primary, var(--primary))",
-              color: "var(--onAccentText)",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.7 : 1,
-            }}
-          >
+      <header className="app-popup-compact-header">
+        <h2>{itemLabel || "Edit customer description"}</h2>
+        <div className="app-popup-compact-header__actions">
+          <Button type="button" variant="primary" busy={saving} onClick={handleSave}>
+            Save
+          </Button>
+          <Button type="button" variant="secondary" disabled={saving} onClick={handleResetToTech}>
             Use technician's text
-          </button>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => onClose?.()}
-              disabled={saving}
-              style={{
-                padding: "10px 14px",
-                minHeight: 40,
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                background: "var(--surface)",
-                color: "var(--text-1)",
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                padding: "10px 16px",
-                minHeight: 40,
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                background: "var(--primary, var(--primary))",
-                color: "var(--onAccentText)",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: saving ? "not-allowed" : "pointer",
-                opacity: saving ? 0.7 : 1,
-              }}
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-          </div>
+          </Button>
+          <Button type="button" variant="secondary" disabled={saving} onClick={onClose}>
+            Close
+          </Button>
         </div>
-      </div>
-    </div>
-  );
+      </header>
 
-  return createPortal(modal, document.body);
+      <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
+        {categoryLabel ? `${categoryLabel}. ` : ""}
+        This wording is shown in the Summary tab, preview, share link and send flows.
+        The technician's original VHC note stays unchanged.
+      </p>
+
+      {technicianDescription ? (
+        <LayerTheme radius="var(--radius-sm)" padding="12px 14px" gap="4px">
+          <strong>Technician&apos;s description</strong>
+          <span>{technicianDescription}</span>
+        </LayerTheme>
+      ) : null}
+
+      <label htmlFor="vhc-customer-description">Customer description</label>
+      <textarea
+        id="vhc-customer-description"
+        ref={textareaRef}
+        className="app-input"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        disabled={saving}
+        rows={5}
+        placeholder="Leave empty to use the technician's description"
+        style={{ width: "100%", minHeight: "130px", resize: "vertical" }}
+      />
+
+      {error ? <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p> : null}
+    </PopupModal>
+  );
 }

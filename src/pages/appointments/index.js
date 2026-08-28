@@ -11,13 +11,7 @@ import { useUser } from "@/context/UserContext"; // Access current user for chec
 import { isMobileTechnician } from "@/lib/auth/roles"; // Scope appointments view for mobile mechanics
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
 import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
-import {
-  createOrUpdateAppointment,
-  getJobByNumberOrReg,
-  getJobsByDate // ✅ NEW: Get appointments by date
-} from "@/lib/database/jobs"; // DB functions
-import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
-import supabase from "@/lib/database/supabaseClient"; // Supabase client for live tech availability
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
@@ -28,6 +22,18 @@ import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for
 import { getJobRequests } from "@/lib/canonical/fields";
 import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
 import { WORKSHOP_APPOINTMENT_TIME_OPTIONS } from "@/lib/appointments/dateTime";
+
+// Loaded on demand - each of these resolves the 213 KB Supabase browser client.
+//
+// Nothing here is needed to RENDER the page: the DB helpers run from save and
+// check-in handlers, the four availability/hours queries run inside async
+// callbacks, and the two realtime channels subscribe from effects after mount.
+// Importing them statically put the whole client in front of first paint on the
+// page with the highest blocking time in the app. Realtime behaviour is
+// unchanged - see subscribeWithDeferredClient.
+const loadSupabase = loadSupabaseClient;
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadJobStatusService = () => import("@/lib/services/jobStatusService");
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
 // Calculate hours worked between two timestamps
@@ -42,6 +48,22 @@ const calculateDurationHours = (start, end) => {
   if (diffMs <= 0) return 0;
   return parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
 };
+
+// Shared Intl formatters, built once at module load rather than per call.
+//
+// Every toLocaleDateString / toLocaleTimeString call constructs a new
+// Intl.DateTimeFormat internally. These run per job row and per rendered day, so
+// the constructions dominated this page's render cost. Options are copied
+// verbatim from the call sites they replace, so output is unchanged.
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+const FINISH_TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const getDateKey = (dateInput) => {
   const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
@@ -476,7 +498,7 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("job_requests").
       select("job_id, hours, request_source, vhc_item_id").
       in("job_id", uniqueJobIds);
@@ -508,7 +530,7 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("vhc_checks").
       select("job_id, labour_hours, approval_status").
       in("job_id", uniqueJobIds);
@@ -541,7 +563,7 @@ export default function Appointments() {
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from(TECH_AVAILABILITY_TABLE).
       select(`
           id,
@@ -573,7 +595,7 @@ export default function Appointments() {
 
   const fetchTechUsers = useCallback(async () => {
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("users").
       select("user_id, first_name, last_name, email, role, contracted_hours").
       in("role", TECH_USER_ROLES).
@@ -676,37 +698,35 @@ export default function Appointments() {
   useEffect(() => {
     if (!dates.length) return;
 
-    const channel = supabase.
-    channel("job_clocking_changes").
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
-      scheduleTechAvailabilityRefresh
-    ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscribeWithDeferredClient((supabase) =>
+      supabase.
+      channel("job_clocking_changes").
+      on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
+        scheduleTechAvailabilityRefresh
+      ).
+      subscribe()
+    );
   }, [dates, scheduleTechAvailabilityRefresh]);
 
   // Real-time subscription for jobs and appointments tables — revalidate SWR when data changes
   useEffect(() => {
-    const channel = supabase.
-    channel("appointments-page-jobs-sync") // unique channel name for this page
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
-      scheduleJobsRevalidate // trigger SWR revalidation (coalesced + deduplicated)
-    ).
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
-      scheduleJobsRevalidate
-    ).
-    subscribe();
-
-    return () => {supabase.removeChannel(channel);}; // clean up on unmount
+    return subscribeWithDeferredClient((supabase) =>
+      supabase.
+      channel("appointments-page-jobs-sync") // unique channel name for this page
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
+        scheduleJobsRevalidate // trigger SWR revalidation (coalesced + deduplicated)
+      ).
+      on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
+        scheduleJobsRevalidate
+      ).
+      subscribe()
+    );
   }, [scheduleJobsRevalidate]);
 
   useEffect(() => {
@@ -862,7 +882,7 @@ export default function Appointments() {
       // ✅ If not found locally, fetch from database
       if (!job) {
         console.log(`Job ${normalizedJobNumber} not found locally, fetching from DB...`);
-        const fetchedJob = await getJobByNumberOrReg(normalizedJobNumber);
+        const fetchedJob = await (await loadJobsDb()).getJobByNumberOrReg(normalizedJobNumber);
 
         if (!fetchedJob) {
           alert(`Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
@@ -881,7 +901,7 @@ export default function Appointments() {
         time: time
       });
 
-      const appointmentResult = await createOrUpdateAppointment(
+      const appointmentResult = await (await loadJobsDb()).createOrUpdateAppointment(
         job.jobNumber, // Use job number for appointment creation
         appointmentDate,
         time,
@@ -984,7 +1004,7 @@ export default function Appointments() {
     setCheckingInJobId(job.id);
 
     try {
-      const result = await autoSetCheckedInStatus(
+      const result = await (await loadJobStatusService()).autoSetCheckedInStatus(
         job.id,
         dbUserId || user?.user_id || user?.id || "SYSTEM"
       );
@@ -1039,10 +1059,10 @@ export default function Appointments() {
 
   // ---------------- Utilities ----------------
   const formatDate = (dateObj) =>
-  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  SHORT_DATE_FORMATTER.format(dateObj);
 
   const formatDateNoYear = (dateObj) =>
-  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  SHORT_DATE_FORMATTER.format(dateObj);
 
   // Per-day technician summary.
   //
@@ -1263,7 +1283,7 @@ export default function Appointments() {
     const totalHours = (parseHoursValue(jobHours) || 0) + (parseHoursValue(vhcHours) || 0);
     if (totalHours <= 0) return "-";
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
-    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    return FINISH_TIME_FORMATTER.format(finish);
   };
 
   const normalizeJobCategoryLabel = (rawLabel) => {
@@ -1414,7 +1434,7 @@ export default function Appointments() {
 
     const totalHours = getScheduledDurationHours(job);
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
-    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    return FINISH_TIME_FORMATTER.format(finish);
   };
 
   const getSchedulerBookingHours = (job) => {

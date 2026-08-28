@@ -9,6 +9,7 @@
 // Webpack (used by Next.js) supports JSON imports natively without the import assertion
 // eslint-disable-next-line import/no-unresolved
 import knowledgeIndex from "./knowledgeIndex.json";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -311,6 +312,7 @@ function normaliseRole(role) {
 function userCanAccess(entry, userRoles) {
   if (!entry.roles || entry.roles.length === 0) return true;
   const normalised = (userRoles || []).map(normaliseRole);
+  if (hasAllAccessRole(normalised)) return true; // All Access demo login
   return entry.roles.some((r) => normalised.includes(normaliseRole(r)));
 }
 

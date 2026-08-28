@@ -4,9 +4,9 @@
 // handles and playhead) directly under it.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
+import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 import VideoPlayer from "./videoEditor/VideoPlayer";
 import TimelineTrimControl from "./videoEditor/TimelineTrimControl";
 
@@ -34,9 +34,15 @@ export default function VideoEditorModal({
   busyLabel = "",
   errorLabel = "",
   widgetCount = 0,
+  // Queue navigation for a multi-video capture session. Back / Next commit the
+  // current trim / cut / mute work before moving, so cycling through a session
+  // never drops an edit. An untouched video is passed through without a
+  // re-encode, so navigating past one costs nothing.
+  onBack,
+  onNext,
+  queueIndex = 0,
+  queueTotal = 0,
 }) {
-  useBodyModalLock(isOpen);
-
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
@@ -141,11 +147,18 @@ export default function VideoEditorModal({
     if (currentTime >= next) seekTo(trimStart);
   };
 
-  const exportVideo = async () => {
+  // Flatten the current trim / cut / mute work into a file and hand it to
+  // `deliver`. Every exit that keeps the edit (Save edits, Back, Next) goes
+  // through here, so the work is committed no matter which one the technician
+  // uses. "Keep original" deliberately bypasses this.
+  const exportVideo = async (deliver) => {
     try {
       setProcessing(true);
       const v = videoRef.current;
-      if (!v) return;
+      if (!v) {
+        setProcessing(false);
+        return;
+      }
 
       const noEdits =
         trimStart === 0 &&
@@ -153,7 +166,8 @@ export default function VideoEditorModal({
         !isMuted &&
         cuts.length === 0;
       if (noEdits) {
-        onSave?.(videoFile);
+        setProcessing(false);
+        deliver(videoFile);
         return;
       }
 
@@ -172,7 +186,7 @@ export default function VideoEditorModal({
         const blob = new Blob(chunks, { type });
         const file = new File([blob], `edited_video_${Date.now()}.${ext}`, { type });
         setProcessing(false);
-        onSave?.(file);
+        deliver(file);
       };
 
       const onTimeUpdate = () => {
@@ -209,29 +223,66 @@ export default function VideoEditorModal({
     }
   };
 
-  if (!isOpen || typeof document === "undefined") return null;
+  const handleSavePress = () => exportVideo((file) => onSave?.(file));
+  const handleBackPress = () => exportVideo((file) => onBack?.(file));
+  const handleNextPress = () => exportVideo((file) => onNext?.(file));
+
+  if (!isOpen) return null;
 
   const popupMaxWidth = videoAspectRatio < 0.8 ? "460px" : videoAspectRatio < 1.35 ? "720px" : "900px";
 
-  return createPortal(
-    <div className="popup-backdrop video-editor-backdrop" role="dialog" aria-modal="true" aria-label="Edit video">
-      <div
-        className="popup-card video-editor-popup"
-        style={{
+  return (
+    <PopupModal
+      isOpen
+      onClose={processing ? undefined : onCancel}
+      closeOnBackdrop={false}
+      closeOnEscape={!processing}
+      ariaLabel="Edit video"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{
+          width: `min(100%, ${popupMaxWidth})`,
           "--video-editor-max-width": popupMaxWidth,
           "--video-editor-aspect-ratio": videoAspectRatio,
-        }}
+          overflow: "hidden",
+      }}
+    >
+      <div
+        className="app-settings-popup app-media-editor-popup"
       >
-        <div className="video-editor-popup__header">
-          <h2 className="video-editor-popup__title">Edit video</h2>
-          {widgetCount > 0 ? (
-            <span className="video-editor-popup__meta">
-              {widgetCount} widget{widgetCount === 1 ? "" : "s"} baked in
-            </span>
-          ) : null}
-        </div>
+        <header className="app-popup-compact-header">
+          <div>
+            <h2>{queueTotal > 1 ? `Edit video · ${queueIndex + 1} of ${queueTotal}` : "Edit video"}</h2>
+            {widgetCount > 0 ? (
+              <span className="video-editor-popup__meta">
+                {widgetCount} widget{widgetCount === 1 ? "" : "s"} baked in
+              </span>
+            ) : null}
+          </div>
+          <div className="app-popup-compact-header__actions">
+            <Button variant="primary" size="sm" onClick={handleSavePress} disabled={!videoLoaded || processing}>
+              {processing ? "Processing..." : "Save edits"}
+            </Button>
+            {onSkip ? (
+              <Button variant="secondary" size="sm" onClick={() => onSkip?.(videoFile)} disabled={processing || !videoLoaded}>
+                Keep original
+              </Button>
+            ) : null}
+            <Button variant="secondary" size="sm" onClick={onCancel} disabled={processing}>
+              Close
+            </Button>
+          </div>
+        </header>
 
-        <div className="video-editor-popup__body">
+        {/* Media preview stays on the popup card's own --surface layer; the editing
+            controls below sit in their own --theme card (ladder, §3.0a-2). */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            flex: "0 1 auto",
+          }}
+        >
           <VideoPlayer
             ref={videoRef}
             src={previewSource}
@@ -281,6 +332,24 @@ export default function VideoEditorModal({
             }}
           />
 
+        </div>
+
+        <LayerTheme
+          sectionKey="video-editor-controls"
+          parentKey="shared-popup-card"
+          style={{ flex: "0 1 auto", minHeight: 0 }}
+        >
+          {onBack || onNext ? (
+            <div style={{ display: "flex", gap: 10, flex: "0 0 auto" }}>
+              <Button type="button" variant="secondary" size="sm" onClick={handleBackPress} disabled={!onBack || processing || !videoLoaded}>
+                Back
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={handleNextPress} disabled={!onNext || processing || !videoLoaded}>
+                Next
+              </Button>
+            </div>
+          ) : null}
+
           <TimelineTrimControl
             duration={duration}
             currentTime={currentTime}
@@ -305,23 +374,8 @@ export default function VideoEditorModal({
               {errorLabel || busyLabel}
             </div>
           ) : null}
-        </div>
-
-        <div className="video-editor-popup__footer">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={processing} className="video-editor-popup__cancel">
-            Cancel
-          </Button>
-          {onSkip ? (
-            <Button variant="secondary" size="sm" onClick={() => onSkip?.(videoFile)} disabled={processing || !videoLoaded}>
-              Keep original
-            </Button>
-          ) : null}
-          <Button variant="primary" size="sm" onClick={exportVideo} disabled={!videoLoaded || processing}>
-            {processing ? "Processing..." : "Save edits"}
-          </Button>
-        </div>
+        </LayerTheme>
       </div>
-    </div>,
-    document.body
+    </PopupModal>
   );
 }

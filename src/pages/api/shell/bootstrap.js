@@ -24,7 +24,7 @@
 //     that errors comes back null and its provider fetches for itself.
 //   * Returns only what the shell renders before first interaction.
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
+import { resolveSessionUserId, isUserProfileNotFound } from "@/lib/auth/sessionUserResolver";
 import { getUserSidebarAccessById } from "@/lib/database/users";
 import { buildRosterPayload } from "@/lib/users/rosterPayload";
 import { getUnreadThreadCountForUser } from "@/lib/database/messages";
@@ -48,16 +48,32 @@ async function handler(req, res, session) {
 
   const timer = createServerTimer();
 
+  // "identity" tells the client WHY there is no user id, which it cannot infer
+  // from a null:
+  //   linked    — this session maps to a users row (its id is below)
+  //   unlinked  — it settledly does not (synthetic dev-platform / cookie-bypass
+  //               sessions, or an account HR has not linked yet). There is no
+  //               per-user record to wait for, so the client can stop waiting
+  //               and fall back to role-derived navigation.
+  //   error     — the lookup itself failed. The answer is still unknown, so the
+  //               client must stay fail-closed and retry.
+  // The browser cannot make this call for itself: its Supabase client runs as
+  // the anon role, which has no permission on the users table.
   let userId = null;
+  let identity = "unlinked";
   try {
     userId = await timer.db("resolveUser", () => resolveSessionUserId(session));
-  } catch {
-    // Synthetic sessions (dev platform, presentation) have no users row. The
-    // shell handles a null id already — role-derived navigation is the default.
+    identity = "linked";
+  } catch (error) {
     userId = null;
+    identity = isUserProfileNotFound(error) ? "unlinked" : "error";
+    if (identity === "error") {
+      console.warn("[shell/bootstrap] resolveUser failed:", error?.message || error);
+    }
   }
 
   const numericUserId = Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null;
+  if (identity === "linked" && numericUserId === null) identity = "unlinked";
 
   const [sidebarAccess, roster, unreadCount] = await Promise.all([
     numericUserId
@@ -77,6 +93,7 @@ async function handler(req, res, session) {
     success: true,
     data: {
       userId: numericUserId,
+      identity,
       sidebarAccess: sidebarAccess ?? null,
       roster: roster ?? null,
       unreadCount: typeof unreadCount === "number" ? unreadCount : null,

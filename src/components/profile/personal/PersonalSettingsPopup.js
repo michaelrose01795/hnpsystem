@@ -1,18 +1,15 @@
 import React from "react";
-import { createPortal } from "react-dom";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
 import useIsMobile from "@/hooks/useIsMobile";
+import PopupModal from "@/components/popups/popupStyleApi";
 import {
   EmptyState,
   formatCurrency,
   formatDate,
-  getWidgetModalCardStyle,
   toNumber,
   widgetAccentSurfaceStyle,
   widgetInsetSurfaceStyle,
-  widgetModalBackdropStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
 import { formatMonthLabel } from "@/lib/profile/calculations";
@@ -824,7 +821,6 @@ function AdjustmentsSection({ finance, isMobile }) {
 }
 
 export default function PersonalSettingsPopup({ isOpen, onClose, finance, initialSection = null }) {
-  useBodyModalLock(isOpen);
   const isMobile = useIsMobile();
   const scrollContainerRef = React.useRef(null);
 
@@ -842,33 +838,38 @@ export default function PersonalSettingsPopup({ isOpen, onClose, finance, initia
 
   if (!isOpen || !finance) return null;
 
-  const popup = (
-    <div
-      className="popup-backdrop"
-      style={{
-        ...widgetModalBackdropStyle,
-        padding: isMobile ? "8px" : "24px",
-        zIndex: 2200,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
+  return (
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Personal settings"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{
+        width: "min(100%, 820px)",
+        padding: "var(--section-card-padding)",
+        overflow: "hidden",
       }}
     >
       <div
+        className="app-settings-popup"
         style={{
-          ...getWidgetModalCardStyle(isMobile, {
-            maxWidth: "820px",
-          }),
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--layout-card-gap)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ display: "grid", gap: "3px" }}>
-            <div style={{ fontSize: isMobile ? "1rem" : "1.05rem", fontWeight: 700 }}>Personal settings</div>
-            <div style={{ color: "var(--text-1)", lineHeight: 1.5, fontSize: "0.8rem" }}>
-              Changes for <strong>{finance.model.selectedMonthKey}</strong> save automatically.
-            </div>
+        <header className="app-popup-compact-header">
+          <h2>Personal settings</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Close
+            </Button>
           </div>
-        </div>
+        </header>
+
+        <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
+          Changes for <strong>{finance.model.selectedMonthKey}</strong> save automatically.
+        </p>
 
         <div
           ref={scrollContainerRef}
@@ -891,14 +892,7 @@ export default function PersonalSettingsPopup({ isOpen, onClose, finance, initia
           <AdjustmentsSection finance={finance} isMobile={isMobile} />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "2px" }}>
-          <Button type="button" variant="primary" size="sm" pill onClick={onClose}>
-            Done
-          </Button>
-        </div>
       </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? popup : createPortal(popup, document.body);
 }

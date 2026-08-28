@@ -194,7 +194,6 @@ Legacy `sidebar_access.items/groups` JSON remains valid. v4 layouts add `sourceR
 
 ### Painters
 
-- Paint Overview: `/dashboard/painting`
 - Paint Reports: `/reports/paint`
 - Communication: `/newsfeed`, `/messages`
 - Records: `/archive`

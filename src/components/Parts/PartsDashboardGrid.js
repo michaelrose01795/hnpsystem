@@ -1,49 +1,35 @@
-// Shared layout shell for the parts dashboards
-import React from "react";import LayerTheme from "@/components/ui/LayerTheme";
+// Shared, staffglobal.css-driven layout shell for the parts dashboards.
+import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import StaffCard from "@/components/ui/StaffCard";
+import StaffCardGrid from "@/components/ui/StaffCardGrid";
+import StaffPageHeader from "@/components/ui/StaffPageHeader";
 
-const containerStyle = {
-  width: "100%",
-  maxWidth: "100%",
-  padding: "8px 0",
-  margin: "0 auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: "24px"
-};
-
-const summaryGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "16px"
-};
-
-const summaryCardStyle = {
-  padding: "18px"
-};
-
-const sectionCardStyle = {
-  height: "100%"
-};
-
-const sectionTitleStyle = {
-  fontSize: "0.95rem",
-  fontWeight: 700,
-  letterSpacing: "0.05em",
-  color: "var(--primary-selected)",
-  marginBottom: "14px",
-  textTransform: "uppercase"
-};
+const sectionCardStyle = { height: "100%", minWidth: 0 };
 
 const splitGridStyle = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, 2fr) minmax(260px, 1fr)",
-  gap: "20px"
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+  gap: "var(--page-stack-gap)",
 };
 
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "separate",
-  borderSpacing: "0 10px"
+const columnStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--page-stack-gap)",
+  minWidth: 0,
+};
+
+const twoCardGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+  gap: "var(--page-stack-gap)",
+};
+
+const listRowStyle = {
+  padding: "var(--space-3) 0",
+  borderBottom: "var(--separating-line)",
 };
 
 const formatCurrency = (value) => {
@@ -56,9 +42,27 @@ const formatMargin = (cost, price) => {
   const costValue = Number(cost || 0);
   const priceValue = Number(price || 0);
   const diff = priceValue - costValue;
-  const percent = priceValue !== 0 ? diff / priceValue * 100 : 0;
+  const percent = priceValue !== 0 ? (diff / priceValue) * 100 : 0;
   return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
 };
+
+const statusBadgeClass = (status = "") => {
+  const normalized = status.toLowerCase();
+  if (/stock|fitted|complete|picked/.test(normalized)) return "app-badge--success";
+  if (/wait|order|pending/.test(normalized)) return "app-badge--warning";
+  if (/urgent|overdue|failed/.test(normalized)) return "app-badge--danger";
+  return "app-badge--neutral";
+};
+
+function StaffTable({ children, label }) {
+  return (
+    <div className="app-table-shell-scroll" role="region" aria-label={label} tabIndex={0}>
+      <table className="app-data-table app-data-table--rounded app-table-shell app-table-shell--with-headings">
+        {children}
+      </table>
+    </div>
+  );
+}
 
 export default function PartsDashboardGrid({
   title,
@@ -68,174 +72,179 @@ export default function PartsDashboardGrid({
   focusItems = [],
   inventoryAlerts = [],
   deliveries = [],
-  teamAvailability = []
+  teamAvailability = [],
 }) {
   return (
-    <div style={containerStyle}>
-      <div style={summaryGridStyle}>
-        {summaryCards.map((card, index) =>
-        <LayerTheme as="div" key={card.label} sectionKey={`parts-ops-summary-${index + 1}`} sectionType="stat-card" data-dev-text-preview={`Summary card: ${card.label}`} style={summaryCardStyle}>
-            <div style={{ fontSize: "0.85rem", color: "var(--primary-selected)", fontWeight: 600 }}>{card.label}</div>
-            <div style={{ fontSize: "1.9rem", fontWeight: 700, color: "var(--primary)", margin: "8px 0" }}>
+    <div className="app-page-stack">
+      <StaffPageHeader title={title} subtitle={subtitle} />
+
+      <StaffCardGrid minColumnWidth="220px">
+        {summaryCards.map((card, index) => (
+          <StaffCard
+            as="article"
+            key={card.label}
+            variant="theme"
+            title={card.label}
+            sectionKey={`parts-ops-summary-${index + 1}`}
+            sectionType="stat-card"
+            data-dev-text-preview={`Summary card: ${card.label}`}
+          >
+            <div className="app-staff-card__title" style={{ fontSize: "var(--text-h2)" }}>
               {card.value}
             </div>
-            {card.helper ? <div style={{ color: "var(--grey-accent)" }}>{card.helper}</div> : null}
-          </LayerTheme>
-        )}
-      </div>
+            {card.helper ? <div className="app-staff-card__subtitle">{card.helper}</div> : null}
+          </StaffCard>
+        ))}
+      </StaffCardGrid>
 
       <div style={splitGridStyle}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <LayerTheme as="div" sectionKey="parts-ops-active-job-queue" sectionType="data-table" data-dev-text-preview="Active Job Queue" style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Active Job Queue</div>
-            <table style={tableStyle}>
+        <div style={columnStyle}>
+          <LayerTheme
+            as="section"
+            sectionKey="parts-ops-active-job-queue"
+            sectionType="data-table"
+            data-dev-text-preview="Active Job Queue"
+            style={sectionCardStyle}
+          >
+            <h2 className="app-staff-card__title">Active Job Queue</h2>
+            <StaffTable label="Active Job Queue">
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>
-                  <th style={{ paddingBottom: "8px" }}>Job</th>
-                  <th style={{ paddingBottom: "8px" }}>Advisor</th>
-                  <th style={{ paddingBottom: "8px" }}>Needed</th>
-                  <th style={{ paddingBottom: "8px" }}>Status</th>
-                  <th style={{ paddingBottom: "8px", textAlign: "right" }}>Value</th>
+                <tr>
+                  <th>Job</th>
+                  <th>Advisor</th>
+                  <th>Needed</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Value</th>
                 </tr>
               </thead>
               <tbody>
-                {workload.map((job) =>
-                <tr key={job.jobNumber} style={{ background: "var(--danger-surface)" }}>
-                    <td style={{ padding: "12px", borderRadius: "var(--radius-xs) 0 0 var(--radius-xs)" }}>
+                {workload.map((job) => (
+                  <tr key={`${job.jobNumber}-${job.jobId || "line"}`}>
+                    <td>
                       <div style={{ fontWeight: 600 }}>{job.jobNumber}</div>
-                      <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{job.reg}</div>
+                      <div className="app-staff-card__subtitle">{job.reg}</div>
                     </td>
-                    <td style={{ padding: "12px" }}>{job.advisor}</td>
-                    <td style={{ padding: "12px" }}>{job.neededBy}</td>
-                    <td style={{ padding: "12px" }}>
-                      <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        padding: "4px 10px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.8rem",
-                        fontWeight: 600,
-                        background: job.statusColor || "rgba(var(--primary-rgb),0.08)",
-                        color: job.statusTextColor || "var(--primary-selected)"
-                      }}>
-
-                        {job.status}
-                      </span>
+                    <td>{job.advisor}</td>
+                    <td>{job.neededBy}</td>
+                    <td>
+                      <span className={`app-badge ${statusBadgeClass(job.status)}`}>{job.status}</span>
                     </td>
-                    <td style={{ padding: "12px", textAlign: "right", borderRadius: "0 var(--radius-xs) var(--radius-xs) 0" }}>
-                      {job.value}
-                    </td>
+                    <td style={{ textAlign: "right" }}>{job.value}</td>
                   </tr>
-                )}
+                ))}
               </tbody>
-            </table>
+            </StaffTable>
           </LayerTheme>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            <LayerTheme as="div" sectionKey="parts-ops-inventory-alerts" sectionType="content-card" data-dev-text-preview="Inventory Alerts" style={sectionCardStyle}>
-              <div style={sectionTitleStyle}>Inventory Alerts</div>
+          <div style={twoCardGridStyle}>
+            <LayerTheme
+              as="section"
+              sectionKey="parts-ops-inventory-alerts"
+              sectionType="content-card"
+              data-dev-text-preview="Inventory Alerts"
+              style={sectionCardStyle}
+            >
+              <h2 className="app-staff-card__title">Inventory Alerts</h2>
               {inventoryAlerts.map((alert) => {
                 const statusLabel =
-                alert.status === "low_stock" ?
-                "Low stock" :
-                alert.status === "back_order" ?
-                "On back-order" :
-                alert.status === "inactive" ?
-                "Inactive" :
-                "In stock";
+                  alert.status === "low_stock"
+                    ? "Low stock"
+                    : alert.status === "back_order"
+                      ? "On back-order"
+                      : alert.status === "inactive"
+                        ? "Inactive"
+                        : "In stock";
                 return (
-                  <div
+                  <LayerSurface
                     key={alert.id || alert.partNumber || alert.part}
-                    style={{
-                      padding: "12px 14px",
-                      marginBottom: "12px",
-                      borderRadius: "var(--radius-sm)",
-                      background: "var(--theme)"
-                    }}>
-
-                    <div style={{ fontWeight: 600, color: "var(--primary-selected)" }}>
+                    radius="var(--radius-sm)"
+                    padding="var(--space-3) var(--space-md)"
+                    gap="var(--space-xs)"
+                  >
+                    <div style={{ fontWeight: 600, color: "var(--accentText)" }}>
                       {alert.partNumber ? `${alert.partNumber} · ${alert.name || ""}` : alert.part || "Part"}
                     </div>
-                    <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>
+                    <div className="app-staff-card__subtitle">
                       Supplier: {alert.supplier || "—"} · Location: {alert.location || "Not set"}
                     </div>
-                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--primary-selected)" }}>
-                      {statusLabel} · Stock {alert.inStock ?? 0} / Min {alert.reorderLevel ?? 0} · On order {alert.qtyOnOrder ?? 0}
+                    <span className={`app-badge ${statusBadgeClass(statusLabel)}`} style={{ alignSelf: "flex-start" }}>
+                      {statusLabel} · Stock {alert.inStock ?? 0} / Min {alert.reorderLevel ?? 0}
+                    </span>
+                    <div className="app-staff-card__subtitle">
+                      On order {alert.qtyOnOrder ?? 0} · Cost {formatCurrency(alert.unitCost)} · Sell {formatCurrency(alert.unitPrice)}
                     </div>
-                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                      Cost {formatCurrency(alert.unitCost)} · Sell {formatCurrency(alert.unitPrice)} · Margin {formatMargin(alert.unitCost, alert.unitPrice)}
+                    <div className="app-staff-card__subtitle">
+                      Margin {formatMargin(alert.unitCost, alert.unitPrice)} · Linked jobs: {alert.openJobCount ?? 0}
                     </div>
-                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                      Linked jobs: {alert.openJobCount ?? 0}
-                    </div>
-                  </div>);
-
+                  </LayerSurface>
+                );
               })}
             </LayerTheme>
-            <LayerTheme as="div" sectionKey="parts-ops-team-focus" sectionType="content-card" data-dev-text-preview="Team Focus" style={sectionCardStyle}>
-              <div style={sectionTitleStyle}>Team Focus</div>
-              {focusItems.map((item) =>
-              <div
-                key={item.title}
-                style={{
-                  padding: "10px 0",
-                  borderBottom: "1px solid var(--separating-line-color)"
-                }}>
 
+            <LayerTheme
+              as="section"
+              sectionKey="parts-ops-team-focus"
+              sectionType="content-card"
+              data-dev-text-preview="Team Focus"
+              style={sectionCardStyle}
+            >
+              <h2 className="app-staff-card__title">Team Focus</h2>
+              {focusItems.map((item) => (
+                <div key={item.title} style={listRowStyle}>
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{item.detail}</div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>{item.owner}</div>
+                  <div className="app-staff-card__subtitle">{item.detail}</div>
+                  <div style={{ color: "var(--accentText)", marginTop: "var(--space-xs)" }}>{item.owner}</div>
                 </div>
-              )}
+              ))}
             </LayerTheme>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <LayerTheme as="div" sectionKey="parts-ops-team-availability" sectionType="content-card" data-dev-text-preview="Team Availability" style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Team Availability</div>
-            {teamAvailability.map((entry) =>
-            <div
-              key={entry.name}
-              style={{
-                padding: "12px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                marginBottom: "12px",
-                background: "var(--theme)"
-              }}>
-
+        <div style={columnStyle}>
+          <LayerTheme
+            as="section"
+            sectionKey="parts-ops-team-availability"
+            sectionType="content-card"
+            data-dev-text-preview="Team Availability"
+            style={sectionCardStyle}
+          >
+            <h2 className="app-staff-card__title">Team Availability</h2>
+            {teamAvailability.map((entry) => (
+              <LayerSurface
+                key={entry.name}
+                radius="var(--radius-sm)"
+                padding="var(--space-3)"
+                gap="var(--space-xs)"
+              >
                 <div style={{ fontWeight: 600 }}>{entry.name}</div>
-                <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{entry.role}</div>
-                <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "6px" }}>
-                  {entry.status} • {entry.window}
-                </div>
-              </div>
-            )}
+                <div className="app-staff-card__subtitle">{entry.role}</div>
+                <span className="app-badge app-badge--accent-soft" style={{ alignSelf: "flex-start" }}>
+                  {entry.status} · {entry.window}
+                </span>
+              </LayerSurface>
+            ))}
           </LayerTheme>
-          <LayerTheme as="div" sectionKey="parts-ops-inbound-deliveries" sectionType="content-card" data-dev-text-preview="Inbound Deliveries" style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Inbound Deliveries</div>
-            {deliveries.map((delivery) =>
-            <div
-              key={delivery.reference}
-              style={{
-                padding: "10px 0",
-                borderBottom: "1px solid var(--separating-line-color)"
-              }}>
 
+          <LayerTheme
+            as="section"
+            sectionKey="parts-ops-inbound-deliveries"
+            sectionType="content-card"
+            data-dev-text-preview="Inbound Deliveries"
+            style={sectionCardStyle}
+          >
+            <h2 className="app-staff-card__title">Inbound Deliveries</h2>
+            {deliveries.map((delivery) => (
+              <div key={delivery.reference} style={listRowStyle}>
                 <div style={{ fontWeight: 600 }}>{delivery.supplier}</div>
-                <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>
-                  ETA {delivery.eta} • {delivery.items} lines
+                <div className="app-staff-card__subtitle">
+                  ETA {delivery.eta} · {delivery.items} lines
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>
-                  {delivery.reference}
-                </div>
+                <div style={{ color: "var(--accentText)", marginTop: "var(--space-xs)" }}>{delivery.reference}</div>
               </div>
-            )}
+            ))}
           </LayerTheme>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

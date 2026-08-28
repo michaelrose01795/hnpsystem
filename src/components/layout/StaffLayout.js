@@ -10,6 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // import React hooks
 import dynamic from "next/dynamic"; // code-split heavy Layout children out of the shell bundle
 import useSWR from "swr"; // SWR for deduped, cache-backed data fetching
+import { hasAllAccessRole } from "@/lib/auth/roles"; // All Access demo login gate
 // usePolling removed — SWR + slot-keyed caching covers the welcome-quote refresh.
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
@@ -21,6 +22,7 @@ const JobCardModal = dynamic(() => import("@/components/JobCards/JobCardModal"),
 const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSidebar"), { ssr: false });
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/layout/StaffSidebar";
+import { isRestorableRoute } from "@/lib/auth/returnRoute";
 import StaffTopbar from "@/components/layout/StaffTopbar";
 import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
@@ -39,7 +41,6 @@ import { resolveDepartmentForRoles } from "@/lib/reporting/config/departments";
 import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
 import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
-import { useContinueContext } from "@/hooks/useContinueContext";
 import { useBehaviourModel } from "@/hooks/useBehaviourModel";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
@@ -90,7 +91,6 @@ const NAV_DRAWER_WIDTH = 260;
 const COLLAPSED_RAIL_WIDTH = 48;
 const STATUS_DRAWER_WIDTH = 560;
 const AUTH_LAYOUT_ENTRANCE_STORAGE_KEY = "hnp-auth-layout-entrance";
-const AUTH_LAYOUT_ENTRANCE_DURATION_MS = 360;
 // Fallback role union used only if /presentation is somehow rendered without
 // a chosen role from /loginPresentation (the provider redirects in that case,
 // but Layout sits outside the provider so this keeps it safe during the brief
@@ -127,10 +127,11 @@ export default function Layout({
   } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
-  const [authEntranceActive, setAuthEntranceActive] = useState(() => {
+  const [authEntranceActive] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.sessionStorage.getItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY) === "1";
   });
+  const authEntranceStartedRef = useRef(false);
   // Optimistic sidebar highlight. Driven by router.events so the sidebar can
   // highlight the clicked item the instant a real navigation starts, before
   // router.asPath catches up (Pages Router only updates asPath on completion).
@@ -394,7 +395,8 @@ export default function Layout({
     ? getQuickActions(userRoles, activeWorkspaceDepartment)
     : null;
 
-  const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
+  const canUseServiceActions =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
@@ -411,15 +413,20 @@ export default function Layout({
     user?.email ||
     normalizedUsername ||
     null;
+  // All Access demo login: every role-gated shortcut, panel and command-palette
+  // entry below is granted. Note this deliberately does NOT feed `isTech` — that
+  // flag SWAPS the topbar to the reduced technician view, so turning it on would
+  // hide the manager KPIs and insights this login exists to show.
+  const hasFullAccess = hasAllAccessRole(userRoles);
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = presentationShell
     ? hasTechRole
     : (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
-  const canViewStatusSidebar = presentationShell || userRoles.some((role) =>
+  const canViewStatusSidebar = presentationShell || hasFullAccess || userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
-  const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
-  const isPartsManager = userRoles.includes("parts manager");
+  const hasPartsAccess = hasFullAccess || userRoles.some((role) => PARTS_NAV_ROLES.has(role));
+  const isPartsManager = hasFullAccess || userRoles.includes("parts manager");
 
   // Role-aware workspace for the top bar (computed centrally here so the bar
   // stays presentational). All the reusable pieces live in src/config/topbar,
@@ -468,13 +475,6 @@ export default function Layout({
     manifestQuickActions: workspaceQuickActions,
     canUseServiceActions,
     hasPartsAccess,
-  });
-  // Phase 2.3: Continue Where You Left Off.
-  const continueContext = useContinueContext(router.asPath, {
-    // Technicians already have the live current-job action in the topbar.
-    // Recording /tech as generic history creates a duplicate, less accurate
-    // resume link beside "Open Job <number>".
-    enabled: !presentationShell && !isTech,
   });
   // Two most-used pages for the topbar quick-access buttons. READ-ONLY: the visit
   // counting is already done by WorkspaceCommandCenter's behaviour model (mounted
@@ -543,11 +543,7 @@ export default function Layout({
       return undefined;
     }
     window.sessionStorage.removeItem(AUTH_LAYOUT_ENTRANCE_STORAGE_KEY);
-    const timer = window.setTimeout(
-      () => setAuthEntranceActive(false),
-      AUTH_LAYOUT_ENTRANCE_DURATION_MS
-    );
-    return () => window.clearTimeout(timer);
+    return undefined;
   }, [authEntranceActive, authEntranceReady]);
 
   useEffect(() => {
@@ -717,7 +713,16 @@ export default function Layout({
       trace("layout", "user is null on a gated route -> router.replace(/login)", {
         route: router.pathname,
       });
-      router.replace("/login");
+      // Carry the route the user was on. This bounce covers every gated route
+      // rendered in the staff shell — including the ones the edge guard treats
+      // as always-allowed, such as /newsfeed — so without this a session that
+      // expires there loses the user's place before /login can read it.
+      const current = router.asPath || "";
+      router.replace(
+        isRestorableRoute(current)
+          ? `/login?redirectedFrom=${encodeURIComponent(current)}`
+          : "/login"
+      );
     }
   }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute]);
 
@@ -985,7 +990,7 @@ export default function Layout({
     roleName.toLowerCase().includes("accounts")
   );
   const normalizedAccountsRoles = accountsRoleCandidates.map((roleName) => roleName.toLowerCase());
-  const hasAccountsSidebarAccess = userRoles.some((role) => normalizedAccountsRoles.includes(role));
+  const hasAccountsSidebarAccess = hasFullAccess || userRoles.some((role) => normalizedAccountsRoles.includes(role));
   const accountsSidebarSections = hasAccountsSidebarAccess
     ? [
         {
@@ -1009,6 +1014,7 @@ export default function Layout({
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
     if (!requiredRoles || requiredRoles.length === 0) return true;
+    if (hasFullAccess) return true;
     return requiredRoles.some((role) => userRoles.includes(role.toLowerCase()));
   };
 
@@ -1085,7 +1091,7 @@ export default function Layout({
     });
   }
 
-  if (isTech) {
+  if (isTech || hasFullAccess) {
     addNavItem("My Jobs", "/tech", {
       keywords: ["my jobs", "jobs", "tech"],
       section: "Workshop",
@@ -1102,6 +1108,7 @@ export default function Layout({
   }
 
   if (
+    hasFullAccess ||
     ["service manager", "workshop manager", "admin manager"].some((roleName) =>
       userRoles.includes(roleName)
     )
@@ -1112,7 +1119,7 @@ export default function Layout({
     });
   }
 
-  if (userRoles.includes("workshop manager")) {
+  if (hasFullAccess || userRoles.includes("workshop manager")) {
     addNavItem("Consumables Tracker", "/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
       description: "Monitor consumable spend, reminders, and supplier details",
@@ -1120,7 +1127,7 @@ export default function Layout({
     });
   }
 
-  if (viewRoles.some((r) => userRoles.includes(r))) {
+  if (hasFullAccess || viewRoles.some((r) => userRoles.includes(r))) {
     addNavItem("Job Cards", "/jobs", {
       keywords: ["view job", "job cards"],
       description: "Browse all job cards",
@@ -1155,13 +1162,16 @@ export default function Layout({
   }
 
   const hrAccessRoles = ["hr manager", "admin manager", "admin"];
-  if (userRoles.some((role) => hrAccessRoles.includes(role))) {
+  if (hasFullAccess || userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("HR Dashboard", "/hr", {
       keywords: ["hr", "people", "culture", "training"],
       description: "Headcount, attendance, and compliance overview",
       section: "HR",
     });
-  } else if (userRoles.some((role) => role.includes("manager"))) {
+  }
+  // The manager-tier HR entries sit on the `else` of the branch above, so the
+  // All Access login would otherwise lose them by qualifying for the wider one.
+  if (hasFullAccess || userRoles.some((role) => role.includes("manager"))) {
     addNavItem("Team HR", "/hr/employees", {
       keywords: ["team hr", "people", "hr"],
       description: "View team employee directory and leave",
@@ -1175,6 +1185,7 @@ export default function Layout({
   }
 
   if (
+    hasFullAccess ||
     userRoles.includes("valet service") ||
     userRoles.includes("service manager") ||
     userRoles.includes("admin")
@@ -1308,7 +1319,11 @@ export default function Layout({
     return <>{children}</>;
   }
 
-  if (authEntranceActive && !authEntranceReady) {
+  if (authEntranceActive && authEntranceReady) {
+    authEntranceStartedRef.current = true;
+  }
+
+  if (authEntranceActive && !authEntranceStartedRef.current) {
     return null;
   }
 
@@ -1345,7 +1360,7 @@ export default function Layout({
             flexDirection: "column",
             alignItems: "center",
             transition: `width ${sidebarMotion}, min-width ${sidebarMotion}`,
-            willChange: authEntranceActive ? "width, transform, opacity" : "width",
+            willChange: "width",
             position: "sticky",
             top: 0,
             overflow: "hidden",
@@ -1521,7 +1536,6 @@ export default function Layout({
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
             userRoles={userRoles}
-            resumeItem={isTech ? null : continueContext.mostRecent}
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}

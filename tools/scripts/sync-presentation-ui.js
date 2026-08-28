@@ -89,7 +89,6 @@ const ROUTE_CATALOG = [
   "/dashboard/mot",
   "/tech/efficiency",
   "/vhc",
-  "/dashboard/painting",
   "/dashboard/parts",
   "/parts",
   "/parts/manager",

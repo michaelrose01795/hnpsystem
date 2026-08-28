@@ -7,12 +7,28 @@
 // and are burned into the video frame as it records.
 
 import React, { useMemo, useState } from "react"; // React primitives
-import FullScreenCapture from "@/components/VHC/mediaCapture/FullScreenCapture"; // New full-screen camera
-import VideoEditorModal from "@/components/VHC/VideoEditorModal"; // Post-capture edit modal (trim/mute)
+import dynamic from "next/dynamic";
+import useIdleWarm from "@/hooks/useIdleWarm";
 import { buildInspectionConcerns } from "@/components/VHC/mediaCapture/buildInspectionConcerns"; // Panel data helper
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
-import { supabaseClient } from "@/lib/database/supabaseClient";
+// Loaded on demand - 213 KB of @supabase/supabase-js. The client is used for a
+// single signed-URL upload inside an async handler, so it is not needed to
+// render the button. Importing it statically put the whole client into the
+// first load of every route that renders this component.
+const loadSupabaseClient = async () => (await import("@/lib/database/supabaseClient")).supabaseClient;
+
+// As the header above says, this file is the LAUNCHER; the capture UI lives in
+// FullScreenCapture. The button keeps its place in the first-load bundle so the
+// customer-video control is immediately available, while the capture surface and
+// the post-capture editor - neither of which paints anything until its isOpen
+// flag is true - are code-split and warmed on idle, so the first press still
+// finds them in cache.
+const loadFullScreenCapture = () => import("@/components/VHC/mediaCapture/FullScreenCapture");
+const loadVideoEditorModal = () => import("@/components/VHC/VideoEditorModal");
+
+const FullScreenCapture = dynamic(loadFullScreenCapture, { ssr: false });
+const VideoEditorModal = dynamic(loadVideoEditorModal, { ssr: false });
 
 const postUploadJson = async (body) => {
   const response = await fetch("/api/vhc/customer-video-upload", {
@@ -43,7 +59,7 @@ async function uploadCustomerVideo({ file, jobNumber, userId, widgets, contextLa
     fileSize: file?.size || 0,
   });
 
-  const { error: storageError } = await supabaseClient
+  const { error: storageError } = await (await loadSupabaseClient())
     .storage
     .from(uploadPlan.bucket)
     .uploadToSignedUrl(uploadPlan.storagePath, uploadPlan.token, file, {
@@ -75,10 +91,12 @@ export default function CustomerVideoButton({
   userId, // Uploading user id
   vhcContextLabel = "", // Optional VHC section label for analytics
   vhcData = null, // Raw VHC state — used to build the left panel
-  buttonStyle, // Optional style override (kept for callers that need it, but the default look now comes from the global `.vhc-btn` class so this button matches "Reopen VHC" etc.)
-  buttonClassName = "vhc-btn", // Global VHC button class — override only when a caller has a good reason
+  buttonStyle, // Optional style override (kept for callers that need it — the default look comes from the global button family)
+  buttonClassName = "app-btn app-btn--secondary app-btn--sm", // Canonical secondary button — override only when a caller has a good reason
   onUploadComplete, // Invoked after a successful upload
 }) {
+  useIdleWarm([loadFullScreenCapture, loadVideoEditorModal]);
+
   const [showCapture, setShowCapture] = useState(false); // Controls the full-screen overlay
   const [pendingVideo, setPendingVideo] = useState(null); // Holds { file, widgets } awaiting edit
   const [uploading, setUploading] = useState(false); // Upload in-flight flag
@@ -180,7 +198,7 @@ export default function CustomerVideoButton({
       </button>
 
       {/* Full-screen capture surface (photo/video; defaults to video-only here). */}
-      <FullScreenCapture
+      {showCapture && <FullScreenCapture
         isOpen={showCapture}
         initialMode="video" // Customer video flow defaults to video mode
         allowModeSwitch={false} // Keep this flow focused on video only
@@ -189,10 +207,10 @@ export default function CustomerVideoButton({
         title="Customer Video" // Subtle top-left caption
         onClose={() => setShowCapture(false)} // User dismissed
         onCapture={handleCapture} // File + widgets handoff
-      />
+      />}
 
       {/* Post-capture editor (trim / mute / keep original) */}
-      <VideoEditorModal
+      {pendingVideo && <VideoEditorModal
         isOpen={Boolean(pendingVideo)} // Visible when a recording is waiting
         videoFile={pendingVideo?.file || null} // Provide the captured file
         busyLabel={uploading ? "Uploading…" : ""} // Bubble upload progress into the editor's header
@@ -201,7 +219,7 @@ export default function CustomerVideoButton({
         onCancel={handleEditorCancel} // Discard without upload
         onSkip={handleEditorSkip} // Keep original + upload
         onSave={handleEditorSave} // Save edited + upload
-      />
+      />}
     </>
   );
 }

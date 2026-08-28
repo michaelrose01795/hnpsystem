@@ -4,6 +4,7 @@
 
 import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
+import { excludeAllAccessUser } from "@/lib/database/allAccessVisibility";
 
 // Create a slug from display name for deterministic fake emails
 const slugify = (txt) =>
@@ -31,9 +32,11 @@ const buildRosterMap = (rows = []) =>
   }, {});
 
 const fetchRoster = async () => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("user_id, first_name, last_name, email, role");
+  // The All Access demo account must never be pickable here — the Developer
+  // Login dropdown would otherwise hand its full access to anyone.
+  const { data, error } = await excludeAllAccessUser(
+    supabase.from("users").select("user_id, first_name, last_name, email, role")
+  );
 
   if (error) throw error;
   return buildRosterMap(data || []);

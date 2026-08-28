@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
 import { getDisplayName } from "@/lib/users/displayName";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 
@@ -701,6 +702,7 @@ export async function getDepartmentPerformance() {
   const { data, error } = await supabase
     .from("users")
     .select("department")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .eq("is_active", true)
     .not("department", "is", null);
 
@@ -910,6 +912,7 @@ export async function getEmployeeDirectory() {
   let usersResult = await supabase
     .from("users")
     .select(employeeColumns)
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .eq("is_active", true)
     .order("created_at", { ascending: true });
 
@@ -921,6 +924,7 @@ export async function getEmployeeDirectory() {
     usersResult = await supabase
       .from("users")
       .select(employeeColumns.replace(/\s*,?\s*sidebar_access\s*,?/, ","))
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true)
       .order("created_at", { ascending: true });
     usersResult.data = (usersResult.data || []).map((user) => ({
@@ -1178,6 +1182,7 @@ export async function getLeaveBalances() {
     supabase
       .from("users")
       .select("user_id, first_name, last_name, email, department, employment_type")
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true),
     supabase
       .from("hr_absences")

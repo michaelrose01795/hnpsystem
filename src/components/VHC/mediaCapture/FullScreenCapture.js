@@ -19,12 +19,15 @@
 // --radius-* / --duration-* token set) so theme switching flows through
 // the capture UI automatically.
 
+/* eslint-disable @next/next/no-img-element -- local blob previews cannot use next/image */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
+import Button from "@/components/ui/Button";
 
 import useDeviceCamera from "./useDeviceCamera";
 import useWidgetRecorder from "./useWidgetRecorder";
@@ -1228,6 +1231,52 @@ function nextWidgetId(kind) {
   return `${kind}-${Date.now()}-${widgetIdCounter}`;
 }
 
+// One thumbnail in the capture tray. Each thumb owns the object URL for its
+// own file, keyed on the File itself, so replacing an entry with an edited
+// version swaps the preview without churning its neighbours.
+function CaptureTrayThumb({ entry, index, onSelect, disabled }) {
+  const isVideo = entry.meta?.type === "video";
+  const previewUrl = useMemo(() => URL.createObjectURL(entry.file), [entry.file]);
+
+  useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
+
+  const label = `${isVideo ? "Video" : "Photo"} ${index + 1}`;
+
+  return (
+    <button
+      type="button"
+      className="app-btn app-btn--secondary app-btn--sm"
+      onClick={() => onSelect(index)}
+      disabled={disabled}
+      aria-label={`Edit ${label}`}
+      title={`Edit ${label}`}
+      style={{
+        position: "relative",
+        flex: "0 0 auto",
+        width: 64,
+        height: 64,
+        minHeight: 0,
+        overflow: "hidden",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      {isVideo ? (
+        <video src={previewUrl} muted playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <img src={previewUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      )}
+      <span
+        aria-hidden="true"
+        className="app-badge app-badge--accent-soft"
+        style={{ position: "absolute", right: 2, bottom: 2 }}
+      >
+        {index + 1}
+      </span>
+    </button>
+  );
+}
+
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -1239,6 +1288,14 @@ export default function FullScreenCapture({
   initialMode = "photo",
   onClose,
   onCapture,
+  // Batch mode: captures accumulate in the capture screen instead of closing
+  // it, and are handed over as one array when the technician presses Done.
+  batchMode = false,
+  onDone,
+  // Batch mode only. Called with (entry, index) when the technician taps a
+  // capture in the tray. Resolve with a File to replace that capture, or null
+  // to leave it untouched. The camera stays live throughout.
+  onEditCapture = null,
   allowModeSwitch = true,
   panel = null,
   // Kept in the public API for backward compatibility — the panel can no
@@ -1256,6 +1313,8 @@ export default function FullScreenCapture({
   // itself back in so the overlay can always be turned off from inside.
   const devOverlay = useDevLayoutOverlay();
   const passThroughActive = Boolean(devOverlay?.enabled);
+
+  const { confirm } = useConfirmation();
 
   const orientation = useOrientation();
   const compactMode = orientation.screenWidth > 0 && orientation.screenWidth < 500;
@@ -1281,12 +1340,40 @@ export default function FullScreenCapture({
   });
 
   const [capturing, setCapturing] = useState(false);
+  const [batch, setBatch] = useState([]);
+  // Index of the capture currently open in the parent's editor, or null. The
+  // shutter, Done and the key shortcuts all stand down while it is set so the
+  // camera underneath cannot be driven through the editor sitting on top.
+  const [editingIndex, setEditingIndex] = useState(null);
+  const isEditingCapture = editingIndex !== null;
 
   useEffect(() => {
     if (!isOpen) return;
     setWidgets([]);
     setCapturing(false);
+    setBatch([]);
+    setEditingIndex(null);
   }, [isOpen]);
+
+  // Open a captured item in the parent's editor without tearing the camera
+  // down, then fold whatever comes back into the batch. `edited` marks the
+  // decision as already made so the post-Done pass does not ask again.
+  const handleTrayPress = useCallback(async (index) => {
+    if (!onEditCapture) return;
+    const entry = batch[index];
+    if (!entry || editingIndex !== null) return;
+    setEditingIndex(index);
+    try {
+      const nextFile = await onEditCapture(entry, index);
+      if (nextFile) {
+        setBatch((current) => current.map((item, i) => (
+          i === index ? { ...item, file: nextFile, edited: true } : item
+        )));
+      }
+    } finally {
+      setEditingIndex(null);
+    }
+  }, [batch, editingIndex, onEditCapture]);
 
   useEffect(() => {
     const el = videoElementRef.current;
@@ -1325,12 +1412,46 @@ export default function FullScreenCapture({
     return set;
   }, [widgets]);
 
-  const handleClose = useCallback(() => {
-    recorder.cancel();
+  // Closing throws the whole session away, so a batch that has not been handed
+  // over with Done is confirmed first — otherwise one stray tap on x silently
+  // deletes every shot the technician has taken. closingRef keeps a second
+  // Escape press from stacking a duplicate prompt on top of the first.
+  const closingRef = useRef(false);
+
+  const handleClose = useCallback(async () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    try {
+      if (batch.length > 0) {
+        const discard = await confirm({
+          title: "Discard captures?",
+          message: `${batch.length} capture${batch.length === 1 ? "" : "s"} have not been saved yet.`,
+          description: "Closing the camera deletes them. Press Done instead to keep them and carry on.",
+          confirmLabel: "Discard",
+          cancelLabel: "Keep capturing",
+        });
+        if (!discard) return;
+      }
+      recorder.cancel();
+      camera.stop();
+      setWidgets([]);
+      setBatch([]);
+      onClose?.();
+    } finally {
+      closingRef.current = false;
+    }
+  }, [batch.length, camera, confirm, onClose, recorder]);
+
+  // Batch mode only: hand the whole session over and close.
+  const handleBatchDone = useCallback(() => {
+    if (recorder.isRecording) return;
     camera.stop();
     setWidgets([]);
+    const items = batch;
+    setBatch([]);
+    onDone?.(items);
     onClose?.();
-  }, [camera, recorder, onClose]);
+  }, [batch, camera, onClose, onDone, recorder.isRecording]);
 
   const handlePhotoPress = useCallback(async () => {
     if (!orientation.isLandscape) return;
@@ -1352,6 +1473,12 @@ export default function FullScreenCapture({
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.94));
       if (!blob) throw new Error("Failed to capture photo");
       const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (batchMode) {
+        // Keep the camera live so the technician can take the next shot.
+        setBatch((current) => [...current, { file, meta: { type: "photo", widgets: [] } }]);
+        setCapturing(false);
+        return;
+      }
       camera.stop();
       await Promise.resolve(onCapture?.(file, { type: "photo", widgets: [] }));
       onClose?.();
@@ -1364,7 +1491,7 @@ export default function FullScreenCapture({
       ));
       setCapturing(false);
     }
-  }, [camera, capturing, onCapture, onClose, orientation.isLandscape]);
+  }, [batchMode, camera, capturing, onCapture, onClose, orientation.isLandscape]);
 
   const handleVideoPress = useCallback(async () => {
     if (!orientation.isLandscape) return;
@@ -1386,6 +1513,13 @@ export default function FullScreenCapture({
       setCapturing(true);
       const file = await recorder.stop();
       const frozenWidgets = widgets.map((widget) => ({ ...widget }));
+      if (batchMode) {
+        if (file) {
+          setBatch((current) => [...current, { file, meta: { type: "video", widgets: frozenWidgets } }]);
+        }
+        setCapturing(false);
+        return;
+      }
       camera.stop();
       if (file) {
         await Promise.resolve(onCapture?.(file, { type: "video", widgets: frozenWidgets }));
@@ -1400,7 +1534,7 @@ export default function FullScreenCapture({
       ));
       setCapturing(false);
     }
-  }, [camera, capturing, onCapture, onClose, recorder, widgets, orientation.isLandscape]);
+  }, [batchMode, camera, capturing, onCapture, onClose, recorder, widgets, orientation.isLandscape]);
 
   const handlePauseToggle = useCallback(() => {
     if (!recorder.canPause) return;
@@ -1429,7 +1563,9 @@ export default function FullScreenCapture({
   }, [isOpen, orientation.isLandscape, recorder]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    // While an editor is open over the capture screen its Escape / Space
+    // belong to the editor, not to the camera behind it.
+    if (!isOpen || isEditingCapture) return undefined;
     const onKey = (event) => {
       if (event.key === "Escape" && !recorder.isRecording) handleClose();
       if (event.key === " " && document.activeElement?.tagName !== "INPUT") {
@@ -1439,7 +1575,7 @@ export default function FullScreenCapture({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleClose, isOpen, onShutterPress, recorder.isRecording]);
+  }, [handleClose, isEditingCapture, isOpen, onShutterPress, recorder.isRecording]);
 
   const isLive = mode === "video" && recorder.isRecording;
   const showPanel = Boolean(panel) && orientation.isLandscape;
@@ -1678,6 +1814,62 @@ export default function FullScreenCapture({
             </div>
           ) : null}
 
+          {batchMode && batch.length > 0 ? (
+            <div
+              data-dev-section-key="capture-batch-tray"
+              data-dev-section-type="toolbar"
+              aria-label="Captured this session"
+              style={{
+                position: "absolute",
+                left: showPanel ? PANEL_WIDTH + 24 : "var(--space-4)",
+                bottom: "calc(var(--space-4) + env(safe-area-inset-bottom))",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+                maxWidth: "46vw",
+                overflowX: "auto",
+                overflowY: "hidden",
+                pointerEvents: "auto",
+                zIndex: 5,
+              }}
+            >
+              {batch.map((entry, index) => (
+                <CaptureTrayThumb
+                  key={`${index}-${entry.file.name}-${entry.file.lastModified}`}
+                  entry={entry}
+                  index={index}
+                  onSelect={handleTrayPress}
+                  disabled={!onEditCapture || isEditingCapture || recorder.isRecording || capturing}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {batchMode ? (
+            <div
+              data-dev-section-key="capture-batch-done"
+              data-dev-section-type="toolbar"
+              style={{
+                position: "absolute",
+                right: topBarRightOffset,
+                bottom: "calc(var(--space-4) + env(safe-area-inset-bottom))",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+                pointerEvents: "auto",
+                zIndex: 5,
+              }}
+            >
+              <Button
+                variant="primary"
+                onClick={handleBatchDone}
+                disabled={recorder.isRecording || capturing || isEditingCapture || batch.length === 0}
+              >
+                {batch.length > 0 ? `Done · ${batch.length}` : "Done"}
+              </Button>
+            </div>
+          ) : null}
+
           <div
             data-dev-section-key="capture-right-rail"
             data-dev-section-type="sidebar"
@@ -1701,7 +1893,7 @@ export default function FullScreenCapture({
               onShutterPress={onShutterPress}
               onPausePress={handlePauseToggle}
               onFlip={camera.flip}
-              disabled={camera.loading || !!camera.error || !camera.permissionGranted || capturing}
+              disabled={camera.loading || !!camera.error || !camera.permissionGranted || capturing || isEditingCapture}
               compactMode={compactMode}
             />
           </div>
@@ -1710,17 +1902,13 @@ export default function FullScreenCapture({
 
       {orientation.isLandscape && !camera.stream ? (() => {
         const status = camera.permissionStatus;
-        const needsPrompt = status === "prompt" || status === "unknown";
         const isDenied = status === "denied";
         const isBusy = camera.loading || status === "checking";
         const wantsAudio = mode === "video";
-        const promptBody = wantsAudio
-          ? "HNPSystem uses your camera and microphone to record this vehicle check. Your browser will ask once — choose Allow and you won't be asked again on this device."
-          : "HNPSystem uses your camera to capture this vehicle check. Your browser will ask once — choose Allow and you won't be asked again on this device.";
         const deniedBody = wantsAudio
           ? "Camera or microphone access was blocked. Open your browser's site settings, set Camera and Microphone to Allow for this site, then tap Try again."
           : "Camera access was blocked. Open your browser's site settings, set Camera to Allow for this site, then tap Try again.";
-        const isModal = needsPrompt || isDenied;
+        const isModal = isDenied;
 
         return (
           <div style={{
@@ -1791,9 +1979,7 @@ export default function FullScreenCapture({
               >
                 {isDenied
                   ? "Camera is blocked"
-                  : needsPrompt
-                    ? "Camera access needed"
-                    : isBusy && camera.loading
+                  : isBusy && camera.loading
                       ? "Opening camera…"
                       : isBusy
                         ? "Checking access…"
@@ -1808,52 +1994,10 @@ export default function FullScreenCapture({
               }}>
                 {isDenied
                   ? deniedBody
-                  : needsPrompt
-                    ? promptBody
-                    : camera.error || "Please wait while the device camera is prepared."}
+                  : camera.error || "Please wait while the device camera is prepared."}
               </div>
 
-              {needsPrompt ? (
-                <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)", flexWrap: "wrap", justifyContent: "center" }}>
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    style={{
-                      padding: "var(--space-2) var(--space-4)",
-                      borderRadius: "var(--radius-pill)",
-                      border: "1px solid var(--ghostbutton-ring-color)",
-                      background: "var(--hud-surface)",
-                      color: "var(--hud-text)",
-                      fontWeight: 700,
-                      fontSize: "var(--text-body-sm)",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-family)",
-                      transition: "var(--control-transition)",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => camera.requestPermission?.()}
-                    style={{
-                      padding: "var(--space-2) var(--space-4)",
-                      borderRadius: "var(--radius-pill)",
-                      background: "var(--primary)",
-                      color: "var(--onAccentText)",
-                      fontWeight: 800,
-                      fontSize: "var(--text-body-sm)",
-                      letterSpacing: "var(--tracking-wide)",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-family)",
-                      transition: "var(--control-transition)",
-                      boxShadow: "0 2px 12px rgba(var(--accentMainRgb), 0.35)",
-                    }}
-                  >
-                    {wantsAudio ? "Allow camera & mic" : "Allow camera"}
-                  </button>
-                </div>
-              ) : isDenied ? (
+              {isDenied ? (
                 <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)", flexWrap: "wrap", justifyContent: "center" }}>
                   <button
                     type="button"

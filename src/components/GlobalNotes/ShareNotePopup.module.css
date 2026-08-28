@@ -1,0 +1,143 @@
+/* file location: src/components/GlobalNotes/ShareNotePopup.module.css
+   =====================================================================
+   Share note popup — styles for ShareNotePopup.js only.
+
+   SPECIFICITY CONTRACT — read before editing.
+
+   staffglobal.css styles bare elements inside `html.staff-scope`, e.g.
+
+     html.staff-scope label { display: block; margin-bottom: 2px; }   (0,1,1)
+
+   A CSS-module class on its own is (0,1,0), so a bare-element global rule
+   BEATS it and the module declaration is silently dropped. That is exactly
+   how the row here spent months ignoring `display: flex` / `display: grid`:
+   the rule was written, compiled, shipped — and lost.
+
+   Therefore EVERY rule in this file that targets an element the globals also
+   target (label, input, p, span, h2 …) is written as a TWO-CLASS selector
+   scoped by `.root`, giving (0,2,0) and a guaranteed win. Keep it that way:
+   if you add a rule for a bare element, scope it under `.root`.
+
+   No `!important` is used or needed — `npm run check:design` bans new ones.
+   ===================================================================== */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.toolbar {
+  width: 100%;
+  min-width: 0;
+}
+
+.search {
+  flex: 1 1 var(--control-min-width);
+  min-width: 0;
+}
+
+.selectedCount {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.listSection {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--theme);
+}
+
+.list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  background: var(--theme);
+  /* A feature-specific cap is required so the canonical popup card remains
+     centred while the people list, rather than the whole dialog, scrolls. */
+  max-height: min(360px, 46dvh);
+}
+
+/* Row = one colleague. Two-class selector so it outranks
+   `html.staff-scope label` (see the specificity contract above). */
+.root .row {
+  display: flex;
+  align-items: center;
+  /* Even inset either side of the tick — matches the 10px edge gap below. */
+  gap: 10px;
+  /* The tick must sit exactly 10px from the row edge, so this inset is literal. */
+  padding: 0 10px;
+  /* Fixed 44px row — also the control-height floor, so the full-width label
+     remains a compliant touch target. */
+  height: var(--control-height);
+  min-height: var(--control-height);
+  /* Beats `html.staff-scope label { margin-bottom: 2px }`, which would
+     otherwise gap the rows apart. */
+  margin: 0;
+  border-bottom: var(--separating-line);
+  box-sizing: border-box;
+  background: var(--theme);
+  cursor: pointer;
+  transition: var(--control-transition);
+}
+
+.root .row:hover,
+.root .row:focus-within {
+  background: var(--theme-hover);
+}
+
+.root .row:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.root .row[data-selected="true"] {
+  background: var(--theme-hover);
+}
+
+.root .row:last-child {
+  border-bottom: 0;
+}
+
+/* The tick. Two-class + element so it clears the toggle family's own
+   `html.staff-scope .app-toggle--checkbox` (0,2,0). */
+.root .row > :global(input.app-toggle) {
+  flex: 0 0 auto;
+  /* Centre on the row's cross axis regardless of the global label rules. */
+  align-self: center;
+  margin: 0;
+}
+
+/* Name — same line as the tick, centred on it. */
+.root .name {
+  flex: 1 1 auto;
+  align-self: center;
+  min-width: 0;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--control-height) * 3);
+  padding: var(--space-3);
+}
+
+/* The global tooltip is body-portalled at z-index 4000, far below the popup
+   layer (--z-modal, 100100). Lift it while this modal is open so the row
+   tooltips render above the popup instead of behind it. */
+:global(html.staff-scope body.floating-notes-share-modal-open .app-global-tooltip) {
+  z-index: calc(var(--z-modal) + 100) !important;
+}

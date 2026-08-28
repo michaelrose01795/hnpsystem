@@ -1,5 +1,6 @@
 // file location: src/components/ui/dropdownAPI/MultiSelectDropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
 import {
   normalizeOptions,
@@ -27,6 +28,7 @@ import {
  * - id: optional id override for the control button.
  * - emptyState: message shown when no options are available.
  * - maxHeight: maximum height for the dropdown menu (default: "280px").
+ * - usePortal: renders the menu at document.body so popup overflow cannot clip it.
  */
 export default function MultiSelectDropdown({
   label,
@@ -43,9 +45,11 @@ export default function MultiSelectDropdown({
   maxHeight = "280px",
   searchPlaceholder = "Search options",
   noSearchResultsText = "No options match your search",
+  usePortal = false,
   ...rest
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
@@ -107,7 +111,44 @@ export default function MultiSelectDropdown({
     setIsOpen(true);
   };
 
-  useOutsideClick(dropdownRef, () => setIsOpen(false), isOpen);
+  useOutsideClick([dropdownRef, menuRef], () => setIsOpen(false), isOpen);
+
+  useEffect(() => {
+    if (!isOpen || !usePortal) {
+      setMenuPosition(null);
+      return undefined;
+    }
+
+    const updateMenuPosition = () => {
+      const controlNode = dropdownRef.current?.querySelector(".dropdown-api__control");
+      if (!controlNode) return;
+
+      const rect = controlNode.getBoundingClientRect();
+      const menuHeight = menuRef.current?.offsetHeight || 0;
+      const viewportGap = 10;
+      let top = rect.bottom + viewportGap;
+
+      if (menuHeight && top + menuHeight > window.innerHeight - viewportGap) {
+        top = Math.max(viewportGap, rect.top - menuHeight - viewportGap);
+      }
+
+      setMenuPosition({
+        position: "fixed",
+        top,
+        left: rect.left,
+        width: rect.width,
+        zIndex: "var(--z-dropdown)"
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [isOpen, usePortal]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -137,6 +178,55 @@ export default function MultiSelectDropdown({
 
   const reactId = useId();
   const controlId = id || `multiselect-dropdown-api-${reactId.replace(/[:]/g, "")}`;
+
+  const menu = (
+    <div
+      className={`dropdown-api__menu app-dropdown-menu${usePortal ? " staff-scope website-scope" : ""}`}
+      role="listbox"
+      aria-multiselectable="true"
+      hidden={!isOpen}
+      ref={menuRef}
+      style={{
+        maxHeight,
+        ...(usePortal
+          ? menuPosition || { position: "fixed", visibility: "hidden" }
+          : {})
+      }}
+    >
+      {normalizedOptions.length === 0 && (
+        <div className="dropdown-api__empty">{emptyState}</div>
+      )}
+      {normalizedOptions.length > 0 && visibleOptions.length === 0 && (
+        <div className="dropdown-api__empty">{noSearchResultsText}</div>
+      )}
+      {visibleOptions.map((option) => {
+        const isSelected = selectedOptions.some((opt) => opt.key === option.key);
+        return (
+          <button
+            type="button"
+            role="option"
+            className={`dropdown-api__option multiselect-dropdown-api__option ${
+              isSelected ? "is-selected" : ""
+            }`}
+            key={option.key}
+            id={`${controlId}-${option.key}`}
+            aria-selected={isSelected}
+            onClick={() => handleOptionToggle(option)}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => {}}
+              className="multiselect-dropdown-api__checkbox"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+            <span className="dropdown-api__option-label">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className={wrapperClasses} ref={dropdownRef} {...rest}>
@@ -204,48 +294,12 @@ export default function MultiSelectDropdown({
       </div>
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}
 
-      {/* Dropdown menu */}
-      <div
-        className="dropdown-api__menu app-dropdown-menu"
-        role="listbox"
-        aria-multiselectable="true"
-        hidden={!isOpen}
-        ref={menuRef}
-        style={{ maxHeight }}
-      >
-        {normalizedOptions.length === 0 && (
-          <div className="dropdown-api__empty">{emptyState}</div>
-        )}
-        {normalizedOptions.length > 0 && visibleOptions.length === 0 && (
-          <div className="dropdown-api__empty">{noSearchResultsText}</div>
-        )}
-        {visibleOptions.map((option) => {
-          const isSelected = selectedOptions.some((opt) => opt.key === option.key);
-          return (
-            <button
-              type="button"
-              role="option"
-              className={`dropdown-api__option multiselect-dropdown-api__option ${
-                isSelected ? "is-selected" : ""
-              }`}
-              key={option.key}
-              id={`${controlId}-${option.key}`}
-              aria-selected={isSelected}
-              onClick={() => handleOptionToggle(option)}
-            >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => {}}
-                className="multiselect-dropdown-api__checkbox"
-                tabIndex={-1}
-                aria-hidden="true"
-              />
-              <span className="dropdown-api__option-label">{option.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Portalled menus escape popup overflow; inline menus preserve legacy placement. */}
+      {usePortal && isOpen && typeof document !== "undefined"
+        ? createPortal(menu, document.body)
+        : !usePortal
+          ? menu
+          : null}
     </div>
   );
 }

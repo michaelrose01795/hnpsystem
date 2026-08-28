@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -11,6 +11,8 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import GoodsInPageUi from "@/components/page-ui/parts/parts-goods-in-ui"; // Extracted presentation layer.
 
 const PRICE_LEVEL_OPTIONS = [
@@ -341,7 +343,8 @@ function GoodsInPage() {
     []
   );
   const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
-  const hasGoodsInAccess = userRoles.some((role) => GOODS_IN_ROLES.has(role));
+  const hasGoodsInAccess =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => GOODS_IN_ROLES.has(role));
   const actingUserUuid = useMemo(() => {
     if (typeof authUserId === "string") return authUserId;
     if (typeof user?.authUuid === "string") return user.authUuid;
@@ -1984,33 +1987,34 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
   });
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
-      <div
-        className="popup-card"
-        style={{
-          ...popupCardStyles,
-          borderRadius: "var(--radius-xl)",
-          width: "100%",
-          maxWidth: "760px",
-          height: "620px",
-          maxHeight: "90vh",
-          padding: "24px",
-          border: "none",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Supplier accounts"
+      cardStyle={{
+        width: "min(100%, 760px)",
+        height: "620px",
+        maxHeight: "90vh",
+        padding: "var(--section-card-padding)",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
         
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, color: "var(--text-1)" }}>Supplier accounts</h3>
-          <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "var(--radius-sm)" }}>
+        <header className="app-popup-compact-header">
+          <h3>Supplier accounts</h3>
+          <div className="app-popup-compact-header__actions">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Close
-          </button>
-        </div>
+          </Button>
+          </div>
+        </header>
         <div>
           <input
-            style={{ ...inputStyle, width: "100%", boxSizing: "border-box" }}
+            className="app-input"
+            style={{ width: "100%", boxSizing: "border-box" }}
             placeholder="Search name, account number, phone, or city"
             value={query}
             onChange={(event) => {
@@ -2055,8 +2059,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           renderSupplierResults()
           }
         </div>
-      </div>
-    </div>);
+    </PopupModal>);
 
 }
 
@@ -2132,16 +2135,23 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
   }, [query, searchParts]);
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px", width: "min(94vw, 620px)", maxWidth: "620px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-          <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
-          <button onClick={onClose} style={secondaryButtonStyle}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Search parts catalogue"
+      cardStyle={{ width: "min(100%, 620px)", padding: "var(--section-card-padding)" }}
+    >
+        <header className="app-popup-compact-header">
+          <h3>Search parts catalogue</h3>
+          <div className="app-popup-compact-header__actions">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Close
-          </button>
-        </div>
+          </Button>
+          </div>
+        </header>
         <input
-          style={inputStyle}
+          className="app-input"
+          style={{ width: "100%" }}
           placeholder="Part number or description"
           value={query}
           onChange={(event) => setQuery(event.target.value)} />
@@ -2177,8 +2187,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
             </button>
           )}
         </div>
-      </div>
-    </div>);
+    </PopupModal>);
 
 }
 
@@ -2536,22 +2545,33 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
-      <div
-        style={{
-          ...popupCardStyles,
-          padding: "24px",
-          maxWidth: "980px",
-          width: "min(98vw, 980px)",
-          overflow: "visible"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={submitting ? undefined : onClose}
+      closeOnBackdrop={!submitting}
+      closeOnEscape={!submitting}
+      ariaLabel="Add goods-in parts to a job"
+      cardStyle={{
+        width: "min(100%, 980px)",
+        padding: "var(--section-card-padding)",
+        overflow: "visible",
+      }}
+    >
         
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <h3 style={{ margin: 0 }}>Add goods-in parts to a job</h3>
-          <button onClick={onClose} style={secondaryButtonStyle} disabled={submitting}>
-            Cancel
-          </button>
-        </div>
+        <header className="app-popup-compact-header">
+          <h3>Add goods-in parts to a job</h3>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="primary" busy={submitting} onClick={handleAssign} disabled={selectedRows.length === 0}>
+              Add selected to job
+            </Button>
+            <Button type="button" variant="secondary" onClick={onFinish} disabled={submitting}>
+              Finish
+            </Button>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
+              Close
+            </Button>
+          </div>
+        </header>
         <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
           <div style={modalSectionStyle}>
             <input
@@ -2738,30 +2758,25 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
-          <button style={secondaryButtonStyle} onClick={onFinish} disabled={submitting}>
-            Finish
-          </button>
-          <button
-            style={primaryButtonStyle(submitting)}
-            onClick={handleAssign}
-            disabled={submitting || selectedRows.length === 0}>
-            
-            {submitting ? "Adding..." : "Add selected to job"}
-          </button>
-        </div>
-      </div>
-    </div>);
+    </PopupModal>);
 
 }
 
 function CompletionPrompt({ goodsInNumber, summary, currencyFormatter: formatCurrency, onAddToJob, onClose }) {
-  useBodyModalLock(true);
-
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "480px" }}>
-        <h3>Goods in complete</h3>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Goods in complete"
+      cardStyle={{ width: "min(100%, 480px)", padding: "var(--section-card-padding)" }}
+    >
+        <header className="app-popup-compact-header">
+          <h3>Goods in complete</h3>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="primary" onClick={onAddToJob}>Add to job</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>Not now</Button>
+          </div>
+        </header>
         <p>
           {goodsInNumber || "This receipt"} has been marked as complete. Would you like to attach the new
           parts to a job now?
@@ -2777,16 +2792,7 @@ function CompletionPrompt({ goodsInNumber, summary, currencyFormatter: formatCur
             {item.partNumber || "Unknown part"}: {item.error}
           </div>)}
         </div>}
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-          <button style={secondaryButtonStyle} onClick={onClose}>
-            Not now
-          </button>
-          <button style={primaryButtonStyle(false)} onClick={onAddToJob}>
-            Add to job
-          </button>
-        </div>
-      </div>
-    </div>);
+    </PopupModal>);
 
 }
 

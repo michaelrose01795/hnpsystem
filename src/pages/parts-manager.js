@@ -1,6 +1,7 @@
 // file location: src/pages/parts/manager.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/parts/pipeline";
@@ -84,21 +85,8 @@ const needsDeliveryScheduling = (waitingStatus = "") => {
   return /collect|delivery/.test(normalized);
 };
 
-const SourceBadge = ({ label, background, color }) =>
-<span
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "2px 10px",
-    borderRadius: "var(--radius-pill)",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    background,
-    color
-  }}>
-  
-    {label}
-  </span>;
+const SourceBadge = ({ label }) =>
+<span className="app-badge app-badge--accent-soft">{label}</span>;
 
 
 const formatCurrency = (value) => {
@@ -198,7 +186,7 @@ items.slice(0, 5).map((item) => {
 export default function PartsManagerDashboard() {
   const { user } = useUser();
   const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
-  const isManager = userRoles.includes("parts manager");
+  const isManager = hasAllAccessRole(userRoles) || userRoles.includes("parts manager");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
