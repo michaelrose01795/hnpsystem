@@ -464,7 +464,11 @@ const buttonContracts = [
     path: buttonFamilyPath,
     source: buttonFamilySource,
     selector: "html.staff-scope .app-btn--primary",
-    required: ["--btn-bg: var(--primary)", "--btn-color: var(--onAccentText)"],
+    // The fill may be the flat brand step or the deeper --primary-hover step:
+    // Primary sits one step deeper so it is not pixel-identical to the
+    // is-active / aria-selected paint, which uses flat --primary. Either is a
+    // brand accent; what matters is that it is never a form-control token.
+    required: [["--btn-bg: var(--primary)", "--btn-bg: var(--primary-hover)"], "--btn-color: var(--onAccentText)"],
   },
   {
     path: buttonFamilyPath,
@@ -508,8 +512,10 @@ for (const contract of buttonContracts) {
     continue;
   }
   for (const fragment of contract.required) {
-    if (!body.includes(fragment)) {
-      violations.push(`${contract.path}: ${contract.selector} missing ${JSON.stringify(fragment)}`);
+    const alternatives = Array.isArray(fragment) ? fragment : [fragment];
+    if (!alternatives.some((alternative) => body.includes(alternative))) {
+      const expected = alternatives.map((alternative) => JSON.stringify(alternative)).join(" or ");
+      violations.push(`${contract.path}: ${contract.selector} missing ${expected}`);
     }
   }
   for (const token of forbiddenButtonFillTokens) {
