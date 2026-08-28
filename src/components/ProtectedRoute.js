@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
+import { isAllAccessUser } from "@/lib/auth/allAccessSession";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { isRestorableRoute } from "@/lib/auth/returnRoute";
@@ -22,6 +23,7 @@ function resolveAccess({ loading, status, user, session, allowedRoles }) {
   if (roleHolder) {
     if (!allowedRoles) return "granted";
     if (hasDevPlatformPageAccess(roleHolder)) return "granted"; // dev-platform diagnostic account only
+    if (isAllAccessUser(roleHolder)) return "granted"; // All Access demo login only
     const hasRole = (roleHolder.roles || []).some((r) =>
       allowedRoles.includes(String(r).toUpperCase())
     );
@@ -45,6 +47,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     if (loading) return;
     // Dev-platform diagnostic account: granted above, so never redirect it.
     if (hasDevPlatformPageAccess(user) || hasDevPlatformPageAccess(session?.user)) return;
+    // All Access demo login: granted above, so never redirect it either.
+    if (isAllAccessUser(user) || isAllAccessUser(session?.user)) return;
 
     if (user) {
       if (allowedRoles) {

@@ -35,7 +35,7 @@ describe("sidebar access snapshots", () => {
         items: ["/dashboard/workshop", "/tech"],
       },
       { key: "department-account", label: "Account", items: ["/profile"] },
-      { key: "department-paint", label: "Pages", items: ["/dashboard/painting"] },
+      { key: "department-valeting", label: "Pages", items: ["/dashboard/valeting"] },
       { key: "custom-finance", label: "My Finance", items: ["/accounts"] },
     ]);
 
@@ -64,8 +64,8 @@ describe("sidebar access snapshots", () => {
     ]);
     expect(synced.find((module) => module.key === "department-account"))
       .toBeUndefined();
-    expect(synced.find((module) => module.key === "department-paint")?.label)
-      .toBe("Paint");
+    expect(synced.find((module) => module.key === "department-valeting")?.label)
+      .toBe("Valeting");
     expect(synced.find((module) => module.key === "custom-finance"))
       .toEqual({ key: "custom-finance", label: "My Finance", items: ["/accounts"] });
   });

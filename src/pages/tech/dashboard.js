@@ -9,6 +9,7 @@ import { PageSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { fetchJobsWorkload } from "@/hooks/useJobsList";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 // Loaded on demand — this module resolves the Supabase browser client, and its
 // single use here is one await inside a mount effect.
 const loadClocking = () => import("@/lib/database/clocking");
@@ -152,7 +153,8 @@ export default function TechsDashboard() {
   const username = typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole =
   user?.roles?.some((role) => role?.toLowerCase().includes("tech")) || false;
-  const isTech = allowedNames.has(username) || hasTechRole;
+  const hasFullAccess = hasAllAccessRole(user?.roles || []);
+  const isTech = hasFullAccess || allowedNames.has(username) || hasTechRole;
 
   const isAssignedToTechnician = useCallback(
     (job) => {
@@ -245,7 +247,10 @@ export default function TechsDashboard() {
   }];
 
 
-  if (rosterLoading) {
+  // The All Access demo role is authoritative and does not depend on the staff
+  // roster containing the demo identity. This keeps the page reachable even if
+  // the roster request is slow or unavailable during a demonstration.
+  if (rosterLoading && !hasFullAccess) {
     return <TechsDashboardUi view="section1" centeredStateStyle={centeredStateStyle} InlineLoading={InlineLoading} SectionShell={SectionShell} />;
 
 

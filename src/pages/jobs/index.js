@@ -20,6 +20,7 @@ const loadNotesDb = () => import("@/lib/database/notes");
 const loadUsersDb = () => import("@/lib/database/users");
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -238,7 +239,9 @@ export default function ViewJobCards() {
     filter(Boolean);
   }, [user]);
   const canViewOrdersTab = useMemo(
-    () => userRoles.some((role) => role === "parts" || role === "parts manager"),
+    () =>
+    hasAllAccessRole(userRoles) ||
+    userRoles.some((role) => role === "parts" || role === "parts manager"),
     [userRoles]
   );
 

@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/adminUsers.js
 import { supabase, supabaseService } from "@/lib/database/supabaseClient";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const adminClient = supabaseService || supabase;
 
@@ -79,12 +80,14 @@ export async function listAdminUsers() {
   let { data, error } = await adminClient
     .from(USERS_TABLE)
     .select(baseSelectColumns.join(","))
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .order("created_at", { ascending: false });
 
   if (isMissingSidebarAccessColumnError(error)) {
     const fallback = await adminClient
       .from(USERS_TABLE)
       .select(baseSelectColumnsWithoutSidebarAccess.join(","))
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .order("created_at", { ascending: false });
     data = (fallback.data || []).map((row) => ({ ...row, sidebar_access: null }));
     error = fallback.error;

@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
 // Loaded on demand.
 //
@@ -170,7 +171,7 @@ const twoColSplitStyle = {
 export default function ManagersDashboard() {
   const { user } = useUser();
   const userRoles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasAccess = MANAGER_ROLES.some((role) => userRoles.includes(role));
+  const hasAccess = hasAllAccessRole(userRoles) || MANAGER_ROLES.some((role) => userRoles.includes(role));
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

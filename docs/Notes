@@ -4,3 +4,123 @@ have it so by default the capture screen auto uses the back drives camera not fa
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
+
+
+
+----check all of these for ui design/style-----
+
+
+TODO
+Workshop
+
+CHECK---
+make sure the all acccess demo user has full access to the "/tech/dashboard" page 
+
+--------------------
+TODO
+Reception
+
+CHECK----
+have it os the text doesnt clash with the background colour within the "/dashboard/service" page etc
+
+CHECK----
+why is the goods in page button within the reception modual, move this inot the "Parts" modual only
+
+CHECK----
+why within the goods in page the "Supplier search" button is black background and white text in dark mode and white background and lack text in light mode? deep dive to make sure any button which is this style is changes to follow etiher the staffgloabl.css setting style for primary or secondary styling etc have it so the bakc and white text and white and black text style is never users again etc
+
+CHECK-----
+have it os "Refresh" button iwhtin the goods in page is follows the staffglobal.css setting for secondary button style etc 
+
+CHECK---
+have it so the field boxes withn the "Job Cards Create Mobile Mechanic Eligibility | 1.2.2.1.1.2.1.1.2 | key job-cards-create-mobile-mechanic-eligibility | file src/components/JobCards/MobileMechanicEligibility.js:62 | route /new-job | where Job Source Retail Warranty Mobile Mechanic? Yes No Within 40 min drive of West Malling No postcode entered yet Vehicle is 3 years old or newer Vehicle year not available yet Vehicl | parent job-cards-create-job-information 1.2.2.1.1.2.1.1 | 2 children" section is following the staffglobal.css setting etc 
+
+---------------------------
+TODO
+Admin
+
+-----------------------
+TODO
+Parts
+
+CHECK CLAUDE------
+improve the /deliveries page
+
+CHECK CLAUDE-----
+within the "/deliveries" page insert live realistic data into the database so within this page it shows a bunch of realisic delevier details etc, have some bits link to customers already exisiting and companys etc
+
+CHECK CLAUDE-----
+remove "List Map" buttonwihtin the "Deliveries Auto Tab Row 18 | 1.2.2.1.1.1.1 | key deliveries-auto-tab-row-18 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:195 (dynamic pattern) | route /deliveries | where List Map Week | parent parts-deliveries-controls 1.2.2.1.1.1" section and have it so the mapo view is in the top right corner of the "Parts Deliveries Detail | 1.2.1.1.3 | key parts-deliveries-detail | file src/components/Deliveries/DeliveryDetailPanel.js:84 | route /deliveries | where Stop 9 CleanTec Picking Close Reference INV-ENR-00021 Delivery date Fri, 28 Aug 2026 Time 14:15 Value £207.00 Address Unit 7, Sittingbourne, ME10 3RN Call 01795 880123 Navigate Vie | parent app-layout-page-card 1.2.1.1 | 6 children" section for example which is a square box with the map view always availible etc. change it so the week button is the same style as the today button but change Today button to primary and then week button to secondary style etc.
+
+CHECK CLAUDE-----
+improve the layout of the "Deliveries Auto Content Card 8 | 1.2.2.1.2.1 | key deliveries-auto-content-card-8 | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:195 (dynamic pattern) | route /deliveries | where 1 Stop When Any time Customer Edward Baker 127 Mill Lane, Aylesford, ME12 6IE 07766678806 Reference INV-ENR-00851 3 items Value £75.00 Paid Job & driver ENR00970 27KSG088 · Ford Tr | parent parts-deliveries-list 1.2.2.1.2" rows as well to make them more in there sections etc and everythigm follows the staffgloabl.css setting style.
+
+CHECK CLAUDE-----
+have it so the "Planned 2  Ready 2 Out for delivery 2 Delivered 3  Failed 1 Value £5,545.00" sections are each individual "--theme" colour background etc.
+
+CHECK CLAUDE-----
+hvae it so the previous, and next and monthly section is removed from "Parts Deliveries Controls | 1.2.2.1.1.1 | key parts-deliveries-controls | file src/components/page-ui/parts/parts-deliveries-ui.js:257 | route /deliveries | where Day picker controls | parent parts-deliveries-header 1.2.2.1.1 | 1 child" section and add a staffgloabl.css setting for the monthly picker style etc
+
+TODO
+**deep dive and have it so the map is shown and not just a black section etc have the map accruate as well with the location side etc**
+
+------------------
+TODO
+MOT
+
+CHECK LCAUDE -------------
+Improve the layout of the "/dashboard/mot" page 
+
+------------------------------
+
+TODO
+Valeting
+
+CHECK----------
+"App Layout Page Card | 1.2.2.1 | key app-layout-page-card | file src/components/layout/StaffLayout.js:1579 | route /valet | where App Layout Page Card | parent app-layout-main-shell 1.2.2 | 2 children" table needs to follows the staffglobal.css setting,
+
+CHECK----------
+have it os the "Today" and "All day" (cahnge all day button text to say something more profianla for everything job tey have had etc) button follows primary button style within the staffglobal.css setting 
+
+--------------------------
+
+TODO
+Paint
+
+CHECK CLAUDE--------
+Remove the "Paint Painting Dashboard" dashboard and modual, this parts hasnt been made yet so remove that completly and taht will be recreated once im on that stage etc 
+
+----------------------
+
+TODO
+Accounts
+
+CHECK CLAUDE--------
+Impoe the layout and contents wtihn the "/dashboard/accounts" page 
+
+-------------------
+
+TODO
+Reports
+
+CHECK ---------
+have it so wihtn the "App Layout Page Card | 1.2.2.1 | key app-layout-page-card | file src/components/layout/StaffLayout.js:1579 | route /archive | where App Layout Page Card | parent app-layout-main-shell 1.2.2 | 1 child" table follows the staffglobal.css setting for the table 
+
+
+CHECK CLAUDE----
+imporve the ""Report Filter Service Advisors Tabs | 1.2.2.1.1.1 | key report-filter-service-advisors-tabs | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:196 (dynamic pattern) | route /reports/service | where Report Filter Service Advisors Tabs | parent report-filter-service-advisors 1.2.2.1.1 | 5 children"" tab section so it doesnt overlap the buttons etc and the same within the "Report Filter Management And Executive Tabs | 1.2.2.1.1.1 | key report-filter-management-and-executive-tabs | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:196 (dynamic pattern) | route /reports/overview | where Report Filter Management And Executive Tabs | parent report-filter-management-and-executive 1.2.2.1.1 | 8 children" section as well 
+
+
+-----
+TODO 
+Layout
+
+CHECK CLAUDE-----
+wihtin the "Showcase Buttons App Btn | 1.2.1.1.6 | key showcase-buttons-app-btn | file src/components/Workshop/QueuePlanner/WorkshopQueuePlanner.js:195 (dynamic pattern) | route /dev/user-diagnostic | where Buttons (.app-btn) Where used Edit Primary Secondary Ghost Danger Pill Disabled Saving… Loading Save (click me twice) | parent app-layout-page-card 1.2.1.1" section haev it so the "Primary" style has the same background colour as the "Secondary" button, however the text is "--surface" colour in the primary butto instead of theme like it is within the "Secondary" button, change only the primary button background colour etc 
+
+
+CHECK
+Primary button style 
+
+TODO
+have it so the "Clock Out Logout Dev Overlay" button fully follow the staffglobal.css setting button primary and secondary buttons style and not there sidebar button style etc

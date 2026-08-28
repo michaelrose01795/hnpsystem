@@ -18,6 +18,7 @@ import Layout from "@/components/Layout";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -2964,11 +2965,12 @@ export default function TechJobDetailPage() {
   user?.role ?
   [user.role] :
   [];
-  const hasRoleAccess = userRoles.some((roleName) => {
+  const hasFullAccess = hasAllAccessRole(userRoles); // All Access demo login
+  const hasRoleAccess = hasFullAccess || userRoles.some((roleName) => {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
-  const hasMotRoleAccess = userRoles.some((roleName) =>
+  const hasMotRoleAccess = hasFullAccess || userRoles.some((roleName) =>
   String(roleName).toLowerCase().includes("mot")
   );
   const isTech =

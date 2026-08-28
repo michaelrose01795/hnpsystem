@@ -8,10 +8,10 @@ export default function ArchivedJobsPageUi(props) {
     DevLayoutSection,
     DropdownField,
     Link,
-    STATUS_BADGES,
+    STATUS_BADGE_CLASSES,
     SearchBar,
     availableStatuses,
-    defaultStatusBadge,
+    defaultStatusBadgeClass,
     error,
     filteredResults,
     isSearching,
@@ -117,115 +117,49 @@ export default function ArchivedJobsPageUi(props) {
       }}>{error}</p>
           </LayerTheme>}
 
-        <LayerTheme as="section" data-presentation="archive-results" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" style={{
-        overflowX: "auto"
-      }}>
-          <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-panel" sectionType="data-table" backgroundToken="accent-surface" style={{
-          width: "100%",
-          borderCollapse: "collapse"
-        }}>
-              <thead data-dev-section="1" data-dev-section-key="job-cards-archive-results-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="job-cards-archive-results-table" style={{
-            background: "var(--secondary)",
-            color: "var(--surfaceText)"
-          }}>
-                <tr style={{
-              textAlign: "left",
-              color: "var(--surfaceText)",
-              fontSize: "0.85rem"
-            }}>
-                  <th style={{
-                padding: "10px 18px"
-              }}>Job #</th>
-                  <th style={{
-                padding: "10px 18px"
-              }}>Customer</th>
-                  <th style={{
-                padding: "10px 18px"
-              }}>Vehicle</th>
-                  <th style={{
-                padding: "10px 18px"
-              }}>Status</th>
-                  <th style={{
-                padding: "10px 18px"
-              }}>Completed</th>
-                  <th style={{
-                padding: "10px 18px"
-              }} />
+        <LayerTheme as="section" data-presentation="archive-results" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" className="app-table-shell-scroll">
+          <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-panel" sectionType="data-table" backgroundToken="accent-surface" className="app-data-table app-table-shell app-table-shell--with-headings">
+              <thead data-dev-section="1" data-dev-section-key="job-cards-archive-results-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="job-cards-archive-results-table">
+                <tr>
+                  <th>Job #</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Status</th>
+                  <th>Completed</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody data-dev-section-key="job-cards-archive-results-table-rows">
                 {filteredResults.map(job => {
-              const badge = STATUS_BADGES[job.status] || defaultStatusBadge;
-              return <tr key={job.id} data-dev-section-key={`job-cards-archive-results-row-${job.id}`} style={{
-                borderTop: "var(--separating-line)",
-                background: "var(--surface)",
-                transition: "background-color 0.18s ease, box-shadow 0.18s ease"
-              }} onMouseEnter={event => {
-                event.currentTarget.style.backgroundColor = "var(--theme)";
-                event.currentTarget.style.boxShadow = "inset 4px 0 0 var(--primary)";
-              }} onMouseLeave={event => {
-                event.currentTarget.style.backgroundColor = "var(--surface)";
-                event.currentTarget.style.boxShadow = "none";
-              }}>
+              const badgeClass = STATUS_BADGE_CLASSES[job.status] || defaultStatusBadgeClass;
+              return <tr key={job.id} data-dev-section-key={`job-cards-archive-results-row-${job.id}`}>
                       <td style={{
-                  padding: "12px 18px",
-                  fontWeight: 600,
-                  color: "var(--accentText)"
+                  fontWeight: 600
                 }}>{job.jobNumber}</td>
-                      <td style={{
-                  padding: "12px 18px",
-                  color: "var(--surfaceText)"
-                }}>{job.customer || "—"}</td>
-                      <td style={{
-                  padding: "12px 18px"
-                }}>
+                      <td>{job.customer || "—"}</td>
+                      <td>
                         <div style={{
                     display: "flex",
                     flexDirection: "column",
                     gap: "4px"
                   }}>
                           <span style={{
-                      fontWeight: 600,
-                      color: "var(--surfaceText)"
+                      fontWeight: 600
                     }}>{job.vehicleMakeModel || "—"}</span>
-                          <span style={{
-                      color: "var(--surfaceTextMuted)"
-                    }}>{job.vehicleReg || "—"}</span>
+                          <span>{job.vehicleReg || "—"}</span>
                         </div>
                       </td>
-                      <td style={{
-                  padding: "12px 18px"
-                }}>
-                        <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "4px 12px",
-                    borderRadius: "var(--control-radius)",
-                    background: badge.bg,
-                    color: badge.color,
-                    fontSize: "0.85rem",
-                    fontWeight: 600
-                  }}>
+                      <td>
+                        <span className={`app-badge ${badgeClass}`}>
                           {job.status}
                         </span>
                       </td>
-                      <td style={{
-                  padding: "12px 18px",
-                  color: "var(--info-dark)"
-                }}>
+                      <td>
                         {job.updatedAt ? new Date(job.updatedAt).toLocaleDateString() : "—"}
                       </td>
-                      <td style={{
-                  padding: "12px 18px"
-                }}>
+                      <td>
                         <Link href={`/job-cards/${encodeURIComponent(job.jobNumber)}?archive=1`} onMouseEnter={() => prefetchJob(job.jobNumber)} // warm SWR cache on hover
-                  style={{
-                    textDecoration: "none",
-                    padding: "8px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    color: "var(--accent-purple)",
-                    fontWeight: 600
-                  }}>
+                  className="app-table-action-btn">
                           View archive
                         </Link>
                       </td>
@@ -233,9 +167,7 @@ export default function ArchivedJobsPageUi(props) {
             })}
                 {filteredResults.length === 0 && <tr data-dev-section-key="job-cards-archive-empty-row">
                     <td colSpan={6} style={{
-                padding: "18px",
-                textAlign: "center",
-                color: "var(--info)"
+                textAlign: "center"
               }}>
                       No archived jobs matched the current filters.
                     </td>

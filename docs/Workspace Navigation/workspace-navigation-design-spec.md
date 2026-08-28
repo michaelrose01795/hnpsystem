@@ -288,8 +288,8 @@ Departments keyed on `ROLE_DEPARTMENT_MAP`. Cross-cutting routes appear under th
 ### MOT — home `/dashboard/mot`
 `/dashboard/mot`, `/tech`, `/tech/efficiency`. Cross: `/clocking`, `/reports/mot`.
 
-### Paint / Smart Repair — home `/dashboard/painting`
-`/dashboard/painting`. Cross: `/reports/paint`, `/job-cards/[jobNumber]`.
+### Paint / Smart Repair — no home dashboard yet
+The Paint dashboard has not been built. Cross: `/reports/paint`, `/job-cards/[jobNumber]`.
 
 ### Valeting — home `/dashboard/valeting`
 `/dashboard/valeting`, `/valet` (+`/[jobNumber]`). Cross: `/job-cards/[jobNumber]` (valet mode), `/reports/valeting`.

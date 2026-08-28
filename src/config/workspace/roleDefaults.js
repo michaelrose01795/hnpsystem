@@ -62,13 +62,13 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   service: layout(
     navModule("daily-overview", "Daily Overview", ["/dashboard/service"]),
     navModule("customer-jobs", "Customer & Job Intake", ["/jobs", "/new-job"]),
-    navModule("shared-operations", "Shared Operations", ["/goods-in", "/tracking", "/archive"]),
+    navModule("shared-operations", "Shared Operations", ["/tracking", "/archive"]),
     COMMUNICATION
   ),
   "service manager": layout(
     navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/service"]),
     navModule("service-control", "Service Control", ["/nextjobs", "/jobs", "/appointments", "/new-job"]),
-    navModule("shared-operations", "Shared Operations", ["/goods-in", "/tracking", "/archive"]),
+    navModule("shared-operations", "Shared Operations", ["/tracking", "/archive"]),
     navModule("operational-reports", "Operational Reports", [
       "/reports/service", "/reports/workshop", "/reports/mot", "/reports/valeting", "/reports/paint",
     ]),
@@ -122,7 +122,15 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     COMMUNICATION,
     RECORDS
   ),
-  "parts driver": layout(COMMUNICATION, RECORDS),
+  // A delivery driver's whole shift is the day's route, so the diary is their
+  // landing module. The page itself limits them to load / dispatch / deliver /
+  // fail / proof of delivery (src/features/deliveries/deliveryStatus.js) — they
+  // cannot assign work or reopen a closed stop.
+  "parts driver": layout(
+    navModule("my-day", "My Day", ["/deliveries"]),
+    COMMUNICATION,
+    RECORDS
+  ),
   "mot tester": layout(
     navModule("mot-overview", "MOT Overview", ["/dashboard/mot"]),
     navModule("my-work", "My Work", ["/tech", "/tech/efficiency"]),
@@ -201,7 +209,6 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "vehicle processor & photographer": layout(COMMUNICATION, RECORDS),
   receptionist: layout(COMMUNICATION, RECORDS),
   painters: layout(
-    navModule("paint-overview", "Paint Overview", ["/dashboard/painting"]),
     navModule("paint-reports", "Paint Reports", ["/reports/paint"]),
     COMMUNICATION,
     RECORDS
@@ -216,7 +223,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   // Supported legacy spellings/roles remain complete even though they are not
   // offered as new role defaults in the developer picker.
   "aftersales manager": layout(
-    navModule("service-control", "Service Control", ["/nextjobs", "/jobs", "/goods-in"]),
+    navModule("service-control", "Service Control", ["/nextjobs", "/jobs"]),
     navModule("operational-reports", "Operational Reports", ["/reports/service"]),
     COMMUNICATION,
     RECORDS

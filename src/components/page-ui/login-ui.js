@@ -11,6 +11,7 @@ export default function LoginPageUi(props) {
     allowDevUserSelection,
     closeResetModal,
     email,
+    handleAllAccessLogin,
     errorMessage,
     handleDbLogin,
     handleDevLogin,
@@ -134,7 +135,7 @@ export default function LoginPageUi(props) {
           as="section"
           aria-label="Manager preview guide"
           radius="var(--radius-xl)"
-          padding="var(--section-card-padding)"
+          padding="10px var(--section-card-padding) var(--section-card-padding)"
           style={{
             width: "min(1280px, calc(100% - 32px))",
             alignSelf: "center",
@@ -168,14 +169,25 @@ export default function LoginPageUi(props) {
                 </p>
               </div>
               <div>
-                <h3 style={{
-                  color: "var(--text-1)",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  margin: 0
-                }}>
-                  What to do
-                </h3>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "var(--layout-card-gap)",
+                  flexWrap: "wrap"
+                }}> {/* Heading and its action on one line; layout-only, no shared toolbar primitive matches this row. */}
+                  <h3 style={{
+                    color: "var(--text-1)",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    margin: 0
+                  }}>
+                    What to do
+                  </h3>
+                  <Button type="button" variant="primary" onClick={handleAllAccessLogin} disabled={isRedirecting}>
+                    {isRedirecting ? "Signing in..." : "All access"}
+                  </Button>
+                </div>
                 <p style={{
                   color: "var(--text-1)",
                   margin: "8px 0 0"

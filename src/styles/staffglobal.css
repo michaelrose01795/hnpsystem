@@ -1529,8 +1529,8 @@ html.staff-scope button:not(.app-btn) {
      should use <Button>, but any remaining raw button now inherits the same
      Primary control source instead of drifting onto the old accent palette.
      Purpose-built API controls override this block in their family rules. */
-  background: var(--primary-control-bg);
-  color: var(--primary-control-color);
+  background: var(--primary);
+  color: var(--onAccentText);
   border: none;
   border-radius: var(--control-radius);
   min-height: var(--control-height);
@@ -1548,7 +1548,7 @@ html.staff-scope button:not(.app-btn) {
   z-index: 0;
 }
 html.staff-scope button:not(.app-btn):hover {
-  background: var(--primary-control-bg-hover);
+  background: var(--primary-hover);
 }
 html.staff-scope button:not(.app-btn):disabled {
   opacity: 0.5;
@@ -1908,13 +1908,11 @@ html.staff-scope .app-table-action-btn {
   font-size: var(--text-label);
   font-weight: 600;
   border-radius: var(--radius-xs);
-  /* --control-bg, not --surface. Table rows are --surface too, so a --surface
-     action button was the same colour as the row it sat in. --control-bg is
-     context-aware (families/cards.css re-binds it inside a theme layer), so
-     the button separates from the row whether the table sits on a page card
-     or on a section card. */
-  background: var(--control-bg);
-  color: var(--text-1);
+  /* Table actions use the canonical Secondary palette. Form-control fills are
+     rebound to --surface inside theme layers and would recreate the neutral
+     black/white inversion that action buttons must not use. */
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
   /* No border — table action buttons sit on the row separator alone.
      Borders are only allowed on inputs, checkboxes, ghost buttons, focus rings. */
   border: none;
@@ -1939,15 +1937,15 @@ html.staff-scope .app-table-action-btn--danger {
    .app-table-action-btn but wears the .app-btn--primary fill. */
 html.staff-scope .app-data-table .app-table-action-btn--primary,
 html.staff-scope .app-table-action-btn--primary {
-  background: var(--input-bg);
-  color: var(--text-1);
+  background: var(--primary);
+  color: var(--onAccentText);
   border: none;
 }
 html.staff-scope .app-data-table .app-table-action-btn--primary:hover,
 html.staff-scope .app-data-table .app-table-action-btn--primary:focus-visible,
 html.staff-scope .app-table-action-btn--primary:hover,
 html.staff-scope .app-table-action-btn--primary:focus-visible {
-  background: var(--control-bg-hover);
+  background: var(--primary-hover);
 }
 
 /* Canonical home: src/styles/families/badges.css
@@ -8619,5 +8617,45 @@ html.staff-scope .report-graph__empty {
   html.staff-scope .report-graph__line,
   html.staff-scope .report-graph__value {
     transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Delivery day controls (/deliveries — parts-deliveries-controls)
+   The previous/next day stepper was removed, so the month picker is the only
+   day control. Layout and picker sizing live here rather than as inline styles
+   on the page so every day-picker row reads the same.
+   ------------------------------------------------------------------------ */
+html.staff-scope .app-delivery-day-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-delivery-month-picker {
+  flex: 0 1 220px; /* picker width: no token covers control widths */
+  min-width: 0;
+}
+
+html.staff-scope .app-delivery-month-picker .calendar-api__control {
+  width: 100%;
+  min-height: var(--control-height);
+  justify-content: space-between;
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .app-delivery-day-controls {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  html.staff-scope .app-delivery-month-picker {
+    flex: 1 1 100%;
   }
 }

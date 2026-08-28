@@ -3,6 +3,7 @@
 // file location: src/lib/database/messages.js
 import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const dbClient = supabaseService || supabase;
 const isServiceClient = Boolean(supabaseService);
@@ -857,6 +858,7 @@ export const searchDirectoryUsers = async (searchTerm = "", limit = 25) => {
   const query = dbClient
     .from("users")
     .select("user_id, first_name, last_name, email, role")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .order("first_name", { ascending: true })
     .limit(limit);
 

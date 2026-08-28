@@ -190,7 +190,6 @@ Assigned: derived management roles. Admin is the requested display name for curr
 - **Dashboards**
   - **D** Managers Dashboard — `/dashboard/managers` — manager/leadership audience.
   - **D** Admin Dashboard — `/dashboard/admin` — admin/admin-manager exception.
-  - **D** Paint Dashboard — `/dashboard/painting` — painters only; retain as an exception until Paint gets a real workspace.
 - **People & HR**
   - **P** HR Manager — `/hr/manager` — admin-manager only; dashboard tabs are **T**.
   - **P** Employee Records — `/hr/employees` — HR-core plus scoped-manager edge policy; keep role/proxy rules aligned.

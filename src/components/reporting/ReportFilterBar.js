@@ -35,12 +35,16 @@ const GRANULARITY_OPTIONS = [
   { value: "year", label: "Yearly" },
 ];
 
-// Everything stays on a single row — the toolbar never wraps; the search bar
-// (below) is the flexible element that shrinks to keep the line intact.
+// The toolbar prefers a single row but is allowed to wrap. Report packages
+// carry anywhere from four to eight tabs, and a long tab row (Executive on
+// /reports/overview, Service Advisor on /reports/service) is wider than the
+// space left beside the pickers. Wrapping drops the controls onto their own
+// line instead of letting the tab strip run underneath them.
 const toolbarStyle = {
   display: "flex",
-  flexWrap: "nowrap",
-  gap: 12,
+  flexWrap: "wrap",
+  columnGap: 12,
+  rowGap: 10,
   alignItems: "center",
   justifyContent: "space-between",
 };
@@ -51,28 +55,33 @@ const controlsStyle = {
   gap: 10,
   alignItems: "center",
   justifyContent: "flex-end",
+  // Basis = two 150px pickers + the search bar at its minimum + gaps. Below
+  // that the controls take a row of their own rather than squeezing the tabs.
+  flex: "1 1 470px",
+  minWidth: 0,
+};
+
+// The tab group takes whatever room is left on the row and is allowed to
+// shrink, so `.tab-api` (flex-wrap: wrap, max-width: 100%) reflows its buttons
+// onto a second line inside the strip instead of overflowing the toolbar.
+const tabsWrapStyle = {
+  display: "flex",
   flex: "1 1 auto",
   minWidth: 0,
 };
 
-// Tabs keep their natural width and never shrink, so the tab group always
-// renders on one line.
-const tabsWrapStyle = {
-  flex: "0 0 auto",
-  minWidth: 0,
-};
-
 // Both pickers share one fixed, even width so the date-range and granularity
-// dropdowns line up regardless of their (differing) label lengths.
+// dropdowns line up regardless of their (differing) label lengths. They may
+// shrink a little before the controls wrap, but never below a readable width.
 const pickerStyle = {
-  flex: "0 0 150px",
+  flex: "0 1 150px",
   width: 150,
+  minWidth: 118,
 };
 
 // Search bar is the flexible control: it grows to fill the remaining space and
-// auto-shrinks (down to its min) so the whole toolbar stays on one line. Its
-// max width is capped so it stays even with the pickers and never crowds out an
-// added tab (e.g. Efficiency) — keeping the whole row on a single line.
+// auto-shrinks (down to its min) so the control row stays on one line. Its max
+// width is capped so it stays even with the pickers.
 const searchStyle = {
   flex: "1 1 160px",
   minWidth: 140,

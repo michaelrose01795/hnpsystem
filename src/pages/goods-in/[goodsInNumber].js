@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { ScrollArea } from "@/components/ui/scrollAPI";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import GoodsInDetailPageUi from "@/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui"; // Extracted presentation layer.
@@ -86,7 +87,8 @@ function GoodsInDetailPage() {
     () => (user?.roles || []).map((role) => role.toLowerCase()),
     [user?.roles]
   );
-  const hasGoodsInAccess = userRoles.some((role) => GOODS_IN_ROLES.has(role));
+  const hasGoodsInAccess =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => GOODS_IN_ROLES.has(role));
 
   useEffect(() => {
     if (!router.isReady || !goodsInNumber) return;

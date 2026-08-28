@@ -985,6 +985,19 @@ export default function CreateJobCardPageUi(props) {
           background: currentColor;
         }
 
+        /* Eligibility values are canonical read-only .app-input fields; this
+           local wrapper only aligns their status badge beside the field. */
+        html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-detail {
+          display: flex;
+          align-items: center;
+          gap: var(--space-sm);
+          min-width: 0;
+        }
+
+        html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-detail > .app-input {
+          min-width: 0;
+        }
+
         @media (min-width: 1280px) {
           @supports (grid-template-rows: subgrid) {
             html.staff-scope .job-cards-create-aligned-top-row {
@@ -1147,13 +1160,6 @@ export default function CreateJobCardPageUi(props) {
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__rule:nth-child(4) {
               grid-row: 5;
-            }
-
-            html.staff-scope .job-cards-create-mobile-eligibility-grid__rule-detail {
-              display: flex;
-              align-items: center;
-              gap: var(--space-sm);
-              box-sizing: border-box;
             }
 
             html.staff-scope .job-cards-create-mobile-eligibility-grid__message {

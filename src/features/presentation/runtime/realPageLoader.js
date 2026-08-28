@@ -33,7 +33,6 @@ const ROUTE_TO_MODULE = {
   // Dashboards
   "/dashboard/managers": () => import("@/pages/dashboard/managers/index"),
   "/dashboard/mot": () => import("@/pages/dashboard/mot/index"),
-  "/dashboard/painting": () => import("@/pages/dashboard/painting/index"),
   "/dashboard/parts": () => import("@/pages/dashboard/parts/index"),
   "/dashboard/service": () => import("@/pages/dashboard/service/index"),
   "/dashboard/valeting": () => import("@/pages/dashboard/valeting/index"),

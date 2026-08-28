@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/database/supabaseClient";
+import { isAllAccessSession } from "@/lib/auth/allAccessSession";
 
 function asNonEmptyString(value) {
   if (value === null || value === undefined) return "";
@@ -130,6 +131,18 @@ export async function resolveSessionUserId(session) {
 
   const nameUserId = await findUserIdByName(asNonEmptyString(sessionUser.name));
   if (nameUserId) return nameUserId;
+
+  // The All Access demo login resolves to its own `users` row, creating it if it
+  // is not there yet. This is the single choke point every per-user endpoint
+  // shares (profile, clocking, messages, payslips, shell bootstrap), so putting
+  // it here means the demo account is "linked" everywhere at once — including
+  // for a session token that was minted before the row existed.
+  if (isAllAccessSession(session)) {
+    const { ensureAllAccessUser } = await import("@/lib/database/allAccessUser");
+    const demoUser = await ensureAllAccessUser();
+    const demoUserId = parsePositiveInt(demoUser?.user_id);
+    if (demoUserId) return demoUserId;
+  }
 
   throw new UserProfileNotFoundError();
 }

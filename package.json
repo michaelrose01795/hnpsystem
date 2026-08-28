@@ -34,6 +34,8 @@
     "seed:parts-search-presets": "node tools/scripts/seed-parts-search-presets.js",
     "seed:job-request-presets": "node tools/scripts/seed-job-request-presets.js",
     "seed:efficiency-demo": "node tools/scripts/seed-efficiency-demo.js",
+    "seed:all-access": "node tools/scripts/seed-all-access-user.js",
+    "seed:deliveries": "node tools/scripts/seed-delivery-diary.js",
     "seed:website-content": "node tools/scripts/seed-website-content.mjs",
     "db:seed": "node tools/scripts/db-seed.js",
     "retention:dry-run": "node tools/scripts/run-retention.js",

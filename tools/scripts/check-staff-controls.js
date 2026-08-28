@@ -85,7 +85,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
   ["src/components/page-ui/parts/parts-goods-in-ui.js", 49],
-  ["src/components/page-ui/parts/parts-manager-ui.js", 1],
+  ["src/components/page-ui/parts/parts-manager-ui.js", 0],
   ["src/components/page-ui/stock-catalogue-ui.js", 10],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
   ["src/components/page-ui/valet/valet-ui.js", 2],
@@ -186,7 +186,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/admin/compliance/dpias.js", 1],
   ["src/pages/admin/compliance/ropa.js", 1],
   ["src/pages/customers/[customerSlug].js", 3],
-  ["src/pages/deliveries/index.js", 1],
+  ["src/pages/deliveries/index.js", 0],
   ["src/pages/delivery-planner.js", 16],
   ["src/pages/dev/knowledge.js", 1],
   ["src/pages/dev/user-diagnostic.js", 27],
@@ -443,6 +443,81 @@ if (dayJobsStart < 0 || dayJobsEnd < 0) {
 
 const staffGlobalPath = "src/styles/staffglobal.css";
 const staffGlobalSource = fs.readFileSync(path.join(ROOT, staffGlobalPath), "utf8");
+const buttonFamilyPath = "src/styles/families/buttons.css";
+const buttonFamilySource = fs.readFileSync(path.join(ROOT, buttonFamilyPath), "utf8");
+
+function cssRuleBody(source, selector) {
+  const start = source.indexOf(selector);
+  if (start < 0) return null;
+  const open = source.indexOf("{", start);
+  const close = source.indexOf("}", open);
+  if (open < 0 || close < 0) return null;
+  return source.slice(open + 1, close);
+}
+
+// Action buttons must retain their semantic brand/tint variants in every
+// layer. Form-control tokens are intentionally rebound to --surface inside
+// LayerTheme and must never be reused for buttons: doing so recreates the
+// black/white mode inversion that previously affected Goods In Supplier Search.
+const buttonContracts = [
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--primary",
+    required: ["--btn-bg: var(--primary)", "--btn-color: var(--onAccentText)"],
+  },
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--secondary",
+    required: ["--btn-bg: var(--secondary)", "--btn-color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope button:not(.app-btn)",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn",
+    required: ["background: var(--secondary)", "color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn--primary",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+];
+const forbiddenButtonFillTokens = [
+  "var(--primary-control-bg)",
+  "var(--primary-control-color)",
+  "var(--control-bg)",
+  "var(--input-bg)",
+  "var(--surface)",
+  "var(--text-1)",
+  "var(--surfaceText)",
+];
+
+for (const contract of buttonContracts) {
+  const body = cssRuleBody(contract.source, contract.selector);
+  if (body == null) {
+    violations.push(`${contract.path}: canonical button rule ${contract.selector} could not be located`);
+    continue;
+  }
+  for (const fragment of contract.required) {
+    if (!body.includes(fragment)) {
+      violations.push(`${contract.path}: ${contract.selector} missing ${JSON.stringify(fragment)}`);
+    }
+  }
+  for (const token of forbiddenButtonFillTokens) {
+    if (body.includes(token)) {
+      violations.push(`${contract.path}: ${contract.selector} must not use inverse/form-control token ${token}`);
+    }
+  }
+}
 
 // The canonical data-table row-control density contract. It lives in
 // staffglobal.css today (see the family-ownership ratchet in

@@ -8,16 +8,16 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
 import ArchivedJobsPageUi from "@/components/page-ui/job-cards/archive/job-cards-archive-ui"; // Extracted presentation layer.
 
-const STATUS_BADGES = {
-  Complete: { bg: "var(--success-surface)", color: "var(--success-text)" },
-  Released: { bg: "var(--success-surface)", color: "var(--success-dark)" },
-  Cancelled: { bg: "var(--danger-surface)", color: "var(--danger-dark)" },
-  Invoiced: { bg: "var(--theme)", color: "var(--accentText)" },
-  Delivered: { bg: "var(--warning-surface)", color: "var(--warning-text)" },
-  Archived: { bg: "var(--theme)", color: "var(--accentText)" }
+const STATUS_BADGE_CLASSES = {
+  Complete: "app-badge--success",
+  Released: "app-badge--success",
+  Cancelled: "app-badge--danger",
+  Invoiced: "app-badge--accent-soft",
+  Delivered: "app-badge--warning",
+  Archived: "app-badge--accent-soft"
 };
 
-const defaultStatusBadge = { bg: "var(--theme)", color: "var(--accentText)" };
+const defaultStatusBadgeClass = "app-badge--neutral";
 
 export default function ArchivedJobsPage() {
   const [query, setQuery] = useState("");
@@ -91,7 +91,7 @@ export default function ArchivedJobsPage() {
     return nextResults;
   }, [regOnly, results, sortOrder, statusFilter]);
 
-  return <ArchivedJobsPageUi view="section1" availableStatuses={availableStatuses} Button={Button} defaultStatusBadge={defaultStatusBadge} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} error={error} filteredResults={filteredResults} isSearching={isSearching} Link={Link} prefetchJob={prefetchJob} query={query} regOnly={regOnly} runSearch={runSearch} SearchBar={SearchBar} setQuery={setQuery} setRegOnly={setRegOnly} setSortOrder={setSortOrder} setStatusFilter={setStatusFilter} sortOrder={sortOrder} STATUS_BADGES={STATUS_BADGES} statusFilter={statusFilter} />;
+  return <ArchivedJobsPageUi view="section1" availableStatuses={availableStatuses} Button={Button} defaultStatusBadgeClass={defaultStatusBadgeClass} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} error={error} filteredResults={filteredResults} isSearching={isSearching} Link={Link} prefetchJob={prefetchJob} query={query} regOnly={regOnly} runSearch={runSearch} SearchBar={SearchBar} setQuery={setQuery} setRegOnly={setRegOnly} setSortOrder={setSortOrder} setStatusFilter={setStatusFilter} sortOrder={sortOrder} STATUS_BADGE_CLASSES={STATUS_BADGE_CLASSES} statusFilter={statusFilter} />;
 
 
 

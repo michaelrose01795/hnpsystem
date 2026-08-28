@@ -73,6 +73,14 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
 // gated by isDevAuthAllowed()). It remains separate from roleCategories so it
 // can never be picked in the HR role-assignment surfaces.
 export const DEV_PLATFORM_ROLE = "dev";
+
+// All Access demo login. Like DEV_PLATFORM_ROLE this is a SYNTHETIC role minted
+// in code by the login screen's "All access" button (NextAuth credentials,
+// server-gated by isDevAuthAllowed()). It is deliberately kept out of
+// roleCategories so it can never be picked in the HR role-assignment surfaces
+// or stored against a real users row. Its purpose is demonstrations: one login
+// that opens every module and page without switching between staff accounts.
+export const ALL_ACCESS_ROLE = "all access";
 export const AUDIT_ADMIN_ROLES = [
   "Admin",
   "Admin Manager",
@@ -95,8 +103,16 @@ export function normalizeRoles(roles = []) {
   return roles.map((role) => role?.toString().toLowerCase().trim()).filter(Boolean);
 }
 
+// Does this role set carry the synthetic All Access demo role?
+export function hasAllAccessRole(userRoles) {
+  return normalizeRoles(userRoles).includes(ALL_ACCESS_ROLE);
+}
+
 export function hasAnyRole(userRoles, allowedRoles = []) {
   const normalized = normalizeRoles(userRoles);
+  // The All Access demo login satisfies every role check by design — it exists
+  // so a demonstration can reach every screen from one session.
+  if (normalized.includes(ALL_ACCESS_ROLE)) return true;
   return allowedRoles.some((role) => normalized.includes(role.toLowerCase()));
 }
 
@@ -116,12 +132,21 @@ export function canAccessHrManagerDashboard(userRoles) {
   return hasAnyRole(userRoles, HR_MANAGER_DASHBOARD_ROLES);
 }
 
+// IDENTITY predicates — "is the user THIS kind of person", not "may they do X".
+// These deliberately skip the All Access wildcard: answering yes would push the
+// demo session into a NARROWER role-specific view (mobile-only bookings, the
+// customer portal) instead of opening anything up.
+function matchesRealRole(userRoles, allowedRoles = []) {
+  const normalized = normalizeRoles(userRoles);
+  return allowedRoles.some((role) => normalized.includes(role.toLowerCase()));
+}
+
 export function isMobileTechnician(userRoles) {
-  return hasAnyRole(userRoles, MOBILE_TECH_ROLES);
+  return matchesRealRole(userRoles, MOBILE_TECH_ROLES);
 }
 
 export function isCustomerRole(role) {
-  return hasAnyRole([role], CUSTOMER_ROLES);
+  return matchesRealRole([role], CUSTOMER_ROLES);
 }
 
 // Developer Platform access gate: the synthetic dev role or any configured app role passes.

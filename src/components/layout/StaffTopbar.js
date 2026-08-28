@@ -21,6 +21,7 @@
 import React from "react";
 import Link from "next/link";
 import GlobalSearch from "@/components/GlobalSearch";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -407,7 +408,7 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {userRoles.includes("admin manager") && (
+            {(userRoles.includes("admin manager") || hasAllAccessRole(userRoles)) && (
               <Link
                 href="/admin/users"
                 prefetch={false}

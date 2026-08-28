@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/database/supabaseClient";
 import { CUSTOMER_ROLES, isCustomerRole } from "@/lib/auth/roles";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const TABLE = "floating_notes";
 const SHARE_TABLE = "floating_note_shares";
@@ -162,6 +163,7 @@ const getShareableUsers = async () => {
   const { data, error } = await supabase
     .from("users")
     .select("user_id, first_name, last_name, email, role, is_active")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .eq("is_active", true)
     .order("first_name", { ascending: true })
     .order("last_name", { ascending: true });

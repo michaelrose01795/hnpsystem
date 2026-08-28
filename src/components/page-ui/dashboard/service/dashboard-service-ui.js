@@ -17,12 +17,12 @@ function ThemeCard({ LayerTheme, title, subtitle, children, sectionKey, parentKe
       {(title || subtitle) && (
         <div>
           {title && (
-            <h2 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-accent)" }}>
+            <h2 style={{ margin: 0, fontSize: "1.05rem", color: "var(--accent-text-on-tint)" }}>
               {title}
             </h2>
           )}
           {subtitle && (
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
               {subtitle}
             </p>
           )}
@@ -76,9 +76,9 @@ export default function ServiceDashboardUi(props) {
               title="Appointments today"
             >
               {loading ? (
-                <p style={{ margin: 0, color: "var(--text-2)" }}>Counting today&apos;s arrivals…</p>
+                <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Counting today&apos;s arrivals…</p>
               ) : error ? (
-                <p style={{ margin: 0, color: "var(--text-accent)" }}>{error}</p>
+                <p style={{ margin: 0, color: "var(--accent-text-on-tint)" }}>{error}</p>
               ) : (
                 <MetricCard
                   label="Appointments today"
@@ -139,14 +139,14 @@ export default function ServiceDashboardUi(props) {
               subtitle="Weekly breakdown"
             >
               {data.vhcSeverityTrend.length === 0 ? (
-                <p style={{ margin: 0, color: "var(--text-2)" }}>No VHC data for the week yet.</p>
+                <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No VHC data for the week yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {data.vhcSeverityTrend.map((point) => {
                     const total = point.red + point.amber + point.green || 1;
                     return (
                       <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-2)" }}>
+                        <span style={{ width: 35, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
                           {point.label}
                         </span>
                         <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
@@ -180,7 +180,7 @@ export default function ServiceDashboardUi(props) {
                             />
                           </div>
                         </div>
-                        <strong style={{ color: "var(--text-accent)", fontSize: "0.85rem" }}>
+                        <strong style={{ color: "var(--accent-text-on-tint)", fontSize: "0.85rem" }}>
                           {total}
                         </strong>
                       </div>
@@ -197,7 +197,7 @@ export default function ServiceDashboardUi(props) {
               title="Upcoming jobs"
             >
               {data.upcomingJobs.length === 0 ? (
-                <p style={{ margin: 0, color: "var(--text-2)" }}>No upcoming jobs right now.</p>
+                <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No upcoming jobs right now.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {data.upcomingJobs.map((job) => (
@@ -214,7 +214,7 @@ export default function ServiceDashboardUi(props) {
               title="VHCs awaiting approval"
             >
               {data.awaitingVhc.length === 0 ? (
-                <p style={{ margin: 0, color: "var(--text-2)" }}>No pending VHC approvals.</p>
+                <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No pending VHC approvals.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {data.awaitingVhc.map((job) => (

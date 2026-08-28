@@ -3,6 +3,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -88,6 +89,8 @@ const normalizeDepartments = (input) => {
 };
 
 const deriveDepartmentsFromRoles = (roles = []) => {
+  // All Access demo login: every department's feed, not a role-derived subset.
+  if (hasAllAccessRole(roles)) return [...AVAILABLE_DEPARTMENTS];
   const canonicalDepartments = new Map(
     AVAILABLE_DEPARTMENTS.map((department) => [department.toLowerCase(), department])
   );
@@ -162,7 +165,7 @@ const formatTimeAgo = (value) => {
 };
 
 const isManagerRole = (roles = []) =>
-roles.some((role) => /(manager|director)/i.test(role));
+hasAllAccessRole(roles) || roles.some((role) => /(manager|director)/i.test(role));
 
 const matchesSection = (update, section) => {
   const payload = Array.isArray(update.departments) ? update.departments : [];

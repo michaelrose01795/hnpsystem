@@ -5,6 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // Import React hooks for stateful UI
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
+import { hasAllAccessRole } from "@/lib/auth/roles"; // All Access demo login gate
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -103,8 +104,9 @@ const TechConsumableRequestPage = () => {
   const { user, dbUserId } = useUser(); // Access current user information
   const isMobile = useIsMobile();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // Normalise roles to lower case for checks
-  const isTechRole = userRoles.includes("techs") || userRoles.includes("mot tester"); // Determine if page access should be granted
-  const isWorkshopManager = userRoles.includes("workshop manager") || userRoles.includes("workshop_manager");
+  const hasFullAccess = hasAllAccessRole(userRoles); // All Access demo login sees both sides of this page
+  const isTechRole = hasFullAccess || userRoles.includes("techs") || userRoles.includes("mot tester"); // Determine if page access should be granted
+  const isWorkshopManager = hasFullAccess || userRoles.includes("workshop manager") || userRoles.includes("workshop_manager");
 
   const [requestForm, setRequestForm] = useState({
     partName: "" // Stock search input

@@ -60,6 +60,7 @@ import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { roleCategories } from "@/config/users";
 import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
@@ -165,7 +166,6 @@ function buildGoldenSidebarSections() {
       category: "departments",
       items: [
         { label: "Job Cards", href: "/jobs", roles: ["service"] },
-        { label: "Goods In", href: "/goods-in", roles: ["service"] },
         { label: "New Job", href: "/new-job", roles: ["service"] },
       ],
     },
@@ -175,7 +175,6 @@ function buildGoldenSidebarSections() {
       items: [
         { label: "Next Jobs", href: "/nextjobs", roles: ["service manager"] },
         { label: "Job Cards", href: "/jobs", roles: ["service manager"] },
-        { label: "Goods In", href: "/goods-in", roles: ["service manager"] },
         { label: "Mobile Appointments", href: "/appointments", roles: ["service manager"] },
         { label: "New Job", href: "/new-job", roles: ["service manager"] },
       ],
@@ -197,7 +196,6 @@ function buildGoldenSidebarSections() {
       items: [
         { label: "Next Jobs", href: "/nextjobs", roles: ["aftersales manager"] },
         { label: "Job Cards", href: "/jobs", roles: ["aftersales manager"] },
-        { label: "Goods In", href: "/goods-in", roles: ["aftersales manager"] },
       ],
     },
     {
@@ -245,6 +243,18 @@ function buildGoldenSidebarSections() {
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
+      ],
+    },
+    {
+      // Added with the delivery diary: a Parts Driver's whole shift is the van
+      // run, so the diary is the single page they land on. What they can DO on
+      // it is scoped separately by resolveDeliveryCapabilities
+      // (src/features/deliveries/deliveryStatus.js) — load, dispatch,
+      // delivered, failed, proof of delivery; never assignment or reopening.
+      label: "Parts Driver",
+      category: "departments",
+      items: [
+        { label: "Deliveries", href: "/deliveries", roles: ["parts driver"] },
       ],
     },
     {
@@ -482,7 +492,6 @@ describe("workspace manifest - module bundle placement", () => {
       "Valeting",
       "Accounts",
       "Reports",
-      "Paint",
       "Tech",
     ]);
     expect(
@@ -515,7 +524,6 @@ describe("workspace manifest - module bundle placement", () => {
         "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin",
         "/reports/overview",
       ] },
-      { key: "department-paint", hrefs: ["/dashboard/painting"] },
       { key: "department-tech", hrefs: [
         "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
       ] },
@@ -526,6 +534,9 @@ describe("workspace manifest - module bundle placement", () => {
     expect(
       moduleCatalog.find((module) => module.label === "Reception")?.items
     ).toContainEqual(expect.objectContaining({ label: "Create Job Card", href: "/new-job" }));
+    expect(
+      moduleCatalog.find((module) => module.label === "Reception")?.items.map((item) => item.href)
+    ).not.toContain("/goods-in");
   });
 
   it("keeps standalone Profile and the locked Developer route out of the assignable page catalog", () => {
@@ -544,6 +555,21 @@ describe("workspace manifest - module bundle placement", () => {
       "/jobs",
       "/deliveries",
     ]));
+  });
+
+  it("keeps Goods In exclusively in Parts role modules, including all-access navigation", () => {
+    const serviceHrefs = getRoleWorkspaceModules(["service"])
+      .flatMap((navigationModule) => navigationModule.items.map((item) => item.href));
+    const partsHrefs = getRoleWorkspaceModules(["parts"])
+      .flatMap((navigationModule) => navigationModule.items.map((item) => item.href));
+    const allAccessModules = getRoleWorkspaceModules([ALL_ACCESS_ROLE]);
+    const reception = allAccessModules.find((navigationModule) => navigationModule.label === "Reception");
+    const parts = allAccessModules.find((navigationModule) => navigationModule.label === "Parts");
+
+    expect(serviceHrefs).not.toContain("/goods-in");
+    expect(partsHrefs).toContain("/goods-in");
+    expect(reception?.items.map((item) => item.href)).not.toContain("/goods-in");
+    expect(parts?.items.map((item) => item.href)).toContain("/goods-in");
   });
 
   it("keeps the technician consumable request page in the Tech module", () => {
@@ -908,6 +934,7 @@ describe("🔒 developer sidebar entry is LOCKED (must never change)", () => {
 describe("workspace manifest — department-first selectors", () => {
   it("getActiveDepartment maps flat routes to their owning department", () => {
     expect(getActiveDepartment("/deliveries")).toBe("parts");
+    expect(getActiveDepartment("/goods-in")).toBe("parts");
     expect(getActiveDepartment("/clocking")).toBe("workshop");
     expect(getActiveDepartment("/valet")).toBe("valeting");
     expect(getActiveDepartment("/reports/workshop")).toBe("reports");

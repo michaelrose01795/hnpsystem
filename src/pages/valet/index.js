@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
 import { getValetEtaSignals } from "@/lib/database/valetEtaSignals";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
@@ -22,10 +23,6 @@ import { calculateSmartTechEta } from "@/utils/jobs/calculateSmartTechEta";
 import ValetDashboardUi from "@/components/page-ui/valet/valet-ui"; // Extracted presentation layer.
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
-const VALET_TABLE_COLUMNS =
-"minmax(0, 0.8fr) minmax(0, 0.72fr) minmax(0, 1.45fr) repeat(4, minmax(84px, 0.62fr)) minmax(0, 1fr)";
-const VALET_ROW_HEIGHT = "84px";
-
 const formatDateOnly = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
   const year = date.getFullYear();
@@ -436,7 +433,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
   return (
     <tr
       style={{
-        height: VALET_ROW_HEIGHT,
         color: cancelled ? "var(--text-1)" : "inherit",
         textDecoration: cancelled ? "line-through" : "none",
         opacity: cancelled ? 0.72 : 1
@@ -675,7 +671,9 @@ export default function ValetDashboard() {
     [user]
   );
 
-  const hasAccess = userRoles.some((role) =>
+  const hasAccess =
+  hasAllAccessRole(userRoles) ||
+  userRoles.some((role) =>
   ["valet service", "service manager", "admin", "workshop manager"].includes(
     role
   )
@@ -1026,7 +1024,7 @@ export default function ValetDashboard() {
 
   }
 
-  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} LayerTheme={LayerTheme} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} VALET_ROW_HEIGHT={VALET_ROW_HEIGHT} VALET_TABLE_COLUMNS={VALET_TABLE_COLUMNS} ValetJobRow={ValetJobRow} valetState={valetState} />;
+  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} LayerTheme={LayerTheme} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} ValetJobRow={ValetJobRow} valetState={valetState} />;
 
 
 

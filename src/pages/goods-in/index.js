@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -342,7 +343,8 @@ function GoodsInPage() {
     []
   );
   const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
-  const hasGoodsInAccess = userRoles.some((role) => GOODS_IN_ROLES.has(role));
+  const hasGoodsInAccess =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => GOODS_IN_ROLES.has(role));
   const actingUserUuid = useMemo(() => {
     if (typeof authUserId === "string") return authUserId;
     if (typeof user?.authUuid === "string") return user.authUuid;

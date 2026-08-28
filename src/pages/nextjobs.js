@@ -5,6 +5,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext"; // Logged-in user context
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
 // Loaded on demand - both resolve the 213 KB Supabase browser client, and every
@@ -552,6 +553,7 @@ export default function NextJobsPage() {
   // ⚠️ Mock data found — replacing with Supabase query
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const hasAccess =
+  hasAllAccessRole(normalizedRoles) ||
   allowedUsers.includes(username) ||
   normalizedRoles.some((role) => allowedRoles.has(role));
 

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { supabase } from "@/lib/database/supabaseClient";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -74,7 +75,7 @@ export default function DeliveryRoutePage() {
   const { user, dbUserId } = useUser();
   const { confirm } = useConfirmation();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasAccess = roles.includes("parts") || roles.includes("parts manager");
+  const hasAccess = hasAllAccessRole(roles) || roles.includes("parts") || roles.includes("parts manager");
 
   const [delivery, setDelivery] = useState(null);
   const [loading, setLoading] = useState(false);

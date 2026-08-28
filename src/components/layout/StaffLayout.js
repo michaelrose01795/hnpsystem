@@ -10,6 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // import React hooks
 import dynamic from "next/dynamic"; // code-split heavy Layout children out of the shell bundle
 import useSWR from "swr"; // SWR for deduped, cache-backed data fetching
+import { hasAllAccessRole } from "@/lib/auth/roles"; // All Access demo login gate
 // usePolling removed — SWR + slot-keyed caching covers the welcome-quote refresh.
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
@@ -394,7 +395,8 @@ export default function Layout({
     ? getQuickActions(userRoles, activeWorkspaceDepartment)
     : null;
 
-  const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
+  const canUseServiceActions =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
@@ -411,15 +413,20 @@ export default function Layout({
     user?.email ||
     normalizedUsername ||
     null;
+  // All Access demo login: every role-gated shortcut, panel and command-palette
+  // entry below is granted. Note this deliberately does NOT feed `isTech` — that
+  // flag SWAPS the topbar to the reduced technician view, so turning it on would
+  // hide the manager KPIs and insights this login exists to show.
+  const hasFullAccess = hasAllAccessRole(userRoles);
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = presentationShell
     ? hasTechRole
     : (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
-  const canViewStatusSidebar = presentationShell || userRoles.some((role) =>
+  const canViewStatusSidebar = presentationShell || hasFullAccess || userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
-  const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
-  const isPartsManager = userRoles.includes("parts manager");
+  const hasPartsAccess = hasFullAccess || userRoles.some((role) => PARTS_NAV_ROLES.has(role));
+  const isPartsManager = hasFullAccess || userRoles.includes("parts manager");
 
   // Role-aware workspace for the top bar (computed centrally here so the bar
   // stays presentational). All the reusable pieces live in src/config/topbar,
@@ -983,7 +990,7 @@ export default function Layout({
     roleName.toLowerCase().includes("accounts")
   );
   const normalizedAccountsRoles = accountsRoleCandidates.map((roleName) => roleName.toLowerCase());
-  const hasAccountsSidebarAccess = userRoles.some((role) => normalizedAccountsRoles.includes(role));
+  const hasAccountsSidebarAccess = hasFullAccess || userRoles.some((role) => normalizedAccountsRoles.includes(role));
   const accountsSidebarSections = hasAccountsSidebarAccess
     ? [
         {
@@ -1007,6 +1014,7 @@ export default function Layout({
   const seenNavItems = new Set();
   const roleMatches = (requiredRoles = []) => {
     if (!requiredRoles || requiredRoles.length === 0) return true;
+    if (hasFullAccess) return true;
     return requiredRoles.some((role) => userRoles.includes(role.toLowerCase()));
   };
 
@@ -1083,7 +1091,7 @@ export default function Layout({
     });
   }
 
-  if (isTech) {
+  if (isTech || hasFullAccess) {
     addNavItem("My Jobs", "/tech", {
       keywords: ["my jobs", "jobs", "tech"],
       section: "Workshop",
@@ -1100,6 +1108,7 @@ export default function Layout({
   }
 
   if (
+    hasFullAccess ||
     ["service manager", "workshop manager", "admin manager"].some((roleName) =>
       userRoles.includes(roleName)
     )
@@ -1110,7 +1119,7 @@ export default function Layout({
     });
   }
 
-  if (userRoles.includes("workshop manager")) {
+  if (hasFullAccess || userRoles.includes("workshop manager")) {
     addNavItem("Consumables Tracker", "/consumables-tracker", {
       keywords: ["consumables", "tracker", "budget"],
       description: "Monitor consumable spend, reminders, and supplier details",
@@ -1118,7 +1127,7 @@ export default function Layout({
     });
   }
 
-  if (viewRoles.some((r) => userRoles.includes(r))) {
+  if (hasFullAccess || viewRoles.some((r) => userRoles.includes(r))) {
     addNavItem("Job Cards", "/jobs", {
       keywords: ["view job", "job cards"],
       description: "Browse all job cards",
@@ -1153,13 +1162,16 @@ export default function Layout({
   }
 
   const hrAccessRoles = ["hr manager", "admin manager", "admin"];
-  if (userRoles.some((role) => hrAccessRoles.includes(role))) {
+  if (hasFullAccess || userRoles.some((role) => hrAccessRoles.includes(role))) {
     addNavItem("HR Dashboard", "/hr", {
       keywords: ["hr", "people", "culture", "training"],
       description: "Headcount, attendance, and compliance overview",
       section: "HR",
     });
-  } else if (userRoles.some((role) => role.includes("manager"))) {
+  }
+  // The manager-tier HR entries sit on the `else` of the branch above, so the
+  // All Access login would otherwise lose them by qualifying for the wider one.
+  if (hasFullAccess || userRoles.some((role) => role.includes("manager"))) {
     addNavItem("Team HR", "/hr/employees", {
       keywords: ["team hr", "people", "hr"],
       description: "View team employee directory and leave",
@@ -1173,6 +1185,7 @@ export default function Layout({
   }
 
   if (
+    hasFullAccess ||
     userRoles.includes("valet service") ||
     userRoles.includes("service manager") ||
     userRoles.includes("admin")

@@ -107,6 +107,9 @@ for (const accent of Object.keys(ACCENT_PALETTES)) {
     const text1 = hex(t["--text-1"]);
     const text2 = hex(t["--text-2"]);
     const accentHex = hex(t["--accentText"]);
+    const primaryButton = hex(t["--primary"]);
+    const secondaryButtonOnCard = resolve(t["--secondary"], pageCard);
+    const secondaryButtonOnTheme = resolve(t["--secondary"], sectionCard);
 
     const dL = (a, b) => Math.abs(Lstar(a) - Lstar(b));
     const step = (name, a, b, min) => {
@@ -134,10 +137,10 @@ for (const accent of Object.keys(ACCENT_PALETTES)) {
     // -- text on every fill it lands on ------------------------------------
     text("body text on page card", text1, pageCard);
     text("body text on section card", text1, sectionCard);
-    text("primary btn label on card", text1, ctrlOnCard);
-    text("primary btn label on theme", text1, ctrlOnTheme);
-    text("secondary btn label on card", hex(t["--accent-text-on-tint"]), ctrlOnCard);
-    text("secondary btn label on theme", hex(t["--accent-text-on-tint"]), ctrlOnTheme);
+    text("primary btn label on card", hex(t["--onAccentText"]), primaryButton);
+    text("primary btn label on theme", hex(t["--onAccentText"]), primaryButton);
+    text("secondary btn label on card", hex(t["--accent-text-on-tint"]), secondaryButtonOnCard);
+    text("secondary btn label on theme", hex(t["--accent-text-on-tint"]), secondaryButtonOnTheme);
     text("ghost/theme btn label on theme layer", hex(t["--accent-text-on-tint"]), sectionCard);
     text("is-active btn label on accent", hex(t["--onAccentText"]), accentHex);
     text("tab selected label", hex(t["--onAccentText"]), hex(t["--primary-selected"]));

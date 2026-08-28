@@ -1,6 +1,25 @@
 // file location: src/components/page-ui/parts/parts-manager-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import Button from "@/components/ui/Button";
+
+const badgeClassForStatus = (status = "") => {
+  const normalized = status.toLowerCase();
+  if (/stock|fitted|complete|picked|allocated/.test(normalized)) return "app-badge--success";
+  if (/wait|order|pending/.test(normalized)) return "app-badge--warning";
+  if (/urgent|overdue|failed/.test(normalized)) return "app-badge--danger";
+  return "app-badge--neutral";
+};
+
+function StaffTable({ children, label }) {
+  return (
+    <div className="app-table-shell-scroll" role="region" aria-label={label} tabIndex={0}>
+      <table className="app-data-table app-data-table--rounded app-table-shell app-table-shell--with-headings">
+        {children}
+      </table>
+    </div>
+  );
+}
 
 export default function PartsManagerDashboardUi(props) {
   const {
@@ -9,9 +28,7 @@ export default function PartsManagerDashboardUi(props) {
     SkeletonBlock,
     SkeletonKeyframes,
     SkeletonMetricCard,
-    SourceBadge,
     closeScheduleModal,
-    containerStyle,
     dashboardData,
     deliveryRoutes,
     error,
@@ -26,14 +43,11 @@ export default function PartsManagerDashboardUi(props) {
     lowStockRows,
     needsDeliveryScheduling,
     openScheduleModalForRow,
-    performanceTableStyle,
     pipelineStages,
     pipelineSummary,
     resolveSourceMeta,
-    resolveStatusStyles,
     scheduleModalJob,
     sectionCardStyle,
-    sectionTitleStyle,
     teamPerformance,
     techRequests,
   } = props; // receive page logic props.
@@ -98,17 +112,17 @@ export default function PartsManagerDashboardUi(props) {
     padding: "48px",
     textAlign: "center",
     color: "var(--primary-selected)"
-  }}>{error}</div> : <>
+  }}>{error}</div> : <div className="app-page-stack">
           <PartsOpsDashboard title="Parts Manager Dashboard" subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase" data={dashboardData} />
 
-          <LayerSurface sectionKey="parts-manager-pipeline" sectionType="content-card" data-dev-text-preview="Parts Pipeline" style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Parts Pipeline</div>
+          <LayerTheme sectionKey="parts-manager-pipeline" sectionType="content-card" data-dev-text-preview="Parts Pipeline" style={sectionCardStyle}>
+            <h2 className="app-staff-card__title">Parts Pipeline</h2>
             <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: "12px"
       }}>
-              {pipelineStages.map(stage => <LayerTheme key={stage.id} radius="var(--radius-sm)" padding="10px 12px" gap="0" style={{
+              {pipelineStages.map(stage => <LayerSurface key={stage.id} radius="var(--radius-sm)" padding="var(--space-3) var(--space-md)" gap="var(--space-xs)" style={{
           minHeight: "100px"
         }}>
                   <div style={{
@@ -128,7 +142,7 @@ export default function PartsManagerDashboardUi(props) {
           }}>
                     {stage.description}
                   </p>
-                </LayerTheme>)}
+                </LayerSurface>)}
             </div>
             <div style={{
         marginTop: "12px",
@@ -138,17 +152,17 @@ export default function PartsManagerDashboardUi(props) {
               {pipelineSummary.totalCount} part line
               {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked in the pipeline.
             </div>
-          </LayerSurface>
+          </LayerTheme>
 
-          <div style={containerStyle}>
+          <div className="app-page-stack">
             <div style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)",
-        gap: "20px"
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+        gap: "var(--page-stack-gap)"
       }}>
               <LayerTheme sectionKey="parts-manager-queue-snapshot" sectionType="data-table" data-dev-text-preview="Queue Snapshot table" style={sectionCardStyle}>
-                <div style={sectionTitleStyle}>Queue Snapshot</div>
-                <table style={performanceTableStyle}>
+                <h2 className="app-staff-card__title">Queue Snapshot</h2>
+                <StaffTable label="Queue Snapshot">
                   <thead>
                     <tr style={{
                 textAlign: "left",
@@ -181,9 +195,7 @@ export default function PartsManagerDashboardUi(props) {
                 const deliveryInfo = jobDeliveryMap[row.jobId || ""]?.[0] || null;
                 const deliveryDate = deliveryInfo?.delivery?.delivery_date;
                 const needsSchedule = needsDeliveryScheduling(row.waitingStatus);
-                return <tr key={`${row.jobNumber}-${row.advisor}-${row.jobId}`} style={{
-                  borderTop: "1px solid var(--separating-line-color)"
-                }}>
+                return <tr key={`${row.jobNumber}-${row.advisor}-${row.jobId}`}>
                           <td style={{
                     padding: "12px 0"
                   }}>{row.jobNumber}</td>
@@ -203,19 +215,15 @@ export default function PartsManagerDashboardUi(props) {
                               </div> : <span style={{
                       color: "var(--info)"
                     }}>None</span>}
-                            {needsSchedule && <button type="button" onClick={() => openScheduleModalForRow(row)} style={{
-                      marginTop: "6px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--ghostbutton-ring-color)",
-                      background: "var(--surface)",
-                      color: "var(--accent-purple)",
-                      padding: "4px 10px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontSize: "0.75rem"
-                    }}>
+                            {needsSchedule && <Button
+                              type="button"
+                              variant="ghost"
+                              size="xs"
+                              className="app-table-action-btn"
+                              onClick={() => openScheduleModalForRow(row)}
+                              style={{ marginTop: "var(--space-xs)" }}>
                                 Schedule Delivery
-                              </button>}
+                              </Button>}
                           </td>
                           <td style={{
                     padding: "12px 0"
@@ -225,7 +233,7 @@ export default function PartsManagerDashboardUi(props) {
                   }}>{row.advisor}</td>
                           <td style={{
                     padding: "12px 0"
-                  }}>{row.status}</td>
+                  }}><span className={`app-badge ${badgeClassForStatus(row.status)}`}>{row.status}</span></td>
                           <td style={{
                     padding: "12px 0",
                     textAlign: "right",
@@ -234,19 +242,19 @@ export default function PartsManagerDashboardUi(props) {
                         </tr>;
               })}
                   </tbody>
-                </table>
+                </StaffTable>
               </LayerTheme>
 
               <div style={{
           display: "flex",
           flexDirection: "column",
-          gap: "20px"
+          gap: "var(--page-stack-gap)"
         }}>
                 <LayerTheme sectionKey="parts-manager-status-buckets" sectionType="content-card" data-dev-text-preview="Status Buckets" style={sectionCardStyle}>
-                  <div style={sectionTitleStyle}>Status Buckets</div>
+                  <h2 className="app-staff-card__title">Status Buckets</h2>
                   {dashboardData.teamAvailability.map(bucket => <div key={bucket.name} style={{
-              padding: "10px 0",
-              borderBottom: "1px solid var(--separating-line-color)"
+              padding: "var(--space-3) 0",
+              borderBottom: "var(--separating-line)"
             }}>
                       <div style={{
                 fontWeight: 600
@@ -264,10 +272,10 @@ export default function PartsManagerDashboardUi(props) {
                 </LayerTheme>
 
                 <LayerTheme sectionKey="parts-manager-focus-items" sectionType="content-card" data-dev-text-preview="Focus Items" style={sectionCardStyle}>
-                  <div style={sectionTitleStyle}>Focus Items</div>
+                  <h2 className="app-staff-card__title">Focus Items</h2>
                   {dashboardData.focusItems.map(item => <div key={item.title} style={{
-              padding: "10px 0",
-              borderBottom: "1px solid var(--separating-line-color)"
+              padding: "var(--space-3) 0",
+              borderBottom: "var(--separating-line)"
             }}>
                       <div style={{
                 fontWeight: 600
@@ -287,8 +295,8 @@ export default function PartsManagerDashboardUi(props) {
             </div>
 
             <LayerTheme sectionKey="parts-manager-top-queue-lines" sectionType="data-table" data-dev-text-preview="Top Queue Lines" style={sectionCardStyle}>
-              <div style={sectionTitleStyle}>Top Queue Lines</div>
-              <table style={performanceTableStyle}>
+              <h2 className="app-staff-card__title">Top Queue Lines</h2>
+              <StaffTable label="Top Queue Lines">
                 <thead>
                   <tr style={{
               textAlign: "left",
@@ -311,9 +319,7 @@ export default function PartsManagerDashboardUi(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {teamPerformance.map(row => <tr key={row.name} style={{
-              borderTop: "1px solid var(--separating-line-color)"
-            }}>
+                  {teamPerformance.map(row => <tr key={row.name}>
                       <td style={{
                 padding: "12px 0"
               }}>{row.name}</td>
@@ -322,7 +328,7 @@ export default function PartsManagerDashboardUi(props) {
               }}>{row.accuracy}</td>
                       <td style={{
                 padding: "12px 0"
-              }}>{row.fillRate}</td>
+              }}><span className={`app-badge ${badgeClassForStatus(row.fillRate)}`}>{row.fillRate}</span></td>
                       <td style={{
                 padding: "12px 0",
                 textAlign: "right",
@@ -330,14 +336,14 @@ export default function PartsManagerDashboardUi(props) {
               }}>{row.valuePerDay}</td>
                     </tr>)}
                 </tbody>
-              </table>
+              </StaffTable>
             </LayerTheme>
 
             <LayerTheme sectionKey="parts-manager-low-stock" sectionType="data-table" data-dev-text-preview="Low Stock Parts Overview" style={sectionCardStyle}>
-              <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
+              <h2 className="app-staff-card__title">Low Stock Parts Overview</h2>
               {lowStockRows.length === 0 ? <div style={{
           color: "var(--grey-accent)"
-        }}>No low stock parts currently.</div> : <table style={performanceTableStyle}>
+        }}>No low stock parts currently.</div> : <StaffTable label="Low Stock Parts Overview">
                   <thead>
                     <tr style={{
               textAlign: "left",
@@ -375,9 +381,7 @@ export default function PartsManagerDashboardUi(props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {lowStockRows.map(part => <tr key={part.id} style={{
-              borderTop: "1px solid var(--separating-line-color)"
-            }}>
+                    {lowStockRows.map(part => <tr key={part.id}>
                         <td style={{
                 padding: "12px 0"
               }}>
@@ -407,21 +411,23 @@ export default function PartsManagerDashboardUi(props) {
               }}>{part.reorderLevel}</td>
                         <td style={{
                 padding: "12px 0"
-              }}>{(part.status || "in stock").replace(/_/g, " ")}</td>
+              }}><span className={`app-badge ${badgeClassForStatus(part.status || "in stock")}`}>
+                  {(part.status || "in stock").replace(/_/g, " ")}
+                </span></td>
                         <td style={{
                 padding: "12px 0",
                 textAlign: "right"
               }}>{part.openJobCount || 0}</td>
                       </tr>)}
                   </tbody>
-                </table>}
+                </StaffTable>}
             </LayerTheme>
 
           <LayerTheme sectionKey="parts-manager-tech-requests" sectionType="data-table" data-dev-text-preview="Tech Requests" style={sectionCardStyle}>
-            <div style={sectionTitleStyle}>Tech Requests</div>
+            <h2 className="app-staff-card__title">Tech Requests</h2>
             {techRequests.length === 0 ? <div style={{
           color: "var(--grey-accent)"
-        }}>No open technician requests.</div> : <table style={performanceTableStyle}>
+        }}>No open technician requests.</div> : <StaffTable label="Tech Requests">
                   <thead>
                     <tr style={{
               textAlign: "left",
@@ -451,10 +457,7 @@ export default function PartsManagerDashboardUi(props) {
                   <tbody>
                     {techRequests.map(request => {
               const sourceMeta = resolveSourceMeta(request.source);
-              const statusMeta = resolveStatusStyles(request.status || "waiting_authorisation");
-              return <tr key={request.request_id} style={{
-                borderTop: "1px solid var(--separating-line-color)"
-              }}>
+              return <tr key={request.request_id}>
                           <td style={{
                   padding: "12px 0"
                 }}>{request.job?.job_number || `#${request.job_id}`}</td>
@@ -477,21 +480,12 @@ export default function PartsManagerDashboardUi(props) {
                           <td style={{
                   padding: "12px 0"
                 }}>
-                            <SourceBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
+                            <span className="app-badge app-badge--accent-soft">{sourceMeta.label}</span>
                           </td>
                           <td style={{
                   padding: "12px 0"
                 }}>
-                            <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "2px 10px",
-                    borderRadius: "var(--radius-pill)",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    background: statusMeta.background,
-                    color: statusMeta.color
-                  }}>
+                            <span className={`app-badge ${badgeClassForStatus(request.status || "waiting_authorisation")}`}>
                               {formatStatusLabel(request.status || "waiting_authorisation")}
                             </span>
                           </td>
@@ -501,10 +495,10 @@ export default function PartsManagerDashboardUi(props) {
                         </tr>;
             })}
                   </tbody>
-              </table>}
+              </StaffTable>}
           </LayerTheme>
         </div>
-      </>}
+      </div>}
       <DeliverySchedulerModal open={isScheduleModalOpen} onClose={closeScheduleModal} job={scheduleModalJob} deliveries={deliveryRoutes} onScheduled={() => loadDashboard()} />
   </>; // render extracted page section.
     default:

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { PageContainer, PageWrapper } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { supabase } from "@/lib/database/supabaseClient";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
@@ -131,7 +132,8 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
     []
   );
   const userRoles = currentUser?.roles?.map((role) => role.toLowerCase()) || [];
-  const isManager = userRoles.some((role) => managerRoles.has(role));
+  const isManager =
+    hasAllAccessRole(userRoles) || userRoles.some((role) => managerRoles.has(role));
 
   const [activeJobs, setActiveJobs] = useState([]);
   const [activeJobsLoading, setActiveJobsLoading] = useState(true);

@@ -46,6 +46,7 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
+import { isAllAccessUser } from "@/lib/auth/allAccessSession";
 import { rememberStaffRoute } from "@/lib/auth/returnRoute";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
@@ -701,6 +702,10 @@ function PageAccessGuard({ pathname }) {
     // audits (Staff Style Review, layout overlay) can run against the real
     // screens. It gains no roles, so its own sidebar/nav is unchanged.
     if (hasDevPlatformPageAccess(user)) return;
+    // All Access demo login: same reasoning. Every page in its sidebar already
+    // passes canAccessPath below; this keeps it consistent with the edge guard
+    // and ProtectedRoute, which also let this synthetic session through.
+    if (isAllAccessUser(user)) return;
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
     if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) {

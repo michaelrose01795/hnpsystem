@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/notes.js
 import { supabase } from "@/lib/database/supabaseClient";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const toIntegerOrNull = (value) => {
   const numericValue = Number(value);
@@ -468,6 +469,7 @@ export const getActiveStaff = async () => {
     const { data, error } = await supabase
       .from("users")
       .select("user_id, first_name, last_name, role")
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true)
       .order("first_name", { ascending: true });
 

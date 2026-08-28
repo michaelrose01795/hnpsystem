@@ -7,8 +7,6 @@ export default function ValetDashboardUi(props) {
     LayerTheme,
     InlineLoading,
     SearchBar,
-    VALET_ROW_HEIGHT,
-    VALET_TABLE_COLUMNS,
     ValetJobRow,
     buildChecklist,
     error,
@@ -174,12 +172,11 @@ export default function ValetDashboardUi(props) {
       width: "100%"
     }}>
             <table
-              className="app-table-shell app-table-shell--with-headings"
+              className="app-data-table app-table-shell app-table-shell--with-headings"
               data-dev-section="1"
               data-dev-section-key="valet-jobs-table"
               data-dev-section-type="data-table"
-              data-dev-section-parent="valet-jobs-list"
-              style={{ width: "100%" }}>
+              data-dev-section-parent="valet-jobs-list">
               <thead
                 data-dev-section="1"
                 data-dev-section-key="valet-jobs-headings"

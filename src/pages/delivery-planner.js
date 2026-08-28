@@ -8,6 +8,11 @@ import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import {
+  DELIVERY_STATUS,
+  deliveryStatusLabel,
+  normaliseDeliveryStatus
+} from "@/features/deliveries/deliveryStatus";
 import PartsDeliveryPlannerPageUi from "@/components/page-ui/parts/parts-delivery-planner-ui"; // Extracted presentation layer.
 
 const sectionStyle = {
@@ -87,7 +92,23 @@ const collectionListScrollStyle = {
   paddingRight: "4px"
 };
 
-const statusChipStyle = (variant = "scheduled") => {
+// The chip keeps its three tones; the workflow states added for the delivery
+// diary are folded onto them (in-progress on the van reads as en route, a
+// closed stop reads as completed) so an unmapped value can never fall through
+// to "scheduled" and misreport a stop that is already done.
+const CHIP_VARIANT_BY_STATUS = {
+  [DELIVERY_STATUS.PLANNED]: "scheduled",
+  [DELIVERY_STATUS.PICKING]: "scheduled",
+  [DELIVERY_STATUS.READY]: "scheduled",
+  [DELIVERY_STATUS.LOADED]: "en_route",
+  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: "en_route",
+  [DELIVERY_STATUS.DELIVERED]: "completed",
+  [DELIVERY_STATUS.FAILED]: "completed",
+  [DELIVERY_STATUS.RETURNED]: "completed"
+};
+
+const statusChipStyle = (status = "scheduled") => {
+  const variant = CHIP_VARIANT_BY_STATUS[normaliseDeliveryStatus(status)] || "scheduled";
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.18)", color: "var(--danger-dark)" },
     en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
@@ -759,11 +780,12 @@ export default function PartsDeliveryPlannerPage() {
     }
   };
 
-  const jobStatusLabel = (status) => {
-    if (status === "completed") return "Completed";
-    if (status === "en_route") return "En Route";
-    return "Scheduled";
-  };
+  // /deliveries moved the diary onto the full workflow (planned → picking →
+  // ready → loaded → out for delivery → delivered / failed / returned). The
+  // planner still creates rows as "scheduled" and does not run that workflow,
+  // but it must not label a delivered or failed stop "Scheduled" — so the label
+  // comes from the shared status module rather than a local three-way guess.
+  const jobStatusLabel = (status) => deliveryStatusLabel(status);
 
   const computeFuelCost = (run) => (Number(run.mileage) || 0) / KM_PER_LITRE * pricePerLitre;
   const priceLabel = fuelRate?.fuel_type ?

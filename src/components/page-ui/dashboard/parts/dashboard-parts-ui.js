@@ -51,8 +51,8 @@ export default function PartsDashboardUi(props) {
       const ThemedSection = ({ title, subtitle, children }) => (
         <LayerTheme as="section" gap="12px">
           <div>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>{title}</h2>
-            {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-2)" }}>{subtitle}</p>}
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accent-text-on-tint)" }}>{title}</h2>
+            {subtitle && <p style={{ margin: "6px 0 0", color: "var(--surfaceTextMuted)" }}>{subtitle}</p>}
           </div>
           {children}
         </LayerTheme>
@@ -60,7 +60,7 @@ export default function PartsDashboardUi(props) {
       return <>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 16px)" }}>
         <ThemedSection title="Request snapshot" subtitle="New and pre-picks today">
-          {loading ? <InlineLoading label="Loading request counts" /> : error ? <p style={{ color: "var(--text-accent)" }}>{error}</p> : data ? <div style={{
+          {loading ? <InlineLoading label="Loading request counts" /> : error ? <p style={{ color: "var(--danger-strong)" }}>{error}</p> : data ? <div style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px"
@@ -69,16 +69,16 @@ export default function PartsDashboardUi(props) {
               <MetricCard label="Parts on order" value={requestSummary.partsOnOrder ?? 0} helper="Units on order" />
               <MetricCard label="Pre picked" value={requestSummary.prePicked ?? 0} helper="Assigned to racks" />
               <MetricCard label="Delayed orders" value={requestSummary.delayedOrders ?? 0} helper="Missing qty" />
-            </div> : <p style={{ color: "var(--text-2)" }}>No request data available yet.</p>}
+            </div> : <p style={{ color: "var(--surfaceTextMuted)" }}>No request data available yet.</p>}
         </ThemedSection>
 
         <div style={splitRowStyle}>
           <ThemedSection title="Requests trend" subtitle="Report KPI: parts requests, last 7 days">
-            {loading ? <InlineLoading label="Loading request trends" /> : trendData.length === 0 ? <p style={{ color: "var(--text-2)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
+            {loading ? <InlineLoading label="Loading request trends" /> : trendData.length === 0 ? <p style={{ color: "var(--surfaceTextMuted)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
           </ThemedSection>
 
           <ThemedSection title="Stock levels" subtitle="Lowest availability items">
-            {loading ? <InlineLoading label="Loading stock alerts" /> : stockAlerts.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>No low stock alerts yet.</p> : <div style={{
+            {loading ? <InlineLoading label="Loading stock alerts" /> : stockAlerts.length === 0 ? <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No low stock alerts yet.</p> : <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "10px"
@@ -89,13 +89,13 @@ export default function PartsDashboardUi(props) {
           }}>
                     <div>
                       <strong style={{ color: "var(--text-1)" }}>{part.label}</strong>
-                      <p style={{ margin: "4px 0 0", color: "var(--text-2)", fontSize: "0.85rem" }}>
+                      <p style={{ margin: "4px 0 0", color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>
                         Reorder at {part.reorderLevel}
                       </p>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <p style={{ margin: 0, color: "var(--text-accent)", fontWeight: 600 }}>{part.inStock}</p>
-                      <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-2)" }}>In stock</p>
+                      <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--surfaceTextMuted)" }}>In stock</p>
                     </div>
                   </LayerSurface>)}
               </div>}
@@ -104,13 +104,13 @@ export default function PartsDashboardUi(props) {
 
         <div style={splitRowStyle}>
           <ThemedSection title="Requests by status">
-            {loading ? <InlineLoading label="Loading request status breakdown" /> : requestsByStatus.length === 0 ? <p style={{ margin: 0, color: "var(--text-2)" }}>Waiting for request data.</p> : <div style={{
+            {loading ? <InlineLoading label="Loading request status breakdown" /> : requestsByStatus.length === 0 ? <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Waiting for request data.</p> : <div style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px"
         }}>
                 {requestsByStatus.map(row => <LayerSurface key={row.status} radius="var(--radius-sm)" padding="10px 14px" style={{ minWidth: 150 }}>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-2)" }}>{humanizeStatus(row.status)}</p>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{humanizeStatus(row.status)}</p>
                     <strong style={{ color: "var(--text-accent)", fontSize: "1.4rem" }}>{row.count}</strong>
                   </LayerSurface>)}
               </div>}
