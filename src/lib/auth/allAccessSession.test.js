@@ -159,7 +159,7 @@ describe("all access session — reach", () => {
     const hrefs = modules.flatMap((navigationModule) =>
       navigationModule.items.map((item) => item.href)
     );
-    expect(hrefs.length).toBeGreaterThan(50);
+    expect(hrefs.length).toBeGreaterThan(40);
     const unlandable = hrefs
       .map((href) => href.split("?")[0].split("#")[0])
       .filter((href) => !canAccessPath(href, ROLES));

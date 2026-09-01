@@ -55,7 +55,6 @@ const hiddenHrRoutes = new Set([
   "/hr/recruitment",
   "/hr/reports",
   "/hr/settings",
-  "/admin/users",
 ]);
 
 function buildRouteAllowedChecker(allowedRoutes) {

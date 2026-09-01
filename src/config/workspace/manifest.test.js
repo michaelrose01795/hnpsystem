@@ -130,9 +130,6 @@ function buildGoldenSidebarSections() {
       category: "departments",
       items: [
         { label: "HR Manager", href: "/hr/manager", roles: ["admin manager"] },
-        { label: "Next Jobs", href: "/nextjobs", roles: ["admin manager"] },
-        { label: "Job Cards", href: "/jobs", roles: ["admin manager"] },
-        { label: "User Admin", href: "/admin/users", roles: ["admin manager"] },
         {
           label: "User Activity",
           href: "/admin/activity-log",
@@ -142,21 +139,6 @@ function buildGoldenSidebarSections() {
         {
           label: "Website Manager",
           href: "/website-manager",
-          roles: ["admin", "admin manager", "general manager", "sales"],
-        },
-        {
-          label: "Website Preview",
-          href: "/website-manager?tab=preview",
-          roles: ["admin", "admin manager", "general manager", "sales"],
-        },
-        {
-          label: "Website Shop",
-          href: "/website-manager?tab=shop",
-          roles: ["admin", "admin manager", "general manager", "sales"],
-        },
-        {
-          label: "Public Shop (live)",
-          href: "/website#shop",
           roles: ["admin", "admin manager", "general manager", "sales"],
         },
       ],
@@ -229,7 +211,7 @@ function buildGoldenSidebarSections() {
       label: "Parts",
       category: "departments",
       items: [
-        { label: "Job Cards", href: "/jobs", roles: ["parts"] },
+        // Job Cards intentionally absent — it is a Reception page, not a Parts one.
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -239,7 +221,7 @@ function buildGoldenSidebarSections() {
       label: "Parts Manager",
       category: "departments",
       items: [
-        { label: "Job Cards", href: "/jobs", roles: ["parts manager"] },
+        // See the Parts section above — Job Cards stays in Reception.
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -468,14 +450,56 @@ describe("workspace manifest — Phase 9 modules", () => {
 });
 
 describe("workspace manifest - module bundle placement", () => {
-  it("includes former topbar create and appointments pages in Workshop Control", () => {
-    const workshopControl = getRoleWorkspaceModules(["workshop manager"])
-      .find((module) => module.key === "workshop-control");
+  it("keeps HR and Website tabs inside their parent pages, not sidebar modules", () => {
+    const nestedTabHrefs = [
+      "/hr/employees",
+      "/hr/attendance",
+      "/hr/payroll",
+      "/hr/leave",
+      "/hr/performance",
+      "/hr/training",
+      "/hr/disciplinary",
+      "/hr/recruitment",
+      "/hr/reports",
+      "/hr/settings",
+      "/website-manager?tab=preview",
+      "/website-manager?tab=shop",
+      "/website#shop",
+    ];
+    const adminHrefs = getRoleWorkspaceModules(["admin"])
+      .flatMap((module) => module.items.map((item) => item.href));
+    const adminManagerHrefs = getRoleWorkspaceModules(["admin manager"])
+      .flatMap((module) => module.items.map((item) => item.href));
 
-    expect(workshopControl?.items.map((item) => item.href)).toEqual(
+    expect(adminHrefs).toContain("/website-manager");
+    expect(adminManagerHrefs).toEqual(expect.arrayContaining(["/hr/manager", "/website-manager"]));
+    for (const href of nestedTabHrefs) {
+      expect(adminHrefs).not.toContain(href);
+      expect(adminManagerHrefs).not.toContain(href);
+    }
+
+    const savedLayoutHrefs = getRoleWorkspaceModules(["admin manager"], {
+      items: ["/hr/manager", "/hr/employees", "/website-manager", "/website-manager?tab=shop"],
+      modules: [{
+        key: "admin-custom",
+        label: "Admin",
+        items: ["/hr/manager", "/hr/employees", "/website-manager", "/website-manager?tab=shop"],
+      }],
+    }).flatMap((module) => module.items.map((item) => item.href));
+    expect(savedLayoutHrefs).toEqual(["/hr/manager", "/website-manager"]);
+  });
+
+  it("keeps the former topbar create and appointments pages on the Workshop Manager rail", () => {
+    // These used to sit in a bespoke "Workshop Control" bundle that mixed
+    // Workshop and Reception pages. Post module-library sweep they are in the
+    // Reception library module, which owns them — the rail still carries them.
+    const reception = getRoleWorkspaceModules(["workshop manager"])
+      .find((module) => module.key === "department-service");
+
+    expect(reception?.items.map((item) => item.href)).toEqual(
       expect.arrayContaining(["/appointments", "/new-job"])
     );
-    expect(workshopControl?.items).toContainEqual(
+    expect(reception?.items).toContainEqual(
       expect.objectContaining({ label: "Appointments", href: "/appointments" })
     );
   });
@@ -502,21 +526,17 @@ describe("workspace manifest - module bundle placement", () => {
     ).toEqual([
       { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
       { key: "department-management", hrefs: [
-        "/dashboard/managers", "/dashboard/admin", "/admin/users",
-        "/admin/activity-log", "/admin/compliance",
-        "/hr/manager", "/website-manager", "/website-manager?tab=preview",
-        "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
-        "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
-        "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
-        "/hr/settings", "/archive",
+        "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
+        "/hr/manager", "/website-manager", "/archive",
       ] },
       { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"] },
       { key: "department-workshop", hrefs: [
-        "/dashboard/workshop", "/clocking", "/consumables-tracker",
+        "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
         "/tech/efficiency", "/nextjobs",
       ] },
       { key: "department-mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
-      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in", "/jobs"] },
+      // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"] },
       { key: "department-valeting", hrefs: ["/dashboard/valeting", "/valet"] },
       { key: "department-accounts", hrefs: ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"] },
       { key: "department-reports", hrefs: [
@@ -552,9 +572,9 @@ describe("workspace manifest - module bundle placement", () => {
       "/dashboard/parts",
       "/stock-catalogue",
       "/goods-in",
-      "/jobs",
       "/deliveries",
     ]));
+    expect(parts.items.map((item) => item.href)).not.toContain("/jobs");
   });
 
   it("keeps Goods In exclusively in Parts role modules, including all-access navigation", () => {
@@ -946,11 +966,13 @@ describe("workspace manifest — department-first selectors", () => {
   });
 
   it("getContextNav deduplicates a department's pages by href", () => {
-    // Parts declares Job Cards / Goods In / Deliveries in BOTH the Parts and
-    // Parts Manager sections; the context nav shows each once.
+    // Parts declares Stock Catalogue / Goods In / Deliveries in BOTH the Parts
+    // and Parts Manager sections; the context nav shows each once. (Job Cards
+    // is no longer among them — /jobs belongs to Reception.)
     const partsManager = getContextNav("parts", ["parts manager"]);
     const hrefs = partsManager.items.map((i) => i.href);
-    expect(hrefs).toContain("/jobs");
+    expect(hrefs).not.toContain("/jobs");
+    expect(hrefs).toContain("/goods-in");
     expect(hrefs).toContain("/deliveries");
     expect(new Set(hrefs).size).toBe(hrefs.length); // no duplicates
   });
@@ -975,8 +997,10 @@ describe("workspace manifest — department-first selectors", () => {
   });
 
   it("getBreadcrumbTrail builds a Module › Page trail", () => {
+    // "Parts" is the library module that owns /deliveries; the bespoke
+    // "Fulfilment" bundle (Reception + Parts pages) no longer exists.
     const trail = getBreadcrumbTrail("/deliveries", ["parts"]);
-    expect(trail.map((t) => t.label)).toEqual(["Fulfilment", "Deliveries"]);
+    expect(trail.map((t) => t.label)).toEqual(["Parts", "Deliveries"]);
   });
 
   it("getSearchItems returns a deduplicated, role-filtered page list", () => {
@@ -1132,8 +1156,9 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("getActiveWorkspaceDepartment resolves shared routes through role-visible workspaces", () => {
     expect(getActiveWorkspaceDepartment("/jobs", ["service"])).toBe("service");
-    expect(getActiveWorkspaceDepartment("/jobs", ["parts manager"])).toBe("parts");
-    expect(getActiveWorkspaceDepartment("/jobs", ["admin manager"])).toBe("management");
+    // Parts no longer carries Job Cards, so /jobs resolves to no workspace for it.
+    expect(getActiveWorkspaceDepartment("/jobs", ["parts manager"])).toBeNull();
+    expect(getActiveWorkspaceDepartment("/jobs", ["admin manager"])).toBeNull();
   });
 
   it("context nav active state matches exact, child routes, and pending hrefs", () => {
@@ -1145,12 +1170,9 @@ describe("workspace manifest — department-first selectors", () => {
     expect(isContextNavItemActive(item, "/clocking", "/jobs")).toBe(false);
   });
 
-  it("getPageTabs returns HR module tabs and preserves User Admin exact active matching", () => {
+  it("does not expose the retired standalone HR routes as a page-tab group", () => {
     const tabs = getPageTabs("/hr/employees", [], { groupKey: "hr-modules" });
-    expect(tabs.ariaLabel).toBe("HR modules");
-    expect(tabs.items.map((tab) => tab.href)).toContain("/admin/users");
-    expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/hr/employees"), "/hr/employees/123")).toBe(true);
-    expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/admin/users"), "/admin/users/create")).toBe(false);
+    expect(tabs.items).toEqual([]);
   });
 
   it("getPageTabs returns workshop navigation and quick-action tab groups", () => {
@@ -1191,7 +1213,7 @@ describe("workspace manifest — department-first selectors", () => {
   it("getWorkspaceHeader and shortcut selectors are manifest-derived", () => {
     const header = getWorkspaceHeader("/deliveries", ["parts"]);
     expect(header.label).toBe("Parts");
-    expect(header.breadcrumbs.map((crumb) => crumb.label)).toEqual(["Fulfilment", "Deliveries"]);
+    expect(header.breadcrumbs.map((crumb) => crumb.label)).toEqual(["Parts", "Deliveries"]);
     expect(header.quickActions.map((action) => action.href)).toContain("/new-order");
 
     const shortcuts = getWorkspaceShortcutItems(["parts"]);

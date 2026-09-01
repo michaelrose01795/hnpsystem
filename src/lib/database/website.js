@@ -79,6 +79,14 @@ const publishedOnly = async (table) => {
   return data || [];
 };
 
+// Builder collections (20260901120000_website_builder_nav_design_layout).
+// The top bar and the running order of the /website blocks are content, not
+// code — both hide 'draft' rows from the public read exactly like every other
+// published collection.
+export const getNavLinks = () => publishedOnly("website_nav");
+export const getSectionLayout = () => publishedOnly("website_section_layout");
+export const getDesign = () => singletonSelect("website_design");
+
 export const getTrustPoints = () => publishedOnly("website_trust_points");
 export const getPartnerBrands = () => publishedOnly("website_partner_brands");
 export const getRatings = () => publishedOnly("website_ratings");
@@ -145,6 +153,9 @@ export const getWebsiteContent = async () => {
     blogPosts,
     timeline,
     team,
+    navLinks,
+    sectionLayout,
+    design,
   ] = await Promise.all([
     getBrand(),
     getHero(),
@@ -164,6 +175,9 @@ export const getWebsiteContent = async () => {
     getBlogPosts(),
     getTimeline(),
     getTeam(),
+    getNavLinks(),
+    getSectionLayout(),
+    getDesign(),
   ]);
 
   return {
@@ -188,6 +202,9 @@ export const getWebsiteContent = async () => {
     brands: partnerBrands.map((b) => ({ name: b.name, logo: b.logo_url })),
     team: team.members.map(memberOut),
     teamDepartments: team.departments.map((d) => ({ id: d.id, label: d.label })),
+    navLinks: navLinks.map(navOut),
+    sectionLayout: sectionLayout.map(layoutOut),
+    design: designOut(design),
   };
 };
 
@@ -331,6 +348,51 @@ const blogOut = (p) => ({
   body: p.body,
   image: p.image_url,
 });
+
+/* ----------------------------------------------------------------------------
+   Builder mappers — nav / section layout / design
+---------------------------------------------------------------------------- */
+
+const navOut = (n) => ({
+  id: n.id,
+  label: n.label,
+  href: n.href,
+  // `null` rather than "" so `link.filter` stays falsy for plain anchors.
+  filter: n.filter || null,
+});
+
+const layoutOut = (s) => ({
+  id: s.id,
+  label: s.label,
+  anchor: s.anchor || s.id,
+  eyebrow: s.eyebrow || null,
+  title: s.title || null,
+  lead: s.lead || null,
+  tint: Boolean(s.tint),
+});
+
+// Design is a singleton that may legitimately be missing (migration not yet
+// applied). Returning `null` lets useWebsiteContent fall back to the static
+// defaults rather than painting a half-empty token set onto .ws-page.
+const designOut = (d) =>
+  d
+    ? {
+        accentHex: d.accent_hex,
+        accentHoverHex: d.accent_hover_hex,
+        defaultTheme: d.default_theme,
+        containerWidth: d.container_width,
+        cornerRadius: d.corner_radius,
+        buttonRadius: d.button_radius,
+        sectionSpacing: d.section_spacing,
+        navHeight: d.nav_height,
+        logoHeight: d.logo_height,
+        headingFont: d.heading_font,
+        navSticky: d.nav_sticky !== false,
+        showNavPhone: d.show_nav_phone !== false,
+        showNavAccount: d.show_nav_account !== false,
+        showBrandStrip: d.show_brand_strip !== false,
+      }
+    : null;
 
 const memberOut = (m) => ({
   id: m.id,
@@ -568,4 +630,8 @@ export const SECTION_TABLES = {
   "team-members": { table: "website_team_members", kind: "collection" },
   timeline: { table: "website_timeline", kind: "collection" },
   "blog-posts": { table: "website_blog_posts", kind: "collection" },
+  // Site-builder sections (20260901120000_website_builder_nav_design_layout).
+  design: { table: "website_design", kind: "singleton" },
+  nav: { table: "website_nav", kind: "collection" },
+  "section-layout": { table: "website_section_layout", kind: "collection" },
 };

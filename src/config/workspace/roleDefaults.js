@@ -4,28 +4,58 @@
 // href references into the canonical workspace manifest; this file never
 // creates routes or permissions. Selectors in manifest.js resolve labels and
 // discard references that are unavailable for the active role/feature flags.
+//
+// THE LAW (2026-09 module-library sweep)
+// --------------------------------------
+// SIDEBAR_MODULE_LIBRARY — the module set rendered by the Developer Platform's
+// "Module page map" popup — is the SINGLE SOURCE OF TRUTH for sidebar layout.
+// A role default may only:
+//   * name a module that exists in that library, and
+//   * list pages that library module owns.
+// It may not invent a module, rename one, mix pages from two library modules
+// into one bundle, or reorder pages within a bundle. `mod()` enforces all four
+// at import time, so a violation is a hard build failure rather than a layout
+// that silently drifts from what the popup shows.
+//
+// Before this sweep there were 38 hand-authored modules here whose keys existed
+// nowhere in the library, 16 of which mixed pages from two or three different
+// library modules, and 6 of which meant different page sets depending on the
+// role. Roles keep exactly the pages they had — only the grouping changed.
 
-const page = (href) => href;
-const navModule = (key, label, hrefs) => Object.freeze({
-  key,
-  label,
-  hrefs: Object.freeze(hrefs.map(page)),
-});
+import { SIDEBAR_MODULE_LIBRARY } from "@/config/workspace/departments";
+
+const LIBRARY_BY_KEY = new Map(
+  SIDEBAR_MODULE_LIBRARY.map((navigationModule) => [navigationModule.key, navigationModule])
+);
+
+// A role's slice of one library module. The label always comes from the library
+// (never from the caller) and the pages are re-sorted into library order, so the
+// button order inside a module is identical for every role and cannot be
+// authored differently here.
+const mod = (key, hrefs) => {
+  const library = LIBRARY_BY_KEY.get(key);
+  if (!library) {
+    throw new Error(
+      `roleDefaults: "${key}" is not a module in SIDEBAR_MODULE_LIBRARY. Role defaults may only use library modules.`
+    );
+  }
+  const stray = hrefs.filter((href) => !library.hrefs.includes(href));
+  if (stray.length > 0) {
+    throw new Error(
+      `roleDefaults: ${stray.join(", ")} do(es) not belong to the "${library.label}" module. Pages cannot be mixed between modules.`
+    );
+  }
+  const wanted = new Set(hrefs);
+  return Object.freeze({
+    key,
+    label: library.label,
+    hrefs: Object.freeze(library.hrefs.filter((href) => wanted.has(href))),
+  });
+};
+
+// Modules are emitted in library order so every role's rail reads in the same
+// sequence; `layout()` only freezes what the role table already ordered.
 const layout = (...modules) => Object.freeze(modules);
-
-const COMMUNICATION = navModule("communication", "Communication", ["/newsfeed", "/messages"]);
-const RECORDS = navModule("records", "Records", ["/archive"]);
-const REPORTS_ALL = navModule("business-insight", "Business Insight", [
-  "/reports/overview",
-  "/reports/accounts",
-  "/reports/admin",
-  "/reports/workshop",
-  "/reports/service",
-  "/reports/parts",
-  "/reports/mot",
-  "/reports/paint",
-  "/reports/valeting",
-]);
 
 export const WORKSPACE_ROLE_DEFAULT_NAMES = Object.freeze([
   "Retail",
@@ -58,193 +88,190 @@ export const WORKSPACE_ROLE_DEFAULT_NAMES = Object.freeze([
 ]);
 
 export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
-  retail: layout(COMMUNICATION, RECORDS),
-  service: layout(
-    navModule("daily-overview", "Daily Overview", ["/dashboard/service"]),
-    navModule("customer-jobs", "Customer & Job Intake", ["/jobs", "/new-job"]),
-    navModule("shared-operations", "Shared Operations", ["/tracking", "/archive"]),
-    COMMUNICATION
+  "retail": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+  ),
+  "service": layout(
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-management", ["/archive"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/jobs"]),
   ),
   "service manager": layout(
-    navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/service"]),
-    navModule("service-control", "Service Control", ["/nextjobs", "/jobs", "/appointments", "/new-job"]),
-    navModule("shared-operations", "Shared Operations", ["/tracking", "/archive"]),
-    navModule("operational-reports", "Operational Reports", [
-      "/reports/service", "/reports/workshop", "/reports/mot", "/reports/valeting", "/reports/paint",
-    ]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-management", ["/dashboard/managers", "/archive"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/appointments", "/jobs"]),
+    mod("department-workshop", ["/nextjobs"]),
+    mod("department-reports", ["/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
   "workshop manager": layout(
-    navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/workshop"]),
-    navModule("workshop-control", "Workshop Control", ["/nextjobs", "/jobs", "/appointments", "/new-job", "/clocking", "/consumables-tracker"]),
-    navModule("operational-visibility", "Operational Visibility", ["/tracking", "/archive"]),
-    navModule("operational-reports", "Operational Reports", [
-      "/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/valeting",
-    ]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-management", ["/dashboard/managers", "/archive"]),
+    mod("department-service", ["/new-job", "/appointments", "/jobs"]),
+    mod("department-workshop", ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs"]),
+    mod("department-reports", ["/reports/workshop", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
   "after sales director": layout(
-    navModule("leadership", "Leadership", ["/dashboard/managers"]),
-    REPORTS_ALL,
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
   ),
-  techs: layout(
-    navModule("my-day", "My Day", ["/tech/dashboard", "/dashboard/workshop"]),
-    navModule("my-work", "My Work", ["/tech", "/tech/efficiency", "/consumables-request"]),
-    navModule("workshop-information", "Workshop Information", ["/tracking"]),
-    COMMUNICATION
+  "techs": layout(
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-workshop", ["/dashboard/workshop"]),
+    mod("department-tech", ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"]),
   ),
-  technician: layout(
-    navModule("my-day", "My Day", ["/dashboard/workshop"]),
-    COMMUNICATION
+  "technician": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-workshop", ["/dashboard/workshop"]),
   ),
-  tech: layout(COMMUNICATION, RECORDS),
+  "tech": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+  ),
   "mobile technician": layout(
-    navModule("my-day", "My Day", ["/mobile/dashboard"]),
-    navModule("mobile-work", "Mobile Work", ["/tech", "/appointments", "/new-job", "/consumables-request"]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-service", ["/new-job", "/appointments"]),
+    mod("department-workshop", ["/mobile/dashboard"]),
+    mod("department-tech", ["/tech", "/consumables-request"]),
   ),
-  parts: layout(
-    navModule("parts-overview", "Parts Overview", ["/dashboard/parts"]),
-    navModule("stock-receiving", "Stock & Receiving", ["/stock-catalogue", "/goods-in"]),
-    navModule("fulfilment", "Fulfilment", ["/jobs", "/deliveries", "/delivery-planner"]),
-    navModule("ordering", "Ordering", ["/new-order"]),
-    COMMUNICATION,
-    RECORDS
+  "parts": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-parts", ["/dashboard/parts", "/stock-catalogue", "/deliveries", "/goods-in"]),
   ),
   "parts manager": layout(
-    navModule("management-overview", "Management Overview", ["/dashboard/managers", "/parts-manager", "/dashboard/parts"]),
-    navModule("stock-receiving", "Stock & Receiving", ["/stock-catalogue", "/goods-in"]),
-    navModule("fulfilment", "Fulfilment", ["/jobs", "/deliveries", "/delivery-planner"]),
-    navModule("ordering", "Ordering", ["/new-order"]),
-    navModule("parts-reports", "Parts Reports", ["/reports/parts"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/dashboard/managers", "/archive"]),
+    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"]),
+    mod("department-reports", ["/reports/parts"]),
   ),
-  // A delivery driver's whole shift is the day's route, so the diary is their
-  // landing module. The page itself limits them to load / dispatch / deliver /
-  // fail / proof of delivery (src/features/deliveries/deliveryStatus.js) — they
-  // cannot assign work or reopen a closed stop.
   "parts driver": layout(
-    navModule("my-day", "My Day", ["/deliveries"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-parts", ["/deliveries"]),
   ),
   "mot tester": layout(
-    navModule("mot-overview", "MOT Overview", ["/dashboard/mot"]),
-    navModule("my-work", "My Work", ["/tech", "/tech/efficiency"]),
-    navModule("mot-reports", "MOT Reports", ["/reports/mot"]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-mot", ["/dashboard/mot", "/tech", "/tech/efficiency"]),
+    mod("department-reports", ["/reports/mot"]),
   ),
   "valet service": layout(
-    navModule("valeting-overview", "Valeting Overview", ["/dashboard/valeting"]),
-    navModule("work-queue", "Work Queue", ["/valet", "/tracking"]),
-    navModule("valeting-reports", "Valeting Reports", ["/reports/valeting"]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-valeting", ["/dashboard/valeting", "/valet"]),
+    mod("department-reports", ["/reports/valeting"]),
   ),
-  "sales / administration": layout(COMMUNICATION, RECORDS),
-  "sales director": layout(REPORTS_ALL, COMMUNICATION, RECORDS),
-  sales: layout(
-    navModule("website-operations", "Website Operations", ["/website-manager"]),
-    COMMUNICATION,
-    RECORDS
+  "sales / administration": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
   ),
-  admin: layout(
-    navModule("admin-overview", "Admin Overview", ["/dashboard/admin"]),
-    navModule("people-operations", "People Operations", [
-      "/hr", "/hr/employees", "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
-      "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports", "/hr/settings",
-    ]),
-    navModule("website-operations", "Website Operations", ["/website-manager"]),
-    navModule("staff-finance", "Staff Finance", ["/accounts/payslips"]),
-    navModule("operational-visibility", "Operational Visibility", ["/tracking", "/reports/admin"]),
-    COMMUNICATION,
-    RECORDS
+  "sales director": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
+  ),
+  "sales": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/website-manager", "/archive"]),
+  ),
+  "admin": layout(
+    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-management", ["/dashboard/admin", "/website-manager", "/archive"]),
+    mod("department-accounts", ["/accounts/payslips"]),
+    mod("department-reports", ["/reports/admin"]),
   ),
   "admin manager": layout(
-    navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/admin"]),
-    navModule("operational-control", "Operational Control", ["/nextjobs", "/jobs"]),
-    navModule("people-hr", "People & HR", [
-      "/hr/manager", "/hr", "/hr/employees", "/hr/attendance", "/hr/leave", "/hr/payroll",
-      "/hr/performance", "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
-      "/hr/settings", "/admin/users",
-    ]),
-    navModule("governance", "Governance", ["/admin/compliance"]),
-    navModule("website-operations", "Website Operations", ["/website-manager"]),
-    navModule("staff-finance", "Staff Finance", ["/accounts/payslips"]),
-    REPORTS_ALL,
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/dashboard/managers", "/dashboard/admin", "/admin/compliance", "/hr/manager", "/website-manager", "/archive"]),
+    mod("department-accounts", ["/accounts/payslips"]),
+    mod("department-reports", ["/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
   ),
-  accounts: layout(
-    navModule("accounts-overview", "Accounts Overview", ["/dashboard/accounts"]),
-    navModule("accounts", "Accounts", ["/accounts", "/company-accounts"]),
-    navModule("billing", "Billing", ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"]),
-    navModule("financial-reports", "Financial Reports", ["/reports/accounts"]),
-    COMMUNICATION
+  "accounts": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-accounts", ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"]),
+    mod("department-reports", ["/reports/accounts"]),
   ),
   "accounts manager": layout(
-    navModule("management-overview", "Management Overview", ["/dashboard/managers", "/dashboard/accounts"]),
-    navModule("accounts", "Accounts", ["/accounts", "/company-accounts"]),
-    navModule("billing", "Billing", ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"]),
-    navModule("financial-reports", "Financial Reports", ["/reports/accounts"]),
-    COMMUNICATION
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/dashboard/managers"]),
+    mod("department-accounts", ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"]),
+    mod("department-reports", ["/reports/accounts"]),
   ),
   "general manager": layout(
-    navModule("leadership", "Leadership", ["/dashboard/managers"]),
-    navModule("people-management", "People Management", ["/hr/employees", "/hr/leave"]),
-    navModule("website-operations", "Website Operations", ["/website-manager"]),
-    REPORTS_ALL,
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/dashboard/managers", "/website-manager", "/archive"]),
+    mod("department-reports", ["/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
   ),
   "valet sales": layout(
-    navModule("valeting-insight", "Valeting Insight", ["/reports/valeting"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/valeting"]),
   ),
-  "buying director": layout(REPORTS_ALL, COMMUNICATION, RECORDS),
-  "second hand buying": layout(COMMUNICATION, RECORDS),
-  "vehicle processor & photographer": layout(COMMUNICATION, RECORDS),
-  receptionist: layout(COMMUNICATION, RECORDS),
-  painters: layout(
-    navModule("paint-reports", "Paint Reports", ["/reports/paint"]),
-    COMMUNICATION,
-    RECORDS
+  "buying director": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
   ),
-  painter: layout(
-    navModule("paint-reports", "Paint Reports", ["/reports/paint"]),
-    COMMUNICATION,
-    RECORDS
+  "second hand buying": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
   ),
-  contractors: layout(COMMUNICATION, RECORDS),
-
-  // Supported legacy spellings/roles remain complete even though they are not
-  // offered as new role defaults in the developer picker.
+  "vehicle processor & photographer": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+  ),
+  "receptionist": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+  ),
+  "painters": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/paint"]),
+  ),
+  "painter": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/paint"]),
+  ),
+  "contractors": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+  ),
   "aftersales manager": layout(
-    navModule("service-control", "Service Control", ["/nextjobs", "/jobs"]),
-    navModule("operational-reports", "Operational Reports", ["/reports/service"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-service", ["/jobs"]),
+    mod("department-workshop", ["/nextjobs"]),
+    mod("department-reports", ["/reports/service"]),
   ),
   "after sales manager": layout(
-    navModule("operational-reports", "Operational Reports", ["/reports/service"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/service"]),
   ),
   "workshop controller": layout(
-    navModule("workshop-reports", "Workshop Reports", ["/reports/workshop"]),
-    COMMUNICATION,
-    RECORDS
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/workshop"]),
   ),
-  manager: layout(REPORTS_ALL, COMMUNICATION, RECORDS),
-});
+  "manager": layout(
+    mod("department-general", ["/newsfeed", "/messages"]),
+    mod("department-management", ["/archive"]),
+    mod("department-reports", ["/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin"]),
+  ),});
 
 export function normalizeWorkspaceRole(role) {
   return String(role || "").trim().toLowerCase();
 }
 
+// Roles with no authored default fall back to the two universally-safe library
+// slices: the General bundle's comms pages and the Admin bundle's archive.
+const FALLBACK_LAYOUT = layout(
+  mod("department-general", ["/newsfeed", "/messages"]),
+  mod("department-management", ["/archive"])
+);
+
 export function getConfiguredRoleDefault(role) {
-  return ROLE_WORKSPACE_DEFAULTS[normalizeWorkspaceRole(role)] || layout(COMMUNICATION, RECORDS);
+  return ROLE_WORKSPACE_DEFAULTS[normalizeWorkspaceRole(role)] || FALLBACK_LAYOUT;
 }

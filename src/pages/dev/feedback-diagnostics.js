@@ -24,11 +24,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
   KeyValue,
   KeyValueGrid,
   EmptyState,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -95,8 +93,8 @@ function FeedbackDiagnosticsView() {
         subtitle="Live state of the Frontend Feedback & Error System (Phases 2–9)."
         actions={
           <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
-            <DevButton small onClick={takeSnapshot}>Capture snapshot</DevButton>
-            <DevButton small onClick={() => openSupportReport()}>Open report</DevButton>
+            <button type="button" onClick={takeSnapshot} className="app-btn app-btn--secondary app-btn--sm">Capture snapshot</button>
+            <button type="button" onClick={() => openSupportReport()} className="app-btn app-btn--secondary app-btn--sm">Open report</button>
           </div>
         }
       />
@@ -150,7 +148,7 @@ function FeedbackDiagnosticsView() {
               .map((e, i) => (
                 <SubSurface key={`${e.referenceCode}-${i}`} style={{ gap: "4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <Pill label={e.referenceCode} tone="warning-base" strong />
+                    <span className="app-badge app-badge--warning-strong">{e.referenceCode}</span>
                     <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>{e.message}</span>
                     <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.6, marginLeft: "auto" }}>
                       {relTime(e.at)}
@@ -177,7 +175,7 @@ function FeedbackDiagnosticsView() {
               .map((r, i) => (
                 <SubSurface key={`${r.referenceCode || "noref"}-${r.at}-${i}`} style={{ gap: "4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <Pill label={r.referenceCode || "no ref"} tone="warning-base" strong />
+                    <span className="app-badge app-badge--warning-strong">{r.referenceCode || "no ref"}</span>
                     <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>{r.message || "(no message)"}</span>
                     <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.6, marginLeft: "auto" }}>
                       {relTime(r.at)}
@@ -213,11 +211,11 @@ function FeedbackDiagnosticsView() {
         title="Feedback primitives (the standard)"
         actions={
           <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
-            <DevButton small onClick={() => reportError("Test error from feedback diagnostics.", new Error("synthetic test error"), { source: "dev:feedback-diagnostics" })}>
+            <button type="button" onClick={() => reportError("Test error from feedback diagnostics.", new Error("synthetic test error"), { source: "dev:feedback-diagnostics" })} className="app-btn app-btn--secondary app-btn--sm">
               Emit error
-            </DevButton>
-            <DevButton small onClick={() => reportWarning("Test warning from feedback diagnostics.")}>Emit warning</DevButton>
-            <DevButton small onClick={() => reportSuccess("Test success from feedback diagnostics.")}>Emit success</DevButton>
+            </button>
+            <button type="button" onClick={() => reportWarning("Test warning from feedback diagnostics.")} className="app-btn app-btn--secondary app-btn--sm">Emit warning</button>
+            <button type="button" onClick={() => reportSuccess("Test success from feedback diagnostics.")} className="app-btn app-btn--secondary app-btn--sm">Emit success</button>
           </div>
         }
       >

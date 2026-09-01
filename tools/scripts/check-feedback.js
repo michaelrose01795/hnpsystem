@@ -62,7 +62,6 @@ const EXEMPT_PREFIXES = [
 //
 // Generated with `node tools/scripts/check-feedback.js --list`; keep sorted.
 const BASELINE_ALLOWLIST = new Set([
-  "src/pages/admin/users/index.js",
   "src/pages/appointments/index.js",
   "src/pages/login.js",
   "src/pages/stock-catalogue.js",

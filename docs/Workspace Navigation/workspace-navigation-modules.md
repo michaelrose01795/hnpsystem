@@ -194,7 +194,6 @@ Assigned: derived management roles. Admin is the requested display name for curr
   - **P** HR Manager — `/hr/manager` — admin-manager only; dashboard tabs are **T**.
   - **P** Employee Records — `/hr/employees` — HR-core plus scoped-manager edge policy; keep role/proxy rules aligned.
   - **P** Attendance, Leave, Payroll, Performance, Training, Incidents, Recruitment, HR Reports, HR Settings — `/hr/*` — HR-core restrictions; these are Pages in this module, not a separate top-level HR Group.
-  - **P** User Administration — `/admin/users` — admin/admin-manager exception.
 - **Governance**
   - **P** Compliance — `/admin/compliance` — admin-manager exception.
   - **Detail/tab-only** breaches, DPIAs, retention, ROPA and SARs — `/admin/compliance/*`; retain inside Compliance, not sidebar pages.

@@ -75,7 +75,6 @@ Groups are listed in manifest order. "Assigned roles" is the output of `getWorks
 |---|---|---|---|
 | Next Jobs | `/nextjobs` | Override (restriction) · Classic-locked | `admin manager` only within the group (legacy per-role curation). |
 | Job Cards | `/jobs` | Override (restriction) · Classic-locked | `admin manager` only. |
-| User Admin | `/admin/users` | Override (restriction) · Classic-locked | `admin manager`. Sensitive user administration. |
 | Compliance | `/admin/compliance` | Override (restriction) · Classic-locked | `admin manager`. |
 | HR Manager | `/hr/manager` | Override (restriction) · Classic-locked | `admin manager` only. |
 | Website Manager | `/website-manager` | Override (cross-grant) | `admin, admin manager, general manager, sales`. Shared content/analytics area — grants **admin** and **sales** (outside the group). Keep in sync with `WEBSITE_MANAGER_ROLES` in `src/pages/staff/website-manager.js`. |

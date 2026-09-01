@@ -56,6 +56,23 @@ describe("job row operational summary", () => {
     expect(summary.requests[0].status).toBe("Not Started");
   });
 
+  it("extracts legacy nested request text without rendering object coercion", () => {
+    const summary = buildJobRowSummary({
+      status: "Booked",
+      requests: [
+        { text: { text: "Investigate steering vibration" }, status: "inprogress" },
+        { description: { value: "Check intermittent warning light" }, status: "inprogress" },
+        { text: { unsupported: true }, status: "inprogress" },
+      ],
+    }, { now });
+
+    expect(summary.requests.map((request) => request.text)).toEqual([
+      "Investigate steering vibration",
+      "Check intermittent warning light",
+    ]);
+    expect(summary.requests.some((request) => request.text.includes("[object Object]"))).toBe(false);
+  });
+
   it("shows a request as completed when its write-up checklist row is checked", () => {
     const summary = buildJobRowSummary({
       status: "Booked",

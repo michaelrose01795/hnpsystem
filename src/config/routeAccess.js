@@ -175,14 +175,14 @@ export const DYNAMIC_DETAIL_EXTENDS = {
     "/tech",
     "/new-job",
     "/nextjobs",
-    "/admin/users",
+    "/hr/manager",
   ],
   "/customers/[customerSlug]": [
     "/jobs",
     "/tech",
     "/new-job",
     "/nextjobs",
-    "/admin/users",
+    "/hr/manager",
   ],
   "/clocking/[technicianSlug]": ["/clocking"],
   "/accounts/edit/[accountId]": ["/accounts"],
@@ -203,9 +203,9 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/company-accounts/[accountNumber]": [
     "/accounts",
     "/accounts/payslips",
-    "/admin/users",
+    "/hr/manager",
   ],
-  "/company-accounts": ["/accounts", "/accounts/payslips", "/admin/users"],
+  "/company-accounts": ["/accounts", "/accounts/payslips", "/hr/manager"],
   "/hr/attendance": ["/hr/manager"],
   "/hr/disciplinary": ["/hr/manager"],
   "/hr/employees": ["/hr/manager"],
@@ -225,10 +225,11 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   // NOT from /deliveries. A Parts Driver's only page is the delivery diary, so
   // inheriting off /deliveries would have handed them the Parts Manager screen
   // as a side effect of being given their own run sheet. Parts and Parts
-  // Manager both carry /jobs, /goods-in and /stock-catalogue in their
-  // navigation, so neither loses anything by the source list changing.
+  // Manager both carry /goods-in and /stock-catalogue in their navigation, so
+  // neither loses anything by the source list changing. (/jobs was dropped from
+  // the Parts module's navigation — it lives in Reception — but any ONE entry
+  // here grants /parts, so the other two still cover both roles.)
   "/parts": [
-    "/jobs",
     "/goods-in",
     "/stock-catalogue",
   ],

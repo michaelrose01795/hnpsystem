@@ -10,10 +10,9 @@ import { DropdownField, MultiSelectDropdown } from "@/components/ui/dropdownAPI"
 import {
   Panel,
   SubSurface,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
 } from "@/components/support/dev/supportDevUi";
 import {
   WORKSPACE_ROLE_DEFAULT_NAMES,
@@ -42,12 +41,56 @@ const modulesFromUser = (user) =>
 // current catalogue here would silently restore pages the administrator unticked.
 const draftFromUser = (user) => modulesFromUser(user);
 
-const moveItem = (items, index, direction) => {
-  const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= items.length) return items;
-  const next = [...items];
-  [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-  return next;
+// Colour coding for the module page map. A page that lives in more than one
+// standard module is keyed on the exact SET of modules it belongs to, so the
+// same shared page reads in the same colour inside every card it appears in.
+// Pages that belong to a single module stay on the default body colour.
+const SHARED_PAGE_COLOURS = [
+  "var(--success-text)",
+  "var(--info-dark)",
+  "var(--complete-text)",
+  "var(--warning-text)",
+  "var(--authorised-text)",
+  "var(--danger-text)",
+];
+
+// Every card is sized to the module with the most pages so the grid stays even.
+const MAP_ROW_HEIGHT = 56;
+const MAP_ROW_GAP = 6;
+
+const buildModulePageMap = (modules) => {
+  const ownersByHref = new Map();
+  for (const bundle of modules) {
+    for (const item of bundle.items) {
+      if (!ownersByHref.has(item.href)) ownersByHref.set(item.href, []);
+      ownersByHref.get(item.href).push(bundle.label);
+    }
+  }
+
+  const colourBySignature = new Map();
+  const colourByHref = new Map();
+  for (const [href, labels] of ownersByHref) {
+    if (labels.length < 2) continue;
+    const signature = [...labels].sort().join(" + ");
+    if (!colourBySignature.has(signature)) {
+      colourBySignature.set(
+        signature,
+        SHARED_PAGE_COLOURS[colourBySignature.size % SHARED_PAGE_COLOURS.length]
+      );
+    }
+    colourByHref.set(href, colourBySignature.get(signature));
+  }
+
+  const maxItems = modules.reduce((max, bundle) => Math.max(max, bundle.items.length), 0);
+
+  return {
+    ownersByHref,
+    colourByHref,
+    legend: [...colourBySignature.entries()].map(([signature, colour]) => ({ signature, colour })),
+    maxItems,
+    listHeight: maxItems > 0 ? maxItems * MAP_ROW_HEIGHT + (maxItems - 1) * MAP_ROW_GAP : 0,
+    sharedCount: colourByHref.size,
+  };
 };
 
 const serialiseModules = (modules) =>
@@ -71,13 +114,14 @@ export default function DevSidebarAccess() {
   const [copyRole, setCopyRole] = useState(WORKSPACE_ROLE_DEFAULT_NAMES[0]);
   const [draftModules, setDraftModules] = useState([]);
   const [initialModules, setInitialModules] = useState([]);
-  const [pageSelections, setPageSelections] = useState({});
   const [assignedModulesOpen, setAssignedModulesOpen] = useState(false);
   const [copyLayoutOpen, setCopyLayoutOpen] = useState(false);
+  const [modulePageMapOpen, setModulePageMapOpen] = useState(false);
   const [copyTargetIds, setCopyTargetIds] = useState([]);
 
   const catalog = useMemo(() => getAssignableSidebarPageCatalog(), []);
   const moduleCatalog = useMemo(() => getSidebarModuleCatalog(), []);
+  const modulePageMap = useMemo(() => buildModulePageMap(moduleCatalog), [moduleCatalog]);
   const catalogByHref = useMemo(
     () => new Map(catalog.map((item) => [item.href, item])),
     [catalog]
@@ -214,15 +258,6 @@ export default function DevSidebarAccess() {
 
   const selectBundle = (bundle) => addBundle(bundle);
 
-  const addPage = (moduleIndex) => {
-    const href = pageSelections[moduleIndex];
-    if (!href || usedHrefs.has(href)) return;
-    updateModule(moduleIndex, {
-      items: [...draftModules[moduleIndex].items, href],
-    });
-    setPageSelections((current) => ({ ...current, [moduleIndex]: "" }));
-  };
-
   const saveLayout = async () => {
     if (!selectedUser || !hasSavableModules) return null;
     const modules = draftModules.filter(
@@ -281,7 +316,12 @@ export default function DevSidebarAccess() {
       headerSectionKey="dev-sidebar-user-editor-header"
       contentSectionKey="dev-sidebar-user-editor-content"
       title="Sidebar module access"
-      actions={<Pill label={`${users.length} users`} tone="accentText" strong />}
+      actions={(
+        <>
+          <span className="app-badge app-badge--accent-strong">{`${users.length} users`}</span>
+          <button type="button" onClick={() => setModulePageMapOpen(true)} className="app-btn app-btn--secondary">Module page map</button>
+        </>
+      )}
     >
       {loading ? (
         <LoadingBlock rows={4} />
@@ -289,7 +329,7 @@ export default function DevSidebarAccess() {
         <EmptyState
           title="Sidebar access unavailable"
           message={loadError}
-          action={<DevButton onClick={load}>Refresh</DevButton>}
+          action={<button type="button" onClick={load} className="app-btn app-btn--secondary">Refresh</button>}
         />
       ) : (
         <DevLayoutSection
@@ -326,11 +366,10 @@ export default function DevSidebarAccess() {
               />
               <button
                 type="button"
-                className="app-btn app-btn--ghost"
+                className="app-btn app-btn--secondary"
                 onClick={() => setUserListOpen((current) => !current)}
                 aria-expanded={userListOpen}
                 aria-controls="dev-sidebar-user-list"
-                style={{ minHeight: 44 }}
               >
                 {userListOpen ? "Hide list" : "Show list"}
               </button>
@@ -353,7 +392,7 @@ export default function DevSidebarAccess() {
                         setUserListOpen(false);
                       }}
                       className={`app-btn app-btn--secondary app-btn--nav${active ? " is-active" : ""}`}
-                      style={{ width: "100%", justifyContent: "flex-start", textAlign: "left", height: "auto", minHeight: 44, padding: "6px 12px" }}
+                      style={{ height: "auto" }}
                     >
                       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
                         <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
@@ -399,9 +438,9 @@ export default function DevSidebarAccess() {
                     <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.75 }}>{selectedUser.email}</div>
                   </div>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <Pill label={selectedUser.role || "No role"} tone="accentText" strong />
-                    <Pill label={selectedStatus} tone={selectedUser.sidebarAccess ? "warning-base" : "success-base"} strong />
-                    {isDirty ? <Pill label="Unsaved changes" tone="warning-base" strong /> : null}
+                    <span className="app-badge app-badge--accent-strong">{selectedUser.role || "No role"}</span>
+                    <span className={badgeClass(selectedUser.sidebarAccess ? "warning-base" : "success-base", true)}>{selectedStatus}</span>
+                    {isDirty ? <span className="app-badge app-badge--warning-strong">Unsaved changes</span> : null}
                   </div>
                 </DevLayoutSection>
 
@@ -417,40 +456,46 @@ export default function DevSidebarAccess() {
                     aria-label="Copy another role default"
                     style={{ width: "100%" }}
                   />
-                  <DevButton
+                  <button
+                    type="button"
                     onClick={() => {
                       const roleModules = getRoleDefaultWorkspaceModules(copyRole).map(moduleToDraft);
                       setDraftModules(roleModules);
                     }}
                     disabled={saving}
+                    className="app-btn app-btn--secondary"
                   >
                     Load role modules
-                  </DevButton>
+                  </button>
                 </div>
 
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <DevButton variant="solid" onClick={saveLayout} disabled={saving || !isDirty || !hasSavableModules}>
+                  <button type="button" onClick={saveLayout} disabled={saving || !isDirty || !hasSavableModules} className="app-btn app-btn--primary">
                     {saving ? "Saving" : "Save modules"}
-                  </DevButton>
-                  <DevButton
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       setCopyTargetIds([]);
                       setSaveError("");
                       setCopyLayoutOpen(true);
                     }}
                     disabled={saving || !hasSavableModules}
+                    className="app-btn app-btn--secondary"
                   >
                     Copy layout
-                  </DevButton>
-                  <DevButton onClick={() => setDraftModules(initialModules)} disabled={saving || !isDirty}>
+                  </button>
+                  <button type="button" onClick={() => setDraftModules(initialModules)} disabled={saving || !isDirty} className="app-btn app-btn--secondary">
                     Discard changes
-                  </DevButton>
-                  <DevButton
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => callApi({ action: "restore-default", userId: selectedUser.id })}
                     disabled={saving || !selectedUser.sidebarAccess}
+                    className="app-btn app-btn--secondary"
                   >
                     Restore own role default
-                  </DevButton>
+                  </button>
                 </div>
                 <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                   This controls sidebar visibility. Existing page and API role guards remain in force.
@@ -470,9 +515,9 @@ export default function DevSidebarAccess() {
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Select standard modules</div>
-                  <DevButton onClick={() => setAssignedModulesOpen(true)} disabled={saving}>
+                  <button type="button" onClick={() => setAssignedModulesOpen(true)} disabled={saving} className="app-btn app-btn--secondary">
                     Assigned modules ({draftModules.length})
-                  </DevButton>
+                  </button>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "8px" }}>
                   {moduleCatalog.map((bundle) => {
@@ -493,7 +538,7 @@ export default function DevSidebarAccess() {
                             : `Select ${bundle.label} module`
                         }
                         className={`app-btn app-btn--secondary${assigned ? " is-active" : ""}`}
-                        style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left", padding: "8px 12px" }}
+                        style={{ minHeight: 56, height: "auto", justifyContent: "space-between", textAlign: "left" }}
                       >
                         <span>{bundle.label}</span>
                         <span style={{ fontSize: "var(--text-caption)", opacity: 0.7 }}>
@@ -538,22 +583,19 @@ export default function DevSidebarAccess() {
           contentStyle={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}
           actions={(
             <>
-              <Pill label={`${draftModules.length} modules`} tone="text-1" />
-              <Pill
-                label={isDirty ? "Unsaved changes" : "Saved"}
-                tone={isDirty ? "warning-base" : "success-base"}
-                strong
-              />
-              <DevButton
-                variant="solid"
+              <span className="app-badge app-badge--neutral">{`${draftModules.length} modules`}</span>
+              <span className={badgeClass(isDirty ? "warning-base" : "success-base", true)}>{isDirty ? "Unsaved changes" : "Saved"}</span>
+              <button
+                type="button"
                 onClick={saveLayout}
                 disabled={saving || !isDirty || !hasSavableModules}
+                className="app-btn app-btn--primary"
               >
                 {saving ? "Saving" : "Save"}
-              </DevButton>
-              <DevButton onClick={() => setAssignedModulesOpen(false)} disabled={saving}>
+              </button>
+              <button type="button" onClick={() => setAssignedModulesOpen(false)} disabled={saving} className="app-btn app-btn--secondary">
                 Close
-              </DevButton>
+              </button>
             </>
           )}
         >
@@ -577,19 +619,17 @@ export default function DevSidebarAccess() {
                 sectionType="content-card"
                 style={{ gap: "12px" }}
               >
+                {/* Module-library sweep (2026-09): the Module page map library is
+                    the only layout a user can have, so this header is read-only.
+                    The label came from a free-text input (rename), and Up/Down
+                    reordered the modules — both produced layouts that existed in
+                    no library module. Removing a PAGE (the checkboxes below) is
+                    the only per-user edit; clearing every page in a module drops
+                    the module, which is what the old Remove button did. */}
                 <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                  <input
-                    className="app-input"
-                    value={module.label}
-                    onChange={(event) => updateModule(moduleIndex, { label: event.target.value })}
-                    aria-label={`Module ${moduleIndex + 1} label`}
-                    style={{ flex: "1 1 220px", fontWeight: 700 }}
-                  />
-                  <Pill label={`${selectedCount} pages`} tone="text-1" />
-                  {bundle ? <Pill label="Standard module" tone="success-base" /> : null}
-                  <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, -1))} disabled={moduleIndex === 0}>Up</DevButton>
-                  <DevButton small onClick={() => setDraftModules((current) => moveItem(current, moduleIndex, 1))} disabled={moduleIndex === draftModules.length - 1}>Down</DevButton>
-                  <DevButton small tone="danger-base" onClick={() => setDraftModules((current) => current.filter((_, index) => index !== moduleIndex))}>Remove</DevButton>
+                  <span style={{ flex: "1 1 220px", fontWeight: 700, color: "var(--accentText)" }}>{module.label}</span>
+                  <span className="app-badge app-badge--neutral">{`${selectedCount} pages`}</span>
+                  {bundle ? <span className="app-badge app-badge--success">Standard module</span> : null}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "6px" }}>
@@ -624,28 +664,145 @@ export default function DevSidebarAccess() {
                   })}
                 </div>
 
-                {!bundle ? (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                    <DropdownField
-                      value={pageSelections[moduleIndex] || ""}
-                      onChange={(event) => setPageSelections((current) => ({ ...current, [moduleIndex]: event.target.value }))}
-                      aria-label={`Add page to ${module.label}`}
-                      placeholder="Choose another page"
-                      options={catalog.filter((item) => !usedHrefs.has(item.href)).map((item) => ({
-                        value: item.href,
-                        label: item.label,
-                        description: item.href,
-                      }))}
-                      style={{ flex: "1 1 260px" }}
-                    />
-                    <DevButton onClick={() => addPage(moduleIndex)} disabled={!pageSelections[moduleIndex]}>
-                      Add page
-                    </DevButton>
-                  </div>
-                ) : null}
+                {/* "Add page" is gone with the module-library sweep: it could drop
+                    ANY catalogue page into a non-standard module, which is exactly
+                    the page mixing the library forbids. A module's pages are now
+                    fixed by the library; a user's layout is a subset of them. */}
               </SubSurface>
             );
           })}
+        </Panel>
+      </PopupModal>
+
+      <PopupModal
+        isOpen={modulePageMapOpen}
+        onClose={() => setModulePageMapOpen(false)}
+        ariaLabel="Module page map"
+        cardStyle={{
+          width: "min(1100px, 100%)",
+          height: "calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
+          padding: "var(--section-card-padding)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <Panel
+          sectionKey="dev-sidebar-module-page-map-popup"
+          parentKey="shared-popup-card"
+          headerSectionKey="dev-sidebar-module-page-map-popup-header"
+          contentSectionKey="dev-sidebar-module-page-map-popup-content"
+          title="Module page map"
+          style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden" }}
+          contentStyle={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}
+          actions={(
+            <>
+              <span className="app-badge app-badge--neutral">{`${moduleCatalog.length} modules`}</span>
+              <span className={badgeClass(modulePageMap.sharedCount > 0 ? "warning-base" : "success-base", true)}>{`${modulePageMap.sharedCount} shared pages`}</span>
+              <button type="button" onClick={() => setModulePageMapOpen(false)} className="app-btn app-btn--secondary">Close</button>
+            </>
+          )}
+        >
+          <SubSurface
+            sectionKey="dev-sidebar-module-page-map-legend"
+            parentKey="dev-sidebar-module-page-map-popup-content"
+            sectionType="content-card"
+            style={{ gap: "8px" }}
+          >
+            <div style={{ fontWeight: 700, color: "var(--accentText)" }}>Shared page colours</div>
+            {modulePageMap.legend.length === 0 ? (
+              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.75 }}>
+                No page appears in more than one standard module.
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                {modulePageMap.legend.map((entry) => (
+                  <span
+                    key={entry.signature}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "var(--text-body-sm)", fontWeight: 600, color: entry.colour }}
+                  >
+                    <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: entry.colour }} />
+                    {entry.signature}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
+              A page in a single module uses the standard body colour. Every card is sized to the
+              largest module ({modulePageMap.maxItems} pages) so the grid stays even.
+            </div>
+          </SubSurface>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
+              gap: "var(--page-stack-gap, 12px)",
+              alignItems: "stretch",
+              marginTop: "var(--page-stack-gap, 12px)",
+            }}
+          >
+            {moduleCatalog.map((bundle) => (
+              <SubSurface
+                as="section"
+                key={bundle.key}
+                sectionKey={`dev-sidebar-module-page-map-${bundle.key}`}
+                parentKey="dev-sidebar-module-page-map-popup-content"
+                sectionType="content-card"
+                style={{ gap: "10px", minWidth: 0 }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", minHeight: 28 }}>
+                  <span style={{ fontWeight: 700, color: "var(--accentText)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {bundle.label}
+                  </span>
+                  <span className="app-badge app-badge--neutral">{`${bundle.items.length}`}</span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: `${MAP_ROW_GAP}px`,
+                    height: modulePageMap.listHeight,
+                    minHeight: modulePageMap.listHeight,
+                    maxHeight: modulePageMap.listHeight,
+                    minWidth: 0,
+                  }}
+                >
+                  {bundle.items.map((item) => {
+                    const owners = modulePageMap.ownersByHref.get(item.href) || [];
+                    const others = owners.filter((label) => label !== bundle.label);
+                    const colour = modulePageMap.colourByHref.get(item.href);
+                    return (
+                      <div
+                        key={`${bundle.key}-${item.href}`}
+                        className="app-btn app-btn--secondary"
+                        title={others.length > 0 ? `${item.href} - also in ${others.join(", ")}` : item.href}
+                        style={{
+                          height: MAP_ROW_HEIGHT,
+                          minHeight: MAP_ROW_HEIGHT,
+                          flex: "0 0 auto",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          justifyContent: "center",
+                          textAlign: "left",
+                          gap: "2px",
+                          minWidth: 0,
+                        }}
+                      >
+                        <span style={{ color: colour, fontWeight: 600, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.label}
+                        </span>
+                        <span style={{ color: colour, fontSize: "var(--text-caption)", opacity: 0.75, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {others.length > 0 ? `Also in ${others.join(", ")}` : item.href}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </SubSurface>
+            ))}
+          </div>
         </Panel>
       </PopupModal>
 
@@ -671,15 +828,17 @@ export default function DevSidebarAccess() {
             </p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <DevButton
+            <button
+              type="button"
               onClick={copyLayout}
               disabled={saving || copyTargetIds.length === 0 || !hasSavableModules}
+              className="app-btn app-btn--secondary"
             >
               {saving ? "Saving" : "Save"}
-            </DevButton>
-            <DevButton variant="solid" onClick={closeCopyLayout} disabled={saving}>
+            </button>
+            <button type="button" onClick={closeCopyLayout} disabled={saving} className="app-btn app-btn--primary">
               Close
-            </DevButton>
+            </button>
           </div>
         </div>
 

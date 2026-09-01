@@ -30,7 +30,6 @@
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
-import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 // ---------------------------------------------------------------------------
 // Reporting role derivations (moved here from src/config/navigation.js so the
@@ -384,37 +383,6 @@ export const WORKSPACE_QUICK_ACTIONS = Object.freeze([
 
 export const WORKSPACE_PAGE_TABS = Object.freeze([
   {
-    key: "hr-modules",
-    ariaLabel: "HR modules",
-    matchers: [
-      { href: "/hr", match: "exact" },
-      { href: "/hr/employees", match: "prefix" },
-      { href: "/hr/attendance", match: "prefix" },
-      { href: "/hr/payroll", match: "prefix" },
-      { href: "/hr/leave", match: "prefix" },
-      { href: "/hr/performance", match: "prefix" },
-      { href: "/hr/training", match: "prefix" },
-      { href: "/hr/disciplinary", match: "prefix" },
-      { href: "/hr/recruitment", match: "prefix" },
-      { href: "/hr/reports", match: "prefix" },
-      { href: "/hr/settings", match: "prefix" },
-      { href: "/admin/users", match: "prefix" },
-    ],
-    items: [
-      { href: "/hr/employees", label: "Employee Records", match: "prefix" },
-      { href: "/hr/attendance", label: "Attendance", match: "prefix" },
-      { href: "/hr/payroll", label: "Payroll", match: "prefix" },
-      { href: "/hr/leave", label: "Leave", match: "prefix" },
-      { href: "/hr/performance", label: "Performance", match: "prefix" },
-      { href: "/hr/training", label: "Training", match: "prefix" },
-      { href: "/hr/disciplinary", label: "Incidents", match: "prefix" },
-      { href: "/hr/recruitment", label: "Recruitment", match: "prefix" },
-      { href: "/hr/reports", label: "HR Reports", match: "prefix" },
-      { href: "/hr/settings", label: "HR Settings", match: "prefix" },
-      { href: "/admin/users", label: "User Admin", match: "exact" },
-    ],
-  },
-  {
     key: "workshop-navigation",
     ariaLabel: "Workshop navigation",
     matchers: [
@@ -536,9 +504,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       { label: "HR Manager", href: "/hr/manager", roles: ["admin manager"] },
-      { label: "Next Jobs", href: "/nextjobs", roles: ["admin manager"] },
-      { label: "Job Cards", href: "/jobs", roles: ["admin manager"] },
-      { label: "User Admin", href: "/admin/users", roles: ["admin manager"] },
       {
         label: "User Activity",
         href: "/admin/activity-log",
@@ -551,25 +516,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
         // WEBSITE_MANAGER_ROLES in src/pages/staff/website-manager.js.
         label: "Website Manager",
         href: "/website-manager",
-        roles: ["admin", "admin manager", "general manager", "sales"],
-      },
-      {
-        // Deep-link into the Live Preview tab inside the Website Manager
-        // (sidebar reads ?tab=preview on first render — see WebsiteManager.js).
-        label: "Website Preview",
-        href: "/website-manager?tab=preview",
-        roles: ["admin", "admin manager", "general manager", "sales"],
-      },
-      {
-        // Deep-link into the Shop tab (products / categories / orders).
-        label: "Website Shop",
-        href: "/website-manager?tab=shop",
-        roles: ["admin", "admin manager", "general manager", "sales"],
-      },
-      {
-        // Quick jump to the public-facing shop section as customers see it.
-        label: "Public Shop (live)",
-        href: "/website#shop",
         roles: ["admin", "admin manager", "general manager", "sales"],
       },
     ],
@@ -677,7 +623,9 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      { label: "Job Cards", href: "/jobs", roles: ["parts"] },
+      // Job Cards deliberately NOT listed here — /jobs belongs to Reception
+      // (department-service). The parts desk reaches job data through its own
+      // pages, so the Parts module does not duplicate the page button.
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -690,7 +638,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      { label: "Job Cards", href: "/jobs", roles: ["parts manager"] },
+      // See the note in the Parts section above — Job Cards stays in Reception.
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -803,34 +751,6 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
 // cross-group grant — see docs/Workspace Navigation/workspace-group-permissions.md.
 export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   {
-    department: "management",
-    order: 25,
-    label: "People & HR Workspace",
-    category: "departments",
-    flag: null,
-    items: [
-      { label: "HR Overview", href: "/hr", roles: HR_CORE_ROLES },
-      {
-        label: "Employee Records",
-        href: "/hr/employees",
-        roles: Array.from(new Set([...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES])),
-      },
-      { label: "Attendance", href: "/hr/attendance", roles: HR_CORE_ROLES },
-      {
-        label: "Leave",
-        href: "/hr/leave",
-        roles: Array.from(new Set([...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES])),
-      },
-      { label: "Payroll", href: "/hr/payroll", roles: HR_CORE_ROLES },
-      { label: "Performance", href: "/hr/performance", roles: HR_CORE_ROLES },
-      { label: "Training", href: "/hr/training", roles: HR_CORE_ROLES },
-      { label: "Incidents", href: "/hr/disciplinary", roles: HR_CORE_ROLES },
-      { label: "Recruitment", href: "/hr/recruitment", roles: HR_CORE_ROLES },
-      { label: "HR Reports", href: "/hr/reports", roles: HR_CORE_ROLES },
-      { label: "HR Settings", href: "/hr/settings", roles: HR_CORE_ROLES },
-    ],
-  },
-  {
     department: "accounts",
     order: 132,
     label: "Accounts Workspace",
@@ -856,12 +776,8 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     label: "Admin",
     department: "management",
     hrefs: [
-      "/dashboard/managers", "/dashboard/admin", "/admin/users", "/admin/activity-log", "/admin/compliance",
-      "/hr/manager", "/website-manager", "/website-manager?tab=preview",
-      "/website-manager?tab=shop", "/website#shop", "/hr", "/hr/employees",
-      "/hr/attendance", "/hr/leave", "/hr/payroll", "/hr/performance",
-      "/hr/training", "/hr/disciplinary", "/hr/recruitment", "/hr/reports",
-      "/hr/settings", "/archive",
+      "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
+      "/hr/manager", "/website-manager", "/archive",
     ],
   },
   {
@@ -875,7 +791,11 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     label: "Workshop",
     department: "workshop",
     hrefs: [
-      "/dashboard/workshop", "/clocking", "/consumables-tracker",
+      // /mobile/dashboard is the Mobile Technician's landing dashboard. It is a
+      // workshop-department page and was previously reachable only through a
+      // role default that named no library module, which put it outside the
+      // library the Module page map claims is complete.
+      "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
       "/tech/efficiency", "/nextjobs",
     ],
   },
@@ -884,7 +804,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in", "/jobs"],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"],
   },
   { key: "department-valeting", label: "Valeting", department: "valeting", hrefs: ["/dashboard/valeting", "/valet"] },
   {
@@ -916,7 +836,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
 // assign their primary Module and never grant access by themselves.
 export const WORKSPACE_MODULES = Object.freeze({
   general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking", "/archive"] }],
-  management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager", "/admin/users"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }, { key: "operations", label: "Operations", hrefs: ["/nextjobs", "/jobs"] }],
+  management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }],
   service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }],
   workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],

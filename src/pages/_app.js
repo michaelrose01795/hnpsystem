@@ -19,6 +19,7 @@ import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
+import Head from "next/head";
 import React, { useEffect } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
@@ -38,6 +39,7 @@ const interFont = Inter({
 // change there. Rendered as an inline <style> tag so it is present in the
 // initial HTML — no FOUC, no JS dependency, no _document.js changes.
 const FONT_VARIABLE_STYLE = `:root { --font-inter: ${interFont.style.fontFamily}; }`;
+const APP_BROWSER_TITLE = "H&P DMS";
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
@@ -739,6 +741,20 @@ function LightweightLoginScope({ children }) {
   return children;
 }
 
+function AppBrowserTitle() {
+  const router = useRouter();
+
+  useEffect(() => {
+    document.title = APP_BROWSER_TITLE;
+  }, [router.asPath]);
+
+  return (
+    <Head key={router.asPath}>
+      <title>{APP_BROWSER_TITLE}</title>
+    </Head>
+  );
+}
+
 // Main app entry with all providers composed
 export default function MyApp({ Component, pageProps }) {
   const isLightweightLogin = Component.lightweightApp === true;
@@ -767,6 +783,7 @@ export default function MyApp({ Component, pageProps }) {
       </SessionProvider>
       <Analytics />
       <SpeedInsights />
+      <AppBrowserTitle />
     </>
   );
 }

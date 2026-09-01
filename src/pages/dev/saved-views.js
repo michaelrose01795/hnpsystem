@@ -16,8 +16,7 @@ import { useAlerts } from "@/context/AlertContext";
 import LayerTheme from "@/components/ui/LayerTheme";
 import {
   Panel,
-  Pill,
-  DevButton,
+  badgeClass,
   EmptyState,
   LoadingBlock,
 } from "@/components/support/dev/supportDevUi";
@@ -32,7 +31,7 @@ function FilterChips({ filters }) {
   return (
     <span style={{ display: "inline-flex", flexWrap: "wrap", gap: "6px" }}>
       {entries.map(([k, v]) => (
-        <Pill key={k} label={`${k}: ${v === true ? "yes" : v}`} tone="text-1" />
+        <span key={k} className="app-badge app-badge--neutral">{`${k}: ${v === true ? "yes" : v}`}</span>
       ))}
     </span>
   );
@@ -52,15 +51,15 @@ function ViewRow({ view, onRemove }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
         <span style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
           <strong style={{ color: "var(--accentText)", fontSize: "var(--text-body)" }}>{view.name}</strong>
-          <Pill label={view.shared ? "Shared" : "Personal"} tone={view.shared ? "accentText" : "success-base"} strong />
+          <span className={badgeClass(view.shared ? "accentText" : "success-base", true)}>{view.shared ? "Shared" : "Personal"}</span>
         </span>
         <FilterChips filters={view.filters} />
       </div>
       <div style={{ display: "flex", gap: "var(--space-xs)" }}>
         <Link href="/dev/support-reports" style={{ textDecoration: "none" }}>
-          <DevButton small>Open Support Centre</DevButton>
+          <button type="button" className="app-btn app-btn--secondary app-btn--sm">Open Support Centre</button>
         </Link>
-        <DevButton small tone="danger-base" onClick={() => onRemove(view.id)}>Remove</DevButton>
+        <button type="button" onClick={() => onRemove(view.id)} className="app-btn app-btn--danger app-btn--sm">Remove</button>
       </div>
     </LayerTheme>
   );
@@ -83,7 +82,7 @@ function SavedViewsView() {
           ? "Showing device-local views (server unavailable or migration not applied)."
           : "Personal and shared team workspaces, synced to the server."
       }
-      actions={<DevButton small onClick={refresh}>Refresh</DevButton>}
+      actions={<button type="button" onClick={refresh} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
     >
       {source === "loading" ? (
         <LoadingBlock rows={3} />
@@ -93,7 +92,7 @@ function SavedViewsView() {
           message="Open the Support Centre, set some filters, and use “Save view” to create one (personal or shared)."
           action={
             <Link href="/dev/support-reports" style={{ textDecoration: "none" }}>
-              <DevButton small>Go to Support Centre</DevButton>
+              <button type="button" className="app-btn app-btn--secondary app-btn--sm">Go to Support Centre</button>
             </Link>
           }
         />

@@ -16,8 +16,7 @@ import { useSupportReport } from "@/context/SupportReportContext";
 import {
   Panel,
   SubSurface,
-  Pill,
-  DevButton,
+  badgeClass,
   EmptyState,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
@@ -135,12 +134,12 @@ function LiveOpsView() {
         subtitle={updatedAt ? `Updated ${updatedAt.toLocaleTimeString()} · refreshes every ${POLL_MS / 1000}s` : "Starting live feed…"}
         actions={
           <>
-            <DevButton small onClick={() => setPaused((p) => !p)}>
+            <button type="button" onClick={() => setPaused((p) => !p)} className="app-btn app-btn--secondary app-btn--sm">
               {paused ? "Resume" : "Pause"}
-            </DevButton>
-            <DevButton small onClick={() => { refresh(); probeHealth(); }}>
+            </button>
+            <button type="button" onClick={() => { refresh(); probeHealth(); }} className="app-btn app-btn--secondary app-btn--sm">
               Refresh
-            </DevButton>
+            </button>
           </>
         }
       >
@@ -156,13 +155,7 @@ function LiveOpsView() {
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {checkEntries.map(([name, check]) => (
-                <Pill
-                  key={name}
-                  label={`${name}: ${check?.status || "?"}`}
-                  tone={HEALTH_TONE[check?.status] || "text-1"}
-                  title={check?.note || ""}
-                  strong
-                />
+                <span key={name} title={check?.note || ""} className={badgeClass(HEALTH_TONE[check?.status] || "text-1", true)}>{`${name}: ${check?.status || "?"}`}</span>
               ))}
             </div>
           )}

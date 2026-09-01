@@ -42,7 +42,6 @@ import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
 import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
 import { useBehaviourModel } from "@/hooks/useBehaviourModel";
-import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 // Loaded on demand — see the note on loadTechnicianTopbar below. Every use of
@@ -147,9 +146,6 @@ export default function Layout({
     customerPortalPath === "/customer" || customerPortalPath.startsWith("/customer/");
   const hideSidebar =
     router.pathname === "/login" || router.pathname === "/loginPresentation";
-  const showHrTabs =
-    (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
-    router.pathname.startsWith("/admin/users");
   const isMessagesRoute = router.pathname === "/messages";
 
   const [viewportWidth, setViewportWidth] = useState(1440);
@@ -1161,29 +1157,6 @@ export default function Layout({
     });
   }
 
-  const hrAccessRoles = ["hr manager", "admin manager", "admin"];
-  if (hasFullAccess || userRoles.some((role) => hrAccessRoles.includes(role))) {
-    addNavItem("HR Dashboard", "/hr", {
-      keywords: ["hr", "people", "culture", "training"],
-      description: "Headcount, attendance, and compliance overview",
-      section: "HR",
-    });
-  }
-  // The manager-tier HR entries sit on the `else` of the branch above, so the
-  // All Access login would otherwise lose them by qualifying for the wider one.
-  if (hasFullAccess || userRoles.some((role) => role.includes("manager"))) {
-    addNavItem("Team HR", "/hr/employees", {
-      keywords: ["team hr", "people", "hr"],
-      description: "View team employee directory and leave",
-      section: "HR",
-    });
-    addNavItem("Leave", "/hr/leave", {
-      keywords: ["leave", "holiday"],
-      description: "Review departmental leave requests",
-      section: "HR",
-    });
-  }
-
   if (
     hasFullAccess ||
     userRoles.includes("valet service") ||
@@ -1475,7 +1448,10 @@ export default function Layout({
                 />
                 <div
                   id="compact-navigation-sidebar"
-                  className={`app-portrait-sidebar-assembly${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
+                  // --solo: no Status button, so Menu is the only control in the
+                  // row and stretches full width. The close tab replaces Menu in
+                  // place, so it has to stretch with it.
+                  className={`app-portrait-sidebar-assembly${canViewStatusSidebar ? "" : " app-portrait-sidebar-assembly--solo"}${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
                   role="dialog"
                   aria-modal="true"
                   aria-label="Navigation sidebar"
@@ -1643,7 +1619,6 @@ export default function Layout({
                 }
               >
                 <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
-                  {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>
                 {/* In-between-zone hold (see lockedBottomSpacer): keeps a little

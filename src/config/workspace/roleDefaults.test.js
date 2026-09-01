@@ -60,9 +60,12 @@ describe("role workspace defaults", () => {
     }
   });
 
-  it("keeps Communication first for role defaults but respects saved layouts", () => {
+  it("keeps General first for role defaults but respects saved layouts", () => {
+    // Post module-library sweep: /newsfeed and /messages live in the library's
+    // General module, which every role default lists first. The old synthetic
+    // "communication" module existed in no library module and is gone.
     for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
-      expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("communication");
+      expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("department-general");
     }
 
     const savedLayout = {
@@ -91,16 +94,27 @@ describe("role workspace defaults", () => {
   });
 
   it("keeps manager controls separate from employee task modules", () => {
-    expect(getRoleDefaultWorkspaceModules("Service").map((module) => module.key)).not.toContain("management-overview");
-    expect(getRoleDefaultWorkspaceModules("Service Manager").map((module) => module.key)).toContain("management-overview");
-    expect(getRoleDefaultWorkspaceModules("Techs").map((module) => module.key)).toContain("my-work");
-    expect(getRoleDefaultWorkspaceModules("Techs").flatMap((module) => module.items.map((item) => item.href))).not.toContain("/nextjobs");
+    // The manager dashboard is what separates a manager from their team; after
+    // the sweep it lives in the library's Admin module rather than a bespoke
+    // "management-overview" bundle, so assert on the PAGE, not the module name.
+    const serviceHrefs = getRoleDefaultWorkspaceModules("Service")
+      .flatMap((module) => module.items.map((item) => item.href));
+    const serviceManagerHrefs = getRoleDefaultWorkspaceModules("Service Manager")
+      .flatMap((module) => module.items.map((item) => item.href));
+    expect(serviceHrefs).not.toContain("/dashboard/managers");
+    expect(serviceManagerHrefs).toContain("/dashboard/managers");
+
+    const techHrefs = getRoleDefaultWorkspaceModules("Techs")
+      .flatMap((module) => module.items.map((item) => item.href));
+    expect(getRoleDefaultWorkspaceModules("Techs").map((module) => module.key)).toContain("department-tech");
+    expect(techHrefs).toContain("/tech");
+    expect(techHrefs).not.toContain("/nextjobs");
   });
 
   it("opens the module that owns the active route, including pending routes", () => {
-    expect(getActiveRoleWorkspaceModule("/jobs", ["service"])).toBe("customer-jobs");
-    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"])).toBe("communication");
-    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"], null, "/jobs")).toBe("customer-jobs");
+    expect(getActiveRoleWorkspaceModule("/jobs", ["service"])).toBe("department-service");
+    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"])).toBe("department-general");
+    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"], null, "/jobs")).toBe("department-service");
   });
 
   it("custom user modules grant access to every page they render", () => {

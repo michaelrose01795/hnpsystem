@@ -476,11 +476,30 @@ const standardModuleItemOrder = new Map(
 );
 const retiredSidebarModuleKeys = new Set(["department-account"]);
 const standaloneSidebarHrefs = new Set(["/profile"]);
+// These routes are navigation tabs within their parent HR/Website pages. They
+// remain in the workspace manifest for routing and permissions, but must never
+// become standalone buttons in role modules, saved layouts, or the editor.
+const nestedPageTabHrefs = new Set([
+  "/hr/employees",
+  "/hr/attendance",
+  "/hr/payroll",
+  "/hr/leave",
+  "/hr/performance",
+  "/hr/training",
+  "/hr/disciplinary",
+  "/hr/recruitment",
+  "/hr/reports",
+  "/hr/settings",
+  "/website-manager?tab=preview",
+  "/website-manager?tab=shop",
+  "/website#shop",
+]);
 
 export function getAssignableSidebarPageCatalog() {
   return getWorkspacePageCatalog().filter(
     (item) =>
       !standaloneSidebarHrefs.has(item.href) &&
+      !nestedPageTabHrefs.has(item.href) &&
       item.department !== DEVELOPER_GROUP_LOCK.key
   );
 }
@@ -547,7 +566,9 @@ const toRoleModuleItem = (item) => ({
 // group/item snapshots remain valid and are projected over the role default,
 // with previously granted extra pages retained in their department module.
 export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
-  const catalog = getWorkspacePageCatalog();
+  const catalog = getWorkspacePageCatalog().filter(
+    (item) => !nestedPageTabHrefs.has(item.href)
+  );
   const byHref = new Map(catalog.map((item) => [item.href, item]));
   const roleSet = normalizeRoleSet(roles);
   const roleAccessible = getAccessibleNavPaths(roles);
@@ -671,41 +692,13 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     );
   }
 
-  // A saved per-user module layout is authoritative. Communication is promoted
-  // only for role defaults; custom layouts may remove it or place its pages in
-  // another module (for example, the standard General bundle).
-  if (storedModules) return visibleModules;
-
-  const communicationHrefs = ["/newsfeed", "/messages"];
-  const communicationHrefSet = new Set(communicationHrefs);
-  const communicationItems = communicationHrefs
-    .filter((href) => roleAccessible.has(href) && byHref.has(href))
-    .map((href) => toRoleModuleItem(byHref.get(href)));
-
-  if (communicationItems.length === 0) return visibleModules;
-
-  const storedCommunicationModule = visibleModules.find(
-    (navigationModule) => navigationModule.key === "communication"
-  );
-  const communicationExtras = (storedCommunicationModule?.items || []).filter(
-    (item) => !communicationHrefSet.has(item.href)
-  );
-  const remainingModules = visibleModules
-    .filter((navigationModule) => navigationModule !== storedCommunicationModule)
-    .map((navigationModule) => ({
-      ...navigationModule,
-      items: navigationModule.items.filter((item) => !communicationHrefSet.has(item.href)),
-    }))
-    .filter((navigationModule) => navigationModule.items.length > 0);
-
-  return [
-    {
-      key: "communication",
-      label: "Communication",
-      items: [...communicationItems, ...communicationExtras],
-    },
-    ...remainingModules,
-  ];
+  // Retired with the 2026-09 module-library sweep: this used to hoist /newsfeed
+  // and /messages out of whatever module held them into a synthetic
+  // "Communication" bundle that existed in no library module. Those two pages
+  // now live in the library's General module, which every role default lists
+  // first, so the promotion has nothing left to do — and running it would
+  // reintroduce exactly the off-library module the sweep removed.
+  return visibleModules;
 }
 
 // Developer-editor projection for manually granted pages. It deliberately uses
@@ -714,7 +707,9 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
 // user's role layout and must never be duplicated as manual grants.
 export function getManualGrantPlacementDetails(roles, sidebarAccess = null) {
   if (!Array.isArray(sidebarAccess?.items)) return [];
-  const catalog = getWorkspacePageCatalog();
+  const catalog = getWorkspacePageCatalog().filter(
+    (item) => !nestedPageTabHrefs.has(item.href)
+  );
   const defaultModules = roleDefaultModules(roles);
   const defaultHrefs = new Set(defaultModules.flatMap((navigationModule) => navigationModule.hrefs));
   const effectiveModules = getRoleWorkspaceModules(roles, sidebarAccess);

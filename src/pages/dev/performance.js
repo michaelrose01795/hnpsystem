@@ -23,11 +23,10 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   KeyValue,
   KeyValueGrid,
   EmptyState,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -65,7 +64,7 @@ function PerformanceView() {
       <Panel
         title="Performance"
         subtitle={updatedAt ? `Live session profile · captured ${updatedAt.toLocaleTimeString()}` : "Profiling…"}
-        actions={<DevButton small onClick={refresh}>Recapture</DevButton>}
+        actions={<button type="button" onClick={refresh} className="app-btn app-btn--secondary app-btn--sm">Recapture</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="TTFB" value={fmtMs(m.ttfbMs)} tone="accentText" />
@@ -90,10 +89,10 @@ function PerformanceView() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                <Pill label={`×${e.count}`} tone="warning-base" strong />
-                {e.avgMs != null && <Pill label={`avg ${e.avgMs}ms`} tone="text-1" />}
-                {e.maxMs != null && <Pill label={`max ${e.maxMs}ms`} tone={e.maxMs > 1000 ? "danger-base" : "text-1"} />}
-                {e.serverErrors > 0 && <Pill label={`${e.serverErrors}× 5xx`} tone="danger-base" strong />}
+                <span className="app-badge app-badge--warning-strong">{`×${e.count}`}</span>
+                {e.avgMs != null && <span className="app-badge app-badge--neutral">{`avg ${e.avgMs}ms`}</span>}
+                {e.maxMs != null && <span className={badgeClass(e.maxMs > 1000 ? "danger-base" : "text-1")}>{`max ${e.maxMs}ms`}</span>}
+                {e.serverErrors > 0 && <span className="app-badge app-badge--danger-strong">{`${e.serverErrors}× 5xx`}</span>}
               </div>
             </SubSurface>
           ))

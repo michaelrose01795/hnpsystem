@@ -484,7 +484,7 @@ export default function StatusSidebar({
         style={panelStyle}
       >
         {/* Header */}
-        <div className="app-section-card" style={{
+        <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
           color: 'var(--text-1)',
           padding: compactMode ? '10px 12px' : '0 16px',
           borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
@@ -696,7 +696,7 @@ export default function StatusSidebar({
         }}>
           {/* Show message when no job selected */}
           {!jobId ? (
-            <div className="app-section-card" style={{ 
+            <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
               display: 'flex', 
               flexDirection: 'column', 
               alignItems: 'center', 

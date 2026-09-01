@@ -410,7 +410,7 @@ export default function StaffTopbar({
 
             {(userRoles.includes("admin manager") || hasAllAccessRole(userRoles)) && (
               <Link
-                href="/admin/users"
+                href="/hr/manager?tab=employees"
                 prefetch={false}
                 className="app-btn app-btn--primary"
               >

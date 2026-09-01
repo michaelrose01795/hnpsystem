@@ -40,9 +40,6 @@ import { accountsSettingsSlide } from "./definitions/accountsSettings";
 import { companyAccountsSlide } from "./definitions/companyAccounts";
 import { companyAccountsDetailSlide } from "./definitions/companyAccountsDetail";
 
-// Admin
-import { adminUsersSlide } from "./definitions/adminUsers";
-
 // HR
 import { hrAttendanceSlide } from "./definitions/hrAttendance";
 import { hrDisciplinarySlide } from "./definitions/hrDisciplinary";
@@ -165,8 +162,6 @@ export const ALL_SLIDES = [
   accountsSettingsSlide,
   companyAccountsSlide,
   companyAccountsDetailSlide,
-
-  adminUsersSlide,
 
   hrAttendanceSlide,
   hrDisciplinarySlide,

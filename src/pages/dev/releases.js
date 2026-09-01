@@ -18,10 +18,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -60,7 +59,7 @@ function ReleasesView() {
   }
   if (error) {
     return (
-      <Panel title="Releases" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+      <Panel title="Releases" actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Retry</button>}>
         <EmptyState title="Could not load release intelligence" message={error} />
       </Panel>
     );
@@ -76,7 +75,7 @@ function ReleasesView() {
       <Panel
         title="Releases"
         subtitle={`${rel?.releaseCount || 0} release(s) reconstructed from captured reports`}
-        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Releases" value={rel?.releaseCount || 0} tone="accentText" />
@@ -90,16 +89,16 @@ function ReleasesView() {
           title="Regression auto-reopen"
           subtitle={`${autoReopen.length} closed report(s) recurred on a newer build`}
           actions={
-            <DevButton variant="solid" tone="danger-base" onClick={applyAutoReopen} disabled={reopening}>
+            <button type="button" onClick={applyAutoReopen} disabled={reopening} className="app-btn app-btn--danger">
               {reopening ? "Reopening…" : `Reopen all (${autoReopen.length})`}
-            </DevButton>
+            </button>
           }
         >
           {autoReopen.map((c) => (
             <SubSurface key={c.id} style={{ gap: "4px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{c.route || c.id}</span>
-                <Pill label={`was ${c.fromStatus}`} tone="text-1" />
+                <span className="app-badge app-badge--neutral">{`was ${c.fromStatus}`}</span>
               </div>
               <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8 }}>{c.reason}</div>
             </SubSurface>
@@ -121,10 +120,10 @@ function ReleasesView() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                {t.regressions > 0 && <Pill label={`${t.regressions} regression`} tone="danger-base" strong />}
-                <Pill label={`quality ${t.qualityScore}`} tone={qualityTone(t.qualityScore)} strong />
+                {t.regressions > 0 && <span className="app-badge app-badge--danger-strong">{`${t.regressions} regression`}</span>}
+                <span className={badgeClass(qualityTone(t.qualityScore), true)}>{`quality ${t.qualityScore}`}</span>
                 {t.qualityDelta != null && (
-                  <Pill label={`${t.qualityDelta >= 0 ? "+" : "−"}${Math.abs(t.qualityDelta)}`} tone={t.qualityDelta >= 0 ? "success-base" : "danger-base"} />
+                  <span className={badgeClass(t.qualityDelta >= 0 ? "success-base" : "danger-base")}>{`${t.qualityDelta >= 0 ? "+" : "−"}${Math.abs(t.qualityDelta)}`}</span>
                 )}
               </div>
             </SubSurface>
@@ -140,10 +139,10 @@ function ReleasesView() {
               <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>{rl.ref || rl.commit || ""}</div>
             </div>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              <Pill label={`${rl.reportCount} reports`} tone="text-1" />
-              {rl.open > 0 && <Pill label={`${rl.open} open`} tone="accentText" />}
-              {rl.regressions > 0 && <Pill label={`${rl.regressions} regression`} tone="danger-base" strong />}
-              <Pill label={`quality ${rl.qualityScore}`} tone={qualityTone(rl.qualityScore)} strong />
+              <span className="app-badge app-badge--neutral">{`${rl.reportCount} reports`}</span>
+              {rl.open > 0 && <span className="app-badge app-badge--accent-soft">{`${rl.open} open`}</span>}
+              {rl.regressions > 0 && <span className="app-badge app-badge--danger-strong">{`${rl.regressions} regression`}</span>}
+              <span className={badgeClass(qualityTone(rl.qualityScore), true)}>{`quality ${rl.qualityScore}`}</span>
             </div>
           </SubSurface>
         ))}
@@ -159,9 +158,9 @@ function ReleasesView() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{inc.sample?.title || "(untitled incident)"}</span>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  <Pill label={`×${inc.occurrences}`} tone="warning-base" strong />
-                  {inc.regression && <Pill label="Regression" tone="danger-base" strong />}
-                  {inc.open > 0 && <Pill label={`${inc.open} open`} tone="accentText" />}
+                  <span className="app-badge app-badge--warning-strong">{`×${inc.occurrences}`}</span>
+                  {inc.regression && <span className="app-badge app-badge--danger-strong">Regression</span>}
+                  {inc.open > 0 && <span className="app-badge app-badge--accent-soft">{`${inc.open} open`}</span>}
                 </div>
               </div>
               <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>

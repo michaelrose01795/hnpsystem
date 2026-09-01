@@ -1521,7 +1521,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
       onMouseEnter={onMouseEnter}>
 
       <LayerSurface
-        className={`app-job-operations-row${summary.signals.some((signal) => signal.tone === "danger") ? " is-overdue" : summary.signals.length ? " needs-attention" : ""}`}
+        className="app-job-operations-row"
         radius="var(--radius-sm)"
         padding="0"
         gap="0"
@@ -1536,15 +1536,15 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
         role="group"
         aria-label={`Job ${job.jobNumber || "workshop row"} summary`}
         data-dev-text-preview={`Job ${job.jobNumber || "workshop row"} appointment customer status technician VHC parts actions`}>
-        <section className="app-job-operations-row__column app-job-operations-row__column--appointment">
+        <div className="app-job-operations-row__column app-job-operations-row__column--appointment">
           <span className="app-job-operations-row__label">Appointment</span>
           {summary.appointmentTime && <time className="app-job-operations-row__time-value">{summary.appointmentTime}</time>}
           {summary.appointmentDate && <span className="app-job-operations-row__time-date">{summary.appointmentDate}</span>}
           {summary.scheduleLabel && <strong className={`app-job-operations-row__elapsed${summary.scheduleState === "overdue" ? " is-overdue" : ""}`}>{summary.scheduleLabel}</strong>}
           {summary.presenceLabel && <strong className="app-job-operations-row__elapsed">{summary.presenceLabel}</strong>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--job">
+        <div className="app-job-operations-row__column app-job-operations-row__column--job">
           <span className="app-job-operations-row__label">Job</span>
           <div className="app-job-operations-row__job-number">
             {job.jobNumber && <span>{job.jobNumber}</span>}
@@ -1555,17 +1555,17 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
           {job.reg && <strong className="app-job-operations-row__registration">{job.reg}</strong>}
           {job.makeModel && <span className="app-job-operations-row__vehicle-model">{job.makeModel}</span>}
           {jobType && <span className="app-job-operations-row__muted">{jobType}</span>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--customer">
+        <div className="app-job-operations-row__column app-job-operations-row__column--customer">
           <span className="app-job-operations-row__label">Customer</span>
           {job.customer && <strong className="app-job-operations-row__value">{job.customer}</strong>}
           {job.customerPhone && <span className="app-job-operations-row__muted">{job.customerPhone}</span>}
           {job.customerEmail && <span className="app-job-operations-row__muted app-job-operations-row__customer-email" title={job.customerEmail}>{job.customerEmail}</span>}
           {job.customerPostcode && <span className="app-job-operations-row__muted">{job.customerPostcode}</span>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--status">
+        <div className="app-job-operations-row__column app-job-operations-row__column--status">
           <span className="app-job-operations-row__label">Status</span>
           <div className="app-job-operations-row__badge-line">
             {job.status && <span className={`app-badge ${getJobStatusBadgeTone(job.status)}`}>{job.status}</span>}
@@ -1575,27 +1575,27 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
           {summary.signals.length > 0 && <div className="app-job-operations-row__signals" aria-label="Job attention indicators">
             {summary.signals.map((signal) => <span key={signal.label} className={`app-badge ${operationalBadgeTone(signal.tone)}`}>{signal.label}</span>)}
           </div>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--technician">
+        <div className="app-job-operations-row__column app-job-operations-row__column--technician">
           <span className="app-job-operations-row__label">Technician</span>
           {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--neutral">No tech</span>}
           {summary.technicianLoad && <span className="app-job-operations-row__muted">{summary.technicianLoad}</span>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--vhc">
+        <div className="app-job-operations-row__column app-job-operations-row__column--vhc">
           <span className="app-job-operations-row__label">VHC</span>
           {summary.vhc && <span className={`app-badge ${operationalBadgeTone(summary.vhc.tone)}`}>{summary.vhc.label}</span>}
           {summary.vhc?.detail && <span className="app-job-operations-row__muted">{summary.vhc.detail}</span>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--parts">
+        <div className="app-job-operations-row__column app-job-operations-row__column--parts">
           <span className="app-job-operations-row__label">Parts</span>
           {summary.parts && <span className={`app-badge app-job-operations-row__parts-status ${operationalBadgeTone(summary.parts.tone)}`}>{summary.parts.label}</span>}
           {summary.parts?.detail && <span className="app-job-operations-row__muted">{summary.parts.detail}</span>}
-        </section>
+        </div>
 
-        <section className="app-job-operations-row__column app-job-operations-row__column--actions">
+        <div className="app-job-operations-row__column app-job-operations-row__column--actions">
           <span className="app-job-operations-row__label">Actions</span>
           <div className="app-job-operations-row__action-stack">
             <button type="button" className="app-btn app-btn--primary app-btn--sm" onClick={(event) => runAction(event, onNavigate)}>
@@ -1605,7 +1605,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
               Quick note
             </button>
           </div>
-        </section>
+        </div>
       </DevLayoutSection>
 
       {summary.requests.length > 0 && <DevLayoutSection

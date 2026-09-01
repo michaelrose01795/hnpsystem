@@ -44,7 +44,6 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Admin Manager",
     "routes": [
       "/dashboard/admin",
-      "/admin/users",
       "/admin/compliance",
       "/admin/compliance/sars",
       "/admin/compliance/breaches",

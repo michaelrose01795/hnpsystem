@@ -20,10 +20,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -38,15 +37,9 @@ const STATUS_OPTIONS = [
 const statusTone = (status) =>
   status === "published" ? "success-base" : status === "archived" ? "text-1" : "warning-base";
 
-// Shared input styling — 44px touch target, surface background, token colour.
-const inputStyle = {
-  minHeight: 44,
-  padding: "8px 12px",
-  borderRadius: "var(--radius-md)",
-  background: "var(--surface)",
-  color: "var(--text-1)",
-  width: "100%",
-};
+// Layout only — height, padding, radius, fill and colour all come from
+// .app-input (src/styles/families/inputs.css).
+const inputStyle = { width: "100%" };
 
 function Field({ label, children }) {
   return (
@@ -148,7 +141,7 @@ function KnowledgeView() {
       <Panel
         title="Knowledge Centre"
         subtitle="Curated documentation for recurring incidents, plus live derivation from captured reports."
-        actions={<DevButton small onClick={reloadAll}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reloadAll} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       >
         {derivationRes.loading ? (
           <LoadingBlock rows={1} />
@@ -183,14 +176,14 @@ function KnowledgeView() {
                 </span>
                 <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8 }}>{s.reason}</div>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                  <Pill label={`×${s.occurrences}`} tone="warning-base" strong />
+                  <span className="app-badge app-badge--warning-strong">{`×${s.occurrences}`}</span>
                   {(s.routes || []).slice(0, 3).map((r) => (
-                    <Pill key={r} label={r} tone="text-1" />
+                    <span key={r} className="app-badge app-badge--neutral">{r}</span>
                   ))}
-                  {s.open > 0 && <Pill label={`${s.open} open`} tone="accentText" />}
+                  {s.open > 0 && <span className="app-badge app-badge--accent-soft">{`${s.open} open`}</span>}
                 </div>
               </div>
-              <DevButton small variant="solid" onClick={() => documentSuggestion(s)}>Document this</DevButton>
+              <button type="button" onClick={() => documentSuggestion(s)} className="app-btn app-btn--primary app-btn--sm">Document this</button>
             </SubSurface>
           ))
         )}
@@ -210,16 +203,16 @@ function KnowledgeView() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ fontWeight: 700, color: "var(--accentText)", wordBreak: "break-word", minWidth: 0 }}>{e.title}</span>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                  {e.category && <Pill label={e.category} tone="text-1" />}
-                  <Pill label={e.status} tone={statusTone(e.status)} strong />
-                  <DevButton
-                    small
-                    tone="danger-base"
+                  {e.category && <span className="app-badge app-badge--neutral">{e.category}</span>}
+                  <span className={badgeClass(statusTone(e.status), true)}>{e.status}</span>
+                  <button
+                    type="button"
                     disabled={busyId === e.id}
                     onClick={() => onDelete(e.id)}
+                    className="app-btn app-btn--danger app-btn--sm"
                   >
                     {busyId === e.id ? "Deleting…" : "Delete"}
-                  </DevButton>
+                  </button>
                 </div>
               </div>
               {e.body && (
@@ -238,9 +231,9 @@ function KnowledgeView() {
           title="New entry"
           subtitle="Document a recurring incident. A fingerprint links the entry to its incident cluster."
           actions={
-            <DevButton variant="solid" onClick={onSave} disabled={saving}>
+            <button type="button" onClick={onSave} disabled={saving} className="app-btn app-btn--primary">
               {saving ? "Saving…" : "Save"}
-            </DevButton>
+            </button>
           }
         >
           <SubSurface style={{ gap: "var(--space-md)" }}>
@@ -274,14 +267,14 @@ function KnowledgeView() {
                 onChange={(e) => set({ body: e.target.value })}
                 placeholder="Cause, resolution, and any workaround for this recurring incident…"
                 rows={6}
-                style={{ ...inputStyle, minHeight: 120, resize: "vertical", fontFamily: "inherit" }}
+                style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
               />
             </Field>
             {form.fingerprint && (
               <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>Linked incident:</span>
-                <Pill label={form.fingerprint} tone="accentText" />
-                <DevButton small onClick={() => set({ fingerprint: "" })}>Clear link</DevButton>
+                <span className="app-badge app-badge--accent-soft">{form.fingerprint}</span>
+                <button type="button" onClick={() => set({ fingerprint: "" })} className="app-btn app-btn--secondary app-btn--sm">Clear link</button>
               </div>
             )}
           </SubSurface>
