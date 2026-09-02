@@ -5,6 +5,7 @@
 // requested in video mode so photo mode never lights the mic light.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; // React primitives
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Helper: clamp any number into [min, max].
 function clamp(value, min, max) {
@@ -212,7 +213,7 @@ export default function useDeviceCamera({ isActive, mode = "photo" }) {
       }
       syncTrackCapabilities(nextStream, facing); // Sync zoom/facing
     } catch (cameraError) {
-      console.error("Camera initialisation failed:", cameraError); // Log for ops
+      logFailure("Camera initialisation failed:", cameraError); // Log for ops
       setPermissionGranted(false); // Mark denied
       if (cameraError?.name === "NotAllowedError") { // Permission rejected
         setPermissionStatus("denied");

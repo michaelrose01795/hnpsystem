@@ -20,6 +20,7 @@ import {
   WORKSPACE_MODULES,
   WORKSPACE_PAGE_TABS,
   WORKSPACE_QUICK_ACTIONS,
+  sortModulesByLibraryOrder,
 } from "./departments";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
@@ -442,7 +443,10 @@ function allAccessDefaultModules() {
     const bundle = modules.get(key);
     if (!bundle.hrefs.includes(item.href)) bundle.hrefs.push(item.href);
   }
-  return Array.from(modules.values());
+  // Bucketing above follows page-catalogue order, which is not the rail order.
+  // Sort the finished bundles so the All Access rail reads exactly like every
+  // other role's (SIDEBAR_MODULE_LIBRARY order).
+  return sortModulesByLibraryOrder(Array.from(modules.values()));
 }
 
 function roleDefaultModules(roles) {
@@ -465,7 +469,9 @@ function roleDefaultModules(roles) {
       }
     }
   }
-  return Array.from(moduleMap.values());
+  // Merging two roles can append a module out of sequence; the rail order is
+  // SIDEBAR_MODULE_LIBRARY order for every user, so re-sort after the merge.
+  return sortModulesByLibraryOrder(Array.from(moduleMap.values()));
 }
 
 const standardModuleItemOrder = new Map(
@@ -681,7 +687,13 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     for (const item of developerItems) used.add(item.href);
   }
 
-  const visibleModules = modules.filter((navigationModule) => navigationModule.items.length > 0);
+  // Rail order. A saved layout from the Sidebar Access editor is a deliberate
+  // per-user arrangement and is left exactly as saved; everything else (role
+  // defaults, plus any department module created for a manual grant above)
+  // renders in SIDEBAR_MODULE_LIBRARY order, skipping modules the user has no
+  // pages in.
+  const orderedModules = storedModules ? modules : sortModulesByLibraryOrder(modules);
+  const visibleModules = orderedModules.filter((navigationModule) => navigationModule.items.length > 0);
 
   // The synthetic developer login is intentionally isolated from the staff
   // workspace. Its rail contains the locked Developer module only; shared

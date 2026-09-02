@@ -1,6 +1,7 @@
 // file location: src/lib/hr/reminderTasks.js
 
 import { getDatabaseClient } from "@/lib/database/client";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient();
 const REMINDER_TABLE = "hr_reminder_tasks";
@@ -25,7 +26,7 @@ const enqueueReminder = async (type, payload, runAt) => {
   });
 
   if (error) {
-    console.error(`❌ Failed to enqueue ${type} reminder`, error);
+    logFailure(`❌ Failed to enqueue ${type} reminder`, error);
     throw error;
   }
 };

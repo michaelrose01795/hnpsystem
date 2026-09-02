@@ -15,6 +15,7 @@ import { hasAllAccessRole } from "@/lib/auth/roles";
 const loadClocking = () => import("@/lib/database/clocking");
 import { prefetchJob } from "@/lib/swr/prefetch";
 import TechsDashboardUi from "@/components/page-ui/tech/tech-dashboard-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const pageShellStyle = {
   width: "100%",
@@ -210,7 +211,7 @@ export default function TechsDashboard() {
         setClockingStatus(data);
         setCurrentJob(isClockedIn && data ? sortedJobs[0] || null : null);
       } catch (error) {
-        console.error("Error fetching tech data:", error);
+        logFailure("Error fetching tech data:", error);
       } finally {
         setLoading(false);
       }

@@ -36,6 +36,7 @@ import { reportError } from "@/lib/notifications/report"; // Phase 3 reporting h
 import { buildJobOperationalStatusCounts, buildJobRowSummary, buildTechnicianWorkloadMap, findNextJobsTechnician } from "@/lib/jobCards/jobRowSummary";
 import { invalidateCache } from "@/lib/database/queryCache";
 import { subscribeViaDeferredModule } from "@/lib/database/realtimeClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -217,7 +218,7 @@ export default function ViewJobCards() {
         }
       } catch (snapshotError) {
         if (!isActive) return;
-        console.error("Failed to load status snapshot:", snapshotError);
+        logFailure("Failed to load status snapshot:", snapshotError);
       }
     };
     loadSnapshot();
@@ -295,7 +296,7 @@ export default function ViewJobCards() {
       }
     }
 
-    console.error("Failed to load jobs after retrying", lastError);
+    logFailure("Failed to load jobs after retrying", lastError);
     setJobsLoadError("Jobs could not be loaded. Please refresh and try again.");
     setLoading(false);
   }, []);
@@ -316,7 +317,7 @@ export default function ViewJobCards() {
         ...(Array.isArray(motTesters) ? motTesters : []),
       ]);
     } catch (technicianError) {
-      console.error("Failed to load the Next Jobs technician roster", technicianError);
+      logFailure("Failed to load the Next Jobs technician roster", technicianError);
       setNextJobsTechnicians([]);
     }
   }, []);
@@ -419,7 +420,7 @@ export default function ViewJobCards() {
       })
       .catch((noteError) => {
         if (!isActive) return;
-        console.error("Failed to load quick-note context", noteError);
+        logFailure("Failed to load quick-note context", noteError);
         setQuickNoteError("Existing notes could not be loaded.");
       })
       .finally(() => {
@@ -470,7 +471,7 @@ export default function ViewJobCards() {
       setQuickNoteText("");
       setQuickNoteHidden(true);
     } catch (noteError) {
-      console.error("Failed to save quick note", noteError);
+      logFailure("Failed to save quick note", noteError);
       setQuickNoteError(noteError?.message || "Failed to save note.");
     } finally {
       setQuickNoteSaving(false);
@@ -492,7 +493,7 @@ export default function ViewJobCards() {
       const payload = await response.json();
       setOrders(payload?.orders || []);
     } catch (orderError) {
-      console.error("Failed to fetch parts orders", orderError);
+      logFailure("Failed to fetch parts orders", orderError);
       setOrders([]);
     } finally {
       setOrdersLoading(false);

@@ -47,6 +47,14 @@ export const deliveryStyles = {
     width: "100%",
     minWidth: 0,
   },
+  deliverySummaryRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    gap: "var(--space-sm)",
+    width: "100%",
+    minWidth: 0,
+  },
   // The day controls row now lives in staffglobal.css as
   // .app-delivery-day-controls — the previous/next stepper was removed and the
   // month picker is the only day control.
@@ -62,14 +70,15 @@ export const deliveryStyles = {
     flexDirection: "row",
     alignItems: "center",
     gap: "var(--space-sm)",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     flex: "0 0 auto",
+    minWidth: 0,
   },
 
   // --- filter toolbar -------------------------------------------------------
   filterRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(200px, 2fr) repeat(3, minmax(150px, 1fr)) auto",
+    gridTemplateColumns: "minmax(200px, 2fr) repeat(3, minmax(150px, 1fr)) auto auto",
     gap: "var(--space-sm)",
     alignItems: "center",
     width: "100%",
@@ -273,17 +282,59 @@ export const deliveryStyles = {
   // --- route map ------------------------------------------------------------
   // The route runs the full width of the detail panel, above everything else,
   // rather than sitting behind a view switch. 4:3 gives a Kent-shaped run
-  // enough height to read without pushing the stop's details off the card; the
-  // SVG viewBox matches that ratio so the plot fills the width instead of
-  // letterboxing a square drawing inside a wide frame.
+  // enough height to read without pushing the stop's details off the card.
   routeMapCard: {
     width: "100%",
     minWidth: 0,
   },
-  routeMapSvg: {
+  // The tile grid is absolutely positioned inside this box, so it establishes
+  // the containing block and clips whatever overhangs the fitted view. The
+  // background is what shows through when tiles are still loading or cannot be
+  // reached — a tinted surface, never a black hole.
+  routeMapViewport: {
+    position: "relative",
     width: "100%",
     aspectRatio: "4 / 3",
+    minHeight: "220px",
+    overflow: "hidden",
+    borderRadius: "var(--radius-sm)",
+    background: "var(--theme)",
+    isolation: "isolate",
+  },
+  // Markers and legs sit above the tiles in the same pixel space.
+  routeMapOverlay: {
+    position: "absolute",
+    inset: 0,
     display: "block",
+  },
+  // The parts desk, marked with the brand logo instead of a labelled square.
+  // Centred on its projected point by a translate rather than a negative margin
+  // so the mark can be resized in one place without the offset drifting.
+  routeMapOriginMark: {
+    position: "absolute",
+    width: "30px",
+    height: "30px",
+    transform: "translate(-50%, -50%)",
+  },
+  routeMapOriginMarkImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    display: "block",
+  },
+  // OpenStreetMap attribution, bottom-right over the tiles as the tile usage
+  // policy requires. The chip keeps it legible over any map feature.
+  routeMapAttribution: {
+    position: "absolute",
+    right: "4px",
+    bottom: "4px",
+    padding: "1px 6px",
+    borderRadius: "var(--radius-xs)",
+    background: "var(--surface)",
+    color: "var(--text-1)",
+    opacity: 0.78,
+    fontSize: "var(--text-caption)",
+    pointerEvents: "none",
   },
 
   // --- week strip -----------------------------------------------------------
@@ -312,6 +363,36 @@ export const deliveryStyles = {
     maxHeight: "82vh",
     overflowY: "auto",
     minWidth: 0,
+  },
+  modalBodyWide: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--layout-card-gap)",
+    width: "100%",
+    maxHeight: "82vh",
+    overflow: "hidden",
+    minWidth: 0,
+  },
+  modalScroll: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--page-stack-gap)",
+    overflowY: "auto",
+    minWidth: 0,
+  },
+  routeSettingsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: "var(--layout-card-gap)",
+    width: "100%",
+    minWidth: 0,
+  },
+  toggleLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "var(--space-sm)",
+    minHeight: "44px",
+    cursor: "pointer",
   },
   modalHeader: {
     display: "flex",

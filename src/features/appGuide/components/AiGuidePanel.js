@@ -25,6 +25,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
 import StatusMessage from "@/components/ui/StatusMessage";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -529,7 +530,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("[AiGuidePanel] load messages error:", err);
+        logFailure("[AiGuidePanel] load messages error:", err);
         setMessages([]);
       })
       .finally(() => {

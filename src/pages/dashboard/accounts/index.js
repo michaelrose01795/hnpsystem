@@ -16,6 +16,7 @@ const loadDashboardData = () => import("@/lib/database/dashboard/accounts");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface } from "@/components/ui"; // canonical surface layer primitive (nested inside dashboard theme sections)
 import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboard-accounts-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside a dashboard LayerTheme section,
 // so per the strict alternation rule it renders as a LayerSurface.
@@ -207,7 +208,7 @@ export default function AccountsDashboard() {
         const payload = await (await loadDashboardData()).getAccountsDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load accounts dashboard", fetchError);
+        logFailure("Failed to load accounts dashboard", fetchError);
         setError(fetchError.message || "Unable to load financial metrics");
       } finally {
         setLoading(false);

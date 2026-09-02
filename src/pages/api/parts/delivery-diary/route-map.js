@@ -1,16 +1,24 @@
 // file location: src/pages/api/parts/delivery-diary/route-map.js
 //
-// Geocodes the stops on one day's route so the page can plot them.
+// Geocodes the stops on one day's route and routes the drive between them.
 //
-// There is no mapping library or tile provider in this project, and the brief
-// is explicit that no paid API may be introduced. This route therefore reuses
-// exactly what /api/location/drive-time already relies on — postcodes.io, free
-// and key-less — via its bulk endpoint, and returns plain coordinates plus
-// straight-line leg distances. The page draws a schematic route from those and
-// hides the panel entirely when geocoding is unavailable.
+// There is no mapping library in this project and no paid API may be
+// introduced, so both halves of the answer come from free, key-less services:
 //
-// The shape returned is deliberately provider-neutral: swapping in a real
-// routing provider later means changing this file only.
+//   1. Postcodes are geocoded by postcodes.io — exactly what
+//      /api/location/drive-time already relies on.
+//   2. The drive itself is routed by OSRM (the public demo server by default,
+//      or whatever OSRM_BASE_URL points at). It returns the real road geometry
+//      from the parts desk through every stop in order and back, plus per-leg
+//      driving distance and duration. That geometry is what the page draws, so
+//      the line on the map follows the roads the van actually takes rather than
+//      a straight hop between postcodes.
+//
+// OSRM is best-effort. If it is slow, rate-limited, unreachable, or refuses the
+// waypoint set, the response falls back to the previous behaviour —
+// straight-line distance with a winding factor, and no geometry — and flags
+// itself with provider: "estimate" so the page says so in its caption instead
+// of quietly presenting a guess as a routed drive.
 
 export const runtime = "nodejs";
 
@@ -73,9 +81,95 @@ function haversineMiles(a, b) {
 
 // Road distance is longer than straight-line. The same 1.35 winding factor the
 // drive-time estimator uses, so the two never disagree about the same leg.
+// Only reached when OSRM could not answer.
 const ROAD_FACTOR = 1.35;
 
+const METRES_PER_MILE = 1609.344;
+
+// The public OSRM demo server is free and key-less, matching the constraint
+// that already put postcodes.io in this file. Self-hosting later means pointing
+// OSRM_BASE_URL somewhere else — nothing else here changes.
+const OSRM_BASE_URL = (process.env.OSRM_BASE_URL || "https://router.project-osrm.org").replace(
+  /\/+$/,
+  ""
+);
+// A route panel must never hold the page open on a slow third party; past this
+// the request is abandoned and the estimate is used instead.
+const OSRM_TIMEOUT_MS = 7000;
+// Waypoints travel in the URL path. A day's van run is nowhere near this, and
+// the cap stops a pathological day building an unroutable request.
+const OSRM_MAX_WAYPOINTS = 60;
+
+const roundTenth = (value) => Math.round(value * 10) / 10;
+
 const normaliseKey = (postcode) => String(postcode || "").toUpperCase().replace(/\s+/g, "");
+
+/**
+ * Ask OSRM to drive through `points` in order.
+ *
+ * Returns null on any failure — the caller then falls back to the estimate.
+ * Never throws: a routing outage must not take the panel down with it.
+ *
+ * @param {Array<{latitude:number, longitude:number}>} points
+ * @returns {Promise<null | {
+ *   legMiles: number[],
+ *   legMinutes: number[],
+ *   geometry: Array<{latitude:number, longitude:number}>,
+ *   totalMiles: number,
+ *   totalMinutes: number,
+ * }>}
+ */
+async function routeDrive(points) {
+  if (points.length < 2 || points.length > OSRM_MAX_WAYPOINTS) return null;
+
+  const coordinates = points
+    .map((point) => `${point.longitude.toFixed(6)},${point.latitude.toFixed(6)}`)
+    .join(";");
+  // overview=simplified is Douglas-Peucker-reduced geometry: it still follows
+  // every road the route uses, but at a fraction of the points. The panel is a
+  // few hundred pixels wide, so full geometry would be detail nobody can see.
+  const url =
+    `${OSRM_BASE_URL}/route/v1/driving/${coordinates}` +
+    "?overview=simplified&geometries=geojson&steps=false&alternatives=false";
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OSRM_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
+      headers: { accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const payload = await response.json().catch(() => null);
+    if (payload?.code !== "Ok") return null;
+
+    const route = payload?.routes?.[0];
+    const legs = route?.legs;
+    const line = route?.geometry?.coordinates;
+    // One leg per consecutive pair of waypoints. Anything else means the answer
+    // does not describe the journey that was asked for, so it is not safe to
+    // map legs back onto stops.
+    if (!Array.isArray(legs) || legs.length !== points.length - 1) return null;
+    if (!Array.isArray(line) || line.length < 2) return null;
+
+    return {
+      legMiles: legs.map((leg) => roundTenth(Number(leg?.distance || 0) / METRES_PER_MILE)),
+      legMinutes: legs.map((leg) => Math.round(Number(leg?.duration || 0) / 60)),
+      // GeoJSON is [longitude, latitude]; every other coordinate in this
+      // response is lat/lng, so it is flipped once, here.
+      geometry: line
+        .filter((pair) => Array.isArray(pair) && pair.length >= 2)
+        .map(([longitude, latitude]) => ({ latitude, longitude })),
+      totalMiles: roundTenth(Number(route?.distance || 0) / METRES_PER_MILE),
+      totalMinutes: Math.round(Number(route?.duration || 0) / 60),
+    };
+  } catch {
+    // Timeout, DNS failure, malformed JSON — all the same answer: no route.
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function handler(req, res, session) {
   if (req.method !== "GET") {
@@ -130,59 +224,90 @@ async function handler(req, res, session) {
       return;
     }
 
+    // Two passes: build the stop list and the waypoint list first, then attach
+    // distances once it is known whether they came from a routed drive or from
+    // the estimate. A stop that could not be geocoded stays in the list — the
+    // page reports it as "not plotted" — but never becomes a waypoint.
     const stops = [];
-    let previous = origin;
-    let totalMiles = 0;
+    const waypoints = [origin];
+    const waypointStopIndex = [];
 
     deliveries.forEach((delivery, index) => {
       const point = geocoded.get(normaliseKey(delivery.postcodeValue));
-      if (!point) {
-        stops.push({
-          id: delivery.id,
-          stopNumber: index + 1,
-          located: false,
-          label: delivery.customerDisplayName || delivery.customer_name || "Stop",
-          postcode: delivery.postcodeValue || null,
-          status: delivery.status,
-        });
-        return;
-      }
-      const legMiles = Math.round(haversineMiles(previous, point) * ROAD_FACTOR * 10) / 10;
-      totalMiles += legMiles;
-      previous = point;
-      stops.push({
+      const base = {
         id: delivery.id,
         stopNumber: index + 1,
-        located: true,
         label: delivery.customerDisplayName || delivery.customer_name || "Stop",
+        status: delivery.status,
+      };
+      if (!point) {
+        stops.push({ ...base, located: false, postcode: delivery.postcodeValue || null });
+        return;
+      }
+      waypointStopIndex.push(stops.length);
+      waypoints.push(point);
+      stops.push({
+        ...base,
+        located: true,
         postcode: point.postcode,
         latitude: point.latitude,
         longitude: point.longitude,
-        legMiles,
-        status: delivery.status,
         isUrgent: Boolean(delivery.is_urgent),
       });
     });
 
-    // Return leg — the van comes back to the parts desk.
-    const returnMiles =
-      previous === origin
-        ? 0
-        : Math.round(haversineMiles(previous, origin) * ROAD_FACTOR * 10) / 10;
-    totalMiles = Math.round((totalMiles + returnMiles) * 10) / 10;
+    // The van comes back to the parts desk, so the drive ends where it started.
+    const hasLocatedStops = waypoints.length > 1;
+    if (hasLocatedStops) waypoints.push(origin);
+
+    const routed = hasLocatedStops ? await routeDrive(waypoints) : null;
+
+    let returnMiles = 0;
+    let totalMiles = 0;
+    let totalMinutes = null;
+
+    if (routed) {
+      // Leg N is the drive into waypoint N+1, so the leading legs land on the
+      // located stops in order and the last one is the run home.
+      waypointStopIndex.forEach((stopIndex, legIndex) => {
+        stops[stopIndex].legMiles = routed.legMiles[legIndex];
+        stops[stopIndex].legMinutes = routed.legMinutes[legIndex];
+      });
+      returnMiles = routed.legMiles[routed.legMiles.length - 1];
+      totalMiles = routed.totalMiles;
+      totalMinutes = routed.totalMinutes;
+    } else {
+      let previous = origin;
+      waypointStopIndex.forEach((stopIndex) => {
+        const stop = stops[stopIndex];
+        const point = { latitude: stop.latitude, longitude: stop.longitude };
+        stop.legMiles = roundTenth(haversineMiles(previous, point) * ROAD_FACTOR);
+        totalMiles += stop.legMiles;
+        previous = point;
+      });
+      returnMiles = hasLocatedStops
+        ? roundTenth(haversineMiles(previous, origin) * ROAD_FACTOR)
+        : 0;
+      totalMiles = roundTenth(totalMiles + returnMiles);
+    }
 
     res.status(200).json({
       success: true,
       data: {
         date: requestedDate,
         available: true,
-        // "estimate" is honest about what these numbers are: straight-line
-        // distance with a road-winding factor, not a routed drive.
-        provider: "estimate",
+        // "osrm" means these are real road distances measured along the
+        // geometry below. "estimate" means straight-line distance with a
+        // winding factor and no geometry — the page must not claim a routed
+        // drive in that case.
+        provider: routed ? "osrm" : "estimate",
+        routed: Boolean(routed),
+        geometry: routed ? routed.geometry : null,
         origin: { ...origin, label: "Humphries & Parks" },
         stops,
         returnMiles,
         totalMiles,
+        totalMinutes,
       },
     });
   } catch (error) {

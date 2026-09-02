@@ -1,6 +1,7 @@
 // ✅ Parts order helpers
 // file location: src/lib/database/partsOrders.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const supabase = getDatabaseClient();
 
@@ -54,7 +55,7 @@ export const getPartsOrders = async () => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ getPartsOrders error:", error);
+    logFailure("❌ getPartsOrders error:", error);
     return [];
   }
 

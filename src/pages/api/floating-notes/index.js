@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
-import { CUSTOMER_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import { isCustomerRole } from "@/lib/auth/roles";
 import {
   createFloatingNote,
   deleteFloatingNote,
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     ...(Array.isArray(session.user.roles) ? session.user.roles : [session.user.roles]),
     session.user.role,
   ].filter(Boolean);
-  if (hasAnyRole(sessionRoles, CUSTOMER_ROLES)) {
+  if (sessionRoles.some(isCustomerRole)) {
     return res.status(403).json({
       success: false,
       error: { message: "Floating notes are available to staff users only" },

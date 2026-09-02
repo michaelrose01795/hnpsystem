@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 const loadDashboardData = () => import("@/lib/database/dashboard/admin");
 import { ContentWidth, LayerSurface, LayerTheme, PageShell } from "@/components/ui";
 import AdminDashboardUi from "@/components/page-ui/dashboard/admin/dashboard-admin-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const MetricCard = ({ label, parentKey, sectionKey, value, helper }) => (
   <LayerSurface
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
         const payload = await (await loadDashboardData()).getAdminDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load admin dashboard", fetchError);
+        logFailure("Failed to load admin dashboard", fetchError);
         setError(fetchError.message || "Unable to load admin metrics");
       } finally {
         setLoading(false);

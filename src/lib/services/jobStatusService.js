@@ -10,6 +10,7 @@ import {
   isValidTransition,
 } from "@/lib/status/statusFlow";
 import { DISPLAY as JOB_DISPLAY, STATUSES as JOB } from "@/lib/status/catalog/job"; // Canonical job status constants.
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================
    STATUS FLOW DEFINITION
@@ -57,7 +58,7 @@ const ensureInProgressStatus = async (jobId, updatedBy) => {
     .single();
 
   if (error) {
-    console.error("❌ Unable to check job status before sub-status update:", error);
+    logFailure("❌ Unable to check job status before sub-status update:", error);
     return null;
   }
 
@@ -104,7 +105,7 @@ export const logJobSubStatus = async (jobId, subStatus, changedBy, reason) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error("❌ Error logging sub-status:", error);
+    logFailure("❌ Error logging sub-status:", error);
     return { success: false, error };
   }
 };
@@ -179,7 +180,7 @@ export const autoSetBookedStatus = async (jobId, bookedBy = null) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Booked status:", error);
+    logFailure("❌ Error auto-setting Booked status:", error);
     return { success: false, error };
   }
 };
@@ -206,7 +207,7 @@ export const autoSetCheckedInStatus = async (jobId, checkedInBy) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Checked In status:", error);
+    logFailure("❌ Error auto-setting Checked In status:", error);
     return { success: false, error };
   }
 };
@@ -249,7 +250,7 @@ export const autoSetWorkshopStatus = async (jobId, technicianId, technicianName)
 
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting In Progress status:", error);
+    logFailure("❌ Error auto-setting In Progress status:", error);
     return { success: false, error };
   }
 };
@@ -283,7 +284,7 @@ export const autoSetVHCCompleteStatus = async (jobId, completedBy) => {
 
     return result;
   } catch (error) {
-    console.error("❌ Error logging VHC Completed status:", error);
+    logFailure("❌ Error logging VHC Completed status:", error);
     return { success: false, error };
   }
 };
@@ -306,7 +307,7 @@ export const autoSetVHCSentStatus = async (jobId, sentBy) => {
 
     return result;
   } catch (error) {
-    console.error("❌ Error logging VHC Sent status:", error);
+    logFailure("❌ Error logging VHC Sent status:", error);
     return { success: false, error };
   }
 };
@@ -329,7 +330,7 @@ export const autoSetAdditionalWorkRequiredStatus = async (jobId, authorizedBy) =
 
     return result;
   } catch (error) {
-    console.error("❌ Error logging Customer Authorised status:", error);
+    logFailure("❌ Error logging Customer Authorised status:", error);
     return { success: false, error };
   }
 };
@@ -352,7 +353,7 @@ export const autoSetAdditionalWorkInProgressStatus = async (jobId, technicianId)
 
     return result;
   } catch (error) {
-    console.error("❌ Error logging Technician Started status:", error);
+    logFailure("❌ Error logging Technician Started status:", error);
     return { success: false, error };
   }
 };
@@ -375,7 +376,7 @@ export const autoSetBeingWashedStatus = async (jobId, valetId) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error recording valet start:", error);
+    logFailure("❌ Error recording valet start:", error);
     return { success: false, error };
   }
 };
@@ -421,7 +422,7 @@ export const autoSetCompleteStatus = async (jobId, completedBy) => {
       .maybeSingle();
 
     if (invoiceError) {
-      console.error("❌ Error checking invoices before completion:", invoiceError);
+      logFailure("❌ Error checking invoices before completion:", invoiceError);
       return { success: false, error: invoiceError };
     }
 
@@ -444,7 +445,7 @@ export const autoSetCompleteStatus = async (jobId, completedBy) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Complete status:", error);
+    logFailure("❌ Error auto-setting Complete status:", error);
     return { success: false, error };
   }
 };
@@ -467,7 +468,7 @@ export const autoSetRetailPartsOnOrderStatus = async (jobId, orderedBy) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error logging Waiting for Parts status:", error);
+    logFailure("❌ Error logging Waiting for Parts status:", error);
     return { success: false, error };
   }
 };
@@ -490,7 +491,7 @@ export const autoSetWarrantyPartsOnOrderStatus = async (jobId, orderedBy) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error logging Waiting for Parts status:", error);
+    logFailure("❌ Error logging Waiting for Parts status:", error);
     return { success: false, error };
   }
 };
@@ -509,7 +510,7 @@ export const autoSetWarrantyQualityControlStatus = async (jobId, userId) => {
 
     return result;
   } catch (error) {
-    console.error("❌ Error recording Warranty QC requirement:", error);
+    logFailure("❌ Error recording Warranty QC requirement:", error);
     return { success: false, error };
   }
 };
@@ -528,7 +529,7 @@ export const autoSetWarrantyReadyToClaimStatus = async (jobId, userId) => {
 
     return result;
   } catch (error) {
-    console.error("❌ Error recording Warranty Ready to Claim:", error);
+    logFailure("❌ Error recording Warranty Ready to Claim:", error);
     return { success: false, error };
   }
 };
@@ -554,7 +555,7 @@ const logStatusChange = async (jobId, fromStatus, toStatus, changedBy, reason) =
     
     console.log(`📝 Status change logged: ${fromStatus} → ${toStatus}`);
   } catch (error) {
-    console.error("❌ Error logging status change:", error);
+    logFailure("❌ Error logging status change:", error);
     // Don't throw - logging failure shouldn't block status update
   }
 };
@@ -575,7 +576,7 @@ export const getJobStatusHistory = async (jobId) => {
     
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting status history:", error);
+    logFailure("❌ Error getting status history:", error);
     return { success: false, error, data: [] };
   }
 };
@@ -633,7 +634,7 @@ export const manualStatusUpdate = async (jobId, newStatus, userId, reason) => {
     
     return result;
   } catch (error) {
-    console.error("❌ Error in manual status update:", error);
+    logFailure("❌ Error in manual status update:", error);
     return { success: false, error };
   }
 };

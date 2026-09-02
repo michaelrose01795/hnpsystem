@@ -769,17 +769,16 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
 // presentation catalogue only: moving a route here does not alter its owning
 // workspace department, role permissions, or API/page guards. Hrefs resolve
 // against getWorkspacePageCatalog(), so this list cannot create new routes.
+//
+// ⚠️ ARRAY ORDER IS THE SIDEBAR ORDER. Modules render top-to-bottom in exactly
+// this sequence for every user; a module the user has no pages in is simply
+// skipped and the next one moves up. Role defaults (roleDefaults.js `layout()`)
+// and the All Access rail are both sorted against this array, so the rail order
+// is authored HERE and nowhere else. Only a saved per-user layout from the
+// Developer Platform's Sidebar Access editor may deviate — that is a deliberate
+// manual override.
 export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
   { key: "department-general", label: "General", department: "general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
-  {
-    key: "department-management",
-    label: "Admin",
-    department: "management",
-    hrefs: [
-      "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
-      "/hr/manager", "/website-manager", "/archive",
-    ],
-  },
   {
     key: "department-service",
     label: "Reception",
@@ -799,20 +798,38 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
       "/tech/efficiency", "/nextjobs",
     ],
   },
-  { key: "department-mot", label: "MOT", department: "mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+  {
+    // Tech sits with Workshop: it is the technician's own slice of the same
+    // department. It has no place in the requested rail order because no role
+    // sees both it and every other module at once.
+    key: "department-tech",
+    label: "Tech",
+    department: "tech",
+    hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"],
+  },
   {
     key: "department-parts",
     label: "Parts",
     department: "parts",
     hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"],
   },
-  { key: "department-valeting", label: "Valeting", department: "valeting", hrefs: ["/dashboard/valeting", "/valet"] },
+  {
+    key: "department-management",
+    label: "Admin",
+    department: "management",
+    hrefs: [
+      "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
+      "/hr/manager", "/website-manager", "/archive",
+    ],
+  },
   {
     key: "department-accounts",
     label: "Accounts",
     department: "accounts",
     hrefs: ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"],
   },
+  { key: "department-mot", label: "MOT", department: "mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+  { key: "department-valeting", label: "Valeting", department: "valeting", hrefs: ["/dashboard/valeting", "/valet"] },
   {
     key: "department-reports",
     label: "Reports",
@@ -823,13 +840,32 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
       "/reports/overview",
     ],
   },
-  {
-    key: "department-tech",
-    label: "Tech",
-    department: "tech",
-    hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"],
-  },
 ]);
+
+// Rail position of a library module, by module key. Anything not in the library
+// (custom modules, the locked Developer bundle) sorts after every standard one
+// while keeping its own relative order.
+const SIDEBAR_MODULE_POSITIONS = new Map(
+  SIDEBAR_MODULE_LIBRARY.map((navigationModule, index) => [navigationModule.key, index])
+);
+
+export function getSidebarModuleOrder(moduleKey) {
+  const position = SIDEBAR_MODULE_POSITIONS.get(moduleKey);
+  return position === undefined ? SIDEBAR_MODULE_LIBRARY.length : position;
+}
+
+// Stable sort of any [{ key }] module list into library order. Modules outside
+// the library keep their incoming order at the end of the rail.
+export function sortModulesByLibraryOrder(modules = []) {
+  return modules
+    .map((navigationModule, index) => ({ navigationModule, index }))
+    .sort(
+      (left, right) =>
+        getSidebarModuleOrder(left.navigationModule?.key) -
+          getSidebarModuleOrder(right.navigationModule?.key) || left.index - right.index
+    )
+    .map((entry) => entry.navigationModule);
+}
 
 // Phase 9: presentation-only grouping for the Workspace Group Sidebar. Pages
 // continue to be declared once in the nav/context sections above; hrefs here

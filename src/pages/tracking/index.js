@@ -26,6 +26,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summar
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import useIdleWarm from "@/hooks/useIdleWarm";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Two surfaces on this route render nothing on arrival, and both were the
 // heaviest things in its eager import graph.
@@ -1382,7 +1383,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         }));
       }
     } catch (err) {
-      console.error("Auto-fill error:", err);
+      logFailure("Auto-fill error:", err);
     } finally {
       setIsSearching(false);
     }
@@ -1893,7 +1894,7 @@ export default function TrackingDashboard() {
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
     } catch (fetchError) {
-      console.error("Failed to fetch tracking snapshot", fetchError);
+      logFailure("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
       setError(fetchError?.message || "Unable to load tracking data");
     } finally {
@@ -1968,7 +1969,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Equipment data load error", loadError);
+      logFailure("Equipment data load error", loadError);
       setEquipmentChecks([]);
     }
   }, [isWorkshopManager]);
@@ -1986,7 +1987,7 @@ export default function TrackingDashboard() {
       }
       setOilChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Oil/stock data load error", loadError);
+      logFailure("Oil/stock data load error", loadError);
       setOilChecks([]);
     }
   }, [isWorkshopManager]);
@@ -2090,7 +2091,7 @@ export default function TrackingDashboard() {
         const updated = result.data;
         setEquipmentChecks((prev) => prev.map((item) => item.id === updated.id ? updated : item));
       } catch (error) {
-        console.error("Equipment check update failed", error);
+        logFailure("Equipment check update failed", error);
         alert(error.message || "Failed to log equipment check");
       }
     },
@@ -2127,7 +2128,7 @@ export default function TrackingDashboard() {
         setActiveTopUpId(null);
         setTopUpValue("");
       } catch (error) {
-        console.error("Oil/stock check update failed", error);
+        logFailure("Oil/stock check update failed", error);
         alert(error.message || "Failed to mark oil/stock check");
       }
     },
@@ -2179,7 +2180,7 @@ export default function TrackingDashboard() {
         });
         setEquipmentModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save equipment entry failed", error);
+        logFailure("Save equipment entry failed", error);
         alert(error.message || "Failed to save equipment entry");
       }
     },
@@ -2233,7 +2234,7 @@ export default function TrackingDashboard() {
         });
         setOilStockModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save oil/stock entry failed", error);
+        logFailure("Save oil/stock entry failed", error);
         alert(error.message || "Failed to save oil/stock entry");
       }
     },
@@ -2252,7 +2253,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete equipment entry failed", error);
+      logFailure("Delete equipment entry failed", error);
       alert(error.message || "Failed to delete equipment entry");
     } finally {
       setEquipmentModal({ open: false, item: null });
@@ -2271,7 +2272,7 @@ export default function TrackingDashboard() {
       }
       setOilChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete oil/stock entry failed", error);
+      logFailure("Delete oil/stock entry failed", error);
       alert(error.message || "Failed to delete oil/stock entry");
     } finally {
       setOilStockModal({ open: false, item: null });
@@ -2596,7 +2597,7 @@ export default function TrackingDashboard() {
       closeEntryModal();
       setSimplifiedModal({ open: false, initialData: null });
     } catch (saveError) {
-      console.error("Failed to log tracking entry", saveError);
+      logFailure("Failed to log tracking entry", saveError);
       setError(saveError.message || "Unable to save tracking entry");
     }
   };

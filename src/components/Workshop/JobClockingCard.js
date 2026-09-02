@@ -16,6 +16,7 @@ import {
 import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers
@@ -105,11 +106,11 @@ export default function JobClockingCard() {
         // Refresh data
         await fetchData();
       } else {
-        console.error("❌ Clock in failed:", result.error);
+        logFailure("❌ Clock in failed:", result.error);
         alert(`❌ Failed to clock in: ${result.error}`);
       }
     } catch (error) {
-      console.error("❌ Error clocking in:", error);
+      logFailure("❌ Error clocking in:", error);
       alert("❌ Error clocking in. Please try again.");
     } finally {
       setLoading(false);
@@ -141,11 +142,11 @@ export default function JobClockingCard() {
         // Refresh data
         await fetchData();
       } else {
-        console.error("❌ Clock out failed:", result.error);
+        logFailure("❌ Clock out failed:", result.error);
         alert(`❌ Failed to clock out: ${result.error}`);
       }
     } catch (error) {
-      console.error("❌ Error clocking out:", error);
+      logFailure("❌ Error clocking out:", error);
       alert("❌ Error clocking out. Please try again.");
     } finally {
       setLoading(false);
@@ -194,7 +195,7 @@ export default function JobClockingCard() {
         alert(`❌ Failed to switch jobs: ${result.error}`);
       }
     } catch (error) {
-      console.error("❌ Error switching jobs:", error);
+      logFailure("❌ Error switching jobs:", error);
       alert("❌ Error switching jobs. Please try again.");
     } finally {
       setLoading(false);

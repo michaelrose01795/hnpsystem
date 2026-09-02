@@ -7,6 +7,7 @@ import {
   getWorkspacePageCatalog,
   resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
 
 const REQUIRED_ROLES = [
   "Retail",
@@ -58,6 +59,45 @@ describe("role workspace defaults", () => {
         expect(catalogHrefs.has(href), `${role}: ${href}`).toBe(true);
       }
     }
+  });
+
+  it("renders every rail in the fixed module order, skipping absent modules", () => {
+    // The agreed sidebar order. A role that has no pages in a module simply
+    // skips it and the next module moves up — that is what this asserts, by
+    // checking each role's rail is a subsequence of the canonical order.
+    const RAIL_ORDER = [
+      "General",
+      "Reception",
+      "Workshop",
+      "Tech",
+      "Parts",
+      "Admin",
+      "Accounts",
+      "MOT",
+      "Valeting",
+      "Reports",
+    ];
+
+    const isSubsequence = (labels) => {
+      let cursor = -1;
+      return labels.every((label) => {
+        const next = RAIL_ORDER.indexOf(label, cursor + 1);
+        if (next === -1) return false;
+        cursor = next;
+        return true;
+      });
+    };
+
+    for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
+      const labels = getRoleDefaultWorkspaceModules(role).map((module) => module.label);
+      expect(isSubsequence(labels), `${role}: ${labels.join(" > ")}`).toBe(true);
+    }
+
+    // The All Access rail is built by bucketing the whole page catalogue and
+    // must land in the same order as everyone else's.
+    const allAccessLabels = getRoleWorkspaceModules([ALL_ACCESS_ROLE]).map((module) => module.label);
+    expect(isSubsequence(allAccessLabels), allAccessLabels.join(" > ")).toBe(true);
+    expect(allAccessLabels[0]).toBe("General");
   });
 
   it("keeps General first for role defaults but respects saved layouts", () => {

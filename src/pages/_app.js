@@ -51,10 +51,15 @@ import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
 import { isAllAccessUser } from "@/lib/auth/allAccessSession";
 import { rememberStaffRoute } from "@/lib/auth/returnRoute";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
-import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // opt-in tracer — hnpDebug("trace")
+import { isDebugChannelEnabled } from "@/utils/debugChannels";
 import { installPerfConsole, startJourney, stage } from "@/lib/perf/stageTimings";
 // STATIC, deliberately — see the note above StaffProviders/Layout below.
 import StaffProviders from "@/components/App/StaffProviders";
+// Static too: the route boundary wraps EVERY page, so code-splitting it would
+// only add a chunk request to the critical path — and a boundary that arrives
+// late cannot catch a crash during the first render it is supposed to guard.
+import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
 import Layout from "@/components/Layout";
 
 // Keep staff-only providers, shell code and global listeners out of the login
@@ -276,42 +281,41 @@ function AppWrapper({ Component, pageProps }) {
     return () => window.removeEventListener("pageshow", clearLegacyBootArtifacts);
   }, []);
 
-  // TEMP diagnostic: mark each fresh document/app boot. Also clear any
-  // leftover console output and trace buffer so F12 starts clean.
+  // Mark each fresh document/app boot, and start the trace buffer empty so one
+  // boot's timeline is not mixed into the previous one's.
+  //
+  // This deliberately does NOT call console.clear(). Clearing is destructive
+  // and unconditional: it wiped whatever error the developer had just stopped
+  // to read, on a boot nobody asked to be traced. Resetting the trace buffer is
+  // the part of that state this effect actually owns.
   useEffect(() => {
-    // Development-only: clears the console and the persisted trace buffer so a
-    // fresh boot starts clean. Skipped in production, where the tracer is a
-    // no-op and wiping the user's console would be user-hostile.
     if (!TRACE_ENABLED) return;
     if (typeof window !== "undefined") {
-      const native = globalThis.__HNP_NATIVE_CONSOLE__ || console;
-      try {
-        native.clear?.();
-      } catch {
-        // ignore
-      }
       try {
         window.sessionStorage.removeItem("hnp-trace-buffer");
       } catch {
-        // ignore
+        // sessionStorage unavailable — the in-memory buffer still works.
       }
       window.__hnpTrace = [];
     }
     trace("boot", "app shell mounted");
   }, []);
 
-  // Navigation diagnostics — clears the F12 console at each new navigation
-  // and prints a fresh timeline so the user can copy the events for one nav
-  // in isolation. Tracks: link click, prefetch, every router event, page
+  // Navigation diagnostics — prints a timeline for one navigation so it can be
+  // copied in isolation. Tracks: link click, prefetch, every router event, page
   // mount, errors, history popstate. Hint after each completed nav:
   //   copy(window.__hnpTrace)   to grab the full timeline
+  //
+  // OFF BY DEFAULT, behind its own debug channel: hnpDebug("nav") then reload,
+  // or ?debug=nav for one visit. It installs nine global listeners including a
+  // capture-phase document click handler, so it is not something to leave
+  // running — and its banners are the loudest thing in the console when it is.
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    // Development-only navigation timeline. In production this installed nine
-    // global listeners (including a capture-phase document click handler that
-    // called console.clear() on every link click) purely to feed a tracer that
-    // is itself disabled there.
-    if (!TRACE_ENABLED) return undefined;
+    // Development-only. In production this installed all nine listeners purely
+    // to feed a tracer that is itself disabled there.
+    if (process.env.NODE_ENV === "production") return undefined;
+    if (!isDebugChannelEnabled("nav")) return undefined;
 
     const native =
       (typeof globalThis !== "undefined" && globalThis.__HNP_NATIVE_CONSOLE__) || console;
@@ -325,11 +329,9 @@ function AppWrapper({ Component, pageProps }) {
           ? performance.now()
           : Date.now();
       navTargetHref = href || null;
-      try {
-        native.clear?.();
-      } catch {
-        // ignore
-      }
+      // No console.clear() here. Resetting the log per navigation also threw
+      // away the error that caused the developer to open F12 in the first
+      // place; the [NAV] banner below is enough to find where a nav starts.
       native.log(
         `%c[NAV] ${sourceLabel} → ${href || "(unknown)"}`,
         "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600"
@@ -466,7 +468,7 @@ function AppWrapper({ Component, pageProps }) {
     window.addEventListener("unhandledrejection", onUnhandledRejection);
 
     native.log(
-      `%c[NAV] diagnostics installed — F12 will clear at each click`,
+      `%c[NAV] diagnostics on — hnpDebug(false) then reload to turn them off`,
       "color:#888"
     );
 
@@ -661,7 +663,6 @@ function AppWrapper({ Component, pageProps }) {
   // Default is the persistent <Layout>. Returning the SAME element type across routes
   // keeps the sidebar/topbar mounted and only swaps the inner children.
   const getLayout = Component.getLayout || defaultGetLayout;
-  const pageElement = <Component {...pageProps} />;
 
   // Customer-facing surfaces (the public website, the customer portal, and the
   // public VHC report links) render none of the staff chrome, so the staff-only
@@ -669,8 +670,36 @@ function AppWrapper({ Component, pageProps }) {
   // though: GlobalTableShells installs a document-wide MutationObserver plus
   // mousemove/scroll/resize listeners for staff data tables, and
   // GlobalDraftPersistence tracks staff form drafts. Skipping them keeps the
-  // customer pages off those listeners entirely.
+  // customer pages off those listeners entirely. The route boundary below also
+  // reads it, to pick the softer customer recovery copy.
   const isCustomerFacingSurface = isWebsiteRoute || isCustomerRoute || isPublicVhcReportRoute;
+
+  // ROUTE-LEVEL ERROR BOUNDARY.
+  //
+  // Until now the only boundary was the app-shell one in StaffProviders, so a
+  // crash in ANY page replaced the entire interface — sidebar, topbar and all.
+  // Wrapping the page element (and not the layout) means a page crash now
+  // recovers inside the content area with the chrome still standing: the user
+  // keeps their navigation and can move somewhere else without a reload.
+  //
+  // It is applied HERE rather than page-by-page so every one of the app's routes
+  // is covered by construction, including any added later. Pages that want finer
+  // isolation still wrap individual panels in <SectionBoundary>.
+  //
+  // The `key` resets the boundary on navigation, so a crash screen never
+  // survives into the next route. The app-shell boundary remains above as the
+  // last resort for a crash in the layout itself.
+  const pageElement = (
+    <RouteBoundary
+      key={pathname}
+      variant={isCustomerFacingSurface ? "customer" : "staff"}
+      // Customer surfaces have no StaffTopbar to host the report popup.
+      hostSupportModal={isCustomerFacingSurface}
+      homeHref={isCustomerFacingSurface ? "/" : "/newsfeed"}
+    >
+      <Component {...pageProps} />
+    </RouteBoundary>
+  );
 
   return (
     <>

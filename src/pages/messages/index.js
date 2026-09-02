@@ -30,6 +30,12 @@ import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui
 // thread, message, and colleague rows have distinct final shapes — the skeleton
 // matches each one so the loading frame already mirrors the final layout.
 import MessagesPageUi from "@/components/page-ui/messages/messages-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
+import {
+  REACTION_TARGET_MESSAGE,
+  subscribeToReactions,
+} from "@/lib/database/reactions";
+import { fetchReactions, saveReaction } from "@/lib/api/reactions";
 function ThreadRowsSkeleton({ count = 4 }) {return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <SkeletonKeyframes />
@@ -407,6 +413,11 @@ const MessageBubble = ({
     return acc;
   }, {});
 
+  // A user holds at most one reaction per message, so this is the emoji or
+  // nothing. Drives aria-pressed on both the picker and the count chips.
+  const myReactionEmoji =
+  reactions.find((r) => String(r.userId) === String(currentUserId))?.emoji || null;
+
   useEffect(() => {
     if (!actionsOpen) return undefined;
     const handlePagePointerDown = (event) => {
@@ -568,14 +579,8 @@ const MessageBubble = ({
           </div>
           {actionsOpen &&
           <div
+            className="app-reaction-bar is-open"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 10px",
-              borderRadius: radii.pill,
-              backgroundColor: "rgba(var(--accent-purple-rgb), 0.12)",
-              boxShadow: "var(--shadow-lg)",
               marginTop: "8px"
             }}>
 
@@ -583,32 +588,25 @@ const MessageBubble = ({
             <button
               key={emoji}
               type="button"
-              className="app-btn app-btn--xs app-btn--pill"
+              className="app-btn app-btn--secondary app-reaction-emoji"
+              aria-pressed={myReactionEmoji === emoji}
               onClick={(e) => {
                 e.stopPropagation();
                 onReact?.(emoji);
                 setActionsOpen(false);
               }}
-              aria-label={`React with ${emoji}`}
-              style={{
-                backgroundColor: "var(--theme)",
-                borderColor: "transparent"
-              }}>
+              aria-label={`React with ${emoji}`}>
 
                   {emoji}
                 </button>
             )}
               <button
               type="button"
-              className="app-btn app-btn--xs app-btn--pill"
+              className="app-btn app-btn--secondary app-reaction-action"
               onClick={(e) => {
                 e.stopPropagation();
                 onReply?.();
                 setActionsOpen(false);
-              }}
-              style={{
-                backgroundColor: "var(--theme)",
-                borderColor: "transparent"
               }}>
 
                 Reply
@@ -632,6 +630,7 @@ const MessageBubble = ({
               variant="secondary"
               size="xs"
               pill
+              aria-pressed={myReactionEmoji === emoji}
               onClick={(e) => {
                 e.stopPropagation();
                 onReact?.(emoji);
@@ -1406,7 +1405,7 @@ function MessagesPage() {
       const payload = await listThreads({ userId: dbUserId });
       setThreads(payload?.data || payload?.threads || []);
     } catch (error) {
-      console.error("❌ Failed to load threads:", error);
+      logFailure("❌ Failed to load threads:", error);
     } finally {
       setLoadingThreads(false);
     }
@@ -1428,7 +1427,7 @@ function MessagesPage() {
         });
         setDirectory(sortDirectoryEntries(payload?.data || payload?.users || []));
       } catch (error) {
-        console.error("❌ Failed to load directory:", error);
+        logFailure("❌ Failed to load directory:", error);
       } finally {
         setDirectoryLoading(false);
       }
@@ -1473,7 +1472,7 @@ function MessagesPage() {
           );
         }
       } catch (error) {
-        console.error("❌ Failed to load conversation:", error);
+        logFailure("❌ Failed to load conversation:", error);
         setConversationError(error.message || "Unable to load conversation.");
       } finally {
         setLoadingMessages(false);
@@ -1504,6 +1503,82 @@ function MessagesPage() {
       return changed ? next : prev;
     });
   }, [messages]);
+
+  // Reactions live in public.content_reactions, not on the message row, so
+  // they are read separately for whichever transcript is on screen.
+  const refreshMessageReactions = useCallback(async (messageIds) => {
+    const ids = (messageIds || []).filter(Boolean).map((id) => String(id));
+    if (!ids.length) return;
+    try {
+      const response = await fetchReactions(REACTION_TARGET_MESSAGE, ids);
+      const loaded = response?.data || {};
+      setMessageReactions((prev) => {
+        const next = { ...prev };
+        // Only the ids just asked about are replaced — reactions for other
+        // threads already in state are left alone.
+        ids.forEach((id) => {
+          next[id] = loaded[id] || [];
+        });
+        return next;
+      });
+    } catch (err) {
+      logFailure("Failed to load message reactions:", err);
+    }
+  }, []);
+
+  const visibleMessageIdKey = useMemo(
+    () => messages.map((message) => String(message.id)).join(","),
+    [messages]
+  );
+
+  useEffect(() => {
+    const ids = visibleMessageIdKey ? visibleMessageIdKey.split(",") : [];
+    if (!ids.length) return undefined;
+    void refreshMessageReactions(ids);
+    // Anyone else reacting writes to content_reactions, which lands here.
+    return subscribeToReactions(REACTION_TARGET_MESSAGE, () => {
+      void refreshMessageReactions(ids);
+    });
+  }, [visibleMessageIdKey, refreshMessageReactions]);
+
+  // One reaction per user per message. Choosing the emoji already set clears
+  // it; choosing a different one moves the reaction across rather than adding
+  // a second. The server applies the same rule, so tabs cannot diverge.
+  const handleReactToMessage = useCallback(
+    async (messageId, emoji) => {
+      if (!dbUserId || !messageId) return;
+      const targetId = String(messageId);
+
+      setMessageReactions((prev) => {
+        const current = prev[targetId] || [];
+        const mine = current.find(
+          (entry) => String(entry.userId) === String(dbUserId)
+        );
+        const withoutMine = current.filter(
+          (entry) => String(entry.userId) !== String(dbUserId)
+        );
+        const next =
+          mine && mine.emoji === emoji
+            ? withoutMine
+            : [...withoutMine, { userId: dbUserId, emoji }];
+        return { ...prev, [targetId]: next };
+      });
+
+      try {
+        await saveReaction({
+          targetType: REACTION_TARGET_MESSAGE,
+          targetId,
+          userId: dbUserId,
+          emoji,
+        });
+      } catch (err) {
+        logFailure("Failed to save message reaction:", err);
+      } finally {
+        void refreshMessageReactions([targetId]);
+      }
+    },
+    [dbUserId, refreshMessageReactions]
+  );
 
   const openSystemNotificationsThread = useCallback(() => {
     ensureMobileConversationHistory();
@@ -1631,7 +1706,7 @@ function MessagesPage() {
         await openThread(activeThreadId, activeThread);
         await fetchThreads();
       } catch (error) {
-        console.error("Failed to process leave request decision:", error);
+        logFailure("Failed to process leave request decision:", error);
         setLeaveDecisionError(error.message || "Unable to process leave request.");
         setConversationError(error.message || "Unable to process leave request.");
       } finally {
@@ -1706,7 +1781,7 @@ function MessagesPage() {
         await openThread(thread.id);
         return true;
       } catch (error) {
-        console.error("❌ Failed to start direct chat:", error);
+        logFailure("❌ Failed to start direct chat:", error);
         setComposeError(error.message || "Unable to start chat");
         return false;
       }
@@ -1739,7 +1814,7 @@ function MessagesPage() {
       await openThread(thread.id);
       return true;
     } catch (error) {
-      console.error("❌ Failed to create group:", error);
+      logFailure("❌ Failed to create group:", error);
       setComposeError(error.message || "Unable to create group");
       return false;
     }
@@ -1938,7 +2013,7 @@ function MessagesPage() {
         await fetchThreads();
         await openThread(targetThreadId);
       } catch (error) {
-        console.error("❌ Failed to send message:", error);
+        logFailure("❌ Failed to send message:", error);
         setConversationError(error.message || "Unable to send message.");
       } finally {
         setSending(false);
@@ -2035,7 +2110,7 @@ function MessagesPage() {
           }
         }
       } catch (error) {
-        console.error("❌ Collaboration deep-link failed:", error);
+        logFailure("❌ Collaboration deep-link failed:", error);
       } finally {
         router.replace("/messages", undefined, { shallow: true });
       }
@@ -2080,7 +2155,7 @@ function MessagesPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          console.error("❌ Failed to load default directory:", error);
+          logFailure("❌ Failed to load default directory:", error);
           setDirectory([]);
         }
       } finally {
@@ -2454,7 +2529,7 @@ function MessagesPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          console.error("❌ Group search failed:", error);
+          logFailure("❌ Group search failed:", error);
           setGroupSearchResults([]);
         }
       } finally {
@@ -2510,7 +2585,7 @@ function MessagesPage() {
           setGroupSearchResults([]);
         }
       } catch (error) {
-        console.error("❌ Failed to add member:", error);
+        logFailure("❌ Failed to add member:", error);
         setGroupManageError(error.message || "Unable to add member.");
       } finally {
         setGroupManageBusy(false);
@@ -2533,7 +2608,7 @@ function MessagesPage() {
           mergeThread(payload.data);
         }
       } catch (error) {
-        console.error("❌ Failed to remove member:", error);
+        logFailure("❌ Failed to remove member:", error);
         setGroupManageError(error.message || "Unable to remove member.");
       } finally {
         setGroupManageBusy(false);
@@ -2558,7 +2633,7 @@ function MessagesPage() {
       }
       setGroupEditModalOpen(false);
     } catch (error) {
-      console.error("❌ Failed to update group:", error);
+      logFailure("❌ Failed to update group:", error);
       setGroupEditError(error.message || "Unable to update group.");
     } finally {
       setGroupEditBusy(false);
@@ -2607,7 +2682,7 @@ function MessagesPage() {
       setThreadSelectionMode(false);
       fetchThreads();
     } catch (error) {
-      console.error("❌ Failed to delete threads:", error);
+      logFailure("❌ Failed to delete threads:", error);
       setThreadDeleteError(error.message || "Unable to delete selected threads.");
     } finally {
       setThreadDeleteBusy(false);
@@ -2649,7 +2724,7 @@ function MessagesPage() {
 
   }
 
-  return <MessagesPageUi view="section2" activeBookingsView={activeBookingsView} activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSeeCustomerRequests={canSeeCustomerRequests} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} customerDetail={customerDetail} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasBookingsUnread={hasBookingsUnread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} messageFilter={messageFilter} handleSelectMessageFilter={handleSelectMessageFilter} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openBookingsThread={openBookingsThread} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={activePseudoNotifications} handleCreateJobFromRequest={handleCreateJobFromRequest} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} setMessageReactions={setMessageReactions} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={activePseudoError} systemLoading={activePseudoLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
+  return <MessagesPageUi view="section2" activeBookingsView={activeBookingsView} activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSeeCustomerRequests={canSeeCustomerRequests} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} customerDetail={customerDetail} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasBookingsUnread={hasBookingsUnread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} messageFilter={messageFilter} handleSelectMessageFilter={handleSelectMessageFilter} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openBookingsThread={openBookingsThread} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={activePseudoNotifications} handleCreateJobFromRequest={handleCreateJobFromRequest} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} handleReactToMessage={handleReactToMessage} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={activePseudoError} systemLoading={activePseudoLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
 
 
 

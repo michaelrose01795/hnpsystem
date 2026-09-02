@@ -9,6 +9,7 @@ import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary
 import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
 import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
 import { supabase } from '@/lib/database/supabaseClient'; // Supabase client for real-time subscriptions
+import { logFailure } from "@/lib/utils/logFailure";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -99,7 +100,7 @@ export default function StatusSidebar({
         setSearchResults(Array.isArray(data.jobs) ? data.jobs : []);
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Tracker search failed:', error);
+          logFailure('Tracker search failed:', error);
           setSearchResults([]);
         }
       } finally {
@@ -186,7 +187,7 @@ export default function StatusSidebar({
       }
       setSearchError(data.error || 'Job not found');
     } catch (error) {
-      console.error('Error fetching status history:', error);
+      logFailure('Error fetching status history:', error);
       setSearchError('Failed to load job data');
     }
     return false;

@@ -12,6 +12,7 @@ import useIdleWarm from "@/hooks/useIdleWarm";
 import { buildInspectionConcerns } from "@/components/VHC/mediaCapture/buildInspectionConcerns"; // Panel data helper
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
+import { logFailure } from "@/lib/utils/logFailure";
 // Loaded on demand - 213 KB of @supabase/supabase-js. The client is used for a
 // single signed-URL upload inside an async handler, so it is not needed to
 // render the button. Importing it statically put the whole client into the
@@ -134,7 +135,7 @@ export default function CustomerVideoButton({
       setPendingVideo(null); // Clear pending state
       onUploadComplete?.(record); // Let parent refresh its data
     } catch (err) {
-      console.error("Customer video upload failed:", err); // Log
+      logFailure("Customer video upload failed:", err); // Log
       const friendlyMsg = "Customer video could not be uploaded. Please try again.";
       setUploadError(friendlyMsg);
       showAlert(buildErrorAlert(friendlyMsg, err, {
@@ -171,7 +172,7 @@ export default function CustomerVideoButton({
       setPendingVideo(null); // Clear
       onUploadComplete?.(record); // Notify parent
     } catch (err) {
-      console.error("Customer video upload failed:", err); // Log
+      logFailure("Customer video upload failed:", err); // Log
       const friendlyMsg = "Customer video could not be uploaded. Please try again.";
       setUploadError(friendlyMsg);
       showAlert(buildErrorAlert(friendlyMsg, err, {

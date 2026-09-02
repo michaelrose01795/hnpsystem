@@ -1,6 +1,7 @@
 // file location: src/hooks/useMessagesBadge.js
 import { useCallback, useEffect, useState } from "react";
 import { getShellBootstrap, peekShellBootstrap } from "@/lib/shell/bootstrapClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
@@ -38,7 +39,7 @@ export function useMessagesBadge(userId) {
       const totalUnread = Number(payload?.data?.unreadCount) || 0;
       setUnreadCount(totalUnread);
     } catch (error) {
-      console.error("❌ Failed to refresh message badge:", error);
+      logFailure("❌ Failed to refresh message badge:", error);
     }
   }, [userId]);
 

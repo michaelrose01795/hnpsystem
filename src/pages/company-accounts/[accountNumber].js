@@ -9,6 +9,7 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { prefetchJob } from "@/lib/swr/prefetch";
 import CompanyAccountDetailPageUi from "@/components/page-ui/company-accounts/company-accounts-account-number-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const ALLOWED_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 const HISTORY_DEFAULT = { jobs: [], invoices: [] };
@@ -45,7 +46,7 @@ export default function CompanyAccountDetailPage() {
       setAccount(payload.data);
       setHistory(payload.history || HISTORY_DEFAULT);
     } catch (err) {
-      console.error("Failed to load company account", err);
+      logFailure("Failed to load company account", err);
       setError(err.message || "Unable to load company account");
     } finally {
       setLoading(false);

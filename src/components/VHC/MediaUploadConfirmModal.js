@@ -11,6 +11,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export default function MediaUploadConfirmModal({
   isOpen,
@@ -75,7 +76,7 @@ export default function MediaUploadConfirmModal({
 
       onUploadComplete?.(uploadedFile);
     } catch (uploadError) {
-      console.error("Failed to save VHC media:", uploadError);
+      logFailure("Failed to save VHC media:", uploadError);
       const friendlyMsg = "Media could not be saved. Please try again.";
       setError(friendlyMsg);
       showAlert(buildErrorAlert(friendlyMsg, uploadError, {

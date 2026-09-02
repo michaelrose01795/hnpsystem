@@ -30,6 +30,7 @@ import {
   isRemovedPartsRow,
   preferLatestPartRow,
 } from "@/lib/jobCards/requestHelpers";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Customer Requests Tab
 export function CustomerRequestsTab({
@@ -908,7 +909,7 @@ export function CustomerRequestsTab({
         })
       });
     } catch (error) {
-      console.error("Failed to persist request preset hours", error);
+      logFailure("Failed to persist request preset hours", error);
     }
   };
 

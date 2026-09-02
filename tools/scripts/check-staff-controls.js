@@ -123,7 +123,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/topbar/TeamPanel.js", 5],
   ["src/components/topbar/WorkspaceCustomiseOverlay.js", 4],
   ["src/components/topbar/WorkspacePanel.js", 4],
-  ["src/components/TopbarAlerts.js", 3],
+  ["src/components/TopbarAlerts.js", 2],
   ["src/components/ui/Button.js", 1],
   ["src/components/ui/calendarAPI/Calendar.js", 8],
   ["src/components/ui/calendarAPI/CalendarField.js", 2],

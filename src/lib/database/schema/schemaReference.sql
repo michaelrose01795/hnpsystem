@@ -1309,7 +1309,145 @@ CREATE TABLE public.news_updates (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT news_updates_pkey PRIMARY KEY (id),
-  CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+  priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['normal'::text, 'important'::text, 'urgent'::text])),
+  category text NOT NULL DEFAULT 'announcement'::text,
+  status text NOT NULL DEFAULT 'published'::text CHECK (status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])),
+  source text NOT NULL DEFAULT 'staff'::text CHECK (source = ANY (ARRAY['staff'::text, 'system'::text])),
+  system_key text,
+  is_pinned boolean NOT NULL DEFAULT false,
+  pinned_at timestamp with time zone,
+  pinned_by integer,
+  requires_ack boolean NOT NULL DEFAULT false,
+  ack_due_at timestamp with time zone,
+  publish_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  published_at timestamp with time zone,
+  edited_at timestamp with time zone,
+  edit_count integer NOT NULL DEFAULT 0,
+  view_count integer NOT NULL DEFAULT 0,
+  deleted_at timestamp with time zone,
+  CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_post_reads (
+  post_id uuid NOT NULL,
+  user_id integer NOT NULL,
+  read_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_post_reads_pkey PRIMARY KEY (post_id, user_id),
+  CONSTRAINT news_post_reads_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_post_reads_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_post_acknowledgements (
+  post_id uuid NOT NULL,
+  user_id integer NOT NULL,
+  acknowledged_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_post_acknowledgements_pkey PRIMARY KEY (post_id, user_id),
+  CONSTRAINT news_post_ack_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_post_ack_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_comments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  parent_id uuid,
+  user_id integer NOT NULL,
+  body text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
+  CONSTRAINT news_comments_pkey PRIMARY KEY (id),
+  CONSTRAINT news_comments_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_comments_parent_fkey FOREIGN KEY (parent_id) REFERENCES public.news_comments(id),
+  CONSTRAINT news_comments_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_attachments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid,
+  draft_key text,
+  file_name text NOT NULL,
+  mime_type text NOT NULL,
+  size_bytes bigint NOT NULL DEFAULT 0,
+  storage_path text NOT NULL,
+  uploaded_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_attachments_pkey PRIMARY KEY (id),
+  CONSTRAINT news_attachments_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_attachments_user_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_post_links (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  record_type text NOT NULL CHECK (record_type = ANY (ARRAY['job_card'::text, 'customer'::text, 'vehicle'::text, 'appointment'::text, 'delivery'::text, 'vhc'::text, 'stock'::text, 'invoice'::text])),
+  record_id text NOT NULL,
+  label text,
+  href text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_post_links_pkey PRIMARY KEY (id),
+  CONSTRAINT news_post_links_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id)
+);
+CREATE TABLE public.news_bookmarks (
+  post_id uuid NOT NULL,
+  user_id integer NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_bookmarks_pkey PRIMARY KEY (post_id, user_id),
+  CONSTRAINT news_bookmarks_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_bookmarks_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_mentions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  comment_id uuid,
+  mentioned_user_id integer NOT NULL,
+  created_by integer,
+  seen_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_mentions_pkey PRIMARY KEY (id),
+  CONSTRAINT news_mentions_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id),
+  CONSTRAINT news_mentions_comment_fkey FOREIGN KEY (comment_id) REFERENCES public.news_comments(id),
+  CONSTRAINT news_mentions_user_fkey FOREIGN KEY (mentioned_user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.news_post_revisions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  revision integer NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL,
+  departments ARRAY NOT NULL DEFAULT ARRAY[]::text[],
+  priority text,
+  category text,
+  edited_by integer,
+  edited_by_name text,
+  edited_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_post_revisions_pkey PRIMARY KEY (id),
+  CONSTRAINT news_post_revisions_unique UNIQUE (post_id, revision),
+  CONSTRAINT news_post_revisions_post_fkey FOREIGN KEY (post_id) REFERENCES public.news_updates(id)
+);
+CREATE TABLE public.news_notification_preferences (
+  user_id integer NOT NULL,
+  notify_all boolean NOT NULL DEFAULT true,
+  notify_urgent boolean NOT NULL DEFAULT true,
+  notify_mentions boolean NOT NULL DEFAULT true,
+  notify_acknowledgements boolean NOT NULL DEFAULT true,
+  notify_comments boolean NOT NULL DEFAULT true,
+  notify_system_posts boolean NOT NULL DEFAULT false,
+  muted_categories ARRAY NOT NULL DEFAULT ARRAY[]::text[],
+  muted_departments ARRAY NOT NULL DEFAULT ARRAY[]::text[],
+  digest_frequency text NOT NULL DEFAULT 'realtime'::text CHECK (digest_frequency = ANY (ARRAY['realtime'::text, 'daily'::text, 'off'::text])),
+  feed_density text NOT NULL DEFAULT 'comfortable'::text CHECK (feed_density = ANY (ARRAY['comfortable'::text, 'compact'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT news_notification_preferences_pkey PRIMARY KEY (user_id),
+  CONSTRAINT news_notification_preferences_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.content_reactions (
+  reaction_id bigint NOT NULL DEFAULT nextval('content_reactions_reaction_id_seq'::regclass),
+  target_type text NOT NULL CHECK (target_type = ANY (ARRAY['message'::text, 'news_update'::text])),
+  target_id text NOT NULL,
+  user_id integer NOT NULL,
+  emoji text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT content_reactions_pkey PRIMARY KEY (reaction_id),
+  CONSTRAINT content_reactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT content_reactions_one_per_user UNIQUE (target_type, target_id, user_id)
 );
 CREATE TABLE public.invoice_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -3,6 +3,7 @@
 // role guards, and error handling to reduce boilerplate.
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /**
  * Creates a Next.js API handler with built-in method routing, role guards,
@@ -40,11 +41,23 @@ export default function createHandler({ allowedRoles = [], methods = {} }) {
     try {
       await methodHandler(req, res, session);
     } catch (error) {
-      console.error(`❌ API error [${req.method} ${req.url}]:`, error);
+      logFailure(`❌ API error [${req.method} ${req.url}]:`, error);
       if (!res.headersSent) {
+        // The raw `error.message` is developer detail — it can carry table
+        // names, constraint text or internal paths, and the client renders API
+        // messages to the user. In production it is logged (above) and kept off
+        // the wire; in development it is returned so a developer debugging a
+        // route still sees what actually threw.
+        //
+        // The client turns this 500 into the friendly SERVER sentence via
+        // friendlyKeyForStatus (src/lib/api/apiError.js), so nothing depends on
+        // the text here being descriptive.
+        const isProduction = process.env.NODE_ENV === "production";
         res.status(500).json({
           success: false,
-          message: error.message || "Internal server error",
+          message: isProduction
+            ? "Internal server error"
+            : error.message || "Internal server error",
         });
       }
     }
@@ -60,7 +73,7 @@ export default function createHandler({ allowedRoles = [], methods = {} }) {
  */
 export function sendError(res, status, message, logContext) {
   if (logContext) {
-    console.error(message, logContext);
+    logFailure(message, logContext);
   }
   return res.status(status).json({ success: false, message });
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import Popup from "./Popup";
 import { normalizeRequests } from "@/lib/jobCards/utils";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;
@@ -306,7 +307,7 @@ export default function InvoiceBuilderPopup({
           : "Invoice saved to job documents."
       );
     } catch (error) {
-      console.error("Share invoice failed:", error);
+      logFailure("Share invoice failed:", error);
       setShareFeedback(error.message);
     } finally {
       setIsSharing(false);

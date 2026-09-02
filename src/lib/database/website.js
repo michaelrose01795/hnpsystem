@@ -17,6 +17,7 @@
 //   from a server context (API routes).
 
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================================================
    READ HELPERS
@@ -29,7 +30,7 @@ const orderedSelect = async (table, { extraSelect } = {}) => {
     .select(select)
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error(`[website] ${table} read error:`, error.message);
+    logFailure(`[website] ${table} read error:`, error.message);
     return [];
   }
   return data || [];
@@ -42,7 +43,7 @@ const singletonSelect = async (table) => {
     .eq("id", "default")
     .maybeSingle();
   if (error) {
-    console.error(`[website] ${table} singleton read error:`, error.message);
+    logFailure(`[website] ${table} singleton read error:`, error.message);
     return null;
   }
   return data || null;
@@ -73,7 +74,7 @@ const publishedOnly = async (table) => {
     .eq("status", "published")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error(`[website] ${table} published read error:`, error.message);
+    logFailure(`[website] ${table} published read error:`, error.message);
     return [];
   }
   return data || [];
@@ -107,8 +108,8 @@ export const getTeam = async () => {
         .eq("status", "published")
         .order("sort_order"),
     ]);
-  if (dErr) console.error("[website] team departments read error:", dErr.message);
-  if (mErr) console.error("[website] team members read error:", mErr.message);
+  if (dErr) logFailure("[website] team departments read error:", dErr.message);
+  if (mErr) logFailure("[website] team members read error:", mErr.message);
   return { departments: depts || [], members: members || [] };
 };
 
@@ -423,7 +424,7 @@ export const upsertSingleton = async (table, patch, actor) => {
     .select()
     .single();
   if (error) {
-    console.error(`[website] ${table} upsert error:`, error.message);
+    logFailure(`[website] ${table} upsert error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -437,7 +438,7 @@ export const upsertRow = async (table, row, actor) => {
     .select()
     .single();
   if (error) {
-    console.error(`[website] ${table} upsert row error:`, error.message);
+    logFailure(`[website] ${table} upsert row error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -446,7 +447,7 @@ export const upsertRow = async (table, row, actor) => {
 export const deleteRow = async (table, id) => {
   const { error } = await supabase.from(table).delete().eq("id", id);
   if (error) {
-    console.error(`[website] ${table} delete error:`, error.message);
+    logFailure(`[website] ${table} delete error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };
@@ -465,7 +466,7 @@ export const reorderRows = async (table, idsInOrder, actor) => {
     .from(table)
     .upsert(rows, { onConflict: "id" });
   if (error) {
-    console.error(`[website] ${table} reorder error:`, error.message);
+    logFailure(`[website] ${table} reorder error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };
@@ -481,7 +482,7 @@ export const getPages = async () => {
     .select("*")
     .order("page_key");
   if (error) {
-    console.error("[website] pages read error:", error.message);
+    logFailure("[website] pages read error:", error.message);
     return [];
   }
   return data || [];
@@ -495,7 +496,7 @@ export const touchPage = async (pageKey, actor) => {
       last_edited_at: new Date().toISOString(),
     })
     .eq("page_key", pageKey);
-  if (error) console.error("[website] touchPage error:", error.message);
+  if (error) logFailure("[website] touchPage error:", error.message);
 };
 
 export const setPageStatus = async (pageKey, status, actor) => {
@@ -510,7 +511,7 @@ export const setPageStatus = async (pageKey, status, actor) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] setPageStatus error:", error.message);
+    logFailure("[website] setPageStatus error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -523,7 +524,7 @@ export const logActivity = async ({ actor, action, target, pageKey }) => {
     target,
     page_key: pageKey || null,
   });
-  if (error) console.error("[website] logActivity error:", error.message);
+  if (error) logFailure("[website] logActivity error:", error.message);
 };
 
 export const getRecentActivity = async (limit = 50) => {
@@ -533,7 +534,7 @@ export const getRecentActivity = async (limit = 50) => {
     .order("occurred_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.error("[website] activity read error:", error.message);
+    logFailure("[website] activity read error:", error.message);
     return [];
   }
   return data || [];
@@ -546,7 +547,7 @@ export const getRecentActivity = async (limit = 50) => {
 export const getSeoEntries = async () => {
   const { data, error } = await supabase.from("website_seo").select("*");
   if (error) {
-    console.error("[website] seo read error:", error.message);
+    logFailure("[website] seo read error:", error.message);
     return [];
   }
   return data || [];
@@ -562,7 +563,7 @@ export const updateSeo = async (pageKey, patch, actor) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] updateSeo error:", error.message);
+    logFailure("[website] updateSeo error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -578,7 +579,7 @@ export const getMedia = async () => {
     .select("*")
     .order("uploaded_at", { ascending: false });
   if (error) {
-    console.error("[website] media read error:", error.message);
+    logFailure("[website] media read error:", error.message);
     return [];
   }
   return data || [];
@@ -591,7 +592,7 @@ export const upsertMedia = async (asset) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] upsertMedia error:", error.message);
+    logFailure("[website] upsertMedia error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -600,7 +601,7 @@ export const upsertMedia = async (asset) => {
 export const deleteMedia = async (id) => {
   const { error } = await supabase.from("website_media").delete().eq("id", id);
   if (error) {
-    console.error("[website] deleteMedia error:", error.message);
+    logFailure("[website] deleteMedia error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };

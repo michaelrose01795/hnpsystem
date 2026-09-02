@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const TOOLS = [
   { id: "circle", label: "Circle" },
@@ -151,14 +152,14 @@ export default function PhotoEditorModal({
         if (cancelled) return;
         img.onload = handleReady;
         img.onerror = () => {
-          console.error("Error loading image:", err);
+          logFailure("Error loading image:", err);
           setImageLoaded(false);
         };
       });
     } else {
       img.onload = handleReady;
       img.onerror = (err) => {
-        console.error("Error loading image:", err);
+        logFailure("Error loading image:", err);
         setImageLoaded(false);
       };
     }

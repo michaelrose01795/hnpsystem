@@ -507,16 +507,18 @@ describe("workspace manifest - module bundle placement", () => {
   it("exposes only the fixed sidebar-access module library", () => {
     const moduleCatalog = getSidebarModuleCatalog();
     expect(moduleCatalog.map((module) => module.label)).toEqual([
+      // Library order IS the sidebar rail order for every user (see the header
+      // note on SIDEBAR_MODULE_LIBRARY).
       "General",
-      "Admin",
       "Reception",
       "Workshop",
-      "MOT",
-      "Parts",
-      "Valeting",
-      "Accounts",
-      "Reports",
       "Tech",
+      "Parts",
+      "Admin",
+      "Accounts",
+      "MOT",
+      "Valeting",
+      "Reports",
     ]);
     expect(
       moduleCatalog.map((module) => ({
@@ -525,27 +527,27 @@ describe("workspace manifest - module bundle placement", () => {
       }))
     ).toEqual([
       { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
-      { key: "department-management", hrefs: [
-        "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
-        "/hr/manager", "/website-manager", "/archive",
-      ] },
       { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"] },
       { key: "department-workshop", hrefs: [
         "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
         "/tech/efficiency", "/nextjobs",
       ] },
-      { key: "department-mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+      { key: "department-tech", hrefs: [
+        "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
+      ] },
       // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
       { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"] },
-      { key: "department-valeting", hrefs: ["/dashboard/valeting", "/valet"] },
+      { key: "department-management", hrefs: [
+        "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
+        "/hr/manager", "/website-manager", "/archive",
+      ] },
       { key: "department-accounts", hrefs: ["/dashboard/accounts", "/accounts/payslips", "/accounts", "/company-accounts", "/accounts/invoices", "/accounts/reports"] },
+      { key: "department-mot", hrefs: ["/dashboard/mot", "/tech", "/tech/efficiency"] },
+      { key: "department-valeting", hrefs: ["/dashboard/valeting", "/valet"] },
       { key: "department-reports", hrefs: [
         "/reports/workshop", "/reports/parts", "/reports/service", "/reports/mot",
         "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin",
         "/reports/overview",
-      ] },
-      { key: "department-tech", hrefs: [
-        "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
       ] },
     ]);
     expect(

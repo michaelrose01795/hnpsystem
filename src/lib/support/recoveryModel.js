@@ -174,19 +174,21 @@ export function resolveHomeHref(variant, homeHref) {
 // Human labels per action, resolved with level/variant context so one action id
 // reads correctly everywhere (e.g. "reload" is "Reload app" at APP level but
 // "Reload page" at ROUTE level).
-function labelFor(actionId, { level, variant }) {
+export function labelFor(actionId, { level, variant } = {}) {
   switch (actionId) {
     case RECOVERY_ACTIONS.RETRY:
-      return level === RECOVERY_LEVELS.SECTION ? "Retry" : "Try again";
+      return level === RECOVERY_LEVELS.SECTION ? "Retry" : "Try Again";
     case RECOVERY_ACTIONS.RELOAD:
       if (level === RECOVERY_LEVELS.APP) return "Reload app";
       return "Reload page";
     case RECOVERY_ACTIONS.BACK:
       return "Go back";
     case RECOVERY_ACTIONS.HOME:
-      return variant === RECOVERY_VARIANTS.CUSTOMER ? "Return home" : "Return to dashboard";
+      // Staff home is /newsfeed (DEFAULT_HOME), so the label names where the
+      // button actually goes rather than a "dashboard" the app has no route for.
+      return variant === RECOVERY_VARIANTS.CUSTOMER ? "Return home" : "Return to Newsfeed";
     case RECOVERY_ACTIONS.REPORT:
-      return "Report a problem";
+      return "Report Problem";
     default:
       return actionId;
   }

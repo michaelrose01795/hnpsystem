@@ -1,0 +1,32 @@
+/* file location: src/styles/families/error-recovery.css
+ *
+ * The in-app error experience — the recovery screen an error boundary renders
+ * (SupportErrorBoundary / PageErrorScreen) and the "Report a problem" popup.
+ *
+ * Only the pieces that appear in MORE THAN ONE of those places live here. The
+ * reference code is the clearest case: the same short "ERR-…" line is shown on
+ * the recovery screen, on the framework error pages, and again inside the report
+ * popup, and it must read identically in all three — it is what a staff member
+ * quotes to support and what the automatically-captured error events are filed
+ * under.
+ *
+ * Tokens only (CLAUDE.md §3.1). No borders: this is not one of the five allowed
+ * outline use-cases (§3.0a).
+ */
+
+/* The "Reference: ERR-K3F9Q2" line. Quiet by default — it is not the message,
+ * it is the thing you read out when the message did not help. */
+.app-error-reference {
+  margin: 0;
+  color: var(--text-1);
+  opacity: 0.62;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+/* The code itself. Selectable in one drag so it can be copied without fighting
+ * the surrounding prose. */
+.app-error-reference__code {
+  font-weight: 600;
+  user-select: all;
+}

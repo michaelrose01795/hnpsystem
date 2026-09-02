@@ -2,6 +2,7 @@
 import { getDatabaseClient } from "@/lib/database/client"; // import supabase service client
 import { apiRequest } from "@/lib/api/client";
 import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table (client + server)
+import { logFailure } from "@/lib/utils/logFailure";
 
 const supabase = getDatabaseClient(); // create singleton client
 
@@ -252,7 +253,7 @@ export const logNextActionEvents = async ({
   ]);
 
   if (keyError || vehicleError) {
-    console.error("Failed to log next action", keyError || vehicleError);
+    logFailure("Failed to log next action", keyError || vehicleError);
     return {
       success: false,
       error: keyError || vehicleError,
@@ -315,7 +316,7 @@ export const recordAutomaticMovementForStatus = async ({
         .eq("id", jobId)
         .maybeSingle();
       if (error) {
-        console.error("Auto movement: unable to read job", error);
+        logFailure("Auto movement: unable to read job", error);
         return { success: false, error };
       }
       row = data || {};
@@ -335,7 +336,7 @@ export const recordAutomaticMovementForStatus = async ({
       deduplicate: true,
     });
   } catch (error) {
-    console.error("Auto movement error", error);
+    logFailure("Auto movement error", error);
     return { success: false, error };
   }
 };
@@ -349,7 +350,7 @@ export const getLoanCarScheduleBookings = async ({ startDate, endDate } = {}) =>
     .order("start_date", { ascending: true });
 
   if (error) {
-    console.error("Failed to fetch loan car schedule bookings", error);
+    logFailure("Failed to fetch loan car schedule bookings", error);
     return [];
   }
 
@@ -364,7 +365,7 @@ export const getLoanCars = async () => {
     .order("reg", { ascending: true });
 
   if (error) {
-    console.error("Failed to fetch loan cars", error);
+    logFailure("Failed to fetch loan cars", error);
     return [];
   }
 
@@ -381,7 +382,7 @@ export const getLoanCarFuelHistory = async (loanCarId, { limit = 50 } = {}) => {
     .limit(limit);
 
   if (error) {
-    console.error("Failed to fetch loan car fuel history", error);
+    logFailure("Failed to fetch loan car fuel history", error);
     return [];
   }
 
@@ -419,7 +420,7 @@ export const recordLoanCarFuelHistorySnapshot = async ({
     .limit(1);
 
   if (latestError) {
-    console.error("Failed to check latest loan car fuel history", latestError);
+    logFailure("Failed to check latest loan car fuel history", latestError);
     return { success: false, error: latestError };
   }
 
@@ -442,7 +443,7 @@ export const recordLoanCarFuelHistorySnapshot = async ({
     });
 
   if (historyError) {
-    console.error("Failed to save loan car fuel history", historyError);
+    logFailure("Failed to save loan car fuel history", historyError);
     return { success: false, error: historyError };
   }
 
@@ -467,7 +468,7 @@ export const saveLoanCar = async (car) => {
       .maybeSingle();
 
     if (existingError) {
-      console.error("Failed to check current loan car fuel level", existingError);
+      logFailure("Failed to check current loan car fuel level", existingError);
       return { success: false, error: existingError };
     }
 
@@ -481,7 +482,7 @@ export const saveLoanCar = async (car) => {
   const { data, error } = await query.select().single();
 
   if (error) {
-    console.error("Failed to save loan car", error);
+    logFailure("Failed to save loan car", error);
     return { success: false, error };
   }
 
@@ -526,7 +527,7 @@ export const saveLoanCar = async (car) => {
 export const deleteLoanCar = async (loanCarId) => {
   const { error } = await supabase.from("tracking_loan_cars").delete().eq("loan_car_id", loanCarId);
   if (error) {
-    console.error("Failed to delete loan car", error);
+    logFailure("Failed to delete loan car", error);
     return { success: false, error };
   }
   return { success: true };
@@ -557,7 +558,7 @@ export const saveLoanCarBooking = async (booking) => {
   const { data: overlappingBookings, error: overlapError } = await overlapQuery;
 
   if (overlapError) {
-    console.error("Failed to check loan car booking overlap", overlapError);
+    logFailure("Failed to check loan car booking overlap", overlapError);
     return { success: false, error: overlapError };
   }
 
@@ -574,7 +575,7 @@ export const saveLoanCarBooking = async (booking) => {
   const { data, error } = await query.select().single();
 
   if (error) {
-    console.error("Failed to save loan car booking", error);
+    logFailure("Failed to save loan car booking", error);
     return { success: false, error };
   }
 
@@ -584,7 +585,7 @@ export const saveLoanCarBooking = async (booking) => {
 export const deleteLoanCarBooking = async (bookingId) => {
   const { error } = await supabase.from("tracking_loan_car_bookings").delete().eq("booking_id", bookingId);
   if (error) {
-    console.error("Failed to delete loan car booking", error);
+    logFailure("Failed to delete loan car booking", error);
     return { success: false, error };
   }
   return { success: true };
@@ -630,7 +631,7 @@ export const searchLoanCarBookingTargets = async (searchTerm) => {
     .limit(12);
 
   if (error) {
-    console.error("Failed to search loan car booking targets", error);
+    logFailure("Failed to search loan car booking targets", error);
     return [];
   }
 
@@ -748,7 +749,7 @@ export const updateTrackingLocations = async ({
       .select()
       .single();
     if (keyResult.error) {
-      console.error("Failed to append key tracking entry", keyResult.error);
+      logFailure("Failed to append key tracking entry", keyResult.error);
       return { success: false, error: keyResult.error };
     }
   }
@@ -764,7 +765,7 @@ export const updateTrackingLocations = async ({
       );
       // Fail open: a lookup error must not stop the movement being recorded.
       if (latestVehicleError) {
-        console.error("Failed to read latest vehicle tracking status", latestVehicleError);
+        logFailure("Failed to read latest vehicle tracking status", latestVehicleError);
       }
       nextVehicleStatus = latestVehicleEvent?.status || statusLabelForAction(actionType);
     }
@@ -783,7 +784,7 @@ export const updateTrackingLocations = async ({
       .select()
       .single();
     if (vehicleResult.error) {
-      console.error("Failed to append vehicle tracking entry", vehicleResult.error);
+      logFailure("Failed to append vehicle tracking entry", vehicleResult.error);
       return { success: false, error: vehicleResult.error };
     }
   }
@@ -939,7 +940,7 @@ export const fetchTrackingSnapshot = async () => {
   ]);
 
   if (keyError || vehicleError) {
-    console.error("Failed to fetch tracking snapshot", keyError || vehicleError);
+    logFailure("Failed to fetch tracking snapshot", keyError || vehicleError);
     return { success: false, error: keyError || vehicleError };
   }
 

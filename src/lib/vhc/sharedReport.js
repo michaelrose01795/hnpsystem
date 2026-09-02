@@ -24,6 +24,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const LINK_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -71,7 +72,7 @@ export async function resolveJobNumberForShareCode(linkCode) {
     .maybeSingle();
 
   if (error) {
-    console.error("Error resolving share code:", error);
+    logFailure("Error resolving share code:", error);
     return null;
   }
   return data?.job_number || null;
@@ -114,7 +115,7 @@ export async function resolveSharedVhcReport({ jobNumber: rawJobNumber, linkCode
       .maybeSingle();
 
     if (linkError) {
-      console.error("Error fetching share link:", linkError);
+      logFailure("Error fetching share link:", linkError);
       return { status: 500, body: { success: false, error: "Failed to validate link" } };
     }
 
@@ -149,7 +150,7 @@ export async function resolveSharedVhcReport({ jobNumber: rawJobNumber, linkCode
       .maybeSingle();
 
     if (jobRowError) {
-      console.error("Error fetching job row:", jobRowError);
+      logFailure("Error fetching job row:", jobRowError);
       const details = isDev()
         ? jobRowError?.message || JSON.stringify(jobRowError, Object.getOwnPropertyNames(jobRowError))
         : undefined;
@@ -183,15 +184,15 @@ export async function resolveSharedVhcReport({ jobNumber: rawJobNumber, linkCode
 
     const warnings = [];
     if (vhcChecksRes.error) {
-      console.error("Error fetching vhc_checks:", vhcChecksRes.error);
+      logFailure("Error fetching vhc_checks:", vhcChecksRes.error);
       warnings.push("vhc_checks");
     }
     if (partsRes.error) {
-      console.error("Error fetching parts_job_items:", partsRes.error);
+      logFailure("Error fetching parts_job_items:", partsRes.error);
       warnings.push("parts_job_items");
     }
     if (filesRes.error) {
-      console.error("Error fetching job_files:", filesRes.error);
+      logFailure("Error fetching job_files:", filesRes.error);
       warnings.push("job_files");
     }
 
@@ -216,7 +217,7 @@ export async function resolveSharedVhcReport({ jobNumber: rawJobNumber, linkCode
       },
     };
   } catch (error) {
-    console.error("Error resolving shared VHC report:", error);
+    logFailure("Error resolving shared VHC report:", error);
     return { status: 500, body: { success: false, error: "Internal server error" } };
   }
 }

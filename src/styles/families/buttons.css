@@ -298,3 +298,202 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.25) !important;
 }
+
+/* ========================================================= */
+/* === Glyph modifier — oversized single glyph             === */
+/* === Pairs with .app-btn--icon when the glyph is a bare  === */
+/* === mark ("+", "×") that should fill the circle rather  === */
+/* === than sit small inside it. Height is unchanged.      === */
+/* ========================================================= */
+html.staff-scope .app-btn--icon.app-btn--glyph-lg {
+  font-size: 1.9rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* ========================================================= */
+/* === Reaction bar                                        === */
+/* === The bar is exactly one control tall (44px); every   === */
+/* === button inside it is a fixed 32px, centred by the    === */
+/* === 6px padding. The trigger is the anchor: it never    === */
+/* === moves, the options grow leftwards out of its left   === */
+/* === edge. Used by the newsfeed post row and the         === */
+/* === messages bubble picker.                             === */
+/* ========================================================= */
+html.staff-scope .app-reaction-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  height: var(--control-height);
+  max-height: var(--control-height);
+  gap: var(--space-xs);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color 0.24s ease;
+}
+
+html.staff-scope .app-reaction-bar.is-open {
+  background: var(--surface);
+}
+
+/* Collapsed to zero width so the trigger keeps its position; opening
+   animates max-width rather than width because the option count varies. */
+html.staff-scope .app-reaction-bar__options {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-width 0.28s ease, opacity 0.2s ease, visibility 0.28s;
+}
+
+html.staff-scope .app-reaction-bar.is-open .app-reaction-bar__options {
+  max-width: 420px;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Perfect 32px circles — the emoji options and the trigger alike. Declared
+   after the size modifiers above so they win the height/padding they need
+   (the family otherwise locks every button to --control-height). */
+html.staff-scope .app-btn.app-reaction-emoji,
+html.staff-scope .app-btn.app-reaction-trigger {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  font-size: 19px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* Non-circular actions that share the bar (e.g. the messages "Reply"), held
+   to the same 32px height so the bar stays one control tall. */
+html.staff-scope .app-btn.app-reaction-action {
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* ========================================================= */
+/* === Reaction summary                                    === */
+/* === Who reacted, in the Facebook shape: an overlapping  === */
+/* === stack + total, per-emoji count chips, then the      === */
+/* === people list. Component: ui/ReactionSummary.js       === */
+/* ========================================================= */
+html.staff-scope .app-reaction-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-reaction-summary__empty {
+  margin: 0;
+  color: var(--text-1);
+  opacity: 0.7;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope button.app-reaction-summary__total {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+html.staff-scope button.app-reaction-summary__total:hover {
+  background: var(--theme);
+}
+
+html.staff-scope .app-reaction-stack {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Bare overlapping glyphs — no disc, no ring. A ring here has to be painted
+   in whatever colour sits behind the stack, and the stack appears on more
+   than one surface, so it showed up as a pale halo cutting into the emoji
+   underneath. The glyph shapes carry the overlap on their own. */
+html.staff-scope .app-reaction-stack__item {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+}
+
+html.staff-scope .app-reaction-stack__item + .app-reaction-stack__item {
+  margin-left: -5px;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(1) {
+  z-index: 3;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(2) {
+  z-index: 2;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(3) {
+  z-index: 1;
+}
+
+html.staff-scope .app-reaction-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+html.staff-scope .app-reaction-people {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .app-reaction-people__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-1);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-reaction-people__row:not(:last-child) {
+  border-bottom: var(--separating-line);
+}

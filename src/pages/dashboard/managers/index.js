@@ -23,6 +23,7 @@ import {
   PageShell,
 } from "@/components/ui";
 import ManagersDashboardUi from "@/components/page-ui/dashboard/managers/dashboard-managers-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const MANAGER_ROLES = [
   "service manager",
@@ -186,7 +187,7 @@ export default function ManagersDashboard() {
         const payload = await (await loadDashboardData()).getManagersDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load managers dashboard", fetchError);
+        logFailure("Failed to load managers dashboard", fetchError);
         setError(fetchError.message || "Unable to load manager data");
       } finally {
         setLoading(false);

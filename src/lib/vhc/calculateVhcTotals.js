@@ -7,6 +7,7 @@
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { DEFAULT_LABOUR_RATE_GBP } from "@/lib/vhc/shared";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const EMPTY_TOTALS = Object.freeze({ authorized: 0, declined: 0 });
 
@@ -68,7 +69,7 @@ export function calculateVhcFinancialTotals(
       declined: Number(quoteModel?.totals?.declined || 0),
     };
   } catch (error) {
-    console.error("[VHC Totals Calculation Error]", error);
+    logFailure("[VHC Totals Calculation Error]", error);
     return { ...EMPTY_TOTALS };
   }
 }

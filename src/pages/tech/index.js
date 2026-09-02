@@ -40,6 +40,7 @@ import {
   SkeletonKeyframes } from
 "@/components/ui/LoadingSkeleton";
 import MyJobsPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -339,7 +340,7 @@ export default function MyJobsPage() {
       const clockingMap = await (await loadJobClockingDb()).getOpenJobClockingByJobIds(
         fetchedJobs.map((job) => job?.id).filter(Boolean)
       ).catch((error) => {
-        console.error("[MyJobs] failed to fetch open job clocking:", error);
+        logFailure("[MyJobs] failed to fetch open job clocking:", error);
         return new Map();
       });
 
@@ -368,7 +369,7 @@ export default function MyJobsPage() {
       setFilteredJobs(sortedJobs);
       persistMyJobsSnapshot(dbUserId, sortedJobs, activeJobIdsRef.current);
     } catch (error) {
-      console.error("[MyJobs] error fetching jobs:", error);
+      logFailure("[MyJobs] error fetching jobs:", error);
     } finally {
       setLoading(false);
     }
@@ -427,7 +428,7 @@ export default function MyJobsPage() {
         setActiveJobIds(new Set());
       }
     } catch (error) {
-      console.error("❌ Failed to fetch active jobs:", error);
+      logFailure("❌ Failed to fetch active jobs:", error);
       setActiveJobIds(new Set());
     }
   }, [dbUserId]);

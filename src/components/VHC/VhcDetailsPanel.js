@@ -66,6 +66,7 @@ import { isValidUuid } from "@/features/labourTimes/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
 import { DEFAULT_LABOUR_RATE_GBP, resolveVhcTotal } from "@/lib/vhc/shared";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
@@ -2140,7 +2141,7 @@ export default function VhcDetailsPanel({
           });
         }
       } catch (error) {
-        console.error("Failed to persist VHC alias:", error);
+        logFailure("Failed to persist VHC alias:", error);
       }
     },
     [job?.id]
@@ -2175,7 +2176,7 @@ export default function VhcDetailsPanel({
           throw new Error(data?.message || "Failed to remove VHC alias");
         }
       } catch (error) {
-        console.error("Failed to remove VHC alias:", error);
+        logFailure("Failed to remove VHC alias:", error);
       }
     },
     [job?.id]
@@ -2238,7 +2239,7 @@ export default function VhcDetailsPanel({
         } catch {}
         return true;
       } catch (err) {
-        console.error("Failed to save VHC sections", err);
+        logFailure("Failed to save VHC sections", err);
         setSectionSaveStatus("error");
         setSectionSaveError(err.message || "Failed to save VHC data.");
         return false;
@@ -2257,7 +2258,7 @@ export default function VhcDetailsPanel({
       }
       return Array.isArray(data.data) ? data.data : [];
     } catch (error) {
-      console.error("[VHC] Fallback parts fetch error", error);
+      logFailure("[VHC] Fallback parts fetch error", error);
       return null;
     }
   }, []);
@@ -2419,7 +2420,7 @@ export default function VhcDetailsPanel({
         const parsedPayload = safeJsonParse(builderRecord?.issue_description || builderRecord?.data) || {};
         setVhcData(buildVhcPayload(parsedPayload));
       } catch (err) {
-        console.error("Failed to load VHC details", err);
+        logFailure("Failed to load VHC details", err);
         setError("Unable to load VHC details for this job.");
       } finally {
         setLoading(false);
@@ -3746,7 +3747,7 @@ export default function VhcDetailsPanel({
         }
         return Number(createResult.vhcId);
       } catch (error) {
-        console.error("Failed to create VHC check item for status update:", error);
+        logFailure("Failed to create VHC check item for status update:", error);
         return null;
       }
     },
@@ -3797,7 +3798,7 @@ export default function VhcDetailsPanel({
     }
 
     if (!Number.isInteger(parsedId)) {
-      console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
+      logFailure(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
       setItemEntries((prev) => ({
         ...prev,
         [itemId]: {
@@ -3835,8 +3836,8 @@ export default function VhcDetailsPanel({
       const result = await response.json();
 
       if (!response.ok || !result?.success) {
-        console.error(`❌ [VHC STATUS ERROR] API Failed:`, result?.message);
-        console.error(`❌ [VHC STATUS ERROR] Full Response:`, result);
+        logFailure(`❌ [VHC STATUS ERROR] API Failed:`, result?.message);
+        logFailure(`❌ [VHC STATUS ERROR] Full Response:`, result);
         // Revert optimistic update so UI matches persisted state.
         setItemEntries((prev) => ({
           ...prev,
@@ -3879,9 +3880,9 @@ export default function VhcDetailsPanel({
       }
 
     } catch (error) {
-      console.error(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);
-      console.error(`❌ [VHC STATUS ERROR]`, error);
-      console.error(`❌ [VHC STATUS ERROR] Stack:`, error.stack);
+      logFailure(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);
+      logFailure(`❌ [VHC STATUS ERROR]`, error);
+      logFailure(`❌ [VHC STATUS ERROR] Stack:`, error.stack);
     }
   };
 
@@ -4010,7 +4011,7 @@ export default function VhcDetailsPanel({
         body: JSON.stringify(dbPayload),
       })
         .catch((error) => {
-          console.error("Failed to save parts complete/cost status", error);
+          logFailure("Failed to save parts complete/cost status", error);
         })
         .finally(() => {
           vhcPartsStatusSyncRef.current.delete(syncKey);
@@ -4090,7 +4091,7 @@ export default function VhcDetailsPanel({
           );
         })
         .catch((error) =>
-          console.error("Failed to sync parts cost to vhc_checks", error)
+          logFailure("Failed to sync parts cost to vhc_checks", error)
         )
         .finally(() => {
           vhcPartsCostSyncRef.current.delete(syncKey);
@@ -4633,7 +4634,7 @@ export default function VhcDetailsPanel({
         }
 
         if (!Number.isInteger(parsedId)) {
-          console.error(`❌ [VHC BULK ERROR] Invalid ID for item ${itemId}`);
+          logFailure(`❌ [VHC BULK ERROR] Invalid ID for item ${itemId}`);
           return null;
         }
 
@@ -4677,7 +4678,7 @@ export default function VhcDetailsPanel({
 
           const result = await response.json();
           if (!response.ok || !result?.success) {
-            console.error(`❌ [VHC BULK ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
+            logFailure(`❌ [VHC BULK ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
             return null;
           }
           return {
@@ -4689,7 +4690,7 @@ export default function VhcDetailsPanel({
             complete: completeFlag,
           };
         } catch (error) {
-          console.error(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
+          logFailure(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
           return null;
         }
       });
@@ -4746,7 +4747,7 @@ export default function VhcDetailsPanel({
       const parsedId = Number(canonicalId);
 
       if (!Number.isInteger(parsedId)) {
-        console.error(`❌ [VHC MOVE ERROR] Invalid ID for item ${itemId}`);
+        logFailure(`❌ [VHC MOVE ERROR] Invalid ID for item ${itemId}`);
         return;
       }
 
@@ -4774,7 +4775,7 @@ export default function VhcDetailsPanel({
 
         const result = await response.json();
         if (!response.ok || !result?.success) {
-          console.error(`❌ [VHC MOVE ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
+          logFailure(`❌ [VHC MOVE ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
           return;
         }
 
@@ -4819,7 +4820,7 @@ export default function VhcDetailsPanel({
           refreshJobData();
         }
       } catch (error) {
-        console.error(`❌ [VHC MOVE ERROR] Exception:`, error);
+        logFailure(`❌ [VHC MOVE ERROR] Exception:`, error);
       }
     },
     [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, resolveOriginalSeverityDisplay]
@@ -6074,7 +6075,7 @@ export default function VhcDetailsPanel({
                                   )
                                 );
                               })
-                              .catch((error) => console.error("Failed to save total override", error));
+                              .catch((error) => logFailure("Failed to save total override", error));
                               }}
                               placeholder="0.00"
                               className="vhc-total-input"
@@ -6584,7 +6585,7 @@ export default function VhcDetailsPanel({
         });
         setPhotosReloadToken((token) => token + 1);
       } catch (err) {
-        console.error("Photo upload failed:", err);
+        logFailure("Photo upload failed:", err);
         setPhotoUploadError(err?.message || "Upload failed");
       } finally {
         setPhotoUploading(false);
@@ -6605,7 +6606,7 @@ export default function VhcDetailsPanel({
         await setMainVhcVideo({ fileId, isMain: makeMain });
         setPhotosReloadToken((token) => token + 1);
       } catch (err) {
-        console.error("Set main video failed:", err);
+        logFailure("Set main video failed:", err);
         setPhotoUploadError(err?.message || "Could not update the main video.");
       } finally {
         setMainVideoSavingId(null);
@@ -6814,7 +6815,7 @@ export default function VhcDetailsPanel({
       setNewMediaLocationName("");
       setPhotosReloadToken((token) => token + 1);
     } catch (err) {
-      console.error("Update media link failed:", err);
+      logFailure("Update media link failed:", err);
       setPhotoPreviewMessage(err?.message || "Could not update the linked item.");
     } finally {
       setMediaLinkSaving(false);
@@ -6893,7 +6894,7 @@ export default function VhcDetailsPanel({
         });
         setPhotosReloadToken((token) => token + 1);
       } catch (err) {
-        console.error("Row media upload failed:", err);
+        logFailure("Row media upload failed:", err);
         setPhotoUploadError(err?.message || "Upload failed");
       } finally {
         setRowMediaUploadConcernId(null);
@@ -6925,7 +6926,7 @@ export default function VhcDetailsPanel({
       setPhotoPreviewFile((prev) => (prev && prev.file_id === file.file_id ? { ...prev, visible_to_customer: next } : prev));
       setPhotosReloadToken((token) => token + 1);
     } catch (err) {
-      console.error("Update media visibility failed:", err);
+      logFailure("Update media visibility failed:", err);
       setPhotoPreviewMessage(err?.message || "Could not update visibility.");
     } finally {
       setMediaVisibilitySaving(false);
@@ -6983,7 +6984,7 @@ export default function VhcDetailsPanel({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`[PART STATUS UPDATE] API Error:`, errorData);
+        logFailure(`[PART STATUS UPDATE] API Error:`, errorData);
 
         // Revert optimistic update on error by re-fetching
         if (job?.id) {
@@ -7062,8 +7063,8 @@ export default function VhcDetailsPanel({
 
       return result;
     } catch (err) {
-      console.error(`[PART STATUS UPDATE] Error:`, err);
-      console.error(`[PART STATUS UPDATE] Error details:`, {
+      logFailure(`[PART STATUS UPDATE] Error:`, err);
+      logFailure(`[PART STATUS UPDATE] Error details:`, {
         message: err.message,
         stack: err.stack,
         partItemId,
@@ -7179,7 +7180,7 @@ export default function VhcDetailsPanel({
         }
         throw new Error(`Unable to resolve a persisted VHC row for ${displayVhcId}`);
       } catch (error) {
-        console.error("Failed to persist labour hours", error);
+        logFailure("Failed to persist labour hours", error);
         setLabourPersistErrorByItem((prev) => ({
           ...prev,
           [displayVhcId]: error?.message || "Failed to save labour hours",
@@ -7469,7 +7470,7 @@ export default function VhcDetailsPanel({
       setShowNewPartForm(false);
       setNewPartForm(createDefaultNewPartForm());
     } catch (error) {
-      console.error("Failed to create new part:", error);
+      logFailure("Failed to create new part:", error);
       setNewPartError(error.message || "Unable to create new part.");
     } finally {
       setNewPartSaving(false);
@@ -7637,7 +7638,7 @@ export default function VhcDetailsPanel({
           return { ...prev, parts_job_items: updatedParts };
         });
       } catch (error) {
-        console.error("Failed to persist part metadata:", error);
+        logFailure("Failed to persist part metadata:", error);
       }
     },
     [job?.parts_job_items]
@@ -7996,7 +7997,7 @@ export default function VhcDetailsPanel({
       setIsAddPartsModalOpen(false);
       setSelectedParts([]);
     } catch (error) {
-      console.error("Failed to add parts to VHC item:", error);
+      logFailure("Failed to add parts to VHC item:", error);
       setAddPartsMessage(error.message || "Unable to add parts to VHC item.");
     } finally {
       setAddingParts(false);
@@ -8073,7 +8074,7 @@ export default function VhcDetailsPanel({
 
         refreshJobData();
       } catch (error) {
-        console.error("Failed to remove part from VHC row:", error);
+        logFailure("Failed to remove part from VHC row:", error);
         alert(`Failed to remove part: ${error.message || "Unknown error"}`);
       } finally {
         setRemovingPartIds((prev) => {
@@ -8153,7 +8154,7 @@ export default function VhcDetailsPanel({
       // Show success message (could use a toast notification here)
       alert(`${part.name || "Part"} has been added to the job successfully!`);
     } catch (error) {
-      console.error("Failed to add part to job:", error);
+      logFailure("Failed to add part to job:", error);
       alert(`Error: ${error.message}`);
     } finally {
       setAddingPartToJob(false);
@@ -8867,7 +8868,7 @@ export default function VhcDetailsPanel({
                                     try {
                                       await handlePartStatusUpdate(part.id, { status: "booked", stockStatus: "in_stock" });
                                     } catch (error) {
-                                      console.error(`[VHC] Failed to mark part ${part.id} as here:`, error);
+                                      logFailure(`[VHC] Failed to mark part ${part.id} as here:`, error);
                                       alert(`Failed to update part: ${error.message}`);
                                     }
                                   }}
@@ -8886,7 +8887,7 @@ export default function VhcDetailsPanel({
                                   try {
                                     await handlePartStatusUpdate(part.id, { status: "on_order", authorised: true, stockStatus: "no_stock" });
                                   } catch (error) {
-                                    console.error(`[VHC] Failed to order part ${part.id}:`, error);
+                                    logFailure(`[VHC] Failed to order part ${part.id}:`, error);
                                     alert(`Failed to mark part as ordered: ${error.message}`);
                                   }
                                 }}

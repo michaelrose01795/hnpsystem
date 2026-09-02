@@ -1,19 +1,51 @@
 // file location: tools/scripts/seed-delivery-diary.js
 //
-// Seeds a realistic parts delivery diary for /deliveries.
+// Seeds a realistic parts delivery diary for /deliveries — a full month of it.
 //
-//   npm run seed:deliveries          insert (or refresh) the seeded rows
-//   npm run seed:deliveries -- --clear   remove them again
+//   npm run seed:deliveries                  write the diary
+//   npm run seed:deliveries -- --days=45     write a longer horizon
+//   npm run seed:deliveries -- --back=60     lay down more worked history
+//   npm run seed:deliveries -- --plan        print what it would write, touch nothing
+//   npm run seed:deliveries -- --clear       remove it again
 //
-// Everything is linked to records that already exist: real customers (address,
-// postcode, mobile), their real invoices (number, id, total, payment state),
-// the workshop job and vehicle behind that invoice, real parts from
-// parts_catalog, real trade accounts from company_accounts, and the real parts
-// staff from users. Nothing here invents a customer or an invoice.
+// What lands in the database, one run per WORKING day — Saturday and Sunday are
+// skipped throughout, because the vans do not run and a diary showing weekend
+// stops is not one anybody trusts:
+//
+//   the last 4 weeks    worked history. Every day is closed out: signed for on
+//                       the door with the contact's name against it, the odd
+//                       drop that failed with a reason, the occasional one that
+//                       came back on the van, cores collected. This is what
+//                       makes scrolling back look like a business rather than
+//                       an empty calendar.
+//   yesterday + today   a hand-written day: deliveries completed, one failed
+//                       with a reason, one returned, cores, missing lines,
+//                       payment on the door, a collection. This is the day
+//                       worth demoing.
+//   tomorrow → horizon  the book of work still to do. Roughly five to nine
+//                       stops a day, Monday and Friday heavier, with the near
+//                       days picked/loaded and driver-allocated and the far
+//                       days still just a list of drops.
+//
+// Everything is linked to real records: real customers with their real
+// invoices (number, id, total, payment state), the workshop job and vehicle
+// behind that invoice, real parts from parts_catalog, real trade accounts from
+// company_accounts, and the real parts staff from users.
+//
+// The one thing it creates is the trade side. The customers table is mostly
+// private owners, so a month of stops drawn only from it reads as a taxi
+// service; ten business accounts (real Kent postcodes, so every one plots on
+// the route map) are inserted into `customers` as ordinary records. They are
+// invoiceable and searchable afterwards like any other customer, and --clear
+// removes them.
 //
 // Reversible by construction: every row id is a deterministic UUIDv5 derived
 // from a fixed namespace plus a slot key, so --clear deletes exactly what this
-// script wrote and nothing else. Re-running is an upsert, not a duplicate.
+// script wrote and nothing else. The generated horizon moves with the calendar,
+// so --clear sweeps a wide window of derived ids to catch days an earlier run
+// wrote. Re-running replaces the seed rather than duplicating it, and because
+// each day's plan is seeded off its own date, a re-run does not reshuffle days
+// it wrote last time.
 
 /* eslint-disable no-console */
 const crypto = require("crypto");
@@ -69,7 +101,6 @@ const shiftDays = (days) => {
 
 const TODAY = isoDate(new Date());
 const YESTERDAY = shiftDays(-1);
-const TOMORROW = shiftDays(1);
 
 // A local wall-clock timestamp on a given day, written as ISO with the offset
 // the machine is in, so "delivered at 08:52" reads as 08:52 on the board.
@@ -95,7 +126,11 @@ const VANS = [
 // ---------------------------------------------------------------------------
 // Trade stops — real rows from company_accounts
 // ---------------------------------------------------------------------------
-const TRADE_ACCOUNTS = ["CA3771", "CA6790", "CA4865", "CA8674"];
+// Kept to accounts within van range of the parts desk — a Birmingham or
+// Southampton account on the list would stretch the day's route map across the
+// country. Five is enough that a busy day never delivers to the same trade
+// counter twice.
+const TRADE_ACCOUNTS = ["CA3771", "CA6790", "CA4865", "CA8674", "CA3606"];
 
 // ---------------------------------------------------------------------------
 // Scenario templates
@@ -153,7 +188,7 @@ const SLOTS = [
   {
     slot: "today-8", day: () => TODAY, stop: 8, status: "ready",
     plannedTime: "13:30", driver: null, van: null, packages: 1,
-    collection: true,
+    collection: true, useCollectionOrder: true,
     notes: "Customer collecting from the trade counter — do not load.",
     times: { picked: "09:20", ready: "10:00" },
   },
@@ -197,26 +232,303 @@ const SLOTS = [
     times: { picked: "12:10", ready: "12:30", loaded: "12:45", dispatched: "12:55", completed: "14:22" },
   },
 
-  // ---- tomorrow: the next run, still being built -------------------------
-  {
-    slot: "tmrw-1", day: () => TOMORROW, stop: 1, status: "planned",
-    plannedTime: "08:30", driver: 0, van: 0, packages: 0, urgent: true,
-    notes: "Re-book of the failed drop from today.",
-  },
-  {
-    slot: "tmrw-2", day: () => TOMORROW, stop: 2, status: "planned",
-    trade: 0, plannedTime: "09:30", windowEnd: "11:00", driver: 0, van: 0, packages: 0,
-  },
-  {
-    slot: "tmrw-3", day: () => TOMORROW, stop: 3, status: "ready",
-    plannedTime: "11:00", driver: 0, van: 0, packages: 2,
-    times: { picked: "16:20", ready: "16:45" },
-  },
-  {
-    slot: "tmrw-4", day: () => TOMORROW, stop: 4, status: "planned",
-    plannedTime: "14:30", driver: null, van: null, packages: 0, forceUnpaid: true,
-  },
+  // Tomorrow onwards is generated (see "The forward month"), so the curated
+  // list stops here. Yesterday and today are the hand-written story day.
 ];
+
+// Slot keys this script used to write and no longer does. --clear still
+// removes them, so an older seed does not leave orphans on the board.
+const LEGACY_SLOT_KEYS = ["tmrw-1", "tmrw-2", "tmrw-3", "tmrw-4"];
+
+// ---------------------------------------------------------------------------
+// The forward month
+// ---------------------------------------------------------------------------
+// Everything from tomorrow to the end of the horizon is generated rather than
+// hand-written, so the diary is a real month of work instead of three days
+// followed by an empty board. Saturday and Sunday are skipped — the vans do not
+// run at the weekend, and a diary that shows stops on a Sunday is not a diary
+// anyone trusts.
+const HORIZON_DAYS_DEFAULT = 30;
+
+// How much worked history to lay down behind today. Four weeks means the week
+// strip has a real day behind every tile the desk can scroll back to, and the
+// current month is complete rather than starting mid-week.
+const BACKFILL_DAYS_DEFAULT = 28;
+
+// How far either side of today --clear sweeps. The generated horizon moves with
+// the calendar, so clearing has to cover the days a previous run could have
+// written; every id in the sweep is derived, so it can only ever match this
+// script's own rows.
+const CLEAR_BACK_DAYS = 120;
+const CLEAR_FORWARD_DAYS = 200;
+const MAX_STOPS_PER_DAY = 12;
+
+const dayOfWeek = (isoDay) => new Date(`${isoDay}T00:00:00`).getDay();
+const isWeekend = (isoDay) => dayOfWeek(isoDay) === 0 || dayOfWeek(isoDay) === 6;
+
+/** Every weekday from `offset` days out to `throughOffset`, inclusive. */
+function weekdaysAhead(offset, throughOffset) {
+  const days = [];
+  for (let index = offset; index <= throughOffset; index += 1) {
+    const day = shiftDays(index);
+    if (isWeekend(day)) continue;
+    days.push({ day, offset: index });
+  }
+  return days;
+}
+
+// A seeded PRNG (mulberry32) keyed off the date, so the same day always plans
+// the same run. Re-seeding tomorrow does not reshuffle next Tuesday, and the
+// row ids stay stable because the plan behind them does.
+function rngFor(seed) {
+  let state = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    state = (state * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const pickChance = (rng, probability) => rng() < probability;
+const pickOne = (rng, list) => list[Math.floor(rng() * list.length)];
+
+// The reasons the failure modal offers — the column has a CHECK constraint on
+// exactly these, so a seeded failure has to be one of them.
+const FAILURE_REASONS = [
+  "customer_closed",
+  "unable_to_contact",
+  "no_access",
+  "refused",
+  "wrong_address",
+];
+
+/** "09:40" plus (or minus) some minutes, clamped to the working day. */
+const addMinutes = (time, delta) => {
+  const [hh, mm] = time.split(":").map(Number);
+  const total = Math.max(7 * 60, Math.min(18 * 60, hh * 60 + mm + delta));
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+};
+
+// Times run from the first drop after the morning pick to mid-afternoon, with
+// an uneven gap between stops — a real run is not on a metronome.
+function plannedTimes(count, rng) {
+  let minutes = 8 * 60 + 15 + Math.floor(rng() * 30);
+  return Array.from({ length: count }, () => {
+    const value = `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+    minutes += 25 + Math.floor(rng() * 35);
+    return value;
+  });
+}
+
+/**
+ * One day's run.
+ *
+ * The further out the day, the less of it is decided: tomorrow is picked and
+ * loading with a driver on it, the day after is allocated, and anything beyond
+ * that is still just a list of drops. That is how the board actually fills.
+ */
+function planDay({ day, offset }, businessCount, tradeCount) {
+  const rng = rngFor(`hnp:delivery-diary:${day}`);
+  const weekday = dayOfWeek(day);
+  // Monday catches the weekend's orders and Friday clears the week; midweek is
+  // quieter.
+  const busy = weekday === 1 || weekday === 5 ? 2 : 0;
+  const count = Math.min(4 + busy + Math.floor(rng() * 4), MAX_STOPS_PER_DAY);
+  const times = plannedTimes(count, rng);
+
+  return Array.from({ length: count }, (_, index) => {
+    const stop = index + 1;
+    const roll = rng();
+
+    // Roughly a fifth of the board is trade counters and business accounts,
+    // which is what the mix looks like on a real parts run.
+    const source =
+      tradeCount > 0 && roll < 0.16
+        ? { trade: Math.floor(rng() * tradeCount) }
+        : businessCount > 0 && roll < 0.34
+        ? { business: Math.floor(rng() * businessCount) }
+        : {};
+
+    const past = offset < 0;
+
+    // A day that has been and gone is closed out: almost everything delivered,
+    // the odd drop that failed on the door, and the occasional one that came
+    // back on the van. A day still ahead is part-worked at most.
+    const closedRoll = rng();
+    const status = past
+      ? closedRoll < 0.88
+        ? "delivered"
+        : closedRoll < 0.95
+        ? "failed"
+        : "returned"
+      : offset === 1
+      ? index === 0
+        ? "loaded"
+        : index < 3
+        ? "ready"
+        : index === 3
+        ? "picking"
+        : "planned"
+      : offset === 2 && index < 2
+      ? "ready"
+      : "planned";
+
+    const previousEvening = index < 4 && offset === 1;
+    const times_ = {};
+    if (past) {
+      // The whole morning: picked and loaded before the van left, then each
+      // drop signed for a few minutes either side of its planned time.
+      times_.picked = "07:35";
+      times_.ready = "07:55";
+      times_.loaded = "08:05";
+      times_.dispatched = "08:15";
+      const onDoor = addMinutes(times[index], Math.floor(rng() * 14) - 4);
+      if (status === "delivered") times_.completed = onDoor;
+      else {
+        times_.failed = onDoor;
+        if (status === "returned") times_.returned = "15:40";
+      }
+    } else {
+      if (status === "picking" || status === "ready" || status === "loaded") {
+        times_.picked = previousEvening ? "16:10" : "07:40";
+      }
+      if (status === "ready" || status === "loaded") {
+        times_.ready = previousEvening ? "16:45" : "08:05";
+      }
+      if (status === "loaded") times_.loaded = previousEvening ? "17:05" : "08:20";
+    }
+
+    const hasWindow = pickChance(rng, 0.3);
+    const [hh, mm] = times[index].split(":").map(Number);
+    const windowEnd = hasWindow ? `${pad(Math.min(hh + 2, 18))}:${pad(mm)}` : null;
+
+    // An unpaid stop that was delivered was paid at the door; one that failed
+    // never got that far.
+    const unpaid = pickChance(rng, 0.22);
+
+    return {
+      slot: `gen:${day}#${stop}`,
+      day: () => day,
+      stop,
+      status,
+      plannedTime: times[index],
+      windowEnd,
+      // A day that has run had a van on it; ahead, only the next two working
+      // days are allocated.
+      driver: past || offset <= 2 ? Math.floor(rng() * 2) : null,
+      van: past || offset <= 2 ? Math.floor(rng() * VANS.length) : null,
+      packages: status === "planned" ? 0 : 1 + Math.floor(rng() * 3),
+      urgent: pickChance(rng, 0.14),
+      collection: !past && pickChance(rng, 0.08),
+      coreExpected: pickChance(rng, 0.12),
+      coreCollected: past && pickChance(rng, 0.7),
+      surcharge: pickChance(rng, 0.12) ? 35 + Math.floor(rng() * 6) * 10 : 0,
+      missingItems: pickChance(rng, 0.1)
+        ? "1 line on back order — the rest can go on the van."
+        : null,
+      forceUnpaid: unpaid,
+      paidOnDoorstep: past && unpaid && status === "delivered",
+      // The driver captured a name on the door, as they would have done. Only
+      // a day that has actually run carries a proof or a failure reason.
+      podFromContact: past && status === "delivered",
+      failedReason: past && status !== "delivered" ? pickOne(rng, FAILURE_REASONS) : null,
+      failedNotes:
+        !past || status === "delivered"
+          ? null
+          : status === "returned"
+          ? "Nobody on site to take it — brought back to the counter."
+          : "No answer on the mobile. Re-book with the customer.",
+      times: times_,
+      ...source,
+    };
+  });
+}
+
+/**
+ * The generated half of the diary, weekdays only.
+ *
+ * Backwards from yesterday it is a worked history — days that ran, signed for,
+ * with the odd failure — so the week strip and any date the desk scrolls back
+ * to has a real day behind it rather than a blank. Forwards it is the book of
+ * work still to do. The curated slots own yesterday and today, so the backfill
+ * stops short of them.
+ */
+function generateSlots(horizonDays, backDays, businessCount, tradeCount) {
+  const past = weekdaysAhead(-backDays, -2);
+  const ahead = weekdaysAhead(1, horizonDays);
+  return [...past, ...ahead].flatMap((entry) => planDay(entry, businessCount, tradeCount));
+}
+
+// ---------------------------------------------------------------------------
+// Business accounts the diary delivers to
+// ---------------------------------------------------------------------------
+// The customers table is mostly private owners, so a month of stops drawn only
+// from it reads as a taxi service rather than a parts department. These are
+// written into `customers` as real records — deterministic ids, so --clear
+// removes exactly them — with genuine Kent postcodes so every one of them plots
+// on the route map. They are ordinary customers afterwards: quotable,
+// invoiceable, searchable, not a fixture.
+const BUSINESS_CUSTOMERS = [
+  { key: "biz-1", name: "Maidstone Motor Works", contact: "Dean Whitlock", address: "Unit 7, Parkwood Industrial Estate, Maidstone", postcode: "ME15 9NJ", mobile: "01622 559 118", email: "parts@maidstonemotorworks.example" },
+  { key: "biz-2", name: "Aylesford Tyre & Exhaust", contact: "Sara Nunes", address: "Forstal Road, Aylesford", postcode: "ME20 7AU", mobile: "01622 559 204", email: "counter@aylesfordtyre.example" },
+  { key: "biz-3", name: "Kings Hill Vehicle Services", contact: "Owen Pratt", address: "Kings Hill Business Park, West Malling", postcode: "ME19 4YU", mobile: "01732 559 330", email: "workshop@khvs.example" },
+  { key: "biz-4", name: "Snodland Commercials", contact: "Marta Kowal", address: "Holborough Road, Snodland", postcode: "ME6 5PG", mobile: "01634 559 412", email: "goodsin@snodlandcommercials.example" },
+  { key: "biz-5", name: "Larkfield Fleet Care", contact: "Ryan Deacon", address: "New Hythe Lane, Larkfield", postcode: "ME20 6RR", mobile: "01732 559 507", email: "fleet@larkfieldcare.example" },
+  { key: "biz-6", name: "Tonbridge Auto Electrics", contact: "Priya Nayar", address: "Vale Rise, Tonbridge", postcode: "TN9 1TB", mobile: "01732 559 660", email: "bookings@tonbridgeautoelec.example" },
+  { key: "biz-7", name: "Sevenoaks Prestige Servicing", contact: "Iwan Davies", address: "Vestry Trading Estate, Sevenoaks", postcode: "TN14 5EL", mobile: "01732 559 771", email: "service@sevenoaksprestige.example" },
+  { key: "biz-8", name: "Chatham Van Centre", contact: "Beth Ackland", address: "Medway City Estate, Rochester", postcode: "ME2 4DP", mobile: "01634 559 884", email: "parts@chathamvancentre.example" },
+  { key: "biz-9", name: "Coxheath Garage", contact: "Nathan Reeve", address: "Heath Road, Coxheath", postcode: "ME17 4PH", mobile: "01622 559 926", email: "office@coxheathgarage.example" },
+  { key: "biz-10", name: "Gravesend Truck & Trailer", contact: "Femi Adeyemi", address: "Imperial Business Estate, Gravesend", postcode: "DA11 0DL", mobile: "01474 559 038", email: "parts@gravesendtruck.example" },
+];
+
+const businessId = (key) => uuidv5(`hnp:delivery-diary:customer:${key}`, NAMESPACE);
+
+const BUSINESS_NOTE = "Trade account seeded by tools/scripts/seed-delivery-diary.js.";
+
+/**
+ * Insert the business accounts, or leave them exactly as they are if someone
+ * has since edited one. A seed should be able to run twice without quietly
+ * reverting a phone number the parts desk corrected by hand.
+ */
+async function seedBusinessCustomers() {
+  const ids = BUSINESS_CUSTOMERS.map((business) => businessId(business.key));
+  const { data: existing, error: readError } = await db
+    .from("customers")
+    .select("id")
+    .in("id", ids);
+  if (readError) throw new Error(`Unable to read seeded customers: ${readError.message}`);
+
+  const present = new Set((existing || []).map((row) => row.id));
+  const missing = BUSINESS_CUSTOMERS.filter((business) => !present.has(businessId(business.key)));
+
+  if (missing.length > 0) {
+    const rows = missing.map((business) => ({
+      id: businessId(business.key),
+      firstname: null,
+      lastname: null,
+      name: business.name,
+      email: business.email,
+      mobile: business.mobile,
+      telephone: business.mobile,
+      address: business.address,
+      postcode: business.postcode,
+      contact_preference: "email",
+      notes: BUSINESS_NOTE,
+    }));
+    const { error } = await db.from("customers").insert(rows);
+    if (error) throw new Error(`Unable to insert business customers: ${error.message}`);
+  }
+
+  console.log(
+    `Business accounts: ${BUSINESS_CUSTOMERS.length} in place (${missing.length} created this run).`
+  );
+  return BUSINESS_CUSTOMERS.map((business) => ({ ...business, id: businessId(business.key) }));
+}
 
 // ---------------------------------------------------------------------------
 // Postcode validation
@@ -356,6 +668,12 @@ async function loadSources() {
 // ---------------------------------------------------------------------------
 const round2 = (value) => Math.round(Number(value || 0) * 100) / 100;
 
+// How a customer is written on the board, and the key the same-day guard uses.
+const customerDisplayName = (customer) =>
+  customer?.name || [customer?.firstname, customer?.lastname].filter(Boolean).join(" ").trim();
+
+const nameKey = (name) => `name:${String(name || "").trim().toLowerCase()}`;
+
 // A believable basket for a stop, drawn from the real catalogue and scaled so
 // the line values add up to the invoice total the row is linked to.
 function buildItems(parts, index, targetTotal) {
@@ -384,15 +702,47 @@ function buildRow(template, sources, index, cursors) {
   const day = template.day();
   const id = slotId(template.slot);
 
-  const tradeAccount = typeof template.trade === "number" ? trade[template.trade % trade.length] : null;
+  // Across a month the pools are walked more than once, which is fine — a
+  // customer can order twice in four weeks — but the same name must not appear
+  // twice on one day's run. Everyone already booked in for the day is in here,
+  // keyed by customer id, or by account number for a trade stop (those carry no
+  // customer id, so an id-only guard misses them entirely).
+  const usedToday = cursors.byDay.get(day) || new Set();
+  cursors.byDay.set(day, usedToday);
+
+  let tradeAccount = null;
+  if (typeof template.trade === "number" && trade.length > 0) {
+    tradeAccount = trade[template.trade % trade.length];
+    for (let attempt = 0; attempt < trade.length; attempt += 1) {
+      const candidate = trade[(template.trade + attempt) % trade.length];
+      if (!usedToday.has(candidate.account_number)) {
+        tradeAccount = candidate;
+        break;
+      }
+    }
+  }
 
   // Draw from the pool that matches the scenario, so "payment due" stops are
   // backed by genuinely unpaid invoices.
   const wantsUnpaid = Boolean(template.forceUnpaid || template.paidOnDoorstep);
   const pool = wantsUnpaid && unpaidInvoices.length > 0 ? unpaidInvoices : paidInvoices;
   const cursorKey = pool === unpaidInvoices ? "unpaid" : "paid";
-  const invoice = pool[cursors[cursorKey] % pool.length];
-  cursors[cursorKey] += 1;
+
+  let invoice = pool[cursors[cursorKey] % pool.length];
+  for (let attempt = 0; attempt < pool.length; attempt += 1) {
+    invoice = pool[cursors[cursorKey] % pool.length];
+    cursors[cursorKey] += 1;
+    if (
+      !usedToday.has(invoice.customer.id) &&
+      !usedToday.has(nameKey(customerDisplayName(invoice.customer)))
+    ) {
+      break;
+    }
+  }
+  // Whoever the stop ends up belonging to is registered at the end of this
+  // function, once the trade / business / collection overrides have had their
+  // say — a business stop borrows an invoice for its value but is not delivered
+  // to that invoice's customer.
 
   const customer = invoice.customer;
   const vehicle = vehicles.get(invoice.job?.vehicle_id);
@@ -490,9 +840,50 @@ function buildRow(template, sources, index, cursors) {
     base.is_paid = true;
   }
 
+  // A business stop is delivered to one of the seeded trade accounts rather
+  // than to a private owner. It carries no invoice link — those parts are on
+  // account and billed monthly — so its value is the basket itself, priced from
+  // the real catalogue rather than scaled to someone else's bill.
+  let business = null;
+  if (typeof template.business === "number" && sources.businesses.length > 0) {
+    const list = sources.businesses;
+    business = list[template.business % list.length];
+    // Two business drops on one day must be two different accounts.
+    for (let attempt = 0; attempt < list.length; attempt += 1) {
+      const candidate = list[(template.business + attempt) % list.length];
+      if (!usedToday.has(candidate.id)) {
+        business = candidate;
+        break;
+      }
+    }
+  }
+  if (business) {
+    const basket = buildItems(parts, index + 5, 0);
+    const basketTotal = round2(basket.reduce((sum, item) => sum + item.total, 0));
+    base.customer_id = business.id;
+    base.customer_name = business.name;
+    base.address = business.address;
+    base.postcode = business.postcode;
+    base.contact_name = business.contact;
+    base.contact_phone = business.mobile;
+    base.contact_email = business.email;
+    base.invoice_id = null;
+    base.invoice_number = null;
+    base.job_id = null;
+    base.order_reference = `TRD-${day.replace(/-/g, "")}-${pad(template.stop)}`;
+    base.items = basket;
+    base.part_name = basket[0]?.description || null;
+    base.part_number = basket[0]?.part_number || null;
+    base.quantity = basket.reduce((sum, item) => sum + item.quantity, 0);
+    base.unit_price = basket[0]?.unit_price ?? 0;
+    base.total_price = basketTotal;
+    base.payment_method = "Account";
+    base.is_paid = template.paidOnDoorstep ? true : !template.forceUnpaid;
+  }
+
   // The collection stop is tied to the real parts order card that is already
   // flagged as a collection, so the reference on screen resolves to a record.
-  if (template.collection && collectionOrder) {
+  if (template.useCollectionOrder && collectionOrder) {
     base.order_reference = collectionOrder.order_number;
     if (collectionOrder.customer_id) {
       base.customer_id = collectionOrder.customer_id;
@@ -501,6 +892,25 @@ function buildRow(template, sources, index, cursors) {
       base.contact_phone = collectionOrder.customer_phone || base.contact_phone;
     }
   }
+
+  // A delivered stop on a day that has already run was signed for by whoever
+  // was on the counter — the contact the desk holds for that address. This
+  // happens after the trade / business overrides so the name matches the place
+  // the van actually went.
+  if (template.podFromContact && times.completed) {
+    base.pod_recipient_name = base.contact_name || base.customer_name || null;
+    base.pod_captured_at = at(day, times.completed);
+    base.pod_captured_by = driver?.user_id ?? null;
+  }
+
+  // Book the stop's final owner in for the day, so the next stop on this run
+  // skips past them. A trade stop has no customer id, so it books its account,
+  // and the name goes in as well: this database holds more than one record for
+  // some people, and two rows an hour apart reading "Charlotte Hall" look like
+  // a mistake on the board whether or not they are different records.
+  if (base.customer_id) usedToday.add(base.customer_id);
+  if (tradeAccount) usedToday.add(tradeAccount.account_number);
+  if (base.customer_name) usedToday.add(nameKey(base.customer_name));
 
   return { row: base, vehicle, driver, day, times, template };
 }
@@ -543,15 +953,73 @@ function buildEvents({ row, driver, day, times, template }) {
 // ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
-async function clearSeed() {
-  const ids = SLOTS.map((slot) => slotId(slot.slot));
-  const { error: eventError } = await db.from("parts_delivery_events").delete().in("delivery_job_id", ids);
-  if (eventError && !/does not exist/i.test(eventError.message)) {
-    throw new Error(`Unable to clear delivery events: ${eventError.message}`);
+/**
+ * Every id this script could have written, past or present.
+ *
+ * The generated horizon moves with the calendar, so a run from three weeks ago
+ * wrote days this run does not plan. Sweeping a wide window of derived ids
+ * clears those too, and because every id is a UUIDv5 of a slot key it can only
+ * ever match rows this script wrote — a real delivery is never in the list.
+ */
+function allSeededIds() {
+  const keys = [...SLOTS.map((slot) => slot.slot), ...LEGACY_SLOT_KEYS];
+  for (let offset = -CLEAR_BACK_DAYS; offset <= CLEAR_FORWARD_DAYS; offset += 1) {
+    const day = shiftDays(offset);
+    if (isWeekend(day)) continue;
+    for (let stop = 1; stop <= MAX_STOPS_PER_DAY; stop += 1) keys.push(`gen:${day}#${stop}`);
   }
-  const { data, error } = await db.from("parts_delivery_jobs").delete().in("id", ids).select("id");
-  if (error) throw new Error(`Unable to clear seeded deliveries: ${error.message}`);
-  console.log(`Removed ${(data || []).length} seeded delivery row(s).`);
+  return keys.map(slotId);
+}
+
+// PostgREST puts `in` filters in the query string, so the sweep goes out in
+// batches rather than one URL of several thousand ids.
+const ID_BATCH = 150;
+
+const chunk = (list, size) =>
+  Array.from({ length: Math.ceil(list.length / size) }, (_, index) =>
+    list.slice(index * size, index * size + size)
+  );
+
+async function clearSeed({ includeCustomers = false } = {}) {
+  const ids = allSeededIds();
+  let removed = 0;
+
+  for (const batch of chunk(ids, ID_BATCH)) {
+    const { error: eventError } = await db
+      .from("parts_delivery_events")
+      .delete()
+      .in("delivery_job_id", batch);
+    if (eventError && !/does not exist/i.test(eventError.message)) {
+      throw new Error(`Unable to clear delivery events: ${eventError.message}`);
+    }
+    const { data, error } = await db
+      .from("parts_delivery_jobs")
+      .delete()
+      .in("id", batch)
+      .select("id");
+    if (error) throw new Error(`Unable to clear seeded deliveries: ${error.message}`);
+    removed += (data || []).length;
+  }
+
+  console.log(`Removed ${removed} seeded delivery row(s).`);
+
+  // The business accounts stay put on a re-seed — the next run delivers to them
+  // again — and only go on an explicit --clear.
+  if (includeCustomers) {
+    const customerIds = BUSINESS_CUSTOMERS.map((business) => businessId(business.key));
+    const { data, error } = await db
+      .from("customers")
+      .delete()
+      .in("id", customerIds)
+      .select("id");
+    if (error) {
+      console.warn(
+        `Seeded deliveries removed, but the business accounts could not be: ${error.message}`
+      );
+    } else {
+      console.log(`Removed ${(data || []).length} seeded business customer(s).`);
+    }
+  }
 }
 
 async function seedVanRoster() {
@@ -571,18 +1039,63 @@ async function seedVanRoster() {
   console.log(`Van roster set to: ${VANS.map((v) => v.reg).join(", ")}`);
 }
 
+// Rows go in a few hundred at a time; a month of stops is one payload
+// PostgREST would rather not take in a single request.
+const INSERT_BATCH = 200;
+
+const numericArg = (flag, fallback) => {
+  const match = process.argv.find((argument) => argument.startsWith(`${flag}=`));
+  if (!match) return fallback;
+  const value = Number(match.slice(flag.length + 1));
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+};
+
 async function main() {
   const clear = process.argv.includes("--clear");
 
   if (clear) {
-    await clearSeed();
+    await clearSeed({ includeCustomers: true });
+    return;
+  }
+
+  const horizonDays = numericArg("--days", HORIZON_DAYS_DEFAULT);
+  const backDays = numericArg("--back", BACKFILL_DAYS_DEFAULT);
+
+  // --plan prints the run the seed would write and touches nothing. Useful for
+  // checking the shape of the month (weekends out, weight of each day, the mix
+  // of trade and business stops) before writing to a live database.
+  if (process.argv.includes("--plan")) {
+    const planned = generateSlots(
+      horizonDays,
+      backDays,
+      BUSINESS_CUSTOMERS.length,
+      TRADE_ACCOUNTS.length
+    );
+    const byDay = new Map();
+    for (const slot of planned) {
+      const day = slot.day();
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push(slot);
+    }
+    console.log(
+      `Plan: ${planned.length} generated stop(s) over ${byDay.size} working day(s), plus ${SLOTS.length} curated stop(s) on ${YESTERDAY} and ${TODAY}.`
+    );
+    for (const [day, slots] of [...byDay.entries()].sort()) {
+      const label = new Date(`${day}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short" });
+      const trade = slots.filter((slot) => typeof slot.trade === "number").length;
+      const business = slots.filter((slot) => typeof slot.business === "number").length;
+      const urgent = slots.filter((slot) => slot.urgent).length;
+      console.log(
+        `  ${day} ${label}: ${slots.length} stop(s) · ${trade} trade · ${business} business · ${urgent} urgent`
+      );
+    }
     return;
   }
 
   const sources = await loadSources();
-  if (sources.invoices.length < SLOTS.length) {
+  if (sources.invoices.length < 12) {
     throw new Error(
-      `Only ${sources.invoices.length} linkable invoices found; need at least ${SLOTS.length}.`
+      `Only ${sources.invoices.length} linkable invoices found; need at least 12 to build a month.`
     );
   }
   if (sources.unpaidInvoices.length === 0) {
@@ -596,23 +1109,36 @@ async function main() {
       `${sources.staff.length} staff, ${sources.trade.length} trade accounts.`
   );
 
+  // The business accounts have to exist before a stop can be linked to one.
+  sources.businesses = await seedBusinessCustomers();
+
+  // Yesterday and today are the curated story day; tomorrow to the horizon is
+  // generated, weekdays only.
+  const templates = [
+    ...SLOTS,
+    ...generateSlots(horizonDays, backDays, sources.businesses.length, sources.trade.length),
+  ];
+
   // Shared cursors so each pool is walked without repeating a customer.
-  const cursors = { paid: 0, unpaid: 0 };
-  const built = SLOTS.map((template, index) => buildRow(template, sources, index, cursors));
+  const cursors = { paid: 0, unpaid: 0, byDay: new Map() };
+  const built = templates.map((template, index) => buildRow(template, sources, index, cursors));
 
   // Replace any previous run first so re-seeding never leaves a stale event
   // trail behind a refreshed row.
   await clearSeed();
   await seedVanRoster();
 
-  const { error: insertError } = await db.from("parts_delivery_jobs").insert(built.map((b) => b.row));
-  if (insertError) throw new Error(`Unable to insert deliveries: ${insertError.message}`);
+  for (const batch of chunk(built.map((b) => b.row), INSERT_BATCH)) {
+    const { error: insertError } = await db.from("parts_delivery_jobs").insert(batch);
+    if (insertError) throw new Error(`Unable to insert deliveries: ${insertError.message}`);
+  }
 
   const events = built.flatMap(buildEvents);
-  if (events.length > 0) {
-    const { error: eventError } = await db.from("parts_delivery_events").insert(events);
+  for (const batch of chunk(events, INSERT_BATCH)) {
+    const { error: eventError } = await db.from("parts_delivery_events").insert(batch);
     if (eventError) {
       console.warn(`Delivery rows inserted, but the history trail failed: ${eventError.message}`);
+      break;
     }
   }
 
@@ -620,9 +1146,13 @@ async function main() {
     acc[b.day] = (acc[b.day] || 0) + 1;
     return acc;
   }, {});
-  console.log(`Inserted ${built.length} deliveries and ${events.length} history entries.`);
+  const days = Object.keys(byDay);
+  console.log(
+    `Inserted ${built.length} deliveries and ${events.length} history entries across ${days.length} working day(s).`
+  );
   for (const [day, count] of Object.entries(byDay).sort()) {
-    console.log(`  ${day}: ${count} stop(s)`);
+    const label = new Date(`${day}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short" });
+    console.log(`  ${day} ${label}: ${count} stop(s)`);
   }
   console.log("Open /deliveries to see them. Re-run with --clear to remove.");
 }

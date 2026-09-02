@@ -7693,20 +7693,20 @@ html.staff-scope .app-alert--info {
 /* Message row: tone icon + text + dismiss. */
 html.staff-scope .app-alert__main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-sm);
   width: 100%;
 }
 
 html.staff-scope .app-alert__icon {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -7738,32 +7738,10 @@ html.staff-scope .app-alert__message {
   color: var(--text-1);
 }
 
-/* Dismiss control — ghost, borderless (Border Sweep: buttons carry no
-   decorative outline; the focus ring is a box-shadow). */
+/* Dismiss control — the shared secondary icon button provides the filled,
+   44px square geometry that makes the background a true circle. */
 html.staff-scope .app-alert__dismiss {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  min-height: 32px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1;
-  opacity: 0.7;
-}
-html.staff-scope .app-alert__dismiss:hover {
-  opacity: 1;
-}
-html.staff-scope .app-alert__dismiss:focus-visible {
-  outline: none;
-  opacity: 1;
-  box-shadow: var(--focus-ring);
 }
 
 /* Reference-code row (Phase 4) — shown to EVERY user so staff can quote the
@@ -7874,7 +7852,7 @@ html.staff-scope .app-alert__report-btn:disabled {
   }
 }
 
-/* Mobile: span the viewport with small gutters; larger dismiss touch target. */
+/* Mobile: span the viewport with small gutters. */
 @media (max-width: 768px) {
   html.staff-scope .app-toast-stack {
     top: calc(var(--page-gutter-y-mobile) + 75px + 12px);
@@ -7882,10 +7860,6 @@ html.staff-scope .app-alert__report-btn:disabled {
     left: 12px;
     width: auto;
     max-width: none;
-  }
-  html.staff-scope .app-alert__dismiss {
-    min-width: 44px;
-    min-height: 44px;
   }
 }
 

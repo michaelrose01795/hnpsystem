@@ -33,7 +33,7 @@ const MOBILE_JOB_COLUMNS = `
   created_at,
   completed_at,
   technician:assigned_to(user_id, first_name, last_name, role),
-  customer:customer_id(id, first_name, last_name, email, phone)
+  customer:customer_id(id, firstname, lastname, email, mobile, telephone)
 `;
 
 /** List mobile jobs assigned to a given technician, optionally bounded by a date window. */

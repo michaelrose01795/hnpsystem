@@ -11,6 +11,7 @@
 //   reset request — 5 per email per hour, 30 per IP per hour
 
 import { supabaseService } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const WINDOW_LOGIN_MS = 15 * 60 * 1000;
 const WINDOW_RESET_MS = 60 * 60 * 1000;
@@ -107,7 +108,7 @@ export async function checkRateLimit({ endpoint, email, ip }) {
       sinceIso,
     });
   } catch (err) {
-    console.error("[rateLimit] count failed:", err?.message || err);
+    logFailure("[rateLimit] count failed:", err?.message || err);
     return { allowed: true };
   }
 
@@ -151,6 +152,6 @@ export async function recordAttempt({
       },
     ]);
   } catch (err) {
-    console.error("[rateLimit] recordAttempt failed:", err?.message || err);
+    logFailure("[rateLimit] recordAttempt failed:", err?.message || err);
   }
 }

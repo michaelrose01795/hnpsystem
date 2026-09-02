@@ -16,6 +16,7 @@ import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 import UserClockingHistoryUi from "@/components/page-ui/clocking/clocking-technician-slug-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
@@ -274,7 +275,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
       setEntries(records || []);
       setError("");
     } catch (err) {
-      console.error("Failed to load user clocking history", err);
+      logFailure("Failed to load user clocking history", err);
       setError(err?.message || "Unable to load user clocking.");
     } finally {
       setLoading(false);
@@ -332,7 +333,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
       unique.sort((a, b) => a.job_number.localeCompare(b.job_number));
       setActiveJobs(unique);
     } catch (err) {
-      console.error("Failed to load active jobs", err);
+      logFailure("Failed to load active jobs", err);
     } finally {
       setActiveJobsLoading(false);
     }
@@ -398,7 +399,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
           setJobRequests([]);
         }
       } catch (err) {
-        console.error("Failed to fetch job requests:", err);
+        logFailure("Failed to fetch job requests:", err);
         setJobRequests([]);
       }
     } else {
@@ -625,7 +626,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
             setLastClockedJobRequests(normalizedRequests);
           }
         } catch (err) {
-          console.error("Failed to fetch job details for history:", err);
+          logFailure("Failed to fetch job details for history:", err);
         }
 
         setHistoryRefreshSignal((prev) => prev + 1);
@@ -640,7 +641,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
         fetchEntries();
         fetchActiveJobs();
       } catch (err) {
-        console.error("Manual entry error:", err);
+        logFailure("Manual entry error:", err);
         setFormError(err?.message || "Unable to save the entry.");
       } finally {
         setFormSubmitting(false);

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/database/supabaseClient";
 import { CUSTOMER_ROLES, isCustomerRole } from "@/lib/auth/roles";
 import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const TABLE = "floating_notes";
 const SHARE_TABLE = "floating_note_shares";
@@ -109,7 +110,7 @@ export const getFloatingNotesForUser = async (userId) => {
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Failed to load floating notes:", error);
+    logFailure("Failed to load floating notes:", error);
     return [];
   }
 
@@ -169,7 +170,7 @@ const getShareableUsers = async () => {
     .order("last_name", { ascending: true });
 
   if (error) {
-    console.error("Failed to load shareable users:", error);
+    logFailure("Failed to load shareable users:", error);
     return [];
   }
 
@@ -212,7 +213,7 @@ const getNoteSharedUserIds = async (noteId) => {
     .eq("note_id", numericNoteId);
 
   if (error) {
-    console.error("Failed to load note shared users:", error);
+    logFailure("Failed to load note shared users:", error);
     return [];
   }
 
@@ -294,7 +295,7 @@ export const setNoteSharedUsers = async ({ noteId, ownerUserId, userIds = [] }) 
 
   const { error: deleteError } = await supabase.from(SHARE_TABLE).delete().eq("note_id", numericNoteId);
   if (deleteError) {
-    console.error("Failed to clear note shared users:", deleteError);
+    logFailure("Failed to clear note shared users:", deleteError);
     return { success: false, error: { message: deleteError.message } };
   }
 
@@ -310,7 +311,7 @@ export const setNoteSharedUsers = async ({ noteId, ownerUserId, userIds = [] }) 
 
   const { error: insertError } = await supabase.from(SHARE_TABLE).insert(payload);
   if (insertError) {
-    console.error("Failed to save note shared users:", insertError);
+    logFailure("Failed to save note shared users:", insertError);
     return { success: false, error: { message: insertError.message } };
   }
 
@@ -340,7 +341,7 @@ export const createFloatingNote = async ({ userId, title, description }) => {
     .single();
 
   if (error) {
-    console.error("Failed to create floating note:", error);
+    logFailure("Failed to create floating note:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -386,7 +387,7 @@ export const updateFloatingNote = async (noteId, ownerUserId, updates = {}) => {
     .maybeSingle();
 
   if (error) {
-    console.error("Failed to update floating note:", error);
+    logFailure("Failed to update floating note:", error);
     return { success: false, error: { message: error.message } };
   }
   if (!data) return inaccessibleNoteResult();
@@ -420,7 +421,7 @@ export const deleteFloatingNote = async (noteId, ownerUserId) => {
     .eq("note_id", numericNoteId);
 
   if (shareDeleteError) {
-    console.error("Failed to clear floating note shares:", shareDeleteError);
+    logFailure("Failed to clear floating note shares:", shareDeleteError);
     return { success: false, error: { message: shareDeleteError.message } };
   }
 
@@ -432,7 +433,7 @@ export const deleteFloatingNote = async (noteId, ownerUserId) => {
     .eq("user_id", numericOwnerUserId);
 
   if (error) {
-    console.error("Failed to delete floating note:", error);
+    logFailure("Failed to delete floating note:", error);
     return { success: false, error: { message: error.message } };
   }
 

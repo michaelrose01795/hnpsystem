@@ -22,7 +22,7 @@
 // library modules, and 6 of which meant different page sets depending on the
 // role. Roles keep exactly the pages they had — only the grouping changed.
 
-import { SIDEBAR_MODULE_LIBRARY } from "@/config/workspace/departments";
+import { SIDEBAR_MODULE_LIBRARY, sortModulesByLibraryOrder } from "@/config/workspace/departments";
 
 const LIBRARY_BY_KEY = new Map(
   SIDEBAR_MODULE_LIBRARY.map((navigationModule) => [navigationModule.key, navigationModule])
@@ -54,8 +54,11 @@ const mod = (key, hrefs) => {
 };
 
 // Modules are emitted in library order so every role's rail reads in the same
-// sequence; `layout()` only freezes what the role table already ordered.
-const layout = (...modules) => Object.freeze(modules);
+// sequence. Whatever order a role table happens to list them in is irrelevant:
+// `layout()` re-sorts against SIDEBAR_MODULE_LIBRARY, the one place the rail
+// order is authored. A role with no pages in a module simply skips it and the
+// next module moves up.
+const layout = (...modules) => Object.freeze(sortModulesByLibraryOrder(modules));
 
 export const WORKSPACE_ROLE_DEFAULT_NAMES = Object.freeze([
   "Retail",

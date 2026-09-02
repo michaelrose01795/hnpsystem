@@ -162,7 +162,7 @@ const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
       job_number: updatedRow?.job_number || fallbackJobNumber,
     };
   } catch (error) {
-    console.error("⚠️ Unable to persist generated job number, using fallback:", error);
+    logFailure("⚠️ Unable to persist generated job number, using fallback:", error);
     return {
       ...jobRow,
       job_number: fallbackJobNumber,
@@ -480,7 +480,7 @@ const _getJobsWorkloadUncached = async ({
     .limit(limit);
 
   if (error) {
-    console.error("❌ getJobsWorkload error:", {
+    logFailure("❌ getJobsWorkload error:", {
       message: error?.message,
       details: error?.details,
       hint: error?.hint,
@@ -543,7 +543,7 @@ export const getJobWorkloadRow = async (jobId, { throwOnError = false } = {}) =>
     .maybeSingle();
 
   if (error) {
-    console.error("❌ getJobWorkloadRow error:", error?.message || error);
+    logFailure("❌ getJobWorkloadRow error:", error?.message || error);
     if (throwOnError) throw error;
     return null;
   }
@@ -833,7 +833,7 @@ const _getAllJobsUncached = async ({ throwOnError = false } = {}) => {
     .order('created_at', { ascending: false }); // Order by newest first
 
   if (error) {
-    console.error("❌ getAllJobs error:", {
+    logFailure("❌ getAllJobs error:", {
       message: error?.message,
       details: error?.details,
       hint: error?.hint,
@@ -885,7 +885,7 @@ export const getDashboardData = async () => {
     .order('scheduled_time', { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching today's appointments:", error);
+    logFailure("❌ Error fetching today's appointments:", error);
     return { allJobs, appointments: [] };
   }
 
@@ -938,7 +938,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       .eq("authorised", true);
 
     if (partsError && partsError.code !== "PGRST116") {
-      console.error("⚠️ Error fetching authorized parts:", partsError);
+      logFailure("⚠️ Error fetching authorized parts:", partsError);
     }
 
     // Fetch authorized VHC checks
@@ -950,7 +950,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       .in("approval_status", ["authorized", "authorised"]);
 
     if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
-      console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+      logFailure("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
     } else {
       vhcChecksData = data || [];
     }
@@ -1000,7 +1000,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
     // Combine both sources
     return [...vhcChecksItems, ...partsItems];
   } catch (error) {
-    console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
+    logFailure("❌ getAuthorizedAdditionalWorkByJob error:", error);
     return [];
   }
 };
@@ -1025,7 +1025,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       .order("approved_at", { ascending: false });
 
     if (error) {
-      console.error("❌ Error fetching authorized VHC items:", error);
+      logFailure("❌ Error fetching authorized VHC items:", error);
       return [];
     }
 
@@ -1073,7 +1073,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       };
     });
   } catch (error) {
-    console.error("❌ getAuthorizedVhcItemsWithDetails error:", error);
+    logFailure("❌ getAuthorizedVhcItemsWithDetails error:", error);
     return [];
   }
 };
@@ -1319,7 +1319,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
   const jobData = Array.isArray(jobRows) ? jobRows[0] : null;
 
   if (jobError) {
-    console.error("❌ getJobByNumber error:", jobError);
+    logFailure("❌ getJobByNumber error:", jobError);
     return { data: null, error: jobError };
   }
 
@@ -1651,7 +1651,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
     .maybeSingle();
 
   if (jobError) {
-    console.error("❌ getJobByNumberOrReg error:", jobError);
+    logFailure("❌ getJobByNumberOrReg error:", jobError);
     return null;
   }
 
@@ -1924,7 +1924,7 @@ const fetchJobMessagingThread = async (jobNumber) => {
 
     if (threadError) {
       if (threadError.code !== "PGRST116") {
-        console.error("❌ fetchJobMessagingThread error:", threadError);
+        logFailure("❌ fetchJobMessagingThread error:", threadError);
       }
       return null;
     }
@@ -1977,10 +1977,10 @@ const fetchJobMessagingThread = async (jobNumber) => {
     ]);
 
     if (participantsResult?.error) {
-      console.error("❌ Failed to load thread participants:", participantsResult.error);
+      logFailure("❌ Failed to load thread participants:", participantsResult.error);
     }
     if (messagesResult?.error) {
-      console.error("❌ Failed to load thread messages:", messagesResult.error);
+      logFailure("❌ Failed to load thread messages:", messagesResult.error);
     }
 
     const participants = (participantsResult?.data || [])
@@ -2000,7 +2000,7 @@ const fetchJobMessagingThread = async (jobNumber) => {
       messages,
     };
   } catch (threadError) {
-    console.error("❌ Unexpected messaging thread error:", threadError);
+    logFailure("❌ Unexpected messaging thread error:", threadError);
     return null;
   }
 };
@@ -2157,6 +2157,7 @@ import {
   isMotRequestLike,
   summarizeWriteUpTasks,
 } from "@/lib/jobCards/writeUpTasks";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export { isMotRequestLike, summarizeWriteUpTasks };
 
@@ -2972,12 +2973,12 @@ export const addJobToDatabase = async ({
         .maybeSingle();
 
       if (vehicleError) {
-        console.error("❌ Error finding vehicle:", vehicleError);
+        logFailure("❌ Error finding vehicle:", vehicleError);
         throw vehicleError;
       }
 
       if (!vehicle) {
-        console.error("❌ Vehicle not found for reg:", regNumber);
+        logFailure("❌ Vehicle not found for reg:", regNumber);
         return { 
           success: false, 
           error: { message: `Vehicle with registration ${regNumber} not found` } 
@@ -3003,7 +3004,7 @@ export const addJobToDatabase = async ({
         .single();
 
       if (primeJobError || !primeJob) {
-        console.error("❌ Prime job not found:", primeJobError);
+        logFailure("❌ Prime job not found:", primeJobError);
         return {
           success: false,
           error: { message: `Prime job with ID ${primeJobId} not found` }
@@ -3119,7 +3120,7 @@ export const addJobToDatabase = async ({
       .single();
 
     if (jobError) {
-      console.error("❌ Error creating job:", jobError);
+      logFailure("❌ Error creating job:", jobError);
       throw jobError;
     }
 
@@ -3142,7 +3143,7 @@ export const addJobToDatabase = async ({
         },
       ]);
     if (bookedHistoryError) {
-      console.error("Failed to record initial Booked status:", bookedHistoryError);
+      logFailure("Failed to record initial Booked status:", bookedHistoryError);
     }
 
     // If this is a prime job, set prime_job_number to the job's own job_number
@@ -3166,7 +3167,7 @@ export const addJobToDatabase = async ({
     invalidateCache("jobs:");
     return { success: true, data: formatJobData(jobWithNumber) };
   } catch (error) {
-    console.error("❌ Error adding job:", error);
+    logFailure("❌ Error adding job:", error);
     return {
       success: false,
       error: { message: error.message || "Failed to create job" }
@@ -3266,7 +3267,7 @@ const recordStatusMovement = async (jobId, status, statusUpdatedBy) => {
     });
   } catch (movementError) {
     // Never fail a job update because a tracking event could not be written.
-    console.error("Auto tracking movement failed", movementError);
+    logFailure("Auto tracking movement failed", movementError);
   }
 };
 
@@ -3310,7 +3311,7 @@ export const updateJob = async (jobId, updates) => {
         .single();
 
       if (statusFetchError) {
-        console.error(
+        logFailure(
           "❌ Unable to read current status before job update:",
           statusFetchError
         );
@@ -3325,7 +3326,7 @@ export const updateJob = async (jobId, updates) => {
             .single();
 
           if (existingJobError) {
-            console.error("❌ Unable to read existing job for no-op status update:", existingJobError);
+            logFailure("❌ Unable to read existing job for no-op status update:", existingJobError);
             return { success: false, error: existingJobError };
           }
 
@@ -3348,7 +3349,7 @@ export const updateJob = async (jobId, updates) => {
           };
         }
       } catch (subStatusError) {
-        console.error("❌ Failed to validate invoicing prerequisites:", subStatusError);
+        logFailure("❌ Failed to validate invoicing prerequisites:", subStatusError);
         return {
           success: false,
           error: { message: "Unable to validate invoicing prerequisites" },
@@ -3373,7 +3374,7 @@ export const updateJob = async (jobId, updates) => {
           };
         }
       } catch (invoiceError) {
-        console.error("❌ Failed to check invoice before release:", invoiceError);
+        logFailure("❌ Failed to check invoice before release:", invoiceError);
         return {
           success: false,
           error: { message: "Unable to validate invoice before release" },
@@ -3404,7 +3405,7 @@ export const updateJob = async (jobId, updates) => {
       .single();
 
     if (error) {
-      console.error("❌ Error updating job:", error);
+      logFailure("❌ Error updating job:", error);
       return { success: false, error };
     }
 
@@ -3451,7 +3452,7 @@ export const updateJob = async (jobId, updates) => {
             },
           ]);
         } catch (activityError) {
-          console.error("❌ Failed to log job card edit activity:", activityError);
+          logFailure("❌ Failed to log job card edit activity:", activityError);
         }
       }
     }
@@ -3475,7 +3476,7 @@ export const updateJob = async (jobId, updates) => {
           },
         ]);
       } catch (historyError) {
-        console.error("❌ Failed to log job status history:", historyError);
+        logFailure("❌ Failed to log job status history:", historyError);
       }
 
       // Reporting event spine (Phase-5). Non-blocking + flag-gated: inert until
@@ -3498,7 +3499,7 @@ export const updateJob = async (jobId, updates) => {
             newStatus: updates.status,
           });
         } catch (notifyError) {
-          console.error(
+          logFailure(
             "❌ Failed to dispatch job status notification:",
             notifyError
           );
@@ -3509,7 +3510,7 @@ export const updateJob = async (jobId, updates) => {
     invalidateCache("jobs:");
     return { success: true, data: formatJobData(data) };
   } catch (error) {
-    console.error("❌ Exception updating job:", error);
+    logFailure("❌ Exception updating job:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3637,7 +3638,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ upsertJobRequestsForJob error:", error);
+    logFailure("❌ upsertJobRequestsForJob error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3667,7 +3668,7 @@ export const updateJobRequestStatus = async (requestId, status) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobRequestStatus error:", error);
+    logFailure("❌ updateJobRequestStatus error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3712,7 +3713,7 @@ export const updateJobRequestWorkDetails = async (requestId, fields = {}) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobRequestWorkDetails error:", error);
+    logFailure("❌ updateJobRequestWorkDetails error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3738,7 +3739,7 @@ export const markAllJobRequestsComplete = async (jobId) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ markAllJobRequestsComplete error:", error);
+    logFailure("❌ markAllJobRequestsComplete error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3806,7 +3807,7 @@ export const cancelJobAppointment = async (
     invalidateCache("jobs:");
     return { success: true, data: statusResult.data };
   } catch (error) {
-    console.error("❌ cancelJobAppointment error:", error);
+    logFailure("❌ cancelJobAppointment error:", error);
     return {
       success: false,
       error: { message: error?.message || "Failed to cancel appointment" },
@@ -3849,7 +3850,7 @@ export const assignTechnicianToJob = async (
         resolvedTechnicianId = ensuredId;
       }
     } catch (err) {
-      console.error("❌ Failed to resolve technician id:", err);
+      logFailure("❌ Failed to resolve technician id:", err);
       return {
         success: false,
         error: { message: err?.message || "Failed to resolve technician id" },
@@ -3951,7 +3952,7 @@ export const createOrUpdateAppointment = async (
       .maybeSingle();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber, jobError);
+      logFailure("Job not found", jobError, { jobNumber });
       return { 
         success: false, 
         error: { message: `Job ${jobNumber} not found in database` } 
@@ -4022,7 +4023,7 @@ export const createOrUpdateAppointment = async (
       }
     };
   } catch (error) {
-    console.error("❌ Error creating/updating appointment:", error);
+    logFailure("❌ Error creating/updating appointment:", error);
     return { 
       success: false, 
       error: { message: error.message || "Failed to create/update appointment" } 
@@ -4065,7 +4066,7 @@ export const getJobsByDate = async (date) => {
     .order('scheduled_time', { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching jobs by date:", error);
+    logFailure("❌ Error fetching jobs by date:", error);
     return [];
   }
 
@@ -4122,7 +4123,7 @@ export const addJobFile = async (
     console.log("✅ File added to job:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ Error adding file to job:", error);
+    logFailure("❌ Error adding file to job:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4149,7 +4150,7 @@ export const getJobFiles = async (jobId, folder = null) => {
     console.log("✅ Job files retrieved:", data?.length || 0);
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting job files:", error);
+    logFailure("❌ Error getting job files:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4169,7 +4170,7 @@ export const deleteJobFile = async (fileId) => {
     console.log("✅ File deleted from job");
     return { success: true };
   } catch (error) {
-    console.error("❌ Error deleting file:", error);
+    logFailure("❌ Error deleting file:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4199,7 +4200,7 @@ export const getCustomerJobHistory = async (customerId) => {
     console.log("✅ Customer job history retrieved:", data?.length || 0, "jobs");
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting customer job history:", error);
+    logFailure("❌ Error getting customer job history:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4227,7 +4228,7 @@ export const getVehicleJobHistory = async (vehicleId) => {
     console.log("✅ Vehicle job history retrieved:", data?.length || 0, "jobs");
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting vehicle job history:", error);
+    logFailure("❌ Error getting vehicle job history:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4257,7 +4258,7 @@ export const updateJobPosition = async (jobId, newPosition) => {
     invalidateCache("jobs:");
     return data;
   } catch (err) {
-    console.error("❌ Error in updateJobPosition:", err.message);
+    logFailure("❌ Error in updateJobPosition:", err.message);
     throw err;
   }
 };
@@ -4290,7 +4291,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       .single();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber);
+      logFailure("❌ Job not found:", jobNumber);
       return null;
     }
 
@@ -4310,7 +4311,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
     const { data: writeUp, error } = writeUpResponse;
 
     if (error && error.code !== "PGRST116") {
-      console.error("❌ Error fetching write-up:", error);
+      logFailure("❌ Error fetching write-up:", error);
       return null;
     }
 
@@ -4405,7 +4406,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       sectionEditors,
     };
   } catch (error) {
-    console.error("❌ getWriteUpByJobNumber error:", error);
+    logFailure("❌ getWriteUpByJobNumber error:", error);
     return null;
   }
 };
@@ -4439,7 +4440,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .single();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber);
+      logFailure("❌ Job not found:", jobNumber);
       return { success: false, error: "Job not found" };
     }
 
@@ -4535,7 +4536,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     if (formattedJobDescription && formattedJobDescription !== (job.description || "")) {
       const jobUpdateResult = await updateJob(job.id, { description: formattedJobDescription });
       if (!jobUpdateResult.success) {
-        console.error("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
+        logFailure("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
       }
     }
 
@@ -4619,7 +4620,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         const { error: requestUpdateError } = await requestUpdateQuery;
 
         if (requestUpdateError) {
-          console.error("⚠️ Error updating job request status:", requestUpdateError);
+          logFailure("⚠️ Error updating job request status:", requestUpdateError);
           return {
             success: false,
             error: `Failed to save request completion: ${requestUpdateError.message}`,
@@ -4639,7 +4640,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           .eq("vhc_id", update.vhcItemId);
 
         if (vhcCompletionError) {
-          console.error("⚠️ Error updating authorised VHC completion:", vhcCompletionError);
+          logFailure("⚠️ Error updating authorised VHC completion:", vhcCompletionError);
           return {
             success: false,
             error: `Failed to save authorised work completion: ${vhcCompletionError.message}`,
@@ -4705,7 +4706,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .single();
 
       if (updateWriteUpError) {
-        console.error("❌ Error updating write-up:", updateWriteUpError);
+        logFailure("❌ Error updating write-up:", updateWriteUpError);
         return { success: false, error: updateWriteUpError.message };
       }
 
@@ -4720,7 +4721,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .single();
 
       if (insertWriteUpError) {
-        console.error("❌ Error inserting write-up:", insertWriteUpError);
+        logFailure("❌ Error inserting write-up:", insertWriteUpError);
         return { success: false, error: insertWriteUpError.message };
       }
 
@@ -4730,7 +4731,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     console.log("✅ Write-up saved successfully");
     return { success: true, data: writeUpRecord, completionStatus };
   } catch (error) {
-    console.error("❌ saveWriteUpToDatabase error:", error);
+    logFailure("❌ saveWriteUpToDatabase error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -4822,12 +4823,12 @@ export const saveChecksheet = async (jobNumber, vhcData) => {
         labour_rate_gbp: 85,
       });
     } catch (syncError) {
-      console.error("Warning: VHC sync to canonical rows failed:", syncError.message);
+      logFailure("Warning: VHC sync to canonical rows failed:", syncError.message);
     }
 
     return { success: true };
   } catch (error) {
-    console.error("❌ saveChecksheet error:", error);
+    logFailure("❌ saveChecksheet error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4862,7 +4863,7 @@ export const updateJobVhcCheck = async (jobNumber, checkData) => {
     invalidateCache("jobs:");
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobVhcCheck error:", error);
+    logFailure("❌ updateJobVhcCheck error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4908,7 +4909,7 @@ export const getJobsByPrimeGroup = async (primeJobNumber) => {
       .order("sub_job_sequence", { ascending: true, nullsFirst: true });
 
     if (error) {
-      console.error("❌ Error fetching prime job group:", error);
+      logFailure("❌ Error fetching prime job group:", error);
       throw error;
     }
 
@@ -4927,7 +4928,7 @@ export const getJobsByPrimeGroup = async (primeJobNumber) => {
       },
     };
   } catch (error) {
-    console.error("❌ getJobsByPrimeGroup error:", error);
+    logFailure("❌ getJobsByPrimeGroup error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4950,7 +4951,7 @@ export const convertToPrimeJob = async (jobId) => {
       .single();
 
     if (fetchError || !job) {
-      console.error("❌ Job not found:", fetchError);
+      logFailure("❌ Job not found:", fetchError);
       return { success: false, error: { message: "Job not found" } };
     }
 
@@ -4976,14 +4977,14 @@ export const convertToPrimeJob = async (jobId) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Error converting to prime job:", updateError);
+      logFailure("❌ Error converting to prime job:", updateError);
       throw updateError;
     }
 
     console.log("✅ Converted job to prime:", job.job_number);
     return { success: true, data: formatJobData(updated) };
   } catch (error) {
-    console.error("❌ convertToPrimeJob error:", error);
+    logFailure("❌ convertToPrimeJob error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -5040,7 +5041,7 @@ export const getGroupedJobsForDate = async (date) => {
       .order("appointments.scheduled_time", { ascending: true });
 
     if (error) {
-      console.error("❌ Error fetching grouped jobs:", error);
+      logFailure("❌ Error fetching grouped jobs:", error);
       throw error;
     }
 
@@ -5087,7 +5088,7 @@ export const getGroupedJobsForDate = async (date) => {
       },
     };
   } catch (error) {
-    console.error("❌ getGroupedJobsForDate error:", error);
+    logFailure("❌ getGroupedJobsForDate error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

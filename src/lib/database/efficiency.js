@@ -1,6 +1,7 @@
 // file location: src/lib/database/efficiency.js
 import { getDatabaseClient } from "@/lib/database/client";
 import { getWorkshopClockingUsers } from "@/lib/database/workshopClocking";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient();
 
@@ -341,7 +342,7 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
     .order("clock_in", { ascending: true });
 
   if (error) {
-    console.error("Failed to fetch job_clocking for efficiency:", error.message);
+    logFailure("Failed to fetch job_clocking for efficiency:", error.message);
     return [];
   }
 
@@ -499,7 +500,7 @@ export async function getOvertimeAsEfficiency(userIds, year, month) {
     .order("date", { ascending: true });
 
   if (error) {
-    console.error("Failed to fetch overtime_sessions for efficiency:", error.message);
+    logFailure("Failed to fetch overtime_sessions for efficiency:", error.message);
     return [];
   }
 

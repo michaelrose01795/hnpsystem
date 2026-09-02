@@ -29,6 +29,7 @@ import {
 } from "@/styles/themeRuntime";
 import { isSyntheticDevPlatformUser } from "@/lib/auth/devSession";
 import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { logFailure } from "@/lib/utils/logFailure";
 
 const STORAGE_KEY = "hp-dms-theme";
 const ACCENT_STORAGE_KEY = "hp-dms-accent";
@@ -272,7 +273,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
           throw new Error(payload?.message || `Theme preference save failed (${response.status})`);
         }
       } catch (error) {
-        console.error("Failed to save theme preference", error?.message || error);
+        logFailure("Failed to save theme preference", error?.message || error);
       }
     },
     [dbUserId]
@@ -300,7 +301,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
           throw new Error(payload?.message || `Accent preference save failed (${response.status})`);
         }
       } catch (error) {
-        console.error("Failed to save accent preference", error?.message || error);
+        logFailure("Failed to save accent preference", error?.message || error);
       }
     },
     [dbUserId]
