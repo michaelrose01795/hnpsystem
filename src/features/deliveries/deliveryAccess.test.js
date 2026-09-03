@@ -8,7 +8,10 @@
 import { describe, expect, it } from "vitest";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 
-const PARTS_PAGES = ["/deliveries", "/delivery-planner", "/stock-catalogue", "/goods-in", "/jobs", "/parts-manager", "/parts"];
+// "/jobs" is deliberately not here: Job Cards was removed from the Parts module's
+// navigation (it belongs to Reception), and nav presence IS access — see the
+// separate assertion below.
+const PARTS_PAGES = ["/deliveries", "/delivery-planner", "/stock-catalogue", "/goods-in", "/parts-manager", "/parts"];
 
 describe("delivery diary access", () => {
   it("gives a Parts Driver the diary and nothing else", () => {
@@ -18,7 +21,6 @@ describe("delivery diary access", () => {
       expect([page, canAccessPath(page, roles)]).toEqual([page, false]);
     }
     expect(canAccessPath("/hr/manager", roles)).toBe(false);
-    expect(canAccessPath("/admin/users", roles)).toBe(false);
   });
 
   it("leaves Parts and Parts Manager exactly as they were", () => {
@@ -26,6 +28,9 @@ describe("delivery diary access", () => {
       for (const page of PARTS_PAGES) {
         expect([role, page, canAccessPath(page, [role])]).toEqual([role, page, true]);
       }
+      // /parts still resolves even though /jobs left its DYNAMIC_DETAIL_EXTENDS
+      // source list — /goods-in and /stock-catalogue each grant it on their own.
+      expect([role, "/jobs", canAccessPath("/jobs", [role])]).toEqual([role, "/jobs", false]);
     }
   });
 

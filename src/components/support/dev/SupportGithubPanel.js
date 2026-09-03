@@ -8,7 +8,7 @@
 // commit via the pure githubCorrelation helper. CLAUDE.md-compliant primitives.
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Panel, Pill, DevButton, EmptyState, LoadingBlock } from "@/components/support/dev/supportDevUi";
+import { Panel, badgeClass, EmptyState, LoadingBlock } from "@/components/support/dev/supportDevUi";
 import { correlateReport } from "@/lib/dev-platform/githubCorrelation";
 import { postJson } from "@/components/dev-platform/usePlatformResource";
 import { useAlerts } from "@/context/AlertContext";
@@ -85,10 +85,10 @@ export default function SupportGithubPanel({ reportId, report }) {
       subtitle={configured ? `Connected to ${repo}` : "Not configured — linking by URL still works; issue creation needs SUPPORT_GITHUB_TOKEN."}
       actions={
         <>
-          <DevButton small onClick={onCreate} disabled={busy || !configured} title={configured ? "Create a GitHub issue from this report" : "Set SUPPORT_GITHUB_TOKEN to enable"}>
+          <button type="button" onClick={onCreate} disabled={busy || !configured} title={configured ? "Create a GitHub issue from this report" : "Set SUPPORT_GITHUB_TOKEN to enable"} className="app-btn app-btn--secondary app-btn--sm">
             Create issue
-          </DevButton>
-          <DevButton small onClick={load} disabled={busy}>Refresh</DevButton>
+          </button>
+          <button type="button" onClick={load} disabled={busy} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>
         </>
       }
     >
@@ -128,9 +128,9 @@ export default function SupportGithubPanel({ reportId, report }) {
           placeholder="Paste a github.com issue / PR / commit URL to link"
           aria-label="GitHub URL to link"
           className="app-input"
-          style={{ flex: 1, minWidth: "220px", minHeight: 44, padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--surface)", color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}
+          style={{ flex: 1, minWidth: "220px" }}
         />
-        <DevButton small onClick={onLink} disabled={busy || !url.trim()}>Link</DevButton>
+        <button type="button" onClick={onLink} disabled={busy || !url.trim()} className="app-btn app-btn--secondary app-btn--sm">Link</button>
       </div>
 
       {/* Linked artifacts */}
@@ -153,13 +153,13 @@ export default function SupportGithubPanel({ reportId, report }) {
                 flexWrap: "wrap",
               }}
             >
-              <Pill label={KIND_LABEL[l.kind] || l.kind || "Link"} tone="text-1" />
+              <span className="app-badge app-badge--neutral">{KIND_LABEL[l.kind] || l.kind || "Link"}</span>
               <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accentText)", fontSize: "var(--text-body-sm)", textDecoration: "none", minWidth: 0, flex: 1, wordBreak: "break-word" }}>
                 {l.title || `${l.kind} ${l.number ? `#${l.number}` : l.sha ? l.sha.slice(0, 7) : ""}`}
               </a>
-              {l.state ? <Pill label={l.state} tone={STATE_TONE[l.state] || "text-1"} strong /> : null}
-              <DevButton small onClick={() => onSync(l.id)} disabled={busy || !configured} title="Refresh live state from GitHub">Sync</DevButton>
-              <DevButton small tone="danger-base" onClick={() => onUnlink(l.id)} disabled={busy}>Unlink</DevButton>
+              {l.state ? <span className={badgeClass(STATE_TONE[l.state] || "text-1", true)}>{l.state}</span> : null}
+              <button type="button" onClick={() => onSync(l.id)} disabled={busy || !configured} title="Refresh live state from GitHub" className="app-btn app-btn--secondary app-btn--sm">Sync</button>
+              <button type="button" onClick={() => onUnlink(l.id)} disabled={busy} className="app-btn app-btn--danger app-btn--sm">Unlink</button>
             </div>
           ))}
         </div>

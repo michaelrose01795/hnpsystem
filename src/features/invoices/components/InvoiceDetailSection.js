@@ -5,6 +5,7 @@ import InvoiceWorkspace from "@/features/invoices/components/InvoiceWorkspace";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getJobRequests } from "@/lib/canonical/fields";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const InvoiceSkeleton = () => {
   return (
@@ -60,7 +61,7 @@ export default function InvoiceDetailSection({
       }
       setData(payload.data);
     } catch (err) {
-      console.error("Invoice fetch failed", err);
+      logFailure("Invoice fetch failed", err);
       if (!silent) {
         setError(err.message || "Unable to load invoice");
         setData(null);
@@ -295,7 +296,7 @@ export default function InvoiceDetailSection({
       }
       setEmailStatus("Invoice emailed successfully!");
     } catch (err) {
-      console.error("Email invoice failed:", err);
+      logFailure("Email invoice failed:", err);
       setEmailStatus(err.message || "Failed to send email");
     }
     setTimeout(() => setEmailStatus(""), 5000);

@@ -17,6 +17,7 @@
 //   from a server context (API routes).
 
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================================================
    READ HELPERS
@@ -29,7 +30,7 @@ const orderedSelect = async (table, { extraSelect } = {}) => {
     .select(select)
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error(`[website] ${table} read error:`, error.message);
+    logFailure(`[website] ${table} read error:`, error.message);
     return [];
   }
   return data || [];
@@ -42,7 +43,7 @@ const singletonSelect = async (table) => {
     .eq("id", "default")
     .maybeSingle();
   if (error) {
-    console.error(`[website] ${table} singleton read error:`, error.message);
+    logFailure(`[website] ${table} singleton read error:`, error.message);
     return null;
   }
   return data || null;
@@ -73,11 +74,19 @@ const publishedOnly = async (table) => {
     .eq("status", "published")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error(`[website] ${table} published read error:`, error.message);
+    logFailure(`[website] ${table} published read error:`, error.message);
     return [];
   }
   return data || [];
 };
+
+// Builder collections (20260901120000_website_builder_nav_design_layout).
+// The top bar and the running order of the /website blocks are content, not
+// code — both hide 'draft' rows from the public read exactly like every other
+// published collection.
+export const getNavLinks = () => publishedOnly("website_nav");
+export const getSectionLayout = () => publishedOnly("website_section_layout");
+export const getDesign = () => singletonSelect("website_design");
 
 export const getTrustPoints = () => publishedOnly("website_trust_points");
 export const getPartnerBrands = () => publishedOnly("website_partner_brands");
@@ -99,8 +108,8 @@ export const getTeam = async () => {
         .eq("status", "published")
         .order("sort_order"),
     ]);
-  if (dErr) console.error("[website] team departments read error:", dErr.message);
-  if (mErr) console.error("[website] team members read error:", mErr.message);
+  if (dErr) logFailure("[website] team departments read error:", dErr.message);
+  if (mErr) logFailure("[website] team members read error:", mErr.message);
   return { departments: depts || [], members: members || [] };
 };
 
@@ -145,6 +154,9 @@ export const getWebsiteContent = async () => {
     blogPosts,
     timeline,
     team,
+    navLinks,
+    sectionLayout,
+    design,
   ] = await Promise.all([
     getBrand(),
     getHero(),
@@ -164,6 +176,9 @@ export const getWebsiteContent = async () => {
     getBlogPosts(),
     getTimeline(),
     getTeam(),
+    getNavLinks(),
+    getSectionLayout(),
+    getDesign(),
   ]);
 
   return {
@@ -188,6 +203,9 @@ export const getWebsiteContent = async () => {
     brands: partnerBrands.map((b) => ({ name: b.name, logo: b.logo_url })),
     team: team.members.map(memberOut),
     teamDepartments: team.departments.map((d) => ({ id: d.id, label: d.label })),
+    navLinks: navLinks.map(navOut),
+    sectionLayout: sectionLayout.map(layoutOut),
+    design: designOut(design),
   };
 };
 
@@ -332,6 +350,51 @@ const blogOut = (p) => ({
   image: p.image_url,
 });
 
+/* ----------------------------------------------------------------------------
+   Builder mappers — nav / section layout / design
+---------------------------------------------------------------------------- */
+
+const navOut = (n) => ({
+  id: n.id,
+  label: n.label,
+  href: n.href,
+  // `null` rather than "" so `link.filter` stays falsy for plain anchors.
+  filter: n.filter || null,
+});
+
+const layoutOut = (s) => ({
+  id: s.id,
+  label: s.label,
+  anchor: s.anchor || s.id,
+  eyebrow: s.eyebrow || null,
+  title: s.title || null,
+  lead: s.lead || null,
+  tint: Boolean(s.tint),
+});
+
+// Design is a singleton that may legitimately be missing (migration not yet
+// applied). Returning `null` lets useWebsiteContent fall back to the static
+// defaults rather than painting a half-empty token set onto .ws-page.
+const designOut = (d) =>
+  d
+    ? {
+        accentHex: d.accent_hex,
+        accentHoverHex: d.accent_hover_hex,
+        defaultTheme: d.default_theme,
+        containerWidth: d.container_width,
+        cornerRadius: d.corner_radius,
+        buttonRadius: d.button_radius,
+        sectionSpacing: d.section_spacing,
+        navHeight: d.nav_height,
+        logoHeight: d.logo_height,
+        headingFont: d.heading_font,
+        navSticky: d.nav_sticky !== false,
+        showNavPhone: d.show_nav_phone !== false,
+        showNavAccount: d.show_nav_account !== false,
+        showBrandStrip: d.show_brand_strip !== false,
+      }
+    : null;
+
 const memberOut = (m) => ({
   id: m.id,
   name: m.name,
@@ -361,7 +424,7 @@ export const upsertSingleton = async (table, patch, actor) => {
     .select()
     .single();
   if (error) {
-    console.error(`[website] ${table} upsert error:`, error.message);
+    logFailure(`[website] ${table} upsert error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -375,7 +438,7 @@ export const upsertRow = async (table, row, actor) => {
     .select()
     .single();
   if (error) {
-    console.error(`[website] ${table} upsert row error:`, error.message);
+    logFailure(`[website] ${table} upsert row error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -384,7 +447,7 @@ export const upsertRow = async (table, row, actor) => {
 export const deleteRow = async (table, id) => {
   const { error } = await supabase.from(table).delete().eq("id", id);
   if (error) {
-    console.error(`[website] ${table} delete error:`, error.message);
+    logFailure(`[website] ${table} delete error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };
@@ -403,7 +466,7 @@ export const reorderRows = async (table, idsInOrder, actor) => {
     .from(table)
     .upsert(rows, { onConflict: "id" });
   if (error) {
-    console.error(`[website] ${table} reorder error:`, error.message);
+    logFailure(`[website] ${table} reorder error:`, error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };
@@ -419,7 +482,7 @@ export const getPages = async () => {
     .select("*")
     .order("page_key");
   if (error) {
-    console.error("[website] pages read error:", error.message);
+    logFailure("[website] pages read error:", error.message);
     return [];
   }
   return data || [];
@@ -433,7 +496,7 @@ export const touchPage = async (pageKey, actor) => {
       last_edited_at: new Date().toISOString(),
     })
     .eq("page_key", pageKey);
-  if (error) console.error("[website] touchPage error:", error.message);
+  if (error) logFailure("[website] touchPage error:", error.message);
 };
 
 export const setPageStatus = async (pageKey, status, actor) => {
@@ -448,7 +511,7 @@ export const setPageStatus = async (pageKey, status, actor) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] setPageStatus error:", error.message);
+    logFailure("[website] setPageStatus error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -461,7 +524,7 @@ export const logActivity = async ({ actor, action, target, pageKey }) => {
     target,
     page_key: pageKey || null,
   });
-  if (error) console.error("[website] logActivity error:", error.message);
+  if (error) logFailure("[website] logActivity error:", error.message);
 };
 
 export const getRecentActivity = async (limit = 50) => {
@@ -471,7 +534,7 @@ export const getRecentActivity = async (limit = 50) => {
     .order("occurred_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.error("[website] activity read error:", error.message);
+    logFailure("[website] activity read error:", error.message);
     return [];
   }
   return data || [];
@@ -484,7 +547,7 @@ export const getRecentActivity = async (limit = 50) => {
 export const getSeoEntries = async () => {
   const { data, error } = await supabase.from("website_seo").select("*");
   if (error) {
-    console.error("[website] seo read error:", error.message);
+    logFailure("[website] seo read error:", error.message);
     return [];
   }
   return data || [];
@@ -500,7 +563,7 @@ export const updateSeo = async (pageKey, patch, actor) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] updateSeo error:", error.message);
+    logFailure("[website] updateSeo error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -516,7 +579,7 @@ export const getMedia = async () => {
     .select("*")
     .order("uploaded_at", { ascending: false });
   if (error) {
-    console.error("[website] media read error:", error.message);
+    logFailure("[website] media read error:", error.message);
     return [];
   }
   return data || [];
@@ -529,7 +592,7 @@ export const upsertMedia = async (asset) => {
     .select()
     .single();
   if (error) {
-    console.error("[website] upsertMedia error:", error.message);
+    logFailure("[website] upsertMedia error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true, data };
@@ -538,7 +601,7 @@ export const upsertMedia = async (asset) => {
 export const deleteMedia = async (id) => {
   const { error } = await supabase.from("website_media").delete().eq("id", id);
   if (error) {
-    console.error("[website] deleteMedia error:", error.message);
+    logFailure("[website] deleteMedia error:", error.message);
     return { ok: false, error: error.message };
   }
   return { ok: true };
@@ -568,4 +631,8 @@ export const SECTION_TABLES = {
   "team-members": { table: "website_team_members", kind: "collection" },
   timeline: { table: "website_timeline", kind: "collection" },
   "blog-posts": { table: "website_blog_posts", kind: "collection" },
+  // Site-builder sections (20260901120000_website_builder_nav_design_layout).
+  design: { table: "website_design", kind: "singleton" },
+  nav: { table: "website_nav", kind: "collection" },
+  "section-layout": { table: "website_section_layout", kind: "collection" },
 };

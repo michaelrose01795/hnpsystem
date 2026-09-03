@@ -21,6 +21,7 @@ import {
   PageShell,
 } from "@/components/ui";
 import WorkshopDashboardUi from "@/components/page-ui/dashboard/workshop/dashboard-workshop-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside the daily-checkpoints LayerSurface,
 // so per the strict alternation rule it renders as a LayerTheme.
@@ -159,7 +160,7 @@ export default function WorkshopDashboard() {
         const data = await (await loadDashboardData()).getWorkshopDashboardData();
         setDashboardData(data);
       } catch (fetchError) {
-        console.error("Failed to load workshop dashboard", fetchError);
+        logFailure("Failed to load workshop dashboard", fetchError);
         setError(fetchError.message || "Unable to load dashboard");
       } finally {
         setLoading(false);

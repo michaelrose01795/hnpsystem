@@ -13,6 +13,7 @@ import {
   ensureJobFilesSchema,
   getRepairableJobFilesColumnsFromError,
 } from "@/lib/storage/jobFilesSchemaRepair";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const BUCKET = "job-files"; // single bucket for all job-related uploads
 const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path", "vhc_concern_link", "is_main_vhc_video"];
@@ -114,7 +115,7 @@ export async function uploadFile(file, folder, jobId) {
   });
 
   if (error) {
-    console.error("❌ Supabase Storage upload failed:", {
+    logFailure("❌ Supabase Storage upload failed:", {
       bucket: BUCKET,
       storagePath,
       message: error.message,
@@ -234,7 +235,7 @@ export async function saveFileRecord(meta) {
   }
 
   if (error) {
-    console.error("❌ saveFileRecord error:", {
+    logFailure("❌ saveFileRecord error:", {
       message: error.message,
       code: error.code,
       details: error.details,
@@ -313,7 +314,7 @@ export async function updateFileRecord(fileId, meta) {
   }
 
   if (error) {
-    console.error("❌ updateFileRecord error:", {
+    logFailure("❌ updateFileRecord error:", {
       message: error.message,
       code: error.code,
       details: error.details,

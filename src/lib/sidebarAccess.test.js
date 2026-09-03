@@ -47,6 +47,7 @@ describe("sidebar access snapshots", () => {
     expect(synced.find((module) => module.key === "department-workshop")?.items)
       .toEqual([
         "/dashboard/workshop",
+        "/mobile/dashboard",
         "/clocking",
         "/consumables-tracker",
         "/tech/efficiency",
@@ -106,7 +107,7 @@ describe("sidebar access snapshots", () => {
     expect(defaults.groups).toContain("general");
     expect(defaults.groups).toContain("service");
     expect(defaults.items).toContain("/jobs");
-    expect(defaults.modules.map((module) => module.key)).toContain("customer-jobs");
+    expect(defaults.modules.map((module) => module.key)).toContain("department-service");
     expect(defaults.pagePlacements).toEqual({});
   });
 
@@ -122,14 +123,16 @@ describe("sidebar access snapshots", () => {
       currentValue: null,
       groupKey: "parts",
       enabled: true,
-      itemOrder: ["/deliveries", "/goods-in", "/jobs", "/stock-catalogue"],
+      // No "/jobs": Job Cards is no longer a Parts page, so granting the Parts
+      // group to another role must not hand it over.
+      itemOrder: ["/deliveries", "/goods-in", "/stock-catalogue"],
     });
 
     expect(getWorkspaceGroups(["service"], snapshot).map((group) => group.key)).toContain("parts");
     expect(resolveAccessiblePaths(["service"], snapshot).has("/deliveries")).toBe(true);
     expect(
       getDepartmentWorkspaceNav("parts", ["service"], snapshot).items.map((item) => item.href)
-    ).toEqual(["/deliveries", "/goods-in", "/jobs", "/stock-catalogue"]);
+    ).toEqual(["/deliveries", "/goods-in", "/stock-catalogue"]);
   });
 
   it("removes a role-default group without changing unrelated groups", () => {
@@ -153,7 +156,9 @@ describe("sidebar access snapshots", () => {
       groupKey: "parts",
       enabled: true,
       selectedItemHrefs: ["/goods-in", "/deliveries"],
-      itemOrder: ["/deliveries", "/goods-in", "/jobs", "/stock-catalogue"],
+      // No "/jobs": Job Cards is no longer a Parts page, so granting the Parts
+      // group to another role must not hand it over.
+      itemOrder: ["/deliveries", "/goods-in", "/stock-catalogue"],
     });
     const nav = getDepartmentWorkspaceNav("parts", ["service"], snapshot);
     expect(nav.items.map((item) => item.href)).toEqual(["/deliveries", "/goods-in"]);

@@ -1,21 +1,18 @@
 // file location: src/features/websiteManager/panels/SeoPanel.js
 // SEO / meta details editor — per-page meta title, description, slug,
-// canonical URL, social share image and search-engine indexing.
+// canonical URL, social share image and search-engine indexing, with a live
+// Google-style result preview.
 import React, { useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
-import { EmptyState, cellStyle, headCellStyle } from "../helpers";
-
-const labelStyle = {
-  fontSize: "0.72rem",
-  color: "var(--text-1)",
-  fontWeight: 600,
-};
 
 const RECOMMENDED_TITLE = 60;
 const RECOMMENDED_DESC = 155;
+const SITE_ORIGIN = "https://www.humphriesparks.co.uk";
 
 export default function SeoPanel({ pages, seo, onUpdateSeo }) {
   const [selectedPageKey, setSelectedPageKey] = useState(pages[0]?.key || "");
@@ -30,10 +27,10 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
   const selectedPage = pages.find((p) => p.key === selectedPageKey);
   const patch = (p) => setDraft((prev) => ({ ...prev, ...p }));
 
-  const dirty = useMemo(() => {
-    const original = seo[selectedPageKey] || {};
-    return JSON.stringify(original) !== JSON.stringify(draft);
-  }, [seo, selectedPageKey, draft]);
+  const dirty = useMemo(
+    () => JSON.stringify(seo[selectedPageKey] || {}) !== JSON.stringify(draft),
+    [seo, selectedPageKey, draft]
+  );
 
   const handleSave = () => {
     onUpdateSeo(selectedPageKey, {
@@ -58,49 +55,37 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
 
   const titleLen = (draft.metaTitle || "").length;
   const descLen = (draft.metaDescription || "").length;
+  const counter = (len, max) => (
+    <span className={len > max ? "website-manager__counter--over" : undefined}>
+      {` (${len}/${max})`}
+    </span>
+  );
 
   return (
     <>
-      <Section
-        title="SEO & Meta Details"
-        subtitle="Control how each page appears in search engines and when shared on social media."
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 300 }}>
-          <span
-            style={{
-              fontSize: "0.7rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--text-1)",
-              fontWeight: 700,
-            }}
-          >
-            Website page
-          </span>
+      <Section title="SEO and sharing">
+        <div className="website-manager__toolbar">
           <DropdownField
+            className="website-manager__toolbar-filter"
+            label="Website page"
             value={selectedPageKey}
             onChange={(e) => setSelectedPageKey(e.target.value)}
             options={pages.map((p) => ({ value: p.key, label: p.name }))}
           />
-        </label>
+        </div>
 
         {!selectedPage ? (
-          <EmptyState message="Select a page to edit its SEO details." />
+          <EmptyState
+            variant="bare"
+            title="No page selected"
+            description="Choose a website page above to edit the meta details search engines and social networks show for it."
+          />
         ) : (
-          <LayerTheme padding="16px" gap="12px">
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={labelStyle}>
-                Meta title{" "}
-                <span
-                  style={{
-                    color:
-                      titleLen > RECOMMENDED_TITLE
-                        ? "var(--warning-dark, var(--text-1))"
-                        : "var(--text-1)",
-                  }}
-                >
-                  ({titleLen}/{RECOMMENDED_TITLE})
-                </span>
+          <LayerTheme gap="var(--space-3)">
+            <label className="website-manager__field">
+              <span className="website-manager__label">
+                Meta title
+                {counter(titleLen, RECOMMENDED_TITLE)}
               </span>
               <input
                 className="app-input"
@@ -110,33 +95,23 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
               />
             </label>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={labelStyle}>
-                Meta description{" "}
-                <span
-                  style={{
-                    color:
-                      descLen > RECOMMENDED_DESC
-                        ? "var(--warning-dark, var(--text-1))"
-                        : "var(--text-1)",
-                  }}
-                >
-                  ({descLen}/{RECOMMENDED_DESC})
-                </span>
+            <label className="website-manager__field">
+              <span className="website-manager__label">
+                Meta description
+                {counter(descLen, RECOMMENDED_DESC)}
               </span>
               <textarea
-                className="app-input"
+                className="app-input website-manager__textarea"
                 rows={3}
                 value={draft.metaDescription || ""}
                 onChange={(e) => patch({ metaDescription: e.target.value })}
                 placeholder="Short summary shown beneath the title in search results"
-                style={{ resize: "vertical" }}
               />
             </label>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-                <span style={labelStyle}>URL slug</span>
+            <div className="website-manager__field-row">
+              <label className="website-manager__field">
+                <span className="website-manager__label">URL slug</span>
                 <input
                   className="app-input"
                   value={draft.slug || ""}
@@ -144,45 +119,55 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
                   placeholder="/page-slug"
                 />
               </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "2 1 280px" }}>
-                <span style={labelStyle}>Canonical URL</span>
+              <label className="website-manager__field website-manager__field--wide">
+                <span className="website-manager__label">Canonical URL</span>
                 <input
                   className="app-input"
                   value={draft.canonical || ""}
                   onChange={(e) => patch({ canonical: e.target.value })}
-                  placeholder="https://www.humphriesparks.co.uk/…"
+                  placeholder={`${SITE_ORIGIN}/…`}
                 />
               </label>
             </div>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={labelStyle}>Social share image (filename in Media Library)</span>
+            <label className="website-manager__field">
+              <span className="website-manager__label">Social share image</span>
               <input
                 className="app-input"
                 value={draft.ogImage || ""}
                 onChange={(e) => patch({ ogImage: e.target.value })}
-                placeholder="e.g. homepage-hero.jpg"
+                placeholder="Filename from the Media library, e.g. homepage-hero.jpg"
               />
             </label>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label className="website-manager__bool">
               <input
+                className="app-toggle--checkbox"
                 type="checkbox"
                 checked={Boolean(draft.indexed)}
                 onChange={(e) => patch({ indexed: e.target.checked })}
               />
-              <span style={{ fontSize: "0.88rem" }}>
-                Allow search engines to index this page
-              </span>
+              <span>Allow search engines to index this page</span>
             </label>
 
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={!dirty}
-                onClick={handleSave}
-              >
+            <LayerSurface
+              className="website-manager__search-preview"
+              radius="var(--radius-sm)"
+              padding="var(--space-3)"
+              gap="var(--space-1)"
+            >
+              <span className="website-manager__search-preview-url">
+                {draft.canonical || `${SITE_ORIGIN}${draft.slug || "/"}`}
+              </span>
+              <strong>{draft.metaTitle || selectedPage.name}</strong>
+              <span>
+                {draft.metaDescription ||
+                  "Add a meta description to preview the search result copy."}
+              </span>
+            </LayerSurface>
+
+            <div className="website-manager__actions">
+              <Button type="button" variant="primary" disabled={!dirty} onClick={handleSave}>
                 Save SEO details
               </Button>
               <Button
@@ -198,28 +183,33 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
         )}
       </Section>
 
-      <Section title="SEO Overview">
-        <input
-          className="app-input"
-          type="search"
-          placeholder="Search pages…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{ maxWidth: 320 }}
-        />
+      <Section title="SEO overview">
+        <div className="website-manager__toolbar">
+          <input
+            className="app-input"
+            type="search"
+            placeholder="Search pages…"
+            aria-label="Search pages"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
         {filteredPages.length === 0 ? (
-          <EmptyState message="No pages match your search." />
+          <EmptyState
+            variant="bare"
+            role="status"
+            title="No pages match your search"
+            description="Clear the search box to see every page's meta details."
+          />
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
-            >
+          <div className="website-manager__table-scroll">
+            <table className="app-data-table">
               <thead>
                 <tr>
-                  <th style={headCellStyle}>Page</th>
-                  <th style={headCellStyle}>Meta title</th>
-                  <th style={headCellStyle}>Slug</th>
-                  <th style={headCellStyle}>Indexing</th>
+                  <th>Page</th>
+                  <th>Meta title</th>
+                  <th>Slug</th>
+                  <th>Indexing</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,14 +217,10 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
                   const entry = seo[p.key] || {};
                   return (
                     <tr key={p.key}>
-                      <td style={{ ...cellStyle, fontWeight: 600 }}>{p.name}</td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)" }}>
-                        {entry.metaTitle || "—"}
-                      </td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)", fontFamily: "monospace" }}>
-                        {entry.slug || "—"}
-                      </td>
-                      <td style={cellStyle}>
+                      <td className="website-manager__cell-strong">{p.name}</td>
+                      <td className="website-manager__cell-muted">{entry.metaTitle || "—"}</td>
+                      <td className="website-manager__cell-mono">{entry.slug || "—"}</td>
+                      <td>
                         <span
                           className={`app-badge ${
                             entry.indexed === false

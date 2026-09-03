@@ -16,11 +16,10 @@ import { useSupportReports } from "@/components/support/dev/useSupportAdmin";
 import { useSupportKeyboard } from "@/components/support/dev/useSupportKeyboard";
 import {
   StatCard,
-  Pill,
+  badgeClass,
   BadgeRow,
   EmptyState,
   LoadingBlock,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 import {
@@ -89,8 +88,8 @@ function ReportRow({ report, onOpen, active }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-        <Pill label={sev.label} tone={sev.tone} strong />
-        <Pill label={status.label} tone={status.tone} />
+        <span className={badgeClass(sev.tone, true)}>{sev.label}</span>
+        <span className={badgeClass(status.tone)}>{status.label}</span>
         <span style={{ fontWeight: 600, color: "var(--text-1)", flex: "1 1 240px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {title}
         </span>
@@ -189,7 +188,7 @@ export default function SupportWorkspace() {
         <div>
           <div style={{ fontSize: "var(--text-h2, 22px)", fontWeight: 800, color: "var(--accentText)" }}>Support Centre</div>
         </div>
-        <DevButton onClick={refresh} tone="accentText">Refresh</DevButton>
+        <button type="button" onClick={refresh} className="app-btn app-btn--secondary">Refresh</button>
       </div>
 
       <DashboardGrid min={420}>
@@ -212,7 +211,7 @@ export default function SupportWorkspace() {
       <WorkspaceCard
         title="Filters"
         sectionKey="support-centre-filters"
-        actions={<DevButton small onClick={saveCurrentView}>Save view</DevButton>}
+        actions={<button type="button" onClick={saveCurrentView} className="app-btn app-btn--secondary app-btn--sm">Save view</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
           <input
@@ -221,7 +220,6 @@ export default function SupportWorkspace() {
             placeholder="Search title, description, route…"
             value={filters.q || ""}
             onChange={(e) => patchFilter({ q: e.target.value })}
-            style={{ minHeight: 44, padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--surface)", color: "var(--text-1)" }}
           />
           <DropdownField options={withDefault(STATUS_OPTIONS, "All statuses")} value={filters.status || ""} onChange={(e) => patchFilter({ status: e.target.value })} />
           <DropdownField options={withDefault(SEVERITY_OPTIONS, "All severities")} value={filters.severity || ""} onChange={(e) => patchFilter({ severity: e.target.value })} />
@@ -232,13 +230,13 @@ export default function SupportWorkspace() {
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>Views:</span>
           {SAVED_VIEW_PRESETS.map((v) => (
-            <DevButton key={v.id} small variant="ghost" onClick={() => applyView(v)}>{v.name}</DevButton>
+            <button type="button" key={v.id} onClick={() => applyView(v)} className="app-btn app-btn--secondary app-btn--sm">{v.name}</button>
           ))}
           {savedViews.map((v) => (
             <span key={v.id} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-              <DevButton small variant="ghost" tone={v.shared ? "accentText" : "success-base"} onClick={() => applyView(v)}>
+              <button type="button" onClick={() => applyView(v)} className="app-btn app-btn--secondary app-btn--sm">
                 {v.shared ? `Shared · ${v.name}` : v.name}
-              </DevButton>
+              </button>
               <button
                 type="button"
                 title={v.shared ? "Remove shared view (owner only)" : "Remove saved view"}
@@ -258,9 +256,9 @@ export default function SupportWorkspace() {
         {loading ? (
           <LoadingBlock rows={5} />
         ) : error ? (
-          <EmptyState title="Couldn't load reports" message={error} action={<DevButton onClick={refresh}>Try again</DevButton>} />
+          <EmptyState title="Couldn't load reports" message={error} action={<button type="button" onClick={refresh} className="app-btn app-btn--secondary">Try again</button>} />
         ) : reports.length === 0 ? (
-          <EmptyState title="No reports match" message="Nothing matches the current filters. Adjust the filters or clear them." action={<DevButton onClick={() => applyView({ filters: {} })}>Clear filters</DevButton>} />
+          <EmptyState title="No reports match" message="Nothing matches the current filters. Adjust the filters or clear them." action={<button type="button" onClick={() => applyView({ filters: {} })} className="app-btn app-btn--secondary">Clear filters</button>} />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {reports.map((r, i) => (

@@ -1,34 +1,20 @@
 // file location: src/features/websiteManager/panels/OverviewPanel.js
 // Website pages overview + publish/status monitoring.
+//
+// Presentation follows the standard staff page contract: <Section> cards, the
+// canonical <EmptyState>, `.app-data-table` for tables (which supplies its own
+// cell padding and row rules) and `.website-manager__*` classes for anything
+// bespoke. No inline visual styling.
 import React, { useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
 import { fetchSection } from "../websiteApi";
 import { fetchProducts, fetchOrders } from "../shopApi";
-import {
-  StatusBadge,
-  EmptyState,
-  formatDateTime,
-  cellStyle,
-  headCellStyle,
-} from "../helpers";
-
-function StatCard({ label, value, hint }) {
-  return (
-    <LayerTheme padding="14px" gap="4px" style={{ flex: "1 1 150px", minWidth: 150 }}>
-      <div style={{ fontSize: "0.78rem", color: "var(--text-1)" }}>{label}</div>
-      <div style={{ fontSize: "1.7rem", fontWeight: 700, color: "var(--accentText)" }}>
-        {value}
-      </div>
-      {hint && (
-        <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>{hint}</div>
-      )}
-    </LayerTheme>
-  );
-}
+import { StatusBadge, StatCard, formatDateTime } from "../helpers";
 
 export default function OverviewPanel({
   pages,
@@ -38,14 +24,18 @@ export default function OverviewPanel({
   onTogglePageStatus,
   onOpenPage,
 }) {
-  // Section count per page is now derived from the editor schema map - the
-  // generic "block" abstraction was retired in Phase 2.
-  const blockCounts = Object.fromEntries(
-    pages.map((p) => [p.key, (SECTIONS_BY_PAGE[p.key] || []).length])
+  // Section count per page is derived from the editor schema map — the generic
+  // "block" abstraction was retired in Phase 2.
+  const sectionCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        pages.map((p) => [p.key, (SECTIONS_BY_PAGE[p.key] || []).length])
+      ),
+    [pages]
   );
 
-  // Phase 5: live stock counts. Vehicles + offers come from website_*;
-  // products + orders come from shop_*. Low-stock = stock_qty < 5 && published.
+  // Live stock counts. Vehicles + offers come from website_*; products and
+  // orders come from shop_*. Low-stock = stock_qty < 5 && published.
   const [stock, setStock] = useState({
     vehicles: null,
     offers: null,
@@ -53,47 +43,48 @@ export default function OverviewPanel({
     lowStock: [],
     pendingOrders: null,
   });
+
   useEffect(() => {
+    let active = true;
     (async () => {
-      try {
-        const [vehicles, offers, products, orders] = await Promise.all([
-          fetchSection("vehicles").catch(() => []),
-          fetchSection("offers").catch(() => []),
-          fetchProducts().catch(() => []),
-          fetchOrders().catch(() => []),
-        ]);
-        const lowStock = (products || []).filter(
+      const [vehicles, offers, products, orders] = await Promise.all([
+        fetchSection("vehicles").catch(() => []),
+        fetchSection("offers").catch(() => []),
+        fetchProducts().catch(() => []),
+        fetchOrders().catch(() => []),
+      ]);
+      if (!active) return;
+      setStock({
+        vehicles: (vehicles || []).filter((v) => v.status === "published").length,
+        offers: (offers || []).filter((o) => o.status === "published").length,
+        products: (products || []).filter((p) => p.status === "published").length,
+        lowStock: (products || []).filter(
           (p) => p.status === "published" && p.stock_qty < 5
-        );
-        const pendingOrders = (orders || []).filter(
+        ),
+        pendingOrders: (orders || []).filter(
           (o) => o.status === "paid" || o.status === "fulfilling"
-        ).length;
-        setStock({
-          vehicles: (vehicles || []).filter((v) => v.status === "published").length,
-          offers: (offers || []).filter((o) => o.status === "published").length,
-          products: (products || []).filter((p) => p.status === "published").length,
-          lowStock,
-          pendingOrders,
-        });
-      } catch {
-        /* silent - stats panel just shows dashes */
-      }
+        ).length,
+      });
     })();
+    return () => {
+      active = false;
+    };
   }, []);
+
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const todayKey = new Date().toDateString();
   const stats = useMemo(() => {
+    const todayKey = new Date().toDateString();
     const published = pages.filter((p) => p.status === "published").length;
-    const drafts = pages.length - published;
-    const changesToday = activity.filter(
-      (a) => new Date(a.at).toDateString() === todayKey
-    ).length;
-    const notIndexed = pages.filter((p) => seo[p.key] && seo[p.key].indexed === false)
-      .length;
-    return { published, drafts, changesToday, notIndexed };
-  }, [pages, activity, seo, todayKey]);
+    return {
+      published,
+      drafts: pages.length - published,
+      changesToday: activity.filter((a) => new Date(a.at).toDateString() === todayKey)
+        .length,
+      notIndexed: pages.filter((p) => seo[p.key] && seo[p.key].indexed === false).length,
+    };
+  }, [pages, activity, seo]);
 
   const draftPages = pages.filter((p) => p.status === "draft");
 
@@ -102,61 +93,35 @@ export default function OverviewPanel({
     return pages.filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (!q) return true;
-      return (
-        p.name.toLowerCase().includes(q) || p.route.toLowerCase().includes(q)
-      );
+      return p.name.toLowerCase().includes(q) || p.route.toLowerCase().includes(q);
     });
   }, [pages, query, statusFilter]);
 
+  const count = (v) => (v == null ? "…" : v);
+
   return (
     <>
-      <Section
-        title="Publish & Status Monitoring"
-        subtitle="A live snapshot of what is currently live, in draft, and recently changed."
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      <Section title="Publish and status">
+        <div className="website-manager__stat-grid">
           <StatCard label="Total pages" value={pages.length} />
-          <StatCard label="Published" value={stats.published} hint="Visible to customers" />
-          <StatCard label="In draft" value={stats.drafts} hint="Hidden from public site" />
+          <StatCard label="Published" value={stats.published} />
+          <StatCard label="In draft" value={stats.drafts} />
           <StatCard label="Media assets" value={media.length} />
           <StatCard label="Changes today" value={stats.changesToday} />
-          <StatCard
-            label="Not indexed"
-            value={stats.notIndexed}
-            hint="Excluded from search engines"
-          />
+          <StatCard label="Not indexed" value={stats.notIndexed} />
         </div>
 
-        {/* Phase 5: live stock & shop counts */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          <StatCard
-            label="Vehicles live on /website"
-            value={stock.vehicles == null ? "…" : stock.vehicles}
-            hint="Published rows in website_vehicles"
-          />
-          <StatCard
-            label="Offers live"
-            value={stock.offers == null ? "…" : stock.offers}
-            hint="Manufacturer promo banners shown"
-          />
-          <StatCard
-            label="Products live"
-            value={stock.products == null ? "…" : stock.products}
-            hint="Catalogue items in the /shop section"
-          />
-          <StatCard
-            label="Orders to fulfil"
-            value={stock.pendingOrders == null ? "…" : stock.pendingOrders}
-            hint="Paid + fulfilling status"
-          />
+        <div className="website-manager__stat-grid">
+          <StatCard label="Vehicles live" value={count(stock.vehicles)} />
+          <StatCard label="Offers live" value={count(stock.offers)} />
+          <StatCard label="Products live" value={count(stock.products)} />
+          <StatCard label="Orders to fulfil" value={count(stock.pendingOrders)} />
         </div>
 
         {stock.lowStock.length > 0 && (
-          <LayerTheme padding="14px" gap="8px">
-            <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-              Low stock — replenish soon
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <LayerTheme gap="var(--space-2)">
+            <span className="website-manager__editor-title">Low stock</span>
+            <div className="website-manager__chip-row">
               {stock.lowStock.map((p) => (
                 <span
                   key={p.id}
@@ -171,16 +136,11 @@ export default function OverviewPanel({
         )}
 
         {draftPages.length > 0 && (
-          <LayerTheme padding="14px" gap="8px">
-            <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-              Pages needing attention
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <LayerTheme gap="var(--space-2)">
+            <span className="website-manager__editor-title">Pages needing attention</span>
+            <div className="website-manager__chip-row">
               {draftPages.map((p) => (
-                <span
-                  key={p.key}
-                  className="app-badge app-badge--warning"
-                >
+                <span key={p.key} className="app-badge app-badge--warning">
                   {p.name} — draft
                 </span>
               ))}
@@ -189,48 +149,49 @@ export default function OverviewPanel({
         )}
       </Section>
 
-      <Section
-        title="Website Pages Overview"
-        subtitle="Every public page this tool manages. Toggle a page between live and draft, or open it to manage its content."
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <Section title="Website pages">
+        <div className="website-manager__toolbar">
           <input
             className="app-input"
             type="search"
             placeholder="Search pages…"
+            aria-label="Search pages"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ flex: "1 1 220px", minWidth: 200 }}
           />
           <DropdownField
+            className="website-manager__toolbar-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter by status"
             options={[
               { value: "all", label: "All statuses" },
               { value: "published", label: "Published only" },
               { value: "draft", label: "Draft only" },
             ]}
-            style={{ flex: "0 0 auto", minWidth: 160 }}
           />
         </div>
 
         {filteredPages.length === 0 ? (
-          <EmptyState message="No pages match your search." />
+          <EmptyState
+            variant="bare"
+            role="status"
+            title="No pages match your search"
+            description="Clear the search box or change the status filter to see the rest of the site."
+          />
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
-            >
+          <div className="website-manager__table-scroll">
+            <table className="app-data-table">
               <thead>
                 <tr>
-                  <th style={headCellStyle}>Page</th>
-                  <th style={headCellStyle}>Route</th>
-                  <th style={headCellStyle}>Sections</th>
-                  <th style={headCellStyle}>SEO</th>
-                  <th style={headCellStyle}>Status</th>
-                  <th style={headCellStyle}>Last edited by</th>
-                  <th style={headCellStyle}>Last edited</th>
-                  <th style={headCellStyle}>Actions</th>
+                  <th>Page</th>
+                  <th>Route</th>
+                  <th>Sections</th>
+                  <th>SEO</th>
+                  <th>Status</th>
+                  <th>Last edited by</th>
+                  <th>Last edited</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,12 +199,10 @@ export default function OverviewPanel({
                   const indexed = seo[p.key] ? seo[p.key].indexed : true;
                   return (
                     <tr key={p.key}>
-                      <td style={{ ...cellStyle, fontWeight: 600 }}>{p.name}</td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)", fontFamily: "monospace" }}>
-                        {p.route}
-                      </td>
-                      <td style={cellStyle}>{blockCounts[p.key] || 0}</td>
-                      <td style={cellStyle}>
+                      <td className="website-manager__cell-strong">{p.name}</td>
+                      <td className="website-manager__cell-mono">{p.route}</td>
+                      <td>{sectionCounts[p.key] || 0}</td>
+                      <td>
                         <span
                           className={`app-badge ${
                             indexed ? "app-badge--success" : "app-badge--neutral"
@@ -252,21 +211,19 @@ export default function OverviewPanel({
                           {indexed ? "Indexed" : "No-index"}
                         </span>
                       </td>
-                      <td style={cellStyle}>
+                      <td>
                         <StatusBadge status={p.status} />
                       </td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)" }}>
-                        {p.lastEditedBy || "—"}
-                      </td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)" }}>
+                      <td className="website-manager__cell-muted">{p.lastEditedBy || "—"}</td>
+                      <td className="website-manager__cell-muted">
                         {p.lastEditedAt ? formatDateTime(p.lastEditedAt) : "Live content"}
                       </td>
-                      <td style={cellStyle}>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <td>
+                        <div className="website-manager__row-actions">
                           <Button
                             type="button"
                             variant="secondary"
-                            size="sm"
+                            size="xs"
                             onClick={() => onTogglePageStatus(p.key)}
                           >
                             {p.status === "published" ? "Set to draft" : "Publish"}
@@ -274,7 +231,7 @@ export default function OverviewPanel({
                           <Button
                             type="button"
                             variant="primary"
-                            size="sm"
+                            size="xs"
                             onClick={() => onOpenPage(p.key)}
                           >
                             Manage

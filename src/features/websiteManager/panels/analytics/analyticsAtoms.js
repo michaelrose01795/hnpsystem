@@ -2,12 +2,17 @@
 // Shared, stateless presentational atoms for the Website Analytics sections.
 // Kept inside the analytics folder because they are specific to this area.
 //
-// These render data-visualisation primitives (stat cards, bar lists, tables) —
-// the inline `background` on a bar fill is a chart primitive, not a card
-// surface, so it is outside the CLAUDE.md §3.0 surface rules.
+// Presentation matches the rest of the Website Manager: `.app-data-table` for
+// tables, the canonical `<EmptyState>` for "no data", `.website-manager__*`
+// classes (in src/styles/features/website-manager.css) for everything else.
+// The bar track/fill are data-visualisation primitives rather than card
+// surfaces, so they live in that stylesheet too — not as inline styles.
 import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { cellStyle, headCellStyle, EmptyState } from "../../helpers";
+import EmptyState from "@/components/ui/EmptyState";
+
+// Re-exported so analytics sections keep importing StatCard from here.
+export { StatCard } from "../../helpers";
 
 // Thousands-separated integer, e.g. 48213 → "48,213".
 export function formatNumber(n) {
@@ -29,25 +34,9 @@ export function formatGbp(n) {
   return `£${Number(n).toLocaleString("en-GB")}`;
 }
 
-// A single headline metric tile. Renders as a <LayerTheme> so it alternates
-// correctly inside a <Section> (which is a LayerSurface).
-export function StatCard({ label, value, hint }) {
-  return (
-    <LayerTheme padding="14px" gap="4px" style={{ flex: "1 1 160px", minWidth: 160 }}>
-      <div style={{ fontSize: "0.78rem", color: "var(--text-1)" }}>{label}</div>
-      <div style={{ fontSize: "1.7rem", fontWeight: 700, color: "var(--accentText)" }}>
-        {value}
-      </div>
-      {hint && <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>{hint}</div>}
-    </LayerTheme>
-  );
-}
-
 // Responsive row of StatCards.
 export function StatGrid({ children }) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>{children}</div>
-  );
+  return <div className="website-manager__stat-grid">{children}</div>;
 }
 
 // Honest "no data yet" panel for an analytics section. There is no tracking
@@ -61,38 +50,16 @@ export function NotConnectedNotice({
   heading = "Analytics tracking not yet connected",
 }) {
   return (
-    <LayerTheme padding="18px" gap="12px">
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <LayerTheme gap="var(--space-3)">
+      <div className="website-manager__chip-row">
         <span className="app-badge app-badge--warning app-badge--uppercase">No data</span>
-        <span style={{ fontWeight: 700, color: "var(--accentText)" }}>{heading}</span>
+        <span className="website-manager__editor-title">{heading}</span>
       </div>
-      {lead && (
-        <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>{lead}</p>
-      )}
+      {lead && <p className="website-manager__meta">{lead}</p>}
       {metrics.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span
-            style={{
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--text-1)",
-            }}
-          >
-            Will appear here once connected
-          </span>
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: 18,
-              color: "var(--text-1)",
-              fontSize: "0.86rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
+        <div className="website-manager__field">
+          <span className="website-manager__label">Will appear here once connected</span>
+          <ul className="website-manager__bullets">
             {metrics.map((m) => (
               <li key={m}>{m}</li>
             ))}
@@ -100,10 +67,10 @@ export function NotConnectedNotice({
         </div>
       )}
       {endpoint && (
-        <p style={{ margin: 0, fontSize: "0.76rem", color: "var(--text-1)" }}>
-          TODO: connect{" "}
-          <span style={{ fontFamily: "monospace" }}>{endpoint}</span> (staff-auth
-          gated; never exposed on the public /website).
+        <p className="website-manager__meta">
+          {"TODO: connect "}
+          <span className="website-manager__cell-mono">{endpoint}</span>
+          {" (staff-auth gated; never exposed on the public /website)."}
         </p>
       )}
     </LayerTheme>
@@ -112,43 +79,28 @@ export function NotConnectedNotice({
 
 // Horizontal bar list — items: [{ label, value, sub? }].
 // Bars are scaled against the largest value in the set.
-export function BarList({ items = [], format = formatNumber, emptyMessage = "No data." }) {
-  if (!items.length) return <EmptyState message={emptyMessage} />;
+export function BarList({ items = [], format = formatNumber, emptyMessage = "No data yet." }) {
+  if (!items.length) {
+    return <EmptyState variant="bare" role="status" title="Nothing to chart" description={emptyMessage} />;
+  }
   const max = Math.max(...items.map((i) => Number(i.value) || 0), 1);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="website-manager__bars">
       {items.map((item) => (
-        <div key={item.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              fontSize: "0.84rem",
-            }}
-          >
-            <span style={{ fontWeight: 600 }}>{item.label}</span>
-            <span style={{ color: "var(--text-1)", whiteSpace: "nowrap" }}>
+        <div key={item.label} className="website-manager__bar-row">
+          <div className="website-manager__bar-head">
+            <span className="website-manager__cell-strong">{item.label}</span>
+            <span className="website-manager__cell-muted website-manager__cell-nowrap">
               {format(item.value)}
               {item.sub ? ` · ${item.sub}` : ""}
             </span>
           </div>
-          {/* Chart track + fill — data-viz primitive, not a card surface. */}
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: "var(--radius-sm, 6px)",
-              height: 10,
-              overflow: "hidden",
-            }}
-          >
+          {/* Chart track + fill — data-viz primitive, not a card surface.
+              The fill width is the datum itself, so it stays inline. */}
+          <div className="website-manager__bar-track">
             <div
-              style={{
-                background: "var(--primary)",
-                height: "100%",
-                width: `${Math.max(2, ((Number(item.value) || 0) / max) * 100)}%`,
-                borderRadius: "var(--radius-sm, 6px)",
-              }}
+              className="website-manager__bar-fill"
+              style={{ width: `${Math.max(2, ((Number(item.value) || 0) / max) * 100)}%` }}
             />
           </div>
         </div>
@@ -157,20 +109,29 @@ export function BarList({ items = [], format = formatNumber, emptyMessage = "No 
   );
 }
 
-// Generic data table. columns: [{ label, render(row), align?, nowrap? }].
-// Follows the same inline-styled table pattern used by the other panels so the
-// analytics area stays visually consistent with the rest of Website Manager.
-export function DataTable({ columns = [], rows = [], rowKey, emptyMessage = "No data." }) {
-  if (!rows.length) return <EmptyState message={emptyMessage} />;
+// Generic data table. columns: [{ label, render(row), align?, nowrap?, muted? }].
+export function DataTable({ columns = [], rows = [], rowKey, emptyMessage = "No data yet." }) {
+  if (!rows.length) {
+    return <EmptyState variant="bare" role="status" title="Nothing to show" description={emptyMessage} />;
+  }
+  const cellClass = (col) =>
+    [
+      col.align === "right" ? "website-manager__cell-right" : null,
+      col.nowrap ? "website-manager__cell-nowrap" : null,
+      col.muted ? "website-manager__cell-muted" : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+    <div className="website-manager__table-scroll">
+      <table className="app-data-table">
         <thead>
           <tr>
             {columns.map((col, i) => (
               <th
                 key={i}
-                style={{ ...headCellStyle, textAlign: col.align || "left" }}
+                className={col.align === "right" ? "website-manager__cell-right" : undefined}
               >
                 {col.label}
               </th>
@@ -181,15 +142,7 @@ export function DataTable({ columns = [], rows = [], rowKey, emptyMessage = "No 
           {rows.map((row, ri) => (
             <tr key={rowKey ? rowKey(row, ri) : ri}>
               {columns.map((col, ci) => (
-                <td
-                  key={ci}
-                  style={{
-                    ...cellStyle,
-                    textAlign: col.align || "left",
-                    ...(col.nowrap ? { whiteSpace: "nowrap" } : {}),
-                    ...(col.muted ? { color: "var(--text-1)" } : {}),
-                  }}
-                >
+                <td key={ci} className={cellClass(col)}>
                   {col.render(row, ri)}
                 </td>
               ))}

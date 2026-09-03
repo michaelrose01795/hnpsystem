@@ -6,6 +6,7 @@ import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context hook
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const KEY_LOCATIONS = [
   "Completed Hooks – Row A",
@@ -99,7 +100,7 @@ export default function NextActionPrompt() {
         closePrompt();
       }, 1200);
     } catch (error) {
-      console.error("Failed to log next action", error);
+      logFailure("Failed to log next action", error);
       setFeedback({ type: "error", message: error.message || "Unable to save action" });
     } finally {
       setIsSubmitting(false);

@@ -1,204 +1,215 @@
 # Workspace role defaults
 
-Workspace Navigation is now role-first. Each staff role receives a default sidebar made from centrally defined modules in `src/config/workspace/roleDefaults.js`. Modules are presentation only: they organise existing staff routes, but page and API permissions remain enforced by the route access layer.
+Workspace Navigation is role-first. Each staff role receives a default sidebar
+made from centrally defined modules in `src/config/workspace/roleDefaults.js`.
+Modules are presentation only: they organise existing staff routes, but page and
+API permissions remain enforced by the route access layer.
+
+## The module library is the only layout (2026-09 sweep)
+
+`SIDEBAR_MODULE_LIBRARY` in `src/config/workspace/departments.js` — the module
+set rendered by the Developer Platform's **Module page map** popup — is the
+single source of truth for sidebar layout. A role default may only name a module
+that exists in that library, and only list pages that library module owns.
+
+`mod()` in `roleDefaults.js` enforces this at import time:
+
+- an unknown module key throws
+- a page that belongs to a different library module throws
+- the module's label always comes from the library, never from the role entry
+- pages are re-sorted into library order, so button order inside a module is
+  identical for every role and cannot be authored per-role
+
+Before this sweep there were 38 hand-authored modules whose keys existed nowhere
+in the library. 16 of them mixed pages from two or three different library
+modules (for example "Workshop Control" = Workshop pages + Reception pages, and
+"Fulfilment" = Reception `/jobs` + Parts `/deliveries`), and 6 meant different
+page sets depending on the role (`management-overview` had five variants).
+**Roles kept exactly the pages they had — only the grouping changed.**
 
 Developer tooling lives at `/dev/sidebar-access` and supports:
 
 - previewing each role default
 - copying a role default to an individual user
-- adding, removing, and reordering modules
-- adding, removing, and reordering pages inside modules
+- adding and removing whole standard modules from a user's layout
+- **removing a page from a module for an individual user** — the only per-user
+  page-level edit
 - restoring a user's inherited role default
 - distinguishing inherited defaults from saved user overrides
 
-Legacy `sidebar_access.items/groups` JSON remains valid. v4 layouts add `sourceRole` and `modules`, and old data is preserved during migration.
+It deliberately does NOT support renaming a module, reordering modules,
+reordering pages inside a module, or adding an arbitrary page to a module. Those
+controls were removed with the sweep because each produced a layout that existed
+in no library module.
+
+Legacy `sidebar_access.items/groups` JSON remains valid. v4 layouts add
+`sourceRole` and `modules`, and old data is preserved during migration.
 
 ## Role reference
 
+Generated from `getRoleDefaultWorkspaceModules()` — module labels and page order
+are the library's.
+
 ### Retail
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
 
 ### Service
 
-- Daily Overview: `/dashboard/service`
-- Customer & Job Intake: `/jobs`, `/new-job`
-- Shared Operations: `/goods-in`, `/tracking`, `/archive`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Admin: `/archive`
+- Reception: `/dashboard/service`, `/new-job`, `/jobs`
 
 ### Service Manager
 
-- Management Overview: `/dashboard/managers`, `/dashboard/service`
-- Service Control: `/nextjobs`, `/jobs`, `/appointments`, `/new-job`
-- Shared Operations: `/goods-in`, `/tracking`, `/archive`
-- Operational Reports: `/reports/service`, `/reports/workshop`, `/reports/mot`, `/reports/valeting`, `/reports/paint`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Admin: `/dashboard/managers`, `/archive`
+- Reception: `/dashboard/service`, `/new-job`, `/appointments`, `/jobs`
+- Workshop: `/nextjobs`
+- Reports: `/reports/workshop`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
 
 ### Workshop Manager
 
-- Management Overview: `/dashboard/managers`, `/dashboard/workshop`
-- Workshop Control: `/nextjobs`, `/jobs`, `/clocking`, `/consumables-tracker`
-- Operational Visibility: `/tracking`, `/archive`
-- Operational Reports: `/reports/workshop`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Admin: `/dashboard/managers`, `/archive`
+- Reception: `/new-job`, `/appointments`, `/jobs`
+- Workshop: `/dashboard/workshop`, `/clocking`, `/consumables-tracker`, `/nextjobs`
+- Reports: `/reports/workshop`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
 
 ### After Sales Director
 
-- Leadership: `/dashboard/managers`
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Reports: `/reports/workshop`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/accounts`, `/reports/valeting`, `/reports/admin`, `/reports/overview`
 
 ### Techs
 
-- My Day: `/tech/dashboard`, `/dashboard/workshop`
-- My Work: `/tech`, `/tech/efficiency`, `/consumables-request`
-- Workshop Information: `/tracking`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Workshop: `/dashboard/workshop`
+- Tech: `/tech/dashboard`, `/tech`, `/tech/efficiency`, `/consumables-request`
 
 ### Mobile Technician
 
-- My Day: `/mobile/dashboard`
-- Mobile Work: `/tech`, `/appointments`, `/new-job`, `/consumables-request`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`
+- Reception: `/new-job`, `/appointments`
+- Workshop: `/mobile/dashboard`
+- Tech: `/tech`, `/consumables-request`
 
 ### Parts
 
-- Parts Overview: `/dashboard/parts`
-- Stock & Receiving: `/stock-catalogue`, `/goods-in`
-- Fulfilment: `/jobs`, `/deliveries`, `/delivery-planner`
-- Ordering: `/new-order`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Parts: `/dashboard/parts`, `/stock-catalogue`, `/deliveries`, `/goods-in`
 
 ### Parts Manager
 
-- Management Overview: `/dashboard/managers`, `/parts-manager`, `/dashboard/parts`
-- Stock & Receiving: `/stock-catalogue`, `/goods-in`
-- Fulfilment: `/jobs`, `/deliveries`, `/delivery-planner`
-- Ordering: `/new-order`
-- Parts Reports: `/reports/parts`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/dashboard/managers`, `/archive`
+- Parts: `/dashboard/parts`, `/parts-manager`, `/stock-catalogue`, `/deliveries`, `/goods-in`
+- Reports: `/reports/parts`
 
 ### Parts Driver
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Parts: `/deliveries`
 
 ### MOT Tester
 
-- MOT Overview: `/dashboard/mot`
-- My Work: `/tech`, `/tech/efficiency`
-- MOT Reports: `/reports/mot`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`
+- MOT: `/dashboard/mot`, `/tech`, `/tech/efficiency`
+- Reports: `/reports/mot`
 
 ### Valet Service
 
-- Valeting Overview: `/dashboard/valeting`
-- Work Queue: `/valet`, `/tracking`
-- Valeting Reports: `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Valeting: `/dashboard/valeting`, `/valet`
+- Reports: `/reports/valeting`
 
 ### Sales / Administration
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
 
 ### Sales Director
 
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Reports: `/reports/workshop`, `/reports/parts`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/accounts`, `/reports/valeting`, `/reports/admin`, `/reports/overview`
 
 ### Sales
 
-- Website Operations: `/website-manager`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/website-manager`, `/archive`
 
 ### Admin
 
-- Admin Overview: `/dashboard/admin`
-- People Operations: `/hr`, `/hr/employees`, `/hr/attendance`, `/hr/leave`, `/hr/payroll`, `/hr/performance`, `/hr/training`, `/hr/disciplinary`, `/hr/recruitment`, `/hr/reports`, `/hr/settings`
-- Website Operations: `/website-manager`
-- Staff Finance: `/accounts/payslips`
-- Operational Visibility: `/tracking`, `/reports/admin`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`, `/tracking`
+- Admin: `/dashboard/admin`, `/website-manager`, `/archive`
+- Accounts: `/accounts/payslips`
+- Reports: `/reports/admin`
 
 ### Admin Manager
 
-- Management Overview: `/dashboard/managers`, `/dashboard/admin`
-- Operational Control: `/nextjobs`, `/jobs`
-- People & HR: `/hr/manager`, `/hr`, `/hr/employees`, `/hr/attendance`, `/hr/leave`, `/hr/payroll`, `/hr/performance`, `/hr/training`, `/hr/disciplinary`, `/hr/recruitment`, `/hr/reports`, `/hr/settings`, `/admin/users`
-- Governance: `/admin/compliance`
-- Website Operations: `/website-manager`
-- Staff Finance: `/accounts/payslips`
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/dashboard/managers`, `/dashboard/admin`, `/admin/compliance`, `/hr/manager`, `/website-manager`, `/archive`
+- Accounts: `/accounts/payslips`
+- Reports: `/reports/workshop`, `/reports/parts`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/accounts`, `/reports/valeting`, `/reports/admin`, `/reports/overview`
 
 ### Accounts
 
-- Accounts Overview: `/dashboard/accounts`
-- Accounts: `/accounts`, `/company-accounts`
-- Billing: `/accounts/invoices`, `/accounts/reports`, `/accounts/payslips`
-- Financial Reports: `/reports/accounts`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`
+- Accounts: `/dashboard/accounts`, `/accounts/payslips`, `/accounts`, `/company-accounts`, `/accounts/invoices`, `/accounts/reports`
+- Reports: `/reports/accounts`
 
 ### Accounts Manager
 
-- Management Overview: `/dashboard/managers`, `/dashboard/accounts`
-- Accounts: `/accounts`, `/company-accounts`
-- Billing: `/accounts/invoices`, `/accounts/reports`, `/accounts/payslips`
-- Financial Reports: `/reports/accounts`
-- Communication: `/newsfeed`, `/messages`
+- General: `/newsfeed`, `/messages`
+- Admin: `/dashboard/managers`
+- Accounts: `/dashboard/accounts`, `/accounts/payslips`, `/accounts`, `/company-accounts`, `/accounts/invoices`, `/accounts/reports`
+- Reports: `/reports/accounts`
 
 ### General Manager
 
-- Leadership: `/dashboard/managers`
-- People Management: `/hr/employees`, `/hr/leave`
-- Website Operations: `/website-manager`
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/dashboard/managers`, `/website-manager`, `/archive`
+- Reports: `/reports/workshop`, `/reports/parts`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/accounts`, `/reports/valeting`, `/reports/admin`, `/reports/overview`
 
 ### Valet Sales
 
-- Valeting Insight: `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Reports: `/reports/valeting`
 
 ### Buying Director
 
-- Business Insight: `/reports/overview`, `/reports/accounts`, `/reports/admin`, `/reports/workshop`, `/reports/service`, `/reports/parts`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Reports: `/reports/workshop`, `/reports/parts`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/accounts`, `/reports/valeting`, `/reports/admin`, `/reports/overview`
 
 ### Second Hand Buying
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
 
 ### Vehicle Processor & Photographer
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
 
 ### Receptionist
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
 
 ### Painters
 
-- Paint Reports: `/reports/paint`
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`
+- Reports: `/reports/paint`
 
 ### Contractors
 
-- Communication: `/newsfeed`, `/messages`
-- Records: `/archive`
+- General: `/newsfeed`, `/messages`
+- Admin: `/archive`

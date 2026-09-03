@@ -9,6 +9,7 @@ import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/
 import { resolveClockingDisplayWindow } from "@/lib/jobClocking/totals"; // pure helper
 const loadJobClockingDb = () => import("@/lib/database/jobClocking"); // deferred - clock-out handler only
 import { WORK_TYPES as CLOCKING_WORK_TYPES } from "@/lib/status/catalog/clocking";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -126,7 +127,7 @@ export default function ClockingHistorySection({
 
       setEntries(mapped);
     } catch (err) {
-      console.error("❌ Failed to load job clocking history:", err);
+      logFailure("❌ Failed to load job clocking history:", err);
       setError(err?.message || "Unable to load clocking entries.");
       setEntries([]);
     } finally {
@@ -163,7 +164,7 @@ export default function ClockingHistorySection({
           setRequestsAllocatedTotal(total > 0 ? Number(total.toFixed(2)) : null);
         }
       } catch (err) {
-        console.error("Failed to load allocated hours total:", err);
+        logFailure("Failed to load allocated hours total:", err);
         if (isMounted) {
           setRequestsAllocatedTotal(null);
         }
@@ -335,7 +336,7 @@ export default function ClockingHistorySection({
       setClockOffTarget(null);
       await fetchEntries();
     } catch (err) {
-      console.error("Clock off failed:", err);
+      logFailure("Clock off failed:", err);
       setClockOffError(err?.message || "Failed to clock off.");
     } finally {
       setClockOffSubmitting(false);

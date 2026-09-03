@@ -3,6 +3,7 @@ import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -58,7 +59,7 @@ export default function DeliverySchedulerModal({
         .eq("id", job.id)
         .maybeSingle();
       if (fetchError) {
-        console.error("Unable to fetch job customer", fetchError);
+        logFailure("Unable to fetch job customer", fetchError);
         return;
       }
       if (data?.customer) {
@@ -120,7 +121,7 @@ export default function DeliverySchedulerModal({
       onScheduled?.();
       onClose?.();
     } catch (scheduleError) {
-      console.error("Unable to schedule delivery", scheduleError);
+      logFailure("Unable to schedule delivery", scheduleError);
       setError(scheduleError?.message || "Unable to schedule delivery.");
     } finally {
       setLoading(false);

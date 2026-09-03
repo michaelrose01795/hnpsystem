@@ -18,6 +18,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // MetricCard — single stat tile. Lives inside an outer LayerTheme section,
 // so per the strict alternation rule it renders as a LayerSurface.
 import ValetingDashboardUi from "@/components/page-ui/dashboard/valeting/dashboard-valeting-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
   <LayerSurface
     sectionKey={sectionKey}
@@ -178,7 +179,7 @@ export default function ValetingDashboard() {
         const payload = await (await loadDashboardData()).getValetingDashboardData(); // call Supabase query
         setData(payload); // update state with fetched data
       } catch (fetchError) {
-        console.error("Failed to load valeting metrics", fetchError); // log error
+        logFailure("Failed to load valeting metrics", fetchError); // log error
         setError(fetchError.message || "Unable to load valeting data"); // display error
       } finally {
         setLoading(false); // hide loading state

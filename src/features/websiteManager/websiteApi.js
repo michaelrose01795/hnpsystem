@@ -4,6 +4,8 @@
 // staff Website Manager. Keeps the UI free of fetch boilerplate and centralises
 // the error-handling pattern (toast / console — currently console only).
 
+import { logFailure } from "@/lib/utils/logFailure";
+
 const json = async (res, label) => {
   let payload = null;
   try {
@@ -14,7 +16,7 @@ const json = async (res, label) => {
   if (!res.ok || payload?.success === false) {
     const message = payload?.message || `${label} failed (${res.status})`;
     // eslint-disable-next-line no-console
-    console.error(`[websiteApi] ${label}:`, message);
+    logFailure(`[websiteApi] ${label}:`, message);
     throw new Error(message);
   }
   return payload?.data ?? null;

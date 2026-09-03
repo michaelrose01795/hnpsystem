@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { fieldGroupStyles } from "@/styles/formStyles";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const DEFAULT_VALUES = {
   account_number: "",
@@ -87,7 +88,7 @@ export default function CompanyAccountForm({
         setValues((prev) => ({ ...prev, account_number: accountNumber }));
       } catch (error) {
         if (error.name === "AbortError") return;
-        console.error("Unable to prefetch company account number", error);
+        logFailure("Unable to prefetch company account number", error);
         setFormError(error.message || "Unable to reserve next account number");
       } finally {
         setFetchingNumber(false);

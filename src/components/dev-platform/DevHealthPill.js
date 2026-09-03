@@ -2,11 +2,11 @@
 //
 // Phase 8 — a compact live health indicator for the Developer Platform shell.
 // Polls the dev-gated GET /api/support/health roll-up (sanitiser canary / DB /
-// storage / RLS / build) and renders a tinted status Pill. Read-only; it only
+// storage / RLS / build) and renders a canonical status badge. Read-only; it only
 // ever shows a status word + colour, never diagnostics content.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pill } from "@/components/support/dev/supportDevUi";
+import { badgeClass } from "@/components/support/dev/supportDevUi";
 
 const POLL_MS = 30000;
 
@@ -49,12 +49,6 @@ export default function DevHealthPill() {
 
   const tone = STATUS_TONE[status] || STATUS_TONE.unknown;
   return (
-    <Pill
-      label={STATUS_LABEL[status] || STATUS_LABEL.unknown}
-      tone={tone}
-      strong
-      title="Application health (updates every 30s)"
-      style={{ minHeight: 28 }}
-    />
+    <span title="Application health (updates every 30s)" className={badgeClass(tone, true)}>{STATUS_LABEL[status] || STATUS_LABEL.unknown}</span>
   );
 }

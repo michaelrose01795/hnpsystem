@@ -201,6 +201,7 @@ import {
   ensureDropdownOption,
   emptyTrackingForm,
 } from "@/lib/jobCards/locations";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
@@ -1342,7 +1343,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setJobNotes(notes || []);
       return notes[0] || null;
     } catch (noteError) {
-      console.error("Failed to load shared note:", noteError);
+      logFailure("Failed to load shared note:", noteError);
       setJobNotes([]);
       return null;
     }
@@ -1460,7 +1461,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           Array.isArray(data.vehicleJobHistory) ? data.vehicleJobHistory : []
         );
       } catch (err) {
-        console.error("Exception fetching job:", err);
+        logFailure("Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
       } finally {
         lastJobFetchAtRef.current = Date.now();
@@ -1630,7 +1631,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         return payload.snapshot;
       }
     } catch (snapshotError) {
-      console.error("Failed to load status snapshot:", snapshotError);
+      logFailure("Failed to load status snapshot:", snapshotError);
     }
 
     return null;
@@ -1702,7 +1703,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           setRelatedJobs(others);
         }
       } catch (err) {
-        console.error("Failed to fetch related jobs:", err);
+        logFailure("Failed to fetch related jobs:", err);
       } finally {
         if (isActive) setRelatedJobsLoading(false);
       }
@@ -1758,7 +1759,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setLinkJobInput("");
     } catch (err) {
       setLinkError("An unexpected error occurred.");
-      console.error("Link job error:", err);
+      logFailure("Link job error:", err);
     } finally {
       setIsLinking(false);
     }
@@ -1801,7 +1802,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       }
       setTrackerEntry(match);
     } catch (loadError) {
-      console.error("Failed to load tracking entry", loadError);
+      logFailure("Failed to load tracking entry", loadError);
       setTrackerEntry(null);
     }
   }, [jobData?.id, jobData?.jobNumber, jobData?.reg, jobNumber]);
@@ -1843,7 +1844,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         catch(() => ({ message: "Failed to read tracking response" }));
 
         if (!response.ok) {
-          console.error("Tracking update failed", response.status, responsePayload);
+          logFailure("Tracking update failed", responsePayload, { status: response.status });
           throw new Error(responsePayload?.message || "Failed to save tracking entry");
         }
 
@@ -1871,7 +1872,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         await loadTrackerEntry();
         setTrackerQuickModalOpen(false);
       } catch (saveError) {
-        console.error("Failed to save tracking entry", saveError);
+        logFailure("Failed to save tracking entry", saveError);
       }
     },
     [dbUserId, jobData, loadTrackerEntry]
@@ -1909,7 +1910,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       if (!result?.success) {
-        console.error("Check-in failed:", result?.error);
+        logFailure("Check-in failed:", result?.error);
         alert(`Failed to check in: ${result?.error?.message || "Unknown error"}`);
         return;
       }
@@ -1937,7 +1938,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await fetchJobData({ silent: true, force: true });
       revalidateAllJobs(); // tell other pages (appointments, dashboard) to refresh
     } catch (error) {
-      console.error("Error checking in:", error);
+      logFailure("Error checking in:", error);
       alert("Error checking in customer. Please try again.");
     } finally {
       setCheckingIn(false);
@@ -1976,7 +1977,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         const vehicles = await (await loadCustomersDb()).getCustomerVehicles(customerId);
         setCustomerVehicles(Array.isArray(vehicles) ? vehicles : []);
       } catch (vehicleError) {
-        console.error("Failed to load customer vehicles:", vehicleError);
+        logFailure("Failed to load customer vehicles:", vehicleError);
         setCustomerVehicles([]);
       } finally {
         setCustomerVehiclesLoading(false);
@@ -2177,7 +2178,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync customer changes to other pages
         return { success: true };
       } catch (saveError) {
-        console.error("Failed to update customer:", saveError);
+        logFailure("Failed to update customer:", saveError);
         alert(saveError?.message || "Failed to update customer details");
         return { success: false, error: saveError };
       } finally {
@@ -2241,7 +2242,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           await router.push("/archive");
           return { success: true };
         } catch (cancelError) {
-          console.error("Failed to cancel appointment:", cancelError);
+          logFailure("Failed to cancel appointment:", cancelError);
           alert(cancelError?.message || "Failed to cancel appointment");
           await fetchJobData({ silent: true, force: true });
           return { success: false, error: cancelError };
@@ -2363,7 +2364,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         revalidateAllJobs(); // sync appointment changes to other pages
         return { success: true };
       } catch (appointmentError) {
-        console.error("Failed to update appointment:", appointmentError);
+        logFailure("Failed to update appointment:", appointmentError);
         alert(appointmentError?.message || "Failed to update appointment");
         return { success: false, error: appointmentError };
       } finally {
@@ -2560,7 +2561,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             );
           }
         } catch (requestError) {
-          console.error(
+          logFailure(
             "Warning: Booking request notifications failed:",
             requestError
           );
@@ -2568,7 +2569,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (bookingError) {
-        console.error("Failed to save booking details:", bookingError);
+        logFailure("Failed to save booking details:", bookingError);
         alert(bookingError?.message || "Failed to save booking details");
         return { success: false, error: bookingError };
       } finally {
@@ -2694,7 +2695,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         eq("id", jobData.id);
 
         if (jobMileageError) {
-          console.error("Failed to update milage on job:", jobMileageError);
+          logFailure("Failed to update milage on job:", jobMileageError);
         }
 
         setJobData((prev) =>
@@ -2715,7 +2716,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (mileageError) {
-        console.error("Failed to save mileage:", mileageError);
+        logFailure("Failed to save mileage:", mileageError);
         return { success: false, error: mileageError };
       }
     },
@@ -2819,7 +2820,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
         return { success: true };
       } catch (approvalError) {
-        console.error("Failed to approve booking:", approvalError);
+        logFailure("Failed to approve booking:", approvalError);
         alert(approvalError?.message || "Failed to approve booking");
         return { success: false, error: approvalError };
       } finally {
@@ -2919,7 +2920,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       // Redirect to invoice tab after successful invoice creation
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
     } catch (createError) {
-      console.error("Failed to trigger invoice creation:", createError);
+      logFailure("Failed to trigger invoice creation:", createError);
       alert(createError?.message || "Failed to trigger invoice creation");
     } finally {
       setCreatingInvoice(false);
@@ -3008,7 +3009,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await router.push("/newsfeed");
       return { success: true };
     } catch (error) {
-      console.error("Archive job failed:", error);
+      logFailure("Archive job failed:", error);
       alert(error.message || "Failed to archive job");
       return { success: false, error: error.message };
     }
@@ -3064,7 +3065,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         prev
         );
       } catch (deleteError) {
-        console.error("Failed to delete document:", deleteError);
+        logFailure("Failed to delete document:", deleteError);
         alert(deleteError?.message || "Failed to delete document");
       }
     },
@@ -3123,7 +3124,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         setSharedNote(latest?.noteText || "");
         setSharedNoteMeta(latest);
       } catch (saveError) {
-        console.error("Failed to save note:", saveError);
+        logFailure("Failed to save note:", saveError);
         alert(saveError?.message || "Failed to save note");
       } finally {
         setSharedNoteSaving(false);
@@ -3306,7 +3307,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await loadClockingEntries();
       alert("Job requests updated successfully");
     } catch (error) {
-      console.error("Error updating requests:", error);
+      logFailure("Error updating requests:", error);
       alert("Failed to update job requests");
     }
   };
@@ -3321,7 +3322,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       const entries = await (await loadJobClockingDb()).getJobClockingEntries(jobData.id);
       setClockingEntries(Array.isArray(entries) ? entries : []);
     } catch (error) {
-      console.error("Failed to load clocking entries", error);
+      logFailure("Failed to load clocking entries", error);
       setClockingEntries([]);
     }
   }, [jobData?.id]);
@@ -3344,7 +3345,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
     } catch (error) {
-      console.error("Error updating request status:", error);
+      logFailure("Error updating request status:", error);
       alert("Failed to update request status");
     }
   };
@@ -3361,7 +3362,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       }
       await fetchJobData({ silent: true, force: true });
     } catch (error) {
-      console.error("Error saving request work details:", error);
+      logFailure("Error saving request work details:", error);
       alert("Failed to save request details");
     }
   };
@@ -3379,7 +3380,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await fetchJobData({ silent: true, force: true });
       await loadClockingEntries();
     } catch (error) {
-      console.error("Error marking all requests complete:", error);
+      logFailure("Error marking all requests complete:", error);
       alert("Failed to mark all requests complete");
     }
   };
@@ -3405,7 +3406,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       await loadClockingEntries();
       return result;
     } catch (error) {
-      console.error("Error saving write-up:", error);
+      logFailure("Error saving write-up:", error);
       throw error instanceof Error ? error : new Error(String(error || "Failed to save write-up"));
     }
   };
@@ -3643,7 +3644,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
       await fetchJobData({ silent: true, force: true });
     } catch (error) {
-      console.error("Error updating request pre-pick location:", error);
+      logFailure("Error updating request pre-pick location:", error);
       throw error;
     }
   };
@@ -3670,7 +3671,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         alert(result?.error?.message || "Failed to update VHC requirement");
       }
     } catch (toggleError) {
-      console.error("Error updating VHC requirement:", toggleError);
+      logFailure("Error updating VHC requirement:", toggleError);
       alert("Failed to update VHC requirement");
     }
   };
@@ -3717,7 +3718,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         });
       }
     } catch (statusError) {
-      console.error("Failed to load VHC customer status:", statusError);
+      logFailure("Failed to load VHC customer status:", statusError);
     }
   }, [jobNumber]);
 
@@ -5036,7 +5037,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
 
   } catch (renderError) {
-    console.error("Job card render error:", renderError);
+    logFailure("Job card render error:", renderError);
     return <JobCardDetailPageUi view="section4" renderError={renderError} />;
 
 
@@ -5075,7 +5076,7 @@ class JobCardErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("Job card render error:", error, info);
+    logFailure("Job card render error:", error, info);
   }
 
   render() {
@@ -6307,7 +6308,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
         setCatalogError("");
       }
     } catch (error) {
-      console.error("Stock search failed", error);
+      logFailure("Stock search failed", error);
       setCatalogResults([]);
       setCatalogError(error.message || "Unable to search stock catalogue");
     } finally {
@@ -6409,7 +6410,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
         searchStockCatalog(catalogSearch.trim());
       }
     } catch (error) {
-      console.error("Unable to add part from stock", error);
+      logFailure("Unable to add part from stock", error);
       setCatalogSubmitError(error.message || "Unable to add part to job");
     } finally {
       setAllocatingPart(false);
@@ -7126,7 +7127,7 @@ function VHCTab({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to copy to clipboard", error);
+      logFailure("Failed to copy to clipboard", error);
       alert("Failed to copy link to clipboard: " + error.message);
     } finally {
       setGeneratingLink(false);
@@ -7161,7 +7162,7 @@ function VHCTab({
         onJobDataRefresh();
       }
     } catch (error) {
-      console.error("Failed to send VHC", error);
+      logFailure("Failed to send VHC", error);
       setSendVhcMessage(error?.message || "Failed to send VHC");
     } finally {
       setSendingVhc(false);
@@ -7372,7 +7373,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
       });
       setChatMessages(messagesPayload?.data || messagesPayload?.messages || []);
     } catch (err) {
-      console.error("Failed to load job customer conversation:", err);
+      logFailure("Failed to load job customer conversation:", err);
       setChatError(err?.message || "Unable to load the customer conversation.");
     } finally {
       setChatLoading(false);
@@ -7412,7 +7413,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
       }
       await loadCustomerConversation();
     } catch (err) {
-      console.error("Failed to send job customer message:", err);
+      logFailure("Failed to send job customer message:", err);
       setChatError(err?.message || "Unable to send the message.");
     } finally {
       setChatSending(false);
@@ -7861,7 +7862,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           setTechnicians(data || []);
         }
       } catch (err) {
-        console.error("Failed to load technicians:", err);
+        logFailure("Failed to load technicians:", err);
         if (isMounted) {
           setTechniciansError(err?.message || "Unable to load technicians.");
         }
@@ -7910,7 +7911,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
         if (isMounted) setTechAbsences(filtered);
       } catch (err) {
-        console.error("Failed to load tech absences for clocking tab:", err);
+        logFailure("Failed to load tech absences for clocking tab:", err);
         if (isMounted) setTechAbsences([]);
       }
     };
@@ -7980,7 +7981,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         });
         if (isMounted) setTechStatuses(map);
       } catch (err) {
-        console.error("Failed to load tech clocking statuses:", err);
+        logFailure("Failed to load tech clocking statuses:", err);
         if (isMounted) setTechStatuses({});
       } finally {
         if (isMounted) setTechStatusesLoading(false);
@@ -8009,7 +8010,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       setRefreshSignal((prev) => prev + 1);
       setShowTechsPopup(false);
     } catch (err) {
-      console.error("Popup clock-on failed:", err);
+      logFailure("Popup clock-on failed:", err);
       setPopupClockingError(err?.message || "Unable to clock the technician onto this job.");
     } finally {
       setPopupClockingUserId(null);
@@ -8253,7 +8254,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         `${selectedTechnician?.first_name || selectedTechnician?.last_name ? `${selectedTechnician.first_name || ""} ${selectedTechnician.last_name || ""}`.trim() : "Technician"} clocked onto Job #${normalizedJobNumber}.`
       );
     } catch (err) {
-      console.error("Just clock error:", err);
+      logFailure("Just clock error:", err);
       setFormError(err?.message || "Unable to clock the technician onto this job.");
     } finally {
       setSubmitting(false);
@@ -8382,7 +8383,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
         handleClockingSuccess("Manual clocking entry saved for this job.");
       } catch (err) {
-        console.error("Manual clocking error:", err);
+        logFailure("Manual clocking error:", err);
         setFormError(err?.message || "Unable to save the clocking entry.");
       } finally {
         setSubmitting(false);
@@ -9091,7 +9092,7 @@ function ValetClockingPanel({ jobId, jobNumber, userId, clockingLocked = false, 
       }]
       );
       if (timeRecordError) {
-        console.error("Failed to create valet time record:", timeRecordError);
+        logFailure("Failed to create valet time record:", timeRecordError);
       }
 
       setActiveClocking(insertedRow);

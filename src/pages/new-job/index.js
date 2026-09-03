@@ -50,6 +50,7 @@ import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
 import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Wait for a pause in typing before looking a registration up in the database.
 const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
@@ -568,7 +569,7 @@ export default function CreateJobCardPage() {
 
         console.log("✅ Prime job loaded for sub-job creation:", result.data.jobNumber);
       } else {
-        console.error("❌ Failed to fetch prime job:", primeJobNumber);
+        logFailure("❌ Failed to fetch prime job:", primeJobNumber);
         setIsSubJobMode(false);
         setPrimeJobData(null);
       }
@@ -647,7 +648,7 @@ export default function CreateJobCardPage() {
           });
         }
       } catch (err) {
-        console.error("fromEvent prefill failed:", err);
+        logFailure("fromEvent prefill failed:", err);
       }
     };
 
@@ -743,7 +744,7 @@ export default function CreateJobCardPage() {
         })
       });
     } catch (error) {
-      console.error("Failed to persist preset default hours", error);
+      logFailure("Failed to persist preset default hours", error);
     }
   };
 
@@ -860,7 +861,7 @@ export default function CreateJobCardPage() {
           hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: false }); // hydrate local form state
         }
       } catch (err) {
-        console.error("Automatic vehicle lookup failed", err); // log lookup failures without blocking user
+        logFailure("Automatic vehicle lookup failed", err); // log lookup failures without blocking user
       }
     };
 
@@ -921,7 +922,7 @@ export default function CreateJobCardPage() {
       setCustomer(normalized);
       setCustomerForm(normalized);
     } catch (err) {
-      console.error("❌ Error updating contact preference:", err);
+      logFailure("❌ Error updating contact preference:", err);
       showNotification("customer", "error", `✗ ${err.message || "Failed to update contact preference"}`);
       setCustomerForm((prev) => ({ ...prev, contactPreference: previousPreferences }));
     } finally {
@@ -1007,7 +1008,7 @@ export default function CreateJobCardPage() {
       setCustomer(normalized);
       showNotification("customer", "success", "✓ Customer details updated!");
     } catch (err) {
-      console.error("❌ Error updating customer:", err);
+      logFailure("❌ Error updating customer:", err);
       showNotification("customer", "error", `✗ ${err.message || "Failed to update customer"}`);
     } finally {
       setIsSavingCustomer(false);
@@ -1284,7 +1285,7 @@ export default function CreateJobCardPage() {
       setShowNewCustomer(false);
       setShowExistingCustomer(false);
     } catch (err) {
-      console.error("❌ Error saving customer:", err);
+      logFailure("❌ Error saving customer:", err);
       showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`);
     }
   };
@@ -1352,7 +1353,7 @@ export default function CreateJobCardPage() {
         try {
           data = JSON.parse(responseText);
         } catch (parseErr) {
-          console.error("DVLA API response JSON parse error:", parseErr);
+          logFailure("DVLA API response JSON parse error:", parseErr);
           throw new Error("DVLA API returned malformed data");
         }
       }
@@ -1400,7 +1401,7 @@ export default function CreateJobCardPage() {
       if (currentVehicleRegistrationRef.current !== requestedRegistration) {
         return;
       }
-      console.error("Error fetching vehicle data from DVLA:", err); // log error
+      logFailure("Error fetching vehicle data from DVLA:", err); // log error
       setError(`Error: ${err.message}`); // store error message
     } finally {
       setIsLoadingVehicle(false); // always stop loading state
@@ -1520,7 +1521,7 @@ export default function CreateJobCardPage() {
 
       // Refresh jobs cache
       if (typeof fetchJobs === "function") {
-        fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
+        fetchJobs().catch((err) => logFailure("❌ Error refreshing jobs:", err));
       }
 
       // If we were created from a customer-portal request, mark the
@@ -1550,7 +1551,7 @@ export default function CreateJobCardPage() {
             });
           }
         } catch (processErr) {
-          console.error("Failed to process customer request:", processErr);
+          logFailure("Failed to process customer request:", processErr);
         }
       }
 
@@ -1591,7 +1592,7 @@ export default function CreateJobCardPage() {
         throw new Error('Failed to link uploaded files');
       }
     } catch (err) {
-      console.error("Error linking files to job:", err);
+      logFailure("Error linking files to job:", err);
     }
   };
 

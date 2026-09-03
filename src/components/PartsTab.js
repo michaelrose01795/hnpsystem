@@ -20,6 +20,7 @@ import {
 import { getJobRequests } from "@/lib/canonical/fields";
 import { NORMALIZE_ITEM as normalizePartStatus } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
 import { reportApiError, reportWarning } from "@/lib/notifications/report"; // Phase 3/5 reporting helpers (Phase 10 migration).
+import { logFailure } from "@/lib/utils/logFailure";
 
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -539,7 +540,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
     } catch (error) {
       // Silent fail for background refresh - keep existing data
-      console.error("Background refresh failed:", error);
+      logFailure("Background refresh failed:", error);
     }
   }, [jobId]);
 
@@ -582,7 +583,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       // Refresh parts on order list
       await fetchPartsOnOrder();
     } catch (error) {
-      console.error("Failed to update ETA:", error);
+      logFailure("Failed to update ETA:", error);
       reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, fetchPartsOnOrder]);
@@ -616,7 +617,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         onRefreshJob();
       }
     } catch (error) {
-      console.error("Failed to mark part as arrived:", error);
+      logFailure("Failed to mark part as arrived:", error);
       reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, onRefreshJob, fetchPartsOnOrder]);
@@ -680,7 +681,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setCatalogResults(results);
       setCatalogError(results.length === 0 ? "No parts found in stock catalogue." : "");
     } catch (error) {
-      console.error("Stock search failed", error);
+      logFailure("Stock search failed", error);
       setCatalogResults([]);
       setCatalogError(error.message || "Unable to search stock catalogue");
     } finally {
@@ -908,7 +909,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         searchStockCatalog(catalogSearch.trim());
       }
     } catch (error) {
-      console.error("Unable to add part from stock", error);
+      logFailure("Unable to add part from stock", error);
       setCatalogSubmitError(error.message || "Unable to add part to job");
       setAddJobDiagnostics((prev) => ({
         ...prev,
@@ -991,7 +992,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         searchStockCatalog(catalogSearch.trim());
       }
     } catch (error) {
-      console.error("Unable to add part to order", error);
+      logFailure("Unable to add part to order", error);
       setCatalogSubmitError(error.message || "Unable to add part to order");
     } finally {
       setAllocatingPart(false);
@@ -1032,7 +1033,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to update pre-pick location:", error);
+        logFailure("Failed to update pre-pick location:", error);
         reportApiError(error, { source: "PartsTab" });
       }
     },
@@ -1420,7 +1421,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to allocate parts to request:", error);
+        logFailure("Failed to allocate parts to request:", error);
         reportApiError(error, { source: "PartsTab" });
       } finally {
         setAllocatingSelection(false);
@@ -1499,7 +1500,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to unassign part:", error);
+        logFailure("Failed to unassign part:", error);
         reportApiError(error, { source: "PartsTab" });
       }
     },
@@ -1560,7 +1561,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
         await refreshCatalogStockState();
       } catch (error) {
-        console.error("Failed to remove part:", error);
+        logFailure("Failed to remove part:", error);
         reportApiError(error, { source: "PartsTab" });
         setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
       } finally {
@@ -1710,7 +1711,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setPartPopup({ open: false, part: null });
       setPartDraft(null);
     } catch (error) {
-      console.error("Failed to save part details:", error);
+      logFailure("Failed to save part details:", error);
       reportApiError(error, { source: "PartsTab" });
     } finally {
       setSavingPartDetails(false);

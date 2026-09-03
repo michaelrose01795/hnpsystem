@@ -49,7 +49,6 @@ const ROUTE_CATALOG = [
   "/job-cards/waiting/nextjobs",
   "/job-cards/view",
   "/job-cards/[jobNumber]",
-  "/admin/users",
   "/admin/profiles/[user]",
   "/hr/manager",
   "/dashboard",

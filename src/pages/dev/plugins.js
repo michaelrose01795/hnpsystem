@@ -25,7 +25,6 @@ import { DEV_PLATFORM_NAV } from "@/components/dev-platform/devPlatformNav";
 import {
   Panel,
   SubSurface,
-  Pill,
   StatCard,
   EmptyState,
   DashboardGrid,
@@ -70,7 +69,7 @@ function PluginRow({ plugin }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          <Pill label={plugin.id} tone="text-1" style={{ fontFamily: "var(--font-family-mono)" }} />
+          <span className="app-badge app-badge--neutral">{plugin.id}</span>
           <strong style={{ fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>{plugin.label}</strong>
         </div>
         {plugin.description ? (

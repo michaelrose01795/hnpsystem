@@ -9,6 +9,7 @@ import {
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
 import { NORMALIZE as NORMALIZE_TECH, STATUSES as TECH_STATUSES } from "@/lib/status/catalog/tech";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient();
 
@@ -481,7 +482,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .in("user_id", Array.from(collectedUserIds));
 
     if (userError) {
-      console.error("Failed to load status snapshot users", userError);
+      logFailure("Failed to load status snapshot users", userError);
     } else {
       (userRows || []).forEach((user) => {
         const parts = [user.first_name, user.last_name].filter(Boolean);
@@ -503,7 +504,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   };
 
   if (historyRes.error) {
-    console.error("Failed to load job status history", historyRes.error);
+    logFailure("Failed to load job status history", historyRes.error);
   } else {
     (historyRes.data || []).forEach((row) => {
       const statusPayload = buildStatusPayload(row.to_status, addWarning);
@@ -786,7 +787,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
 
   const actionEntries = [];
   if (keyRes.error) {
-    console.error("Failed to load key tracking events", keyRes.error);
+    logFailure("Failed to load key tracking events", keyRes.error);
   } else {
     (keyRes.data || []).forEach((row, index) => {
       if (!row.occurred_at) return;
@@ -816,7 +817,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   }
 
   if (vehicleRes.error) {
-    console.error("Failed to load vehicle tracking events", vehicleRes.error);
+    logFailure("Failed to load vehicle tracking events", vehicleRes.error);
   } else {
     (vehicleRes.data || []).forEach((row) => {
       if (!row.occurred_at) return;
@@ -846,7 +847,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
 
   let clockingSummary = buildClockingSummary();
   if (clockingRes.error) {
-    console.error("Failed to load job clocking entries", clockingRes.error);
+    logFailure("Failed to load job clocking entries", clockingRes.error);
   } else {
     const clockingRows = clockingRes.data || [];
     clockingSummary = buildClockingSummary(clockingRows);
@@ -883,7 +884,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   // customer description overrides, non-tech health-check edits, etc. These are
   // logged via /api/jobs/log-activity or the server-side helper logJobActivity.
   if (activityRes?.error) {
-    console.error("Failed to load job_activity_events", activityRes.error);
+    logFailure("Failed to load job_activity_events", activityRes.error);
   } else {
     const CATEGORY_META = {
       vhc:          { dept: "VHC",           color: "var(--info)",          icon: "🩺" },

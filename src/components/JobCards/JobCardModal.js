@@ -20,6 +20,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -205,7 +206,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           .map(normaliseJob); // Normalize per UI
         setAvailableJobs(activeOnly); // Save available jobs
       } catch (e) {
-        console.error("ensureDevDbUserAndGetId/load error:", e); // Log any failure
+        logFailure("ensureDevDbUserAndGetId/load error:", e); // Log any failure
         setError(e.message || "Failed to prepare your account for clocking"); // Show message
       } finally {
         if (mounted) setLoading(false); // Stop loader
@@ -274,7 +275,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(res.error || "Failed to clock in"); // Show DB error
       }
     } catch (e) {
-      console.error("Clock-in error:", e); // Log
+      logFailure("Clock-in error:", e); // Log
       setError(e.message || "Error clocking in. Please try again."); // UI message
     } finally {
       setLoading(false); // Stop loader
@@ -310,7 +311,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(res.error || "Failed to clock out"); // Show DB error
       }
     } catch (e) {
-      console.error("Clock-out error:", e); // Log
+      logFailure("Clock-out error:", e); // Log
       setError(e.message || "Error clocking out. Please try again."); // UI message
     } finally {
       setLoading(false); // Stop loader
@@ -337,7 +338,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         .map(normaliseJob); // Normalize
       setAvailableJobs(list); // Save
     } catch (e) {
-      console.error("Fetch data error:", e); // Log
+      logFailure("Fetch data error:", e); // Log
       setError("Failed to load jobs"); // UI message
     } finally {
       setLoading(false); // Stop loader

@@ -11,8 +11,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import {
   Panel,
-  Pill,
-  DevButton,
+  badgeClass,
   LoadingBlock,
   EmptyState,
 } from "@/components/support/dev/supportDevUi";
@@ -36,7 +35,7 @@ function CheckTile({ name, check }) {
         <span style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>
           {meta.label}
         </span>
-        <Pill label={check?.status || "?"} tone={TONE[check?.status] || "text-1"} strong />
+        <span className={badgeClass(TONE[check?.status] || "text-1", true)}>{check?.status || "?"}</span>
       </div>
       <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8, wordBreak: "break-word" }}>
         {check?.note || "No detail."}
@@ -78,11 +77,11 @@ export default function HealthSection() {
     <Panel
       title="Application health"
       subtitle={data?.checkedAt ? `Checked ${new Date(data.checkedAt).toLocaleString()}` : "Subsystem roll-up"}
-      actions={<DevButton small onClick={probe}>Re-check</DevButton>}
+      actions={<button type="button" onClick={probe} className="app-btn app-btn--secondary app-btn--sm">Re-check</button>}
     >
       {status ? (
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <Pill label={(status || "").toUpperCase()} tone={TONE[status] || "text-1"} strong style={{ minHeight: 28 }} />
+          <span className={badgeClass(TONE[status] || "text-1", true)}>{(status || "").toUpperCase()}</span>
           <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
             {SUMMARY_LABEL[status] || "Status unknown"}
           </span>
@@ -92,7 +91,7 @@ export default function HealthSection() {
       {loading && !data ? (
         <LoadingBlock rows={3} />
       ) : error ? (
-        <EmptyState title="Health unavailable" message={error} action={<DevButton small onClick={probe}>Try again</DevButton>} />
+        <EmptyState title="Health unavailable" message={error} action={<button type="button" onClick={probe} className="app-btn app-btn--secondary app-btn--sm">Try again</button>} />
       ) : checkEntries.length === 0 ? (
         <EmptyState title="No checks reported" />
       ) : (

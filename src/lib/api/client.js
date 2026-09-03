@@ -1,6 +1,7 @@
 // file location: src/lib/api/client.js
 import { buildApiUrl } from "@/utils/apiClient";
 import { apiErrorFromResponse, toApiError } from "@/lib/api/apiError";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const buildQueryString = (params = {}) => {
   const searchParams = new URLSearchParams();
@@ -26,7 +27,7 @@ const parseJson = async (response) => {
   try {
     return await response.json();
   } catch (error) {
-    console.error("⚠️ Failed to parse API response JSON", error);
+    logFailure("⚠️ Failed to parse API response JSON", error);
     return null;
   }
 };

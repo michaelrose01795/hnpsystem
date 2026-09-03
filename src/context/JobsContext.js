@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext"; // access current user
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with caching and auto-refresh
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation helper
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Loaded on demand.
 //
@@ -86,7 +87,7 @@ export function JobsProvider({ children }) {
         { revalidate: true } // also refetch from server
       );
     } catch (err) {
-      console.error("❌ Error adding job:", err.message); // log error
+      logFailure("❌ Error adding job:", err.message); // log error
     }
   };
 
@@ -106,7 +107,7 @@ export function JobsProvider({ children }) {
         { revalidate: true } // also refetch from server
       );
     } catch (err) {
-      console.error("❌ Error updating job:", err.message); // log error
+      logFailure("❌ Error updating job:", err.message); // log error
     }
   };
 

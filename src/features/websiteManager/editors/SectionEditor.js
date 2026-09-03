@@ -4,21 +4,19 @@
 // ./sectionSchemas based on the field types declared there. Used by:
 //   - PageContentPanel (one editor per section in the chosen page)
 //   - LivePreviewPanel (opens an editor when the user clicks a region)
+//   - DesignPanel / NavigationPanel / SectionLayoutPanel (the site builder)
 //
 // Field type handlers live in ./fields.js so this file stays a thin shell.
+//
+// Styling is the `.website-manager__*` classes in
+// src/styles/features/website-manager.css plus the canonical staff primitives
+// (LayerTheme, Button, FieldError) — no one-off inline visual styling.
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
+import FieldError from "@/components/ui/FieldError";
 import { renderField } from "./fields";
-
-const labelStyle = {
-  fontSize: "0.72rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  color: "var(--text-1)",
-  fontWeight: 700,
-};
 
 export default function SectionEditor({
   schema,
@@ -28,15 +26,24 @@ export default function SectionEditor({
   onDelete, // collection rows only
   onChange, // fired on every draft change - used by LivePreviewPanel to
             // forward keystrokes into the iframe for WYSIWYG previews.
+  saveLabel = "Save changes",
 }) {
   const [draft, setDraft] = useState(() => ({ ...(initialValue || {}) }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   // Re-seed when the row being edited changes (live-preview selection swap).
-  React.useEffect(() => {
+  useEffect(() => {
     setDraft({ ...(initialValue || {}) });
+    setError(null);
   }, [initialValue]);
+
+  // Unsaved-changes marker. Compared against the row the editor opened with,
+  // so switching rows in the Visual editor resets it along with the draft.
+  const dirty = useMemo(
+    () => JSON.stringify(initialValue || {}) !== JSON.stringify(draft),
+    [initialValue, draft]
+  );
 
   const setField = (name, value) => {
     setDraft((prev) => {
@@ -47,9 +54,14 @@ export default function SectionEditor({
   };
 
   const handleSave = async () => {
-    // Required-field validation
+    // Required-field validation. `false` is a legitimate value for a boolean
+    // field, so only null/undefined/"" count as missing.
     const missing = schema.fields
-      .filter((f) => f.required && !draft[f.name] && draft[f.name] !== 0)
+      .filter((f) => {
+        if (!f.required) return false;
+        const v = draft[f.name];
+        return v === undefined || v === null || v === "";
+      })
       .map((f) => f.label);
     if (missing.length) {
       setError(`Required: ${missing.join(", ")}`);
@@ -67,21 +79,26 @@ export default function SectionEditor({
   };
 
   return (
-    <LayerTheme padding="16px" gap="14px">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-          {schema.label}
-        </div>
-        {onDelete && (
-          <Button type="button" variant="danger" size="xs" onClick={onDelete} disabled={busy}>
-            Delete
-          </Button>
-        )}
+    <LayerTheme className="website-manager__editor" gap="var(--space-3)">
+      <div className="website-manager__editor-header">
+        <span className="website-manager__editor-title">{schema.label}</span>
+        <span className="website-manager__editor-header-actions">
+          {dirty && (
+            <span className="app-badge app-badge--warning app-badge--uppercase">
+              Unsaved
+            </span>
+          )}
+          {onDelete && (
+            <Button type="button" variant="danger" size="xs" onClick={onDelete} disabled={busy}>
+              Delete
+            </Button>
+          )}
+        </span>
       </div>
 
       {schema.fields.map((field) => (
-        <label key={field.name} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={labelStyle}>
+        <label key={field.name} className="website-manager__field">
+          <span className="website-manager__label">
             {field.label}
             {field.required ? " *" : ""}
           </span>
@@ -89,20 +106,18 @@ export default function SectionEditor({
             field,
             value: draft[field.name],
             onChange: (v) => setField(field.name, v),
-            disabled: busy || (field.idField && initialValue?.id), // ID immutable once set
+            // A collection row's stable text PK is immutable once the row
+            // exists — changing it would orphan every reference to it.
+            disabled: busy || Boolean(field.idField && initialValue?.id),
           })}
         </label>
       ))}
 
-      {error && (
-        <div style={{ color: "var(--danger-base)", fontSize: "0.85rem" }}>
-          {error}
-        </div>
-      )}
+      <FieldError>{error}</FieldError>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <Button type="button" variant="primary" onClick={handleSave} disabled={busy}>
-          {busy ? "Saving…" : "Save changes"}
+      <div className="website-manager__actions">
+        <Button type="button" variant="primary" onClick={handleSave} busy={busy}>
+          {saveLabel}
         </Button>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>

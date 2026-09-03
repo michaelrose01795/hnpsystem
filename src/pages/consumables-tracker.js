@@ -19,6 +19,7 @@ import {
   groupConsumableRequests,
   normalizeConsumableRequestStatus,
 } from "@/lib/consumableRequests";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Page layout follows the canonical page shell and layer surface structure.
 // hierarchy from staffglobal.css (via @/components/ui), so no local layout shells.
@@ -310,7 +311,7 @@ function ConsumablesTrackerPage() {
         return;
       }
 
-      console.error("❌ Failed to load consumables", error);
+      logFailure("❌ Failed to load consumables", error);
       setConsumables([]);
       setPotentialDuplicates([]);
       setShowDuplicateModal(false);
@@ -350,7 +351,7 @@ function ConsumablesTrackerPage() {
 
       setTechRequests(payload.data || []);
     } catch (error) {
-      console.error("❌ Failed to load consumable requests", error);
+      logFailure("❌ Failed to load consumable requests", error);
       setRequestsError(error?.message || "Unable to load requests.");
     } finally {
       setRequestsLoading(false);
@@ -421,7 +422,7 @@ function ConsumablesTrackerPage() {
           setTechRequests(payload.data || []);
         }
       } catch (error) {
-        console.error("❌ Failed to update consumable request", error);
+        logFailure("❌ Failed to update consumable request", error);
         setRequestsError(error?.message || "Unable to update request.");
         throw error;
       } finally {
@@ -462,7 +463,7 @@ function ConsumablesTrackerPage() {
         setTechRequests(payload.data || []);
         await refreshConsumables();
       } catch (error) {
-        console.error("Failed to receive consumable request", error);
+        logFailure("Failed to receive consumable request", error);
         setRequestsError(error?.message || "Unable to mark the order as arrived.");
       } finally {
         setOrderingRequestId(null);
@@ -535,7 +536,7 @@ function ConsumablesTrackerPage() {
         trend: Array.isArray(trend) ? trend : []
       });
     } catch (error) {
-      console.error("❌ Failed to load financial summary", error);
+      logFailure("❌ Failed to load financial summary", error);
       setFinancialError(error?.message || "Unable to load consumable finances.");
     } finally {
       setFinancialLoading(false);
@@ -570,7 +571,7 @@ function ConsumablesTrackerPage() {
       setMonthlyLogs(payload.data.orders || []);
       setLogsSummary(payload.data.summary || { spend: 0, quantity: 0, orders: 0, suppliers: 0 });
     } catch (error) {
-      console.error("❌ Failed to load monthly logs", error);
+      logFailure("❌ Failed to load monthly logs", error);
       setLogsError(error?.message || "Unable to load monthly logs.");
     } finally {
       setLogsLoading(false);
@@ -701,7 +702,7 @@ function ConsumablesTrackerPage() {
       });
       setBudgetSaveMessage("Budget saved.");
     } catch (error) {
-      console.error("❌ Failed to save monthly budget", error);
+      logFailure("❌ Failed to save monthly budget", error);
       setBudgetSaveError(error?.message || "Unable to save budget.");
     } finally {
       setBudgetSaving(false);
@@ -730,7 +731,7 @@ function ConsumablesTrackerPage() {
           throw new Error(errorBody.message || "Failed to notify the Message Centre.");
         }
       } catch (error) {
-        console.error("❌ Unable to send consumable status notification:", error);
+        logFailure("❌ Unable to send consumable status notification:", error);
       }
     },
     []

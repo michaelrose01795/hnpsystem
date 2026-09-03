@@ -26,6 +26,7 @@ vi.mock("@/lib/database/floatingNotes", () => ({
 }));
 
 import handler from "@/pages/api/floating-notes";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
 
 const createResponse = () => {
   const response = {
@@ -108,6 +109,19 @@ describe("floating notes API identity boundary", () => {
     expect(res.statusCode).toBe(403);
     expect(mocks.resolveSessionUserId).not.toHaveBeenCalled();
     expect(mocks.getFloatingNotesForUser).not.toHaveBeenCalled();
+  });
+
+  it("does not mistake the all-access staff session for a customer", async () => {
+    mocks.getServerSession.mockResolvedValue({ user: { id: "7", roles: [ALL_ACCESS_ROLE] } });
+    mocks.getFloatingNotesForUser.mockResolvedValue([]);
+    const req = { method: "GET", query: {}, body: {} };
+    const res = createResponse();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(mocks.resolveSessionUserId).toHaveBeenCalled();
+    expect(mocks.getFloatingNotesForUser).toHaveBeenCalledWith(7);
   });
 
   it("rejects unauthenticated requests before any note access", async () => {

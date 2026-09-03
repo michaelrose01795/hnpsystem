@@ -18,6 +18,7 @@
 //    widget transitions only, not the underlying video.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"; // React primitives
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Probe the best-supported MIME type for MediaRecorder output.
 function getPreferredMimeType() {
@@ -373,7 +374,7 @@ export default function useWidgetRecorder({ stream, videoElement, widgets, isRec
       setIsPaused(false); // Not paused
       resolve(); // start() has succeeded
     } catch (err) {
-      console.error("Failed to start recording:", err); // Log for ops
+      logFailure("Failed to start recording:", err); // Log for ops
       setRecorderError(err?.message || "Unable to start recording"); // UI message
       reject(err); // Reject outer promise
     }

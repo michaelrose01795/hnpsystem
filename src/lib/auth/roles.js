@@ -9,6 +9,7 @@ export const WORKSHOP_MANAGER_ROLES = ["workshop manager"];
 export const HR_MANAGER_DASHBOARD_ROLES = ["admin manager"];
 export const MOBILE_TECH_ROLES = ["mobile technician"];
 export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
+export const PARTS_ORDER_ROLES = ["parts", "parts manager"];
 export const CUSTOMER_ROLES = Array.from(roleCategories.Customers || []);
 export const WORKSHOP_CONTROLLER_ROLES = ["workshop manager", "workshop controller"];
 export const TECHNICIAN_ROLES = [

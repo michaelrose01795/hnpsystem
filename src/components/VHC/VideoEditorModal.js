@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import VideoPlayer from "./videoEditor/VideoPlayer";
 import TimelineTrimControl from "./videoEditor/TimelineTrimControl";
+import { logFailure } from "@/lib/utils/logFailure";
 
 function getPreferredMimeType() {
   const candidates = [
@@ -130,7 +131,7 @@ export default function VideoEditorModal({
       await v.play();
       setIsPlaying(true);
     } catch (err) {
-      console.error("Playback failed:", err);
+      logFailure("Playback failed:", err);
       setLoadError("Video playback was blocked by the browser.");
     }
   };
@@ -217,7 +218,7 @@ export default function VideoEditorModal({
       };
       v.addEventListener("seeked", handleSeeked);
     } catch (err) {
-      console.error("Video export failed:", err);
+      logFailure("Video export failed:", err);
       setProcessing(false);
       setLoadError("Unable to process the edited video in this browser.");
     }

@@ -33,6 +33,13 @@
 // this boundary deliberately adds NO window listeners — its unique contribution
 // is the render error + component stack + recovery timeline.
 //
+// AUTOMATIC LOGGING: every caught crash is also written to the durable trail
+// (support_error_events, via logErrorEvent → /api/support/error-events) at the
+// moment it is caught, tagged with the reference code the user sees. That does
+// NOT depend on the user pressing "Report a problem" — pressing it adds their
+// own words and the full diagnostics bundle on top, and the server stamps the
+// resulting report onto the already-captured events by reference code.
+//
 // Unsaved form data: GlobalDraftPersistence auto-saves draftable fields per route
 // (localStorage) on input/blur/route-change/beforeunload, so a Retry (re-render)
 // or Reload restores what the user had typed where practical — the recovery
@@ -61,6 +68,8 @@ import {
   isCrashLoop,
   resolveRecovery,
 } from "@/lib/support/recoveryModel";
+import { logFailure } from "@/lib/utils/logFailure";
+import { logErrorEvent, ERROR_KINDS } from "@/lib/support/autoErrorLog";
 
 // The popup is only ever needed once a user clicks "Report a problem" from the
 // recovery screen — lazy + client-only, mirroring SupportControl.
@@ -111,9 +120,29 @@ class SupportErrorBoundaryInner extends React.Component {
         referenceCode,
       })
     );
+    // Persist the crash to the durable trail (support_error_events) IMMEDIATELY,
+    // keyed by the same reference code shown on screen — so the failure is
+    // traceable whether or not the user goes on to press "Report a problem".
+    // Fire-and-forget and self-swallowing; it cannot fail the recovery render.
+    logErrorEvent({
+      kind: ERROR_KINDS.RENDER,
+      error,
+      referenceCode,
+      componentStack,
+      component: topComponentFromStack(componentStack),
+      boundaryLevel: this.props.level || RECOVERY_LEVELS.APP,
+      variant: this.props.variant || RECOVERY_VARIANTS.STAFF,
+      sectionKey: this.props.sectionKey,
+      context: {
+        sectionLabel: this.props.sectionLabel || null,
+        loopDetected,
+        crashCount: this.crashState.timestamps.length,
+      },
+    });
+
     // Preserve the console signal for developers (also re-captured by the console
     // patch, so it surfaces in console_errors too).
-    console.error(
+    logFailure(
       `SupportErrorBoundary [${this.props.level || "app"}] caught a render error (${referenceCode}):`,
       error,
       info
@@ -222,13 +251,20 @@ function SupportErrorRecovery({
   sectionLabel,
   handlers,
   hostSupportModal,
+  // Optional pre-built recovery plan. A caught render error resolves its own
+  // plan from the error (the default below); the framework error pages
+  // (404 / 500 / _error) have no error object to classify, so they build a plan
+  // describing THEIR situation and pass it in — which is how those pages reuse
+  // this exact screen instead of growing a parallel visual system.
+  plan: planOverride,
 }) {
   const { isOpen, captureDiagnostics } = useSupportReport();
   const userCtx = useUser?.();
   const canView =
     variant === RECOVERY_VARIANTS.STAFF && canViewDiagnostics(userCtx?.user?.roles);
 
-  const plan = resolveRecovery({ level, variant, error, loopDetected, homeHref, sectionLabel });
+  const plan =
+    planOverride || resolveRecovery({ level, variant, error, loopDetected, homeHref, sectionLabel });
   const isSection = level === RECOVERY_LEVELS.SECTION;
 
   return (
@@ -286,9 +322,9 @@ function SupportErrorRecovery({
             same code is logged against the private diagnostics). Selectable in
             one drag. */}
         {referenceCode && (
-          <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.6, fontSize: "0.82rem" }}>
+          <p className="app-error-reference">
             Reference code:{" "}
-            <span style={{ fontWeight: 600, userSelect: "all" }}>{referenceCode}</span>
+            <span className="app-error-reference__code">{referenceCode}</span>
           </p>
         )}
 

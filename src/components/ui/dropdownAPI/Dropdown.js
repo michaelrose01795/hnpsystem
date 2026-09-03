@@ -138,16 +138,22 @@ export default function Dropdown({
   const selectedOption = useMemo(() => {
     if (value === null || value === undefined) return null;
     return (
-      normalizedOptions.find(
-        (option) =>
-          option.value === value ||
-          option.key === value ||
-          (typeof value === "object" &&
-            option.raw &&
-            (option.raw === value ||
-              option.raw.id === value.id ||
-              option.raw.value === value.value))
-      ) ?? null
+      normalizedOptions.find((option) => {
+        if (option.value === value || option.key === value) return true;
+        if (value === null || typeof value !== "object" || !option.raw) return false;
+        if (option.raw === value) return true;
+        // Match on id/value only when BOTH sides actually carry one. Comparing
+        // a missing field to a missing field is `undefined === undefined`, which
+        // made the first option in the list report itself as the selected one.
+        if (typeof option.raw !== "object") return false;
+        if (option.raw.id !== undefined && value.id !== undefined) {
+          return option.raw.id === value.id;
+        }
+        if (option.raw.value !== undefined && value.value !== undefined) {
+          return option.raw.value === value.value;
+        }
+        return false;
+      }) ?? null
     );
   }, [value, normalizedOptions]);
 

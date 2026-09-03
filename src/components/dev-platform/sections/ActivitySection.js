@@ -12,11 +12,10 @@ import { useAlerts } from "@/context/AlertContext";
 import {
   Panel,
   SubSurface,
-  Pill,
+  badgeClass,
   StatCard,
   EmptyState,
   LoadingBlock,
-  DevButton,
   KeyValue,
   KeyValueGrid,
 } from "@/components/support/dev/supportDevUi";
@@ -82,12 +81,7 @@ function CoveragePanel({ coverage }) {
         {expected.map((action) => {
           const isCovered = covered.includes(action);
           return (
-            <Pill
-              key={action}
-              label={action}
-              tone={isCovered ? "success-base" : "danger-base"}
-              strong
-            />
+            <span key={action} className={badgeClass(isCovered ? "success-base" : "danger-base", true)}>{action}</span>
           );
         })}
       </div>
@@ -123,7 +117,7 @@ function ActivityRow({ item, showRule }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", minWidth: 0, flexWrap: "wrap" }}>
-        <Pill label={item.category || "Other"} tone={CATEGORY_TONE[item.category] || "text-1"} />
+        <span className={badgeClass(CATEGORY_TONE[item.category] || "text-1")}>{item.category || "Other"}</span>
         <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>
           {item.summary || item.action}
         </span>
@@ -147,7 +141,7 @@ function RecentActivityPanel({ loading, byDay, count, onReload }) {
     <Panel
       title="Recent activity"
       subtitle={`${count ?? 0} events, grouped by day, newest first.`}
-      actions={<DevButton small onClick={onReload}>Refresh</DevButton>}
+      actions={<button type="button" onClick={onReload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
     >
       {loading ? (
         <LoadingBlock rows={4} />
@@ -164,7 +158,7 @@ function RecentActivityPanel({ loading, byDay, count, onReload }) {
                 <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>
                   {dayHeading(group.day)}
                 </div>
-                <Pill label={`${group.items.length} item${group.items.length === 1 ? "" : "s"}`} tone="text-1" />
+                <span className="app-badge app-badge--neutral">{`${group.items.length} item${group.items.length === 1 ? "" : "s"}`}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {group.items.map((item, i) => (

@@ -42,18 +42,7 @@ export default function DevNotificationBell() {
         aria-haspopup="true"
         aria-expanded={open}
         className="app-btn app-btn--ghost"
-        style={{
-          position: "relative",
-          minHeight: 44,
-          minWidth: 44,
-          padding: "8px 14px",
-          borderRadius: "var(--radius-md)",
-          cursor: "pointer",
-          background: toneTint("text-1", 10),
-          color: "var(--text-1)",
-          fontSize: "var(--text-body-sm)",
-          fontWeight: 600,
-        }}
+        style={{ position: "relative", minWidth: 44 }}
       >
         <span>Alerts</span>
         {unread > 0 && (
@@ -100,11 +89,11 @@ export default function DevNotificationBell() {
             <strong style={{ color: "var(--accentText)", fontSize: "var(--text-body)" }}>Notifications</strong>
             <div style={{ display: "flex", gap: "6px" }}>
               {unread > 0 && (
-                <button type="button" onClick={markAllRead} className="app-btn app-btn--ghost" style={{ minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-caption)", background: toneTint("accentText", 10), color: "var(--accentText)", cursor: "pointer" }}>
+                <button type="button" onClick={markAllRead} className="app-btn app-btn--ghost app-btn--xs">
                   Mark all read
                 </button>
               )}
-              <Link href="/dev/notifications" onClick={() => setOpen(false)} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 32, padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: "var(--text-caption)", background: toneTint("text-1", 10), color: "var(--text-1)" }}>
+              <Link href="/dev/notifications" onClick={() => setOpen(false)} className="app-btn app-btn--secondary app-btn--xs">
                 Settings
               </Link>
             </div>
@@ -133,7 +122,7 @@ export default function DevNotificationBell() {
                       {n.body ? <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>{n.body}</div> : null}
                     </div>
                     {!n.read_at && (
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" style={{ background: "transparent", cursor: "pointer", color: "var(--accentText)", opacity: 0.8, fontSize: "var(--text-caption)", fontWeight: 700, alignSelf: "flex-start", whiteSpace: "nowrap" }}>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); markRead(n.id); }} title="Mark read" aria-label="Mark read" className="app-btn app-btn--ghost app-btn--xs" style={{ alignSelf: "flex-start" }}>
                         Read
                       </button>
                     )}

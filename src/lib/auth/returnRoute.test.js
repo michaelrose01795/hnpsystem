@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth/returnRoute";
 
 const ADMIN_MANAGER = ["admin manager"];
+const SERVICE = ["service"];
 const TECH = ["techs"];
 const FALLBACK = "/newsfeed";
 
@@ -96,8 +97,8 @@ describe("returnRoute — resolveReturnRoute precedence", () => {
     expect(
       resolveReturnRoute({
         redirectedFrom: "/jobs",
-        remembered: "/hr/manager",
-        roles: ADMIN_MANAGER,
+        remembered: "/newsfeed",
+        roles: SERVICE,
         fallback: FALLBACK,
       })
     ).toBe("/jobs");
@@ -154,7 +155,7 @@ describe("returnRoute — resolveReturnRoute precedence", () => {
     // grants, so the detail route has to inherit from it.
     const resolved = resolveReturnRoute({
       redirectedFrom: "/job-cards/12345",
-      roles: ADMIN_MANAGER,
+      roles: SERVICE,
       fallback: FALLBACK,
     });
     expect(resolved).toBe("/job-cards/12345");
@@ -164,7 +165,7 @@ describe("returnRoute — resolveReturnRoute precedence", () => {
     expect(
       resolveReturnRoute({
         redirectedFrom: "/jobs?status=open",
-        roles: ADMIN_MANAGER,
+        roles: SERVICE,
         fallback: FALLBACK,
       })
     ).toBe("/jobs?status=open");

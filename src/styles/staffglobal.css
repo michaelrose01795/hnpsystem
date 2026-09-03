@@ -968,13 +968,37 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     will-change: clip-path, transform, opacity;
   }
 
+  /* 0.6s total, but the panel retract still occupies only the first 60% (0.36s,
+     unchanged). The trailing 0.24s is dead time on the assembly itself — it exists
+     so the close tab's own corner-seal animation below can finish BEFORE the
+     assembly's animationend fires and unmounts the overlay. */
   html.staff-scope .app-portrait-sidebar-assembly.is-closing {
-    animation: app-portrait-sidebar-drop-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+    animation: app-portrait-sidebar-drop-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
     pointer-events: none;
-    will-change: clip-path, transform, opacity;
+    will-change: clip-path;
+  }
+
+  /* The tab holds its square bottom corners while the panel is still retracting
+     into it, then — once the panel has landed — rounds them out to the full pill
+     over the last 0.24s. That is the "settles into the Menu / Status button"
+     beat: slow enough to read as a shape change rather than a pop. */
+  html.staff-scope .app-portrait-sidebar-assembly.is-closing .app-portrait-sidebar__close-tab.app-btn {
+    /* 0.55s, not the assembly's 0.6s: the seal must land just inside the assembly's
+       animationend, which unmounts the overlay, or its final frame gets cut. */
+    animation: app-portrait-sidebar-tab-seal 0.55s cubic-bezier(0.33, 1, 0.68, 1) both;
+    will-change: border-radius;
+  }
+
+  /* Opening runs the same beat in reverse: the tab starts as the pill it replaced
+     and drops its bottom corners in the first 30% as the panel begins to unfurl. */
+  html.staff-scope .app-portrait-sidebar-assembly.is-opening .app-portrait-sidebar__close-tab.app-btn {
+    animation: app-portrait-sidebar-tab-unseal 0.44s cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   html.staff-scope .app-portrait-sidebar__close-tab.app-btn {
+    --btn-bg: var(--surface);
+    --btn-color: var(--text-1);
+    --btn-ring: none;
     position: relative;
     z-index: 2;
     grid-column: 1;
@@ -982,16 +1006,19 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     width: 100%;
     height: var(--control-height);
     min-height: var(--control-height);
-    background: var(--surface);
-    color: var(--text-1);
-    border-radius: var(--control-radius) var(--control-radius) 0 0;
+    /* Top half matches the Menu / Status pill exactly: a 28px --control-radius on a
+       44px control clamps to half the height, so half the height IS the pill's
+       visible top curve. The bottom corners stay square so the tab runs straight
+       down into the panel surface below it (bridged by ::after) instead of
+       pinching back in and reading as a detached pill floating over a gap. */
+    border-radius: calc(var(--control-height) / 2) calc(var(--control-height) / 2) 0 0;
     box-shadow: none;
   }
 
   html.staff-scope .app-portrait-sidebar__close-tab.app-btn:hover,
   html.staff-scope .app-portrait-sidebar__close-tab.app-btn:focus-visible {
-    background: var(--surface);
-    color: var(--accentText);
+    --btn-bg: var(--surface);
+    --btn-color: var(--accentText);
   }
 
   html.staff-scope .app-portrait-sidebar__close-tab::after {
@@ -1027,21 +1054,41 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     grid-column: 2;
   }
 
+  /* No Status button: Menu owns the whole control row, so the close tab that
+     replaces it spans both grid columns to match its width. */
+  html.staff-scope .app-portrait-sidebar-assembly--solo .app-portrait-sidebar__close-tab.app-btn {
+    grid-column: 1 / -1;
+  }
+
+  /* ...and with the tab now covering the panel's full width, BOTH of the panel's
+     top corners tuck under it, so neither is rounded. */
+  html.staff-scope .app-portrait-sidebar-assembly--solo .app-portrait-sidebar__panel,
+  html.staff-scope
+    .app-portrait-sidebar-assembly--solo
+    .app-portrait-sidebar__panel
+    .app-sidebar--vertical-phone {
+    border-radius: 0 0 var(--page-card-radius) var(--page-card-radius);
+  }
+
   html.staff-scope .app-mobile-sidebar-overlay:not(.is-closing) .app-mobile-sidebar-backdrop {
     animation: app-portrait-sidebar-backdrop-in 0.28s ease-out both;
   }
 
   html.staff-scope .app-mobile-sidebar-overlay.is-closing .app-mobile-sidebar-backdrop {
-    animation: app-portrait-sidebar-backdrop-out 0.24s ease-in both;
+    animation: app-portrait-sidebar-backdrop-out 0.36s ease-in-out both;
     pointer-events: none;
   }
 }
 
 @keyframes app-portrait-sidebar-drop-in {
   from {
-    clip-path: inset(0 0 100% 0 round var(--page-card-radius));
-    opacity: 0.55;
-    transform: translate3d(0, -8px, 0) scale(0.995);
+    /* Collapsed end-state: only the close tab's strip survives, rounded on its top
+       corners only — same radius the tab itself uses, so the clip never shaves the
+       square bottom corners back into a curve as the panel finishes retracting. */
+    clip-path: inset(0 0 calc(100% - var(--control-height)) 0 round
+      calc(var(--control-height) / 2) calc(var(--control-height) / 2) 0 0);
+    opacity: 1;
+    transform: none;
   }
 
   to {
@@ -1052,16 +1099,49 @@ html.staff-scope .app-mobile-sidebar-backdrop {
 }
 
 @keyframes app-portrait-sidebar-drop-out {
-  from {
+  0% {
     clip-path: inset(0 0 0 0 round var(--page-card-radius));
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: none;
   }
 
-  to {
-    clip-path: inset(0 0 100% 0 round var(--page-card-radius));
-    opacity: 0.4;
-    transform: translate3d(0, -6px, 0) scale(0.995);
+  /* Panel fully retracted at 60% of the 0.6s run (0.36s). The clip is held flat
+     from here to 100% while the tab seals its corners — squaring the clip's own
+     bottom corners keeps MORE area than the tab occupies, so the tab's rounding
+     stays visible through it. */
+  60%,
+  100% {
+    /* Collapsed end-state: only the close tab's strip survives, rounded on its top
+       corners only — same radius the tab itself uses, so the clip never shaves the
+       square bottom corners back into a curve as the panel finishes retracting. */
+    clip-path: inset(0 0 calc(100% - var(--control-height)) 0 round
+      calc(var(--control-height) / 2) calc(var(--control-height) / 2) 0 0);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Bottom corners: square while the panel is landing, then eased out to the full
+   pill so the tab ends as an exact copy of the Menu / Status button. */
+@keyframes app-portrait-sidebar-tab-seal {
+  0%,
+  60% {
+    border-radius: calc(var(--control-height) / 2) calc(var(--control-height) / 2) 0 0;
+  }
+
+  100% {
+    border-radius: calc(var(--control-height) / 2);
+  }
+}
+
+@keyframes app-portrait-sidebar-tab-unseal {
+  0% {
+    border-radius: calc(var(--control-height) / 2);
+  }
+
+  30%,
+  100% {
+    border-radius: calc(var(--control-height) / 2) calc(var(--control-height) / 2) 0 0;
   }
 }
 
@@ -1087,6 +1167,7 @@ html.staff-scope .app-mobile-sidebar-backdrop {
 
 @media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
   html.staff-scope .app-portrait-sidebar-assembly,
+  html.staff-scope .app-portrait-sidebar__close-tab.app-btn,
   html.staff-scope .app-mobile-sidebar-backdrop {
     animation: none;
     will-change: auto;
@@ -7612,20 +7693,20 @@ html.staff-scope .app-alert--info {
 /* Message row: tone icon + text + dismiss. */
 html.staff-scope .app-alert__main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-sm);
   width: 100%;
 }
 
 html.staff-scope .app-alert__icon {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -7657,32 +7738,10 @@ html.staff-scope .app-alert__message {
   color: var(--text-1);
 }
 
-/* Dismiss control — ghost, borderless (Border Sweep: buttons carry no
-   decorative outline; the focus ring is a box-shadow). */
+/* Dismiss control — the shared secondary icon button provides the filled,
+   44px square geometry that makes the background a true circle. */
 html.staff-scope .app-alert__dismiss {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  min-height: 32px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1;
-  opacity: 0.7;
-}
-html.staff-scope .app-alert__dismiss:hover {
-  opacity: 1;
-}
-html.staff-scope .app-alert__dismiss:focus-visible {
-  outline: none;
-  opacity: 1;
-  box-shadow: var(--focus-ring);
 }
 
 /* Reference-code row (Phase 4) — shown to EVERY user so staff can quote the
@@ -7793,7 +7852,7 @@ html.staff-scope .app-alert__report-btn:disabled {
   }
 }
 
-/* Mobile: span the viewport with small gutters; larger dismiss touch target. */
+/* Mobile: span the viewport with small gutters. */
 @media (max-width: 768px) {
   html.staff-scope .app-toast-stack {
     top: calc(var(--page-gutter-y-mobile) + 75px + 12px);
@@ -7801,10 +7860,6 @@ html.staff-scope .app-alert__report-btn:disabled {
     left: 12px;
     width: auto;
     max-width: none;
-  }
-  html.staff-scope .app-alert__dismiss {
-    min-width: 44px;
-    min-height: 44px;
   }
 }
 

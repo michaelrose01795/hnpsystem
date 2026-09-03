@@ -16,6 +16,7 @@
 import crypto from "crypto";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { recordAuditEvent } from "@/lib/database/auditActivity";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Field names that must never appear verbatim in the diff. Extend as new
 // sensitive fields are added to the schema.
@@ -102,7 +103,7 @@ export async function writeAuditLog({
 } = {}) {
   if (!supabaseService) return;
   if (!action) {
-    console.error("[audit] writeAuditLog called without action");
+    logFailure("[audit] writeAuditLog called without action");
     return;
   }
   try {
@@ -130,7 +131,7 @@ export async function writeAuditLog({
         ip_address: ip,
       });
     } catch (centralError) {
-      console.error("[audit] central event write failed:", centralError?.message || centralError);
+      logFailure("[audit] central event write failed:", centralError?.message || centralError);
     }
 
     const prevHash = await fetchPrevHash();
@@ -170,6 +171,6 @@ export async function writeAuditLog({
       },
     ]);
   } catch (err) {
-    console.error("[audit] writeAuditLog failed:", err?.message || err);
+    logFailure("[audit] writeAuditLog failed:", err?.message || err);
   }
 }

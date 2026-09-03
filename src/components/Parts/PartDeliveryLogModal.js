@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
   const { dbUserId } = useUser();
@@ -65,7 +66,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           });
         }
       } catch (err) {
-        console.error("Error fetching last delivery:", err);
+        logFailure("Error fetching last delivery:", err);
         setError("Failed to fetch previous delivery information");
       } finally {
         setLoading(false);
@@ -135,7 +136,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
         setSuccess("");
       }, 1500);
     } catch (err) {
-      console.error("Error logging delivery:", err);
+      logFailure("Error logging delivery:", err);
       setError(err.message || "Failed to log delivery");
     } finally {
       setSubmitting(false);

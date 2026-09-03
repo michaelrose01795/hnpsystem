@@ -28,6 +28,8 @@ const STOPS = [
     customer: "Alex Morgan",
     address: "Unit 4, Kings Hill Business Park, West Malling",
     postcode: "ME19 4AE",
+    latitude: 51.2837,
+    longitude: 0.4004,
     phone: "01732 555 118",
     invoice: "INV-20418",
     job: "J-10422",
@@ -46,6 +48,8 @@ const STOPS = [
     customer: "Priya Shah",
     address: "12 Tonbridge Road, Maidstone",
     postcode: "ME16 8RL",
+    latitude: 51.2734,
+    longitude: 0.5064,
     phone: "01622 555 240",
     invoice: "INV-20419",
     job: "J-10430",
@@ -64,6 +68,8 @@ const STOPS = [
     customer: "Reynolds Motor Services",
     address: "Aylesford Trade Centre, Aylesford",
     postcode: "ME20 7SL",
+    latitude: 51.3041,
+    longitude: 0.4772,
     phone: "01622 555 771",
     invoice: "INV-20421",
     job: null,
@@ -82,6 +88,8 @@ const STOPS = [
     customer: "James Holt",
     address: "Larkfield Retail Park, Larkfield",
     postcode: "ME20 6SW",
+    latitude: 51.3013,
+    longitude: 0.4402,
     phone: "07700 555 903",
     invoice: "INV-20423",
     job: "J-10441",
@@ -100,6 +108,8 @@ const STOPS = [
     customer: "Snodland Auto Centre",
     address: "Holborough Road, Snodland",
     postcode: "ME6 5PG",
+    latitude: 51.3281,
+    longitude: 0.4463,
     phone: "01634 555 016",
     invoice: "INV-20415",
     job: null,
@@ -118,6 +128,8 @@ const STOPS = [
     customer: "Coxheath Garage",
     address: "Heath Road, Coxheath",
     postcode: "ME17 4PH",
+    latitude: 51.2447,
+    longitude: 0.4934,
     phone: "01622 555 442",
     invoice: "INV-20416",
     job: null,
@@ -305,16 +317,89 @@ export function buildDeliveryDiaryMock(requestedDate) {
   };
 }
 
-/** Demo response for the route-map panel — deliberately "unavailable", since
- *  the presentation runs with no outbound postcode lookups. */
+// The parts desk (ME19 4NY, Kings Hill) — the same origin the live route uses,
+// so the demo route has the real shape a Kent run has.
+const DEMO_ORIGIN = {
+  postcode: "ME19 4NY",
+  latitude: 51.2861,
+  longitude: 0.4033,
+  label: "Humphries & Parks",
+};
+
+// The real driving route round the six demo stops and back to the desk, as
+// OSRM returns it for these exact coordinates — [latitude, longitude] pairs,
+// simplified geometry, baked in because the presentation makes no outbound
+// calls of any kind. Without it the demo would fall back to the dashed
+// straight-line drawing and caption itself "live routing is unavailable",
+// which is a fault message, not a demonstration.
+const DEMO_DRIVE_GEOMETRY = [
+  [51.28715, 0.40264], [51.28462, 0.39827], [51.28271, 0.40076], [51.28343, 0.39985],
+  [51.28462, 0.39827], [51.27993, 0.39513], [51.28042, 0.39904], [51.28257, 0.40450],
+  [51.29042, 0.41924], [51.29465, 0.42038], [51.29935, 0.41685], [51.30602, 0.41513],
+  [51.30895, 0.41699], [51.30847, 0.42345], [51.30986, 0.42554], [51.30610, 0.43507],
+  [51.30223, 0.46031], [51.29709, 0.48491], [51.29234, 0.48423], [51.29102, 0.48758],
+  [51.28519, 0.49417], [51.28185, 0.50394], [51.27968, 0.50653], [51.27519, 0.50975],
+  [51.27341, 0.50635], [51.27094, 0.50502], [51.27007, 0.50603], [51.27017, 0.51190],
+  [51.27219, 0.51293], [51.27151, 0.51754], [51.27578, 0.51839], [51.27848, 0.51748],
+  [51.28086, 0.51874], [51.29275, 0.51703], [51.29614, 0.51353], [51.29648, 0.51040],
+  [51.29934, 0.50615], [51.30452, 0.47616], [51.30398, 0.47724], [51.30313, 0.48327],
+  [51.30046, 0.47312], [51.30187, 0.46307], [51.29877, 0.45552], [51.29971, 0.45079],
+  [51.29850, 0.44205], [51.30167, 0.44197], [51.30131, 0.43985], [51.30022, 0.43944],
+  [51.30106, 0.43198], [51.31220, 0.43520], [51.31334, 0.42777], [51.31809, 0.43423],
+  [51.31845, 0.43952], [51.32020, 0.44344], [51.32321, 0.44564], [51.32810, 0.44633],
+  [51.33140, 0.44695], [51.33743, 0.44557], [51.33096, 0.44695], [51.32157, 0.44488],
+  [51.31880, 0.44116], [51.31649, 0.43147], [51.31370, 0.42817], [51.30961, 0.42627],
+  [51.30610, 0.43507], [51.30223, 0.46031], [51.29691, 0.48518], [51.29238, 0.48364],
+  [51.29220, 0.47660], [51.28847, 0.47618], [51.27964, 0.47885], [51.27497, 0.48210],
+  [51.25864, 0.48300], [51.25619, 0.48480], [51.25244, 0.48413], [51.25163, 0.48485],
+  [51.25016, 0.49922], [51.24431, 0.49361], [51.24165, 0.49169], [51.23591, 0.48298],
+  [51.23933, 0.46587], [51.24456, 0.46562], [51.24603, 0.45374], [51.25057, 0.45364],
+  [51.25445, 0.44458], [51.25456, 0.42706], [51.25694, 0.41611], [51.25601, 0.40150],
+  [51.25878, 0.38343], [51.25822, 0.38054], [51.26352, 0.38181], [51.26781, 0.38582],
+  [51.27121, 0.38697], [51.28484, 0.39849], [51.28715, 0.40264],
+];
+
+// Per-leg road miles and minutes from the same OSRM answer. Index 0 is the desk
+// to the first stop; the last entry is the run home.
+const DEMO_LEG_MILES = [0.5, 8.6, 4.6, 2.6, 3, 10.5, 8.5];
+const DEMO_LEG_MINUTES = [2, 15, 13, 7, 7, 19, 17];
+const DEMO_TOTAL_MILES = 38.3;
+const DEMO_TOTAL_MINUTES = 80;
+
+/** Demo response for the route-map panel.
+ *
+ *  The presentation makes no outbound postcode lookups or routing calls, so the
+ *  coordinates are carried on the fixture stops themselves and the drive is the
+ *  baked OSRM answer above. They are the real positions of those Kent postcodes
+ *  and the real roads between them, which means the demo draws the same map the
+ *  live page does — basemap tiles and routed line included — instead of an
+ *  apology. */
 export function buildDeliveryRouteMapMock(requestedDate) {
+  const stops = STOPS.map((stop, index) => ({
+    id: `demo-delivery-${stop.key}`,
+    stopNumber: index + 1,
+    located: true,
+    label: stop.customer,
+    postcode: stop.postcode,
+    latitude: stop.latitude,
+    longitude: stop.longitude,
+    legMiles: DEMO_LEG_MILES[index],
+    legMinutes: DEMO_LEG_MINUTES[index],
+    status: stop.status,
+    isUrgent: Boolean(stop.urgent),
+  }));
+
   return {
     date: requestedDate || demoDay(),
-    available: false,
-    detail: "Postcode lookup is disabled during the presentation.",
-    origin: null,
-    stops: [],
-    totalMiles: 0,
+    available: true,
+    provider: "osrm",
+    routed: true,
+    geometry: DEMO_DRIVE_GEOMETRY.map(([latitude, longitude]) => ({ latitude, longitude })),
+    origin: DEMO_ORIGIN,
+    stops,
+    returnMiles: DEMO_LEG_MILES[DEMO_LEG_MILES.length - 1],
+    totalMiles: DEMO_TOTAL_MILES,
+    totalMinutes: DEMO_TOTAL_MINUTES,
   };
 }
 

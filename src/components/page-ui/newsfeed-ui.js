@@ -1,250 +1,193 @@
 // file location: src/components/page-ui/newsfeed-ui.js
-import Button from "@/components/ui/Button";
+//
+// Presentation layer for /newsfeed — the dealership communication hub.
+//
+// This file renders; it decides nothing. Every piece of state and every action
+// arrives as a prop from the page, which gets them from useNewsFeed(). The
+// `view` switch is the convention the rest of src/components/page-ui follows.
+
+import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
-import PopupModal from "@/components/popups/popupStyleApi";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import NewsFilterBar from "@/components/NewsFeed/NewsFilterBar";
+import NewsPostCard from "@/components/NewsFeed/NewsPostCard";
+import NewsComposerModal from "@/components/NewsFeed/NewsComposerModal";
+import NewsPostDetailModal from "@/components/NewsFeed/NewsPostDetailModal";
+
+// The empty state has to say something true about the filter that produced it,
+// otherwise "no updates yet" looks like a fault when the user has simply
+// filtered everything out.
+const emptyStateFor = ({ isSearching, hasActiveFilters }) => {
+  if (isSearching) {
+    return {
+      icon: "🔍",
+      title: "No matching announcements",
+      description: "Try a shorter search, or clear the category and department filters.",
+    };
+  }
+  if (hasActiveFilters) {
+    return {
+      icon: "🔍",
+      title: "Nothing matches these filters",
+      description: "Clear the filters to see the rest of the feed.",
+    };
+  }
+  return {
+    icon: "📣",
+    title: "No updates yet",
+    description:
+      "No announcements have been published for your departments yet. New ones appear here.",
+  };
+};
+
+function FeedSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <SkeletonKeyframes />
+      {Array.from({ length: 3 }).map((_, index) => (
+        <LayerSurface key={index} radius="var(--radius-sm)" padding={18} gap={10}>
+          <SkeletonBlock width="160px" height="14px" />
+          <SkeletonBlock width="80%" height="18px" />
+          <SkeletonBlock width="100%" height="12px" />
+          <SkeletonBlock width="90%" height="12px" />
+        </LayerSurface>
+      ))}
+    </div>
+  );
+}
 
 export default function NewsFeedUi(props) {
   const {
-    AVAILABLE_DEPARTMENTS,
-    MultiSelectDropdown,
-    SkeletonBlock,
-    SkeletonKeyframes,
-    accessibleUpdates,
-    canManageUpdates,
-    formState,
-    formatTimeAgo,
-    handleCreateUpdate,
+    // data
+    visiblePosts = [],
+    reactionsByPost = {},
+    myReactionsByPost = {},
+    capabilities = {},
+    currentUserId,
     loading,
-    modalOpen,
-    notificationError,
-    resetModal,
-    saving,
-    setFormState,
-    setModalOpen,
-  } = props; // receive page logic props.
+    searching,
+    error,
+    isSearching,
+    density,
+    busyActions = {},
+    permissionsFor,
 
-  switch (props.view) { // choose the page section requested by logic.
-    case "section1":
-      return <>
-      <div style={{
-    width: "100%",
-    maxWidth: "100%",
-    padding: "8px 0"
-  }}>
-        {canManageUpdates && <div className="flex justify-end items-center" style={{
-      width: "100%",
-      paddingBottom: "16px"
-    }}>
-            <Button type="button" variant="primary" onClick={() => {
-        resetModal();
-        setModalOpen(true);
-      }}>
-              Add Update
-            </Button>
-          </div>}
+    // filter state
+    filters = { categories: [], priorities: [], departments: [] },
+    setFilters,
+    hasActiveFilters,
+    searchTerm,
+    setSearchTerm,
 
-        {loading && <div className="mb-6" style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }}>
-            <SkeletonKeyframes />
-            {Array.from({
-        length: 3
-      }).map((_, i) => <div key={i} style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: 18,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10
-      }}>
-                <div style={{
-          display: "flex",
-          gap: 10,
-          alignItems: "center"
-        }}>
-                  <SkeletonBlock width="38px" height="38px" borderRadius="999px" />
-                  <SkeletonBlock width="160px" height="14px" />
-                </div>
-                <SkeletonBlock width="80%" height="18px" />
-                <SkeletonBlock width="100%" height="12px" />
-                <SkeletonBlock width="90%" height="12px" />
-              </div>)}
-          </div>}
+    // actions
+    onOpenPost,
+    onAcknowledge,
+    onEditPost,
+    onDeletePost,
+    onReact,
 
-        {!loading && accessibleUpdates.length === 0 && (
-          <EmptyState
-            icon="📣"
-            title="No updates yet"
-            description="No updates have been published for your departments yet. New announcements will appear here."
-          />
-        )}
+    // modal state
+    composerOpen,
+    composerPost,
+    onCloseComposer,
+    onOpenComposer,
+    onComposerSaved,
+    detailPost,
+    onCloseDetail,
+  } = props;
 
-        <div style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "20px"
-    }}>
-          {accessibleUpdates.map(update => <article key={update.id ?? update.title} style={{
-        padding: "20px 24px",
-        border: "none",
-        borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--theme)",
-        cursor: "pointer",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        maxWidth: "100%",
-        width: "100%"
-      }} onMouseEnter={e => {
-        e.currentTarget.style.position = "relative";
-        e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-        e.currentTarget.style.transform = "translateY(-8px)";
-        e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-      }} onMouseLeave={e => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.zIndex = "0";
-      }}>
-              {/* Title */}
-              <h2 style={{
-          fontSize: "22px",
-          fontWeight: "bold",
-          marginBottom: "8px",
-          color: "var(--text-1)"
-        }}>
-                {update.title}
-              </h2>
+  switch (props.view) {
+    case "section1": {
+      const empty = emptyStateFor({ isSearching, hasActiveFilters });
 
-              {/* Author and Time */}
-              <div style={{
-          fontSize: "11px",
-          marginBottom: "12px",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          color: "var(--text-1)",
-          opacity: 0.7
-        }}>
-                <span>{update.author || "System"}</span>
-                <span>•</span>
-                <span>{formatTimeAgo(update.created_at)}</span>
-              </div>
-
-              {/* Description */}
-              <div style={{
-          fontSize: "15px",
-          lineHeight: "1.6",
-          color: "var(--text-1)",
-          opacity: 0.9,
-          maxHeight: "calc(1.6em * 20)",
-          overflowY: "auto"
-        }}>
-                {update.content}
-              </div>
-            </article>)}
-        </div>
-      </div>
-
-      <PopupModal
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          resetModal();
-        }}
-        closeOnBackdrop={!saving}
-        ariaLabel="Share an update"
-        cardStyle={{
-          width: "min(100%, 650px)",
-          padding: "var(--page-card-padding)"
-        }}
-      >
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)"
-        }}>
-          <header className="app-popup-compact-header">
-            <h3>Share an Update</h3>
-            <div className="app-popup-compact-header__actions">
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                busy={saving}
-                onClick={handleCreateUpdate}
-              >
-                {saving ? "Publishing…" : "Publish Update"}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setModalOpen(false);
-                  resetModal();
-                }}
-                disabled={saving}
-              >
-                Cancel
-              </Button>
-            </div>
-          </header>
-
-          <div>
-            <label htmlFor="news-title">Title</label>
-            <input
-              className="app-input"
-              id="news-title"
-              type="text"
-              placeholder="Enter update title..."
-              value={formState.title}
-              onChange={event => setFormState(previous => ({
-                ...previous,
-                title: event.target.value
-              }))}
+      return (
+        <>
+          <div className="app-news">
+            <NewsFilterBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              categories={filters.categories}
+              onCategoriesChange={(value) =>
+                setFilters((previous) => ({ ...previous, categories: value }))
+              }
+              priorities={filters.priorities}
+              onPrioritiesChange={(value) =>
+                setFilters((previous) => ({ ...previous, priorities: value }))
+              }
+              departments={filters.departments}
+              onDepartmentsChange={(value) =>
+                setFilters((previous) => ({ ...previous, departments: value }))
+              }
+              onOpenComposer={onOpenComposer}
+              canPublish={capabilities.canPublish}
             />
+
+            {error && (
+              <div className="app-status-message app-status-message--danger" role="alert">
+                {error}
+              </div>
+            )}
+
+            {loading ? (
+              <FeedSkeleton />
+            ) : visiblePosts.length === 0 ? (
+              <EmptyState
+                icon={empty.icon}
+                title={searching ? "Searching…" : empty.title}
+                description={empty.description}
+              />
+            ) : (
+              <div
+                className={`app-news-list${density === "compact" ? " app-news-list--compact" : ""}`}
+              >
+                {visiblePosts.map((post) => {
+                  const permissions = permissionsFor?.(post) || {};
+                  return (
+                    <NewsPostCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={currentUserId}
+                      density={density}
+                      myReactions={myReactionsByPost[post.id] || []}
+                      canEdit={permissions.canEdit}
+                      busyAction={busyActions[post.id] || null}
+                      onOpen={onOpenPost}
+                      onAcknowledge={onAcknowledge}
+                      onEdit={onEditPost}
+                      onReact={onReact}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div>
-            <label htmlFor="news-content">Description</label>
-            <textarea
-              className="app-input"
-              id="news-content"
-              rows={5}
-              placeholder="Write your update details..."
-              value={formState.content}
-              onChange={event => setFormState(previous => ({
-                ...previous,
-                content: event.target.value
-              }))}
-            />
-          </div>
-
-          <MultiSelectDropdown
-            id="news-departments"
-            label="Visible to departments"
-            searchPlaceholder="Search departments"
-            placeholder="Select departments"
-            options={AVAILABLE_DEPARTMENTS}
-            value={formState.departments}
-            onChange={selectedDepartments => {
-              setFormState(prev => ({
-                ...prev,
-                departments: selectedDepartments
-              }));
-            }}
-            emptyState="No departments available"
-            usePortal
+          <NewsComposerModal
+            isOpen={composerOpen}
+            post={composerPost}
+            // Delete lives in the composer now, not on the row — it is the
+            // same permission the row used to gate its bin button with.
+            canDelete={Boolean(composerPost && (permissionsFor?.(composerPost) || {}).canDelete)}
+            deleting={composerPost ? busyActions[composerPost.id] === "delete" : false}
+            onDelete={onDeletePost}
+            onClose={onCloseComposer}
+            onSaved={onComposerSaved}
           />
 
-          {notificationError && (
-            <div className="app-status-message app-status-message--danger" role="alert">
-              {notificationError}
-            </div>
-          )}
-        </div>
-      </PopupModal>
-    </>; // render extracted page section.
+          <NewsPostDetailModal
+            isOpen={Boolean(detailPost)}
+            post={detailPost}
+            currentUserId={currentUserId}
+            reactions={detailPost ? reactionsByPost[detailPost.id] || [] : []}
+            canModerate={capabilities.canModerate}
+            busyAction={detailPost ? busyActions[detailPost.id] || null : null}
+            onClose={onCloseDetail}
+            onAcknowledge={onAcknowledge}
+          />
+        </>
+      );
+    }
     default:
       return null; // keep unknown sections visually empty.
   }

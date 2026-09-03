@@ -11,6 +11,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import ViewAccountPageUi from "@/components/page-ui/accounts/view/accounts-view-account-id-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const VIEW_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "WORKSHOP MANAGER", "SALES"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
@@ -66,7 +67,7 @@ export default function ViewAccountPage() {
         // so the in-flight load owns the loading flag and the skeleton stays.
         if (error.name === "AbortError") return;
         if (cancelled) return;
-        console.error("Failed to load account", error);
+        logFailure("Failed to load account", error);
         setLoading(false);
       }
     };
@@ -87,7 +88,7 @@ export default function ViewAccountPage() {
       }
       setAccount((prev) => ({ ...prev, status: nextStatus }));
     } catch (error) {
-      console.error("Failed to toggle status", error);
+      logFailure("Failed to toggle status", error);
     }
   };
   const handleEdit = () => {

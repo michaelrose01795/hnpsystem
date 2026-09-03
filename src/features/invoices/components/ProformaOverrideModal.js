@@ -11,6 +11,7 @@ import React, { useCallback, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export const BILLING_OPTIONS = [
   "Customer",
@@ -175,7 +176,7 @@ export function useProformaOverrideEditor({ jobIdForOverride, onDataPatch, onDat
         await onDataRefresh();
       }
     } catch (error) {
-      console.error("Failed to save proforma override", error);
+      logFailure("Failed to save proforma override", error);
       alert(error?.message || "Failed to save proforma override");
     } finally {
       setOverrideSaving(false);

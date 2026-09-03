@@ -19,10 +19,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
   SourceRef,
 } from "@/components/support/dev/supportDevUi";
 
@@ -113,7 +112,7 @@ export default function InvestigationsSection() {
   }
   if (error) {
     return (
-      <Panel title="Intelligence" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+      <Panel title="Intelligence" actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Retry</button>}>
         <EmptyState title="Could not load intelligence" message={error} />
       </Panel>
     );
@@ -128,7 +127,7 @@ export default function InvestigationsSection() {
       <Panel
         title="Intelligence"
         subtitle={`${intel?.reportCount || 0} report(s) analysed · generated ${new Date(intel?.generatedAt || Date.now()).toLocaleTimeString()}`}
-        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Open" value={r.open ?? 0} tone="accentText" />
@@ -152,7 +151,7 @@ export default function InvestigationsSection() {
                 <div style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{p.route || p.key}</div>
                 <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.8 }}>{p.message}</div>
               </div>
-              <Pill label={p.severity === "high" ? "Rising fast" : "Rising"} tone={p.severity === "high" ? "danger-base" : "warning-base"} strong />
+              <span className={badgeClass(p.severity === "high" ? "danger-base" : "warning-base", true)}>{p.severity === "high" ? "Rising fast" : "Rising"}</span>
             </SubSurface>
           ))}
         </Panel>
@@ -167,9 +166,9 @@ export default function InvestigationsSection() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 700, color: "var(--accentText)", wordBreak: "break-word" }}>{a.route || a.key}</div>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  <Pill label={`${a.total} total`} tone="text-1" />
-                  {a.open > 0 && <Pill label={`${a.open} open`} tone="accentText" />}
-                  {a.regressions > 0 && <Pill label={`${a.regressions} regression`} tone="danger-base" strong />}
+                  <span className="app-badge app-badge--neutral">{`${a.total} total`}</span>
+                  {a.open > 0 && <span className="app-badge app-badge--accent-soft">{`${a.open} open`}</span>}
+                  {a.regressions > 0 && <span className="app-badge app-badge--danger-strong">{`${a.regressions} regression`}</span>}
                 </div>
               </div>
               {a.sectionKey && <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>section: {a.sectionKey}</div>}
@@ -199,10 +198,10 @@ export default function InvestigationsSection() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{c.sample?.title || "(untitled incident)"}</div>
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    <Pill label={`×${c.count}`} tone="warning-base" strong />
-                    {c.open > 0 && <Pill label={`${c.open} open`} tone="accentText" />}
-                    {c.regression && <Pill label="Regression" tone="danger-base" strong />}
-                    <Pill label={`sev ${c.maxSeverity}`} tone={SEV_TONE[c.maxSeverity] || "text-1"} />
+                    <span className="app-badge app-badge--warning-strong">{`×${c.count}`}</span>
+                    {c.open > 0 && <span className="app-badge app-badge--accent-soft">{`${c.open} open`}</span>}
+                    {c.regression && <span className="app-badge app-badge--danger-strong">Regression</span>}
+                    <span className={badgeClass(SEV_TONE[c.maxSeverity] || "text-1")}>{`sev ${c.maxSeverity}`}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7, wordBreak: "break-word" }}>
@@ -225,9 +224,9 @@ export default function InvestigationsSection() {
               onValueChange={(v) => setBulkStatus(v)}
             />
             <DeveloperPicker directory={directory} value={bulkAssignee} onSelect={setBulkAssignee} />
-            <DevButton variant="solid" onClick={applyBulk} disabled={applying}>
+            <button type="button" onClick={applyBulk} disabled={applying} className="app-btn app-btn--primary">
               {applying ? "Applying…" : "Apply to selection"}
-            </DevButton>
+            </button>
           </div>
         </Panel>
       )}

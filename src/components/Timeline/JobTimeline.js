@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // file location: src/components/Timeline/JobTimeline.js
 // Component: JobTimeline
@@ -22,7 +23,7 @@ export default function JobTimeline({ jobNumber }) {
         const data = await res.json();
         setTimeline(data.timeline || []);
       } catch (err) {
-        console.error("Timeline fetch error:", err);
+        logFailure("Timeline fetch error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
