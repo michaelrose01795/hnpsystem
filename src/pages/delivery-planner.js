@@ -14,6 +14,7 @@ import {
   normaliseDeliveryStatus
 } from "@/features/deliveries/deliveryStatus";
 import PartsDeliveryPlannerPageUi from "@/components/page-ui/parts/parts-delivery-planner-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const sectionStyle = {
   gap: "18px"
@@ -440,7 +441,7 @@ export default function PartsDeliveryPlannerPage() {
           setInvoiceResults(data || []);
         }
       } catch (searchErr) {
-        console.error("Invoice search failed:", searchErr);
+        logFailure("Invoice search failed:", searchErr);
         if (!cancelled) {
           setInvoiceResults([]);
         }
@@ -751,7 +752,7 @@ export default function PartsDeliveryPlannerPage() {
       await loadDeliveryJobs();
       closeJobModal();
     } catch (saveErr) {
-      console.error("Failed to save delivery job:", saveErr);
+      logFailure("Failed to save delivery job:", saveErr);
       setJobModalError(saveErr.message || "Unable to save delivery job");
     } finally {
       setJobModalSaving(false);
@@ -773,7 +774,7 @@ export default function PartsDeliveryPlannerPage() {
       await loadDeliveryJobs();
       closeJobModal();
     } catch (deleteErr) {
-      console.error("Failed to delete delivery job:", deleteErr);
+      logFailure("Failed to delete delivery job:", deleteErr);
       setJobModalError(deleteErr.message || "Unable to delete delivery job");
     } finally {
       setJobModalSaving(false);

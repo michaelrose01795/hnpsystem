@@ -140,10 +140,10 @@ describe("resolveRecovery — variant behaviour", () => {
     expect(plan.actions.find((a) => a.id === RECOVERY_ACTIONS.HOME)?.label).toBe("Return home");
   });
 
-  it("staff variant allows diagnostics and a dashboard home label", () => {
+  it("staff variant allows diagnostics and a newsfeed home label", () => {
     const plan = resolveRecovery({ variant: RECOVERY_VARIANTS.STAFF, error: new Error("x") });
     expect(plan.allowDiagnostics).toBe(true);
-    expect(plan.actions.find((a) => a.id === RECOVERY_ACTIONS.HOME)?.label).toBe("Return to dashboard");
+    expect(plan.actions.find((a) => a.id === RECOVERY_ACTIONS.HOME)?.label).toBe("Return to Newsfeed");
   });
 
   it("exactly one primary action and report is always ghost", () => {

@@ -17,6 +17,7 @@ import { useKpiValues } from "@/hooks/reporting/useReporting";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import PartsDashboardUi from "@/components/page-ui/dashboard/parts/dashboard-parts-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside a themed section (LayerTheme)
 // on this dashboard, so per the strict alternation rule it renders as a LayerSurface.
@@ -104,7 +105,7 @@ export default function PartsDashboard() {
         const payload = await (await loadDashboardData()).getPartsDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load parts dashboard", fetchError);
+        logFailure("Failed to load parts dashboard", fetchError);
         setData(null);
         setError(fetchError.message || "Unable to load parts data");
       } finally {

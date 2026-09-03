@@ -117,8 +117,25 @@ export default function ArchivedJobsPageUi(props) {
       }}>{error}</p>
           </LayerTheme>}
 
-        <LayerTheme as="section" data-presentation="archive-results" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" className="app-table-shell-scroll">
-          <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-panel" sectionType="data-table" backgroundToken="accent-surface" className="app-data-table app-table-shell app-table-shell--with-headings">
+        <LayerTheme
+          as="section"
+          data-presentation="archive-results"
+          sectionKey="job-cards-archive-results-panel"
+          parentKey="job-cards-archive-page-shell"
+          sectionType="content-card"
+          shell>
+          <LayerSurface
+            data-app-table-shell-scroll
+            sectionKey="job-cards-archive-results-scroll"
+            parentKey="job-cards-archive-results-panel"
+            sectionType="data-table-shell"
+            padding={0}
+            gap={0}
+            className="app-table-shell-scroll"
+            role="region"
+            aria-label="Archived job results"
+            tabIndex={0}>
+          <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-scroll" sectionType="data-table" backgroundToken="surface" className="app-data-table app-table-shell app-table-shell--with-headings">
               <thead data-dev-section="1" data-dev-section-key="job-cards-archive-results-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="job-cards-archive-results-table">
                 <tr>
                   <th>Job #</th>
@@ -174,6 +191,7 @@ export default function ArchivedJobsPageUi(props) {
                   </tr>}
               </tbody>
           </DevLayoutSection>
+          </LayerSurface>
         </LayerTheme>
       </LayerSurface>
     </>; // render extracted page section.

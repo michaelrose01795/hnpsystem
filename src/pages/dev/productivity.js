@@ -17,10 +17,8 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
   EmptyState,
   LoadingBlock,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -51,7 +49,7 @@ function ProductivityView() {
 
   if (error) {
     return (
-      <Panel title="Productivity" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+      <Panel title="Productivity" actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Retry</button>}>
         <EmptyState title="Could not load productivity" message={error} />
       </Panel>
     );
@@ -73,7 +71,7 @@ function ProductivityView() {
       <Panel
         title="Productivity"
         subtitle={windowSubtitle}
-        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Created" value={num(totals.created)} tone="accentText" />
@@ -99,8 +97,8 @@ function ProductivityView() {
             >
               <span style={{ fontWeight: 700, color: "var(--text-1)" }}>{fmtDate(row.date)}</span>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                <Pill label={`${num(row.created)} created`} tone="accentText" />
-                <Pill label={`${num(row.resolved)} resolved`} tone="success-base" />
+                <span className="app-badge app-badge--accent-soft">{`${num(row.created)} created`}</span>
+                <span className="app-badge app-badge--success">{`${num(row.resolved)} resolved`}</span>
               </div>
             </SubSurface>
           ))

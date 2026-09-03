@@ -23,11 +23,8 @@ import DeliveryDetailPanel from "@/components/Deliveries/DeliveryDetailPanel";
 import DeliveryWeekPanel from "@/components/Deliveries/DeliveryWeekPanel";
 import DeliveryProofModal from "@/components/Deliveries/DeliveryProofModal";
 import DeliveryFailureModal from "@/components/Deliveries/DeliveryFailureModal";
+import DeliveryRouteSettingsModal from "@/components/Deliveries/DeliveryRouteSettingsModal";
 import { deliveryStyles, deliveryText } from "@/components/Deliveries/deliveryStyles";
-import {
-  formatCurrency,
-  formatIsoDate,
-} from "@/features/deliveries/deliveryFormatting";
 
 const RouteSkeleton = () => (
   <div style={deliveryStyles.listScroll}>
@@ -53,6 +50,7 @@ const RouteSkeleton = () => (
 
 export default function PartsDeliveriesPageUi(props) {
   const {
+    allDeliveries,
     busy,
     capabilities,
     changeDate,
@@ -85,11 +83,13 @@ export default function PartsDeliveriesPageUi(props) {
     onCloseFailure,
     onCloseProof,
     onOpenProof,
+    optimiseRoute,
     patchDelivery,
     proofTarget,
     refreshing,
     reorderEnabled,
     routeAnnouncement,
+    routeSettingsOpen,
     runAction,
     searchTerm,
     selectDelivery,
@@ -100,17 +100,17 @@ export default function PartsDeliveriesPageUi(props) {
     setSearchTerm,
     setStatusFilter,
     setVehicleFilter,
+    setRouteSettingsOpen,
     statusFilter,
     statusOptions,
     summary,
     summaryTiles,
-    todayIso,
     totalStops,
     vehicleFilter,
     vehicleOptions,
     vehicles,
     weekOpen,
-    toggleWeek,
+    toggleView,
     week,
   } = props;
 
@@ -271,124 +271,77 @@ export default function PartsDeliveriesPageUi(props) {
           data-dev-text-preview="Delivery day header"
           style={deliveryStyles.headerCard}
         >
-          <LayerSurface
-            data-presentation="deliveries-day-controls"
-            sectionKey="parts-deliveries-controls"
-            parentKey="parts-deliveries-header"
-            sectionType="toolbar"
-            data-dev-text-preview="Day picker controls"
-            padding="var(--space-3)"
-            gap="var(--space-sm)"
-            radius="var(--radius-sm)"
-            style={deliveryStyles.headerTopRow}
-          >
-            <div style={deliveryStyles.dayLabel}>
-              <span style={deliveryText.label}>Delivery day</span>
-              <strong style={deliveryText.valueStrong}>{formatIsoDate(selectedDate)}</strong>
-            </div>
-
-            {/* Day stepper removed — the month picker is now the only way to
-                change day, so the row layout lives in the shared class. */}
-            <div className="app-delivery-day-controls">
-              <CalendarField
-                className="app-delivery-month-picker"
-                name="selectedDate"
-                value={selectedDate}
-                onValueChange={(value) => changeDate(value)}
-              />
-            </div>
-
-            {/* Today jumps the diary to the current day; Week opens the
-                Mon–Sun strip below. The route map is no longer a view you
-                switch to — it lives permanently in the detail panel — so
-                these two are the only mode controls left. */}
-            <div style={deliveryStyles.viewControls}>
-              <Button variant="primary" onClick={() => changeDate(todayIso())}>
-                Today
-              </Button>
-              <Button
-                variant="secondary"
-                aria-pressed={weekOpen}
-                onClick={toggleWeek}
-              >
-                Week
-              </Button>
-            </div>
-          </LayerSurface>
-
           {/* Summary strip — the shared .app-summary-* family, so it reads the
               same as the stock and jobs summaries. Each tile filters the list. */}
           <LayerSurface
+            data-presentation="deliveries-day-controls"
             sectionKey="parts-deliveries-summary"
             parentKey="parts-deliveries-header"
-            sectionType="stat-card"
+            sectionType="toolbar"
             data-dev-text-preview="Delivery day totals"
             padding="var(--space-3)"
             gap="var(--space-sm)"
             radius="var(--radius-sm)"
           >
-            {/* A group, not a list: each tile is a status filter toggle, so it
-                carries aria-pressed rather than list semantics. */}
-            <div
-              className="app-summary-grid"
-              role="group"
-              aria-label="Delivery day summary and status filters"
-              style={{
-                // .app-summary-grid carries `flex: 1 1 320px` for use inside a
-                // row. Its parent here is a LayerSurface, which is a flex
-                // COLUMN, so that basis would reserve 320px of height. The grid
-                // is sized by its own rows instead.
-                flex: "0 0 auto",
-                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              }}
-            >
-              {summaryTiles.map((tile) => {
-                const active = statusFilter === tile.key;
-                return (
-                  <LayerTheme
-                    key={tile.key}
-                    as="button"
-                    type="button"
-                    className="app-summary-item"
-                    padding="8px 10px"
-                    radius="var(--radius-sm)"
-                    gap="2px var(--space-sm)"
-                    aria-pressed={active}
-                    aria-label={`${tile.label} deliveries — filter the route`}
-                    onClick={() => setStatusFilter(active ? "all" : tile.key)}
-                    style={{
-                      flexDirection: "row",
-                      cursor: "pointer",
-                      outline: active ? "2px solid var(--accent-strong)" : "none",
-                      outlineOffset: "2px",
-                    }}
-                  >
-                    <span className="app-summary-label">{tile.label}</span>
-                    <strong className="app-summary-value">
-                      {loading ? "…" : summary?.counts?.[tile.key] ?? 0}
-                    </strong>
-                  </LayerTheme>
-                );
-              })}
-              <LayerTheme
-                className="app-summary-item"
-                padding="8px 10px"
-                radius="var(--radius-sm)"
-                gap="2px var(--space-sm)"
-                style={{ flexDirection: "row" }}
+            <div style={deliveryStyles.deliverySummaryRow}>
+              {/* A group, not a list: each tile is a status filter toggle, so it
+                  carries aria-pressed rather than list semantics. */}
+              <div
+                className="app-summary-grid"
+                role="group"
+                aria-label="Delivery day summary and status filters"
+                style={{
+                  width: "100%",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                }}
               >
-                <span className="app-summary-label">Value</span>
-                <strong className="app-summary-value">
-                  {loading ? "…" : formatCurrency(summary?.totalValue)}
-                </strong>
-              </LayerTheme>
-            </div>
-            {!loading && summary?.unpaidValue > 0 ? (
-              <div className="app-status-message app-status-message--warning">
-                {formatCurrency(summary.unpaidValue)} of today&apos;s deliveries is unpaid — the
-                driver needs to collect payment on those stops.
+                {summaryTiles.map((tile) => {
+                  const active = statusFilter === tile.key;
+                  return (
+                    <LayerTheme
+                      key={tile.key}
+                      as="button"
+                      type="button"
+                      className="app-summary-item"
+                      padding="8px 10px"
+                      radius="var(--radius-sm)"
+                      gap="2px var(--space-sm)"
+                      aria-pressed={active}
+                      aria-label={`${tile.label} deliveries — filter the route`}
+                      onClick={() => setStatusFilter(active ? "all" : tile.key)}
+                      style={{
+                        flexDirection: "row",
+                        cursor: "pointer",
+                        outline: active ? "2px solid var(--accent-strong)" : "none",
+                        outlineOffset: "2px",
+                      }}
+                    >
+                      <span className="app-summary-label">{tile.label}</span>
+                      <strong className="app-summary-value">
+                        {loading ? "…" : summary?.counts?.[tile.key] ?? 0}
+                      </strong>
+                    </LayerTheme>
+                  );
+                })}
               </div>
-            ) : null}
+              <div style={deliveryStyles.viewControls}>
+                <CalendarField
+                  className="app-delivery-month-picker"
+                  name="selectedDate"
+                  value={selectedDate}
+                  onValueChange={(value) => changeDate(value)}
+                />
+                <Button
+                  variant={weekOpen ? "secondary" : "primary"}
+                  aria-controls="deliveries-week-panel"
+                  aria-expanded={weekOpen}
+                  aria-label={weekOpen ? "Switch to today view" : "Switch to week view"}
+                  onClick={toggleView}
+                >
+                  {weekOpen ? "Today" : "Week"}
+                </Button>
+              </div>
+            </div>
           </LayerSurface>
 
           {/* Filters */}
@@ -430,6 +383,9 @@ export default function PartsDeliveriesPageUi(props) {
                 onValueChange={(value) => setVehicleFilter(value)}
                 aria-label="Filter by delivery vehicle"
               />
+              <Button variant="secondary" onClick={() => setRouteSettingsOpen(true)}>
+                Route
+              </Button>
               <Button variant="ghost" onClick={clearFilters} disabled={!filtersActive}>
                 Clear
               </Button>
@@ -467,6 +423,16 @@ export default function PartsDeliveriesPageUi(props) {
           onCancel={onCloseFailure}
           onConfirm={confirmFailure}
           saving={modalSaving}
+        />
+      ) : null}
+
+      {routeSettingsOpen ? (
+        <DeliveryRouteSettingsModal
+          capabilities={capabilities}
+          deliveries={allDeliveries}
+          map={map}
+          onClose={() => setRouteSettingsOpen(false)}
+          onOptimise={optimiseRoute}
         />
       ) : null}
     </>

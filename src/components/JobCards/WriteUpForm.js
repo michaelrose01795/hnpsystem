@@ -24,6 +24,7 @@ import Button from "@/components/ui/Button";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -1257,7 +1258,7 @@ function WriteUpForm({
                 await updateJobStatus(jobData.jobCard.id, desiredStatus);
               }
             } catch (statusError) {
-              console.error("❌ Failed to update job status after saving write-up:", statusError);
+              logFailure("❌ Failed to update job status after saving write-up:", statusError);
             }
           }
 
@@ -1285,11 +1286,11 @@ function WriteUpForm({
         if (!silent) {
           alert(result?.error || "❌ Failed to save write-up");
         } else if (result?.error) {
-          console.error("❌ Failed to save write-up:", result.error);
+          logFailure("❌ Failed to save write-up:", result.error);
         }
         return false;
       } catch (error) {
-        console.error("Error saving write-up:", error);
+        logFailure("Error saving write-up:", error);
         if (!silent) {
           alert("❌ Error saving write-up");
         }
@@ -1479,7 +1480,7 @@ function WriteUpForm({
           );
         }
       } catch (error) {
-        console.error("❌ Error fetching write-up:", error);
+        logFailure("❌ Error fetching write-up:", error);
       } finally {
         setLoading(false);
       }
@@ -1820,7 +1821,7 @@ function WriteUpForm({
           sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
         });
       } catch (error) {
-        console.error("❌ Live write-up sync failed:", error);
+        logFailure("❌ Live write-up sync failed:", error);
       }
     },
     [
@@ -1978,10 +1979,10 @@ function WriteUpForm({
             },
           ]);
           if (error) {
-            console.error("Failed to log write-up task timeline event:", error);
+            logFailure("Failed to log write-up task timeline event:", error);
           }
         } catch (error) {
-          console.error("Failed to log write-up task timeline event:", error);
+          logFailure("Failed to log write-up task timeline event:", error);
         }
       })();
     }
@@ -2010,10 +2011,10 @@ function WriteUpForm({
               toggledRequestStatusUpdate.requestId || toggledRequestStatusUpdate.sortOrder
             );
           if (error) {
-            console.error("Failed to sync request status from write-up toggle:", error);
+            logFailure("Failed to sync request status from write-up toggle:", error);
           }
         } catch (error) {
-          console.error("Failed to sync request status from write-up toggle:", error);
+          logFailure("Failed to sync request status from write-up toggle:", error);
         }
       })();
     }
@@ -2032,7 +2033,7 @@ function WriteUpForm({
             }),
           });
         } catch (err) {
-          console.error("Failed to sync VHC item status from write-up:", err);
+          logFailure("Failed to sync VHC item status from write-up:", err);
         }
       })();
     }

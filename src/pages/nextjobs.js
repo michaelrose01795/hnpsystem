@@ -40,6 +40,7 @@ import {
 // Layout constants ensure consistent panel sizing and scroll thresholds
 import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer (loading / access / empty states).
 import WorkshopQueuePlanner from "@/components/Workshop/QueuePlanner/WorkshopQueuePlanner"; // One-off dispatch board that replaces the old Next Jobs table/list.
+import { logFailure } from "@/lib/utils/logFailure";
 const VISIBLE_JOBS_PER_PANEL = 5;const JOB_CARD_HEIGHT = 68; // px height per job card (including padding)
 const JOB_CARD_VERTICAL_GAP = 8; // px gap between cards
 const JOB_LIST_MAX_HEIGHT =
@@ -723,7 +724,7 @@ export default function NextJobsPage() {
     order("created_at", { ascending: false });
 
     if (error) {
-      console.error("❌ Error fetching waiting jobs:", error);
+      logFailure("❌ Error fetching waiting jobs:", error);
       if (fetchSequence === jobsFetchSequenceRef.current) {
         setJobs([]);
         setLoading(false);
@@ -752,7 +753,7 @@ export default function NextJobsPage() {
       setDbTechnicians(techList); // Cache technicians
       setDbMotTesters(testerList); // Cache MOT testers
     } catch (err) {
-      console.error("❌ Error fetching technicians:", err); // Log fetch errors
+      logFailure("❌ Error fetching technicians:", err); // Log fetch errors
     }
   }, []);
 
@@ -805,7 +806,7 @@ export default function NextJobsPage() {
 
       setActiveClockingsByUser(byUser);
     } catch (err) {
-      console.error("❌ Error fetching active technician clockings:", err);
+      logFailure("❌ Error fetching active technician clockings:", err);
     }
   }, []);
 
@@ -830,7 +831,7 @@ export default function NextJobsPage() {
       setCapacityDate(payload.data?.[0]?.date || today);
       setCapacityByUser(byUser);
     } catch (err) {
-      console.error("❌ Error fetching technician capacity:", err);
+      logFailure("❌ Error fetching technician capacity:", err);
     }
   }, []);
 
@@ -844,7 +845,7 @@ export default function NextJobsPage() {
     try {
       setJobProgressByJobId(await (await loadJobsDb()).getJobRequestCapacityProgress(jobIds));
     } catch (error) {
-      console.error("❌ Error fetching job request capacity progress:", error);
+      logFailure("❌ Error fetching job request capacity progress:", error);
     }
   }, [jobs]);
 
@@ -876,7 +877,7 @@ export default function NextJobsPage() {
       });
       setJobClockingRowsByJobKey(byKey);
     } catch (error) {
-      console.error("❌ Error fetching job clocking totals:", error);
+      logFailure("❌ Error fetching job clocking totals:", error);
       setJobClockingRowsByJobKey({});
     }
   }, [jobs]);
@@ -1408,7 +1409,7 @@ export default function NextJobsPage() {
     try {
       updatedJob = await (await loadJobsDb()).unassignTechnicianFromJob(jobId, { status: "In Progress" });
     } catch (err) {
-      console.error("❌ Exception unassigning technician:", err);
+      logFailure("❌ Exception unassigning technician:", err);
       setFeedbackMessage({
         type: "error",
         text: `Failed to unassign technician from ${jobNumber}: ${err?.message || "Unknown error"}`
@@ -1417,7 +1418,7 @@ export default function NextJobsPage() {
     }
 
     if (!updatedJob?.success) {
-      console.error("❌ Failed to unassign technician:", updatedJob?.error);
+      logFailure("❌ Failed to unassign technician:", updatedJob?.error);
       setFeedbackMessage({
         type: "error",
         text: `Failed to unassign technician from ${jobNumber}${
@@ -1780,7 +1781,7 @@ export default function NextJobsPage() {
       try {
         await completePointerDrop(currentState.job, currentIndicator);
       } catch (error) {
-        console.error("❌ Failed to drop job:", error);
+        logFailure("❌ Failed to drop job:", error);
         setFeedbackMessage({
           type: "error",
           text: `Failed to move ${currentState.job?.jobNumber || "job"}: ${

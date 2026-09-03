@@ -42,7 +42,6 @@ import { useOperationalSnapshot } from "@/hooks/useOperationalSnapshot";
 import { buildTopbarSections } from "@/config/topbar/statusViews";
 import { resolveQuickActions } from "@/config/topbar/quickActions";
 import { useBehaviourModel } from "@/hooks/useBehaviourModel";
-import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 // Loaded on demand — see the note on loadTechnicianTopbar below. Every use of
@@ -75,12 +74,17 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import entranceStyles from "@/components/layout/StaffLayoutEntrance.module.css";
 import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { logFailure } from "@/lib/utils/logFailure";
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
 const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
 
 const MODE_STORAGE_KEY = "appModeSelection";
+// All Access demo login only: which staff user the top bar is being previewed as.
+// Session-scoped so a demo walk-through survives navigation but never leaks into
+// the next login.
+const TOPBAR_PREVIEW_USER_STORAGE_KEY = "allAccess:topbarPreviewUserId";
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
@@ -125,7 +129,7 @@ export default function Layout({
     sidebarAccessLoading,
     refreshCurrentJob,
   } = useUser(); // get user context data
-  const { usersByRole } = useRoster();
+  const { usersByRole, allUsers } = useRoster();
   const router = useRouter();
   const [authEntranceActive] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -147,9 +151,6 @@ export default function Layout({
     customerPortalPath === "/customer" || customerPortalPath.startsWith("/customer/");
   const hideSidebar =
     router.pathname === "/login" || router.pathname === "/loginPresentation";
-  const showHrTabs =
-    (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
-    router.pathname.startsWith("/admin/users");
   const isMessagesRoute = router.pathname === "/messages";
 
   const [viewportWidth, setViewportWidth] = useState(1440);
@@ -433,11 +434,81 @@ export default function Layout({
   // src/hooks and src/lib/topbar; adding a department extends those, not the bar.
   const departmentCode = resolveDepartmentForRoles(userRoles);
 
+  // ── All Access demo: "view the top bar as …" ───────────────────────────────
+  // The demo login's Create User button is replaced by a picker of every staff
+  // user in the database. Choosing one re-renders the TOP BAR ONLY as that user
+  // would see it (their department's KPIs + Smart Insight, the technician
+  // controls, the role-gated buttons). It is deliberately presentation-only:
+  // permissions, navigation, the sidebar and every data read stay on the real
+  // All Access session, so nothing here can widen or narrow access.
+  const canPreviewTopbarUser = hasFullAccess && !presentationShell;
+  const [topbarPreviewUserId, setTopbarPreviewUserId] = useState("");
+  useEffect(() => {
+    if (!canPreviewTopbarUser) return;
+    if (typeof window === "undefined") return;
+    const stored = window.sessionStorage.getItem(TOPBAR_PREVIEW_USER_STORAGE_KEY);
+    if (stored) setTopbarPreviewUserId(stored);
+  }, [canPreviewTopbarUser]);
+  const handleTopbarPreviewUserChange = useCallback((nextId) => {
+    const value = nextId ? String(nextId) : "";
+    setTopbarPreviewUserId(value);
+    if (typeof window === "undefined") return;
+    if (value) window.sessionStorage.setItem(TOPBAR_PREVIEW_USER_STORAGE_KEY, value);
+    else window.sessionStorage.removeItem(TOPBAR_PREVIEW_USER_STORAGE_KEY);
+  }, []);
+  // Every active staff user, grouped label-wise as "Name — Role" so the picker
+  // reads as a role tour rather than a bare name list. Sorted by role then name.
+  const topbarPreviewOptions = useMemo(() => {
+    if (!canPreviewTopbarUser) return [];
+    return (allUsers || [])
+      // Staff only — the roster also carries the customer rows behind the dev
+      // login picker, which have no staff role and no top bar of their own.
+      .filter(
+        (entry) =>
+          entry &&
+          entry.id != null &&
+          !entry.customerId &&
+          String(entry.role || "").toLowerCase() !== "customer"
+      )
+      .slice()
+      .sort((a, b) =>
+        (a.role || "").localeCompare(b.role || "") ||
+        (a.name || "").localeCompare(b.name || "")
+      )
+      .map((entry) => ({
+        value: String(entry.id),
+        label: entry.name || "Unknown user",
+        description: entry.role || "No role",
+      }));
+  }, [allUsers, canPreviewTopbarUser]);
+  const topbarPreviewUser = useMemo(() => {
+    if (!canPreviewTopbarUser || !topbarPreviewUserId) return null;
+    return (
+      (allUsers || []).find((entry) => String(entry?.id) === String(topbarPreviewUserId)) || null
+    );
+  }, [allUsers, canPreviewTopbarUser, topbarPreviewUserId]);
+  // Roles the BAR is rendered against — the previewed user's single role, or the
+  // real session roles when nothing is being previewed.
+  const topbarRoles = useMemo(() => {
+    const role = topbarPreviewUser?.role;
+    return role ? [String(role).toLowerCase()] : userRoles;
+  }, [topbarPreviewUser, userRoles]);
+  const topbarDepartmentCode = topbarPreviewUser
+    ? resolveDepartmentForRoles(topbarRoles)
+    : departmentCode;
+  // The demo session's OWN bar carries no live KPIs or Smart Insight: "All Access"
+  // is not a department, so the numbers it used to borrow (appts today, overdue,
+  // VHCs awaiting approval …) described nobody. They appear as soon as a real
+  // user is picked, which is the point of the picker.
+  const topbarStatsHidden = canPreviewTopbarUser && !topbarPreviewUser;
+
   // Phase 2.1/2.2: live operational metrics (endpoint + roster). The 2026-07
   // layout refinement surfaces these as their own Live KPI + Smart Insight
   // sections (see buildTopbarSections) instead of one rotating status line.
   const operationalSnapshot = useOperationalSnapshot({
-    department: departmentCode,
+    // Follows the previewed user's department on the All Access demo login; the
+    // real department otherwise (the two are the same when nothing is previewed).
+    department: topbarDepartmentCode,
     isPresentation: presentationShell,
     // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile.
     enabled: !isTablet,
@@ -445,18 +516,25 @@ export default function Layout({
   // Live KPI widgets (2.2) + Smart Insight prompts (2.6) as separate sections.
   const topbarSections = useMemo(
     () =>
-      buildTopbarSections(departmentCode, operationalSnapshot.metrics, {
+      buildTopbarSections(topbarDepartmentCode, operationalSnapshot.metrics, {
         isPresentation: presentationShell,
       }),
-    [departmentCode, operationalSnapshot.metrics, presentationShell]
+    [topbarDepartmentCode, operationalSnapshot.metrics, presentationShell]
   );
+  // Technician view of the bar. Normally the logged-in user's own flag/id; while
+  // the demo login previews someone else it follows THAT user, so picking a
+  // technician swaps the bar to the reduced technician controls + their KPIs.
+  const topbarIsTech = topbarPreviewUser
+    ? topbarRoles.some((role) => role.includes("tech") || role.includes("mot"))
+    : isTech;
+  const topbarTechUserId = topbarPreviewUser ? topbarPreviewUser.id : dbUserId;
   const technicianTopbarKey =
-    !presentationShell && isTech && dbUserId && !isTablet
-      ? ["technician-topbar", Number(dbUserId)]
+    !presentationShell && topbarIsTech && topbarTechUserId && !isTablet
+      ? ["technician-topbar", Number(topbarTechUserId)]
       : null;
   const { data: technicianTopbarSnapshot } = useSWR(
     technicianTopbarKey,
-    () => loadTechnicianTopbar().then((m) => m.getTechnicianTopbarSnapshot(dbUserId)),
+    () => loadTechnicianTopbar().then((m) => m.getTechnicianTopbarSnapshot(topbarTechUserId)),
     {
       refreshInterval: 60000,
       revalidateOnFocus: true,
@@ -489,12 +567,12 @@ export default function Layout({
   const topPages = useMemo(
     () => {
       const learnedPages = behaviourReadOnly.topActions || [];
-      if (!isTech) return learnedPages.slice(0, 2);
+      if (!topbarIsTech) return learnedPages.slice(0, 2);
       return learnedPages.length > 0
         ? learnedPages.slice(0, 1)
         : [{ href: "/tech", label: "My Jobs" }];
     },
-    [behaviourReadOnly.topActions, isTech]
+    [behaviourReadOnly.topActions, topbarIsTech]
   );
   // The current page as a candidate for the command palette's favourite/recent
   // surfaces (WorkspaceCommandCenter). The bar's own Pinned Shortcuts section was
@@ -520,7 +598,7 @@ export default function Layout({
       const data = await response.json();
       if (data.success) setCurrentJobStatus(data.status);
     } catch (error) {
-      console.error("Error fetching job status:", error);
+      logFailure("Error fetching job status:", error);
     }
   }, [presentationShell]);
 
@@ -836,7 +914,7 @@ export default function Layout({
       }
       setStatus(newStatus);
     } catch (error) {
-      console.error("Error changing technician status:", error);
+      logFailure("Error changing technician status:", error);
       await refreshCurrentJob();
     }
   };
@@ -870,7 +948,7 @@ export default function Layout({
           }
         }
       } catch (error) {
-        console.error("Error syncing status:", error);
+        logFailure("Error syncing status:", error);
       }
     };
 
@@ -1158,29 +1236,6 @@ export default function Layout({
       keywords: ["parts manager", "stock value", "parts dashboard"],
       description: "View stock, spending, and income KPIs",
       section: "Parts",
-    });
-  }
-
-  const hrAccessRoles = ["hr manager", "admin manager", "admin"];
-  if (hasFullAccess || userRoles.some((role) => hrAccessRoles.includes(role))) {
-    addNavItem("HR Dashboard", "/hr", {
-      keywords: ["hr", "people", "culture", "training"],
-      description: "Headcount, attendance, and compliance overview",
-      section: "HR",
-    });
-  }
-  // The manager-tier HR entries sit on the `else` of the branch above, so the
-  // All Access login would otherwise lose them by qualifying for the wider one.
-  if (hasFullAccess || userRoles.some((role) => role.includes("manager"))) {
-    addNavItem("Team HR", "/hr/employees", {
-      keywords: ["team hr", "people", "hr"],
-      description: "View team employee directory and leave",
-      section: "HR",
-    });
-    addNavItem("Leave", "/hr/leave", {
-      keywords: ["leave", "holiday"],
-      description: "Review departmental leave requests",
-      section: "HR",
     });
   }
 
@@ -1475,7 +1530,10 @@ export default function Layout({
                 />
                 <div
                   id="compact-navigation-sidebar"
-                  className={`app-portrait-sidebar-assembly${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
+                  // --solo: no Status button, so Menu is the only control in the
+                  // row and stretches full width. The close tab replaces Menu in
+                  // place, so it has to stretch with it.
+                  className={`app-portrait-sidebar-assembly${canViewStatusSidebar ? "" : " app-portrait-sidebar-assembly--solo"}${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
                   role="dialog"
                   aria-modal="true"
                   aria-label="Navigation sidebar"
@@ -1525,17 +1583,32 @@ export default function Layout({
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
             colors={colors}
-            kpis={isTech ? technicianKpis : topbarSections.kpis}
-            insightViews={isTech ? [] : topbarSections.insights}
+            kpis={
+              topbarStatsHidden ? [] : topbarIsTech ? technicianKpis : topbarSections.kpis
+            }
+            insightViews={
+              topbarStatsHidden || topbarIsTech ? [] : topbarSections.insights
+            }
             topPages={topPages}
-            isTech={isTech}
+            isTech={topbarIsTech}
             status={status}
             presentationShell={presentationShell}
             currentJob={currentJob}
             onStartJob={() => setIsModalOpen(true)}
             onStatusChange={handleStatusChange}
             navigationItems={navigationItems}
-            userRoles={userRoles}
+            // The bar's own role-gated content follows the previewed user; the
+            // rest of the layout stays on the real session roles.
+            userRoles={topbarRoles}
+            userPreview={
+              canPreviewTopbarUser
+                ? {
+                    value: topbarPreviewUserId,
+                    options: topbarPreviewOptions,
+                    onChange: handleTopbarPreviewUserChange,
+                  }
+                : null
+            }
             overlay={lockViewport}
             onSearchActiveChange={setTopbarSearchActive}
             wrapperRef={topbarWrapperRef}
@@ -1643,7 +1716,6 @@ export default function Layout({
                 }
               >
                 <div ref={pageStackRef} className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
-                  {showHrTabs && <HrTabsBar />}
                   {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>
                 {/* In-between-zone hold (see lockedBottomSpacer): keeps a little

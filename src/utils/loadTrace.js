@@ -1,12 +1,18 @@
 // file location: src/utils/loadTrace.js
 //
-// TEMPORARY diagnostic tracer for the login -> /newsfeed load sequence.
+// Diagnostic tracer for the login -> /newsfeed load sequence.
 //
-// It prints a timestamped timeline to the browser console (open DevTools with
-// F12) and buffers every entry on `window.__hnpTrace`. The buffer is persisted
-// to sessionStorage, so it SURVIVES hard navigations / reloads — meaning the
-// full login -> /newsfeed timeline (which crosses a full page reload) is kept
-// in one place. Capture it from the console with:
+// OFF BY DEFAULT. It is a debug channel: nothing is printed and nothing is
+// buffered until the channel is turned on, so an ordinary F12 stays clean.
+//
+//   hnpDebug("trace")   in the console, then reload
+//   ?debug=trace        on the URL, for one visit
+//
+// Once on, it prints a timestamped timeline to the browser console and buffers
+// every entry on `window.__hnpTrace`. The buffer is persisted to
+// sessionStorage, so it SURVIVES hard navigations / reloads — meaning the full
+// login -> /newsfeed timeline (which crosses a full page reload) is kept in one
+// place. Capture it from the console with:
 //
 //   copy(window.__hnpTrace)   — copies the whole timeline to the clipboard
 //   hnpTraceTable()           — prints the timeline as a table
@@ -14,22 +20,27 @@
 //
 // `t` is milliseconds since the current document loaded, so `t` jumping back
 // down towards 0 marks a hard navigation / reload. `ts` is the wall clock.
-//
-// Remove this file and its call sites once the load flicker is diagnosed.
 
 import { useEffect, useRef } from "react";
+
+import { isDebugChannelEnabled } from "@/utils/debugChannels";
+
 
 const PREFIX = "[HNP-TRACE]";
 const STORAGE_KEY = "hnp-trace-buffer";
 const MAX_ENTRIES = 600;
 
-// Development-only. Every trace() call used to JSON.stringify the whole ring
-// buffer (up to MAX_ENTRIES) and write it to sessionStorage synchronously, on
-// the main thread, in production too — because it prints through the stashed
-// native console, `compiler.removeConsole` in next.config.mjs never stripped it.
-// The tracer stays fully functional in development; in a production build the
-// exports below become no-ops that the bundler can eliminate.
-const TRACING_ENABLED = process.env.NODE_ENV !== "production";
+// Development-only AND opt-in. Every trace() call JSON-stringifies the ring
+// buffer into sessionStorage and prints through the stashed native console, so
+// `compiler.removeConsole` in next.config.mjs never stripped it — it has to
+// gate itself. In a production build the exports below become no-ops the
+// bundler can eliminate; in development they stay inert until the `trace`
+// channel is enabled.
+//
+// Resolved once at module load, so the per-render cost of useTraceValue stays a
+// single boolean check rather than a storage read.
+const TRACING_ENABLED =
+  process.env.NODE_ENV !== "production" && isDebugChannelEnabled("trace");
 
 // Exported so call sites that install their own diagnostic listeners (the
 // navigation timeline in _app.js) can skip that work entirely rather than

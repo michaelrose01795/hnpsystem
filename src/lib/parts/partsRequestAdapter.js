@@ -3,6 +3,7 @@
 // Ensures both tables stay linked and status-synced without breaking existing consumers.
 
 import { supabase } from "@/lib/database/supabaseClient"; // Shared Supabase client.
+import { logFailure } from "@/lib/utils/logFailure";
 
 // ---------------------------------------------------------------------------
 // Status mapping: parts_requests status → parts_job_items status
@@ -92,7 +93,7 @@ export const linkRequestToJobItem = async ({ jobItemId, requestId }) => { // Wir
     .eq("id", jobItemId);
 
   if (jobItemError) { // Log but continue — the link is best-effort.
-    console.error("[partsRequestAdapter] Failed to set source_request_id:", jobItemError.message);
+    logFailure("[partsRequestAdapter] Failed to set source_request_id:", jobItemError.message);
     return { success: false, error: jobItemError.message };
   }
 
@@ -103,7 +104,7 @@ export const linkRequestToJobItem = async ({ jobItemId, requestId }) => { // Wir
     .eq("request_id", requestId);
 
   if (requestError) { // Log but don't fail — allocation already linked.
-    console.error("[partsRequestAdapter] Failed to set fulfilled_by:", requestError.message);
+    logFailure("[partsRequestAdapter] Failed to set fulfilled_by:", requestError.message);
   }
 
   return { success: true, error: null };
@@ -149,7 +150,7 @@ export const syncRequestStatus = async ({ jobItemId, newJobItemStatus }) => { //
     .eq("request_id", jobItem.source_request_id);
 
   if (updateError) { // Log but don't fail — the job-item status was already updated.
-    console.error("[partsRequestAdapter] Failed to sync request status:", updateError.message);
+    logFailure("[partsRequestAdapter] Failed to sync request status:", updateError.message);
     return { success: false, updated: false };
   }
 
@@ -188,10 +189,10 @@ export const getMergedPartsForJob = async (jobId) => { // Unified parts query.
   ]);
 
   if (jobItemsResult.error) { // Log but return what we have.
-    console.error("[partsRequestAdapter] Failed to fetch job items:", jobItemsResult.error.message);
+    logFailure("[partsRequestAdapter] Failed to fetch job items:", jobItemsResult.error.message);
   }
   if (requestsResult.error) { // Log but return what we have.
-    console.error("[partsRequestAdapter] Failed to fetch requests:", requestsResult.error.message);
+    logFailure("[partsRequestAdapter] Failed to fetch requests:", requestsResult.error.message);
   }
 
   const jobItems = (jobItemsResult.data || []).map((item) => ({ // Tag job items.

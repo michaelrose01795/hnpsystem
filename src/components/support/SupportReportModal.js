@@ -58,6 +58,13 @@ export default function SupportReportModal() {
   // The assistant's analysis of the snapshot taken when the popup opened, and the
   // enriched description it generates (probable cause + affected + timeline).
   const analysis = snapshot?.analysis || null;
+
+  // The reference code the user has already seen — on the error toast that
+  // launched this popup (prefill.trigger) or on the recovery screen an error
+  // boundary rendered (prefill.referenceCode). It is shown back to them here and
+  // sent with the report so the report and the automatically-captured error
+  // events line up on one code.
+  const referenceCode = prefill?.trigger?.referenceCode || prefill?.referenceCode || null;
   const generatedDescription = useMemo(
     () => buildEnrichedDescription(snapshot || {}, analysis),
     [snapshot, analysis]
@@ -156,6 +163,11 @@ export default function SupportReportModal() {
           description: trimmed,
           diagnostics,
           screenshots, // array of baked PNG data URLs (may be empty)
+          // The code already shown to the user. The server uses it to stamp this
+          // report onto the error events captured AUTOMATICALLY when the failure
+          // happened — so the developer opening the report sees the technical
+          // trail that existed before the user typed a word.
+          referenceCode,
         }),
       });
 
@@ -170,11 +182,16 @@ export default function SupportReportModal() {
       // page can list reports created from clicked errors.
       recordReportCreated({
         origin: trigger?.origin || "support-modal",
-        referenceCode: trigger?.referenceCode,
+        referenceCode: referenceCode || undefined,
         message: trigger?.message || trimmed.slice(0, 120),
         alertId: trigger?.alertId,
       });
-      pushAlert("✅ Thanks — your report has been sent to the team.", "success");
+      pushAlert(
+        referenceCode
+          ? `✅ Thanks — your report has been sent to the team. Reference: ${referenceCode}`
+          : "✅ Thanks — your report has been sent to the team.",
+        "success"
+      );
       closeSupportReport();
     } catch (err) {
       setError(err.message || "Could not send your report.");
@@ -218,6 +235,15 @@ export default function SupportReportModal() {
           <p style={{ margin: "6px 0 0", color: "var(--text-1)", opacity: 0.7, lineHeight: 1.5, fontSize: "0.9rem" }}>
             Tell us what went wrong. We&apos;ll attach a private technical snapshot to help us fix it.
           </p>
+          {/* The code the user already saw on the toast or recovery screen. It
+              is worth showing again here: it is what they quote to support, and
+              it is the key the automatically-captured technical detail is filed
+              under. Selectable in one drag. */}
+          {referenceCode && (
+            <p className="app-error-reference" style={{ marginTop: "8px" }}>
+              Reference: <span className="app-error-reference__code">{referenceCode}</span>
+            </p>
+          )}
         </div>
         <button
           type="button"

@@ -12,6 +12,7 @@ import {
   SkeletonMetricCard } from
 "@/components/ui/LoadingSkeleton";
 import PartsManagerDashboardUi from "@/components/page-ui/parts/parts-manager-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const containerStyle = {
   width: "100%",
@@ -219,7 +220,7 @@ export default function PartsManagerDashboard() {
       in("status", ["planned", "en_route"]).
       order("stop_number", { ascending: true });
       if (error) {
-        console.error("Failed to load delivery stops for jobs:", error);
+        logFailure("Failed to load delivery stops for jobs:", error);
         return;
       }
       setJobDeliveryMap(groupByJobId(data || []));
@@ -352,7 +353,7 @@ export default function PartsManagerDashboard() {
         techRequests
       });
     } catch (err) {
-      console.error("Failed to load parts manager data", err);
+      logFailure("Failed to load parts manager data", err);
       setError(err.message || "Unable to load parts dashboard");
     } finally {
       setLoading(false);

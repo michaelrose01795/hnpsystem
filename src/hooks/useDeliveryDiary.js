@@ -121,7 +121,7 @@ export function useDeliveryDiary({ date, driverId = null, enabled = true } = {})
  */
 export function useDeliveryRouteMap({ date, enabled = false } = {}) {
   const key = enabled && date ? `/api/parts/delivery-diary/route-map?date=${date}` : null;
-  const { data, error, isLoading } = useSWR(key, jsonFetcher, {
+  const { data, error, isLoading, mutate } = useSWR(key, jsonFetcher, {
     ...swrConfig,
     // Geocoding a route is an outbound call per day. Once resolved it does not
     // change while the page is open, so nothing here revalidates on focus.
@@ -134,6 +134,7 @@ export function useDeliveryRouteMap({ date, enabled = false } = {}) {
     map: data ?? null,
     loading: isLoading,
     error: error?.message || "",
+    refresh: mutate,
   };
 }
 

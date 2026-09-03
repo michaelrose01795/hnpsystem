@@ -270,8 +270,12 @@ export function installPerfConsole() {
   };
   window.hnpPerf = fn;
   if (IS_DEV) {
+    // The one line a clean boot is allowed to print: without it the diagnostic
+    // tooling is undiscoverable, because everything else is now opt-in.
     const native = globalThis.__HNP_NATIVE_CONSOLE__ || console;
-    native.log("[PERF] run hnpPerf() for a stage breakdown");
+    native.log(
+      "[HNP] hnpPerf() for a stage breakdown · hnpDebug(\"trace,nav\") for load/navigation timelines"
+    );
   }
 }
 

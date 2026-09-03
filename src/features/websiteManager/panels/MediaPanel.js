@@ -1,60 +1,54 @@
 // file location: src/features/websiteManager/panels/MediaPanel.js
 // Website media library — upload new assets, replace existing images, and
-// remove unused media.
+// remove unused media. Assets uploaded here are what the "Choose from Media"
+// dropdown offers on every image field across the manager, so this is where a
+// picture enters the site before it is placed on a section.
 import React, { useMemo, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
-import { EmptyState, formatDateTime, formatSize } from "../helpers";
+import EmptyState from "@/components/ui/EmptyState";
+import { formatDateTime, formatSize } from "../helpers";
 
-// Build a media-asset record from a browser File. For mock mode the preview
-// uses an in-memory object URL.
-// TODO: upload the File to the website storage bucket and persist the public
-//       URL via POST /api/website/media instead of createObjectURL.
+const MAX_FILE_BYTES = 3 * 1024 * 1024;
+
+// Data URLs remain valid after the browser session ends, unlike object URLs.
 function fileToAsset(file) {
-  const isImage = file.type.startsWith("image/");
-  return {
-    name: file.name,
-    url: isImage ? URL.createObjectURL(file) : null,
-    type: isImage ? "image" : "document",
-    sizeKb: file.size / 1024,
-  };
+  if (file.size > MAX_FILE_BYTES) {
+    return Promise.reject(new Error(`${file.name} is larger than the 3 MB upload limit.`));
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error(`${file.name} could not be read.`));
+    reader.onload = () =>
+      resolve({
+        name: file.name,
+        url: String(reader.result || ""),
+        type: file.type.startsWith("image/") ? "image" : "document",
+        sizeKb: file.size / 1024,
+      });
+    reader.readAsDataURL(file);
+  });
 }
 
 function Thumbnail({ asset }) {
-  const sharedStyle = {
-    width: "100%",
-    height: 150,
-    borderRadius: "var(--radius-sm, 8px)",
-  };
   if (asset.url && asset.type === "image") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={asset.url}
-        alt={asset.name}
-        style={{ ...sharedStyle, objectFit: "cover", display: "block" }}
-      />
+      <img className="website-manager__media-thumb" src={asset.url} alt={asset.name} />
     );
   }
   const ext = (asset.name.split(".").pop() || "file").toUpperCase();
   return (
-    <LayerTheme
+    <LayerSurface
+      className="website-manager__media-placeholder"
       padding="0"
       gap="0"
-      radius="var(--radius-sm, 8px)"
-      style={{
-        ...sharedStyle,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      radius="var(--radius-sm)"
     >
-      <span
-        className="app-badge app-badge--accent-soft app-badge--uppercase"
-      >
-        {asset.type === "image" ? `${ext} image` : ext}
-      </span>
-    </LayerTheme>
+      <span className="app-badge app-badge--accent-soft app-badge--uppercase">{ext}</span>
+    </LayerSurface>
   );
 }
 
@@ -65,6 +59,8 @@ export default function MediaPanel({
   onDeleteMedia,
 }) {
   const [query, setQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const [failed, setFailed] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -76,104 +72,128 @@ export default function MediaPanel({
     );
   }, [media, query]);
 
-  const handleUpload = (fileList) => {
-    Array.from(fileList || []).forEach((file) => onAddMedia(fileToAsset(file)));
+  const handleUpload = async (fileList) => {
+    setMessage("");
+    setFailed(false);
+    try {
+      const assets = await Promise.all(Array.from(fileList || []).map(fileToAsset));
+      assets.forEach(onAddMedia);
+      setMessage(
+        `${assets.length} file${assets.length === 1 ? "" : "s"} added to the media library.`
+      );
+    } catch (error) {
+      setFailed(true);
+      setMessage(error.message);
+    }
   };
 
-  const handleReplace = (mediaId, fileList) => {
+  const handleReplace = async (mediaId, fileList) => {
     const file = fileList && fileList[0];
-    if (file) onReplaceMedia(mediaId, fileToAsset(file));
+    if (!file) return;
+    setMessage("");
+    setFailed(false);
+    try {
+      onReplaceMedia(mediaId, await fileToAsset(file));
+      setMessage(`${file.name} replaced the selected asset.`);
+    } catch (error) {
+      setFailed(true);
+      setMessage(error.message);
+    }
   };
 
   const handleDelete = (asset) => {
-    if (window.confirm(`Delete media asset "${asset.name}"?`)) {
+    if (window.confirm(`Delete media asset "${asset.name}"? This cannot be undone.`)) {
       onDeleteMedia(asset.id);
     }
   };
 
   return (
     <>
-      <Section
-        title="Website Media Uploads"
-        subtitle="Upload images and documents for use across the public website. Existing assets can be swapped without changing where they are referenced."
-      >
-        <LayerTheme padding="18px" gap="8px" style={{ alignItems: "flex-start" }}>
-          <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-            Upload new media
-          </div>
-          <div style={{ fontSize: "0.84rem", color: "var(--text-1)" }}>
-            Accepts images (JPG, PNG, WebP) and documents (PDF). Files are added
-            to the library below.
-          </div>
+      <Section title="Upload media">
+        <LayerTheme gap="var(--space-3)">
           {/* Label-wrapped input keeps the native file picker without extra refs. */}
-          <label className="app-btn app-btn--primary" style={{ cursor: "pointer" }}>
-            Choose files to upload
-            <input
-              type="file"
-              multiple
-              accept="image/*,application/pdf"
-              onChange={(e) => {
-                handleUpload(e.target.files);
-                e.target.value = "";
-              }}
-              style={{ display: "none" }}
-            />
-          </label>
+          <div className="website-manager__actions">
+            <label className="app-btn app-btn--primary website-manager__file-label">
+              Choose files to upload
+              <input
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  handleUpload(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <span className="website-manager__meta">
+              JPG, PNG, WebP or PDF · 3 MB maximum
+            </span>
+          </div>
+          {message && (
+            <div
+              className={`website-manager__notice${
+                failed ? " website-manager__notice--warning" : ""
+              }`}
+              role={failed ? "alert" : "status"}
+            >
+              {message}
+            </div>
+          )}
         </LayerTheme>
       </Section>
 
-      <Section title="Media Library">
-        <input
-          className="app-input"
-          type="search"
-          placeholder="Search media by name or page…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{ maxWidth: 320 }}
-        />
+      <Section title="Media library">
+        <div className="website-manager__toolbar">
+          <input
+            className="app-input"
+            type="search"
+            placeholder="Search media by name or page…"
+            aria-label="Search media"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
 
         {filtered.length === 0 ? (
-          <EmptyState message="No media assets match your search." />
+          <EmptyState
+            variant="bare"
+            role="status"
+            title={media.length === 0 ? "No media yet" : "No media matches your search"}
+            description={
+              media.length === 0
+                ? "Upload an image or PDF above and it becomes available on every image field in the manager."
+                : "Clear the search box to see the whole library."
+            }
+          />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: 14,
-            }}
-          >
+          <div className="website-manager__media-grid">
             {filtered.map((asset) => (
-              <LayerTheme key={asset.id} padding="12px" gap="8px">
+              <LayerTheme key={asset.id} className="website-manager__media-card">
                 <Thumbnail asset={asset} />
-                <div style={{ fontWeight: 600, wordBreak: "break-word" }}>
-                  {asset.name}
-                </div>
-                <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
-                  {asset.type === "image" ? "Image" : "Document"} ·{" "}
-                  {formatSize(asset.sizeKb)}
-                </div>
-                <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
+                <span className="website-manager__media-name">{asset.name}</span>
+                <span className="website-manager__meta">
+                  {asset.type === "image" ? "Image" : "Document"} · {formatSize(asset.sizeKb)}
+                </span>
+                <span className="website-manager__meta">
                   Used on: {asset.usedOn || "Unassigned"}
-                </div>
-                <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
+                </span>
+                <span className="website-manager__meta">
                   {asset.uploadedBy
                     ? `By ${asset.uploadedBy} · ${formatDateTime(asset.uploadedAt)}`
                     : "Live website asset"}
-                </div>
-                <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-                  <label
-                    className="app-btn app-btn--secondary app-btn--sm"
-                    style={{ cursor: "pointer", flex: 1, textAlign: "center" }}
-                  >
+                </span>
+                <div className="website-manager__media-actions">
+                  <label className="app-btn app-btn--secondary app-btn--sm website-manager__file-label">
                     Replace
                     <input
                       type="file"
                       accept="image/*,application/pdf"
+                      style={{ display: "none" }}
                       onChange={(e) => {
                         handleReplace(asset.id, e.target.files);
                         e.target.value = "";
                       }}
-                      style={{ display: "none" }}
                     />
                   </label>
                   <Button

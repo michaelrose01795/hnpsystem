@@ -34,6 +34,7 @@ import VhcCustomerView from "@/components/VHC/VhcCustomerView";
 // useWebsiteTheme() is kept: it drives the light/dark choice for the report and
 // is independent of which stylesheet is scoped.
 import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const LABOUR_RATE = 85;
 
@@ -176,7 +177,7 @@ export function VhcLinkedCustomerPage({
         setVhcIdAliases(next.aliases);
         setAuthorizedViewRows(next.authorized);
       } catch (err) {
-        console.error("Error fetching job data:", err);
+        logFailure("Error fetching job data:", err);
         if (!silent) setError("Failed to load job data. Please try again later.");
       } finally {
         if (!silent) setLoading(false);
@@ -379,7 +380,7 @@ export function VhcLinkedCustomerPage({
           scheduleReconcile();
         }
       } catch (err) {
-        console.error("Customer update failed:", err);
+        logFailure("Customer update failed:", err);
         rollback();
         alert("Could not update — please check your connection and try again.");
       } finally {
@@ -522,7 +523,7 @@ export async function getVhcLinkServerSideProps({ params, res }) {
 
     return { props: { initialReport: { error: message } } };
   } catch (error) {
-    console.error("VHC share link SSR failed:", error);
+    logFailure("VHC share link SSR failed:", error);
     // Fall through with no server data — the page fetches client-side exactly
     // as it did before, so a server-side problem degrades instead of breaking.
     return { props: { initialReport: null } };

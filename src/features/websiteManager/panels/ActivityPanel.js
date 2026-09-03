@@ -3,8 +3,9 @@
 // through the Website Manager.
 import React, { useMemo, useState } from "react";
 import Section from "@/components/Section";
+import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
-import { EmptyState, formatDateTime, cellStyle, headCellStyle } from "../helpers";
+import { formatDateTime } from "../helpers";
 
 export default function ActivityPanel({ activity }) {
   const [query, setQuery] = useState("");
@@ -13,7 +14,9 @@ export default function ActivityPanel({ activity }) {
   // Distinct page names present in the log, for the filter dropdown.
   const pageOptions = useMemo(() => {
     const set = new Set(activity.map((a) => a.page).filter(Boolean));
-    return Array.from(set).sort();
+    return Array.from(set)
+      .sort()
+      .map((name) => ({ value: name, label: name }));
   }, [activity]);
 
   const filtered = useMemo(() => {
@@ -31,63 +34,58 @@ export default function ActivityPanel({ activity }) {
   }, [activity, query, pageFilter]);
 
   return (
-    <Section
-      title="Recent Website Activity"
-      subtitle="Every add, edit, delete, upload, reorder and status change is recorded here."
-    >
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+    <Section title="Recent website activity">
+      <div className="website-manager__toolbar">
         <input
           className="app-input"
           type="search"
           placeholder="Search activity…"
+          aria-label="Search activity"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          style={{ flex: "1 1 220px", minWidth: 200 }}
         />
         <DropdownField
+          className="website-manager__toolbar-filter"
           value={pageFilter}
           onChange={(e) => setPageFilter(e.target.value)}
+          aria-label="Filter by page"
           options={[{ value: "all", label: "All pages" }, ...pageOptions]}
-          style={{ flex: "0 0 auto", minWidth: 180 }}
         />
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
-          message={
+          variant="bare"
+          role="status"
+          title={activity.length === 0 ? "No changes recorded yet" : "No activity matches your search"}
+          description={
             activity.length === 0
-              ? "No website changes have been recorded yet. Edits, uploads and status changes made here will appear in this log."
-              : "No activity matches your search."
+              ? "Edits, uploads and publish-status changes made in the Website Manager appear here as they happen."
+              : "Clear the search box or choose “All pages” to see the full log."
           }
         />
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
-          >
+        <div className="website-manager__table-scroll">
+          <table className="app-data-table">
             <thead>
               <tr>
-                <th style={headCellStyle}>When</th>
-                <th style={headCellStyle}>Action</th>
-                <th style={headCellStyle}>Item</th>
-                <th style={headCellStyle}>Page</th>
-                <th style={headCellStyle}>By</th>
+                <th>When</th>
+                <th>Action</th>
+                <th>Item</th>
+                <th>Page</th>
+                <th>By</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((a) => (
                 <tr key={a.id}>
-                  <td style={{ ...cellStyle, color: "var(--text-1)", whiteSpace: "nowrap" }}>
+                  <td className="website-manager__cell-muted website-manager__cell-nowrap">
                     {formatDateTime(a.at)}
                   </td>
-                  <td style={{ ...cellStyle, fontWeight: 600 }}>{a.action}</td>
-                  <td style={{ ...cellStyle, color: "var(--text-1)" }}>
-                    {a.target || "—"}
-                  </td>
-                  <td style={{ ...cellStyle, color: "var(--text-1)" }}>
-                    {a.page || "—"}
-                  </td>
-                  <td style={{ ...cellStyle, color: "var(--text-1)" }}>{a.user}</td>
+                  <td className="website-manager__cell-strong">{a.action}</td>
+                  <td className="website-manager__cell-muted">{a.target || "—"}</td>
+                  <td className="website-manager__cell-muted">{a.page || "—"}</td>
+                  <td className="website-manager__cell-muted">{a.user}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,13 +1,23 @@
 // file location: src/lib/database/newsUpdates.js
-// Browser-facing data access for the staff news feed. Keeping the Supabase
-// reads, writes and realtime subscription here prevents page components from
-// owning database operations.
+//
+// Browser-facing data access for the staff news feed.
+//
+// Since the feed became the dealership communication hub, the READ path is the
+// role-guarded API (/api/news) rather than a direct Supabase select: audience
+// filtering, scheduling, expiry and the per-viewer read / acknowledged / saved
+// state all have to be resolved server-side, and a post targeted at one
+// department must never be sent to a browser that should not see it.
+//
+// What stays here is the login hand-off cache. src/pages/login.js warms it
+// while the shell is still painting, so the feed can render its first frame
+// without a second round trip. The exported names are unchanged so that
+// hand-off keeps working exactly as before.
 
+import { fetchFeed, createNewsPost } from "@/lib/api/news";
 import { supabase } from "@/lib/database/supabaseClient";
 
 const NEWS_UPDATES_TABLE = "news_updates";
-const NEWS_UPDATE_COLUMNS = "id, title, content, departments, author, created_at";
-const NEWS_UPDATES_CACHE_KEY = "hnp-news-feed-v1";
+const NEWS_UPDATES_CACHE_KEY = "hnp-news-feed-v2";
 let pendingNewsUpdatesRequest = null;
 let warmedNewsUpdatesCache = null;
 
@@ -23,37 +33,36 @@ export function readCachedNewsUpdates() {
   try {
     const cached = window.sessionStorage.getItem(NEWS_UPDATES_CACHE_KEY);
     const parsed = cached ? JSON.parse(cached) : null;
-    return Array.isArray(parsed) ? parsed : null;
+    return parsed && Array.isArray(parsed.posts) ? parsed : null;
   } catch {
     return null;
   }
 }
 
-export function cacheNewsUpdates(rows) {
-  if (!Array.isArray(rows)) return;
-  warmedNewsUpdatesCache = rows;
+export function cacheNewsUpdates(payload) {
+  if (!payload || !Array.isArray(payload.posts)) return;
+  warmedNewsUpdatesCache = payload;
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(NEWS_UPDATES_CACHE_KEY, JSON.stringify(rows));
+    window.sessionStorage.setItem(NEWS_UPDATES_CACHE_KEY, JSON.stringify(payload));
   } catch {
     // Storage can be unavailable in private/locked-down browser contexts.
   }
 }
 
-export async function getNewsUpdates({ limit = 200 } = {}) {
+/**
+ * The signed-in viewer's feed, as { posts, preferences, viewer }.
+ * Concurrent callers share one in-flight request, exactly as before.
+ */
+export async function getNewsUpdates({ limit = 200, includeArchived = false } = {}) {
   if (!pendingNewsUpdatesRequest) {
     pendingNewsUpdatesRequest = (async () => {
-      const { data, error } = await supabase
-        .from(NEWS_UPDATES_TABLE)
-        .select(NEWS_UPDATE_COLUMNS)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-      if (error) {
-        throw new Error(`Failed to load news updates: ${error.message}`);
-      }
-
-      return Array.isArray(data) ? data : [];
+      const data = await fetchFeed({ limit, includeArchived });
+      return {
+        posts: Array.isArray(data?.posts) ? data.posts : [],
+        preferences: data?.preferences || null,
+        viewer: data?.viewer || null,
+      };
     })();
   }
 
@@ -67,20 +76,28 @@ export async function getNewsUpdates({ limit = 200 } = {}) {
   }
 }
 
+/**
+ * Publish an update. Kept as a named export because it is the long-standing
+ * entry point; the hub's richer fields (priority, scheduling, links…) go
+ * straight through to the same API.
+ */
 export async function createNewsUpdate(payload) {
-  const { error } = await supabase.from(NEWS_UPDATES_TABLE).insert([payload]);
-  if (error) {
-    throw new Error(`Failed to create news update: ${error.message}`);
-  }
+  return createNewsPost(payload);
 }
 
 export async function warmNewsUpdatesCache() {
-  const rows = await getNewsUpdates();
-  cacheNewsUpdates(rows);
-  return rows;
+  const payload = await getNewsUpdates();
+  cacheNewsUpdates(payload);
+  return payload;
 }
 
+/**
+ * Realtime: anyone publishing, editing, pinning or expiring a post is a write
+ * to public.news_updates, which lands here so every open feed re-reads.
+ */
 export function subscribeToNewsUpdates(onChange) {
+  if (typeof window === "undefined") return () => {};
+
   const channel = supabase
     .channel("news-feed-updates")
     .on(

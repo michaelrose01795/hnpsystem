@@ -14,6 +14,7 @@ import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import StockCataloguePageUi from "@/components/page-ui/stock-catalogue-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const PRE_PICK_OPTIONS = [
 { value: "", label: "Not assigned" },
@@ -371,7 +372,7 @@ function StockCataloguePage() {
       if (error) throw error;
       setCategories(data || []);
     } catch (err) {
-      console.error("Error fetching categories:", err);
+      logFailure("Error fetching categories:", err);
     }
   }, []);
 
@@ -452,7 +453,7 @@ function StockCataloguePage() {
       }
     } catch (error) {
       if (error?.name !== "AbortError") {
-        console.error("Failed to refresh part links:", error);
+        logFailure("Failed to refresh part links:", error);
       }
     }
     return () => controller.abort();
@@ -700,7 +701,7 @@ function StockCataloguePage() {
       setNewPartForm((prev) => ({ ...prev, category: data.name }));
       setCategorySearch("");
     } catch (err) {
-      console.error("Error creating category:", err);
+      logFailure("Error creating category:", err);
       alert("Failed to create category: " + err.message);
     }
   }, []);
@@ -863,7 +864,7 @@ function StockCataloguePage() {
       setIsEditMode(false);
       setEditedPart(null);
     } catch (error) {
-      console.error("Failed to save part:", error);
+      logFailure("Failed to save part:", error);
       alert("Failed to save changes: " + error.message);
     } finally {
       setIsSavingPart(false);

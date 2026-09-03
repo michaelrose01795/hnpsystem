@@ -7,6 +7,11 @@ import { Button, InputField, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("performance");
+}
 
 // Skeleton rows that sit inside each SectionCard while performance data loads.
 // Keeping the outer page shell mounted (header, section grids, card chrome) means

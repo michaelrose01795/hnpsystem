@@ -22,6 +22,7 @@ import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for
 import { getJobRequests } from "@/lib/canonical/fields";
 import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
 import { WORKSHOP_APPOINTMENT_TIME_OPTIONS } from "@/lib/appointments/dateTime";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Loaded on demand - each of these resolves the 213 KB Supabase browser client.
 //
@@ -517,7 +518,7 @@ export default function Appointments() {
 
       setJobRequestHours(aggregated);
     } catch (error) {
-      console.error("Error fetching job request hours:", error);
+      logFailure("Error fetching job request hours:", error);
     }
   }, []);
 
@@ -552,7 +553,7 @@ export default function Appointments() {
 
       setJobVhcLabourHours(aggregated);
     } catch (error) {
-      console.error("Error fetching VHC labour hours:", error);
+      logFailure("Error fetching VHC labour hours:", error);
     }
   }, []);
 
@@ -589,7 +590,7 @@ export default function Appointments() {
       const availabilityMap = buildTechAvailabilityMap(data || []);
       setTechAvailability(availabilityMap);
     } catch (error) {
-      console.error("Error fetching tech availability:", error);
+      logFailure("Error fetching tech availability:", error);
     }
   }, [dates]);
 
@@ -604,7 +605,7 @@ export default function Appointments() {
       if (error) throw error;
       setTechUsers(data || []);
     } catch (error) {
-      console.error("Error fetching tech users:", error);
+      logFailure("Error fetching tech users:", error);
       setTechUsers([]);
     }
   }, []);
@@ -620,7 +621,7 @@ export default function Appointments() {
       const map = buildStaffAbsenceMap(data, dates[0], dates[dates.length - 1]);
       setStaffAbsences(map);
     } catch (error) {
-      console.error("Error fetching staff absences:", error);
+      logFailure("Error fetching staff absences:", error);
       setStaffAbsences({});
     }
   }, [dates]);
@@ -637,7 +638,7 @@ export default function Appointments() {
         Object.fromEntries((payload.data || []).map((day) => [day.date, day]))
       );
     } catch (error) {
-      console.error("Error fetching technician capacity:", error);
+      logFailure("Error fetching technician capacity:", error);
       setCapacityScheduleByDate({});
     }
   }, [dates]);
@@ -911,7 +912,7 @@ export default function Appointments() {
 
       if (!appointmentResult.success) {
         const errorMessage = appointmentResult.error?.message || "Unknown error occurred";
-        console.error("Appointment booking failed:", errorMessage);
+        logFailure("Appointment booking failed:", errorMessage);
         alert(`Error booking appointment:\n\n${errorMessage}\n\nPlease check the job number and try again.`);
         setIsLoading(false);
         return;
@@ -969,7 +970,7 @@ export default function Appointments() {
       invalidateCache("jobs:"); // clear stale queryCache after appointment change
 
     } catch (error) {
-      console.error("Unexpected error booking appointment:", error);
+      logFailure("Unexpected error booking appointment:", error);
       alert(`Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setIsLoading(false);
@@ -1046,11 +1047,11 @@ export default function Appointments() {
         );
         invalidateCache("jobs:"); // clear stale queryCache so job card page gets fresh data
       } else {
-        console.error("❌ Check-in failed:", result.error);
+        logFailure("❌ Check-in failed:", result.error);
         alert(`❌ Failed to check in: ${result.error?.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("❌ Error checking in:", error);
+      logFailure("❌ Error checking in:", error);
       alert("❌ Error checking in customer. Please try again.");
     } finally {
       setCheckingInJobId(null);

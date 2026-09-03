@@ -4,6 +4,7 @@
 import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const dbClient = supabaseService || supabase;
 const isServiceClient = Boolean(supabaseService);
@@ -272,7 +273,7 @@ export const getThreadsForUser = async (userId) => {
     .eq("user_id", userIdNum);
 
   if (membershipError) {
-    console.error("❌ getThreadsForUser membership error:", membershipError);
+    logFailure("❌ getThreadsForUser membership error:", membershipError);
     return [];
   }
 
@@ -321,7 +322,7 @@ export const getThreadsForUser = async (userId) => {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error("❌ getThreadsForUser thread fetch error:", error);
+    logFailure("❌ getThreadsForUser thread fetch error:", error);
     return [];
   }
 
@@ -348,7 +349,7 @@ export const getUnreadThreadCountForUser = async (userId) => {
     .eq("user_id", userIdNum);
 
   if (membershipError) {
-    console.error("❌ getUnreadThreadCountForUser membership error:", membershipError);
+    logFailure("❌ getUnreadThreadCountForUser membership error:", membershipError);
     return 0;
   }
   if (!membershipRows?.length) return 0;
@@ -365,7 +366,7 @@ export const getUnreadThreadCountForUser = async (userId) => {
     .limit(1, { foreignTable: "recent_messages" });
 
   if (error) {
-    console.error("❌ getUnreadThreadCountForUser thread fetch error:", error);
+    logFailure("❌ getUnreadThreadCountForUser thread fetch error:", error);
     return 0;
   }
 
@@ -1168,7 +1169,7 @@ const hydrateConversationSenders = async (messages = []) => {
     .in("user_id", senderIds);
 
   if (error) {
-    console.error("❌ hydrateConversationSenders error:", error);
+    logFailure("❌ hydrateConversationSenders error:", error);
     return messages.map((message) => ({ ...message, sender: message.sender || null }));
   }
 
@@ -1285,7 +1286,7 @@ export const getThreadMessages = async (threadId, userId, limit = 50, before) =>
       savedForever: Boolean(message.savedForever),
     }));
   } catch (error) {
-    console.error("❌ getThreadMessages error:", error);
+    logFailure("❌ getThreadMessages error:", error);
     return [];
   }
 };
@@ -1305,7 +1306,7 @@ export const markThreadRead = async ({ threadId, userId }) => {
     .single();
 
   if (error) {
-    console.error("❌ markThreadRead error:", error);
+    logFailure("❌ markThreadRead error:", error);
     return null;
   }
 

@@ -3,12 +3,28 @@
 import React from "react"; // support extracted fragments.
 import PopupModal from "@/components/popups/popupStyleApi";
 
+// Presentation-only: renders a thread member's last_read_at (the last time they
+// opened this conversation on /messages) as "HH:MM - DDth MMM".
+const ORDINAL_SUFFIX = (day) => {
+  if (day % 100 >= 11 && day % 100 <= 13) return "th";
+  return { 1: "st", 2: "nd", 3: "rd" }[day % 10] || "th";
+};
+
+const formatLastSeen = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  const day = date.getDate();
+  const month = date.toLocaleString("en-GB", { month: "short" });
+  return `${time} - ${day}${ORDINAL_SUFFIX(day)} ${month}`;
+};
+
 export default function MessagesPageUi(props) {
   const {
     Button,
     Chip,
     ColleagueRowsSkeleton,
-    ComposeToggleButton,
     DevLayoutSection,
     InlineLoading,
     InputField,
@@ -115,7 +131,7 @@ export default function MessagesPageUi(props) {
     setLeaveDecisionError,
     setLeaveDeclineModal,
     setLeaveDeclineReason,
-    setMessageReactions,
+    handleReactToMessage,
     setReplyTo,
     setSelectedRecipients,
     setSelectedThreadIds,
@@ -163,6 +179,7 @@ export default function MessagesPageUi(props) {
     { key: "team", label: "Team" },
     { key: "system", label: "System" },
   ];
+  const threadPinCount = (canSeeCustomerRequests ? 1 : 0) + pinnedThreads.length;
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -260,7 +277,7 @@ export default function MessagesPageUi(props) {
           }} disabled={!visibleThreads.length}>
                   Select
                 </Button>
-                <Button type="button" variant="primary" size="sm" pill onClick={handleOpenNewChatModal} aria-label="Start new chat">
+                <Button type="button" variant="primary" size="sm" pill className="app-btn--icon app-btn--glyph-lg" onClick={handleOpenNewChatModal} aria-label="Start new chat">
                   +
                 </Button>
               </>}
@@ -315,8 +332,8 @@ export default function MessagesPageUi(props) {
           }}>
                 <DevLayoutSection sectionKey="messages-thread-pins" parentKey="messages-thread-list" sectionType="toolbar" style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: "var(--space-sm)",
+              gridTemplateColumns: `repeat(${Math.max(threadPinCount, 1)}, minmax(0, 1fr))`,
+              gap: "10px", // Exact inter-button spacing requested for this local toolbar.
               width: "100%",
               flex: "0 0 auto"
             }}>
@@ -375,13 +392,6 @@ export default function MessagesPageUi(props) {
                   marginLeft: "var(--space-1)"
                 }} />}
                     </button>)}
-                  {(() => {
-                // Keep the 3-column grid aligned: pad the final row with spacers.
-                // Quick buttons = optional Bookings + up to 3 pinned chats.
-                const quickCount = (canSeeCustomerRequests ? 1 : 0) + pinnedThreads.length;
-                const spacerCount = quickCount === 0 ? 0 : (3 - (quickCount % 3)) % 3;
-                return Array.from({ length: spacerCount }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />);
-              })()}
                 </DevLayoutSection>
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
@@ -485,6 +495,7 @@ export default function MessagesPageUi(props) {
           <DevLayoutSection data-presentation="messages-conversation" sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
         ...cardStyle,
         background: "var(--theme)",
+        position: "relative", // anchors the floating slash-command help button
         flex: 1,
         minHeight: 0,
         flexDirection: "column",
@@ -728,64 +739,85 @@ export default function MessagesPageUi(props) {
             paddingBottom: "12px",
             flexWrap: "wrap"
           }}>
-                  <div style={{
-              flex: "1 1 auto",
-              minWidth: 0
-            }}>
-                    {isGroupChat ? <h3 onClick={() => setGroupMembersModalOpen(true)} style={{
-                margin: 0,
-                color: systemTitleColor,
-                cursor: "pointer"
-              }} title="Click to view members">
-                        {activeThread.title}
-                      </h3> : <h3 style={{
-                margin: 0,
-                color: systemTitleColor
-              }}>{activeThread.title}</h3>}
-                    {headerHasCustomerMember ? (
-                      customerDetail && (customerDetail.phone || customerDetail.vehicle || customerDetail.jobNumber) ? <p style={{
-                  margin: "4px 0 0",
-                  color: palette.textMuted,
-                  fontSize: "var(--text-body-sm)",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "4px 12px"
-                }}>
-                        {customerDetail.phone ? <span>{customerDetail.phone}</span> : null}
-                        {customerDetail.vehicle ? <span>{customerDetail.vehicle}</span> : null}
-                        {customerDetail.jobNumber ? <span>JOB {customerDetail.jobNumber}</span> : null}
-                      </p> : null
-                    ) : (() => {
-                if (isGroupChat) return null;
-                const otherMember = (activeThread.members || []).find(member => member.userId !== dbUserId);
-                const role = otherMember?.profile?.role;
-                const extension = otherMember?.profile?.extension;
-                if (!role && !extension) return null;
-                return <p style={{
-                  margin: "4px 0 0",
-                  color: palette.textMuted,
-                  fontSize: "var(--text-body-sm)",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "4px 12px"
-                }}>
-                        {role ? <span>{role}</span> : null}
-                        {extension ? <span>Ext. {extension}</span> : null}
-                      </p>;
-              })()}
-                  </div>
+                  {(() => {
+              const otherMember = isGroupChat ? null : (activeThread.members || []).find(member => member.userId !== dbUserId);
+              // DM headers show the person, not the stored thread title: first +
+              // last name only, with their last visit to /messages underneath.
+              const headerTitle = otherMember?.profile?.name || activeThread.title;
+              const lastSeen = otherMember ? formatLastSeen(otherMember.lastReadAt) : null;
+              return <div style={{
+                flex: "1 1 auto",
+                minWidth: 0,
+                marginRight: "54px" // clears the floating slash-command help button
+              }}>
+                      {isGroupChat ? <h3 onClick={() => setGroupMembersModalOpen(true)} style={{
+                  margin: 0,
+                  color: systemTitleColor,
+                  cursor: "pointer"
+                }} title="Click to view members">
+                          {activeThread.title}
+                        </h3> : <h3 style={{
+                  margin: 0,
+                  color: systemTitleColor
+                }}>{headerTitle}</h3>}
+                      {headerHasCustomerMember ? (
+                        customerDetail && (customerDetail.phone || customerDetail.vehicle || customerDetail.jobNumber) ? <p style={{
+                    margin: "4px 0 0",
+                    color: palette.textMuted,
+                    fontSize: "var(--text-body-sm)",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "4px 12px"
+                  }}>
+                          {customerDetail.phone ? <span>{customerDetail.phone}</span> : null}
+                          {customerDetail.vehicle ? <span>{customerDetail.vehicle}</span> : null}
+                          {customerDetail.jobNumber ? <span>JOB {customerDetail.jobNumber}</span> : null}
+                        </p> : null
+                      ) : lastSeen ? <p style={{
+                    margin: "2px 0 0",
+                    color: palette.textMuted,
+                    fontSize: "var(--text-caption)"
+                  }}>
+                          Last seen {lastSeen}
+                        </p> : null}
+                    </div>;
+            })()}
                   {isGroupChat && canEditGroup && !isCustomerChat && <div style={{
               display: "flex",
               alignItems: "center",
               gap: "var(--space-3)",
               flexWrap: "wrap",
-              justifyContent: "flex-end"
+              justifyContent: "flex-end",
+              flex: "0 0 auto",
+              marginRight: "54px"
             }}>
                       <Button type="button" variant="secondary" size="sm" pill onClick={openGroupEditModal}>
                         Edit
                       </Button>
                     </div>}
+                  {/* Pinned to the conversation card itself (10px in from its
+                      top-right corner), not to the header's flow. */}
+                  <Button type="button" variant="secondary" pill className="app-btn--icon app-btn--glyph-lg" onClick={() => setCommandHelpOpen(true)} title="Slash command help" aria-label="Slash command help" style={{
+              position: "absolute",
+              top: "10px",
+              right: "10px",
+              zIndex: 1
+            }}>
+                    ?
+                  </Button>
                 </DevLayoutSection>
+
+                {/* Divides the thread header from the transcript. Inset from
+                    the card's edges rather than running the full width. The
+                    conversation panel is itself painted --theme, so the rule
+                    takes --surface — the next rung of the surface ladder, and
+                    the one step guaranteed to be visible against it. */}
+                <div aria-hidden="true" style={{
+            height: "1px",
+            margin: "0 20px",
+            flex: "0 0 auto",
+            backgroundColor: "var(--surface)"
+          }} />
 
                 <DevLayoutSection sectionKey="messages-thread-feed" parentKey="messages-conversation-panel" sectionType="section-shell" shell backgroundToken="messages-thread-feed" ref={scrollerRef} style={{
             marginTop: isMobileView ? "8px" : "16px",
@@ -872,18 +904,7 @@ export default function MessagesPageUi(props) {
                     backgroundColor: palette.border
                   }} />
                           </div>}
-                        <MessageBubble message={message} isMine={message.senderId === dbUserId} nameColor={userNameColor} userRoles={user?.roles || []} currentUserId={dbUserId} onApproveLeaveRequest={handleApproveLeaveRequest} onDeclineLeaveRequest={handleOpenDeclineLeaveRequest} decisionBusy={leaveDecisionBusy} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} reactions={messageReactions[message.id] || []} onReact={emoji => setMessageReactions(prev => {
-                  const current = prev[message.id] || [];
-                  const existing = current.find(r => r.userId === dbUserId && r.emoji === emoji);
-                  const nextList = existing ? current.filter(r => !(r.userId === dbUserId && r.emoji === emoji)) : [...current, {
-                    userId: dbUserId,
-                    emoji
-                  }];
-                  return {
-                    ...prev,
-                    [message.id]: nextList
-                  };
-                })} onReply={() => setReplyTo(message)} />
+                        <MessageBubble message={message} isMine={message.senderId === dbUserId} nameColor={userNameColor} userRoles={user?.roles || []} currentUserId={dbUserId} onApproveLeaveRequest={handleApproveLeaveRequest} onDeclineLeaveRequest={handleOpenDeclineLeaveRequest} decisionBusy={leaveDecisionBusy} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} reactions={messageReactions[message.id] || []} onReact={emoji => handleReactToMessage?.(message.id, emoji)} onReply={() => setReplyTo(message)} />
                       </React.Fragment>;
             })}
                 </DevLayoutSection>
@@ -917,8 +938,13 @@ export default function MessagesPageUi(props) {
                 }
               }} style={{
                 width: "100%",
+                height: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "var(--space-3)",
                 textAlign: "left",
-                padding: "var(--space-3) var(--space-4)",
+                padding: "0 var(--space-4)",
                 borderBottom: index < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                 backgroundColor: "var(--surface)",
                 cursor: "pointer",
@@ -928,25 +954,26 @@ export default function MessagesPageUi(props) {
               }} onMouseLeave={e => {
                 e.currentTarget.style.backgroundColor = "var(--surface)";
               }}>
-                          <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-xs)"
+                          <span style={{
+                  fontWeight: 700,
+                  color: palette.accent,
+                  fontSize: "var(--text-body-sm)",
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto"
                 }}>
-                            <span style={{
-                    fontWeight: 700,
-                    color: palette.accent,
-                    fontSize: "var(--text-body)"
-                  }}>
-                              {cmd.command}
-                            </span>
-                            <span style={{
-                    fontSize: "var(--text-body-sm)",
-                    color: palette.textMuted
-                  }}>
-                              {cmd.description}
-                            </span>
-                          </div>
+                            {cmd.command}
+                          </span>
+                          <span style={{
+                  fontSize: "var(--text-caption)",
+                  color: palette.textMuted,
+                  minWidth: 0,
+                  textAlign: "right",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
+                            {cmd.description}
+                          </span>
                         </div>)}
                     </div>}
 
@@ -985,24 +1012,31 @@ export default function MessagesPageUi(props) {
                           {String(replyTo.content || "").slice(0, 140)}
                         </div>
                       </div>
-                      <Button type="button" variant="ghost" size="xs" pill onClick={() => setReplyTo(null)} aria-label="Cancel reply">
-                        ×
+                      <Button type="button" variant="secondary" pill className="app-btn--icon" onClick={() => setReplyTo(null)} aria-label="Cancel reply" style={{
+                alignSelf: "center",
+                flex: "0 0 auto"
+              }}>
+                        {/* Drawn rather than typed: the "×" glyph sits on the
+                            font's math axis, so it renders visibly high inside
+                            a 44px circle. An SVG cross is centred exactly. */}
+                        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                          <path d="M5 5 L15 15 M15 5 L5 15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                        </svg>
                       </Button>
                     </div>}
-                  <textarea id="message-textarea" className="app-input" rows={3} value={messageDraft} onChange={handleMessageDraftChange} placeholder="Write an internal update… (type / for commands)" style={{
-              width: "100%",
-              resize: "none"
-            }} />
                   <div style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "var(--space-3)"
+              alignItems: "flex-end",
+              gap: "var(--space-sm)"
             }}>
-                    <Button type="button" variant="secondary" size="sm" pill onClick={() => setCommandHelpOpen(true)} title="Slash command help" aria-label="Slash command help">
-                      ?
-                    </Button>
-                    <Button type="submit" variant="primary" pill disabled={!canSend}>
+                    <textarea id="message-textarea" className="app-input" rows={3} value={messageDraft} onChange={handleMessageDraftChange} placeholder={'Write an internal message… (type "/" for commands)'} style={{
+                flex: 1,
+                minWidth: 0,
+                resize: "none"
+              }} />
+                    <Button type="submit" variant="primary" pill disabled={!canSend} style={{
+                flex: "0 0 auto"
+              }}>
                       {sending ? "Sending…" : "Send"}
                     </Button>
                   </div>
@@ -1264,44 +1298,50 @@ export default function MessagesPageUi(props) {
         onClose={closeNewChatModal}
         ariaLabel="Start new chat"
         backdropClassName="start-new-chat-backdrop"
-        cardClassName="start-new-chat-popup"
+        cardClassName="app-settings-popup-card start-new-chat-popup"
         cardStyle={{
           width: "min(100%, 640px)",
-          maxHeight: "90vh",
-          overflowY: "auto",
+          padding: "var(--page-card-padding)",
+          overflow: "hidden",
+          boxSizing: "border-box",
         }}
       >
-              <div style={{
-          padding: "32px",
+              <div className="app-settings-popup" style={{
           display: "flex",
           flexDirection: "column",
-          gap: "16px"
+          gap: "var(--layout-card-gap)",
+          overflow: "hidden"
         }}>
-                <div>
-                  <h3 style={{
-              margin: 0,
-              color: systemTitleColor
-            }}>Start New Chat</h3>
-                </div>
+                <header className="app-popup-compact-header">
+                  <h2 style={{ color: systemTitleColor }}>Start New Chat</h2>
+                  <div className="app-popup-compact-header__actions">
+                    <Button type="button" variant="primary" onClick={handleStartChat} disabled={!canInitiateChat}>
+                      Start Chat
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={closeNewChatModal}>
+                      Cancel
+                    </Button>
+                  </div>
+                </header>
 
-            <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "var(--space-2)"
+            <div className="tab-api" role="tablist" aria-label="Chat type" style={{
+            width: "100%",
+            maxWidth: "none",
+            flexWrap: "nowrap"
           }}>
-              <ComposeToggleButton active={composeMode === "direct"} onClick={() => {
+              <button type="button" role="tab" aria-selected={composeMode === "direct"} className={`tab-api__item${composeMode === "direct" ? " is-active" : ""}`} style={{ flex: "1 1 0", minWidth: 0 }} onClick={() => {
               setComposeMode("direct");
               setComposeError("");
               setSelectedRecipients(prev => prev.length ? [prev[0]] : []);
-            }}>
+              }}>
                 Direct
-              </ComposeToggleButton>
-              <ComposeToggleButton active={composeMode === "group"} onClick={() => {
+              </button>
+              <button type="button" role="tab" aria-selected={composeMode === "group"} className={`tab-api__item${composeMode === "group" ? " is-active" : ""}`} style={{ flex: "1 1 0", minWidth: 0 }} onClick={() => {
               setComposeMode("group");
               setComposeError("");
-            }}>
+              }}>
                 Group
-              </ComposeToggleButton>
+              </button>
             </div>
 
             <SearchBar placeholder="Search everyone..." value={directorySearch} onChange={event => setDirectorySearch(event.target.value)} onClear={() => setDirectorySearch("")} style={{
@@ -1309,7 +1349,8 @@ export default function MessagesPageUi(props) {
           }} />
 
             <div style={{
-            height: "320px",
+            flex: "1 1 auto",
+            minHeight: "220px",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
@@ -1390,18 +1431,6 @@ export default function MessagesPageUi(props) {
 
             {composeError && <StatusMessage tone="danger">{composeError}</StatusMessage>}
 
-            <div style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "var(--space-2)"
-          }}>
-              <Button type="button" variant="secondary" pill onClick={closeNewChatModal}>
-                Cancel
-              </Button>
-              <Button type="button" variant="primary" pill onClick={handleStartChat} disabled={!canInitiateChat}>
-                Start Chat
-              </Button>
-            </div>
               </div>
         </PopupModal>}
 
@@ -1482,34 +1511,41 @@ export default function MessagesPageUi(props) {
                       <div style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px"
+                  gap: "var(--space-xs)"
                 }}>
-                        {commands.map((cmd, idx) => <div key={idx} onClick={() => handleInsertCommandFromHelp(cmd)} style={{
-                    padding: "10px 12px",
+                        {commands.map((cmd, idx) => <div key={idx} role="button" tabIndex={0} onClick={() => handleInsertCommandFromHelp(cmd)} onKeyDown={event => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    handleInsertCommandFromHelp(cmd);
+                  }} style={{
+                    minHeight: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    padding: "0 12px",
                     backgroundColor: "var(--theme)",
                     borderRadius: radii.lg,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease"
-                  }} onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = "var(--theme)";
-                    e.currentTarget.style.transform = "translateX(4px)";
-                  }} onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = "var(--theme)";
-                    e.currentTarget.style.transform = "translateX(0)";
+                    cursor: "pointer"
                   }}>
                             <strong style={{
                       color: palette.accent,
-                      fontSize: "var(--text-body)"
+                      fontSize: "var(--text-body)",
+                      whiteSpace: "nowrap"
                     }}>
                               {cmd.command}
                             </strong>
-                            <p style={{
-                      margin: "2px 0 0 0",
+                            <span style={{
                       fontSize: "var(--text-body-sm)",
-                      color: palette.textMuted
+                      color: palette.textMuted,
+                      textAlign: "right",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
                     }}>
                               {cmd.description}
-                            </p>
+                            </span>
                           </div>)}
                       </div>
                     </div>;

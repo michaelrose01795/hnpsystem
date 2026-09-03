@@ -11,6 +11,7 @@ import Link from "next/link"; // Import Next.js Link for navigation buttons
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 import TechConsumableRequestPageUi from "@/components/page-ui/tech/tech-consumables-request-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const flattenStockData = (payloadData = {}) => {
   const locatedItems = (payloadData.locations || []).flatMap((location) =>
@@ -148,7 +149,7 @@ const TechConsumableRequestPage = () => {
       }
       setRequests(payload.data || []);
     } catch (error) {
-      console.error("❌ Failed to load consumable requests", error);
+      logFailure("❌ Failed to load consumable requests", error);
       setRequestError(error?.message || "Unable to load requests.");
     } finally {
       setLoadingRequests(false);
@@ -176,7 +177,7 @@ const TechConsumableRequestPage = () => {
       setStockItems(flattened);
       return flattened;
     } catch (error) {
-      console.error("❌ Failed to load stock items", error);
+      logFailure("❌ Failed to load stock items", error);
       setStockItems([]);
       setStockError(error?.message || "Unable to load stock items.");
       return [];
@@ -327,7 +328,7 @@ const TechConsumableRequestPage = () => {
         if (createdItem) addStockItemToSelection(createdItem);
         return createdItem || null;
       } catch (error) {
-        console.error("❌ Failed to add temporary consumable", error);
+        logFailure("❌ Failed to add temporary consumable", error);
         setRequestError(error?.message || "Unable to add consumable to stock.");
         return null;
       } finally {
@@ -391,7 +392,7 @@ const TechConsumableRequestPage = () => {
       setSuccessMessage(`${selectedStockItems.length} consumable request${selectedStockItems.length === 1 ? "" : "s"} sent.`);
       await fetchRequests();
     } catch (error) {
-      console.error("❌ Failed to send consumable requests", error);
+      logFailure("❌ Failed to send consumable requests", error);
       setSendError(error?.message || "Unable to send the request.");
     } finally {
       setSendLoading(false);

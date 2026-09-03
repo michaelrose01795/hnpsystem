@@ -17,6 +17,7 @@ import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentati
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 import { readRememberedStaffRoute, resolveReturnRoute } from "@/lib/auth/returnRoute";
 import { ALL_ACCESS_USER_ID } from "@/lib/auth/allAccessSession";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const LoginDropdown = dynamic(() => import("@/components/LoginDropdown"));
 
@@ -45,7 +46,7 @@ const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
 const warmStaffLandingPage = () =>
   import("@/lib/database/newsUpdates").then(({ warmNewsUpdatesCache }) => warmNewsUpdatesCache()).catch((error) => {
-    console.error("Failed to warm news feed cache:", error);
+    logFailure("Failed to warm news feed cache:", error);
   });
 const STAFF_DEV_LOGIN_HIDDEN_CATEGORIES = new Set(["customers"]);
 const hasActiveLogoutBarrier = () => {
@@ -292,7 +293,7 @@ export default function LoginPage() {
         })
         .catch((error) => {
           if (error.name === "AbortError") return;
-          console.error("Failed to load developer login roster", error);
+          logFailure("Failed to load developer login roster", error);
           setRosterState((current) => ({ ...current, isLoading: false }));
         });
     };
@@ -654,7 +655,7 @@ export default function LoginPage() {
       setRedirectInProgress(false);
       setIsRedirecting(false);
     } catch (err) {
-      console.error("Login error:", err);
+      logFailure("Login error:", err);
       setErrorMessage("Login failed, please try again.");
       clearAuthenticatedLayoutEntrance();
       setRedirectInProgress(false);
@@ -755,7 +756,7 @@ export default function LoginPage() {
             }
           }
         } catch (err) {
-          console.error("Auto clock-in failed:", err);
+          logFailure("Auto clock-in failed:", err);
         }
       };
       clockIn();
@@ -805,7 +806,7 @@ export default function LoginPage() {
           }
         }
       } catch (err) {
-        console.error("Auto clock-out on logout failed:", err);
+        logFailure("Auto clock-out on logout failed:", err);
       }
       await logout?.();
     })();

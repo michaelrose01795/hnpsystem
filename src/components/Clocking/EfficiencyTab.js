@@ -47,6 +47,7 @@ import {
   reconcileEfficiencyEntries,
 } from "@/lib/efficiency/analytics";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -1352,7 +1353,7 @@ export default function EfficiencyTab({
 
       doc.save(fileName);
     } catch (err) {
-      console.error("PDF download failed:", err);
+      logFailure("PDF download failed:", err);
       setError("Failed to generate the PDF. Please try again.");
     }
   };

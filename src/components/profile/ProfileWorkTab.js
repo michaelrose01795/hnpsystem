@@ -561,6 +561,7 @@ function createRecurringRuleLabel() {
 
 // Import shared recurring overtime utilities (cycle math, matching, grouping, summaries)
 import { groupRulesSmartly, getGroupKey, generateSmartSummary, getUpcomingEntries, detectOverlaps } from "@/lib/overtime/recurringUtils";
+import { logFailure } from "@/lib/utils/logFailure";
 
 function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null, initialMode = "single" }) {
   const [mode, setMode] = useState("single"); // "single" or "recurring"
@@ -1551,7 +1552,7 @@ export function ProfileWorkTab({
         if (error.name === "AbortError") return;
         if (!isMounted) return;
 
-        console.error("Failed to fetch user profile:", error);
+        logFailure("Failed to fetch user profile:", error);
         setUserProfileError(error);
         setUserProfileLoading(false);
       }
@@ -1753,7 +1754,7 @@ export function ProfileWorkTab({
       setProfileReloadKey((prev) => prev + 1);
       alert(`Leave request ${isEditMode ? "updated" : "submitted"} successfully.`);
     } catch (err) {
-      console.error("Leave request error:", err);
+      logFailure("Leave request error:", err);
       setLeaveSubmitError(err.message || `Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request.`);
     } finally {
       setLeaveSubmitting(false);
@@ -1792,7 +1793,7 @@ export function ProfileWorkTab({
       setProfileReloadKey((prev) => prev + 1);
       alert("Leave request removed successfully.");
     } catch (error) {
-      console.error("Failed to remove leave request:", error);
+      logFailure("Failed to remove leave request:", error);
       alert(`Failed to remove leave request. ${error.message || ""}`);
     } finally {
       setLeaveRemoving(false);

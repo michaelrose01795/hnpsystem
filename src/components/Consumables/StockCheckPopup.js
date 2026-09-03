@@ -4,6 +4,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -285,7 +286,7 @@ function StockCheckPopup({
         );
       });
     } catch (fetchError) {
-      console.error("❌ Failed to load stock data", fetchError);
+      logFailure("❌ Failed to load stock data", fetchError);
       setError(fetchError.message || "Unable to load stock data.");
     } finally {
       setLoading(false);
@@ -460,7 +461,7 @@ function StockCheckPopup({
         setIsAddConsumableOpen(false);
       }
     } catch (newItemError) {
-      console.error("❌ Failed to add consumable", newItemError);
+      logFailure("❌ Failed to add consumable", newItemError);
       setNewConsumableError(newItemError.message || "Unable to add consumable.");
     } finally {
       setNewConsumableLoading(false);
@@ -507,7 +508,7 @@ function StockCheckPopup({
         onRequestsSubmitted(nextState.stockChecks || []);
       }
     } catch (submitError) {
-      console.error("❌ Failed to submit stock check", submitError);
+      logFailure("❌ Failed to submit stock check", submitError);
       setError(submitError.message || "Unable to submit stock check.");
     } finally {
       setSubmitLoading(false);
@@ -571,7 +572,7 @@ function StockCheckPopup({
       setRenameItemState({ id: null, value: "" });
       return true;
     } catch (managerError) {
-      console.error("❌ Manager action failed", managerError);
+      logFailure("❌ Manager action failed", managerError);
       setError(managerError.message || "Unable to update consumables.");
       return false;
     } finally {
@@ -639,7 +640,7 @@ function StockCheckPopup({
       setData(payload.data || defaultData);
       setStatusMessage(`Request ${status}.`);
     } catch (requestError) {
-      console.error("❌ Failed to update request", requestError);
+      logFailure("❌ Failed to update request", requestError);
       setError(requestError.message || "Unable to update request.");
     } finally {
       setRequestUpdateId(null);

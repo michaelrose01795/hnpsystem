@@ -20,6 +20,7 @@ import { resolveScope } from "./permissionScope";
 import { normaliseFilter } from "./filters";
 import { buildEnvelope, buildErrorEnvelope } from "./envelope";
 import { getReportingFlag } from "./config/flags";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export function withReportingAuth(handler, { allow = [], methods = ["GET"] } = {}) {
   return withRoleGuard(
@@ -57,7 +58,7 @@ export function withReportingAuth(handler, { allow = [], methods = ["GET"] } = {
 
         return await handler(req, res, rctx);
       } catch (err) {
-        console.error("[reporting] route error:", err?.message || err);
+        logFailure("[reporting] route error:", err?.message || err);
         return res.status(500).json(buildErrorEnvelope(err?.message || "Reporting error"));
       }
     },

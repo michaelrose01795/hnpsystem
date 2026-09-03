@@ -103,6 +103,7 @@ export default function PartsDeliveriesPage() {
   const [draggingId, setDraggingId] = useState("");
   const [dropTargetId, setDropTargetId] = useState("");
   const [routeAnnouncement, setRouteAnnouncement] = useState("");
+  const [routeSettingsOpen, setRouteSettingsOpen] = useState(false);
 
   // A deep link (?date=2026-08-28) opens straight on that day, which is what
   // the topbar alerts and the dashboard tiles link to.
@@ -131,7 +132,7 @@ export default function PartsDeliveriesPage() {
 
   const capabilities = serverCapabilities || localCapabilities;
 
-  const { map, loading: mapLoading, error: mapError } = useDeliveryRouteMap({
+  const { map, loading: mapLoading, error: mapError, refresh: refreshMap } = useDeliveryRouteMap({
     date: selectedDate,
     enabled: localCapabilities.view,
   });
@@ -226,6 +227,27 @@ export default function PartsDeliveriesPage() {
     setVehicleFilter("all");
   }, []);
 
+  const optimiseRoute = useCallback(
+    async ({ avoidMotorways = false } = {}) => {
+      const response = await fetch("/api/parts/delivery-diary/route-optimise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ date: selectedDate, avoidMotorways }),
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || json?.success === false) {
+        throw new Error(json?.message || "The route could not be calculated.");
+      }
+      applyRouteToCache(json.data.deliveries, { revalidate: false });
+      setOrderOverride(null);
+      void refreshMap();
+      reportSuccess("The delivery route has been automatically ordered.");
+      return json.data.plan;
+    },
+    [applyRouteToCache, refreshMap, selectedDate]
+  );
+
   const changeDate = useCallback(
     (nextDate) => {
       if (!ISO_DATE_RE.test(nextDate || "")) return;
@@ -281,6 +303,7 @@ export default function PartsDeliveriesPage() {
       try {
         const data = await sendPatch(delivery, { action: actionKey });
         applyDeliveryToCache(data.delivery, data.events);
+        void refreshMap();
         (data.syncNotes || []).forEach((note) => reportSuccess(note));
       } catch (actionError) {
         reportError("The delivery could not be updated.", actionError, {
@@ -292,7 +315,7 @@ export default function PartsDeliveriesPage() {
         setBusy(null);
       }
     },
-    [applyDeliveryToCache, sendPatch]
+    [applyDeliveryToCache, refreshMap, sendPatch]
   );
 
   const patchDelivery = useCallback(
@@ -301,6 +324,7 @@ export default function PartsDeliveriesPage() {
       try {
         const data = await sendPatch(delivery, { patch });
         applyDeliveryToCache(data.delivery, data.events);
+        void refreshMap();
       } catch (patchError) {
         reportError("That change could not be saved.", patchError, {
           source: "deliveries",
@@ -311,7 +335,7 @@ export default function PartsDeliveriesPage() {
         setBusy(null);
       }
     },
-    [applyDeliveryToCache, sendPatch]
+    [applyDeliveryToCache, refreshMap, sendPatch]
   );
 
   const uploadProofFiles = useCallback(async (delivery, { photo, signature, recipientName }) => {
@@ -351,12 +375,16 @@ export default function PartsDeliveriesPage() {
           },
         });
         applyDeliveryToCache(data.delivery, data.events);
+        void refreshMap();
         (data.syncNotes || []).forEach((note) => reportSuccess(note));
         setProofTarget(null);
 
         try {
           const proof = await uploadProofFiles(proofTarget, details);
-          if (proof?.delivery) applyDeliveryToCache(proof.delivery, proof.events);
+          if (proof?.delivery) {
+            applyDeliveryToCache(proof.delivery, proof.events);
+            void refreshMap();
+          }
         } catch (uploadError) {
           reportWarning(
             "Delivery recorded, but the photo or signature could not be stored. Add it again from the delivery panel."
@@ -369,7 +397,7 @@ export default function PartsDeliveriesPage() {
         setModalSaving(false);
       }
     },
-    [applyDeliveryToCache, proofTarget, sendPatch, uploadProofFiles]
+    [applyDeliveryToCache, proofTarget, refreshMap, sendPatch, uploadProofFiles]
   );
 
   const confirmFailure = useCallback(
@@ -383,6 +411,7 @@ export default function PartsDeliveriesPage() {
           payload: details,
         });
         applyDeliveryToCache(data.delivery, data.events);
+        void refreshMap();
         setFailureTarget(null);
       } catch (failError) {
         setModalError(failError?.message || "The failure could not be recorded.");
@@ -390,7 +419,7 @@ export default function PartsDeliveriesPage() {
         setModalSaving(false);
       }
     },
-    [applyDeliveryToCache, failureTarget, sendPatch]
+    [applyDeliveryToCache, failureTarget, refreshMap, sendPatch]
   );
 
   // ---------------------------------------------------------------------------
@@ -510,6 +539,7 @@ export default function PartsDeliveriesPage() {
   return (
     <PartsDeliveriesPageUi
       view="diary"
+      allDeliveries={orderedDeliveries}
       busy={busy}
       capabilities={capabilities}
       changeDate={changeDate}
@@ -550,6 +580,7 @@ export default function PartsDeliveriesPage() {
       refreshing={refreshing}
       reorderEnabled={reorderEnabled}
       routeAnnouncement={routeAnnouncement}
+      routeSettingsOpen={routeSettingsOpen}
       runAction={runAction}
       searchTerm={searchTerm}
       selectDelivery={(delivery) =>
@@ -562,12 +593,20 @@ export default function PartsDeliveriesPage() {
       setSearchTerm={setSearchTerm}
       setStatusFilter={setStatusFilter}
       setVehicleFilter={setVehicleFilter}
-      toggleWeek={() => setWeekOpen((open) => !open)}
+      setRouteSettingsOpen={setRouteSettingsOpen}
+      optimiseRoute={optimiseRoute}
+      toggleView={() => {
+        if (weekOpen) {
+          setWeekOpen(false);
+          changeDate(todayIso());
+          return;
+        }
+        setWeekOpen(true);
+      }}
       statusFilter={statusFilter}
       statusOptions={statusOptions}
       summary={summary}
       summaryTiles={SUMMARY_TILES}
-      todayIso={todayIso}
       totalStops={orderedDeliveries.length}
       vehicleFilter={vehicleFilter}
       vehicleOptions={vehicleOptions}

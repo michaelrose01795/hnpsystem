@@ -10,6 +10,7 @@ import { isPresentationMode } from "@/features/presentation/runtime/presentation
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 import { useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { logFailure } from "@/lib/utils/logFailure";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -294,7 +295,7 @@ export function UserProvider({ children }) {
         setUser(finalDevUser);
         setDevRoleCookie(finalDevUser.roles || []);
       } catch (err) {
-        console.error("Failed to parse dev user from localStorage", err);
+        logFailure("Failed to parse dev user from localStorage", err);
       }
     }
     if (!stored) {
@@ -435,7 +436,7 @@ export function UserProvider({ children }) {
         setSidebarAccessOwnerId(null);
         setIdentityStatus(boot?.identity === "unlinked" ? "unlinked" : "error");
       } catch (err) {
-        console.error("Failed to resolve workshop user id", err?.message || err);
+        logFailure("Failed to resolve workshop user id", err?.message || err);
         if (cancelled) return;
         setDbUserId(null);
         setSidebarAccessOwnerId(null);
@@ -545,7 +546,7 @@ export function UserProvider({ children }) {
       setSidebarAccessLoading(false);
     } catch (err) {
       if (requestId !== sidebarAccessRequestRef.current) return;
-      console.error("Failed to load sidebar access", err?.message || err);
+      logFailure("Failed to load sidebar access", err?.message || err);
       if (!alreadyResolvedForUser) {
         setSidebarAccess(null);
         setSidebarAccessOwnerId(null);
@@ -620,7 +621,7 @@ export function UserProvider({ children }) {
         return null;
       }
     } catch (err) {
-      console.error("Failed to refresh current job", err?.message || err);
+      logFailure("Failed to refresh current job", err?.message || err);
       return null;
     }
   }, [dbUserId]);
@@ -679,7 +680,7 @@ export function UserProvider({ children }) {
       }
       return { success: true };
     } catch (err) {
-      console.error("Dev login failed", err);
+      logFailure("Dev login failed", err);
       return { success: false, error: err };
     }
   }, []);

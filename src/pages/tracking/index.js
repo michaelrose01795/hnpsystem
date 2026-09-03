@@ -26,6 +26,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summar
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import useIdleWarm from "@/hooks/useIdleWarm";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Two surfaces on this route render nothing on arrival, and both were the
 // heaviest things in its eager import graph.
@@ -161,6 +162,7 @@ const OIL_STOCK_CATEGORY_FILTERS = [
 
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
+const TRACKING_CARD_GRID_TEMPLATE = "repeat(auto-fit, minmax(min(100%, 320px), 1fr))";
 
 const renderTrackingSummaryItem = (item) => (
   <LayerTheme
@@ -1382,7 +1384,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         }));
       }
     } catch (err) {
-      console.error("Auto-fill error:", err);
+      logFailure("Auto-fill error:", err);
     } finally {
       setIsSearching(false);
     }
@@ -1837,7 +1839,6 @@ export default function TrackingDashboard() {
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
-  const [isWideTrackerView, setIsWideTrackerView] = useState(false);
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
   const [loanCarSearchTerm, setLoanCarSearchTerm] = useState("");
   const [loanCarMonth, setLoanCarMonth] = useState(() => {
@@ -1858,14 +1859,6 @@ export default function TrackingDashboard() {
     const mediaQuery = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
     setIsMobileView(mediaQuery.matches);
     const handler = (event) => setIsMobileView(event.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1280px)");
-    setIsWideTrackerView(mediaQuery.matches);
-    const handler = (event) => setIsWideTrackerView(event.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
@@ -1893,7 +1886,7 @@ export default function TrackingDashboard() {
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
     } catch (fetchError) {
-      console.error("Failed to fetch tracking snapshot", fetchError);
+      logFailure("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
       setError(fetchError?.message || "Unable to load tracking data");
     } finally {
@@ -1968,7 +1961,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Equipment data load error", loadError);
+      logFailure("Equipment data load error", loadError);
       setEquipmentChecks([]);
     }
   }, [isWorkshopManager]);
@@ -1986,7 +1979,7 @@ export default function TrackingDashboard() {
       }
       setOilChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Oil/stock data load error", loadError);
+      logFailure("Oil/stock data load error", loadError);
       setOilChecks([]);
     }
   }, [isWorkshopManager]);
@@ -2090,7 +2083,7 @@ export default function TrackingDashboard() {
         const updated = result.data;
         setEquipmentChecks((prev) => prev.map((item) => item.id === updated.id ? updated : item));
       } catch (error) {
-        console.error("Equipment check update failed", error);
+        logFailure("Equipment check update failed", error);
         alert(error.message || "Failed to log equipment check");
       }
     },
@@ -2127,7 +2120,7 @@ export default function TrackingDashboard() {
         setActiveTopUpId(null);
         setTopUpValue("");
       } catch (error) {
-        console.error("Oil/stock check update failed", error);
+        logFailure("Oil/stock check update failed", error);
         alert(error.message || "Failed to mark oil/stock check");
       }
     },
@@ -2179,7 +2172,7 @@ export default function TrackingDashboard() {
         });
         setEquipmentModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save equipment entry failed", error);
+        logFailure("Save equipment entry failed", error);
         alert(error.message || "Failed to save equipment entry");
       }
     },
@@ -2233,7 +2226,7 @@ export default function TrackingDashboard() {
         });
         setOilStockModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save oil/stock entry failed", error);
+        logFailure("Save oil/stock entry failed", error);
         alert(error.message || "Failed to save oil/stock entry");
       }
     },
@@ -2252,7 +2245,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete equipment entry failed", error);
+      logFailure("Delete equipment entry failed", error);
       alert(error.message || "Failed to delete equipment entry");
     } finally {
       setEquipmentModal({ open: false, item: null });
@@ -2271,7 +2264,7 @@ export default function TrackingDashboard() {
       }
       setOilChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete oil/stock entry failed", error);
+      logFailure("Delete oil/stock entry failed", error);
       alert(error.message || "Failed to delete oil/stock entry");
     } finally {
       setOilStockModal({ open: false, item: null });
@@ -2406,18 +2399,6 @@ export default function TrackingDashboard() {
     { label: "Customer Waiting", value: customerWaiting }];
 
   }, [activeEntries]);
-
-  const groupedTrackerEntries = useMemo(() => {
-    const groups = new Map();
-    filteredActiveEntries.forEach((entry) => {
-      const group = getTrackerGroup(entry);
-      if (!groups.has(group.id)) {
-        groups.set(group.id, { ...group, entries: [] });
-      }
-      groups.get(group.id).entries.push(entry);
-    });
-    return Array.from(groups.values());
-  }, [filteredActiveEntries]);
 
   const filteredEquipmentChecks = useMemo(() => {
     const term = equipmentSearchTerm.trim().toLowerCase();
@@ -2596,7 +2577,7 @@ export default function TrackingDashboard() {
       closeEntryModal();
       setSimplifiedModal({ open: false, initialData: null });
     } catch (saveError) {
-      console.error("Failed to log tracking entry", saveError);
+      logFailure("Failed to log tracking entry", saveError);
       setError(saveError.message || "Unable to save tracking entry");
     }
   };
@@ -2660,59 +2641,29 @@ export default function TrackingDashboard() {
           No active jobs match your search or filters.
         </DevLayoutSection>
     }
-      {groupedTrackerEntries.map((group) =>
+      {filteredActiveEntries.length > 0 &&
     <DevLayoutSection
-      key={group.id}
-      sectionKey={`tracking-active-jobs-group-${group.id}`}
+      sectionKey="tracking-active-jobs-list"
       parentKey="tracking-page-body"
-      sectionType="section-shell"
+      sectionType="list"
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
+        display: "grid",
+        gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+        alignItems: "stretch",
+        gap: "20px",
         width: "100%",
         maxWidth: "100%",
         minWidth: 0
       }}>
 
-        <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: "var(--space-sm)",
-          minWidth: 0
-        }}>
-
-          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
-            {group.label}
-          </h2>
-          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
-            {group.entries.length}
-          </span>
-        </div>
-
-        <DevLayoutSection
-        sectionKey={`tracking-active-jobs-list-${group.id}`}
-        parentKey={`tracking-active-jobs-group-${group.id}`}
-        sectionType="list"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-          !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
-          gap: "20px",
-          width: "100%",
-          maxWidth: "100%",
-          minWidth: 0
-        }}>
-
-          {group.entries.map((entry, index) => {
+          {filteredActiveEntries.map((entry, index) => {
+        const group = getTrackerGroup(entry);
         const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
         return (
           <DevLayoutSection
             key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
             sectionKey={`tracking-active-jobs-card-${group.id}-${index + 1}`}
-            parentKey={`tracking-active-jobs-list-${group.id}`}
+            parentKey="tracking-active-jobs-list"
             sectionType="content-card">
 
               <CombinedTrackerCard
@@ -2740,9 +2691,8 @@ export default function TrackingDashboard() {
             </DevLayoutSection>);
 
       })}
-        </DevLayoutSection>
       </DevLayoutSection>
-    )}
+    }
     </>;
 
 
@@ -2830,10 +2780,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, min(100%, 260px))" : "repeat(auto-fill, 260px)",
-          justifyContent: "start",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
           alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 
@@ -3065,8 +3016,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+          alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 

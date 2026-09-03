@@ -14,6 +14,7 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import GoodsInPageUi from "@/components/page-ui/parts/parts-goods-in-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const PRICE_LEVEL_OPTIONS = [
 { value: "stock_order_rate", label: "Stock order rate" },
@@ -389,7 +390,7 @@ function GoodsInPage() {
           priceLevel: payload.goodsIn?.price_level || "stock_order_rate"
         }));
       } catch (error) {
-        console.error(error);
+        logFailure(error);
         setToast({ type: "error", message: error.message });
       }
     },
@@ -523,7 +524,7 @@ function GoodsInPage() {
       setToast({ type: "success", message: `Goods in ${payload.goodsIn.goods_in_number} started` });
       return payload.goodsIn;
     } catch (error) {
-      console.error(error);
+      logFailure(error);
       setToast({ type: "error", message: error.message });
       setPartError(error.message);
       return null;
@@ -562,7 +563,7 @@ function GoodsInPage() {
       await fetchRecentGoodsIn();
       return true;
     } catch (error) {
-      console.error(error);
+      logFailure(error);
       setToast({ type: "error", message: error.message });
       return false;
     } finally {
@@ -658,7 +659,7 @@ function GoodsInPage() {
       fetchRecentGoodsIn();
       requestAnimationFrame(() => partNumberInputRef.current?.focus());
     } catch (error) {
-      console.error(error);
+      logFailure(error);
       setToast({ type: "error", message: error.message });
       setPartError(error.message);
     } finally {
@@ -706,7 +707,7 @@ function GoodsInPage() {
       setGoodsInItems((prev) => prev.filter((item) => item.id !== itemId));
       setToast({ type: "success", message: "Invoice line removed" });
     } catch (error) {
-      console.error(error);
+      logFailure(error);
       setToast({ type: "error", message: error.message });
     } finally {
       setRemovingItemId(null);
@@ -765,7 +766,7 @@ function GoodsInPage() {
       setToast({ type: "success", message: `${payload.goodsIn.goods_in_number} marked complete` });
       fetchRecentGoodsIn();
     } catch (error) {
-      console.error(error);
+      logFailure(error);
       setToast({ type: "error", message: error.message });
     } finally {
       setCompleting(false);
@@ -1856,7 +1857,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         setResults(suppliers);
         setError(suppliers.length ? "" : "No suppliers found");
       } catch (err) {
-        console.error(err);
+        logFailure(err);
         if (requestId === searchRequestRef.current) {
           setError(err.message);
         }
@@ -2102,7 +2103,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
       setResults([...(payload.parts || [])].sort((a, b) => scorePart(a) - scorePart(b) || String(a.part_number).localeCompare(String(b.part_number))));
       setError(payload.parts?.length ? "" : "No parts match this search");
     } catch (err) {
-      console.error(err);
+      logFailure(err);
       if (requestId === searchRequestRef.current) {
         setError(err.message);
       }
@@ -2439,7 +2440,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
         setError(failed[0].reason?.message || "Some parts could not be linked to the job");
       }
     } catch (err) {
-      console.error(err);
+      logFailure(err);
       setError(err.message);
     } finally {
       setSubmitting(false);

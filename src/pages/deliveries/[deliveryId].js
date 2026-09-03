@@ -9,6 +9,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import DeliveryRoutePageUi from "@/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const STATUS_META = {
   planned: { label: "Planned", background: "rgba(var(--warning-rgb), 0.15)", color: "var(--danger-dark)" },
@@ -125,7 +126,7 @@ export default function DeliveryRoutePage() {
       setFuelSyncedKey(null);
       return payload;
     } catch (fetchErr) {
-      console.error("Failed to load delivery:", fetchErr);
+      logFailure("Failed to load delivery:", fetchErr);
       setError(fetchErr?.message || "Unable to load delivery route");
     } finally {
       setLoading(false);
@@ -161,7 +162,7 @@ export default function DeliveryRoutePage() {
           setCustomerResults(data || []);
         }
       } catch (searchErr) {
-        console.error("Customer search failed:", searchErr);
+        logFailure("Customer search failed:", searchErr);
       } finally {
         if (isActive) {
           setCustomerSearchLoading(false);
@@ -187,7 +188,7 @@ export default function DeliveryRoutePage() {
         setDieselPricePerLitre(data.diesel_price_per_litre);
       }
     } catch (settingsError) {
-      console.error("Failed to load diesel price:", settingsError);
+      logFailure("Failed to load diesel price:", settingsError);
     }
   }, []);
 
@@ -288,7 +289,7 @@ export default function DeliveryRoutePage() {
           setFuelSyncedKey(syncKey);
         }
       } catch (syncErr) {
-        console.error("Failed to sync mileage after fuel settings change:", syncErr);
+        logFailure("Failed to sync mileage after fuel settings change:", syncErr);
       }
     };
     runSync();
@@ -331,7 +332,7 @@ export default function DeliveryRoutePage() {
         body: JSON.stringify(payload)
       });
     } catch (notifyError) {
-      console.error("Unable to send delivery notification:", notifyError);
+      logFailure("Unable to send delivery notification:", notifyError);
     }
   }, []);
 
@@ -395,7 +396,7 @@ export default function DeliveryRoutePage() {
           }
         }
       } catch (actionErr) {
-        console.error("Status update failed:", actionErr);
+        logFailure("Status update failed:", actionErr);
         setError(actionErr?.message || "Unable to update stop status");
       } finally {
         setActionLoading(false);
@@ -447,7 +448,7 @@ export default function DeliveryRoutePage() {
       await syncLegMileage(orderedStops, parsedMpg);
       await loadDelivery();
     } catch (mpgErr) {
-      console.error("Failed to save MPG:", mpgErr);
+      logFailure("Failed to save MPG:", mpgErr);
       setError(mpgErr?.message || "Unable to save MPG");
     } finally {
       setActionLoading(false);
@@ -477,7 +478,7 @@ export default function DeliveryRoutePage() {
       await loadDelivery();
       cancelNoteEditing();
     } catch (saveErr) {
-      console.error("Failed to save note:", saveErr);
+      logFailure("Failed to save note:", saveErr);
       setError(saveErr?.message || "Unable to save note");
     } finally {
       setNoteSaving(false);
@@ -510,7 +511,7 @@ export default function DeliveryRoutePage() {
           throw new Error(payload?.message || "Unable to confirm job delivery.");
         }
       } catch (confirmError) {
-        console.error("Failed to confirm job delivery:", confirmError);
+        logFailure("Failed to confirm job delivery:", confirmError);
         setError(confirmError?.message || "Unable to confirm job delivery.");
       }
     },
@@ -593,7 +594,7 @@ export default function DeliveryRoutePage() {
       setModalOpen(false);
       resetModal();
     } catch (saveErr) {
-      console.error("Failed to add stop:", saveErr);
+      logFailure("Failed to add stop:", saveErr);
       setModalError(saveErr?.message || "Unable to add stop.");
     } finally {
       setSavingStop(false);
@@ -626,7 +627,7 @@ export default function DeliveryRoutePage() {
         await syncLegMileage(nextOrder, delivery?.vehicle_mpg);
         await loadDelivery();
       } catch (reorderErr) {
-        console.error("Failed to reorder stops:", reorderErr);
+        logFailure("Failed to reorder stops:", reorderErr);
         setError(reorderErr?.message || "Unable to reorder stops");
       } finally {
         setActionLoading(false);
@@ -677,7 +678,7 @@ export default function DeliveryRoutePage() {
         await syncLegMileage(remainingStops, delivery?.vehicle_mpg);
         await loadDelivery();
       } catch (deleteErr) {
-        console.error("Failed to delete stop:", deleteErr);
+        logFailure("Failed to delete stop:", deleteErr);
         setError(deleteErr?.message || "Unable to delete stop");
       } finally {
         setActionLoading(false);

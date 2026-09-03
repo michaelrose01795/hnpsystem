@@ -21,7 +21,6 @@ const ROUTE_TO_MODULE = {
 
   // Admin
   "/dashboard/admin": () => import("@/pages/dashboard/admin/index"),
-  "/admin/users": () => import("@/pages/admin/users/index"),
   "/admin/compliance": () => import("@/pages/admin/compliance/index"),
   "/admin/compliance/breaches": () => import("@/pages/admin/compliance/breaches"),
   "/admin/compliance/dpias": () => import("@/pages/admin/compliance/dpias"),

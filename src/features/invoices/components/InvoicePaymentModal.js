@@ -9,6 +9,7 @@ import {
   PAYMENT_FLOW_OUTCOMES,
   PAYMENT_FLOW_STEPS,
 } from "@/lib/payments/paymentFlow";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
@@ -245,7 +246,7 @@ export default function InvoicePaymentModal({
 
       await onInvoiceActionComplete?.(payload);
     } catch (error) {
-      console.error("Payment flow failed:", error);
+      logFailure("Payment flow failed:", error);
       setCurrentState("failed");
       pushLog("failed", error.message || "Simulation failed");
       setResultMessage(error.message || "Simulation failed");
@@ -306,7 +307,7 @@ export default function InvoicePaymentModal({
       await onInvoiceActionComplete?.();
       onClose?.();
     } catch (error) {
-      console.error("Release flow failed:", error);
+      logFailure("Release flow failed:", error);
       setResultMessage(error.message || "Unable to release vehicle");
     } finally {
       setReleaseBusy(false);

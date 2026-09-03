@@ -32,6 +32,7 @@ import Button from "@/components/ui/Button";
 import useDeviceCamera from "./useDeviceCamera";
 import useWidgetRecorder from "./useWidgetRecorder";
 import ConcernPanel from "./ConcernPanel";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // ─── layout constants ────────────────────────────────────────────────────────
 
@@ -1483,7 +1484,7 @@ export default function FullScreenCapture({
       await Promise.resolve(onCapture?.(file, { type: "photo", widgets: [] }));
       onClose?.();
     } catch (err) {
-      console.error("Photo capture failed:", err);
+      logFailure("Photo capture failed:", err);
       showAlert(buildErrorAlert(
         "Photo capture failed. Please try again.",
         err,
@@ -1500,7 +1501,7 @@ export default function FullScreenCapture({
       try {
         await recorder.start();
       } catch (err) {
-        console.error("Start recording failed:", err);
+        logFailure("Start recording failed:", err);
         showAlert(buildErrorAlert(
           "Could not start recording. Check camera permissions and try again.",
           err,
@@ -1526,7 +1527,7 @@ export default function FullScreenCapture({
       }
       onClose?.();
     } catch (err) {
-      console.error("Stop recording failed:", err);
+      logFailure("Stop recording failed:", err);
       showAlert(buildErrorAlert(
         "Recording stopped unexpectedly. The video may not have been saved.",
         err,

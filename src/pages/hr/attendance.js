@@ -5,6 +5,11 @@ import { SectionCard } from "@/components/Section";
 import { Button, StatusMessage } from "@/components/ui";
 import { StatusTag } from "@/components/HR/MetricCard";
 import HrAttendanceUi from "@/components/page-ui/hr/hr-attendance-ui"; // Extracted presentation layer.
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("attendance");
+}
 
 export default function HrAttendance() {
   const { data, isLoading, error } = useHrAttendanceData();

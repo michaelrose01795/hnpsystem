@@ -68,10 +68,14 @@ export const UI_FAMILIES = [
       { id: "md", className: "", description: "Default 44px control height." },
       { id: "sm", className: "app-btn--sm", description: "40px — compact toolbars." },
       { id: "xs", className: "app-btn--xs", description: "34px — table rows, dense UIs." },
+      { id: "xxs", className: "app-btn--xxs", description: "32px — leaves the control floor; secondary affordance beside a full-height control." },
     ],
     shapes: [
       { id: "default", className: "", description: "Rounded rectangle." },
       { id: "pill", className: "app-btn--pill", description: "Fully rounded, use for inline toggles." },
+      { id: "icon", className: "app-btn--icon", description: "Circular single-glyph button, locked to --control-height." },
+      { id: "icon-glyph-lg", className: "app-btn--icon app-btn--glyph-lg", description: "Icon button whose bare glyph (+, ×) fills the circle." },
+      { id: "icon-sm", className: "app-btn--icon-sm", description: "Perfect 32px circle for a single glyph sitting beside a 44px control." },
     ],
     customOnly: [
       {
@@ -416,6 +420,98 @@ export const UI_FAMILIES = [
       { id: "success", className: "app-toast app-toast--success", description: "Positive outcome.", usage: "Record created, Job completed.", status: "approved" },
       { id: "warning", className: "app-toast app-toast--warning", description: "Soft warning.", usage: "Partial save, retry suggested.", status: "approved" },
       { id: "error", className: "app-toast app-toast--error", description: "Error / failure.", usage: "Save failed, request rejected.", status: "approved" },
+    ],
+  },
+  {
+    id: "error-recovery",
+    label: "Error recovery",
+    cssFile: "src/styles/families/error-recovery.css",
+    component: "src/components/support/SupportErrorBoundary.js",
+    traceColor: "#dc2626",
+    description:
+      "The in-app error experience: the recovery screen an error boundary renders and the pieces of it reused by the framework error pages and the report popup.",
+    variants: [
+      {
+        id: "reference",
+        className: "app-error-reference",
+        description: "The short quotable error reference line shown under the recovery message.",
+        usage: "Recovery screens, 404/500 pages, and the Report a problem popup.",
+        status: "approved",
+      },
+    ],
+  },
+  {
+    id: "news",
+    label: "News / Communication hub",
+    cssFile: "src/styles/families/news.css",
+    component: "src/components/NewsFeed/NewsPostCard.js",
+    traceColor: "#0ea5e9",
+    description:
+      "The dealership communication hub: feed cards, priority and category chips, author avatars, acknowledgement banners, attachment and record-link rows, comment threads and the reach/read-rate insight blocks.",
+    variants: [
+      {
+        id: "card",
+        className: "app-news-card",
+        description: "A post in the feed. Sits on the --theme rung; anything nested inside flips back to --surface.",
+        usage: "The default comfortable feed row.",
+        status: "approved",
+      },
+      {
+        id: "card-compact",
+        className: "app-news-card app-news-card--compact",
+        description: "Denser feed row — tighter padding, two-line body clamp.",
+        usage: "When the reader has chosen the compact feed view.",
+        status: "approved",
+      },
+      {
+        id: "chip",
+        className: "app-news-chip",
+        description: "Category / department / state chip on the accent tint.",
+        usage: "Post metadata rows and filter summaries.",
+        status: "approved",
+      },
+      {
+        id: "chip-urgent",
+        className: "app-news-chip app-news-chip--urgent",
+        description: "Urgent priority chip. Tone is carried by tint + glyph, never by a border.",
+        usage: "Urgent announcements only.",
+        status: "approved",
+      },
+      {
+        id: "avatar",
+        className: "app-news-avatar",
+        description: "Author avatar — photo when the user has one, monogram when they do not.",
+        usage: "Bylines, comment rows and acknowledgement trackers.",
+        status: "approved",
+      },
+      {
+        id: "ack",
+        className: "app-news-ack",
+        description: "Acknowledgement banner with its due / overdue / done tones.",
+        usage: "Posts that require a sign-off.",
+        status: "approved",
+      },
+      {
+        id: "comment",
+        className: "app-news-comment",
+        description: "One comment row. Carries the only allowed line — a --separating-line row rule.",
+        usage: "The comment thread on a post.",
+        status: "approved",
+      },
+      {
+        id: "stat",
+        className: "app-news-stat",
+        description: "A single reach / engagement figure with its caption.",
+        usage: "Post insights and the hub analytics panel.",
+        status: "approved",
+      },
+      {
+        id: "meter",
+        className: "app-news-meter",
+        description: "Read-rate meter: track plus fill, no outline.",
+        usage: "Read and acknowledgement rates.",
+        status: "approved",
+      },
     ],
   },
 ];

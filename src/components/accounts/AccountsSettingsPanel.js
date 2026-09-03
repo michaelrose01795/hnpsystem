@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, StatusMessage } from "@/components/ui";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const initialSettings = {
   requireManagerApproval: true,
@@ -49,7 +50,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
         }
         setSettings({ ...initialSettings, ...(payload.data || {}) });
       } catch (error) {
-        console.error("Failed to load account settings", error);
+        logFailure("Failed to load account settings", error);
         setMessage(error.message || "Unable to load settings");
       } finally {
         setLoading(false);
@@ -67,7 +68,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
         }
         setCompanyProfile({ ...defaultCompanyProfile, ...(payload.data || {}) });
       } catch (error) {
-        console.error("Failed to load company profile", error);
+        logFailure("Failed to load company profile", error);
         setCompanyMessage(error.message || "Unable to load company profile");
       } finally {
         setCompanyLoading(false);
@@ -96,7 +97,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
       }
       setMessage("Settings saved successfully.");
     } catch (error) {
-      console.error("Failed to save account settings", error);
+      logFailure("Failed to save account settings", error);
       setMessage(error.message || "Unable to save settings");
     }
   };
@@ -121,7 +122,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
       setCompanyProfile(payload.data || defaultCompanyProfile);
       setCompanyMessage("Company & bank details saved.");
     } catch (error) {
-      console.error("Failed to save company profile", error);
+      logFailure("Failed to save company profile", error);
       setCompanyMessage(error.message || "Unable to save company profile.");
     } finally {
       setCompanySaving(false);

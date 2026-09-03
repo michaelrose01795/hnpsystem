@@ -8,7 +8,7 @@
 import React, { useState } from "react";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useUser } from "@/context/UserContext";
-import { Panel, KeyValue, KeyValueGrid, DevButton, Pill } from "@/components/support/dev/supportDevUi";
+import { Panel, KeyValue, KeyValueGrid, badgeClass } from "@/components/support/dev/supportDevUi";
 import { STATUS_OPTIONS, SEVERITY_OPTIONS, STATUS_META, SEVERITY_META } from "@/lib/support/adminView";
 
 export default function SupportTriagePanel({ report, patch }) {
@@ -45,11 +45,11 @@ export default function SupportTriagePanel({ report, patch }) {
           label="Assignee"
           value={
             <span style={{ display: "inline-flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-              {assignedTo ? <Pill label={isMine ? "You" : `User #${assignedTo}`} tone="accentText" /> : <span style={{ opacity: 0.6 }}>Unassigned</span>}
+              {assignedTo ? <span className="app-badge app-badge--accent-soft">{isMine ? "You" : `User #${assignedTo}`}</span> : <span style={{ opacity: 0.6 }}>Unassigned</span>}
               {!isMine && Number.isInteger(dbUserId) ? (
-                <DevButton small onClick={() => patch({ assignedTo: dbUserId })}>Assign to me</DevButton>
+                <button type="button" onClick={() => patch({ assignedTo: dbUserId })} className="app-btn app-btn--secondary app-btn--sm">Assign to me</button>
               ) : null}
-              {assignedTo ? <DevButton small variant="ghost" tone="text-1" onClick={() => patch({ assignedTo: null })}>Unassign</DevButton> : null}
+              {assignedTo ? <button type="button" onClick={() => patch({ assignedTo: null })} className="app-btn app-btn--secondary app-btn--sm">Unassign</button> : null}
             </span>
           }
         />
@@ -61,7 +61,7 @@ export default function SupportTriagePanel({ report, patch }) {
                 <a href={`/dev/support-reports/${report.duplicate_of}`} style={{ color: "var(--accentText)", fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)" }}>
                   {String(report.duplicate_of).slice(0, 8)}…
                 </a>
-                <DevButton small variant="ghost" tone="text-1" onClick={() => patch({ duplicateOf: null })}>Clear</DevButton>
+                <button type="button" onClick={() => patch({ duplicateOf: null })} className="app-btn app-btn--secondary app-btn--sm">Clear</button>
               </span>
             ) : (
               <span style={{ display: "inline-flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
@@ -70,10 +70,10 @@ export default function SupportTriagePanel({ report, patch }) {
                   placeholder="Canonical report id (UUID)"
                   value={dupInput}
                   onChange={(e) => setDupInput(e.target.value)}
-                  style={{ minHeight: 36, padding: "4px 10px", borderRadius: "var(--radius-md)", background: "var(--surface)", color: "var(--text-1)", minWidth: 220 }}
+                  style={{ minWidth: 220 }}
                 />
-                <DevButton
-                  small
+                <button
+                  type="button"
                   onClick={() => {
                     const v = dupInput.trim();
                     if (v && v !== report.id) {
@@ -81,9 +81,10 @@ export default function SupportTriagePanel({ report, patch }) {
                       setDupInput("");
                     }
                   }}
+                  className="app-btn app-btn--secondary app-btn--sm"
                 >
                   Mark duplicate
-                </DevButton>
+                </button>
               </span>
             )
           }
@@ -91,8 +92,8 @@ export default function SupportTriagePanel({ report, patch }) {
       </KeyValueGrid>
 
       <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
-        Current: <Pill label={STATUS_META[report.status]?.label || report.status} tone={STATUS_META[report.status]?.tone} /> ·{" "}
-        <Pill label={SEVERITY_META[report.severity]?.label || report.severity} tone={SEVERITY_META[report.severity]?.tone} />
+        Current: <span className={badgeClass(STATUS_META[report.status]?.tone)}>{STATUS_META[report.status]?.label || report.status}</span> ·{" "}
+        <span className={badgeClass(SEVERITY_META[report.severity]?.tone)}>{SEVERITY_META[report.severity]?.label || report.severity}</span>
       </div>
     </Panel>
   );

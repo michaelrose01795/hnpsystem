@@ -133,15 +133,7 @@ export function CommandPaletteProvider({ children }) {
               placeholder="Search commands… (arrow keys to move, Enter to run, Esc to close)"
               aria-label="Search commands"
               className="app-input"
-              style={{
-                width: "100%",
-                minHeight: 44,
-                padding: "10px 12px",
-                borderRadius: "var(--radius-md)",
-                fontSize: "var(--text-body)",
-                background: "var(--theme)",
-                color: "var(--text-1)",
-              }}
+              style={{ width: "100%" }}
             />
             <ul
               role="listbox"

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
 const mainCardStyle = {
@@ -82,7 +83,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
     try {
       await navigator.clipboard.writeText(value);
     } catch (err) {
-      console.error("Copy failed", err);
+      logFailure("Copy failed", err);
     }
   };
 

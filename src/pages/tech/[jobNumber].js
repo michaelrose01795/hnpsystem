@@ -103,6 +103,7 @@ import themeConfig, {
 // Page layout styles — moved inline from appTheme.js (this was the only consumer).
 // Uses thin CSS variable wrapper aliases to keep the same token references.
 import TechJobDetailPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
   accent: "var(--primary)", // primary brand colour
   accentSoft: "var(--surface)", // light accent surface
@@ -651,7 +652,7 @@ export default function TechJobDetailPage() {
       eq("approval_status", "authorized").
       then(({ data, error }) => {
         if (error) {
-          console.error("Failed to refresh authorised VHC rows:", error);
+          logFailure("Failed to refresh authorised VHC rows:", error);
         } else {
           setAuthorizedVhcRows(data || []);
         }
@@ -712,7 +713,7 @@ export default function TechJobDetailPage() {
 
         setPartsRequests(data || []);
       } catch (loadError) {
-        console.error("Failed to load parts requests:", loadError);
+        logFailure("Failed to load parts requests:", loadError);
         setPartsRequests([]);
       } finally {
         setPartsRequestsLoading(false);
@@ -734,7 +735,7 @@ export default function TechJobDetailPage() {
         const fetchedNotes = await (await loadNotesDb()).getNotesByJob(targetJobId);
         setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
       } catch (error) {
-        console.error("Failed to load notes:", error);
+        logFailure("Failed to load notes:", error);
         setNotes([]);
       } finally {
         setNotesLoading(false);
@@ -810,7 +811,7 @@ export default function TechJobDetailPage() {
 
         setAuthorizedParts(filtered);
       } catch (loadError) {
-        console.error("Failed to load authorised parts:", loadError);
+        logFailure("Failed to load authorised parts:", loadError);
         setAuthorizedParts([]);
         setAuthorizedVhcRows([]);
       } finally {
@@ -833,7 +834,7 @@ export default function TechJobDetailPage() {
         setStatusSnapshot(payload.snapshot);
       }
     } catch (snapshotError) {
-      console.error("Failed to load status snapshot:", snapshotError);
+      logFailure("Failed to load status snapshot:", snapshotError);
     }
   }, []);
 
@@ -864,7 +865,7 @@ export default function TechJobDetailPage() {
         });
       }
     } catch (statusError) {
-      console.error("Failed to load VHC customer status:", statusError);
+      logFailure("Failed to load VHC customer status:", statusError);
     }
   }, [jobNumber]);
 
@@ -885,7 +886,7 @@ export default function TechJobDetailPage() {
         setClockingStatus(null);
       }
     } catch (error) {
-      console.error("Error refreshing clocking status:", error);
+      logFailure("Error refreshing clocking status:", error);
       setClockingStatus(null);
     }
   }, [dbUserId]);
@@ -939,7 +940,7 @@ export default function TechJobDetailPage() {
           revalidateAllJobs(); // sync status change to other pages
           return { status: subStatusUpdates.status || targetStatus, subStatus: targetStatus };
         } catch (error) {
-          console.error("syncJobStatus error:", error);
+          logFailure("syncJobStatus error:", error);
           return null;
         }
       }
@@ -982,7 +983,7 @@ export default function TechJobDetailPage() {
           return response.data;
         }
       } catch (error) {
-        console.error("syncJobStatus error:", error);
+        logFailure("syncJobStatus error:", error);
       }
 
       return null;
@@ -1009,7 +1010,7 @@ export default function TechJobDetailPage() {
         setJobClocking(null);
       }
     } catch (refreshError) {
-      console.error("Failed to refresh job clocking", refreshError);
+      logFailure("Failed to refresh job clocking", refreshError);
       setJobClocking(null);
     }
   }, [dbUserId, user?.id, jobCardId]);
@@ -1034,7 +1035,7 @@ export default function TechJobDetailPage() {
       const rows = Array.isArray(data) ? data : [];
       setClockingRows(rows);
     } catch (fetchError) {
-      console.error("Failed to fetch clocked hours total:", fetchError);
+      logFailure("Failed to fetch clocked hours total:", fetchError);
       setClockingRows([]);
     }
   }, [jobCardId, jobNumber]);
@@ -1062,7 +1063,7 @@ export default function TechJobDetailPage() {
       }
       return payload.data || null;
     } catch (loadError) {
-      console.error("Failed to load tracking entry", loadError);
+      logFailure("Failed to load tracking entry", loadError);
       return null;
     }
   }, []);
@@ -1114,7 +1115,7 @@ export default function TechJobDetailPage() {
       await loadVhcCustomerStatus();
       return job;
     } catch (fetchError) {
-      console.error("Error fetching job:", fetchError);
+      logFailure("Error fetching job:", fetchError);
       alert("Failed to load job");
       return null;
     } finally {
@@ -1208,7 +1209,7 @@ export default function TechJobDetailPage() {
       }
       setTrackerQuickModalOpen(false);
     } catch (saveError) {
-      console.error("Failed to save tracking entry", saveError);
+      logFailure("Failed to save tracking entry", saveError);
     }
   }, [dbUserId, jobData, jobNumber, loadTrackerEntry]);
 
@@ -1259,7 +1260,7 @@ export default function TechJobDetailPage() {
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to update technician job requests:", requestError);
+      logFailure("Failed to update technician job requests:", requestError);
     }
   }, [jobCardId, refreshWorkspaceData]);
 
@@ -1272,7 +1273,7 @@ export default function TechJobDetailPage() {
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to update technician request status:", requestError);
+      logFailure("Failed to update technician request status:", requestError);
     }
   }, [refreshWorkspaceData]);
 
@@ -1285,7 +1286,7 @@ export default function TechJobDetailPage() {
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to save technician request details:", requestError);
+      logFailure("Failed to save technician request details:", requestError);
     }
   }, [refreshWorkspaceData]);
 
@@ -1298,7 +1299,7 @@ export default function TechJobDetailPage() {
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to complete technician job requests:", requestError);
+      logFailure("Failed to complete technician job requests:", requestError);
     }
   }, [jobCardId, refreshWorkspaceData]);
 
@@ -1316,7 +1317,7 @@ export default function TechJobDetailPage() {
       revalidateAllJobs();
       return result;
     } catch (writeUpError) {
-      console.error("Failed to save technician write-up:", writeUpError);
+      logFailure("Failed to save technician write-up:", writeUpError);
       throw writeUpError instanceof Error
         ? writeUpError
         : new Error(String(writeUpError || "Failed to save write-up"));
@@ -1565,7 +1566,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock out of this job.");
       }
     } catch (clockOutError) {
-      console.error("Error clocking out from job:", clockOutError);
+      logFailure("Error clocking out from job:", clockOutError);
       alert(clockOutError.message || "Error clocking out. Please try again.");
     } finally {
       setClockOutLoading(false);
@@ -1657,7 +1658,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true, requestId: insertedRequest?.request_id };
     } catch (submitError) {
-      console.error("Failed to submit part request:", submitError);
+      logFailure("Failed to submit part request:", submitError);
       setPartsFeedback(submitError.message || "Failed to raise the part request. Try again.");
       return { success: false };
     } finally {
@@ -1738,7 +1739,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true };
     } catch (error) {
-      console.error("Failed to update parts request:", error);
+      logFailure("Failed to update parts request:", error);
       setPartsFeedback(error.message || "Failed to update the parts request.");
       return { success: false };
     }
@@ -1795,7 +1796,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true };
     } catch (error) {
-      console.error("Failed to update job part:", error);
+      logFailure("Failed to update job part:", error);
       setPartsFeedback(error.message || "Failed to update part status.");
       return { success: false };
     }
@@ -1858,12 +1859,12 @@ export default function TechJobDetailPage() {
           }
           return true;
         }
-        console.error("VHC save failed:", result.error);
+        logFailure("VHC save failed:", result.error);
         setSaveStatus("error");
         setSaveError(result.error?.message || "Failed to save VHC data.");
         return false;
       } catch (err) {
-        console.error("Error saving VHC:", err);
+        logFailure("Error saving VHC:", err);
         setSaveStatus("error");
         setSaveError(err.message || "Unexpected error saving VHC data.");
         return false;
@@ -2358,7 +2359,7 @@ export default function TechJobDetailPage() {
         }
       }
     } catch (error) {
-      console.error("Error updating VHC status:", error);
+      logFailure("Error updating VHC status:", error);
       if (shouldShowCompleteCard) {
         setVhcCompleteOverride(false);
       }
@@ -2542,7 +2543,7 @@ export default function TechJobDetailPage() {
       setShowAddNote(false);
       await loadNotes(jobCardId);
     } catch (error) {
-      console.error("Failed to add note:", error);
+      logFailure("Failed to add note:", error);
       alert(error?.message || "Failed to add note");
     } finally {
       setNotesSubmitting(false);
@@ -2587,7 +2588,7 @@ export default function TechJobDetailPage() {
           };
         });
       } catch (deleteError) {
-        console.error("Failed to delete document:", deleteError);
+        logFailure("Failed to delete document:", deleteError);
         alert(deleteError?.message || "Failed to delete document");
       }
     },
@@ -3252,7 +3253,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock in to this job.");
       }
     } catch (clockInError) {
-      console.error("Error clocking in to job:", clockInError);
+      logFailure("Error clocking in to job:", clockInError);
       alert(clockInError.message || "Error clocking in. Please try again.");
     } finally {
       setClockInLoading(false);
@@ -3289,7 +3290,7 @@ export default function TechJobDetailPage() {
         await fetchClockedHoursTotal();
         await refreshClockingStatus();
       } catch (clockOutError) {
-        console.error("Error clocking out from job:", clockOutError);
+        logFailure("Error clocking out from job:", clockOutError);
         alert(clockOutError.message || "Error clocking out. Please try again.");
         return;
       } finally {

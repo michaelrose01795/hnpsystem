@@ -54,11 +54,12 @@ export default function LoginPageUi(props) {
           overflowY: "auto"
         }}>
         <div
+          data-login-panels
           style={{
             width: "min(calc(520px + var(--login-dev-panel-width) + var(--login-dev-panel-gap)), 100%)",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
-            alignItems: "center",
+            alignItems: "stretch",
             justifyItems: "center",
             gap: "var(--login-dev-panel-gap)"
           }}>
@@ -131,6 +132,88 @@ export default function LoginPageUi(props) {
               </LoginCard>
             </div>}
         </div>
+        <style jsx global>{`
+          @media (min-width: 1100px) {
+            html.staff-scope [data-login-panels] {
+              grid-template-columns: minmax(0, 520px) minmax(0, var(--login-dev-panel-width)) !important;
+              grid-template-rows: auto auto;
+              column-gap: var(--login-dev-panel-gap) !important;
+              row-gap: 1.4rem !important;
+            }
+
+            html.staff-scope [data-login-panels] > .login-center-stage {
+              display: contents !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-brand {
+              grid-column: 1;
+              grid-row: 1;
+              justify-self: center;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--auth {
+              grid-column: 1;
+              grid-row: 2;
+              height: 100%;
+            }
+
+            html.staff-scope [data-login-panels] .login-dev-panel {
+              grid-column: 2;
+              grid-row: 2;
+              align-self: stretch !important;
+              margin-top: 0 !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--auth > div,
+            html.staff-scope [data-login-panels] .login-card--dev,
+            html.staff-scope [data-login-panels] .login-card--dev > div {
+              height: 100% !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-card-inner,
+            html.staff-scope [data-login-panels] .login-card--dev .login-dev-content {
+              flex: 1;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dev-content {
+              gap: 0;
+              position: relative;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown {
+              gap: 0;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .dropdown-api__label {
+              font-size: 0.85rem;
+              font-weight: 600;
+              line-height: 1.35;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(1) {
+              margin-bottom: 14px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(2) {
+              margin-bottom: 22px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(3) .dropdown-api__label {
+              margin-bottom: 4px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown {
+              margin-bottom: 20px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-loading-text {
+              position: absolute;
+              bottom: calc(var(--control-height) + 3px);
+              left: 0;
+              margin: 0;
+            }
+          }
+        `}</style>
         {allowDevUserSelection && <LayerSurface
           as="section"
           aria-label="Manager preview guide"

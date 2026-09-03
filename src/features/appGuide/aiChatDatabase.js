@@ -26,6 +26,7 @@
 //   CREATE INDEX idx_ai_guide_messages_session_id ON ai_guide_messages(session_id);
 
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const SESSIONS_TABLE = "ai_guide_sessions";
 const MESSAGES_TABLE = "ai_guide_messages";
@@ -81,7 +82,7 @@ export async function getSessionsForUser(userId) {
       // Tables not created yet — return empty list so the UI degrades gracefully
       return { success: true, data: [], tableNotFound: true };
     }
-    console.error("[aiChatDatabase] getSessionsForUser error:", error);
+    logFailure("[aiChatDatabase] getSessionsForUser error:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -117,7 +118,7 @@ export async function createSession(userId, title = "New Chat") {
     if (isTableMissingError(error)) {
       return { success: false, tableNotFound: true, error: { message: "AI guide tables not set up yet. Run the SQL migration in Supabase." } };
     }
-    console.error("[aiChatDatabase] createSession error:", error);
+    logFailure("[aiChatDatabase] createSession error:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -149,7 +150,7 @@ export async function updateSessionTitle(sessionId, userId, title) {
     .single();
 
   if (error) {
-    console.error("[aiChatDatabase] updateSessionTitle error:", error);
+    logFailure("[aiChatDatabase] updateSessionTitle error:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -179,7 +180,7 @@ export async function deleteSession(sessionId, userId) {
     .eq("user_id", numericUserId); // ownership check prevents cross-user deletes
 
   if (error) {
-    console.error("[aiChatDatabase] deleteSession error:", error);
+    logFailure("[aiChatDatabase] deleteSession error:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -228,7 +229,7 @@ export async function getMessagesForSession(sessionId, userId) {
     if (isTableMissingError(error)) {
       return { success: true, data: [], tableNotFound: true };
     }
-    console.error("[aiChatDatabase] getMessagesForSession error:", error);
+    logFailure("[aiChatDatabase] getMessagesForSession error:", error);
     return { success: false, error: { message: error.message } };
   }
 
@@ -281,7 +282,7 @@ export async function saveMessagePair(sessionId, userContent, assistantContent, 
     if (isTableMissingError(error)) {
       return { success: false, tableNotFound: true, error: { message: "Tables not ready" } };
     }
-    console.error("[aiChatDatabase] saveMessagePair error:", error);
+    logFailure("[aiChatDatabase] saveMessagePair error:", error);
     return { success: false, error: { message: error.message } };
   }
 

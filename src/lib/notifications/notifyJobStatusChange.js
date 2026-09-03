@@ -1,6 +1,7 @@
 // file location: src/lib/notifications/notifyJobStatusChange.js
 // Centralised helper to broadcast job-status notifications.
 import supabase from "@/lib/database/client";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const normaliseStatus = (value) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -54,7 +55,7 @@ export const notifyJobStatusChange = async ({
         job_number: jobNumberLabel,
       });
     } catch (error) {
-      console.error("❌ Failed to notify Techs for Ready for Workshop:", error);
+      logFailure("❌ Failed to notify Techs for Ready for Workshop:", error);
     }
   }
 
@@ -67,7 +68,7 @@ export const notifyJobStatusChange = async ({
         job_number: jobNumberLabel,
       });
     } catch (error) {
-      console.error("❌ Failed to notify Parts for Waiting for Parts:", error);
+      logFailure("❌ Failed to notify Parts for Waiting for Parts:", error);
     }
   }
 
@@ -80,7 +81,7 @@ export const notifyJobStatusChange = async ({
         job_number: jobNumberLabel,
       });
     } catch (error) {
-      console.error(
+      logFailure(
         "❌ Failed to notify Managers for VHC Sent to Service:",
         error
       );
@@ -96,7 +97,7 @@ export const notifyJobStatusChange = async ({
         job_number: jobNumberLabel,
       });
     } catch (error) {
-      console.error("❌ Failed to notify Managers for Job Complete:", error);
+      logFailure("❌ Failed to notify Managers for Job Complete:", error);
     }
 
     // ✅ Notify Valet that the job needs final valeting
@@ -107,7 +108,7 @@ export const notifyJobStatusChange = async ({
         job_number: jobNumberLabel,
       });
     } catch (error) {
-      console.error("❌ Failed to notify Valet for Job Complete:", error);
+      logFailure("❌ Failed to notify Valet for Job Complete:", error);
     }
   }
 };

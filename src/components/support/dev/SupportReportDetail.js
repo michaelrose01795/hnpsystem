@@ -17,9 +17,8 @@ import {
   SubSurface,
   KeyValue,
   KeyValueGrid,
-  Pill,
+  badgeClass,
   BadgeRow,
-  DevButton,
   CopyButton,
   SourceRef,
   ConfidenceBar,
@@ -74,11 +73,11 @@ function InvestigationPanel({ inv }) {
     <Panel title="Investigation" subtitle="Developer-only · computed server-side at ingest" sectionKey="support-detail-investigation">
       {inv.explanation ? <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)" }}>{inv.explanation}</div> : null}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-        {inv.severity ? <Pill label={`Severity: ${inv.severity}`} tone={SEVERITY_META[inv.severity]?.tone} strong /> : null}
-        {inv.priority ? <Pill label={inv.priority} tone="accentText" strong /> : null}
-        {inv.userImpact ? <Pill label={`Impact: ${inv.userImpact}`} tone="warning-base" /> : null}
-        {inv.regressionRisk ? <Pill label={`Regression risk: ${inv.regressionRisk}`} tone="danger-base" /> : null}
-        {inv.fixComplexity ? <Pill label={`Fix: ${inv.fixComplexity}`} tone="text-1" /> : null}
+        {inv.severity ? <span className={badgeClass(SEVERITY_META[inv.severity]?.tone, true)}>{`Severity: ${inv.severity}`}</span> : null}
+        {inv.priority ? <span className="app-badge app-badge--accent-strong">{inv.priority}</span> : null}
+        {inv.userImpact ? <span className="app-badge app-badge--warning">{`Impact: ${inv.userImpact}`}</span> : null}
+        {inv.regressionRisk ? <span className="app-badge app-badge--danger">{`Regression risk: ${inv.regressionRisk}`}</span> : null}
+        {inv.fixComplexity ? <span className="app-badge app-badge--neutral">{`Fix: ${inv.fixComplexity}`}</span> : null}
       </div>
       {Number.isFinite(Number(inv.reproducibleConfidence)) ? (
         <ConfidenceBar value={inv.reproducibleConfidence} label="Reproducible confidence" />
@@ -91,7 +90,7 @@ function InvestigationPanel({ inv }) {
             items={rc}
             render={(c) => (
               <span>
-                <Pill label={`${Math.round((c.confidence || 0) * 100)}%`} tone="accentText" /> {c.cause}
+                <span className="app-badge app-badge--accent-soft">{`${Math.round((c.confidence || 0) * 100)}%`}</span> {c.cause}
               </span>
             )}
           />
@@ -139,8 +138,8 @@ function CodeStatePanel({ inv, build }) {
       {drift ? (
         <SubSurface style={{ gap: "4px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-            <Pill label={drift.drifted ? "Code drift detected" : "No drift"} tone={drift.drifted ? "warning-base" : "success-base"} strong />
-            {cs?.sourceMap?.status ? <Pill label={`Section map: ${cs.sourceMap.status}`} tone={cs.sourceMap.status === "match" ? "success-base" : cs.sourceMap.status === "drift" ? "danger-base" : "text-1"} /> : null}
+            <span className={badgeClass(drift.drifted ? "warning-base" : "success-base", true)}>{drift.drifted ? "Code drift detected" : "No drift"}</span>
+            {cs?.sourceMap?.status ? <span className={badgeClass(cs.sourceMap.status === "match" ? "success-base" : cs.sourceMap.status === "drift" ? "danger-base" : "text-1")}>{`Section map: ${cs.sourceMap.status}`}</span> : null}
           </div>
           {drift.note ? <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>{drift.note}</div> : null}
         </SubSurface>
@@ -151,7 +150,7 @@ function CodeStatePanel({ inv, build }) {
           <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
             First seen <strong>{vh.firstSeenVersion}</strong>
             {vh.spansMultipleVersions ? <> → last seen <strong>{vh.lastSeenVersion}</strong></> : null}
-            {vh.isRegression ? <> · <Pill label="Recurred across releases" tone="danger-base" /></> : null}
+            {vh.isRegression ? <> · <span className="app-badge app-badge--danger">Recurred across releases</span></> : null}
           </div>
           <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>{vh.occurrences} matching occurrence(s)</div>
         </SubSurface>
@@ -169,7 +168,7 @@ function OwnershipPanel({ report, inv, diagnostics }) {
         <KeyValue label="Route" value={report.route || diagnostics?.route?.asPath} mono />
         <KeyValue label="Section key" value={report.section_key || co.section_key} mono />
         <KeyValue label="Source" value={(report.source_file || co.file) ? <SourceRef file={report.source_file || co.file} line={report.source_line ?? co.line} /> : null} />
-        {own.primary ? <KeyValue label="Primary layer" value={<Pill label={own.primary} tone="accentText" />} /> : null}
+        {own.primary ? <KeyValue label="Primary layer" value={<span className="app-badge app-badge--accent-soft">{own.primary}</span>} /> : null}
       </KeyValueGrid>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-sm)" }}>
         <SubSurface><div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>API routes</div><List items={own.api} empty="None" render={(r) => <code>{r}</code>} /></SubSurface>
@@ -213,7 +212,7 @@ function TimelinePanel({ diagnostics }) {
     <Panel
       title="Event timeline"
       sectionKey="support-detail-timeline"
-      actions={events.length > 8 ? <DevButton small variant="ghost" onClick={() => setExpanded((v) => !v)}>{expanded ? "Show less" : `Show all (${events.length})`}</DevButton> : null}
+      actions={events.length > 8 ? <button type="button" onClick={() => setExpanded((v) => !v)} className="app-btn app-btn--secondary app-btn--sm">{expanded ? "Show less" : `Show all (${events.length})`}</button> : null}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
         {shown.map((e, i) => (
@@ -222,7 +221,7 @@ function TimelinePanel({ diagnostics }) {
               {e.ts ? new Date(e.ts).toLocaleTimeString("en-GB") : ""}
             </span>
             <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", flex: 1 }}>
-              {e.text} {e.isTrigger ? <Pill label="trigger" tone="danger-base" /> : null}
+              {e.text} {e.isTrigger ? <span className="app-badge app-badge--danger">trigger</span> : null}
             </span>
           </div>
         ))}
@@ -268,11 +267,11 @@ function DiagnosticsExplorer({ diagnostics }) {
 
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Console errors ({arr(diagnostics?.console_errors).length})</div>
-        <List items={diagnostics?.console_errors} empty="None" render={(c) => <span><Pill label={c.level} tone={c.level === "error" ? "danger-base" : "warning-base"} /> {c.msg}</span>} />
+        <List items={diagnostics?.console_errors} empty="None" render={(c) => <span><span className={badgeClass(c.level === "error" ? "danger-base" : "warning-base")}>{c.level}</span> {c.msg}</span>} />
       </SubSurface>
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Failed requests ({arr(diagnostics?.failed_requests).length})</div>
-        <List items={diagnostics?.failed_requests} empty="None" render={(r) => <span><Pill label={String(r.status ?? "err")} tone={(r.status || 0) >= 500 || r.status === 0 ? "danger-base" : "warning-base"} /> <code>{r.method} {r.url}</code> {r.ms != null ? `(${r.ms}ms)` : ""}</span>} />
+        <List items={diagnostics?.failed_requests} empty="None" render={(r) => <span><span className={badgeClass((r.status || 0) >= 500 || r.status === 0 ? "danger-base" : "warning-base")}>{String(r.status ?? "err")}</span> <code>{r.method} {r.url}</code> {r.ms != null ? `(${r.ms}ms)` : ""}</span>} />
       </SubSurface>
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Unhandled errors ({arr(diagnostics?.unhandled_errors).length})</div>
@@ -435,7 +434,7 @@ function CommentsPanel({ comments, onAdd }) {
           rows={2}
           disabled={submitting}
         />
-        <DevButton type="submit" variant="solid" disabled={!text.trim() || submitting}>{submitting ? "Sending…" : "Send"}</DevButton>
+        <button type="submit" disabled={!text.trim() || submitting} className="app-btn app-btn--primary">{submitting ? "Sending…" : "Send"}</button>
       </form>
       {/* Scoped styles keep the chat responsive without adding global one-off classes. */}
       <style jsx>{`
@@ -553,7 +552,7 @@ function ActivityPanel({ audit }) {
           <div key={a.id} style={{ display: "flex", gap: "10px", padding: "6px 0", borderBottom: "1px solid var(--separating-line-color)", fontSize: "var(--text-body-sm)" }}>
             <span style={{ color: "var(--text-1)", opacity: 0.55, minWidth: 132, fontSize: "var(--text-caption)" }}>{fmt(a.occurred_at)}</span>
             <span style={{ flex: 1, color: "var(--text-1)" }}>
-              <Pill label={label(a)} tone="accentText" /> {a.actor_user_id ? `by #${a.actor_user_id}` : ""}
+              <span className="app-badge app-badge--accent-soft">{label(a)}</span> {a.actor_user_id ? `by #${a.actor_user_id}` : ""}
               {a.diff && Object.keys(a.diff).length ? <span style={{ opacity: 0.7 }}> · {Object.entries(a.diff).map(([k, v]) => `${k}=${v}`).join(", ")}</span> : null}
             </span>
           </div>
@@ -591,7 +590,7 @@ export default function SupportReportDetail({ id }) {
   if (loading) {
     return (
       <LayerSurface style={{ gap: "var(--page-stack-gap)" }}>
-        <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>Back</DevButton>
+        <button type="button" onClick={() => router.push("/dev/support-reports")} className="app-btn app-btn--secondary">Back</button>
         <LoadingBlock rows={6} />
       </LayerSurface>
     );
@@ -599,7 +598,7 @@ export default function SupportReportDetail({ id }) {
   if (error || !data) {
     return (
       <LayerSurface>
-        <EmptyState title="Report not found" message={error || "This report may have been deleted."} action={<DevButton onClick={() => router.push("/dev/support-reports")}>Back to list</DevButton>} />
+        <EmptyState title="Report not found" message={error || "This report may have been deleted."} action={<button type="button" onClick={() => router.push("/dev/support-reports")} className="app-btn app-btn--secondary">Back to list</button>} />
       </LayerSurface>
     );
   }
@@ -614,21 +613,21 @@ export default function SupportReportDetail({ id }) {
       {/* Header */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <DevButton variant="ghost" onClick={() => router.push("/dev/support-reports")}>Back to Support Centre</DevButton>
+          <button type="button" onClick={() => router.push("/dev/support-reports")} className="app-btn app-btn--secondary">Back to Support Centre</button>
           <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
             <CopyButton text={() => bundle.text} label="Copy dev bundle" small={false} />
             <CopyButton text={() => buildMarkdownReport(data, { baseUrl: typeof window !== "undefined" ? window.location.origin : "" })} label="Copy markdown" small={false} />
             {github ? <CopyButton text={() => `${github.title}\n\n${github.body}`} label="Copy issue" small={false} /> : null}
-            {process.env.NEXT_PUBLIC_GITHUB_REPO ? <DevButton onClick={openGithub}>Open GitHub issue</DevButton> : null}
+            {process.env.NEXT_PUBLIC_GITHUB_REPO ? <button type="button" onClick={openGithub} className="app-btn app-btn--secondary">Open GitHub issue</button> : null}
           </div>
         </div>
         <div style={{ fontSize: "var(--text-h2, 22px)", fontWeight: 800, color: "var(--accentText)" }}>
           {data.title || (data.description ? data.description.split("\n")[0] : "Support report")}
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-          <Pill label={sev.label} tone={sev.tone} strong />
-          <Pill label={status.label} tone={status.tone} />
-          <Pill label={cat.label} tone={cat.tone} />
+          <span className={badgeClass(sev.tone, true)}>{sev.label}</span>
+          <span className={badgeClass(status.tone)}>{status.label}</span>
+          <span className={badgeClass(cat.tone)}>{cat.label}</span>
           <BadgeRow badges={badges} />
           <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
             {data.reporter_username ? `by ${data.reporter_username} · ` : ""}{fmt(data.created_at)} ·{" "}

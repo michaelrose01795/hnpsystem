@@ -170,6 +170,36 @@ const formatStoredStatus = (value) => {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
+const getRequestDisplayText = (request) => {
+  if (typeof request === "string") return request.trim();
+  if (!request || typeof request !== "object") return "";
+
+  const candidates = [
+    request.description,
+    request.text,
+    request.requestText,
+    request.request_text,
+    request.note,
+    request.label,
+    request.title,
+    request.raw,
+    request.value,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === "object" && candidate !== request) {
+      const nestedText = getRequestDisplayText(candidate);
+      if (nestedText) return nestedText;
+    }
+  }
+
+  return "";
+};
+
 const getAppointmentDate = (job) => {
   const date = job?.appointment?.date;
   if (!date) return null;
@@ -330,7 +360,7 @@ export const buildJobRowSummary = (job, { now = new Date(), technicianLoad = nul
   });
   const requests = customerRequests
     .map((request, index) => ({
-      text: String(request?.description || request?.text || request || "").trim(),
+      text: getRequestDisplayText(request),
       hours: Number(request?.hours ?? request?.time),
       status: formatStoredStatus(getCustomerRequestEffectiveStatus({
         requestStatus: request?.status,

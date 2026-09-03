@@ -3,7 +3,8 @@
 // This page is only accessible to users with the "admin manager" role.
 // Provides tabbed access to all HR functions from a single interface.
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import { canAccessHrManagerDashboard, normalizeRoles } from "@/lib/auth/roles";
@@ -24,6 +25,7 @@ import { ContentWidth, PageShell } from "@/components/ui/layout-system";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { StatusMessage } from "@/components/ui";
 import HRManagerDashboardUi from "@/components/page-ui/hr/manager/hr-manager-ui"; // Extracted presentation layer.
+import { buildHrManagerTabHref, normalizeHrManagerTab } from "@/lib/hr/hrManagerRoutes";
 
 const HR_TABS = [
 { id: "dashboard", label: "Dashboard", component: HRDashboardTab },
@@ -40,6 +42,7 @@ const HR_TABS = [
 
 
 export default function HRManagerDashboard() {
+  const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const { data: session, status: sessionStatus } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -48,6 +51,20 @@ export default function HRManagerDashboard() {
   const userRoles = normalizeRoles(session?.user?.roles || user?.roles || []);
   const authIsLoading = sessionStatus === "loading" || userLoading;
   const hasHRAccess = canAccessHrManagerDashboard(userRoles);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    setActiveTab(normalizeHrManagerTab(router.query.tab));
+  }, [router.isReady, router.query.tab]);
+
+  const handleTabChange = (tab) => {
+    const nextTab = normalizeHrManagerTab(tab);
+    setActiveTab(nextTab);
+    void router.replace(buildHrManagerTabHref(nextTab), undefined, {
+      shallow: true,
+      scroll: false,
+    });
+  };
 
   if (authIsLoading) {
     return <HRManagerDashboardUi view="section1" />;
@@ -91,7 +108,7 @@ export default function HRManagerDashboard() {
 
   const ActiveTabComponent = HR_TABS.find((tab) => tab.id === activeTab)?.component || HRDashboardTab;
 
-  return <HRManagerDashboardUi view="section4" activeTab={activeTab} ActiveTabComponent={ActiveTabComponent} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} HR_TABS={HR_TABS} PageShell={PageShell} setActiveTab={setActiveTab} TabGroup={TabGroup} />;
+  return <HRManagerDashboardUi view="section4" activeTab={activeTab} ActiveTabComponent={ActiveTabComponent} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} HR_TABS={HR_TABS} PageShell={PageShell} setActiveTab={handleTabChange} TabGroup={TabGroup} />;
 
 
 

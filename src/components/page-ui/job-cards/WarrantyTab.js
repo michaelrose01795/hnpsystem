@@ -28,6 +28,7 @@ const loadJobsDb = () => import("@/lib/database/jobs"); // deferred - link/unlin
 const loadNotesDb = () => import("@/lib/database/notes"); // deferred - handler-time only
 const loadWarrantyDb = () => import("@/lib/database/warranty"); // deferred - save handlers only
 import { formatCurrency, DASH } from "./historyFormat";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ════════════════════════════════════════════════════════════════════════
    WarrantyLinkPanel — empty-state: link (or change) the paired warranty job.
@@ -67,7 +68,7 @@ function WarrantyLinkPanel({
       setAvailableJobs(filtered);
       setLinkError(filtered.length ? "" : "No warranty jobs are available to link right now.");
     } catch (err) {
-      console.error("❌ Failed to load warranty jobs:", err);
+      logFailure("❌ Failed to load warranty jobs:", err);
       setLinkError(err?.message || "Failed to load warranty jobs.");
     } finally {
       setLoadingJobs(false);

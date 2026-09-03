@@ -27,6 +27,7 @@ import MultiSelectDropdown from "@/components/ui/dropdownAPI/MultiSelectDropdown
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ════════════════════════════════════════════════════════════════════════
    Shared constants + small pure helpers (formerly contactConstants.js).
@@ -1028,7 +1029,7 @@ export default function ContactTab({
         setMessages(messagesPayload?.data || messagesPayload?.messages || []);
       }
     } catch (error) {
-      console.error("ContactTab: failed to load communication history:", error);
+      logFailure("ContactTab: failed to load communication history:", error);
     } finally {
       setLoadingHistory(false);
     }
@@ -1045,7 +1046,7 @@ export default function ContactTab({
       const payload = await fetchMessageTemplates();
       setTemplates(payload?.templates || []);
     } catch (error) {
-      console.error("ContactTab: failed to load templates:", error);
+      logFailure("ContactTab: failed to load templates:", error);
     } finally {
       setLoadingTemplates(false);
     }
@@ -1089,7 +1090,7 @@ export default function ContactTab({
         });
         await loadHistory();
       } catch (error) {
-        console.error("ContactTab: failed to send message:", error);
+        logFailure("ContactTab: failed to send message:", error);
         // Surface minimally — the confirm dialog already closed; a failed send
         // simply won't appear in the history (which reloads on success).
         alert(error?.message || "Failed to send message.");

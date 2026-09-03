@@ -8,6 +8,7 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountTransactionsPageUi from "@/components/page-ui/accounts/transactions/accounts-transactions-account-id-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const TRANSACTION_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "SALES"];
 export default function AccountTransactionsPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function AccountTransactionsPage() {
       setTransactions(payload.data || []);
       setPagination((prev) => ({ ...prev, total: payload.pagination?.total || prev.total }));
     } catch (error) {
-      console.error("Failed to load transactions", error);
+      logFailure("Failed to load transactions", error);
     } finally {
       setLoading(false);
     }

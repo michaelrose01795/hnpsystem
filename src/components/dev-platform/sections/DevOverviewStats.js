@@ -13,10 +13,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   LoadingBlock,
   EmptyState,
-  DevButton,
 } from "@/components/support/dev/supportDevUi";
 import { SUPPORT_CATEGORIES } from "@/lib/support/reportSubmission";
 
@@ -54,7 +53,7 @@ function Breakdown({ title, subtitle, map, labels, tones }) {
               key={key}
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)" }}
             >
-              <Pill label={(labels && labels[key]) || key} tone={(tones && tones[key]) || "text-1"} strong />
+              <span className={badgeClass((tones && tones[key]) || "text-1", true)}>{(labels && labels[key]) || key}</span>
               <span style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--text-1)", fontFamily: "var(--font-family-mono)" }}>
                 {count}
               </span>
@@ -101,15 +100,15 @@ export default function DevOverviewStats() {
         subtitle="Live overview of Help & Diagnostics reports coming in from staff."
         actions={
           <>
-            <DevButton small onClick={load}>Refresh</DevButton>
-            <DevButton small variant="solid" onClick={openReports}>Open reports</DevButton>
+            <button type="button" onClick={load} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>
+            <button type="button" onClick={openReports} className="app-btn app-btn--primary app-btn--sm">Open reports</button>
           </>
         }
       >
         {loading && !stats ? (
           <LoadingBlock rows={2} />
         ) : error ? (
-          <EmptyState title="Statistics unavailable" message={error} action={<DevButton small onClick={load}>Try again</DevButton>} />
+          <EmptyState title="Statistics unavailable" message={error} action={<button type="button" onClick={load} className="app-btn app-btn--secondary app-btn--sm">Try again</button>} />
         ) : (
           <div
             style={{

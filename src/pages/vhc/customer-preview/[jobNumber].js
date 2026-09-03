@@ -15,6 +15,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
 import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -256,7 +257,7 @@ export function VhcDirectCustomerPage({ accessMode = "preview" }) {
         );
         setAuthorizedViewRows(authorizedRows);
       } catch (err) {
-        console.error("Error fetching job data:", err);
+        logFailure("Error fetching job data:", err);
         if (!silent) {
           setError(err.message || "Failed to load job data");
         }

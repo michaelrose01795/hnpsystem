@@ -12,6 +12,7 @@
 
 import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Open parts-item statuses = "still on a live job" (mirrors api/parts/summary.js).
 const OPEN_PARTS_STATUSES = [
@@ -45,7 +46,7 @@ async function countRows(query) {
     if (error) throw error;
     return count ?? 0;
   } catch (err) {
-    console.error("topbarSummary count failed:", err?.message || err);
+    logFailure("topbarSummary count failed:", err?.message || err);
     return null;
   }
 }
@@ -59,7 +60,7 @@ async function selectRows(query) {
     if (error) throw error;
     return data ?? [];
   } catch (err) {
-    console.error("topbarSummary select failed:", err?.message || err);
+    logFailure("topbarSummary select failed:", err?.message || err);
     return null;
   }
 }
@@ -79,7 +80,7 @@ async function countWithSample(query) {
     if (error) throw error;
     return { count: count ?? 0, sample: Array.isArray(data) ? data : [] };
   } catch (err) {
-    console.error("topbarSummary countWithSample failed:", err?.message || err);
+    logFailure("topbarSummary countWithSample failed:", err?.message || err);
     return { count: null, sample: [] };
   }
 }

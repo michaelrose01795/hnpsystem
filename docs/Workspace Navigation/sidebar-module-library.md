@@ -57,7 +57,6 @@ Current page count: **21**
 
 - Managers Dashboard - `/dashboard/managers`
 - Admin Dashboard - `/dashboard/admin`
-- User Admin - `/admin/users`
 - Compliance - `/admin/compliance`
 - HR Manager - `/hr/manager`
 - Website Manager - `/website-manager`

@@ -29,7 +29,32 @@ import {
  * - emptyState: message shown when no options are available.
  * - maxHeight: maximum height for the dropdown menu (default: "280px").
  * - usePortal: renders the menu at document.body so popup overflow cannot clip it.
+ *
+ * What onChange emits: the option's own `value` when the caller gave one (so
+ * `[{ value: "urgent", label: "Urgent" }]` selects the string "urgent"), and the
+ * caller's original item otherwise (so a list of domain objects, or of plain
+ * strings, comes back in the same shape it went in).
  */
+
+// What a selected option is worth to the caller. Emitting the descriptor object
+// for a { value, label } option handed callers something they could not compare
+// against their own data — the newsfeed's category and priority filters matched
+// nothing at all because of it.
+const selectionFor = (option) =>
+  option.value !== undefined && option.value !== "" ? option.value : option.raw;
+
+// Is `v` (an entry of the caller's value array) this option? Object entries are
+// matched by identity or by id — but only when BOTH carry an id. Comparing a
+// missing id to a missing id used to be `undefined === undefined`, which made
+// every row in the list report itself as selected the moment one was picked.
+const isSameSelection = (v, option) => {
+  if (v !== null && typeof v === "object") {
+    if (v === option.raw) return true;
+    const rawId = option.raw && typeof option.raw === "object" ? option.raw.id : undefined;
+    return v.id !== undefined && rawId !== undefined && v.id === rawId;
+  }
+  return v === option.value || v === option.key || v === option.raw;
+};
 export default function MultiSelectDropdown({
   label,
   placeholder = "Select departments",
@@ -59,17 +84,7 @@ export default function MultiSelectDropdown({
 
   const selectedOptions = useMemo(() => {
     if (!Array.isArray(value) || value.length === 0) return [];
-    return normalizedOptions.filter((option) =>
-      value.some(
-        (v) =>
-          v === option.value ||
-          v === option.key ||
-          v === option.raw ||
-          (typeof v === "object" &&
-            option.raw &&
-            (v === option.raw || v.id === option.raw.id))
-      )
-    );
+    return normalizedOptions.filter((option) => value.some((v) => isSameSelection(v, option)));
   }, [value, normalizedOptions]);
 
   const visibleOptions = useMemo(
@@ -92,15 +107,10 @@ export default function MultiSelectDropdown({
 
     if (isSelected) {
       // Remove from selection
-      newValues = value.filter((v) => {
-        if (typeof v === "object" && typeof option.raw === "object") {
-          return v !== option.raw && v.id !== option.raw.id;
-        }
-        return v !== option.value && v !== option.key && v !== option.raw;
-      });
+      newValues = value.filter((v) => !isSameSelection(v, option));
     } else {
       // Add to selection
-      newValues = [...value, option.raw ?? option.value];
+      newValues = [...value, selectionFor(option)];
     }
 
     onChange?.(newValues);

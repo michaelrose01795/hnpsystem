@@ -34,7 +34,6 @@ export default function ViewJobCardsUi(props) {
     DevLayoutSection,
     DropdownField,
     JobListCard,
-    OrderListCard,
     PageShell,
     PageSkeleton,
     SearchBar,
@@ -54,10 +53,8 @@ export default function ViewJobCardsUi(props) {
     handleSearchValueChange,
     handleStatusChange,
     handleStatusFilterChange,
-    isOrdersTab,
     operationalNow,
     operationalStatusCounts,
-    ordersLoading,
     nextJobsTechnicians,
     onOpenQuickNote,
     popupCardStyles,
@@ -105,7 +102,7 @@ export default function ViewJobCardsUi(props) {
               </div>
               <div className="job-cards-view-search-shell">
                 <SearchBar data-presentation="job-cards-search" className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} />
-                {!isOrdersTab && <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
+                <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
                     <DevLayoutSection data-presentation="job-cards-division-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
                       <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-division-filter" parentKey="job-cards-view-filter-controls-division-slot" sectionType="filter-control">
                         <DropdownField className="job-cards-filter" value={divisionFilter} options={[{
@@ -129,19 +126,19 @@ export default function ViewJobCardsUi(props) {
                     }))} size="sm" onValueChange={value => handleStatusFilterChange(activeTab, value)} />
                       </DevLayoutSection>
                     </DevLayoutSection>
-                  </DevLayoutSection>}
+                  </DevLayoutSection>
               </div>
             </div>
           </SectionShell>
 
-          {!isOrdersTab && <LayerTheme sectionKey="job-cards-view-operational-statuses" parentKey="job-cards-view-shell" sectionType="content-card" className="app-summary-section app-job-operational-summary" radius="var(--radius-sm)">
+          <LayerTheme sectionKey="job-cards-view-operational-statuses" parentKey="job-cards-view-shell" sectionType="content-card" className="app-summary-section app-job-operational-summary" radius="var(--radius-sm)">
             <div className="app-summary-grid" role="list" aria-label="Operational job status counts">
               {OPERATIONAL_STATUS_ITEMS.map((item) => <LayerSurface key={item.key} as="div" className="app-summary-item" radius="var(--radius-sm)" role="listitem">
                 <span className="app-summary-label">{item.label}</span>
                 <strong className="app-summary-value">{operationalStatusCounts?.[item.key] || 0}</strong>
               </LayerSurface>)}
             </div>
-          </LayerTheme>}
+          </LayerTheme>
 
           <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-shell" style={{
           flex: 1,
@@ -156,14 +153,9 @@ export default function ViewJobCardsUi(props) {
             flexDirection: "column",
             gap: "10px"
             }}>
-              {isOrdersTab && ordersLoading ? <LayerTheme sectionKey="job-cards-view-orders-loading" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
-              textAlign: "center",
-              color: "var(--text-2)"
-            }}>
-                  Loading orders...
-                </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
+              {sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
-                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/new-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} nextJobsTechnicians={nextJobsTechnicians} now={operationalNow} technicianLoads={technicianLoads} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenQuickNote={onOpenQuickNote} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
+                </LayerTheme> : sortedJobs.map((job, index) => <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} nextJobsTechnicians={nextJobsTechnicians} now={operationalNow} technicianLoads={technicianLoads} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenQuickNote={onOpenQuickNote} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 

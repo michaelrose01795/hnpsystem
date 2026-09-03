@@ -15,6 +15,7 @@ const loadDashboardData = () => import("@/lib/database/dashboard/mot");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md section 3.0)
 import MotDashboardUi from "@/components/page-ui/dashboard/mot/dashboard-mot-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard - single stat tile. Lives inside a themed MOT section,
 // so it renders on the neutral surface layer. minWidth: 0 lets it shrink
@@ -139,7 +140,7 @@ export default function MotDashboard() {
         const payload = await (await loadDashboardData()).getMotDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load MOT dashboard", fetchError);
+        logFailure("Failed to load MOT dashboard", fetchError);
         setError(fetchError.message || "Unable to load MOT data");
       } finally {
         setLoading(false);

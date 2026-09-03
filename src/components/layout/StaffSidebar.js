@@ -37,6 +37,7 @@ import {
   setOverlayHidden as writeOverlayHidden,
   subscribeOverlayVisibility,
 } from "@/features/presentation/runtime/overlayVisibility";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
@@ -55,7 +56,6 @@ const hiddenHrRoutes = new Set([
   "/hr/recruitment",
   "/hr/reports",
   "/hr/settings",
-  "/admin/users",
 ]);
 
 function buildRouteAllowedChecker(allowedRoutes) {
@@ -458,7 +458,7 @@ export default function Sidebar({
       if (isClockedIn) await clockOut();
       else await clockIn();
     } catch (err) {
-      console.error("Clock toggle error:", err);
+      logFailure("Clock toggle error:", err);
     } finally {
       setClockLoading(false);
     }

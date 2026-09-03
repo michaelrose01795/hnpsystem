@@ -14,6 +14,7 @@ const loadDashboardData = () => import("@/lib/database/dashboard/service");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import ServiceDashboardUi from "@/components/page-ui/dashboard/service/dashboard-service-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside a ThemeCard (LayerTheme),
 // so per the strict alternation rule it renders as a LayerSurface.
@@ -150,7 +151,7 @@ export default function ServiceDashboard() {
         const payload = await (await loadDashboardData()).getServiceDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load service dashboard", fetchError);
+        logFailure("Failed to load service dashboard", fetchError);
         setError(fetchError.message || "Unable to load service data");
       } finally {
         setLoading(false);

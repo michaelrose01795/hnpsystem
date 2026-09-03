@@ -29,6 +29,7 @@ import {
   isRemovedPartsRow,
   preferLatestPartRow,
 } from "@/lib/jobCards/requestHelpers";
+import { logFailure } from "@/lib/utils/logFailure";
 
 function RequestCompleteIcon() {
   return (
@@ -988,7 +989,7 @@ export function WriteUpWorkspace({
         })
       });
     } catch (error) {
-      console.error("Failed to persist request preset hours", error);
+      logFailure("Failed to persist request preset hours", error);
     }
   };
 
@@ -1313,7 +1314,7 @@ export function WriteUpWorkspace({
         onRequestStatusesChange(rollbackStatuses);
         onCompletionChange(deriveCompletionStatus(previousTasks));
         setCompletionSaveError(error?.message || "Failed to save write-up completion");
-        console.error("Failed to persist write-up completion:", error);
+        logFailure("Failed to persist write-up completion:", error);
         return false;
       } finally {
         completionInFlightRef.current.delete(actionKey);
