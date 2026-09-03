@@ -79,6 +79,7 @@ export const PROTECTED_PREFIXES = [
   "/mobile",
   "/new-job", // create job card (moved from /job-cards/create)
   "/new-order", // create parts order (moved from /parts/create-order)
+  "/order", // parts order register
   "/nextjobs", // next-jobs queue (moved from /job-cards/waiting/nextjobs)
   "/parts",
   "/parts-manager", // moved from /parts/manager
@@ -217,7 +218,7 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/hr/reports": ["/hr/manager"],
   "/hr/settings": ["/hr/manager"],
   "/hr/training": ["/hr/manager"],
-  "/new-order/[orderNumber]": ["/new-order"],
+  "/new-order/[orderNumber]": ["/order", "/new-order"],
   "/deliveries": ["/deliveries"],
   "/deliveries/[deliveryId]": ["/deliveries"],
   "/goods-in/[goodsInNumber]": ["/goods-in"],

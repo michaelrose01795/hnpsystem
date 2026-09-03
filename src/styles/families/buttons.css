@@ -331,7 +331,13 @@ html.staff-scope .app-reaction-bar {
   padding: var(--space-1);
   border-radius: var(--radius-pill);
   background: transparent;
-  transition: background-color 0.24s ease;
+  transition: background-color 0.24s ease, padding 0.24s ease;
+}
+
+/* Closed there is nothing to inset — the trigger fills the bar at the full
+   44px control height, so the 6px padding would push it past the bar. */
+html.staff-scope .app-reaction-bar:not(.is-open) {
+  padding: 0;
 }
 
 html.staff-scope .app-reaction-bar.is-open {
@@ -357,9 +363,9 @@ html.staff-scope .app-reaction-bar.is-open .app-reaction-bar__options {
   visibility: visible;
 }
 
-/* Perfect 32px circles — the emoji options and the trigger alike. Declared
-   after the size modifiers above so they win the height/padding they need
-   (the family otherwise locks every button to --control-height). */
+/* Perfect circles — the emoji options and the trigger alike. Declared after
+   the size modifiers above so they win the height/padding they need (the
+   family otherwise locks every button to --control-height). */
 html.staff-scope .app-btn.app-reaction-emoji,
 html.staff-scope .app-btn.app-reaction-trigger {
   width: 32px;
@@ -371,6 +377,52 @@ html.staff-scope .app-btn.app-reaction-trigger {
   border-radius: var(--radius-pill);
   aspect-ratio: 1 / 1;
   font-size: 19px;
+  line-height: 1;
+  flex: 0 0 auto;
+  transition: width 0.24s ease, height 0.24s ease;
+}
+
+/* Closed, the trigger is a full 44px control — it is the only thing on show,
+   so it carries the touch target. Opening hands that job to the emoji row and
+   the trigger shrinks to the same 32px as the options, which is why the bar's
+   own height never changes. */
+html.staff-scope .app-reaction-bar:not(.is-open) .app-btn.app-reaction-trigger {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+}
+
+/* Perfect 32px circle — the small sibling of .app-btn--icon, for a single
+   glyph that must sit tighter than the 44px control floor (e.g. the newsfeed
+   save star). Declared alongside the reaction circles so it likewise wins the
+   height the family otherwise locks to --control-height. Not a touch target on
+   its own — only use it where a 44px control sits beside it. */
+html.staff-scope .app-btn.app-btn--icon-sm {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  font-size: 1.05rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* 32px-tall pill — the only size modifier that leaves the 44px control floor.
+   Declared here, after the size modifiers, so it wins the height the family
+   otherwise locks. Use where the control is a secondary affordance next to a
+   full-height one (e.g. the composer's "Choose files"). */
+html.staff-scope .app-btn.app-btn--xxs {
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 var(--space-3);
+  font-size: 0.82rem;
   line-height: 1;
   flex: 0 0 auto;
 }

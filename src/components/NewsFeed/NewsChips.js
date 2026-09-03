@@ -52,7 +52,7 @@ export function PriorityChip({ priority }) {
 export function CategoryChip({ category }) {
   const definition = getCategory(category);
   return (
-    <NewsChip tone="app-news-chip--muted" glyph={definition.icon}>
+    <NewsChip tone="app-news-chip--category" glyph={definition.icon}>
       {definition.label}
     </NewsChip>
   );
@@ -107,15 +107,6 @@ export function StatusChip({ status, publishAt }) {
   return null;
 }
 
-export function PinnedChip({ isPinned }) {
-  if (!isPinned) return null;
-  return (
-    <NewsChip tone="app-news-chip--important" glyph="📌">
-      Pinned
-    </NewsChip>
-  );
-}
-
 export function SystemChip({ source }) {
   if (source !== "system") return null;
   return (
@@ -143,7 +134,6 @@ export default function NewsChipRow({ post, showStatus = true }) {
   if (!post) return null;
   return (
     <div className="app-news-chip-row">
-      <PinnedChip isPinned={post.isPinned} />
       <PriorityChip priority={post.priority} />
       <AckChip requiresAck={post.requiresAck} isAcknowledged={post.isAcknowledged} />
       <CategoryChip category={post.category} />

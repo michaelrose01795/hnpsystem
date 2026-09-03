@@ -15,6 +15,7 @@ export default function NewsBodyText({
   currentUserId = null,
   className = "",
   clamped = false,
+  bracketedMentions = false,
 }) {
   const tokens = parseMentionBody(body);
   const classes = [
@@ -36,9 +37,11 @@ export default function NewsBodyText({
         return (
           <span
             key={index}
-            className={`app-news-mention${isMe ? " app-news-mention--me" : ""}`}
+            className={`app-news-mention${
+              bracketedMentions ? " app-news-mention--comment" : ""
+            }${isMe ? " app-news-mention--me" : ""}`}
           >
-            {`@${token.value}`}
+            {bracketedMentions ? `@[${token.value}]` : `@${token.value}`}
           </span>
         );
       })}

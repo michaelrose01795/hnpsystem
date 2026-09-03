@@ -68,12 +68,14 @@ export const UI_FAMILIES = [
       { id: "md", className: "", description: "Default 44px control height." },
       { id: "sm", className: "app-btn--sm", description: "40px — compact toolbars." },
       { id: "xs", className: "app-btn--xs", description: "34px — table rows, dense UIs." },
+      { id: "xxs", className: "app-btn--xxs", description: "32px — leaves the control floor; secondary affordance beside a full-height control." },
     ],
     shapes: [
       { id: "default", className: "", description: "Rounded rectangle." },
       { id: "pill", className: "app-btn--pill", description: "Fully rounded, use for inline toggles." },
       { id: "icon", className: "app-btn--icon", description: "Circular single-glyph button, locked to --control-height." },
       { id: "icon-glyph-lg", className: "app-btn--icon app-btn--glyph-lg", description: "Icon button whose bare glyph (+, ×) fills the circle." },
+      { id: "icon-sm", className: "app-btn--icon-sm", description: "Perfect 32px circle for a single glyph sitting beside a 44px control." },
     ],
     customOnly: [
       {

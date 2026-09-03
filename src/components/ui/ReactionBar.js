@@ -4,7 +4,8 @@
 //
 // A 44px circular trigger (the "react" smiley) that stays anchored where it is
 // rendered. Pressing it grows the bar LEFTWARDS out of the trigger's left edge
-// to reveal the reaction emojis — each a perfect 32px circle. The emoji set
+// to reveal the reaction emojis — each a perfect 32px circle — and the trigger
+// itself shrinks to that same 32px so the open bar reads as one row. The set
 // matches the messages thread picker (/messages) so a reaction means the same
 // thing everywhere in the app.
 //

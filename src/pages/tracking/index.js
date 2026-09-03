@@ -162,6 +162,7 @@ const OIL_STOCK_CATEGORY_FILTERS = [
 
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
+const TRACKING_CARD_GRID_TEMPLATE = "repeat(auto-fit, minmax(min(100%, 320px), 1fr))";
 
 const renderTrackingSummaryItem = (item) => (
   <LayerTheme
@@ -1838,7 +1839,6 @@ export default function TrackingDashboard() {
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
-  const [isWideTrackerView, setIsWideTrackerView] = useState(false);
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
   const [loanCarSearchTerm, setLoanCarSearchTerm] = useState("");
   const [loanCarMonth, setLoanCarMonth] = useState(() => {
@@ -1859,14 +1859,6 @@ export default function TrackingDashboard() {
     const mediaQuery = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
     setIsMobileView(mediaQuery.matches);
     const handler = (event) => setIsMobileView(event.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1280px)");
-    setIsWideTrackerView(mediaQuery.matches);
-    const handler = (event) => setIsWideTrackerView(event.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
@@ -2408,18 +2400,6 @@ export default function TrackingDashboard() {
 
   }, [activeEntries]);
 
-  const groupedTrackerEntries = useMemo(() => {
-    const groups = new Map();
-    filteredActiveEntries.forEach((entry) => {
-      const group = getTrackerGroup(entry);
-      if (!groups.has(group.id)) {
-        groups.set(group.id, { ...group, entries: [] });
-      }
-      groups.get(group.id).entries.push(entry);
-    });
-    return Array.from(groups.values());
-  }, [filteredActiveEntries]);
-
   const filteredEquipmentChecks = useMemo(() => {
     const term = equipmentSearchTerm.trim().toLowerCase();
     return equipmentChecks.
@@ -2661,59 +2641,29 @@ export default function TrackingDashboard() {
           No active jobs match your search or filters.
         </DevLayoutSection>
     }
-      {groupedTrackerEntries.map((group) =>
+      {filteredActiveEntries.length > 0 &&
     <DevLayoutSection
-      key={group.id}
-      sectionKey={`tracking-active-jobs-group-${group.id}`}
+      sectionKey="tracking-active-jobs-list"
       parentKey="tracking-page-body"
-      sectionType="section-shell"
+      sectionType="list"
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
+        display: "grid",
+        gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+        alignItems: "stretch",
+        gap: "20px",
         width: "100%",
         maxWidth: "100%",
         minWidth: 0
       }}>
 
-        <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: "var(--space-sm)",
-          minWidth: 0
-        }}>
-
-          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
-            {group.label}
-          </h2>
-          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
-            {group.entries.length}
-          </span>
-        </div>
-
-        <DevLayoutSection
-        sectionKey={`tracking-active-jobs-list-${group.id}`}
-        parentKey={`tracking-active-jobs-group-${group.id}`}
-        sectionType="list"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-          !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
-          gap: "20px",
-          width: "100%",
-          maxWidth: "100%",
-          minWidth: 0
-        }}>
-
-          {group.entries.map((entry, index) => {
+          {filteredActiveEntries.map((entry, index) => {
+        const group = getTrackerGroup(entry);
         const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
         return (
           <DevLayoutSection
             key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
             sectionKey={`tracking-active-jobs-card-${group.id}-${index + 1}`}
-            parentKey={`tracking-active-jobs-list-${group.id}`}
+            parentKey="tracking-active-jobs-list"
             sectionType="content-card">
 
               <CombinedTrackerCard
@@ -2741,9 +2691,8 @@ export default function TrackingDashboard() {
             </DevLayoutSection>);
 
       })}
-        </DevLayoutSection>
       </DevLayoutSection>
-    )}
+    }
     </>;
 
 
@@ -2831,10 +2780,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, min(100%, 260px))" : "repeat(auto-fill, 260px)",
-          justifyContent: "start",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
           alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 
@@ -3066,8 +3016,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+          alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 

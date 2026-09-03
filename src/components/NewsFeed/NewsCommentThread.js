@@ -108,6 +108,7 @@ function CommentRow({
             body={comment.body}
             currentUserId={currentUserId}
             className="app-news-comment__body"
+            bracketedMentions
           />
         )}
 

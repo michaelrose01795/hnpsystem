@@ -209,31 +209,6 @@ export const DENSITY_COMPACT = "compact";
 export const DENSITY_VALUES = [DENSITY_COMFORTABLE, DENSITY_COMPACT];
 
 // ---------------------------------------------------------------------------
-// Feed filters (the tab row above the feed)
-// ---------------------------------------------------------------------------
-export const FEED_FILTER_ALL = "all";
-export const FEED_FILTER_UNREAD = "unread";
-export const FEED_FILTER_ACK = "action";
-export const FEED_FILTER_SAVED = "saved";
-export const FEED_FILTER_MENTIONS = "mentions";
-export const FEED_FILTER_PINNED = "pinned";
-export const FEED_FILTER_MINE = "mine";
-
-export const FEED_FILTERS = [
-  { value: FEED_FILTER_ALL, label: "All" },
-  { value: FEED_FILTER_UNREAD, label: "Unread" },
-  { value: FEED_FILTER_ACK, label: "Needs action" },
-  { value: FEED_FILTER_MENTIONS, label: "Mentions" },
-  { value: FEED_FILTER_SAVED, label: "Saved" },
-  { value: FEED_FILTER_PINNED, label: "Pinned" },
-];
-
-export const FEED_FILTER_VALUES = [
-  ...FEED_FILTERS.map((entry) => entry.value),
-  FEED_FILTER_MINE,
-];
-
-// ---------------------------------------------------------------------------
 // Digest frequency (notification preferences)
 // ---------------------------------------------------------------------------
 export const DIGEST_FREQUENCIES = [

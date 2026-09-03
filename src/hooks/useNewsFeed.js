@@ -5,8 +5,8 @@
 // dumb.
 //
 // It owns: loading the feed (with the login hand-off cache), the realtime
-// re-read, filters and news-specific search, the read / acknowledge / save /
-// pin / delete actions with optimistic updates, reactions (through the
+// re-read, filters and news-specific search, acknowledgement and delete
+// actions with optimistic updates, reactions (through the
 // existing shared reactions API — not a second implementation), and raising a
 // toast for a new urgent post the reader has not muted.
 
@@ -15,12 +15,6 @@ import { useUser } from "@/context/UserContext";
 import { useAlerts } from "@/context/AlertContext";
 import {
   DENSITY_COMFORTABLE,
-  FEED_FILTER_ACK,
-  FEED_FILTER_ALL,
-  FEED_FILTER_MENTIONS,
-  FEED_FILTER_PINNED,
-  FEED_FILTER_SAVED,
-  FEED_FILTER_UNREAD,
   PRIORITY_URGENT,
 } from "@/lib/news/constants";
 import { shouldNotify } from "@/lib/news/notify";
@@ -40,13 +34,7 @@ import {
   acknowledgePost as acknowledgePostRequest,
   deleteNewsPost,
   fetchFeed,
-  markPostRead,
-  markPostUnread,
-  pinPost,
-  savePost,
   searchNews,
-  unpinPost,
-  unsavePost,
 } from "@/lib/api/news";
 import { logFailure } from "@/lib/utils/logFailure";
 
@@ -68,12 +56,10 @@ export default function useNewsFeed() {
   const [loading, setLoading] = useState(() => warmed == null);
   const [error, setError] = useState("");
 
-  const [activeFilter, setActiveFilter] = useState(FEED_FILTER_ALL);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
-  const [includeArchived, setIncludeArchived] = useState(false);
   const [density, setDensity] = useState(DENSITY_COMFORTABLE);
 
   const [reactionsByPost, setReactionsByPost] = useState({});
@@ -101,7 +87,6 @@ export default function useNewsFeed() {
         const fresh = nextPosts.filter(
           (post) =>
             !announcedRef.current.has(post.id) &&
-            !post.isRead &&
             shouldNotify(data.preferences, post)
         );
         for (const post of fresh) {
@@ -134,7 +119,7 @@ export default function useNewsFeed() {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchFeed({ includeArchived });
+      const data = await fetchFeed();
       applyFeed(data);
       setError("");
     } catch (loadError) {
@@ -143,7 +128,7 @@ export default function useNewsFeed() {
     } finally {
       setLoading(false);
     }
-  }, [applyFeed, includeArchived]);
+  }, [applyFeed]);
 
   // Seed from the session cache on mount so a hard load paints instantly.
   useEffect(() => {
@@ -269,56 +254,10 @@ export default function useNewsFeed() {
     }
   }, []);
 
-  const markRead = useCallback(
-    async (post) => {
-      if (post.isRead) return;
-      patchPost(post.id, { isRead: true, readCount: post.readCount + 1 });
-      try {
-        await markPostRead(post.id);
-      } catch (readError) {
-        logFailure("Failed to mark the update as read:", readError);
-        patchPost(post.id, { isRead: false, readCount: post.readCount });
-      }
-    },
-    [patchPost]
-  );
-
-  const toggleRead = useCallback(
-    (post) =>
-      withBusy(post.id, "read", async () => {
-        const next = !post.isRead;
-        patchPost(post.id, { isRead: next });
-        try {
-          if (next) await markPostRead(post.id);
-          else await markPostUnread(post.id);
-        } catch (readError) {
-          logFailure("Failed to change the read state:", readError);
-          patchPost(post.id, { isRead: post.isRead });
-        }
-      }),
-    [patchPost, withBusy]
-  );
-
-  const toggleSave = useCallback(
-    (post) =>
-      withBusy(post.id, "save", async () => {
-        const next = !post.isSaved;
-        patchPost(post.id, { isSaved: next });
-        try {
-          if (next) await savePost(post.id);
-          else await unsavePost(post.id);
-        } catch (saveError) {
-          logFailure("Failed to change the saved state:", saveError);
-          patchPost(post.id, { isSaved: post.isSaved });
-        }
-      }),
-    [patchPost, withBusy]
-  );
-
   const acknowledge = useCallback(
     (post) =>
       withBusy(post.id, "acknowledge", async () => {
-        patchPost(post.id, { isAcknowledged: true, isRead: true });
+        patchPost(post.id, { isAcknowledged: true });
         try {
           await acknowledgePostRequest(post.id);
           pushAlert({ message: "Thanks — your acknowledgement is recorded.", type: "success" });
@@ -329,21 +268,6 @@ export default function useNewsFeed() {
         }
       }),
     [patchPost, pushAlert, withBusy]
-  );
-
-  const togglePin = useCallback(
-    (post) =>
-      withBusy(post.id, "pin", async () => {
-        try {
-          const updated = post.isPinned ? await unpinPost(post.id) : await pinPost(post.id);
-          patchPost(post.id, { isPinned: updated.isPinned });
-          await load();
-        } catch (pinError) {
-          logFailure("Failed to pin the update:", pinError);
-          pushAlert({ message: "We could not change the pin.", type: "error" });
-        }
-      }),
-    [load, patchPost, pushAlert, withBusy]
   );
 
   const removePost = useCallback(
@@ -381,7 +305,6 @@ export default function useNewsFeed() {
           categories: filters.categories,
           priorities: filters.priorities,
           departments: filters.departments,
-          includeArchived,
         });
         if (!cancelled) setSearchResults(Array.isArray(results) ? results : []);
       } catch (searchError) {
@@ -396,7 +319,7 @@ export default function useNewsFeed() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [filters, includeArchived, searchTerm]);
+  }, [filters, searchTerm]);
 
   // -------------------------------------------------------------------------
   // Filtering
@@ -418,56 +341,16 @@ export default function useNewsFeed() {
     [filters]
   );
 
-  const matchesQuickFilter = useCallback((post, filter) => {
-    switch (filter) {
-      case FEED_FILTER_UNREAD:
-        return !post.isRead;
-      case FEED_FILTER_ACK:
-        return post.requiresAck && !post.isAcknowledged;
-      case FEED_FILTER_SAVED:
-        return post.isSaved;
-      case FEED_FILTER_MENTIONS:
-        return post.isMentioned;
-      case FEED_FILTER_PINNED:
-        return post.isPinned;
-      default:
-        return true;
-    }
-  }, []);
-
   const visiblePosts = useMemo(
-    () =>
-      source.filter((post) => matchesFilters(post) && matchesQuickFilter(post, activeFilter)),
-    [activeFilter, matchesFilters, matchesQuickFilter, source]
-  );
-
-  // Counts are taken from the full feed, not the filtered view, so the tab
-  // labels do not change as you narrow the list.
-  const filterCounts = useMemo(
-    () => ({
-      [FEED_FILTER_UNREAD]: posts.filter((post) => !post.isRead).length,
-      [FEED_FILTER_ACK]: posts.filter((post) => post.requiresAck && !post.isAcknowledged).length,
-      [FEED_FILTER_MENTIONS]: posts.filter((post) => post.isMentioned).length,
-      [FEED_FILTER_SAVED]: posts.filter((post) => post.isSaved).length,
-      [FEED_FILTER_PINNED]: posts.filter((post) => post.isPinned).length,
-    }),
-    [posts]
+    () => source.filter((post) => matchesFilters(post)),
+    [matchesFilters, source]
   );
 
   const hasActiveFilters =
     filters.categories.length > 0 ||
     filters.priorities.length > 0 ||
     filters.departments.length > 0 ||
-    activeFilter !== FEED_FILTER_ALL ||
-    searchTerm.trim().length > 0 ||
-    includeArchived;
-
-  const clearFilters = useCallback(() => {
-    setFilters(EMPTY_FILTERS);
-    setActiveFilter(FEED_FILTER_ALL);
-    setSearchTerm("");
-    setIncludeArchived(false);
-  }, []);
+    searchTerm.trim().length > 0;
 
   // -------------------------------------------------------------------------
   // Per-post permissions, resolved once here rather than in every card.
@@ -496,27 +379,17 @@ export default function useNewsFeed() {
     isSearching: searchResults !== null,
 
     // view state
-    activeFilter,
-    setActiveFilter,
     filters,
     setFilters,
-    filterCounts,
     hasActiveFilters,
-    clearFilters,
     searchTerm,
     setSearchTerm,
-    includeArchived,
-    setIncludeArchived,
     density,
     setDensity,
 
     // actions
     reload: load,
-    markRead,
-    toggleRead,
-    toggleSave,
     acknowledge,
-    togglePin,
     removePost,
     toggleReaction,
     permissionsFor,

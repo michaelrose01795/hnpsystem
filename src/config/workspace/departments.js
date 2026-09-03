@@ -423,12 +423,14 @@ export const WORKSPACE_PAGE_TABS = Object.freeze([
     key: "parts-workspace",
     ariaLabel: "Parts workspace pages",
     matchers: [
+      { href: "/order", match: "prefix" },
       { href: "/goods-in", match: "prefix" },
       { href: "/deliveries", match: "prefix" },
       { href: "/delivery-planner", match: "prefix" },
       { href: "/parts-manager", match: "prefix" },
     ],
     items: [
+      { href: "/order", label: "Orders", match: "prefix" },
       { href: "/goods-in", label: "Goods In", match: "prefix" },
       { href: "/deliveries", label: "Deliveries", match: "prefix" },
       {
@@ -626,6 +628,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
       // Job Cards deliberately NOT listed here — /jobs belongs to Reception
       // (department-service). The parts desk reaches job data through its own
       // pages, so the Parts module does not duplicate the page button.
+      { label: "Orders", href: "/order", roles: ["parts"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -639,6 +642,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       // See the note in the Parts section above — Job Cards stays in Reception.
+      { label: "Orders", href: "/order", roles: ["parts manager"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -811,7 +815,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"],
   },
   {
     key: "department-management",
@@ -876,7 +880,7 @@ export const WORKSPACE_MODULES = Object.freeze({
   service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }],
   workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
-  parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/new-order"] }],
+  parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/order", "/new-order"] }],
   valeting: [{ key: "work-queue", label: "Work Queue", hrefs: ["/valet"] }],
   accounts: [{ key: "accounts", label: "Accounts", hrefs: ["/accounts", "/company-accounts"] }, { key: "billing", label: "Billing", hrefs: ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"] }],
   reports: [{ key: "operational", label: "Operational Reports", hrefs: ["/reports/workshop", "/reports/service", "/reports/parts", "/reports/mot", "/reports/paint", "/reports/valeting"] }, { key: "business", label: "Business Reports", hrefs: ["/reports/accounts", "/reports/admin", "/reports/overview"] }],

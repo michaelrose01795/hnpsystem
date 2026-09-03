@@ -25,8 +25,6 @@ export default function NewsFeed() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerPost, setComposerPost] = useState(null);
   const [detailPost, setDetailPost] = useState(null);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [showPresentationNotesDemo, setShowPresentationNotesDemo] = useState(false);
 
   useTraceMount("NewsFeed page");
@@ -37,15 +35,12 @@ export default function NewsFeed() {
     setShowPresentationNotesDemo(isPresentationMode());
   }, []);
 
-  // Opening a post is what marks it read — the same rule everywhere, so the
-  // unread count can never disagree with what the reader has actually seen.
   const openPost = useCallback(
     (post) => {
       trace("newsfeed", `openPost: ${post.id}`);
       setDetailPost(post);
-      void feed.markRead(post);
     },
-    [feed]
+    []
   );
 
   // Deep link: /newsfeed?post=<id> opens that announcement directly. This is
@@ -63,10 +58,9 @@ export default function NewsFeed() {
 
     deepLinkedRef.current = requested;
     setDetailPost(match);
-    void feed.markRead(match);
   }, [feed, router.query.post]);
 
-  // The detail modal reads from the live feed, so an acknowledgement or a new
+  // The detail modal uses the live feed, so an acknowledgement or a new
   // comment made inside it is reflected without closing and reopening.
   const liveDetailPost = detailPost
     ? feed.posts.find((post) => post.id === detailPost.id) || detailPost
@@ -91,13 +85,6 @@ export default function NewsFeed() {
     void feed.reload();
   }, [feed]);
 
-  const handlePreferencesSaved = useCallback(
-    (preferences) => {
-      feed.setPreferences(preferences);
-      if (preferences?.feedDensity) feed.setDensity(preferences.feedDensity);
-    },
-    [feed]
-  );
 
   return (
     <>
@@ -112,27 +99,16 @@ export default function NewsFeed() {
         searching={feed.searching}
         error={feed.error}
         isSearching={feed.isSearching}
-        preferences={feed.preferences}
         density={feed.density}
         busyActions={feed.busyActions}
         permissionsFor={feed.permissionsFor}
-        activeFilter={feed.activeFilter}
-        setActiveFilter={feed.setActiveFilter}
         filters={feed.filters}
         setFilters={feed.setFilters}
-        filterCounts={feed.filterCounts}
         hasActiveFilters={feed.hasActiveFilters}
-        clearFilters={feed.clearFilters}
         searchTerm={feed.searchTerm}
         setSearchTerm={feed.setSearchTerm}
-        includeArchived={feed.includeArchived}
-        setIncludeArchived={feed.setIncludeArchived}
-        setDensity={feed.setDensity}
         onOpenPost={openPost}
-        onToggleRead={feed.toggleRead}
-        onToggleSave={feed.toggleSave}
         onAcknowledge={feed.acknowledge}
-        onTogglePin={feed.togglePin}
         onEditPost={editPost}
         onDeletePost={feed.removePost}
         onReact={feed.toggleReaction}
@@ -143,13 +119,6 @@ export default function NewsFeed() {
         onComposerSaved={handleComposerSaved}
         detailPost={liveDetailPost}
         onCloseDetail={() => setDetailPost(null)}
-        preferencesOpen={preferencesOpen}
-        onOpenPreferences={() => setPreferencesOpen(true)}
-        onClosePreferences={() => setPreferencesOpen(false)}
-        onPreferencesSaved={handlePreferencesSaved}
-        analyticsOpen={analyticsOpen}
-        onOpenAnalytics={() => setAnalyticsOpen(true)}
-        onCloseAnalytics={() => setAnalyticsOpen(false)}
       />
       {showPresentationNotesDemo && <GlobalNotesWidget presentationDemo />}
     </>

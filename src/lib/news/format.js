@@ -145,7 +145,9 @@ export const isExpired = (value) => {
 // is what the server uses to write the news_mentions rows.
 // ---------------------------------------------------------------------------
 
-const MENTION_PATTERN = /@\[([^\]]+)\]\(u:(\d+)\)/g;
+// Accept both the canonical token and legacy/comment text where the
+// parentheses were escaped before storage (for example, \(u:45\)).
+const MENTION_PATTERN = /@\[([^\]]+)\]\\?\(u:(\d+)\\?\)/g;
 
 export const buildMentionToken = (name, userId) => `@[${name}](u:${userId})`;
 

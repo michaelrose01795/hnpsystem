@@ -58,18 +58,39 @@ Reports
 
 -------------------
 
+CHECK 
+/new-order/P00001
+
+CHECK
+Within the "/jobs" page there is an "Order" button within the tab section at the top, this needs to change, remove this order button from the tab section and make a new page which mirrors the current style of the "Order" section and name the page "/Order" so if i put within the url /order it opens up 
+
+CHECK
+Within the "/new-order/P00001" for example, have it os the page full follows the staffgloabl.css setting. orgainse the page to work the best and to have sections correctly with "--theme" colour backgrounds cards etc to make it look near and easy to figure out. /Order page is connected to the "Parts" modual within the sidebar so add that to the parts section. this /order page also links full wihtin the "/deliveries" page as they work together. the /orders page can have collection as well as delivers so make something so it can tell the diff with a status of postage for example. mkae sure everything within the ""/new-order/P00001" page is connected to the data base and all works together etc with the otehr parts page 
+
+CHECK
+Remove the "Orders View Filter Shell | 1.2.2.1.1.1 | key orders-view-filter-shell | file src/components/profile/ProfileWorkTab.js:1917 (dynamic pattern) | route /order | where Orders View Filter Shell | parent orders-view-shell 1.2.2.1.1" card and move the search bar with a filter dropdown for collection or deleviry onto the same row as the search bar. 
+
+TODO
+QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+
+-------------------
+
 
 TODO
 newsfeed
 
-Have it so "Category", "Priority", "Department", "View" text is removed avove the dropdowns. within the "New announcement" popup make sure the "Visible to departments" list can vertical scroll so all rows can be viewed without changing the height of the section etc. change "Include archived" button style to Secondary staffglobal.css setting. 
+CHECK
+same happens with the catagories dropdown, deep dive to fix this. 
 
-have it so within the rows the "Open · 2 reactions
-Mark read
-Pin
-Edit
-Delete" button are either primary or secondary staffglobal.css setting style. "☆" follows a perfect circle which is 32px with the symbol in the middle. change the "Delete" button to a symbol in a perfect 44px circle, same with the edit button. remove the mark read butotn this is done auto when the page is opened, and the pin feature souldnt be used. have it os the "Open · 2 reactions" button is removed and that is opened by double clicking the row etc. 
+TODO
+QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
 
-Arrange the row to be more suited etc. 
+TODO
+"yes make "The sidebar request requires a global navigation change in:
 
-new annoucnment popup 
+- `src/config/workspace/departments.js`
+- `src/config/workspace/roleDefaults.js`
+
+This will add Orders to the Parts module for Parts and Parts Manager users and affect shared navigation across the app. It cannot be implemented locally because `StaffSidebar` derives its links from this manifest.
+
+Please confirm that I may make this global navigation change alongside the local `/new-order/[orderNumber]`, `/order`, database API, and `/deliveries` integration work." change"

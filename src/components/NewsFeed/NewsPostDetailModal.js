@@ -2,10 +2,7 @@
 //
 // The full view of one post: the whole body, its attachments and DMS links,
 // who reacted, the comment thread, and — for the author and management — the
-// edit history, the reach figures and the acknowledgement tracker.
-//
-// Opening this modal is what marks a post read, which is why the read call
-// lives with the parent hook rather than here: this component stays a view.
+// edit history, the engagement figures and the acknowledgement tracker.
 
 import React, { useCallback, useEffect, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
@@ -37,7 +34,6 @@ export default function NewsPostDetailModal({
   canModerate = false,
   onClose,
   onAcknowledge,
-  onToggleSave,
   busyAction = null,
 }) {
   const [insights, setInsights] = useState(null);
@@ -91,16 +87,6 @@ export default function NewsPostDetailModal({
         <header className="app-popup-compact-header">
           <h3>{post.title}</h3>
           <div className="app-popup-compact-header__actions">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              busy={busyAction === "save"}
-              aria-pressed={post.isSaved}
-              onClick={() => onToggleSave?.(post)}
-            >
-              {post.isSaved ? "★ Saved" : "☆ Save"}
-            </Button>
             <Button type="button" variant="secondary" size="sm" onClick={onClose}>
               Close
             </Button>
@@ -151,7 +137,7 @@ export default function NewsPostDetailModal({
                   busy={busyAction === "acknowledge"}
                   onClick={() => onAcknowledge?.(post)}
                 >
-                  I have read this
+                  Acknowledge
                 </Button>
               </span>
             )}
@@ -186,28 +172,38 @@ export default function NewsPostDetailModal({
           />
         </LayerTheme>
 
-        <div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowInsights((open) => !open)}
-            aria-expanded={showInsights}
-          >
-            {showInsights ? "Hide reach & history" : "Reach, acknowledgements & edit history"}
-          </Button>
-        </div>
+        <section className="app-news-insights-disclosure">
+          <header className="app-news-insights-disclosure__header">
+            <span className="app-news-insights-disclosure__heading">
+              <strong>Reach &amp; history</strong>
+              <span>Engagement, acknowledgements and published changes</span>
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowInsights((open) => !open)}
+              aria-expanded={showInsights}
+              aria-controls="news-post-insights"
+            >
+              {showInsights ? "Hide" : "Show"}
+            </Button>
+          </header>
 
-        {showInsights &&
-          (loadingInsights ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <SkeletonBlock width="70%" height="14px" />
-              <SkeletonBlock width="100%" height="12px" />
-              <SkeletonBlock width="90%" height="12px" />
+          {showInsights && (
+            <div id="news-post-insights">
+              {loadingInsights ? (
+                <div className="app-news-insights__loading">
+                  <SkeletonBlock width="70%" height="14px" />
+                  <SkeletonBlock width="100%" height="12px" />
+                  <SkeletonBlock width="90%" height="12px" />
+                </div>
+              ) : (
+                <NewsInsightsPanel insights={insights} />
+              )}
             </div>
-          ) : (
-            <NewsInsightsPanel insights={insights} />
-          ))}
+          )}
+        </section>
       </div>
     </PopupModal>
   );

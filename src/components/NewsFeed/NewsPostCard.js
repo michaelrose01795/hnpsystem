@@ -15,7 +15,6 @@ import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import ReactionBar from "@/components/ui/ReactionBar";
-import NewsAvatar from "./NewsAvatar";
 import NewsChipRow from "./NewsChips";
 import NewsBodyText from "./NewsBodyText";
 import NewsAttachments from "./NewsAttachments";
@@ -56,18 +55,11 @@ export default function NewsPostCard({
   post,
   currentUserId,
   density = "comfortable",
-  reactions = [],
   myReactions = [],
-  canPin = false,
   canEdit = false,
-  canDelete = false,
   onOpen,
-  onToggleRead,
-  onToggleSave,
   onAcknowledge,
-  onTogglePin,
   onEdit,
-  onDelete,
   onReact,
   busyAction = null,
 }) {
@@ -80,11 +72,7 @@ export default function NewsPostCard({
   const authorRole =
     post.authorUser?.jobTitle || formatAuthorRole(post.author) || post.authorUser?.role || "";
 
-  const cardClasses = [
-    "app-news-card",
-    isCompact ? "app-news-card--compact" : "",
-    post.isRead ? "" : "app-news-card--unread",
-  ]
+  const cardClasses = ["app-news-card", isCompact ? "app-news-card--compact" : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -96,40 +84,22 @@ export default function NewsPostCard({
       padding={layer.padding}
       gap={layer.gap}
       aria-label={post.title}
+      tabIndex={0}
+      onDoubleClick={() => onOpen?.(post)}
+      onKeyDown={(event) => {
+        // Keyboard equivalent of the double-click — the row itself is the way
+        // in now that the "Open" button is gone. Ignore keys bubbling up from
+        // the controls inside the card.
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen?.(post);
+        }
+      }}
     >
       <div className="app-news-card__head">
-        <div className="app-news-card__headings">
-          <h2 className="app-news-card__title">
-            {!post.isRead && (
-              <>
-                <span className="app-news-dot" aria-hidden="true" />{" "}
-                <span className="app-news-sr-only">Unread. </span>
-              </>
-            )}
-            {post.title}
-          </h2>
-          <NewsChipRow post={post} />
-        </div>
-
-        <div className="app-news-card__actions">
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => onToggleSave?.(post)}
-            busy={busyAction === "save"}
-            aria-pressed={post.isSaved}
-            aria-label={post.isSaved ? "Remove from saved" : "Save this update"}
-            title={post.isSaved ? "Remove from saved" : "Save this update"}
-          >
-            {post.isSaved ? "★" : "☆"}
-          </Button>
-          <ReactionBar
-            label="React to this update"
-            selected={myReactions}
-            onReact={(emoji) => onReact?.(post, emoji)}
-          />
-        </div>
+        <h2 className="app-news-card__title">{post.title}</h2>
+        <NewsChipRow post={post} />
       </div>
 
       <NewsBodyText
@@ -161,7 +131,7 @@ export default function NewsPostCard({
                 busy={busyAction === "acknowledge"}
                 onClick={() => onAcknowledge?.(post)}
               >
-                I have read this
+                Acknowledge
               </Button>
             </span>
           )}
@@ -170,7 +140,6 @@ export default function NewsPostCard({
 
       <div className="app-news-card__footer">
         <span className="app-news-byline">
-          <NewsAvatar user={post.authorUser} name={post.author} size="sm" />
           <span className="app-news-byline__text">
             <span className="app-news-byline__name">{authorName}</span>
             <span className="app-news-byline__meta" title={dates.absolute}>
@@ -182,52 +151,22 @@ export default function NewsPostCard({
         </span>
 
         <span className="app-news-card__footer-end">
-          <Button type="button" variant="ghost" size="xs" onClick={() => onOpen?.(post)}>
-            {post.commentCount > 0
-              ? `Comments (${post.commentCount})`
-              : reactions.length > 0
-                ? `Open · ${reactions.length} reactions`
-                : "Open"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            busy={busyAction === "read"}
-            onClick={() => onToggleRead?.(post)}
-          >
-            {post.isRead ? "Mark unread" : "Mark read"}
-          </Button>
-
-          {canPin && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              busy={busyAction === "pin"}
-              onClick={() => onTogglePin?.(post)}
-              aria-pressed={post.isPinned}
-            >
-              {post.isPinned ? "Unpin" : "Pin"}
-            </Button>
-          )}
+          <ReactionBar
+            label="React to this update"
+            selected={myReactions}
+            onReact={(emoji) => onReact?.(post, emoji)}
+          />
 
           {canEdit && (
-            <Button type="button" variant="ghost" size="xs" onClick={() => onEdit?.(post)}>
-              Edit
-            </Button>
-          )}
-
-          {canDelete && (
             <Button
               type="button"
-              variant="ghost"
-              size="xs"
-              busy={busyAction === "delete"}
-              onClick={() => onDelete?.(post)}
+              variant="secondary"
+              className="app-btn--icon"
+              onClick={() => onEdit?.(post)}
+              aria-label="Edit this update"
+              title="Edit this update"
             >
-              Delete
+              ✎
             </Button>
           )}
         </span>

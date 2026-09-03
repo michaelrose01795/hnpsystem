@@ -10,8 +10,9 @@
 // draft key, and claimed by the post on save — so a composer that is cancelled
 // leaves the feed untouched.
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import Button from "@/components/ui/Button";
 import InputField from "@/components/ui/InputField";
 import LayerTheme from "@/components/ui/LayerTheme";
@@ -66,7 +67,15 @@ const emptyForm = {
 const buildDraftKey = () =>
   `draft-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export default function NewsComposerModal({ isOpen, post = null, onClose, onSaved }) {
+export default function NewsComposerModal({
+  isOpen,
+  post = null,
+  canDelete = false,
+  deleting = false,
+  onDelete,
+  onClose,
+  onSaved,
+}) {
   const isEditing = Boolean(post?.id);
 
   const [form, setForm] = useState(emptyForm);
@@ -77,12 +86,15 @@ export default function NewsComposerModal({ isOpen, post = null, onClose, onSave
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [linkDraft, setLinkDraft] = useState({ recordType: "job_card", recordId: "", label: "" });
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Seed the form whenever the modal opens, so reopening never shows the last
   // post's wording.
   useEffect(() => {
     if (!isOpen) return;
     setError("");
+    setConfirmingDelete(false);
     setDraftKey(buildDraftKey());
     setLinkDraft({ recordType: "job_card", recordId: "", label: "" });
 
@@ -275,9 +287,23 @@ export default function NewsComposerModal({ isOpen, post = null, onClose, onSave
             >
               Save draft
             </Button>
-            <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={onClose}>
+            <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={onClose}>
               Cancel
             </Button>
+            {/* Delete lives here rather than on the feed row: it is only ever
+                reachable by someone who can already edit the announcement. */}
+            {isEditing && canDelete && (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                busy={deleting}
+                disabled={saving}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                Delete
+              </Button>
+            )}
           </div>
         </header>
 
@@ -375,8 +401,8 @@ export default function NewsComposerModal({ isOpen, post = null, onClose, onSave
           </div>
 
           <span className="app-news-composer__hint">
-            Everyone in the target departments is asked to confirm they have read it, and you can
-            track who still has not from the post itself.
+            Everyone in the target departments is asked to acknowledge it, and you can track who
+            still has not from the post itself.
           </span>
         </LayerTheme>
 
@@ -418,16 +444,34 @@ export default function NewsComposerModal({ isOpen, post = null, onClose, onSave
             removingId={removingId}
           />
           <div className="app-news-composer__row">
+            {/* The native file input is hidden and driven by an app button —
+                the browser's own "Choose file" control cannot be themed. */}
             <input
               id="news-attachment-input"
-              className="app-input"
+              ref={fileInputRef}
               type="file"
               multiple
+              style={{ display: "none" }}
               onChange={handleUpload}
-              disabled={uploading || attachments.length >= ATTACHMENT_MAX_PER_POST}
               aria-label="Attach files to this announcement"
             />
-            {uploading && <span className="app-news-composer__hint">Uploading…</span>}
+            <Button
+              type="button"
+              variant="secondary"
+              size="xxs"
+              busy={uploading}
+              disabled={attachments.length >= ATTACHMENT_MAX_PER_POST}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose files
+            </Button>
+            <span className="app-news-composer__hint">
+              {attachments.length >= ATTACHMENT_MAX_PER_POST
+                ? `Limit of ${ATTACHMENT_MAX_PER_POST} attachments reached.`
+                : uploading
+                  ? "Uploading…"
+                  : "PNG, JPG, PDF and documents."}
+            </span>
           </div>
         </LayerTheme>
 
@@ -488,6 +532,21 @@ export default function NewsComposerModal({ isOpen, post = null, onClose, onSave
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={confirmingDelete}
+        title="Delete announcement"
+        message={`Delete "${post?.title || "this announcement"}"?`}
+        description="It is removed from everyone's feed. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          onDelete?.(post);
+          onClose?.();
+        }}
+      />
     </PopupModal>
   );
 }

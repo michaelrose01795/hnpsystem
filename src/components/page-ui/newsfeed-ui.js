@@ -14,40 +14,16 @@ import NewsFilterBar from "@/components/NewsFeed/NewsFilterBar";
 import NewsPostCard from "@/components/NewsFeed/NewsPostCard";
 import NewsComposerModal from "@/components/NewsFeed/NewsComposerModal";
 import NewsPostDetailModal from "@/components/NewsFeed/NewsPostDetailModal";
-import NewsPreferencesModal from "@/components/NewsFeed/NewsPreferencesModal";
-import NewsAnalyticsModal from "@/components/NewsFeed/NewsAnalyticsModal";
-import { FEED_FILTER_ACK, FEED_FILTER_SAVED, FEED_FILTER_UNREAD } from "@/lib/news/constants";
 
 // The empty state has to say something true about the filter that produced it,
-// otherwise "no updates yet" reads as a fault when the reader has simply
+// otherwise "no updates yet" looks like a fault when the user has simply
 // filtered everything out.
-const emptyStateFor = ({ activeFilter, isSearching, hasActiveFilters }) => {
+const emptyStateFor = ({ isSearching, hasActiveFilters }) => {
   if (isSearching) {
     return {
       icon: "🔍",
       title: "No matching announcements",
       description: "Try a shorter search, or clear the category and department filters.",
-    };
-  }
-  if (activeFilter === FEED_FILTER_UNREAD) {
-    return {
-      icon: "✅",
-      title: "You are all caught up",
-      description: "Nothing in your departments is waiting to be read.",
-    };
-  }
-  if (activeFilter === FEED_FILTER_ACK) {
-    return {
-      icon: "✅",
-      title: "Nothing needs your sign-off",
-      description: "Every announcement that asked for an acknowledgement has one from you.",
-    };
-  }
-  if (activeFilter === FEED_FILTER_SAVED) {
-    return {
-      icon: "★",
-      title: "No saved announcements",
-      description: "Use the star on any post to keep it here for later.",
     };
   }
   if (hasActiveFilters) {
@@ -71,10 +47,7 @@ function FeedSkeleton() {
       <SkeletonKeyframes />
       {Array.from({ length: 3 }).map((_, index) => (
         <LayerSurface key={index} radius="var(--radius-sm)" padding={18} gap={10}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <SkeletonBlock width="38px" height="38px" borderRadius="999px" />
-            <SkeletonBlock width="160px" height="14px" />
-          </div>
+          <SkeletonBlock width="160px" height="14px" />
           <SkeletonBlock width="80%" height="18px" />
           <SkeletonBlock width="100%" height="12px" />
           <SkeletonBlock width="90%" height="12px" />
@@ -96,31 +69,20 @@ export default function NewsFeedUi(props) {
     searching,
     error,
     isSearching,
-    preferences,
     density,
     busyActions = {},
     permissionsFor,
 
     // filter state
-    activeFilter,
-    setActiveFilter,
     filters = { categories: [], priorities: [], departments: [] },
     setFilters,
-    filterCounts,
     hasActiveFilters,
-    clearFilters,
     searchTerm,
     setSearchTerm,
-    includeArchived,
-    setIncludeArchived,
-    setDensity,
 
     // actions
     onOpenPost,
-    onToggleRead,
-    onToggleSave,
     onAcknowledge,
-    onTogglePin,
     onEditPost,
     onDeletePost,
     onReact,
@@ -133,18 +95,11 @@ export default function NewsFeedUi(props) {
     onComposerSaved,
     detailPost,
     onCloseDetail,
-    preferencesOpen,
-    onOpenPreferences,
-    onClosePreferences,
-    onPreferencesSaved,
-    analyticsOpen,
-    onOpenAnalytics,
-    onCloseAnalytics,
   } = props;
 
   switch (props.view) {
     case "section1": {
-      const empty = emptyStateFor({ activeFilter, isSearching, hasActiveFilters });
+      const empty = emptyStateFor({ isSearching, hasActiveFilters });
 
       return (
         <>
@@ -152,9 +107,6 @@ export default function NewsFeedUi(props) {
             <NewsFilterBar
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              filterCounts={filterCounts}
               categories={filters.categories}
               onCategoriesChange={(value) =>
                 setFilters((previous) => ({ ...previous, categories: value }))
@@ -167,17 +119,8 @@ export default function NewsFeedUi(props) {
               onDepartmentsChange={(value) =>
                 setFilters((previous) => ({ ...previous, departments: value }))
               }
-              density={density}
-              onDensityChange={setDensity}
-              includeArchived={includeArchived}
-              onIncludeArchivedChange={setIncludeArchived}
               onOpenComposer={onOpenComposer}
-              onOpenPreferences={onOpenPreferences}
-              onOpenAnalytics={onOpenAnalytics}
               canPublish={capabilities.canPublish}
-              canViewAnalytics={capabilities.canViewAnalytics}
-              hasActiveFilters={hasActiveFilters}
-              onClearFilters={clearFilters}
             />
 
             {error && (
@@ -206,19 +149,12 @@ export default function NewsFeedUi(props) {
                       post={post}
                       currentUserId={currentUserId}
                       density={density}
-                      reactions={reactionsByPost[post.id] || []}
                       myReactions={myReactionsByPost[post.id] || []}
-                      canPin={capabilities.canPin}
                       canEdit={permissions.canEdit}
-                      canDelete={permissions.canDelete}
                       busyAction={busyActions[post.id] || null}
                       onOpen={onOpenPost}
-                      onToggleRead={onToggleRead}
-                      onToggleSave={onToggleSave}
                       onAcknowledge={onAcknowledge}
-                      onTogglePin={onTogglePin}
                       onEdit={onEditPost}
-                      onDelete={onDeletePost}
                       onReact={onReact}
                     />
                   );
@@ -230,6 +166,11 @@ export default function NewsFeedUi(props) {
           <NewsComposerModal
             isOpen={composerOpen}
             post={composerPost}
+            // Delete lives in the composer now, not on the row — it is the
+            // same permission the row used to gate its bin button with.
+            canDelete={Boolean(composerPost && (permissionsFor?.(composerPost) || {}).canDelete)}
+            deleting={composerPost ? busyActions[composerPost.id] === "delete" : false}
+            onDelete={onDeletePost}
             onClose={onCloseComposer}
             onSaved={onComposerSaved}
           />
@@ -243,17 +184,7 @@ export default function NewsFeedUi(props) {
             busyAction={detailPost ? busyActions[detailPost.id] || null : null}
             onClose={onCloseDetail}
             onAcknowledge={onAcknowledge}
-            onToggleSave={onToggleSave}
           />
-
-          <NewsPreferencesModal
-            isOpen={preferencesOpen}
-            preferences={preferences}
-            onClose={onClosePreferences}
-            onSaved={onPreferencesSaved}
-          />
-
-          <NewsAnalyticsModal isOpen={analyticsOpen} onClose={onCloseAnalytics} />
         </>
       );
     }

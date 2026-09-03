@@ -141,12 +141,12 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "parts": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/stock-catalogue", "/deliveries", "/goods-in"]),
+    mod("department-parts", ["/dashboard/parts", "/order", "/stock-catalogue", "/deliveries", "/goods-in"]),
   ),
   "parts manager": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/stock-catalogue", "/deliveries", "/goods-in"]),
+    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"]),
     mod("department-reports", ["/reports/parts"]),
   ),
   "parts driver": layout(
