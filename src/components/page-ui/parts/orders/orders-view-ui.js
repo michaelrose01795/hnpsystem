@@ -79,7 +79,7 @@ export default function OrdersViewUi(props) {
           }}>
               {ordersLoading ? <LayerTheme sectionKey="orders-view-loading" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
               textAlign: "center",
-              color: "var(--text-2)"
+              color: "var(--surfaceTextMuted)"
             }}>
                   Loading orders...
                 </LayerTheme> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">

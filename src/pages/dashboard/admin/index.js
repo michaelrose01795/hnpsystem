@@ -24,7 +24,7 @@ const MetricCard = ({ label, parentKey, sectionKey, value, helper }) => (
     style={{ minWidth: 0, height: "100%" }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-1)" }}>{label}</p>
-    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{helper}</p>}
   </LayerSurface>
 );

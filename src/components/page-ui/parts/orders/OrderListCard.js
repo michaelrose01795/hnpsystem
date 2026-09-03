@@ -43,7 +43,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         borderRadius: "var(--radius-sm)",
         overflow: "hidden",
         backgroundColor: rowBackground,
-        color: "var(--text-2)",
+        color: "var(--surfaceTextMuted)",
         display: "flex",
         flexDirection: "column",
         gap: "0.65rem",
@@ -78,7 +78,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
           <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-accent)" }}>
             {order.customer || "Customer"}
           </span>
-          <span style={{ fontSize: "15px", color: "var(--text-2)" }}>
+          <span style={{ fontSize: "15px", color: "var(--surfaceTextMuted)" }}>
             {order.makeModel || order.vehicle_reg || "Vehicle pending"}
           </span>
         </div>

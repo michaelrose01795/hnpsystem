@@ -59,7 +59,7 @@ export default function ReactionSummary({
     <div className="app-reaction-summary">
       <button
         type="button"
-        className="app-reaction-summary__total"
+        className="app-btn app-btn--ghost app-reaction-summary__total"
         aria-expanded={listOpen && activeEmoji === null}
         onClick={() => openList(null)}
       >
