@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState, useDeferredValue } fr
 import { useRouter } from "next/router";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
-import { hasAllAccessRole } from "@/lib/auth/roles";
+import { hasAnyRole, PARTS_ORDER_ROLES } from "@/lib/auth/roles";
 import { logFailure } from "@/lib/utils/logFailure";
 import OrdersViewUi from "@/components/page-ui/parts/orders/orders-view-ui";
 
@@ -43,9 +43,7 @@ export default function OrdersPage() {
   }, [user]);
 
   const canViewOrders = useMemo(
-    () =>
-    hasAllAccessRole(userRoles) ||
-    userRoles.some((role) => role === "parts" || role === "parts manager"),
+    () => hasAnyRole(userRoles, PARTS_ORDER_ROLES),
     [userRoles]
   );
 

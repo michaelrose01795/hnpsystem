@@ -51,21 +51,16 @@ import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
 import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
 import { logFailure } from "@/lib/utils/logFailure";
+import {
+  CUSTOMER_FIELD_DEFINITIONS,
+  initialCustomerFormState,
+  normalizeCustomerRecord,
+  buildCustomerUpdatePayload,
+} from "@/lib/customers/customerRecord"; // shared with /new-order
+import { createInitialVehicleState } from "@/lib/vehicles/vehicleFormState"; // shared with /new-order
 
 // Wait for a pause in typing before looking a registration up in the database.
 const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
-
-// Static form schema. Module-level so its identity never changes; it has no
-// dependency on component state.
-const CUSTOMER_FIELD_DEFINITIONS = [
-  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
-  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
-  { label: "Email", field: "email", type: "email", placeholder: "" },
-  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
-  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
-  { label: "Address", field: "address", type: "textarea", placeholder: "" },
-  { label: "Contact Preference", field: "contactPreference", type: "multi-select" },
-];
 
 const PAYMENT_TYPE_OPTIONS = [
 { value: "Customer", label: "Customer" },
@@ -79,57 +74,6 @@ const PAYMENT_TYPE_OPTIONS = [
 
 
 
-
-const initialCustomerFormState = {
-  id: null, // stores currently selected customer's UUID
-  firstName: "", // stores customer first name for form binding
-  lastName: "", // stores customer last name for form binding
-  email: "", // stores customer email address
-  mobile: "", // stores customer mobile number
-  telephone: "", // stores customer telephone number
-  address: "", // stores customer street address
-  postcode: "", // stores customer postcode
-  contactPreference: ["email"] // stores customer preferred contact option(s)
-};
-
-const normalizeCustomerRecord = (record = {}) => ({
-  id: record?.id || record?.customer_id || null, // prefer Supabase UUID and fall back to nested keys
-  firstName: record?.firstname || record?.firstName || initialCustomerFormState.firstName, // normalize first name casing
-  lastName: record?.lastname || record?.lastName || initialCustomerFormState.lastName, // normalize last name casing
-  email: record?.email || initialCustomerFormState.email, // normalize email field
-  mobile: record?.mobile || initialCustomerFormState.mobile, // normalize mobile field
-  telephone: record?.telephone || initialCustomerFormState.telephone, // normalize telephone field
-  address: record?.address || initialCustomerFormState.address, // normalize address field
-  postcode: record?.postcode || initialCustomerFormState.postcode, // normalize postcode field
-  contactPreference: (() => {
-    const raw =
-    record?.contact_preference ??
-    record?.contactPreference ??
-    initialCustomerFormState.contactPreference;
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === "string") {
-      const cleaned = raw.
-      split(",").
-      map((item) => item.trim()).
-      filter(Boolean).
-      map((item) => item.toLowerCase());
-      if (cleaned.length) return cleaned;
-      return [raw.toLowerCase()];
-    }
-    return initialCustomerFormState.contactPreference;
-  })() // normalize contact preference field
-});
-
-const createInitialVehicleState = () => ({
-  reg: "",
-  colour: "",
-  makeModel: "",
-  make: "",
-  year: null,
-  chassis: "",
-  engine: "",
-  mileage: ""
-});
 
 export default function CreateJobCardPage() {
   const router = useRouter(); // Next.js router for navigation
@@ -978,25 +922,7 @@ export default function CreateJobCardPage() {
     try {
       setIsSavingCustomer(true);
 
-      const toNullable = (value) => {
-        if (Array.isArray(value)) {
-          const joined = value.map((item) => String(item).trim()).filter(Boolean).join(", ");
-          return joined.length ? joined : null;
-        }
-        const trimmed = (value || "").trim();
-        return trimmed.length ? trimmed : null;
-      };
-
-      const updatePayload = {
-        firstname: (customerForm.firstName || "").trim(),
-        lastname: (customerForm.lastName || "").trim(),
-        email: toNullable(customerForm.email),
-        mobile: toNullable(customerForm.mobile),
-        telephone: toNullable(customerForm.telephone),
-        address: toNullable(customerForm.address),
-        postcode: toNullable(customerForm.postcode),
-        contact_preference: toNullable(customerForm.contactPreference) || "email"
-      };
+      const updatePayload = buildCustomerUpdatePayload(customerForm);
 
       const result = await (await loadCustomersDb()).updateCustomer(customer.id, updatePayload);
 

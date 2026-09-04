@@ -213,6 +213,7 @@ function buildGoldenSidebarSections() {
       items: [
         // Job Cards intentionally absent — it is a Reception page, not a Parts one.
         { label: "Orders", href: "/order", roles: ["parts"] },
+        { label: "Create Order", href: "/new-order", roles: ["parts"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -224,6 +225,7 @@ function buildGoldenSidebarSections() {
       items: [
         // See the Parts section above — Job Cards stays in Reception.
         { label: "Orders", href: "/order", roles: ["parts manager"] },
+        { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -538,7 +540,7 @@ describe("workspace manifest - module bundle placement", () => {
         "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
       ] },
       // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
-      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"] },
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"] },
       { key: "department-management", hrefs: [
         "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
         "/hr/manager", "/website-manager", "/archive",

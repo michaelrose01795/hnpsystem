@@ -3,8 +3,7 @@
 
 
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/lib/database/supabaseClient";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // shared invoice viewer
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import PartsOrderDetailUi from "@/components/page-ui/parts/create-order/parts-create-order-order-number-ui"; // Extracted presentation layer.
@@ -129,9 +128,6 @@ export default function PartsOrderDetail() {
   const [activeTab, setActiveTab] = useState("parts");
   const [statusSaving, setStatusSaving] = useState(false);
   const [statusError, setStatusError] = useState("");
-  const orderId = order?.id;
-  const lastOrderRef = useRef(null);
-  const hasPatchedDraftRef = useRef(false);
 
   useEffect(() => {
     if (!resolvedOrderNumber) return;
@@ -139,13 +135,14 @@ export default function PartsOrderDetail() {
       setLoading(true);
       setError("");
       try {
-        const { data, error: fetchError } = await supabase.
-        from("parts_order_cards").
-        select("*, items:parts_order_card_items(*)").
-        eq("order_number", resolvedOrderNumber).
-        maybeSingle();
-        if (fetchError) throw fetchError;
-        setOrder(data || null);
+        const response = await fetch(
+          `/api/parts/orders/${encodeURIComponent(resolvedOrderNumber)}`
+        );
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.message || "Unable to load parts order.");
+        }
+        setOrder(result.order || null);
       } catch (fetchErr) {
         logFailure("Failed to load parts order:", fetchErr);
         setError(fetchErr.message || "Unable to load parts order.");
@@ -158,41 +155,23 @@ export default function PartsOrderDetail() {
 
   const updateOrderRecord = useCallback(
     async (updates = {}, { skipAutoComplete = false } = {}) => {
-      if (!orderId) return null;
+      if (!resolvedOrderNumber) return null;
       setStatusError("");
       setStatusSaving(true);
       try {
-        const { data, error: updateError } = await supabase.
-        from("parts_order_cards").
-        update({ ...updates, updated_at: new Date().toISOString() }).
-        eq("id", orderId).
-        select("*, items:parts_order_card_items(*)").
-        maybeSingle();
-        if (updateError) throw updateError;
-        let nextOrder = data || null;
-        const shouldAutoComplete =
-        !skipAutoComplete &&
-        nextOrder?.delivery_status === "delivered" &&
-        nextOrder?.invoice_status === "paid" &&
-        nextOrder?.status !== "complete";
-        if (shouldAutoComplete && nextOrder?.id) {
-          const completionPayload = {
-            status: "complete",
-            updated_at: new Date().toISOString()
-          };
-          if (Object.prototype.hasOwnProperty.call(nextOrder, "archived_at")) {
-            completionPayload.archived_at = new Date().toISOString();
+        const response = await fetch(
+          `/api/parts/orders/${encodeURIComponent(resolvedOrderNumber)}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ updates, skipAutoComplete }),
           }
-          const { data: completedOrder, error: completionError } = await supabase.
-          from("parts_order_cards").
-          update(completionPayload).
-          eq("id", nextOrder.id).
-          select("*, items:parts_order_card_items(*)").
-          maybeSingle();
-          if (!completionError && completedOrder) {
-            nextOrder = completedOrder;
-          }
+        );
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.message || "Unable to update parts order.");
         }
+        const nextOrder = result.order || null;
         setOrder(nextOrder);
         return nextOrder;
       } catch (updateErr) {
@@ -203,27 +182,15 @@ export default function PartsOrderDetail() {
         setStatusSaving(false);
       }
     },
-    [orderId]
+    [resolvedOrderNumber]
   );
 
-  useEffect(() => {
-    if (!order?.id) return;
-    if (lastOrderRef.current !== order.id) {
-      lastOrderRef.current = order.id;
-      hasPatchedDraftRef.current = false;
-    }
-    if (order.status === "draft" && !hasPatchedDraftRef.current) {
-      hasPatchedDraftRef.current = true;
-      updateOrderRecord({ status: "booked" }, { skipAutoComplete: true });
-    }
-  }, [order, updateOrderRecord]);
-
-  const deriveOrderStatusFromDelivery = (stageValue) => {
+  const deriveOrderStatusFromDelivery = useCallback((stageValue) => {
     if (order?.status === "complete") return "complete";
     if (stageValue === "pending") return "booked";
     if (stageValue === "delivered" && order?.invoice_status === "paid") return "complete";
     return "ready";
-  };
+  }, [order?.invoice_status, order?.status]);
 
   const handleDeliveryStatusChange = useCallback(
     async (nextValue) => {
@@ -236,7 +203,7 @@ export default function PartsOrderDetail() {
         { skipAutoComplete: nextValue === "pending" }
       );
     },
-    [order, updateOrderRecord]
+    [deriveOrderStatusFromDelivery, order, updateOrderRecord]
   );
 
   const handleInvoiceStatusChange = useCallback(

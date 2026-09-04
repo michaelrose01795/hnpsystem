@@ -1,1224 +1,707 @@
-// file location: src/pages/parts/create-order/index.js
+// file location: src/pages/new-order/index.js
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { hasAllAccessRole } from "@/lib/auth/roles";
-import { supabaseClient } from "@/lib/database/supabaseClient";
-import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
+import { hasAnyRole, PARTS_ORDER_ROLES } from "@/lib/auth/roles";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
-import ModalPortal from "@/components/popups/ModalPortal";
-import { useTheme } from "@/styles/themeProvider";
-import { updateCustomer } from "@/lib/database/customers";
+import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
-import PartsJobCardPageUi from "@/components/page-ui/parts/create-order/parts-create-order-ui"; // Extracted presentation layer.
+import { createCustomerDisplaySlug } from "@/lib/customers/slug";
+import {
+  CUSTOMER_FIELD_DEFINITIONS,
+  initialCustomerFormState,
+  normalizeCustomerRecord,
+  buildCustomerUpdatePayload,
+} from "@/lib/customers/customerRecord"; // shared with /new-job
+import {
+  createInitialVehicleState,
+  hydrateVehicleState,
+  vehicleStateFromDvla,
+} from "@/lib/vehicles/vehicleFormState"; // shared with /new-job
+import PartsCreateOrderUi from "@/components/page-ui/parts/create-order/parts-create-order-ui";
 import { logFailure } from "@/lib/utils/logFailure";
 
-const cardStyle = {
-  gap: "18px"
-};
+const loadCustomersDb = () => import("@/lib/database/customers");
+const loadVehiclesDb = () => import("@/lib/database/vehicles");
 
-const twoColumnGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "12px"
-};
-
-const fieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "4px"
-};
-
-const inputStyle = {
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  padding: "var(--control-padding)",
-  fontSize: "0.95rem",
-  fontFamily: "inherit"
-};
-
-const sectionCardStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px"
-};
-
-const sectionHeaderStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-start",
-  flexWrap: "wrap",
-  gap: "12px"
-};
-
-const partLookupOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "16px",
-  zIndex: "var(--z-modal)"
-};
-
-const partLookupContentStyle = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-md)",
-  padding: "var(--section-card-padding)",
-  width: "min(640px, 100%)",
-  maxHeight: "85vh",
-  overflowY: "auto",
-  border: "none",
-  display: "flex",
-  flexDirection: "column",
-  gap: "14px"
-};
+// Wait for a pause in typing before looking a registration up in the database.
+const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
 
 const blankForm = {
-  customer_id: null,
-  customer_name: "",
-  customer_phone: "",
-  customer_email: "",
-  customer_address: "",
-  vehicle_reg: "",
-  vehicle_make: "",
-  vehicle_model: "",
-  vehicle_vin: "",
-  notes: "",
-  delivery_type: "delivery",
+  internal_notes: "",
+  customer_notes: "",
+  account_number: "",
+  customer_type: "retail",
+  pricing_level: "retail",
+  delivery_type: "collection",
+  delivery_address_mode: "saved",
   delivery_address: "",
   delivery_eta: "",
   delivery_window: "",
-  delivery_notes: ""
+  delivery_charge: "0",
+  delivery_notes: "",
+  priority: "normal",
+  payment_status: "draft",
+  order_source: "phone",
+  assigned_adviser: "",
+  department: "Parts",
+  customer_reference: "",
+  notify_sms: true,
+  notify_email: true,
+  notify_phone: false,
+  reserve_stock: true,
 };
 
+let partLineSequence = 0;
 const blankPart = () => ({
+  client_id: `part-line-${++partLineSequence}`,
   part_number: "",
   part_name: "",
   quantity: 1,
   unit_price: "",
+  discount: "0",
   notes: "",
   part_catalog_id: null,
-  catalog_snapshot: null
+  catalog_snapshot: null,
 });
 
 const formatFullName = (record = {}) =>
-[record.firstname || record.firstName, record.lastname || record.lastName].
-filter(Boolean).
-join(" ").
-trim();
+  [record.firstName || record.firstname, record.lastName || record.lastname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
-const splitFullName = (fullName = "", fallback = {}) => {
-  const trimmed = (fullName || "").trim();
-  if (!trimmed.length) {
-    return {
-      firstName: fallback.firstname || fallback.firstName || "",
-      lastName: fallback.lastname || fallback.lastName || ""
-    };
-  }
-  const [firstName, ...rest] = trimmed.split(/\s+/);
-  return {
-    firstName: firstName || fallback.firstname || fallback.firstName || "",
-    lastName: rest.join(" ").trim() || fallback.lastname || fallback.lastName || ""
-  };
+const money = (value) => Number(Number(value || 0).toFixed(2));
+
+// The Vehicle Details card carries more fields than the parts order table has
+// columns for. Make / model / VIN map onto real columns; colour, engine number
+// and mileage ride along in the vehicle_details JSON the order already stores.
+const splitMakeModel = (makeModel = "") => {
+  const trimmed = String(makeModel || "").trim();
+  if (!trimmed) return { make: "", model: "" };
+  const [make, ...rest] = trimmed.split(/\s+/);
+  return { make, model: rest.join(" ") };
 };
 
-const normalizeCustomerRecord = (record = {}) => ({
-  id: record.id || record.customer_id || null,
-  firstname: record.firstname || record.firstName || "",
-  lastname: record.lastname || record.lastName || "",
-  email: record.email || "",
-  mobile: record.mobile || "",
-  telephone: record.telephone || "",
-  address: record.address || "",
-  postcode: record.postcode || ""
-});
-
-export default function PartsJobCardPage() {
-  const { resolvedMode } = useTheme();
+export default function PartsCreateOrderPage() {
+  const router = useRouter();
   const { user } = useUser();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasPartsAccess = hasAllAccessRole(roles) || roles.includes("parts") || roles.includes("parts manager");
-  const isDarkMode = resolvedMode === "dark";
+  const hasPartsAccess = hasAnyRole(roles, PARTS_ORDER_ROLES);
+  const adviserName = user?.displayName || user?.fullName || user?.name || user?.username || user?.email || "Parts team";
 
-  const router = useRouter();
-  const [form, setForm] = useState(blankForm);
+  const [form, setForm] = useState(() => ({ ...blankForm, assigned_adviser: adviserName }));
   const [partLines, setPartLines] = useState([blankPart()]);
-  const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [customerRecord, setCustomerRecord] = useState(null);
-  const [showExistingCustomer, setShowExistingCustomer] = useState(false);
-  const [showNewCustomer, setShowNewCustomer] = useState(false);
+
+  // Vehicle Details — same state shape as /new-job so the shared card renders
+  // identically on both pages.
+  const [vehicle, setVehicle] = useState(createInitialVehicleState);
+  const [vehicleNotification, setVehicleNotification] = useState(null);
+  const [vehicleError, setVehicleError] = useState("");
+  const [isLoadingVehicle, setIsLoadingVehicle] = useState(false);
+  const [withoutVehicle, setWithoutVehicle] = useState(false);
+  const currentVehicleRegistrationRef = useRef("");
+  const lastVehicleLookupRef = useRef("");
+
+  // Customer Details — same state shape as /new-job.
+  const [customer, setCustomer] = useState(null);
+  const [customerForm, setCustomerForm] = useState(() => ({ ...initialCustomerFormState }));
   const [isCustomerEditing, setIsCustomerEditing] = useState(false);
-  const [savingCustomerDetails, setSavingCustomerDetails] = useState(false);
-  const [deliverySameAsBilling, setDeliverySameAsBilling] = useState(true);
-  const [loadingVehicle, setLoadingVehicle] = useState(false);
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+  const [customerNotification, setCustomerNotification] = useState(null);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showExistingCustomer, setShowExistingCustomer] = useState(false);
+  const [newCustomerPrefill, setNewCustomerPrefill] = useState(null);
+  const [customerOrders, setCustomerOrders] = useState([]);
+
   const [partSearchOpen, setPartSearchOpen] = useState(false);
   const [partSearchQuery, setPartSearchQuery] = useState("");
   const [partSearchResults, setPartSearchResults] = useState([]);
   const [partSearchLoading, setPartSearchLoading] = useState(false);
   const [activePartLine, setActivePartLine] = useState(null);
-  const hasCustomerSelected = Boolean(customerRecord);
+  const [savingMode, setSavingMode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const showNotification = useCallback((section, type, message) => {
+    if (section === "customer") {
+      setCustomerNotification({ type, message });
+      setTimeout(() => setCustomerNotification(null), 5000);
+    } else if (section === "vehicle") {
+      setVehicleNotification({ type, message });
+      setTimeout(() => setVehicleNotification(null), 5000);
+    }
+  }, []);
+
+  const customerName = formatFullName(customerForm);
+
+  const validPartLines = useMemo(
+    () => partLines.filter((line) => line.part_name.trim() || line.part_number.trim()),
+    [partLines]
+  );
+
+  const totals = useMemo(() => {
+    const subtotal = validPartLines.reduce(
+      (sum, line) => sum + (Number(line.quantity) || 0) * (Number(line.unit_price) || 0),
+      0
+    );
+    const discount = validPartLines.reduce((sum, line) => {
+      const gross = (Number(line.quantity) || 0) * (Number(line.unit_price) || 0);
+      return sum + gross * Math.min(Math.max(Number(line.discount) || 0, 0), 100) / 100;
+    }, 0);
+    const delivery = form.delivery_type === "collection" ? 0 : Math.max(Number(form.delivery_charge) || 0, 0);
+    const net = subtotal - discount + delivery;
+    const vat = net * 0.2;
+    return { subtotal: money(subtotal), discount: money(discount), delivery: money(delivery), vat: money(vat), total: money(net + vat) };
+  }, [form.delivery_charge, form.delivery_type, validPartLines]);
 
   useEffect(() => {
-    if (deliverySameAsBilling) {
-      setForm((prev) => ({
-        ...prev,
-        delivery_address: prev.customer_address
-      }));
+    if (!form.assigned_adviser && adviserName) {
+      setForm((current) => ({ ...current, assigned_adviser: adviserName }));
     }
-  }, [deliverySameAsBilling, form.customer_address]);
+  }, [adviserName, form.assigned_adviser]);
+
+  // Keep the editable copy in step with the selected customer, matching /new-job.
+  useEffect(() => {
+    if (customer) {
+      setCustomerForm(normalizeCustomerRecord(customer));
+    } else {
+      setCustomerForm({ ...initialCustomerFormState });
+      setIsCustomerEditing(false);
+    }
+  }, [customer]);
+
+  const hydrateVehicleFromRecord = useCallback((storedVehicle, { notifyCustomer = false } = {}) => {
+    if (!storedVehicle) return;
+    const registration = getVehicleRegistration(storedVehicle);
+    setVehicle((previous) => hydrateVehicleState(storedVehicle, previous, { registration }));
+    if (storedVehicle.customer) {
+      setCustomer(normalizeCustomerRecord(storedVehicle.customer));
+      if (notifyCustomer) {
+        showNotification("customer", "success", "✓ Loaded customer linked to this vehicle");
+      }
+    }
+  }, [showNotification]);
+
+  // Debounced background lookup while the registration is typed — one query per
+  // pause rather than one per keystroke.
+  useEffect(() => {
+    const regTrimmed = (vehicle.reg || "").trim().toUpperCase();
+    currentVehicleRegistrationRef.current = regTrimmed;
+    if (!regTrimmed || regTrimmed.length < 3) return undefined;
+    if (lastVehicleLookupRef.current === regTrimmed) return undefined;
+
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      try {
+        const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(regTrimmed);
+        lastVehicleLookupRef.current = regTrimmed;
+        if (!cancelled && storedVehicle) hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: false });
+      } catch (error) {
+        logFailure("Automatic vehicle lookup failed", error);
+      }
+    }, VEHICLE_LOOKUP_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [vehicle.reg, hydrateVehicleFromRecord]);
 
   useEffect(() => {
-    if (!partSearchOpen) {
-      setPartSearchResults([]);
-      setPartSearchLoading(false);
-      return;
-    }
+    if ((vehicle.reg || "").trim()) return;
+    currentVehicleRegistrationRef.current = "";
+    lastVehicleLookupRef.current = "";
+    setVehicleError("");
+    setVehicleNotification(null);
+    setIsLoadingVehicle(false);
+  }, [vehicle.reg]);
+
+  useEffect(() => {
+    if (!partSearchOpen) return undefined;
     const term = partSearchQuery.trim();
     if (term.length < 2) {
       setPartSearchResults([]);
       setPartSearchLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
-    setPartSearchLoading(true);
-    const searchParts = async () => {
+    const timeout = window.setTimeout(async () => {
+      setPartSearchLoading(true);
       try {
-        const params = new URLSearchParams({
-          search: term,
-          limit: "25"
-        });
-        const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+        const response = await fetch(`/api/parts/catalog?search=${encodeURIComponent(term)}&limit=30`);
         const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Failed to search parts catalogue.");
-        }
-        if (!cancelled) {
-          setPartSearchResults(payload.parts || []);
-        }
-      } catch (lookupError) {
-        logFailure("Failed to search parts catalog:", lookupError);
-        if (!cancelled) {
-          setPartSearchResults([]);
-        }
+        if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to search the parts catalogue.");
+        if (!cancelled) setPartSearchResults(payload.parts || []);
+      } catch (error) {
+        logFailure("Parts catalogue search failed:", error);
+        if (!cancelled) setErrorMessage(error.message || "Unable to search the parts catalogue.");
       } finally {
-        if (!cancelled) {
-          setPartSearchLoading(false);
-        }
+        if (!cancelled) setPartSearchLoading(false);
       }
-    };
-    searchParts();
+    }, 220);
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [partSearchOpen, partSearchQuery]);
 
-  const handleFieldChange = (field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value
-    }));
+  const loadOpenOrders = useCallback(async (record) => {
+    const params = new URLSearchParams({ openOnly: "true", limit: "5" });
+    if (record?.id) params.set("customerId", record.id);
+    else if (formatFullName(record)) params.set("customerName", formatFullName(record));
+    else return setCustomerOrders([]);
+    try {
+      const response = await fetch(`/api/parts/orders?${params.toString()}`);
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to check open orders.");
+      setCustomerOrders(payload.orders || []);
+    } catch (error) {
+      logFailure("Open parts order check failed:", error);
+      setCustomerOrders([]);
+    }
+  }, []);
+
+  // Same resolution flow as /new-job: hydrate by id when the popup supplies
+  // one, otherwise de-duplicate on email/mobile before inserting.
+  const handleCustomerSelect = async (customerData) => {
+    try {
+      const providedId = customerData?.id || customerData?.customer_id || null;
+      let resolvedCustomer = null;
+
+      if (providedId) {
+        const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(providedId);
+        resolvedCustomer = normalizeCustomerRecord(hydratedCustomer || customerData);
+        if (!resolvedCustomer?.id) throw new Error("Customer record missing ID after lookup");
+      } else {
+        if (!customerData.email && !customerData.mobile) {
+          showNotification("customer", "error", "Customer must have at least an email or mobile number.");
+          return;
+        }
+        const normalizedPayload = {
+          firstname: customerData.firstName || customerData.firstname || "",
+          lastname: customerData.lastName || customerData.lastname || "",
+          email: customerData.email || null,
+          mobile: customerData.mobile || null,
+          telephone: customerData.telephone || null,
+          address: customerData.address || null,
+          postcode: customerData.postcode || null,
+          contact_preference: customerData.contactPreference || customerData.contact_preference || "email",
+        };
+        const { exists, customer: existingCustomer } = await (await loadCustomersDb()).checkCustomerExists(
+          normalizedPayload.email,
+          normalizedPayload.mobile
+        );
+        if (exists && existingCustomer?.id) {
+          const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(existingCustomer.id);
+          resolvedCustomer = normalizeCustomerRecord(hydratedCustomer || existingCustomer);
+        } else {
+          const insertedCustomer = await (await loadCustomersDb()).addCustomerToDatabase(normalizedPayload);
+          resolvedCustomer = normalizeCustomerRecord(insertedCustomer);
+          showNotification("customer", "success", "✓ New customer saved successfully!");
+        }
+      }
+
+      if (!resolvedCustomer?.id) throw new Error("Customer record missing after save");
+
+      setCustomer(resolvedCustomer);
+      setForm((current) => ({
+        ...current,
+        account_number: customerData.account_number || current.account_number,
+        delivery_address: [resolvedCustomer.address, resolvedCustomer.postcode].filter(Boolean).join(", "),
+      }));
+      loadOpenOrders(resolvedCustomer);
+
+      try {
+        const vehicles = await (await loadCustomersDb()).getCustomerVehicles(resolvedCustomer.id);
+        const latestVehicle = vehicles?.[0];
+        if (latestVehicle) {
+          setVehicle((previous) => hydrateVehicleState(latestVehicle, previous, {
+            registration: getVehicleRegistration(latestVehicle),
+          }));
+          setWithoutVehicle(false);
+          setVehicleError("");
+        }
+      } catch (vehicleErr) {
+        logFailure("Vehicle lookup failed for customer:", vehicleErr);
+      }
+
+      setShowNewCustomer(false);
+      setShowExistingCustomer(false);
+    } catch (error) {
+      logFailure("❌ Error saving customer:", error);
+      showNotification("customer", "error", `✗ Error: ${error.message || "Could not save customer"}`);
+    }
   };
 
-  const handlePartChange = (index, field, value) => {
-    setPartLines((prev) =>
-    prev.map((line, lineIndex) => {
-      if (lineIndex !== index) return line;
+  const handleCustomerFieldChange = (field, value) => {
+    setCustomerForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveContactPreference = async (nextPreferences, previousPreferences) => {
+    if (!customer?.id) return;
+    try {
+      setIsSavingCustomer(true);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, {
+        contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email",
+      });
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error?.message || "Failed to update contact preference.");
+      }
+      const normalized = normalizeCustomerRecord(result.data);
+      setCustomer(normalized);
+      setCustomerForm(normalized);
+    } catch (err) {
+      logFailure("❌ Error updating contact preference:", err);
+      showNotification("customer", "error", `✗ ${err.message || "Failed to update contact preference"}`);
+      setCustomerForm((prev) => ({ ...prev, contactPreference: previousPreferences }));
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
+  const toggleContactPreference = (value) => {
+    setCustomerForm((prev) => {
+      const current = Array.isArray(prev.contactPreference) ? prev.contactPreference : [];
+      const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+      if (customer?.id) saveContactPreference(next, current);
+      return { ...prev, contactPreference: next };
+    });
+  };
+
+  const handleStartCustomerEdit = () => {
+    if (!customer) {
+      showNotification("customer", "error", "✗ Select a customer first.");
+      return;
+    }
+    setCustomerForm(normalizeCustomerRecord(customer));
+    setIsCustomerEditing(true);
+  };
+
+  const handleCancelCustomerEdit = () => {
+    setCustomerForm(customer ? normalizeCustomerRecord(customer) : { ...initialCustomerFormState });
+    setIsCustomerEditing(false);
+  };
+
+  const handleSaveCustomerEdits = async () => {
+    if (!customer?.id) {
+      showNotification("customer", "error", "✗ Please select a customer before editing.");
+      return;
+    }
+    try {
+      setIsSavingCustomer(true);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, buildCustomerUpdatePayload(customerForm));
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error?.message || "Failed to update customer.");
+      }
+      setCustomer(normalizeCustomerRecord(result.data));
+      setIsCustomerEditing(false);
+      showNotification("customer", "success", "✓ Customer details updated!");
+    } catch (err) {
+      logFailure("❌ Error updating customer:", err);
+      showNotification("customer", "error", `✗ ${err.message || "Failed to update customer"}`);
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
+  const viewCustomer = () => {
+    if (!customer?.id) return;
+    const slug = createCustomerDisplaySlug(customer.firstName, customer.lastName);
+    if (slug) router.push(`/customers/${slug}`);
+  };
+
+  const handleFieldChange = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+
+  // Same lookup order as /new-job: an existing Supabase row wins, DVLA is the
+  // fallback.
+  const handleFetchVehicleData = async () => {
+    if (!vehicle.reg.trim()) {
+      setVehicleError("Please enter a registration number");
+      showNotification("vehicle", "error", "✗ Please enter a registration number");
+      return;
+    }
+
+    setIsLoadingVehicle(true);
+    setVehicleError("");
+    setVehicleNotification(null);
+    const requestedRegistration = vehicle.reg.trim().toUpperCase();
+    currentVehicleRegistrationRef.current = requestedRegistration;
+
+    try {
+      const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(requestedRegistration);
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) return;
+
+      if (storedVehicle) {
+        hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: true });
+        showNotification("vehicle", "success", "✓ Vehicle details loaded from database!");
+        return;
+      }
+
+      const response = await fetch("/api/vehicles/dvla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration: requestedRegistration }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) return;
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.error || `DVLA lookup failed with status ${response.status}`);
+      }
+      if (!payload || Object.keys(payload).length === 0) {
+        throw new Error("No vehicle data found for that registration from DVLA");
+      }
+
+      setVehicle(vehicleStateFromDvla(payload, {
+        registration: requestedRegistration,
+        previousMileage: vehicle.mileage,
+      }));
+      setWithoutVehicle(false);
+    } catch (error) {
+      if (currentVehicleRegistrationRef.current !== requestedRegistration) return;
+      logFailure("Error fetching vehicle data from DVLA:", error);
+      setVehicleError(`Error: ${error.message}`);
+    } finally {
+      setIsLoadingVehicle(false);
+    }
+  };
+
+  const handlePartChange = (clientId, field, value) => {
+    setPartLines((current) => current.map((line) => {
+      if (line.client_id !== clientId) return line;
       const next = { ...line, [field]: value };
       if (field === "part_number" && line.part_catalog_id) {
         next.part_catalog_id = null;
         next.catalog_snapshot = null;
       }
       return next;
-    })
-    );
+    }));
   };
 
-  const handleAddPart = () => {
-    setPartLines((prev) => [...prev, blankPart()]);
-  };
+  const addManualPart = () => setPartLines((current) => [...current, blankPart()]);
+  const removePart = (clientId) => setPartLines((current) => {
+    const next = current.filter((line) => line.client_id !== clientId);
+    return next.length ? next : [blankPart()];
+  });
 
-  const handleRemovePart = (index) => {
-    setPartLines((prev) => prev.filter((_, lineIndex) => lineIndex !== index));
-  };
-
-  const openPartSearch = (index) => {
-    setActivePartLine(index);
-    setPartSearchQuery(partLines[index]?.part_number || "");
+  const openPartSearch = (clientId = null, query = "") => {
+    setActivePartLine(clientId);
+    setPartSearchQuery(query);
     setPartSearchOpen(true);
   };
 
   const closePartSearch = () => {
     setPartSearchOpen(false);
-    setPartSearchLoading(false);
     setPartSearchQuery("");
     setPartSearchResults([]);
     setActivePartLine(null);
   };
 
-  const handlePartSelected = (part) => {
-    if (activePartLine === null || activePartLine === undefined) {
-      closePartSearch();
-      return;
-    }
-    setPartLines((prev) =>
-    prev.map((line, index) => {
-      if (index !== activePartLine) return line;
-      return {
-        ...line,
-        part_catalog_id: part.id,
-        part_number: part.part_number || line.part_number,
-        part_name: part.name || line.part_name,
-        unit_price:
-        part.unit_price === undefined || part.unit_price === null ?
-        line.unit_price :
-        String(part.unit_price),
-        catalog_snapshot: {
-          qty_in_stock: part.qty_in_stock,
-          qty_reserved: part.qty_reserved,
-          storage_location: part.storage_location,
-          supplier: part.supplier
-        }
-      };
-    })
-    );
-    closePartSearch();
-  };
-
-  const handleClearPartLink = (index) => {
-    setPartLines((prev) =>
-    prev.map((line, lineIndex) =>
-    lineIndex === index ? { ...line, part_catalog_id: null, catalog_snapshot: null } : line
-    )
-    );
-  };
-
-  const fetchLatestVehicleForCustomer = useCallback(async (customerId) => {
-    if (!customerId) return;
-    setLoadingVehicle(true);
-    try {
-      const { data, error } = await supabaseClient.
-      from("vehicles").
-      select("registration, reg_number, make, model, make_model, chassis, vin").
-      eq("customer_id", customerId).
-      order("updated_at", { ascending: false }).
-      limit(1).
-      maybeSingle();
-      if (!error && data) {
-        setForm((prev) => ({
-          ...prev,
-          vehicle_reg: getVehicleRegistration(data) || prev.vehicle_reg,
-          vehicle_make: data.make || data.make_model || prev.vehicle_make,
-          vehicle_model: data.model || prev.vehicle_model,
-          vehicle_vin: data.vin || data.chassis || prev.vehicle_vin
-        }));
-      }
-    } catch (vehicleError) {
-      logFailure("Failed to load vehicle for customer:", vehicleError);
-    } finally {
-      setLoadingVehicle(false);
-    }
-  }, []);
-
-  const applyCustomerToForm = useCallback(
-    (record) => {
-      if (!record) return;
-      const normalized = normalizeCustomerRecord(record);
-      setCustomerRecord(normalized);
-      setIsCustomerEditing(false);
-      setForm((prev) => {
-        const nextState = {
-          ...prev,
-          customer_id: normalized.id,
-          customer_name: formatFullName(normalized) || prev.customer_name,
-          customer_phone: normalized.mobile || normalized.telephone || prev.customer_phone,
-          customer_email: normalized.email || prev.customer_email,
-          customer_address: normalized.address || prev.customer_address
-        };
-        if (deliverySameAsBilling) {
-          nextState.delivery_address = normalized.address || prev.delivery_address;
-        }
-        return nextState;
-      });
-      if (normalized.id) {
-        fetchLatestVehicleForCustomer(normalized.id);
-      }
-    },
-    [deliverySameAsBilling, fetchLatestVehicleForCustomer]
-  );
-
-  const handleCustomerCleared = () => {
-    setCustomerRecord(null);
-    setIsCustomerEditing(false);
-    setForm((prev) => ({
-      ...prev,
-      customer_id: null,
-      customer_name: "",
-      customer_phone: "",
-      customer_email: "",
-      customer_address: "",
-      delivery_address: deliverySameAsBilling ? "" : prev.delivery_address
-    }));
-  };
-
-  const syncFormWithCustomerRecord = useCallback(() => {
-    if (!customerRecord) return;
-    setForm((prev) => {
-      const nextState = {
-        ...prev,
-        customer_id: customerRecord.id,
-        customer_name: formatFullName(customerRecord),
-        customer_phone: customerRecord.mobile || customerRecord.telephone || "",
-        customer_email: customerRecord.email || "",
-        customer_address: customerRecord.address || ""
-      };
-      if (deliverySameAsBilling) {
-        nextState.delivery_address = customerRecord.address || "";
-      }
-      return nextState;
-    });
-  }, [customerRecord, deliverySameAsBilling]);
-
-  const handleStartCustomerEdit = () => {
-    if (!customerRecord) return;
-    syncFormWithCustomerRecord();
-    setIsCustomerEditing(true);
-  };
-
-  const handleCancelCustomerEdit = () => {
-    syncFormWithCustomerRecord();
-    setIsCustomerEditing(false);
-  };
-
-  const handleSaveCustomerDetails = async () => {
-    if (!customerRecord?.id) return;
-    setSavingCustomerDetails(true);
-    const toNullable = (value) => {
-      const trimmed = (value || "").trim();
-      return trimmed.length ? trimmed : null;
+  const selectPart = (part) => {
+    const nextLine = {
+      ...blankPart(),
+      part_catalog_id: part.id,
+      part_number: part.part_number || "",
+      part_name: part.description || part.name || "",
+      unit_price: String(part.unit_price ?? ""),
+      catalog_snapshot: {
+        name: part.name,
+        description: part.description,
+        qty_in_stock: part.qty_in_stock,
+        qty_reserved: part.qty_reserved,
+        qty_on_order: part.qty_on_order,
+        storage_location: part.storage_location,
+        notes: part.notes,
+        oem_reference: part.oem_reference,
+      },
     };
-    const { firstName, lastName } = splitFullName(form.customer_name, customerRecord);
-    const phoneValue = toNullable(form.customer_phone);
-    try {
-      const result = await updateCustomer(customerRecord.id, {
-        firstname: firstName || customerRecord.firstname || customerRecord.firstName || "",
-        lastname: lastName || customerRecord.lastname || customerRecord.lastName || "",
-        email: toNullable(form.customer_email),
-        mobile: phoneValue,
-        telephone: phoneValue,
-        address: toNullable(form.customer_address)
-      });
-      if (!result?.success || !result?.data) {
-        throw new Error(result?.error?.message || "Failed to update customer details.");
-      }
-      const normalized = normalizeCustomerRecord(result.data);
-      setCustomerRecord(normalized);
-      setForm((prev) => {
-        const nextState = {
-          ...prev,
-          customer_id: normalized.id,
-          customer_name: formatFullName(normalized),
-          customer_phone: normalized.mobile || normalized.telephone || "",
-          customer_email: normalized.email || "",
-          customer_address: normalized.address || ""
-        };
-        if (deliverySameAsBilling) {
-          nextState.delivery_address = normalized.address || "";
-        }
-        return nextState;
-      });
-      setIsCustomerEditing(false);
-    } catch (saveError) {
-      logFailure("Failed to update customer details:", saveError);
-      setErrorMessage(saveError.message || "Unable to update customer details.");
-    } finally {
-      setSavingCustomerDetails(false);
-    }
-  };
-
-  const handleExistingCustomerSelect = (record) => {
-    applyCustomerToForm(record);
-    setShowExistingCustomer(false);
-  };
-
-  const handleNewCustomerSaved = (record) => {
-    applyCustomerToForm(record);
-    setShowNewCustomer(false);
-  };
-
-  const handleClearForm = () => {
-    setForm({ ...blankForm });
-    setPartLines([blankPart()]);
-    setCustomerRecord(null);
-    setDeliverySameAsBilling(true);
+    setPartLines((current) => {
+      if (activePartLine) return current.map((line) => line.client_id === activePartLine ? { ...line, ...nextLine, client_id: line.client_id } : line);
+      const onlyBlank = current.length === 1 && !current[0].part_number && !current[0].part_name;
+      return onlyBlank ? [{ ...nextLine, client_id: current[0].client_id }] : [...current, nextLine];
+    });
     closePartSearch();
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!form.customer_name.trim()) {
-      setErrorMessage("Customer name is required.");
-      return;
-    }
-    const validParts = partLines.filter(
-      (line) => line.part_name.trim() || line.part_number.trim() || Number(line.quantity) > 0
-    );
-    if (validParts.length === 0) {
-      setErrorMessage("Add at least one part to the order.");
-      return;
-    }
+  const clearPartLink = (clientId) => setPartLines((current) => current.map((line) =>
+    line.client_id === clientId ? { ...line, part_catalog_id: null, catalog_snapshot: null } : line
+  ));
 
-    setSaving(true);
+  const clearForm = () => {
+    setForm({ ...blankForm, assigned_adviser: adviserName });
+    setPartLines([blankPart()]);
+    setCustomer(null);
+    setCustomerOrders([]);
+    setVehicle(createInitialVehicleState());
+    setWithoutVehicle(false);
+    setVehicleError("");
+    setVehicleNotification(null);
+    setErrorMessage("");
+    closePartSearch();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("app:drafts:clear-route", { detail: { routeKey: "/new-order" } }));
+    }
+  };
+
+  const saveOrder = async (status) => {
+    if (status !== "draft" && !customerName) return setErrorMessage("Select a customer before creating the order.");
+    if (status !== "draft" && validPartLines.length === 0) return setErrorMessage("Add at least one part before creating the order.");
+    setSavingMode(status);
     setErrorMessage("");
     try {
-      const billingAddress = form.customer_address || "";
-      const deliveryAddressValue = deliverySameAsBilling ? billingAddress : form.delivery_address || "";
-      const trimmedCustomerName = form.customer_name.trim();
-      const trimmedCustomerPhone = form.customer_phone.trim();
-
-      const payload = {
-        status: "booked",
-        customer_id: customerRecord?.id || form.customer_id,
-        customer_name: trimmedCustomerName,
-        customer_phone: trimmedCustomerPhone || null,
-        customer_email: form.customer_email.trim() || null,
-        customer_address: billingAddress.trim() || null,
-        vehicle_reg: form.vehicle_reg.trim() || null,
-        vehicle_make: form.vehicle_make.trim() || null,
-        vehicle_model: form.vehicle_model.trim() || null,
-        vehicle_vin: form.vehicle_vin.trim() || null,
-        notes: form.notes.trim() || null,
+      const { make, model } = splitMakeModel(vehicle.makeModel);
+      const customerAddress = [customerForm.address, customerForm.postcode].filter(Boolean).join(", ");
+      const orderContext = {
+        version: 1,
+        account_number: form.account_number || null,
+        customer_type: form.customer_type,
+        pricing_level: form.pricing_level,
+        order_source: form.order_source,
+        assigned_adviser: form.assigned_adviser,
+        department: form.department,
+        notifications: { sms: form.notify_sms, email: form.notify_email, phone: form.notify_phone },
+        without_vehicle: withoutVehicle,
+      };
+      const order = {
+        status,
+        priority: form.priority,
+        customer_id: customer?.id || null,
+        customer_name: customerName || null,
+        customer_phone: (customerForm.mobile || customerForm.telephone || "").trim() || null,
+        customer_email: (customerForm.email || "").trim() || null,
+        customer_address: customerAddress || null,
+        vehicle_id: null,
+        vehicle_reg: withoutVehicle ? null : vehicle.reg.trim() || null,
+        vehicle_make: withoutVehicle ? null : make || null,
+        vehicle_model: withoutVehicle ? null : model || null,
+        vehicle_vin: withoutVehicle ? null : vehicle.chassis.trim() || null,
         vehicle_details: {
-          reg: form.vehicle_reg,
-          make: form.vehicle_make,
-          model: form.vehicle_model,
-          vin: form.vehicle_vin
+          reg: withoutVehicle ? null : vehicle.reg,
+          make: withoutVehicle ? null : make,
+          model: withoutVehicle ? null : model,
+          vin: withoutVehicle ? null : vehicle.chassis,
+          // No parts-order columns exist for these three — keep them with the
+          // order rather than dropping what the adviser entered.
+          make_model: withoutVehicle ? null : vehicle.makeModel,
+          colour: withoutVehicle ? null : vehicle.colour,
+          engine: withoutVehicle ? null : vehicle.engine,
+          mileage: withoutVehicle ? null : vehicle.mileage,
+          parts_order_context: orderContext,
         },
+        notes: form.internal_notes.trim() || null,
+        invoice_notes: form.customer_notes.trim() || null,
+        invoice_reference: form.customer_reference.trim() || null,
+        invoice_total: totals.total,
+        invoice_status: form.payment_status,
         delivery_type: form.delivery_type,
-        delivery_address:
-        form.delivery_type === "delivery" ?
-        deliveryAddressValue.trim() || null :
-        null,
-        delivery_contact: trimmedCustomerName || null,
-        delivery_phone: trimmedCustomerPhone || null,
+        delivery_address: form.delivery_type === "collection" ? null : customerAddress || null,
+        delivery_contact: customerName || null,
+        delivery_phone: (customerForm.mobile || customerForm.telephone || "").trim() || null,
         delivery_eta: form.delivery_eta || null,
         delivery_window: form.delivery_window || null,
-        delivery_notes: form.delivery_notes.trim() || null
+        delivery_status: "pending",
+        delivery_notes: form.delivery_notes.trim() || null,
       };
-
-      const { data: orderRecord, error: insertError } = await supabaseClient.
-      from("parts_order_cards").
-      insert([payload]).
-      select("*, items:parts_order_card_items(*)").
-      maybeSingle();
-      if (insertError) throw insertError;
-
-      const partPayload = validParts.map((line) => ({
-        order_id: orderRecord.id,
-        part_catalog_id: line.part_catalog_id || null,
-        part_number: line.part_number.trim() || null,
-        part_name: line.part_name.trim() || null,
-        quantity: Number(line.quantity) || 1,
-        unit_price: line.unit_price === "" ? 0 : Number(line.unit_price),
-        notes: line.notes.trim() || null
-      }));
-
-      if (partPayload.length > 0) {
-        const { error: itemsError, data: itemsData } = await supabaseClient.
-        from("parts_order_card_items").
-        insert(partPayload).
-        select("*");
-        if (itemsError) throw itemsError;
-        orderRecord.items = itemsData;
-      } else {
-        orderRecord.items = [];
-      }
-
-      if (orderRecord?.order_number) {
-        router.push(`/new-order/${orderRecord.order_number}`);
-      } else {
-        router.push("/new-order");
-      }
-    } catch (submitError) {
-      logFailure("Failed to create parts order:", submitError);
-      setErrorMessage(submitError.message || "Unable to save parts order.");
+      const items = validPartLines.map((line) => {
+        const discount = Math.min(Math.max(Number(line.discount) || 0, 0), 100);
+        const basePrice = Number(line.unit_price) || 0;
+        const noteParts = [line.notes.trim(), discount ? `Discount ${discount}% from £${basePrice.toFixed(2)}` : ""].filter(Boolean);
+        return {
+          part_catalog_id: line.part_catalog_id,
+          part_number: line.part_number.trim() || null,
+          part_name: line.part_name.trim() || null,
+          quantity: Number(line.quantity) || 1,
+          unit_price: money(basePrice * (1 - discount / 100)),
+          notes: noteParts.join(" · ") || null,
+        };
+      });
+      const response = await fetch("/api/parts/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order, items, reserveStock: status !== "draft" && form.reserve_stock }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to save the parts order.");
+      window.dispatchEvent(new CustomEvent("app:drafts:clear-route", { detail: { routeKey: "/new-order" } }));
+      await router.push(`/new-order/${payload.order.order_number}`);
+    } catch (error) {
+      logFailure("Parts order save failed:", error);
+      setErrorMessage(error.message || "Unable to save the parts order.");
     } finally {
-      setSaving(false);
+      setSavingMode("");
     }
   };
 
-  if (!hasPartsAccess) {
-    return <PartsJobCardPageUi view="section1" />;
-
-
-
-
-
-
-  }
-
-  return <PartsJobCardPageUi view="section2" CalendarField={CalendarField} cardStyle={cardStyle} closePartSearch={closePartSearch} customerRecord={customerRecord} deliverySameAsBilling={deliverySameAsBilling} errorMessage={errorMessage} ExistingCustomerPopup={ExistingCustomerPopup} fieldStyle={fieldStyle} form={form} formatFullName={formatFullName} handleAddPart={handleAddPart} handleCancelCustomerEdit={handleCancelCustomerEdit} handleClearForm={handleClearForm} handleClearPartLink={handleClearPartLink} handleCustomerCleared={handleCustomerCleared} handleExistingCustomerSelect={handleExistingCustomerSelect} handleFieldChange={handleFieldChange} handleNewCustomerSaved={handleNewCustomerSaved} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemovePart={handleRemovePart} handleSaveCustomerDetails={handleSaveCustomerDetails} handleStartCustomerEdit={handleStartCustomerEdit} handleSubmit={handleSubmit} hasCustomerSelected={hasCustomerSelected} inputStyle={inputStyle} isCustomerEditing={isCustomerEditing} isDarkMode={isDarkMode} loadingVehicle={loadingVehicle} ModalPortal={ModalPortal} NewCustomerPopup={NewCustomerPopup} openPartSearch={openPartSearch} partLines={partLines} partLookupContentStyle={partLookupContentStyle} partLookupOverlayStyle={partLookupOverlayStyle} partSearchLoading={partSearchLoading} partSearchOpen={partSearchOpen} partSearchQuery={partSearchQuery} partSearchResults={partSearchResults} saving={saving} savingCustomerDetails={savingCustomerDetails} SearchBar={SearchBar} sectionCardStyle={sectionCardStyle} sectionHeaderStyle={sectionHeaderStyle} setDeliverySameAsBilling={setDeliverySameAsBilling} setPartSearchQuery={setPartSearchQuery} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} TimePickerField={TimePickerField} twoColumnGrid={twoColumnGrid} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    saveOrder("booked");
+  };
+
+  if (!hasPartsAccess) return <PartsCreateOrderUi view="access-denied" />;
+
+  return (
+    <PartsCreateOrderUi
+      view="workflow"
+      CalendarField={CalendarField}
+      ExistingCustomerPopup={ExistingCustomerPopup}
+      NewCustomerPopup={NewCustomerPopup}
+      SearchBar={SearchBar}
+      TimePickerField={TimePickerField}
+      addManualPart={addManualPart}
+      clearForm={clearForm}
+      clearPartLink={clearPartLink}
+      closePartSearch={closePartSearch}
+      customer={customer}
+      customerFieldDefinitions={CUSTOMER_FIELD_DEFINITIONS}
+      customerForm={customerForm}
+      customerNotification={customerNotification}
+      customerOrders={customerOrders}
+      errorMessage={errorMessage}
+      form={form}
+      handleCancelCustomerEdit={handleCancelCustomerEdit}
+      handleCustomerFieldChange={handleCustomerFieldChange}
+      handleCustomerSelect={handleCustomerSelect}
+      handleFetchVehicleData={handleFetchVehicleData}
+      handleFieldChange={handleFieldChange}
+      handlePartChange={handlePartChange}
+      handleSaveCustomerEdits={handleSaveCustomerEdits}
+      handleStartCustomerEdit={handleStartCustomerEdit}
+      handleSubmit={handleSubmit}
+      isCustomerEditing={isCustomerEditing}
+      isLoadingVehicle={isLoadingVehicle}
+      isSavingCustomer={isSavingCustomer}
+      newCustomerPrefill={newCustomerPrefill}
+      openPartSearch={openPartSearch}
+      partLines={partLines}
+      partSearchLoading={partSearchLoading}
+      partSearchOpen={partSearchOpen}
+      partSearchQuery={partSearchQuery}
+      partSearchResults={partSearchResults}
+      removePart={removePart}
+      savingMode={savingMode}
+      selectPart={selectPart}
+      setCustomer={setCustomer}
+      setCustomerNotification={setCustomerNotification}
+      setNewCustomerPrefill={setNewCustomerPrefill}
+      setPartSearchQuery={setPartSearchQuery}
+      setShowExistingCustomer={setShowExistingCustomer}
+      setShowNewCustomer={setShowNewCustomer}
+      setVehicle={setVehicle}
+      setVehicleNotification={setVehicleNotification}
+      setWithoutVehicle={setWithoutVehicle}
+      showExistingCustomer={showExistingCustomer}
+      showNewCustomer={showNewCustomer}
+      toggleContactPreference={toggleContactPreference}
+      totals={totals}
+      vehicle={vehicle}
+      vehicleError={vehicleError}
+      vehicleNotification={vehicleNotification}
+      viewCustomer={viewCustomer}
+      withoutVehicle={withoutVehicle}
+    />
+  );
 }

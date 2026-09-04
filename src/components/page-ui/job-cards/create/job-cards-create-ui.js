@@ -4,31 +4,9 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import BufferedInput from "@/components/ui/BufferedInput"; // local-state text input; notifies the parent on a debounce (flushes on blur)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import Button from "@/components/ui/Button";
-import StatusMessage from "@/components/ui/StatusMessage";
 import PopupModal from "@/components/popups/popupStyleApi";
-
-const normalizeUkRegistrationInput = (value) =>
-  String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 7);
-
-const formatUkRegistration = (value) => {
-  const registration = normalizeUkRegistrationInput(value);
-  const patterns = [
-    [/^(\d{3})([DX])(\d{1,3})$/, "$1 $2 $3"], // Diplomatic registrations: 123 D 456.
-    [/^([A-Z]{2}\d{2})([A-Z]{1,3})$/, "$1 $2"], // Current registrations: AB12 CDE.
-    [/^([A-Z]\d{1,3})([A-Z]{1,3})$/, "$1 $2"], // Prefix registrations: A123 BCD.
-    [/^([A-Z]{1,3})(\d{1,3}[A-Z])$/, "$1 $2"], // Suffix registrations: ABC 123A.
-    [/^([A-Z]{1,3})(\d{1,4})$/, "$1 $2"], // Northern Irish and dateless registrations: ABC 1234.
-    [/^(\d{1,4})([A-Z]{1,3})$/, "$1 $2"], // Reverse dateless registrations: 123 ABC.
-  ];
-
-  const matchingPattern = patterns.find(([pattern]) => pattern.test(registration));
-  return matchingPattern
-    ? registration.replace(matchingPattern[0], matchingPattern[1])
-    : registration;
-};
+import VehicleDetailsCard from "@/components/vehicles/VehicleDetailsCard"; // shared with /new-order
+import CustomerDetailsCard from "@/components/customers/CustomerDetailsCard"; // shared with /new-order
 
 export default function CreateJobCardPageUi(props) {
   const {
@@ -390,230 +368,45 @@ export default function CreateJobCardPageUi(props) {
               </div>
             </LayerTheme>
 
-            {/* Vehicle Details Section - responsive, min 260px. Outer ref div hosts the ResizeObserver target; inner LayerTheme paints the surface. */}
+            {/* Vehicle Details Section - responsive, min 260px. Outer ref div hosts the ResizeObserver target; inner VehicleDetailsCard paints the surface. */}
             <div ref={vehicleSectionRef} className="job-cards-create-aligned-card-wrap job-cards-create-aligned-card-wrap--vehicle" style={{ flex: "1 1 260px", minWidth: 0, display: "flex" }}>
-            <LayerTheme sectionKey="job-cards-create-vehicle-details" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--vehicle" radius="var(--radius-md)" gap="16px" style={{
-          flex: "1 1 auto",
-          minWidth: 0,
-          minHeight: "420px",
-          boxSizing: "border-box",
-          overflowY: "auto"
-        }}>
-              <div className="job-cards-create-aligned-card__header">
-                <h3>
-                  Vehicle Details
-                  {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
-                      Inherited
-                    </span>}
-                </h3>
-
-                {vehicleNotification && <StatusMessage tone={vehicleNotification.type === "success" ? "success" : "danger"} style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}>
-                  <span>{vehicleNotification.message}</span>
-                  <Button type="button" variant="ghost" size="xs" className="app-btn--icon" onClick={() => setVehicleNotification(null)} style={{
-              marginLeft: "auto"
-            }} aria-label="Dismiss vehicle notification">
-                    ×
-                    </Button>
-                  </StatusMessage>}
-              </div>
-
-              <div className="job-cards-create-aligned-row job-cards-create-vehicle-row--registration" style={{
-            marginBottom: "16px"
-          }}>
-                <label htmlFor="vehicle-registration">
-                  Registration Number
-                </label>
-                <div style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "center"
-            }}>
-                  <input id="vehicle-registration" type="text" value={formatUkRegistration(vehicle.reg)} onChange={e => setVehicle(currentVehicle => ({
-                ...currentVehicle,
-                reg: normalizeUkRegistrationInput(e.target.value)
-              }))} placeholder="e.g. AB12 CDE" className="app-input" style={{ flex: 1 }} maxLength={9} autoCapitalize="characters" spellCheck={false} />
-                  <Button type="button" data-presentation="create-reg-lookup" onClick={handleFetchVehicleData} busy={isLoadingVehicle}>
-                    {isLoadingVehicle ? "Loading..." : "Search"}
-                  </Button>
-                </div>
-                {error && <StatusMessage tone="danger">
-                    {error}
-                  </StatusMessage>}
-              </div>
-
-              <div className="job-cards-create-vehicle-fields" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
-                {["colour", "makeModel", "chassis", "engine"].map((key, idx) => {
-              const labelMap = {
-                colour: "Colour",
-                makeModel: "Make & Model",
-                chassis: "Chassis Number",
-                engine: "Engine Number"
-              };
-              return <div key={`${key}-${idx}`} className={`job-cards-create-aligned-row job-cards-create-vehicle-row--${key}`}>
-                      <label htmlFor={`vehicle-${key}`}>
-                        {labelMap[key]}
-                      </label>
-                      <input id={`vehicle-${key}`} className="app-input" value={vehicle[key] || "Not available"} readOnly />
-                    </div>;
-            })}
-
-                <div className="job-cards-create-aligned-row job-cards-create-vehicle-row--mileage">
-                  <label htmlFor="vehicle-mileage">
-                    Current Mileage
-                  </label>
-                  <input id="vehicle-mileage" type="number" value={vehicle.mileage} onChange={e => setVehicle({
-                ...vehicle,
-                mileage: e.target.value
-              })} placeholder="Enter mileage" className="app-input" />
-                </div>
-              </div>
-            </LayerTheme>
+              <VehicleDetailsCard
+                sectionKey="job-cards-create-vehicle-details"
+                parentKey="job-cards-create-top-row"
+                vehicle={vehicle}
+                setVehicle={setVehicle}
+                onLookup={handleFetchVehicleData}
+                isLoadingVehicle={isLoadingVehicle}
+                error={error}
+                notification={vehicleNotification}
+                onDismissNotification={setVehicleNotification}
+                inherited={isSubJobMode}
+                style={{ flex: "1 1 auto", minWidth: 0, minHeight: "420px", boxSizing: "border-box", overflowY: "auto" }}
+              />
             </div>
 
             {/* Customer Details Section - responsive, min 260px */}
-            <LayerTheme sectionKey="job-cards-create-customer-details" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--customer" radius="var(--radius-md)" gap="16px" style={{
-          flex: "1 1 260px",
-          minWidth: 0,
-          minHeight: "420px",
-          boxSizing: "border-box",
-          overflowY: "auto"
-        }}>
-              <div className="job-cards-create-aligned-card__header">
-                <h3>
-                  Customer Details
-                  {isSubJobMode && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
-                      Inherited
-                    </span>}
-                </h3>
-
-                {customerNotification && <StatusMessage tone={customerNotification.type === "success" ? "success" : "danger"} style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}>
-                  <span>{customerNotification.message}</span>
-                  <Button type="button" variant="ghost" size="xs" className="app-btn--icon" onClick={() => setCustomerNotification(null)} style={{
-              marginLeft: "auto"
-            }} aria-label="Dismiss customer notification">
-                    ×
-                    </Button>
-                  </StatusMessage>}
-              </div>
-
-              {customer ? <div className="job-cards-create-customer-content" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px"
-          }}>
-                  {isCustomerEditing ? <div className="job-cards-create-customer-fields job-cards-create-customer-fields--editing" style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "12px"
-            }}>
-                      {customerFieldDefinitions.map(input => <div key={input.field} className={`job-cards-create-customer-field job-cards-create-customer-field--${input.field}`} style={{
-                gridColumn: input.field === "email" || input.field === "address" || input.field === "contactPreference" ? "1 / -1" : "auto"
-              }}>
-                          <label htmlFor={input.type === "multi-select" ? undefined : `customer-${input.field}`}>
-                            {input.label}
-                          </label>
-                          {input.type === "textarea" ? <BufferedInput as="textarea" id={`customer-${input.field}`} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={3} className="app-input app-input--textarea" /> : input.type === "multi-select" ? <div style={{
-                  display: "flex",
-                  gap: "8px",
-                  flexWrap: "wrap",
-                  width: "100%"
-                }}>
-                              {["phone", "email", "sms"].map(pref => {
-                    const active = Array.isArray(customerForm.contactPreference) && customerForm.contactPreference.includes(pref);
-                    return <Button key={pref} type="button" variant="secondary" size="sm" className={active ? "is-active" : ""} aria-pressed={active} onClick={() => toggleContactPreference(pref)}>
-                                     {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
-                                   </Button>;
-                  })}
-                            </div> : <BufferedInput id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
-                        </div>)}
-                    </div> : <div className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "8px"
-            }}>
-                      {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} className={`job-cards-create-customer-field job-cards-create-customer-field--${input.field}`} style={{
-                gridColumn: input.field === "firstName" || input.field === "lastName" || input.field === "mobile" || input.field === "telephone" ? "auto" : "1 / -1",
-                minWidth: 0
-              }}>
-                            <label htmlFor={`customer-readonly-${input.field}`}>
-                              {input.label}
-                            </label>
-                            <input id={`customer-readonly-${input.field}`} className="app-input" value={customerForm[input.field] || "Not provided"} readOnly />
-                          </div>)}
-                    </div>}
-
-                  <div className={`job-cards-create-customer-actions${isCustomerEditing ? " job-cards-create-customer-actions--editing" : ""}`} style={{
-              display: "flex",
-              gap: "10px",
-              justifyContent: "center",
-              alignItems: "flex-start",
-              flexWrap: "nowrap"
-            }}>
-                    {isCustomerEditing ? <>
-                        <Button type="button" onClick={handleSaveCustomerEdits} busy={isSavingCustomer} style={{
-                  flex: 1
-                }}>
-                          {isSavingCustomer ? "Saving..." : "Save Changes"}
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={handleCancelCustomerEdit} disabled={isSavingCustomer} style={{
-                  flex: 1
-                }}>
-                          Cancel
-                        </Button>
-                      </> : <>
-                        <Button type="button" variant="primary" onClick={handleStartCustomerEdit} style={{
-                  flex: "1 1 0",
-                  minWidth: 0
-                }}>
-                          Edit Customer
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
-                  flex: "1 1 0",
-                  minWidth: 0
-                }}>
-                          Clear Customer
-                        </Button>
-                      </>}
-                  </div>
-
-                  {isCustomerEditing && <Button type="button" variant="ghost" className="job-cards-create-customer-clear-editing" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
-              width: "100%",
-              maxWidth: "320px",
-              alignSelf: "center"
-            }}>
-                      Clear Customer
-                    </Button>}
-                </div> : <div className="job-cards-create-customer-actions job-cards-create-customer-actions--empty" style={{
-            display: "flex",
-            gap: "10px",
-            alignItems: "flex-start"
-          }}>
-                  <Button type="button" data-presentation="create-customer-lookup" variant="primary" onClick={() => setShowExistingCustomer(true)} style={{
-              flex: "1 1 0",
-              minWidth: 0
-            }}>
-                    Existing Customer
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowNewCustomer(true)} style={{
-              flex: "1 1 0",
-              minWidth: 0
-            }}>
-                    New Customer
-                  </Button>
-                </div>}
-            </LayerTheme>
+            <CustomerDetailsCard
+              sectionKey="job-cards-create-customer-details"
+              parentKey="job-cards-create-top-row"
+              customer={customer}
+              setCustomer={setCustomer}
+              customerForm={customerForm}
+              customerFieldDefinitions={customerFieldDefinitions}
+              isCustomerEditing={isCustomerEditing}
+              isSavingCustomer={isSavingCustomer}
+              notification={customerNotification}
+              onDismissNotification={setCustomerNotification}
+              handleCustomerFieldChange={handleCustomerFieldChange}
+              toggleContactPreference={toggleContactPreference}
+              handleStartCustomerEdit={handleStartCustomerEdit}
+              handleSaveCustomerEdits={handleSaveCustomerEdits}
+              handleCancelCustomerEdit={handleCancelCustomerEdit}
+              onExistingCustomer={() => setShowExistingCustomer(true)}
+              onNewCustomer={() => setShowNewCustomer(true)}
+              inherited={isSubJobMode}
+              style={{ flex: "1 1 260px", minWidth: 0, minHeight: "420px", boxSizing: "border-box", overflowY: "auto" }}
+            />
           </DevLayoutSection>
 
           {/* ✅ Job Requests Section - Full Width */}

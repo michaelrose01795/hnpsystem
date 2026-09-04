@@ -629,6 +629,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
       // (department-service). The parts desk reaches job data through its own
       // pages, so the Parts module does not duplicate the page button.
       { label: "Orders", href: "/order", roles: ["parts"] },
+      { label: "Create Order", href: "/new-order", roles: ["parts"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -643,6 +644,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     items: [
       // See the note in the Parts section above — Job Cards stays in Reception.
       { label: "Orders", href: "/order", roles: ["parts manager"] },
+      { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -815,7 +817,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"],
   },
   {
     key: "department-management",

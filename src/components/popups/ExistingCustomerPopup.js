@@ -1,7 +1,6 @@
-// ✅ Imports converted to use absolute alias "@/"
-// ✅ File location: src/components/popups/ExistingCustomerPopup.js
-import React, { useState, useEffect } from "react";
-import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
+// file location: src/components/popups/ExistingCustomerPopup.js
+import React, { useEffect, useState } from "react";
+import { searchCustomers } from "@/lib/database/customers";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import Button from "@/components/ui/Button";
@@ -12,23 +11,17 @@ import { logFailure } from "@/lib/utils/logFailure";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-// ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
-  const [search, setSearch] = useState(""); // text input for name search
-  const [customerList, setCustomerList] = useState([]); // customers from DB
-  const [selectedCustomer, setSelectedCustomer] = useState(null); // chosen customer
+  const [search, setSearch] = useState("");
+  const [customerList, setCustomerList] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchStatus, setSearchStatus] = useState("idle");
 
-  /* ============================================
-     FETCH CUSTOMERS WHEN SEARCH CHANGES
-     Uses shared searchCustomers() from database
-  ============================================ */
   useEffect(() => {
     const searchTerm = search.trim();
     let cancelled = false;
 
     setSelectedCustomer(null);
-
     if (!searchTerm) {
       setCustomerList([]);
       setSearchStatus("idle");
@@ -37,7 +30,6 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
 
     setCustomerList([]);
     setSearchStatus("loading");
-
     const timer = window.setTimeout(async () => {
       try {
         const data = await searchCustomers(searchTerm);
@@ -58,154 +50,107 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
     };
   }, [search]);
 
-  /* ============================================
-     HANDLE ADDING SELECTED CUSTOMER
-  ============================================ */
-  const handleAdd = () => {
-    if (selectedCustomer) {
-      onSelect(selectedCustomer); // send customer to parent
-      onClose(); // close popup
-    }
-  };
-
   const parseName = (raw) => {
     const trimmed = (raw || "").trim().replace(/\s+/g, " ");
     if (!trimmed) return { firstName: "", lastName: "" };
-    const parts = trimmed.split(" ");
-    const firstName = parts[0] || "";
-    const lastName = parts.slice(1).join(" ").trim();
-    return { firstName, lastName };
+    const [firstName = "", ...remainingName] = trimmed.split(" ");
+    return { firstName, lastName: remainingName.join(" ").trim() };
   };
 
   const hasSearch = search.trim().length > 0;
   const noResults = hasSearch && searchStatus === "success" && customerList.length === 0;
   const canCreateNew = noResults && typeof onCreateNew === "function";
-  const primaryButtonLabel = canCreateNew ? "New Customer" : "Add Customer";
-  const canUsePrimary = canCreateNew || !!selectedCustomer;
+  const canUsePrimary = canCreateNew || Boolean(selectedCustomer);
+
   const handlePrimaryClick = () => {
     if (canCreateNew) {
       onCreateNew(parseName(search));
-      if (typeof onClose === "function") onClose();
+      onClose?.();
       return;
     }
-    handleAdd();
+    if (!selectedCustomer) return;
+    onSelect(selectedCustomer);
+    onClose?.();
   };
 
-  /* ============================================
-     RENDER POPUP
-  ============================================ */
   return (
     <PopupModal onClose={onClose} cardStyle={{ maxWidth: "650px" }} ariaLabel="Existing customer">
-      <div style={{ padding: "32px" }}>
+      <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
+        <header className="app-popup-compact-header">
+          <h3>Find a customer</h3>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" onClick={handlePrimaryClick} disabled={!canUsePrimary}>
+              {canCreateNew ? "New customer" : "Add customer"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </header>
+
         <SearchBar
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
           onClear={() => setSearch("")}
           placeholder="Search by name, email, or mobile"
-          style={{
-            width: "100%",
-            marginBottom: "16px",
-          }}
         />
 
-        {searchStatus === "loading" && (
-          <div style={{ marginBottom: "16px" }}>
-            <InlineLoading label="Searching customers" width={150} />
-          </div>
-        )}
+        {searchStatus === "loading" ? <InlineLoading label="Searching customers" width={150} /> : null}
+        {searchStatus === "error" ? (
+          <StatusMessage tone="danger">Unable to search customers. Please try again.</StatusMessage>
+        ) : null}
 
-        {searchStatus === "error" && (
-          <StatusMessage tone="danger" style={{ marginBottom: "16px" }}>
-            Unable to search customers. Please try again.
-          </StatusMessage>
-        )}
-
-        {customerList.length > 0 && (
+        {customerList.length > 0 ? (
           <LayerTheme
+            sectionKey="existing-customer-results"
+            parentKey="shared-popup-card"
+            sectionType="content-card"
             role="listbox"
             aria-label="Customer search results"
             radius="var(--control-menu-radius)"
-            padding="8px"
-            gap="8px"
-            style={{
-              maxHeight: "220px",
-              overflowY: "auto",
-              marginBottom: "16px",
-            }}
+            padding="var(--space-sm)"
+            gap="var(--space-sm)"
+            style={{ maxHeight: "220px", overflowY: "auto" }}
           >
-            {customerList.map((c) => (
+            {customerList.map((customer) => (
               <button
                 type="button"
-                key={c.id}
-                onClick={() => setSelectedCustomer(c)}
+                key={customer.id}
+                onClick={() => setSelectedCustomer(customer)}
                 role="option"
-                aria-selected={selectedCustomer?.id === c.id}
-                className={`dropdown-api__option${selectedCustomer?.id === c.id ? " is-selected" : ""}`}
+                aria-selected={selectedCustomer?.id === customer.id}
+                className={`dropdown-api__option${selectedCustomer?.id === customer.id ? " is-selected" : ""}`}
               >
                 <span className="dropdown-api__option-label">
-                  {c.firstname} {c.lastname}
+                  {customer.firstname} {customer.lastname}
                 </span>
-                {(c.email || c.mobile) && (
+                {customer.email || customer.mobile ? (
                   <span className="dropdown-api__option-description">
-                    {[c.email, c.mobile].filter(Boolean).join(" · ")}
+                    {[customer.email, customer.mobile].filter(Boolean).join(" · ")}
                   </span>
-                )}
+                ) : null}
               </button>
             ))}
           </LayerTheme>
-        )}
+        ) : null}
 
-        {noResults && (
-          <StatusMessage tone="info" style={{ marginBottom: "16px" }}>
-            No existing customers found.
-          </StatusMessage>
-        )}
+        {noResults ? <StatusMessage tone="info">No existing customers found.</StatusMessage> : null}
 
-        {selectedCustomer && (
+        {selectedCustomer ? (
           <LayerTheme
+            sectionKey="existing-customer-summary"
+            parentKey="shared-popup-card"
+            sectionType="content-card"
             radius="var(--input-radius)"
-            padding="16px"
-            style={{
-              marginBottom: "16px",
-            }}
+            padding="var(--section-card-padding-sm)"
           >
-            <p>
-              <strong>Name:</strong> {selectedCustomer.firstname}{" "}
-              {selectedCustomer.lastname}
-            </p>
-            <p>
-              <strong>Address:</strong> {selectedCustomer.address || "Not provided"}
-            </p>
-            <p>
-              <strong>Email:</strong> {selectedCustomer.email || "Not provided"}
-            </p>
-            <p>
-              <strong>Mobile:</strong> {selectedCustomer.mobile || "Not provided"}
-            </p>
-            <p>
-              <strong>Telephone:</strong> {selectedCustomer.telephone || "Not provided"}
-            </p>
+            <p><strong>Name:</strong> {selectedCustomer.firstname} {selectedCustomer.lastname}</p>
+            <p><strong>Address:</strong> {selectedCustomer.address || "Not provided"}</p>
+            <p><strong>Email:</strong> {selectedCustomer.email || "Not provided"}</p>
+            <p><strong>Mobile:</strong> {selectedCustomer.mobile || "Not provided"}</p>
+            <p><strong>Telephone:</strong> {selectedCustomer.telephone || "Not provided"}</p>
           </LayerTheme>
-        )}
-
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            style={{ flex: 1 }}
-          >
-            Close
-          </Button>
-          <Button
-            type="button"
-            onClick={handlePrimaryClick}
-            disabled={!canUsePrimary}
-            style={{ flex: 1 }}
-          >
-            {primaryButtonLabel}
-          </Button>
-        </div>
+        ) : null}
       </div>
     </PopupModal>
   );

@@ -10,6 +10,7 @@ const PART_COLUMNS = [
   "category",
   "supplier",
   "oem_reference",
+  "barcode",
   "storage_location",
   "service_default_zone",
   "unit_cost",
@@ -40,6 +41,7 @@ const SEARCHABLE_FIELDS = [
   "category",
   "description",
   "oem_reference",
+  "barcode",
   "storage_location",
 ];
 

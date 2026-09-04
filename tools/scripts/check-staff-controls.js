@@ -79,7 +79,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/job-cards/WarrantyTab.js", 2],
   ["src/components/page-ui/messages/messages-ui.js", 4],
   ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 30],
+  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 0],
   ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
   ["src/components/page-ui/parts/parts-goods-in-ui.js", 49],

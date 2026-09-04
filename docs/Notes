@@ -75,22 +75,22 @@ QUESTION, how does the user create a P0000 job for example for it to even be sho
 
 -------------------
 
+TODO
+/new-order
+chatgpt improvements
+
 
 TODO
-newsfeed
-
-CHECK
-same happens with the catagories dropdown, deep dive to fix this. 
+and have it so "Delivery date" and "Preferred time" is on the same row as the "Colour". and "Delivery charge" is on the same row as "Make & Model" etc. and "Delivery Method" is on the same row as the "Registration Number" text. change "Delivery charge" text box to be half the width, and add a "£" after it 
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+"Delivery Method
+Collection
+Delivery
+Courier" "Registration Number
+e.g. AB12 CDE
+Search" and "Customer
+Existing Customer
+New Customer" all need to be in th esame row as one another, and then "First Name
+Last Name" also being on that same line when its shown. the same with the rows below to be in line with the ones on taht row within the other rows etc .
 
-TODO
-"yes make "The sidebar request requires a global navigation change in:
-
-- `src/config/workspace/departments.js`
-- `src/config/workspace/roleDefaults.js`
-
-This will add Orders to the Parts module for Parts and Parts Manager users and affect shared navigation across the app. It cannot be implemented locally because `StaffSidebar` derives its links from this manifest.
-
-Please confirm that I may make this global navigation change alongside the local `/new-order/[orderNumber]`, `/order`, database API, and `/deliveries` integration work." change"

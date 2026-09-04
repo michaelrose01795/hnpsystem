@@ -45,6 +45,15 @@ describe("role workspace defaults", () => {
     expect(new Set(WORKSPACE_ROLE_DEFAULT_NAMES).size).toBe(WORKSPACE_ROLE_DEFAULT_NAMES.length);
   });
 
+  it("puts Create Order in the Parts module for Parts staff and managers", () => {
+    for (const role of ["Parts", "Parts Manager"]) {
+      const partsModule = getRoleDefaultWorkspaceModules(role).find(
+        (module) => module.key === "department-parts"
+      );
+      expect(partsModule?.items.map((item) => item.href), role).toContain("/new-order");
+    }
+  });
+
   it("each role resolves to complete modules backed by catalog pages", () => {
     const catalogHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
     for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
