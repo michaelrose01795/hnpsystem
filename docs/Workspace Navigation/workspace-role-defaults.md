@@ -87,13 +87,13 @@ are the library's.
 
 - General: `/newsfeed`, `/messages`, `/tracking`
 - Workshop: `/dashboard/workshop`
-- Tech: `/tech/dashboard`, `/tech`, `/tech/efficiency`, `/consumables-request`
+- Tech: `/dashboard/tech`, `/tech`, `/tech/efficiency`, `/consumables-request`
 
 ### Mobile Technician
 
 - General: `/newsfeed`, `/messages`
 - Reception: `/new-job`, `/appointments`
-- Workshop: `/mobile/dashboard`
+- Workshop: `/dashboard/mobile`
 - Tech: `/tech`, `/consumables-request`
 
 ### Parts

@@ -348,28 +348,6 @@ function TotalsGrid({ totals }) {
   );
 }
 
-function AccessNotice({ accessMode }) {
-  if (accessMode !== "share") return null;
-  return (
-    <div className="app-status-message app-status-message--info">
-      <div
-        style={{
-          fontSize: "var(--text-caption)",
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: "var(--surfaceTextMuted)"
-        }}
-      >
-        Read-only share
-      </div>
-      <div style={{ fontSize: "var(--text-body-sm)", fontWeight: 500, marginTop: 4 }}>
-        This shared link can view the report, photos and videos. Authorising or declining work is only available from the customer view.
-      </div>
-    </div>
-  );
-}
-
 function MediaEmptyState({ title, description }) {
   return (
     <div className="app-empty-state app-empty-state--inline">
@@ -651,9 +629,9 @@ export default function VhcCustomerView({
   onUpdateStatus,
   updatingIds,
   previewBanner = null,
-  expiresAt = null,
   onBack = null,
-  accessMode = "customer"
+  onShare = null,
+  shareLabel = "Share"
 }) {
   const [pendingAuthoriseItem, setPendingAuthoriseItem] = useState(null);
   const tabs = useMemo(() => {
@@ -745,6 +723,7 @@ export default function VhcCustomerView({
                   </div>
                 )}
               </div>
+              {onShare && <Button variant="secondary" onClick={onShare}>{shareLabel}</Button>}
               {onBack && (
                 <Button variant="ghost" size="sm" onClick={onBack} style={{ flexShrink: 0 }}>
                   ← Back
@@ -808,7 +787,6 @@ export default function VhcCustomerView({
               aria-labelledby="vhc-tab-summary"
               className="app-page-stack"
             >
-              <AccessNotice accessMode={accessMode} />
               <TotalsGrid totals={totals} />
 
               {severitySections.map(({ key, title }) =>
@@ -846,14 +824,6 @@ export default function VhcCustomerView({
           </div>
           <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)" }}>
             Vehicle Health Check Report · Job #{jobNumber}
-            {expiresAt && (
-              <>
-                {" · "}
-                <span style={{ color: "var(--danger-text)" }}>
-                  Link expires {new Date(expiresAt).toLocaleString()}
-                </span>
-              </>
-            )}
           </div>
         </footer>
       </div>

@@ -348,6 +348,7 @@ export const UI_FAMILIES = [
       { id: "accent-soft", className: "app-badge app-badge--accent-soft", description: "Soft accent chip.", usage: "Category tags inside lists.", status: "approved" },
       { id: "accent-strong", className: "app-badge app-badge--accent-strong", description: "Filled accent chip.", usage: "Active filter, selected tag.", status: "approved" },
       { id: "count", className: "app-badge app-badge--danger-strong app-badge--count", description: "Fixed 32px circular counter.", usage: "Unread counts on sidebar nav rows. Host row takes .app-badge-slot (+ --counted while a badge is shown).", status: "approved" },
+      { id: "count-control", className: "app-badge app-badge--neutral app-badge--count-control", description: "Fixed 44px circular counter (control height).", usage: "Item counts inside body content, e.g. the Parts Summary total on an order row.", status: "approved" },
     ],
   },
   {
@@ -362,6 +363,7 @@ export const UI_FAMILIES = [
       { id: "switch", className: "app-toggle app-toggle--switch", description: "iOS-style on/off switch.", usage: "Settings, feature flags.", status: "approved" },
       { id: "checkbox", className: "app-toggle app-toggle--checkbox", description: "Styled checkbox.", usage: "Multi-select lists, optional filters.", status: "approved" },
       { id: "radio", className: "app-toggle app-toggle--radio", description: "Styled radio.", usage: "Single-choice groups.", status: "approved" },
+      { id: "field", className: "app-toggle-field", description: "Label wrapper pairing a checkbox/radio with its caption.", usage: "Any checkbox or radio that has visible text beside it.", status: "approved" },
     ],
   },
   {
@@ -510,6 +512,92 @@ export const UI_FAMILIES = [
         className: "app-news-meter",
         description: "Read-rate meter: track plus fill, no outline.",
         usage: "Read and acknowledgement rates.",
+        status: "approved",
+      },
+    ],
+  },
+  {
+    id: "record",
+    label: "Record",
+    cssFile: "src/styles/families/records.css",
+    component: "src/features/customers/hub/RecordPrimitives.js",
+    traceColor: "#0ea5e9",
+    description:
+      "The shared vocabulary for a record screen — one entity, everything about it. Label/value fields, a field grid, the registration plate, a file card and the event timeline. Used by the customer record hub; intended for the vehicle, account and job records too.",
+    variants: [
+      {
+        id: "field",
+        className: "app-record-field",
+        description: "One label-above-value pair. The label is a caption, the value carries the weight.",
+        usage: "Every read-only detail on a record card — VIN, mileage, MOT due, advisor.",
+        status: "approved",
+      },
+      {
+        id: "field-grid",
+        className: "app-record-grid",
+        description: "Responsive auto-fit grid of record fields. `--wide` widens the minimum column.",
+        usage: "The detail block of a vehicle, appointment, invoice or job card.",
+        status: "approved",
+      },
+      {
+        id: "plate",
+        className: "app-record-plate",
+        description: "Registration plate chip. `--theme` flips the fill when it sits on a --surface layer.",
+        usage: "Anywhere a vehicle registration is the identity of the row.",
+        status: "approved",
+      },
+      {
+        id: "actions",
+        className: "app-record-actions",
+        description: "Wrapping action row for the buttons attached to one record.",
+        usage: "Open vehicle / create job / book appointment / view history.",
+        status: "approved",
+      },
+      {
+        id: "file",
+        className: "app-record-file",
+        description: "Document, photo or video card with a fixed preview frame.",
+        usage: "The files attached to a customer's or job's record.",
+        status: "approved",
+      },
+      {
+        id: "timeline",
+        className: "app-timeline",
+        description:
+          "Vertical event timeline: rail, coloured dot, title/time head and meta row. The rail is a background, never a border.",
+        usage: "Dealership history and customer/staff activity feeds.",
+        status: "approved",
+      },
+    ],
+  },
+  {
+    id: "context-menu",
+    label: "Context Menu",
+    cssFile: "src/styles/families/context-menu.css",
+    component: "src/components/ui/GlobalContextMenu.js",
+    traceColor: "#d946ef",
+    description:
+      "The in-app right-click menu that replaces the browser native context menu app-wide. Mounted once from _app.js; the panel is a LayerSurface and every row is a Secondary button at the 44px control floor.",
+    variants: [
+      {
+        id: "menu",
+        className: "app-context-menu",
+        description: "The floating menu panel itself — fixed, clamped into the viewport, above all layout chrome.",
+        usage: "Rendered by GlobalContextMenu on right-click. Never instantiate it directly.",
+        status: "approved",
+      },
+      {
+        id: "item",
+        className: "app-context-menu__item",
+        description: "One menu row: icon, label and keyboard-shortcut hint. Styled as .app-btn--secondary at 44px, with an 8px gap to its neighbours.",
+        usage: "Every action in the right-click menu.",
+        status: "approved",
+      },
+      {
+        id: "separator",
+        className: "app-context-menu__separator",
+        description: "Group divider. Carries the only allowed line — a --separating-line row rule.",
+        usage: "Between action groups (link / edit / page).",
         status: "approved",
       },
     ],

@@ -9,7 +9,7 @@ describe("resolveStaffStyleReviewRoute", () => {
   it("falls dynamic detail routes back to a valid parent route", () => {
     expect(resolveStaffStyleReviewRoute("/job-cards/[jobNumber] → VHC")).toBe("/job-cards");
     expect(resolveStaffStyleReviewRoute("/accounts/invoices/[invoiceId]")).toBe("/accounts/invoices");
-    expect(resolveStaffStyleReviewRoute("/mobile/delivery/[jobNumber]")).toBe("/mobile/dashboard");
+    expect(resolveStaffStyleReviewRoute("/mobile/delivery/[jobNumber]")).toBe("/dashboard/mobile");
   });
 
   it("maps descriptive audit scopes to valid staff routes", () => {

@@ -1,3 +1,4 @@
+import { buildCustomerReportUrl } from "@/lib/vhc/shareCode";
 // file location: src/pages/website/profile.js
 // Customer-facing portal page. Pulls one bundled payload from
 // /api/website/profile (vehicles + jobs + invoices + appointments +
@@ -1123,8 +1124,7 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
           String(link.job_number || "") === String(latestJob.job_number || ""),
       )
     : null;
-  const encodedJobNumber = encodeURIComponent(latestJob?.job_number || "");
-  const encodedLinkCode = encodeURIComponent(latestShareLink?.link_code || "");
+  const customerReportUrl = latestShareLink?.link_code ? buildCustomerReportUrl(latestShareLink.link_code) : null;
   const getRouteHref = (kind, liveHref) => (presentationMode ? VHC_PRESENTATION_LINKS[kind] : liveHref);
   const latestMedia = latestJob
     ? vhcMedia.filter((item) => item.job_number === latestJob.job_number).slice(0, 6)
@@ -1139,13 +1139,8 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
       action={
         latestJob ? (
           <div style={portalActionRowStyle}>
-            <PortalButtonLink href={getRouteHref("preview", `/vhc/customer-preview/${encodedJobNumber}`)}>Preview</PortalButtonLink>
-            <PortalButtonLink href={getRouteHref("customerView", `/vhc/customer-view/${encodedJobNumber}`)}>Customer view</PortalButtonLink>
-            {encodedLinkCode ? (
-              <>
-                <PortalButtonLink href={getRouteHref("share", `/vhc/share/${encodedJobNumber}/${encodedLinkCode}`)}>Share link</PortalButtonLink>
-                <PortalButtonLink href={getRouteHref("customer", `/vhc/customer/${encodedJobNumber}/${encodedLinkCode}`)}>Customer link</PortalButtonLink>
-              </>
+            {customerReportUrl || presentationMode ? (
+              <PortalButtonLink href={getRouteHref("customer", customerReportUrl)}>View and share VHC</PortalButtonLink>
             ) : null}
           </div>
         ) : null

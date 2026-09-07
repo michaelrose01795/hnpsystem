@@ -1,4 +1,4 @@
-// file location: src/pages/mobile/dashboard.js
+// file location: src/pages/dashboard/mobile/index.js
 // Mobile technician landing page: shows assigned on-site visits and mobile-specific actions.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";

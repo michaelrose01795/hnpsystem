@@ -181,3 +181,22 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.32) !important;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Field variant — the <label> that pairs a checkbox/radio with its text.
+   Keeps the control and its caption on one line, vertically centred against
+   the box, with the standard gap between them. Replaces the ad-hoc
+   `display:flex; align-items:center; gap:8px` inline styles. */
+html.staff-scope .app-toggle-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* The caption sits on its own line-box; without this the text baseline drifts
+   a pixel or two below the centre of the 18px box on tighter type scales. */
+html.staff-scope .app-toggle-field > span {
+  line-height: 1.2;
+}

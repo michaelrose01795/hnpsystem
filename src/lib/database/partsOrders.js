@@ -33,6 +33,7 @@ const ORDER_SELECT = `
   invoice_total,
   invoice_status,
   invoice_notes,
+  customer_notes,
   notes,
   created_by,
   created_at,
@@ -67,6 +68,7 @@ const ORDER_UPDATE_FIELDS = new Set([
   "invoice_total",
   "invoice_status",
   "invoice_notes",
+  "customer_notes",
   "notes",
 ]);
 
@@ -97,6 +99,7 @@ const ORDER_CREATE_FIELDS = new Set([
   "invoice_total",
   "invoice_status",
   "invoice_notes",
+  "customer_notes",
 ]);
 
 const DELIVERY_JOB_STATUS = Object.freeze({
@@ -203,6 +206,79 @@ export const getPartsOrders = async ({ customerId, customerName, vehicleReg, ope
   return data || [];
 };
 
+/**
+ * Invoice progress is derived from the invoices raised against the order
+ * rather than stepped by hand: an invoice existing means "issued", and every
+ * invoice on the order being settled means "paid". Returns null when nothing
+ * has been raised yet, so the stored value is left alone.
+ */
+const deriveInvoiceStatus = (invoices = []) => {
+  if (!Array.isArray(invoices) || invoices.length === 0) return null;
+  const settled = invoices.every(
+    (invoice) =>
+      invoice?.paid === true ||
+      String(invoice?.payment_status || "").trim().toLowerCase() === "paid"
+  );
+  return settled ? "paid" : "issued";
+};
+
+/**
+ * Bring an order's invoice fields back in step with the invoices table. Runs
+ * on read so the order reflects accounts activity without anyone updating a
+ * status by hand; a failure here never blocks the read.
+ */
+export const syncPartsOrderInvoiceStatus = async (order) => {
+  if (!order?.order_number) return order;
+  if (order.invoice_status === "cancelled") return order; // cancelling is an accounts decision, not a derived one.
+  // The reference goes into a PostgREST or() filter string, where a comma or a
+  // parenthesis would change the filter's meaning, so only plain tokens are used.
+  const rawReference = String(order.invoice_reference || "").trim();
+  const reference = /^[A-Za-z0-9._/-]{1,64}$/.test(rawReference) ? rawReference : "";
+  let query = supabase
+    .from("invoices")
+    .select("invoice_number, invoice_notes, paid, payment_status, grand_total, invoice_total, total");
+  query = reference
+    ? query.or(`order_number.eq.${order.order_number},invoice_number.eq.${reference}`)
+    : query.eq("order_number", order.order_number);
+  const { data, error } = await query;
+  if (error) {
+    logFailure("Unable to derive parts order invoice status:", error);
+    return order;
+  }
+
+  const invoices = data || [];
+  const derivedStatus = deriveInvoiceStatus(invoices);
+  if (!derivedStatus) return order;
+
+  const invoicedTotal = invoices.reduce(
+    (sum, invoice) =>
+      sum + (Number(invoice.grand_total ?? invoice.invoice_total ?? invoice.total) || 0),
+    0
+  );
+  const updates = {};
+  if (order.invoice_status !== derivedStatus) updates.invoice_status = derivedStatus;
+  if (!reference && invoices.length === 1 && invoices[0].invoice_number) {
+    updates.invoice_reference = invoices[0].invoice_number;
+  }
+  // Seed the order with the invoice's own notes so the notes popup opens on
+  // what the invoice document already says rather than on an empty box.
+  const invoicedNotes = invoices.find((invoice) => String(invoice.invoice_notes || "").trim())?.invoice_notes;
+  if (invoicedNotes && !String(order.invoice_notes || "").trim()) updates.invoice_notes = invoicedNotes;
+  if (invoicedTotal > 0 && Number(order.invoice_total || 0) !== invoicedTotal) {
+    updates.invoice_total = invoicedTotal;
+  }
+  if (Object.keys(updates).length === 0) return order;
+
+  try {
+    // updatePartsOrderByNumber also completes the order once delivery and
+    // invoice have both landed, so completion stays automatic too.
+    return (await updatePartsOrderByNumber(order.order_number, updates)) || order;
+  } catch (updateError) {
+    logFailure("Unable to store derived parts order invoice status:", updateError);
+    return { ...order, ...updates }; // still show the derived truth if the write failed.
+  }
+};
+
 export const getPartsOrderByNumber = async (orderNumber) => {
   const normalized = normaliseOrderNumber(orderNumber);
   if (!normalized) return null;
@@ -212,7 +288,69 @@ export const getPartsOrderByNumber = async (orderNumber) => {
     .eq("order_number", normalized)
     .maybeSingle();
   if (error) throw new Error(`Unable to load parts order: ${error.message}`);
-  return data || null;
+  if (!data) return null;
+  return await syncPartsOrderInvoiceStatus(data);
+};
+
+/**
+ * Replaces the line items on one parts order with the supplied set.
+ * Rows carrying an existing id are updated, rows without one are inserted, and
+ * any row missing from the payload is removed — this backs the "Edit parts"
+ * table on the parts order page.
+ */
+export const replacePartsOrderItems = async (orderNumber, items = []) => {
+  const normalized = normaliseOrderNumber(orderNumber);
+  if (!normalized) throw new Error("An order number is required.");
+
+  const { data: orderRecord, error: lookupError } = await supabase
+    .from("parts_order_cards")
+    .select("id")
+    .eq("order_number", normalized)
+    .maybeSingle();
+  if (lookupError) throw new Error(`Unable to load parts order: ${lookupError.message}`);
+  if (!orderRecord) return null;
+
+  const validItems = (Array.isArray(items) ? items : []).filter(
+    (item) => item && (item.part_name || item.part_number)
+  );
+  const cleanItem = (item) => ({
+    order_id: orderRecord.id,
+    part_catalog_id: item.part_catalog_id || null,
+    part_number: item.part_number ? String(item.part_number) : null,
+    part_name: item.part_name ? String(item.part_name) : null,
+    quantity: Number(item.quantity) || 0,
+    unit_price: Number(item.unit_price) || 0,
+    notes: item.notes ? String(item.notes) : null,
+    updated_at: new Date().toISOString(),
+  });
+
+  const keptIds = validItems.map((item) => item.id).filter(Boolean);
+  let deleteQuery = supabase.from("parts_order_card_items").delete().eq("order_id", orderRecord.id);
+  if (keptIds.length > 0) deleteQuery = deleteQuery.not("id", "in", `(${keptIds.join(",")})`);
+  const { error: deleteError } = await deleteQuery;
+  if (deleteError) throw new Error(`Unable to remove order items: ${deleteError.message}`);
+
+  for (const item of validItems.filter((entry) => entry.id)) {
+    const { error: updateError } = await supabase
+      .from("parts_order_card_items")
+      .update(cleanItem(item))
+      .eq("id", item.id)
+      .eq("order_id", orderRecord.id);
+    if (updateError) throw new Error(`Unable to update order items: ${updateError.message}`);
+  }
+
+  const newItems = validItems.filter((entry) => !entry.id).map(cleanItem);
+  if (newItems.length > 0) {
+    const { error: insertError } = await supabase.from("parts_order_card_items").insert(newItems);
+    if (insertError) throw new Error(`Unable to add order items: ${insertError.message}`);
+  }
+
+  await supabase
+    .from("parts_order_cards")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", orderRecord.id);
+
+  return await getPartsOrderByNumber(normalized);
 };
 
 export const updatePartsOrderByNumber = async (orderNumber, requestedUpdates = {}) => {
@@ -248,6 +386,16 @@ export const updatePartsOrderByNumber = async (orderNumber, requestedUpdates = {
       throw new Error(`Unable to complete parts order: ${completionError.message}`);
     }
     completeOrder = completed || completeOrder;
+  }
+
+  // The order's notes popup is now the only place invoice notes are written,
+  // so push them onto the invoice that carries them onto the document.
+  if (Object.prototype.hasOwnProperty.call(updates, "invoice_notes")) {
+    const { error: notesError } = await supabase
+      .from("invoices")
+      .update({ invoice_notes: updates.invoice_notes, updated_at: new Date().toISOString() })
+      .eq("order_number", normalized);
+    if (notesError) logFailure("Unable to copy invoice notes onto the invoice:", notesError);
   }
 
   await syncPartsOrderDeliveryJob(completeOrder);
@@ -310,6 +458,11 @@ const reserveCatalogueStock = async (items = []) => {
   try {
     for (const item of items) {
       if (!item.part_catalog_id) continue;
+      // Lines the adviser has already resolved on /new-order (booked in at the
+      // counter, or on order with an arrival date) carry awaiting_stock. There
+      // is nothing on the shelf to reserve for those, so reserving the rest of
+      // the order must not fail on them.
+      if (item.awaiting_stock) continue;
       const quantity = Number(item.quantity) || 0;
       const { data: part, error: lookupError } = await supabase
         .from("parts_catalog")

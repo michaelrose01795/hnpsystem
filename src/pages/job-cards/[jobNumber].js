@@ -7096,7 +7096,7 @@ function VHCTab({
     window.location.assign(customerViewUrl);
   };
 
-  // Generate a shareable link (24-hour expiry) and copy to clipboard.
+  // Reuse the permanent customer link and copy to clipboard.
   const handleCopyToClipboard = async () => {
     setGeneratingLink(true);
     try {
@@ -7191,7 +7191,7 @@ function VHCTab({
       variant="secondary"
       size="sm"
       onClick={handleCustomerViewClick}
-      title="Open customer preview">
+      title="Open customer report">
         View
       </Button>
       <Button
@@ -7200,7 +7200,7 @@ function VHCTab({
       size="sm"
       onClick={handleCopyToClipboard}
       disabled={generatingLink}
-      title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
+      title={copied ? "Copied!" : "Copy customer link (no expiry)"}>
         {generatingLink ? "..." : copied ? "Copied" : "Copy"}
       </Button>
       {/* TODO: After testing, lock the Send button to fire only once per job — */}

@@ -138,7 +138,7 @@ const WORKFLOW_FLOWS = [
         id: "diary",
         label: "Check today's diary",
         subtitle: "Appointments",
-        href: "/job-cards/appointments",
+        href: "/appointments",
         include: (ctx) => hasRole(ctx.roles, "service", "service manager", "admin manager", "workshop manager") || num(ctx.metrics, "appointmentsToday") > 0,
       },
       { id: "queue", label: "Review the workshop queue", subtitle: "Next jobs", href: "/nextjobs" },

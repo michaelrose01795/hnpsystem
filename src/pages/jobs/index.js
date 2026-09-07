@@ -103,10 +103,14 @@ const getStatusCounts = (jobs = []) => {
 
 const getJobStatusBadgeTone = (status) => {
   const normalized = normalizeString(status);
-  if (normalized.includes("released") || normalized.includes("complete") || normalized.includes("invoiced")) return "app-badge--success";
-  if (normalized.includes("progress") || normalized.includes("checked")) return "app-badge--accent-soft";
+  if (normalized.includes("cancel") || normalized.includes("failed") || normalized.includes("reject")) return "app-badge--danger";
+  if (normalized.includes("overdue") || normalized.includes("urgent") || normalized.includes("breakdown")) return "app-badge--danger-strong";
+  if (normalized.includes("released") || normalized.includes("invoiced") || normalized.includes("collected")) return "app-badge--success-strong";
+  if (normalized.includes("complete") || normalized.includes("finished") || normalized.includes("ready")) return "app-badge--success";
+  if (normalized.includes("progress") || normalized.includes("started") || normalized.includes("checked")) return "app-badge--accent-strong";
+  if (normalized.includes("booked") || normalized.includes("scheduled") || normalized.includes("arrived") || normalized.includes("new") || normalized.includes("open")) return "app-badge--accent-soft";
+  if (normalized.includes("parts") || normalized.includes("authoris") || normalized.includes("approval")) return "app-badge--warning-strong";
   if (normalized.includes("waiting") || normalized.includes("hold") || normalized.includes("pending")) return "app-badge--warning";
-  if (normalized.includes("cancel") || normalized.includes("failed")) return "app-badge--danger";
   return "app-badge--neutral";
 };
 
@@ -1373,9 +1377,14 @@ export default function ViewJobCards() {
 
 const operationalBadgeTone = (tone) => ({
   accent: "app-badge--accent-soft",
+  "accent-soft": "app-badge--accent-soft",
+  "accent-strong": "app-badge--accent-strong",
   danger: "app-badge--danger",
+  "danger-strong": "app-badge--danger-strong",
   success: "app-badge--success",
+  "success-strong": "app-badge--success-strong",
   warning: "app-badge--warning",
+  "warning-strong": "app-badge--warning-strong",
 }[tone] || "app-badge--neutral");
 
 const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKey, parentKey, now, technicianLoads, nextJobsTechnicians }) => {
@@ -1461,7 +1470,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
 
         <div className="app-job-operations-row__column app-job-operations-row__column--technician">
           <span className="app-job-operations-row__label">Technician</span>
-          {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--neutral">No tech</span>}
+          {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--warning">No tech</span>}
           {summary.technicianLoad && <span className="app-job-operations-row__muted">{summary.technicianLoad}</span>}
         </div>
 

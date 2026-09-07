@@ -17,7 +17,7 @@ const DEPARTMENT_COORDINATION = {
   workshop: [
     { toDept: "parts", label: "Chase parts for a job", subtitle: "Parts", href: "/parts" },
     { toDept: "service", label: "Update the service desk", subtitle: "Service", href: "/job-cards" },
-    { toDept: "mot", label: "Book a retest slot", subtitle: "MOT", href: "/job-cards/appointments" },
+    { toDept: "mot", label: "Book a retest slot", subtitle: "MOT", href: "/appointments" },
     { toDept: "valeting", label: "Send a vehicle to valet", subtitle: "Valeting", href: "/valet" },
   ],
   service: [
@@ -49,7 +49,7 @@ const DEPARTMENT_COORDINATION = {
   ],
   management: [
     { toDept: "workshop", label: "Review workshop load", subtitle: "Workshop", href: "/nextjobs" },
-    { toDept: "service", label: "Review the service diary", subtitle: "Service", href: "/job-cards/appointments" },
+    { toDept: "service", label: "Review the service diary", subtitle: "Service", href: "/appointments" },
     { toDept: "parts", label: "Review parts pipeline", subtitle: "Parts", href: "/parts" },
   ],
 };

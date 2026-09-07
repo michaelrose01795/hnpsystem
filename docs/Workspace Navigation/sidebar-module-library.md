@@ -111,7 +111,7 @@ Module key: `department-tech`
 Department: `tech`
 Current page count: **4**
 
-- Tech Dashboard - `/tech/dashboard`
+- Tech Dashboard - `/dashboard/tech`
 - My Jobs - `/tech`
 - Efficiency - `/tech/efficiency`
 - Request Consumables - `/consumables-request`

@@ -13,7 +13,7 @@ import { useRoster } from "@/context/RosterContext";
 // from effects after mount, so none of this is needed to render the page.
 //
 // NOTE: this page deliberately still reads the FULL job list rather than the
-// technician-scoped workload query used by /tech/dashboard. Its filter is
+// technician-scoped workload query used by /dashboard/tech. Its filter is
 // wider than "assigned to me": a mobile technician sees every mobile job
 // booked for today whoever it belongs to, and a bench technician also sees MOT
 // hand-off jobs. Scoping the query would silently drop both.

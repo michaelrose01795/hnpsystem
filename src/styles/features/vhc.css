@@ -442,3 +442,30 @@ html.staff-scope .vhc-issue-report__empty {
     flex: 1 1 auto;
   }
 }
+
+/* Customer-facing VHC report page (/customer/[code]).
+ *
+ * The canonical customer report renders outside the staff .app-page-shell
+ * hierarchy — it is a standalone, link-authenticated page with no sidebar or
+ * topbar — so it needs its own full-height page shell rather than reusing the
+ * staff page classes. It still lives under html.staff-scope (only /website
+ * carries website-scope), so it draws from the same token set as staff UI and
+ * preview/customer views can never drift apart visually. */
+html.staff-scope .vhc-customer-page {
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+html.staff-scope .vhc-customer-page--loading {
+  padding: var(--layout-card-gap) 12px;
+}
+
+html.staff-scope .vhc-customer-page--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--layout-card-gap);
+}

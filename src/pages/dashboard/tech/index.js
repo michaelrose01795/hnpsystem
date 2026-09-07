@@ -1,4 +1,4 @@
-// file location: src/pages/tech/dashboard.js
+// file location: src/pages/dashboard/tech/index.js
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";

@@ -233,6 +233,13 @@ html.staff-scope .app-summary-item {
   background: var(--surface);
 }
 
+/* Summary tiles sitting on a --surface layer (e.g. inside a popup card) take
+   the --theme fill instead, so each tile reads as its own card rather than
+   disappearing into the surface behind it. Surface ladder, CLAUDE.md 3.0a-2. */
+html.staff-scope .app-summary-item--theme {
+  background: var(--theme);
+}
+
 html.staff-scope .app-summary-label {
   color: var(--grey-accent);
   font-size: 10px;

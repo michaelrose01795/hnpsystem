@@ -1,258 +1,125 @@
 // file location: src/components/page-ui/customers/customers-customer-slug-ui.js
-import StatusMessage from "@/components/ui/StatusMessage";import LayerSurface from "@/components/ui/LayerSurface";
+//
+// Presentation shell for the staff customer record (/customers/[customerSlug]).
+// It owns page structure only — loading, error, header, record search, the tab
+// bar and the active tab panel. Every figure and list is derived in
+// src/lib/customers/customerHubModel.js and rendered by the components in
+// src/features/customers/hub/.
 
-const isWindowsDevice = () => {
-  if (typeof navigator === "undefined") return true;
-  return /win/i.test(`${navigator.platform || ""} ${navigator.userAgent || ""}`);
-};
-
-const handleMapLinkClick = (event, item) => {
-  if (!item?.nativeHref || isWindowsDevice()) return;
-  event.preventDefault();
-  window.location.href = item.nativeHref;
-};
+import React from "react";
+import LayerTheme from "@/components/ui/LayerTheme";
+import StatusMessage from "@/components/ui/StatusMessage";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function CustomerDetailWorkspaceUi(props) {
   const {
-    TAB_DEFINITIONS,
     TabGroup,
-    ContactPreferenceToggle,
     PageSkeleton,
+    tabDefinitions = [],
     activeTab,
-    activityEvents,
-    customer,
-    customerName,
-    detailCardStyles,
-    detailGridStyles,
+    setActiveTab,
     error,
     isLoading,
-    jobs,
-    profileGridItems,
+    customer,
+    header,
+    alerts,
+    search,
     renderTabContent,
-    setActiveTab,
-    tabPanelStyles,
-    vehicles
   } = props;
 
-  switch (props.view) {
-    case "section1":
-      return (
-        <main
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-page-shell"
-          data-dev-section-type="page-shell"
-          style={{
-            padding: "8px 0",
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-            width: "100%",
-            maxWidth: "100%"
-          }}>
+  if (props.view !== "section1") return null;
 
-          {isLoading && PageSkeleton &&
-          <PageSkeleton
-            sections={[
-            { rows: 2, minHeight: "160px" },
+  return (
+    <main
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-page-shell"
+      data-dev-section-type="page-shell"
+      className="app-page-stack"
+      style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}
+    >
+      {isLoading && PageSkeleton && (
+        <PageSkeleton
+          sections={[
+            { rows: 2, minHeight: "220px" },
             { rows: 1, minHeight: "48px" },
-            { rows: 4, minHeight: "260px" }]
-            } />
+            { rows: 4, minHeight: "320px" },
+          ]}
+        />
+      )}
 
-          }
+      {error && !isLoading && (
+        <>
+          <StatusMessage tone="danger">{error}</StatusMessage>
+          {search}
+        </>
+      )}
 
-          {error &&
-          <StatusMessage tone="danger">
-              {error}
-            </StatusMessage>
-          }
+      {!isLoading && !error && !customer && (
+        <EmptyState
+          variant="page"
+          icon="🔎"
+          title="Customer record not found"
+          description="The link may be out of date. Search for the customer by name, email, phone or postcode."
+        />
+      )}
 
-          {customer && !error && !isLoading &&
-          <>
-              <LayerSurface as="section"
-            data-presentation="customer-hero"
+      {customer && !error && !isLoading && (
+        <>
+          {header}
+
+          {/* Sits between the header and the tabs so it stays visible whichever
+              tab is open — these are the things that need doing today. */}
+          {alerts}
+
+          <div
+            data-presentation="customer-history"
             data-dev-section="1"
-            data-dev-section-key="customer-profile-summary"
-            data-dev-section-type="section-shell"
+            data-dev-section-key="customer-profile-tabs"
+            data-dev-section-type="tab-row"
             data-dev-section-parent="app-layout-page-card"
-            data-dev-background-token="accent-surface"
-            style={detailCardStyles.container}>
+            className="app-layout-tab-row"
+            style={{ display: "inline-flex", alignSelf: "flex-start", maxWidth: "100%", overflowX: "auto" }}
+          >
+            <TabGroup
+              items={tabDefinitions.map((tab) => ({
+                label: tab.count === null || tab.count === undefined ? tab.label : `${tab.label} (${tab.count})`,
+                value: tab.id,
+                devSectionKey: `customer-profile-tab-button-${tab.id}`,
+              }))}
+              value={activeTab}
+              onChange={setActiveTab}
+              ariaLabel="Customer record tabs"
+              className="tab-api--wrap"
+              devSectionKey="customer-profile-tab-group"
+              devSectionParent="customer-profile-tabs"
+            />
+          </div>
 
-                <div style={detailCardStyles.identityBlock}>
-                  <div style={detailCardStyles.nameGroup}>
-                    <h1 style={detailCardStyles.name}>{customerName || customer.email || "Customer"}</h1>
-                  </div>
-                </div>
-
-                <div style={detailGridStyles.grid}>
-                  {profileGridItems.map((item) =>
-                <LayerSurface as="div"
-
-                key={item.key}
-                data-dev-section="1"
-                data-dev-section-key={`customer-profile-card-${item.key}`}
-                data-dev-section-type="content-card"
-                data-dev-section-parent="customer-profile-summary"
-                data-dev-background-token="customer-profile-card"
-                style={detailGridStyles.item}>
-
-                      <span style={detailGridStyles.label}>{item.label}</span>
-
-                      {item.type === "stats" ?
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(82px, 1fr))",
-                      gap: "10px",
-                      marginTop: "4px"
-                    }}>
-
-                          {item.stats?.map((stat) =>
-                    <div
-                      key={stat.label}
-                      style={{
-                        borderRadius: "var(--radius-sm)",
-                        background: "var(--surface)",
-                        padding: "10px"
-                      }}>
-
-                              <span
-                        style={{
-                          display: "block",
-                          color: "var(--text-1)",
-                          fontSize: "0.68rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.12em"
-                        }}>
-
-                                {stat.label}
-                              </span>
-                              <strong
-                        style={{
-                          display: "block",
-                          marginTop: "4px",
-                          color: "var(--text-1)",
-                          fontSize: "1.25rem"
-                        }}>
-
-                                {stat.value}
-                              </strong>
-                            </div>
-                    )}
-                        </div> :
-                  item.type === "list" ?
-                  item.items?.length ?
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      padding: 0,
-                      margin: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px"
-                    }}>
-
-                            {item.items.map((entry) =>
-                    <li key={`${entry.label}-${entry.value}`}>
-                                <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-1)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.2em"
-                        }}>
-
-                                  {entry.label}
-                                </span>
-                                <a href={`tel:${entry.value}`} style={{ color: "var(--primary)", fontWeight: 600 }}>
-                                  {entry.value}
-                                </a>
-                              </li>
-                    )}
-                          </ul> :
-
-                  <span style={{ color: "var(--text-1)" }}>No numbers on file</span> :
-
-                  item.href ?
-                  <a
-                    href={item.href}
-                    target={item.nativeHref ? "_blank" : undefined}
-                    rel={item.nativeHref ? "noopener noreferrer" : undefined}
-                    aria-label={item.key === "address" ? `Open ${item.value || "address"} in maps` : undefined}
-                    onClick={(event) => handleMapLinkClick(event, item)}
-                    style={{ color: "var(--primary)", fontWeight: 600, overflowWrap: "anywhere" }}>
-
-                          {item.value || "—"}
-                        </a> :
-
-                  <span style={{ fontWeight: 600, color: "var(--text-1)", overflowWrap: "anywhere" }}>
-                          {item.value ?? "—"}
-                        </span>
-                  }
-
-                      {item.preference && ContactPreferenceToggle &&
-                  <div style={{ marginTop: "8px" }}>
-                          <ContactPreferenceToggle {...item.preference} />
-                        </div>
-                  }
-                      {item.preferences?.length && ContactPreferenceToggle &&
-                  <div style={{ marginTop: "8px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                          {item.preferences.map((preference) =>
-                    <ContactPreferenceToggle key={preference.label} {...preference} />
-                    )}
-                        </div>
-                  }
-                    </LayerSurface>
-                )}
-                </div>
-              </LayerSurface>
-
-              <div
-              data-presentation="customer-history"
+          {activeTab === "messages" ? (
+            // The Messages tab keeps its own panel chrome, unchanged.
+            <LayerTheme
+              as="section"
+              sectionKey={`customer-profile-tab-${activeTab}`}
+              parentKey="app-layout-page-card"
+              sectionType="section-shell"
+            >
+              {renderTabContent()}
+            </LayerTheme>
+          ) : (
+            <div
               data-dev-section="1"
-              data-dev-section-key="customer-profile-tabs"
-              data-dev-section-type="tab-row"
+              data-dev-section-key={`customer-profile-tab-${activeTab}`}
+              data-dev-section-type="section-shell"
               data-dev-section-parent="app-layout-page-card"
-              data-dev-background-token="transparent"
-              style={{ display: "inline-flex", alignSelf: "flex-start", maxWidth: "100%", overflowX: "auto" }}>
+              style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)", minWidth: 0 }}
+            >
+              {renderTabContent()}
+            </div>
+          )}
 
-                <TabGroup
-                items={TAB_DEFINITIONS.map((tab) => ({
-                  label:
-                  tab.id === "insights" ?
-                  `${tab.label} (${vehicles.length})` :
-                  tab.id === "history" ?
-                  `${tab.label} (${jobs.length})` :
-                  tab.id === "activity" ?
-                  `${tab.label} (${(activityEvents || []).length})` :
-                  tab.label,
-                  value: tab.id,
-                  devSectionKey: `customer-profile-tab-button-${tab.id}`
-                }))}
-                value={activeTab}
-                onChange={setActiveTab}
-                ariaLabel="Customer data tabs"
-                className="tab-api--wrap"
-                devSectionKey="customer-profile-tab-group"
-                devSectionParent="customer-profile-tabs" />
-
-              </div>
-
-              <LayerSurface as="section"
-
-            data-dev-section="1"
-            data-dev-section-key={`customer-profile-tab-${activeTab}`}
-            data-dev-section-type="section-shell"
-            data-dev-section-parent="app-layout-page-card"
-            data-dev-background-token="accent-surface"
-            style={tabPanelStyles.container}>
-
-                {renderTabContent()}
-              </LayerSurface>
-            </>
-          }
-        </main>);
-
-    default:
-      return null;
-  }
+          {search}
+        </>
+      )}
+    </main>
+  );
 }

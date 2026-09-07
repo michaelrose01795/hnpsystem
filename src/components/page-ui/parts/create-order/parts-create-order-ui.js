@@ -16,7 +16,50 @@ import CustomerDetailsCard from "@/components/customers/CustomerDetailsCard"; //
 
 // Width at which the three top-row cards stop wrapping and can share rows.
 const SIDE_BY_SIDE_BREAKPOINT = 1280;
-const TOP_ROW_ROWS = 6;
+// Rows shared by the three top-row cards: 1 header, 2 the first field row
+// (Delivery Method / Registration Number / First Name + Last Name), 3-5 the
+// remaining Customer Details field rows, 6 the customer action buttons, 7 page
+// extras. Every card spans all seven, so none can end on a different grid line.
+const TOP_ROW_ROWS = 7;
+const TOP_ROW_EXTRAS_ROW = TOP_ROW_ROWS;
+// Rows 2-5 are reserved at label + control height whether or not a card fills
+// them, so the row keeps the height of a populated Customer Details card even
+// while the customer is still the two-button empty state.
+const TOP_ROW_FIELD_ROW = "minmax(calc(var(--control-height) + 22px), auto)";
+const TOP_ROW_GRID_ROWS = `auto repeat(4, ${TOP_ROW_FIELD_ROW}) minmax(var(--control-height), auto) auto`;
+// Delivery / Vehicle / Customer are one set: identical width, identical height,
+// and a height floor that scales with the viewport rather than a fixed pixel value.
+const TOP_ROW_CARD_MIN_HEIGHT = "clamp(320px, 40vh, 460px)";
+const TOP_ROW_CARD_STYLE = {
+  minWidth: 0,
+  width: "100%",
+  minHeight: TOP_ROW_CARD_MIN_HEIGHT,
+  boxSizing: "border-box",
+  // staffglobal gives every <section> a 10px bottom margin. Delivery renders as
+  // a section and Vehicle / Customer as divs, so the margin ate 10px off the
+  // stretched Delivery card and it ended above the other two.
+  marginBottom: 0,
+};
+
+// The four notes a parts order carries. Keys are form fields; on save they map
+// onto the notes / customer_notes / delivery_notes / invoice_notes columns, so
+// this card reads the same as the Notes card on /order/[orderNumber].
+const ORDER_NOTE_FIELDS = [
+  ["internal_notes", "Order notes", "Supplier, stock or handling notes…"],
+  ["customer_notes", "Customer notes", "What the customer told us…"],
+  ["delivery_notes", "Delivery notes", "Notes for the delivery driver…"],
+  ["invoice_notes", "Invoice notes", "Notes to appear on the invoice…"],
+];
+
+// Keep the notes preview a fixed size whatever the notes hold — the full text is
+// read and edited in the notes popup. Mirrors /order/[orderNumber].
+const NOTE_PREVIEW_WORDS = 4;
+function notePreview(value) {
+  const text = String(value || "").trim().replace(/\s+/g, " ");
+  if (!text) return "None recorded";
+  const words = text.split(" ");
+  return words.length <= NOTE_PREVIEW_WORDS ? text : `${words.slice(0, NOTE_PREVIEW_WORDS).join(" ")}…`;
+}
 
 const money = (value) => new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -35,7 +78,7 @@ function FormField({ label, hint, htmlFor, className = "", style, children }) {
 
 function SummaryItem({ label, children }) {
   return (
-    <div className="app-summary-item">
+    <div className="app-summary-item app-summary-item--theme">
       <span className="app-summary-label">{label}</span>
       <strong className="app-summary-value">{children}</strong>
     </div>
@@ -65,6 +108,11 @@ export default function PartsCreateOrderUi(props) {
   // The order summary now lives in a popup rather than a persistent aside,
   // mirroring the "More" request popup on /new-job.
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // Everything that does not belong on the single-line part row — discount,
+  // line notes, unlink, remove — lives in this per-line Edit popup.
+  const [editPartId, setEditPartId] = useState(null);
+  // All four order notes are read on the Delivery card and edited in one popup.
+  const [notesOpen, setNotesOpen] = useState(false);
   // Cards share grid rows only while they are actually side by side; once the
   // row wraps, each card goes back to being an ordinary stacked flex card.
   const rowsAligned = !useIsMobile(SIDE_BY_SIDE_BREAKPOINT - 1);
@@ -109,8 +157,11 @@ export default function PartsCreateOrderUi(props) {
     isLoadingVehicle,
     isSavingCustomer,
     newCustomerPrefill,
+    activePartLine,
+    focusedPartLine,
     openPartSearch,
     partLines,
+    setFocusedPartLine,
     partSearchLoading,
     partSearchOpen,
     partSearchQuery,
@@ -118,6 +169,12 @@ export default function PartsCreateOrderUi(props) {
     removePart,
     savingMode,
     selectPart,
+    stockShortages,
+    stockPromptOpen,
+    stockResolution,
+    setStockResolution,
+    closeStockPrompt,
+    confirmStockResolution,
     setCustomer,
     setCustomerNotification,
     setNewCustomerPrefill,
@@ -134,18 +191,36 @@ export default function PartsCreateOrderUi(props) {
     vehicle,
     vehicleError,
     vehicleNotification,
-    viewCustomer,
     withoutVehicle,
   } = props;
 
+  // Delivery charge only applies when the parts are coming to us; on a
+  // collection the Notes card takes that row instead of leaving it empty, so it
+  // sits directly under the date / time pickers.
+  const showDeliveryCharge = form.delivery_type !== "collection";
+  const notesStartRow = showDeliveryCharge ? 5 : 4;
+
   const populatedLines = partLines.filter((line) => line.part_number || line.part_name);
+
+  // "Search catalogue" is wired to a line rather than to the order: whichever
+  // Part number box was last clicked, falling back to the first empty line.
+  // Mirrors resolvePartTarget() on the page so the hint matches what happens.
+  const searchTargetLine =
+    partLines.find((line) => line.client_id === focusedPartLine) ||
+    partLines.find((line) => !line.part_number && !line.part_name) ||
+    null;
+  const searchTargetIndex = searchTargetLine ? partLines.indexOf(searchTargetLine) : -1;
+  const activeSearchIndex = partLines.findIndex((line) => line.client_id === activePartLine);
+  const editLineIndex = partLines.findIndex((line) => line.client_id === editPartId);
+  const editLine = editLineIndex === -1 ? null : partLines[editLineIndex];
 
   return (
     <>
       <form onSubmit={handleSubmit} className="app-page-stack">
-        {/* Status on the left, order actions on the right. */}
+        {/* Page title and status on the left, order actions on the right. */}
         <DevLayoutSection as="header" className="app-page-header" sectionKey="new-order-workflow-header" sectionType="page-header" parentKey="app-layout-page-card">
           <div className="app-page-header__text">
+            <h1 className="app-page-header__title">New Order</h1>
             {errorMessage ? <StatusMessage tone="danger">{errorMessage}</StatusMessage> : null}
           </div>
           <div className="app-page-header__actions">
@@ -168,13 +243,23 @@ export default function PartsCreateOrderUi(props) {
             ? {
                 display: "grid",
                 gridTemplateColumns: "repeat(3, minmax(260px, 1fr))",
-                gridTemplateRows: `repeat(${TOP_ROW_ROWS}, auto)`,
+                gridTemplateRows: TOP_ROW_GRID_ROWS,
                 alignItems: "stretch",
                 columnGap: "16px",
                 rowGap: 0,
                 width: "100%",
               }
-            : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gridAutoRows: "1fr", alignItems: "stretch", gap: "16px", width: "100%" }}
+            : {
+                display: "grid",
+                // One full-width column below the breakpoint. auto-fit let a lone
+                // wrapped card stretch across the collapsed tracks, so the three
+                // cards stopped matching each other at in-between widths.
+                gridTemplateColumns: "minmax(0, 1fr)",
+                gridAutoRows: "minmax(min-content, 1fr)",
+                alignItems: "stretch",
+                gap: "16px",
+                width: "100%",
+              }}
         >
           <LayerTheme
             id="new-order-delivery"
@@ -185,13 +270,10 @@ export default function PartsCreateOrderUi(props) {
             radius="var(--radius-md)"
             gap="12px"
             style={{
-              flex: "1 1 260px",
-              minWidth: 0,
-              minHeight: "420px",
-              boxSizing: "border-box",
+              ...TOP_ROW_CARD_STYLE,
               ...(rowsAligned
                 ? { display: "grid", gridTemplateRows: "subgrid", gridRow: `1 / span ${TOP_ROW_ROWS}` }
-                : { overflowY: "auto" }),
+                : null),
             }}
           >
             <div className="new-order-aligned-card__header" style={rowStyle(1)}>
@@ -227,7 +309,7 @@ export default function PartsCreateOrderUi(props) {
               <TimePickerField name="delivery_window" label="Preferred time" value={form.delivery_window} onValueChange={(value) => handleFieldChange("delivery_window", value)} />
             </div>
 
-            {form.delivery_type !== "collection" ? (
+            {showDeliveryCharge ? (
               <FormField label="Delivery charge" htmlFor="delivery-charge" style={rowStyle(4)}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "50%" }}>
                   <input id="delivery-charge" name="delivery_charge" className="app-input" type="number" min="0" step="0.01" style={{ minWidth: 0, flex: 1 }} value={form.delivery_charge} onChange={(event) => handleFieldChange("delivery_charge", event.target.value)} />
@@ -235,6 +317,55 @@ export default function PartsCreateOrderUi(props) {
                 </div>
               </FormField>
             ) : null}
+
+            {/* Notes sit with Delivery so the adviser records them while booking.
+                Previews only — the full text is written in the notes popup, the
+                same arrangement the created order uses on /order/[orderNumber].
+                Spans the rest of the shared subgrid so the card still ends on the
+                same grid line as Vehicle and Customer. */}
+            <LayerSurface
+              sectionKey="new-order-delivery-notes"
+              parentKey="new-order-delivery"
+              radius="var(--radius-sm)"
+              padding="10px 12px"
+              gap="var(--space-sm)"
+              style={{
+                minWidth: 0,
+                overflowWrap: "anywhere",
+                ...(rowsAligned
+                  ? {
+                      gridRow: `${notesStartRow} / span ${TOP_ROW_ROWS - notesStartRow + 1}`,
+                      marginTop: "-2px", // card row gap is 12px; trim 2px so Notes sits 10px below the row above
+                    }
+                  : null),
+              }}
+            >
+              <div className="app-layout-toolbar-row">
+                <h3>Notes</h3>
+                <div className="app-page-header__actions" style={{ marginLeft: "auto" }}>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => setNotesOpen(true)}>Edit notes</Button>
+                </div>
+              </div>
+              <dl
+                className="app-job-summary-panel__meta"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                  gap: "var(--layout-card-gap)",
+                  width: "100%",
+                }}
+              >
+                {ORDER_NOTE_FIELDS.map(([key, label]) => (
+                  <div key={key} className="app-job-summary-panel__meta-item" style={{ minWidth: 0 }}>
+                    {/* Field labels read as labels rather than the shared meta caps. */}
+                    <dt style={{ fontWeight: 400, textTransform: "none", marginBottom: "var(--space-xs)" }}>{label}</dt>
+                    <dd style={{ fontSize: "var(--text-body-sm)", lineHeight: 1.5, fontWeight: 600, whiteSpace: "pre-line", margin: 0 }}>
+                      {notePreview(form[key])}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </LayerSurface>
           </LayerTheme>
 
           <VehicleDetailsCard
@@ -254,7 +385,7 @@ export default function PartsCreateOrderUi(props) {
             subgrid={rowsAligned}
             subgridRows={TOP_ROW_ROWS}
             className="new-order-aligned-card"
-            style={{ flex: "1 1 260px", minWidth: 0, minHeight: "420px", boxSizing: "border-box", ...(rowsAligned ? {} : { overflowY: "auto" }) }}
+            style={TOP_ROW_CARD_STYLE}
           >
             {/* Parts orders may have no vehicle at all; /new-job always has one. */}
             <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -282,20 +413,22 @@ export default function PartsCreateOrderUi(props) {
             onExistingCustomer={() => setShowExistingCustomer(true)}
             onNewCustomer={() => setShowNewCustomer(true)}
             emptySelectionLabel="Customer"
+            gap="12px"
+            subgrid={rowsAligned}
+            subgridRows={TOP_ROW_ROWS}
             className="new-order-aligned-card"
-            style={{ flex: "1 1 260px", minWidth: 0, minHeight: "420px", boxSizing: "border-box", overflowY: "auto", ...(rowsAligned ? { gridRow: `1 / span ${TOP_ROW_ROWS}` } : {}) }}
+            style={TOP_ROW_CARD_STYLE}
           >
             {/* Parts-order extras. The card above is byte-identical to /new-job;
-                anything specific to a parts order hangs below it. */}
-            {customer ? (
-              <>
-                <Button type="button" variant="secondary" disabled={!customer?.id} onClick={viewCustomer}>View Customer</Button>
-                {customerOrders.length > 0 ? (
-                  <StatusMessage tone="warning">
-                    {customerOrders.length} open order{customerOrders.length === 1 ? "" : "s"} already exist for this customer: {customerOrders.map((order) => order.order_number).join(", ")}.
-                  </StatusMessage>
-                ) : null}
-              </>
+                anything specific to a parts order hangs below it, pinned to the
+                shared extras row so it grows the whole row rather than this card
+                alone. */}
+            {customer && customerOrders.length > 0 ? (
+              <div style={rowsAligned ? { gridRow: TOP_ROW_EXTRAS_ROW } : undefined}>
+                <StatusMessage tone="warning">
+                  {customerOrders.length} open order{customerOrders.length === 1 ? "" : "s"} already exist for this customer: {customerOrders.map((order) => order.order_number).join(", ")}.
+                </StatusMessage>
+              </div>
             ) : null}
           </CustomerDetailsCard>
         </DevLayoutSection>
@@ -314,12 +447,21 @@ export default function PartsCreateOrderUi(props) {
             <h3>Parts</h3>
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
               <span className="app-badge app-badge--accent-soft">{populatedLines.length} lines</span>
-              <Button type="button" variant="secondary" onClick={() => openPartSearch(null, [form.vehicle_make, form.vehicle_model].filter(Boolean).join(" "))}>Search catalogue</Button>
+              {searchTargetIndex !== -1 ? <span className="app-field-hint">Fills Part {searchTargetIndex + 1}</span> : null}
+              <Button
+                type="button"
+                variant="secondary"
+                title={searchTargetIndex !== -1 ? `Search the catalogue and fill Part ${searchTargetIndex + 1}` : "Search the catalogue"}
+                onClick={() => openPartSearch(
+                  searchTargetLine?.client_id || null,
+                  searchTargetLine?.part_number || searchTargetLine?.part_name || [form.vehicle_make, form.vehicle_model].filter(Boolean).join(" ")
+                )}
+              >Search catalogue</Button>
               <Button type="button" variant="secondary" onClick={addManualPart}>+ Add Part</Button>
             </div>
           </div>
 
-          <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px" }}>
+          <div style={{ maxHeight: "360px", overflowY: "auto", overflowX: "auto", paddingRight: "4px" }}>
             {partLines.map((line, index) => {
               const availability = partAvailability(line);
               const replacement = supersededPart(line);
@@ -336,32 +478,29 @@ export default function PartsCreateOrderUi(props) {
                   gap="6px"
                   style={{ marginBottom: "10px" }}
                 >
-                  <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap", overflowX: "auto", paddingBottom: "2px" }}>
-                    <strong style={{ flexShrink: 0, whiteSpace: "nowrap" }}>Part {index + 1}</strong>
-                    <input name={`${line.client_id}_number`} className="app-input" style={{ flex: "0 1 140px", minWidth: "120px" }} value={line.part_number} onChange={(event) => handlePartChange(line.client_id, "part_number", event.target.value.toUpperCase())} placeholder="Part number" aria-label={`Part ${index + 1} part number`} />
-                    <input name={`${line.client_id}_name`} className="app-input" style={{ flex: "1 1 240px", minWidth: "200px" }} value={line.part_name} onChange={(event) => handlePartChange(line.client_id, "part_name", event.target.value)} placeholder="Description" aria-label={`Part ${index + 1} description`} />
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto", flexShrink: 0 }}>
+                  {/* One line per part, on a fixed column template so every row
+                      lines up. Discount, notes, unlink and remove live in the
+                      Edit popup rather than competing for width here. */}
+                  <div className="new-order-part-row">
+                    <strong className="new-order-part-row__index">Part {index + 1}</strong>
+                    {/* Clicking a Part number box targets that line, so the
+                        Search catalogue button above fills this row. */}
+                    <input name={`${line.client_id}_number`} className="app-input" value={line.part_number} onFocus={() => setFocusedPartLine(line.client_id)} onChange={(event) => handlePartChange(line.client_id, "part_number", event.target.value.toUpperCase())} placeholder="Part number" aria-label={`Part ${index + 1} part number`} />
+                    <input name={`${line.client_id}_name`} className="app-input" value={line.part_name} onChange={(event) => handlePartChange(line.client_id, "part_name", event.target.value)} placeholder="Description" aria-label={`Part ${index + 1} description`} />
+                    <div className="new-order-part-row__meta">
                       <span className={`app-badge app-badge--${availability.tone}`}>{availability.label}</span>
-                      <span className="app-field-hint" style={{ whiteSpace: "nowrap" }}>{line.catalog_snapshot?.storage_location || "No location"}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "72px", flexShrink: 0 }}>
-                        <input type="number" min="1" step="1" value={line.quantity} onChange={(event) => handlePartChange(line.client_id, "quantity", event.target.value)} className="app-input" style={{ width: "56px" }} aria-label={`Part ${index + 1} quantity`} />
-                        <span style={{ pointerEvents: "none", flexShrink: 0 }}>×</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "100px", flexShrink: 0 }}>
-                        <input type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => handlePartChange(line.client_id, "unit_price", event.target.value)} placeholder="Price" className="app-input" style={{ width: "82px" }} aria-label={`Part ${index + 1} unit price`} />
-                        <span style={{ pointerEvents: "none", flexShrink: 0 }}>£</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "84px", flexShrink: 0 }}>
-                        <input type="number" min="0" max="100" step="0.1" value={line.discount} onChange={(event) => handlePartChange(line.client_id, "discount", event.target.value)} className="app-input" style={{ width: "64px" }} aria-label={`Part ${index + 1} discount percentage`} />
-                        <span style={{ pointerEvents: "none", flexShrink: 0 }}>%</span>
-                      </div>
-                      <strong style={{ whiteSpace: "nowrap" }}>{money(lineTotal)}</strong>
-                      <Button type="button" variant="secondary" size="sm" onClick={() => openPartSearch(line.client_id, line.part_number || line.part_name)}>
-                        {replacement || availability.tone !== "success" ? "Alternatives" : "Edit"}
-                      </Button>
-                      {line.part_catalog_id ? <Button type="button" variant="secondary" size="sm" onClick={() => clearPartLink(line.client_id)}>Unlink</Button> : null}
-                      <Button type="button" variant="danger" size="sm" onClick={() => removePart(line.client_id)}>Remove</Button>
+                      <span className="app-field-hint">{line.catalog_snapshot?.storage_location || "No location"}</span>
                     </div>
+                    <div className="new-order-part-row__unit">
+                      <input type="number" min="1" step="1" value={line.quantity} onChange={(event) => handlePartChange(line.client_id, "quantity", event.target.value)} className="app-input" aria-label={`Part ${index + 1} quantity`} />
+                      <span aria-hidden="true">×</span>
+                    </div>
+                    <div className="new-order-part-row__unit">
+                      <input type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => handlePartChange(line.client_id, "unit_price", event.target.value)} placeholder="Price" className="app-input" aria-label={`Part ${index + 1} unit price`} />
+                      <span aria-hidden="true">£</span>
+                    </div>
+                    <strong className="new-order-part-row__total">{money(lineTotal)}</strong>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setEditPartId(line.client_id)} aria-label={`Edit part ${index + 1}`}>Edit</Button>
                   </div>
                   {replacement ? <StatusMessage tone="warning">Superseded by {replacement}</StatusMessage> : null}
                 </LayerSurface>
@@ -369,6 +508,13 @@ export default function PartsCreateOrderUi(props) {
             })}
           </div>
         </LayerTheme>
+
+        <NotesPopup
+          isOpen={notesOpen}
+          form={form}
+          onChange={handleFieldChange}
+          onClose={() => setNotesOpen(false)}
+        />
 
         {summaryOpen ? (
           <PopupModal maxWidth="720px" onClose={() => setSummaryOpen(false)} ariaLabel="Order summary">
@@ -423,11 +569,11 @@ export default function PartsCreateOrderUi(props) {
               <LayerTheme sectionKey="new-order-summary-notifications" parentKey="shared-popup-card" sectionType="content-card" radius="var(--radius-sm)" padding="10px" gap="var(--space-sm)">
                 <strong>Notifications</strong>
                 <ToolbarRow>
-                  <label><input name="notify_sms" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_sms} onChange={(event) => handleFieldChange("notify_sms", event.target.checked)} /><span>SMS</span></label>
-                  <label><input name="notify_email" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_email} onChange={(event) => handleFieldChange("notify_email", event.target.checked)} /><span>Email</span></label>
-                  <label><input name="notify_phone" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_phone} onChange={(event) => handleFieldChange("notify_phone", event.target.checked)} /><span>Phone</span></label>
+                  <label className="app-toggle-field"><input name="notify_sms" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_sms} onChange={(event) => handleFieldChange("notify_sms", event.target.checked)} /><span>SMS</span></label>
+                  <label className="app-toggle-field"><input name="notify_email" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_email} onChange={(event) => handleFieldChange("notify_email", event.target.checked)} /><span>Email</span></label>
+                  <label className="app-toggle-field"><input name="notify_phone" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.notify_phone} onChange={(event) => handleFieldChange("notify_phone", event.target.checked)} /><span>Phone</span></label>
                 </ToolbarRow>
-                <label><input name="reserve_stock" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.reserve_stock} onChange={(event) => handleFieldChange("reserve_stock", event.target.checked)} /><span>Reserve available catalogue stock when order is created</span></label>
+                <label className="app-toggle-field"><input name="reserve_stock" className="app-toggle app-toggle--checkbox" type="checkbox" checked={form.reserve_stock} onChange={(event) => handleFieldChange("reserve_stock", event.target.checked)} /><span>Reserve available catalogue stock when order is created</span></label>
               </LayerTheme>
 
               <StatusMessage tone="info">Created orders link to Parts and, for collection/delivery/courier, the Delivery workflow. Supplier receipts remain managed through Goods In.</StatusMessage>
@@ -441,7 +587,7 @@ export default function PartsCreateOrderUi(props) {
         <PopupModal maxWidth="920px" onClose={closePartSearch} ariaLabel="Search parts catalogue">
           <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
             <header className="app-popup-compact-header">
-              <div><strong>Parts catalogue</strong><div className="app-field-hint">Search by part number, description, OEM reference, location or vehicle detail.</div></div>
+              <div><strong>Parts catalogue</strong><div className="app-field-hint">{activeSearchIndex !== -1 ? `Filling Part ${activeSearchIndex + 1}. ` : ""}Search by part number, description, OEM reference, location or vehicle detail.</div></div>
               <div className="app-popup-compact-header__actions"><Button type="button" variant="secondary" size="sm" onClick={closePartSearch}>Close</Button></div>
             </header>
             <SearchBar autoFocus value={partSearchQuery} onChange={(event) => setPartSearchQuery(event.target.value)} onClear={() => setPartSearchQuery("")} placeholder="Part number, description, barcode or vehicle" ariaLabel="Search parts catalogue" />
@@ -460,6 +606,131 @@ export default function PartsCreateOrderUi(props) {
                 })}
               </LayerTheme>
             ) : null}
+          </div>
+        </PopupModal>
+      ) : null}
+
+      {/* Create order raises this when a catalogue line cannot be covered from
+          stock. The order cannot be created until the adviser says how those
+          parts are being supplied, so it can never be collected or shipped
+          with parts that are not here and no arrival date on record. */}
+      {stockPromptOpen ? (
+        <PopupModal maxWidth="620px" onClose={closeStockPrompt} ariaLabel="Confirm parts supply">
+          <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
+            <header className="app-popup-compact-header">
+              <div>
+                <strong>Parts not in stock</strong>
+                <div className="app-field-hint">{stockShortages.length} line{stockShortages.length === 1 ? "" : "s"} cannot be covered from the shelf. Confirm how they are being supplied before the order is created.</div>
+              </div>
+            </header>
+            <LayerTheme sectionKey="new-order-stock-shortages" parentKey="shared-popup-card" sectionType="content-card" radius="var(--radius-sm)" padding="10px" gap="var(--space-xs)">
+              {stockShortages.map((entry) => (
+                <div key={entry.client_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <span><strong>{entry.part_number || entry.part_name || "Part"}</strong>{entry.part_number && entry.part_name ? ` · ${entry.part_name}` : ""}</span>
+                  <span className="app-field-hint">{entry.required} required · {entry.available} available{entry.on_order > 0 ? ` · ${entry.on_order} on order` : ""}</span>
+                </div>
+              ))}
+            </LayerTheme>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Button type="button" variant={stockResolution.mode === "goods_in" ? "primary" : "secondary"} aria-pressed={stockResolution.mode === "goods_in"} onClick={() => setStockResolution((current) => ({ ...current, mode: "goods_in" }))}>Goods in now</Button>
+              <Button type="button" variant={stockResolution.mode === "ordered" ? "primary" : "secondary"} aria-pressed={stockResolution.mode === "ordered"} onClick={() => setStockResolution((current) => ({ ...current, mode: "ordered" }))}>Ordered from supplier</Button>
+            </div>
+            {stockResolution.mode === "goods_in" ? (
+              <StatusMessage tone="warning">The parts are being booked in at the counter today. Stock will not be reserved for these lines — book them in before the order is handed over.</StatusMessage>
+            ) : null}
+            {stockResolution.mode === "ordered" ? (
+              <>
+                <CalendarField name="parts_arrival_date" label="Parts arrival date" value={stockResolution.arrival_date} onValueChange={(value) => setStockResolution((current) => ({ ...current, arrival_date: value }))} />
+                <FormField label="Supplier reference" hint="Optional — supplier order or ETA reference." htmlFor="parts-supply-reference">
+                  <input id="parts-supply-reference" name="parts_supply_reference" className="app-input" value={stockResolution.reference} onChange={(event) => setStockResolution((current) => ({ ...current, reference: event.target.value }))} placeholder="Supplier order number" />
+                </FormField>
+                <StatusMessage tone="warning">
+                  {stockResolution.arrival_date
+                    ? `The order is held until ${stockResolution.arrival_date} — the ${form.delivery_type === "collection" ? "collection" : "delivery"} date moves to that date at the earliest and the hold is written onto the delivery notes.`
+                    : "Add the date the parts land. The order cannot be created without it."}
+                </StatusMessage>
+              </>
+            ) : null}
+            <ToolbarRow style={{ justifyContent: "flex-end" }}>
+              <Button type="button" variant="secondary" onClick={closeStockPrompt}>Back to order</Button>
+              <Button
+                type="button"
+                disabled={!stockResolution.mode || (stockResolution.mode === "ordered" && !stockResolution.arrival_date)}
+                onClick={confirmStockResolution}
+              >Confirm and create order</Button>
+            </ToolbarRow>
+          </div>
+        </PopupModal>
+      ) : null}
+
+      {editLine ? (
+        <PopupModal maxWidth="560px" onClose={() => setEditPartId(null)} ariaLabel={`Edit part ${editLineIndex + 1}`}>
+          <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
+            <header className="app-popup-compact-header">
+              <div>
+                <strong>Part {editLineIndex + 1}</strong>
+                <div className="app-field-hint">{editLine.part_number || editLine.part_name || "New line"} · {editLine.catalog_snapshot?.storage_location || "No location"}</div>
+              </div>
+              {/* Line actions sit in the header rather than a footer toolbar so
+                  the popup ends on the line total. */}
+              <div className="app-popup-compact-header__actions">
+                <Button type="button" variant="secondary" size="sm" onClick={() => {
+                  const query = editLine.part_number || editLine.part_name;
+                  setEditPartId(null);
+                  openPartSearch(editLine.client_id, query);
+                }}>Alternatives</Button>
+                {editLine.part_catalog_id ? <Button type="button" variant="secondary" size="sm" onClick={() => clearPartLink(editLine.client_id)}>Unlink catalogue part</Button> : null}
+                <Button type="button" variant="danger" size="sm" onClick={() => {
+                  removePart(editLine.client_id);
+                  setEditPartId(null);
+                }}>Delete part</Button>
+                <Button type="button" size="sm" onClick={() => setEditPartId(null)}>Done</Button>
+              </div>
+            </header>
+
+            {supersededPart(editLine) ? <StatusMessage tone="warning">Superseded by {supersededPart(editLine)}</StatusMessage> : null}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+              <FormField label="Part number" htmlFor="edit-part-number">
+                <input id="edit-part-number" name="edit_part_number" className="app-input" value={editLine.part_number} onChange={(event) => handlePartChange(editLine.client_id, "part_number", event.target.value.toUpperCase())} placeholder="Part number" />
+              </FormField>
+              <FormField label="Description" htmlFor="edit-part-name">
+                <input id="edit-part-name" name="edit_part_name" className="app-input" value={editLine.part_name} onChange={(event) => handlePartChange(editLine.client_id, "part_name", event.target.value)} placeholder="Description" />
+              </FormField>
+              <FormField label="Quantity" htmlFor="edit-part-quantity">
+                <input id="edit-part-quantity" name="edit_part_quantity" type="number" min="1" step="1" className="app-input" value={editLine.quantity} onChange={(event) => handlePartChange(editLine.client_id, "quantity", event.target.value)} />
+              </FormField>
+              <FormField label="Unit price" htmlFor="edit-part-price">
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input id="edit-part-price" name="edit_part_price" type="number" min="0" step="0.01" className="app-input" style={{ minWidth: 0, flex: 1 }} value={editLine.unit_price} onChange={(event) => handlePartChange(editLine.client_id, "unit_price", event.target.value)} />
+                  <span aria-hidden="true" style={{ flexShrink: 0 }}>£</span>
+                </div>
+              </FormField>
+              <FormField label="Discount" hint="Percentage off the unit price." htmlFor="edit-part-discount">
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input id="edit-part-discount" name="edit_part_discount" type="number" min="0" max="100" step="0.1" className="app-input" style={{ minWidth: 0, flex: 1 }} value={editLine.discount} onChange={(event) => handlePartChange(editLine.client_id, "discount", event.target.value)} />
+                  <span aria-hidden="true" style={{ flexShrink: 0 }}>%</span>
+                </div>
+              </FormField>
+              <FormField label="Availability">
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "var(--control-height)" }}>
+                  <span className={`app-badge app-badge--${partAvailability(editLine).tone}`}>{partAvailability(editLine).label}</span>
+                </div>
+              </FormField>
+            </div>
+
+            <FormField label="Line notes" hint="Saved against this order line." htmlFor="edit-part-notes">
+              <textarea id="edit-part-notes" name="edit_part_notes" className="app-input app-input--textarea" rows={3} value={editLine.notes || ""} onChange={(event) => handlePartChange(editLine.client_id, "notes", event.target.value)} placeholder="Supplier, fitment or handling notes" />
+            </FormField>
+
+            <div className="app-summary-section">
+              <div className="app-summary-grid">
+                <SummaryItem label="Line total">
+                  {money((Number(editLine.quantity) || 0) * (Number(editLine.unit_price) || 0) * (1 - Math.min(Math.max(Number(editLine.discount) || 0, 0), 100) / 100))}
+                </SummaryItem>
+              </div>
+            </div>
+
           </div>
         </PopupModal>
       ) : null}
@@ -491,9 +762,14 @@ export default function PartsCreateOrderUi(props) {
           }
         }
 
+        /* The three cards are sized by their grid track, never by their own
+           content, so they keep matching widths and heights at every width. */
         html.staff-scope .new-order-aligned-top-row > .new-order-aligned-card {
           height: 100%;
+          width: 100%;
+          min-width: 0;
           align-self: stretch;
+          justify-self: stretch;
         }
 
         html.staff-scope .new-order-aligned-card__header {
@@ -501,6 +777,59 @@ export default function PartsCreateOrderUi(props) {
           flex-direction: column;
           gap: 4px;
           min-width: 0;
+        }
+
+        /* Part lines: one row each, on a shared column template so the fields
+           line up down the list. The list scrolls sideways below ~880px
+           rather than wrapping a line onto two. */
+        html.staff-scope .new-order-part-row {
+          display: grid;
+          grid-template-columns: auto minmax(110px, 150px) minmax(160px, 1fr) minmax(150px, 210px) 78px 108px 88px auto;
+          align-items: center;
+          gap: 10px;
+          min-width: 860px;
+        }
+
+        html.staff-scope .new-order-part-row > * {
+          min-width: 0;
+        }
+
+        html.staff-scope .new-order-part-row__index,
+        html.staff-scope .new-order-part-row__total {
+          white-space: nowrap;
+        }
+
+        html.staff-scope .new-order-part-row__total {
+          text-align: right;
+        }
+
+        html.staff-scope .new-order-part-row__meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        html.staff-scope .new-order-part-row__meta > .app-field-hint {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        html.staff-scope .new-order-part-row__unit {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        html.staff-scope .new-order-part-row__unit > .app-input {
+          min-width: 0;
+          flex: 1;
+        }
+
+        html.staff-scope .new-order-part-row__unit > span {
+          flex-shrink: 0;
+          pointer-events: none;
         }
 
         html.staff-scope .new-order-aligned-row,
@@ -512,5 +841,45 @@ export default function PartsCreateOrderUi(props) {
         }
       `}</style>
     </>
+  );
+}
+
+// Inherit the canonical popup shell while keeping the notes editor compact.
+// Matches the notes popup on /order/[orderNumber].
+const NOTES_POPUP_CARD_STYLE = {
+  width: "min(100%, 560px)",
+  maxWidth: "560px",
+  padding: "var(--page-card-padding)",
+};
+
+// One popup for every note on the order being created. There is nothing to save
+// here — the notes go to the database with the rest of the form.
+function NotesPopup({ isOpen, form, onChange, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <PopupModal isOpen onClose={onClose} ariaLabel="Order notes" cardStyle={NOTES_POPUP_CARD_STYLE}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)", minWidth: 0 }}>
+        {/* Compact popup header convention: title left, actions top right. */}
+        <header className="app-popup-compact-header">
+          <h2>Notes</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" size="sm" onClick={onClose}>Done</Button>
+          </div>
+        </header>
+        {ORDER_NOTE_FIELDS.map(([key, label, placeholder]) => (
+          <FormField key={key} label={label} htmlFor={`new-order-${key}`}>
+            <textarea
+              id={`new-order-${key}`}
+              name={key}
+              className="app-input app-input--textarea"
+              rows={4}
+              value={form[key] || ""}
+              onChange={(event) => onChange(key, event.target.value)}
+              placeholder={placeholder}
+            />
+          </FormField>
+        ))}
+      </div>
+    </PopupModal>
   );
 }

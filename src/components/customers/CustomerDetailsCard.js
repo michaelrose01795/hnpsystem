@@ -9,9 +9,19 @@ import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
 import { CUSTOMER_FIELD_DEFINITIONS } from "@/lib/customers/customerRecord";
 
+// Field pairs that share one row when `subgrid` is on, in render order. Each
+// group claims one parent grid row, starting at row 2, so First Name / Last
+// Name line up with Registration Number and every pair below lines up with the
+// matching row of the neighbouring cards. Anything not listed gets a row of its
+// own after these.
+const CUSTOMER_ROW_GROUPS = [["firstName", "lastName"], ["mobile", "telephone"], ["email"], ["address"]];
+
 const CUSTOMER_SELECTION_LABEL_STYLE = { fontSize: "var(--text-label)", fontWeight: 500, color: "var(--text-1)", display: "block", marginBottom: "2px" }; // Matches the shared form-label typography while labelling a two-button group.
 
 export default function CustomerDetailsCard({
+  // Row gap inside the card. Must match the neighbouring cards when `subgrid`
+  // is on, since a subgrid item overrides the gaps it inherits from the parent.
+  gap = "16px",
   customer,
   setCustomer,
   customerForm,
@@ -29,12 +39,39 @@ export default function CustomerDetailsCard({
   onNewCustomer,
   emptySelectionLabel = "",
   inherited = false,
+  // Opt-in CSS subgrid, matching VehicleDetailsCard. When on, the card becomes
+  // a grid item that shares its parent's rows so its fields line up with the
+  // neighbouring cards. /new-job leaves this off and renders exactly as before.
+  subgrid = false,
+  subgridRows = 6,
   sectionKey,
   parentKey,
   className = "",
   style,
   children, // optional page-specific extras rendered below the card body
 }) {
+  // Row 1 is the header. With a customer selected the field groups start on
+  // row 2 — the row that lines up with Delivery Method and Registration Number,
+  // now that the View Customer button that used to sit there has gone — then
+  // the action buttons. The empty state still uses row 2 for its two buttons.
+  const rowGroups = subgrid
+    ? [
+        ...CUSTOMER_ROW_GROUPS
+          .map((group) => group.filter((field) => customerFieldDefinitions.some((input) => input.field === field)))
+          .filter((group) => group.length > 0),
+        ...customerFieldDefinitions
+          .filter((input) => input.field !== "contactPreference" && !CUSTOMER_ROW_GROUPS.some((group) => group.includes(input.field)))
+          .map((input) => [input.field]),
+      ]
+    : [];
+  const actionsRow = 2 + rowGroups.length;
+  const totalRows = Math.max(subgridRows, actionsRow + (isCustomerEditing ? 1 : 0));
+  const cardStyle = subgrid
+    ? { ...style, display: "grid", gridTemplateRows: "subgrid", gridRow: `1 / span ${totalRows}` }
+    : style;
+  const rowStyle = (row) => (subgrid ? { gridRow: row } : undefined);
+  const definitionFor = (field) => customerFieldDefinitions.find((input) => input.field === field);
+
   return (
     <LayerTheme
       sectionKey={sectionKey}
@@ -42,10 +79,10 @@ export default function CustomerDetailsCard({
       parentKey={parentKey}
       className={`job-cards-create-aligned-card job-cards-create-aligned-card--customer ${className}`.trim()}
       radius="var(--radius-md)"
-      gap="16px"
-      style={style}
+      gap={gap}
+      style={cardStyle}
     >
-      <div className="job-cards-create-aligned-card__header">
+      <div className="job-cards-create-aligned-card__header" style={rowStyle(1)}>
         <h3>
           Customer Details
           {inherited && <span className="app-badge app-badge--accent-soft" style={{ marginLeft: "8px" }}>
@@ -67,7 +104,9 @@ export default function CustomerDetailsCard({
           </StatusMessage>}
       </div>
 
-      {customer ? <div className="job-cards-create-customer-content" style={{
+      {customer ? <div className="job-cards-create-customer-content" style={subgrid ? {
+        display: "contents" // hand the rows below straight to the card's subgrid
+      } : {
         display: "flex",
         flexDirection: "column",
         gap: "10px"
@@ -75,7 +114,8 @@ export default function CustomerDetailsCard({
           {isCustomerEditing ? <div className="job-cards-create-customer-fields job-cards-create-customer-fields--editing" style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "12px"
+            gap: "12px",
+            ...(subgrid ? { gridRow: `2 / span ${rowGroups.length}` } : null)
           }}>
               {customerFieldDefinitions.map(input => <div key={input.field} className={`job-cards-create-customer-field job-cards-create-customer-field--${input.field}`} style={{
                 gridColumn: input.field === "email" || input.field === "address" || input.field === "contactPreference" ? "1 / -1" : "auto"
@@ -97,7 +137,23 @@ export default function CustomerDetailsCard({
                       })}
                     </div> : <BufferedInput id={`customer-${input.field}`} type={input.type} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} className="app-input" />}
                 </div>)}
-            </div> : <div className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
+            </div> : subgrid ? rowGroups.map((group, groupIndex) => <div key={group.join("-")} className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${group.length}, minmax(0, 1fr))`,
+            gap: "8px",
+            gridRow: 2 + groupIndex
+          }}>
+              {group.map(field => {
+                const input = definitionFor(field);
+                if (!input) return null;
+                return <div key={field} className={`job-cards-create-customer-field job-cards-create-customer-field--${field}`} style={{ minWidth: 0 }}>
+                    <label htmlFor={`customer-readonly-${field}`}>
+                      {input.label}
+                    </label>
+                    <input id={`customer-readonly-${field}`} className="app-input" value={customerForm[field] || "Not provided"} readOnly />
+                  </div>;
+              })}
+            </div>) : <div className="job-cards-create-customer-fields job-cards-create-customer-fields--readonly" style={{
             display: "grid",
             gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "8px"
@@ -118,7 +174,8 @@ export default function CustomerDetailsCard({
             gap: "10px",
             justifyContent: "center",
             alignItems: "flex-start",
-            flexWrap: "nowrap"
+            flexWrap: "nowrap",
+            ...rowStyle(actionsRow)
           }}>
             {isCustomerEditing ? <>
                 <Button type="button" onClick={handleSaveCustomerEdits} busy={isSavingCustomer} style={{
@@ -150,16 +207,18 @@ export default function CustomerDetailsCard({
           {isCustomerEditing && <Button type="button" variant="ghost" className="job-cards-create-customer-clear-editing" onClick={() => setCustomer(null)} disabled={isSavingCustomer} style={{
             width: "100%",
             maxWidth: "320px",
-            alignSelf: "center"
+            alignSelf: "center",
+            ...rowStyle(actionsRow + 1)
           }}>
               Clear Customer
             </Button>}
-        </div> : <div style={{ display: "flex", flexDirection: "column" }}>
+        </div> : <div style={{ display: "flex", flexDirection: "column", ...rowStyle(2) }}>
           {emptySelectionLabel ? <span style={CUSTOMER_SELECTION_LABEL_STYLE}>{emptySelectionLabel}</span> : null}
           <div className="job-cards-create-customer-actions job-cards-create-customer-actions--empty" role="group" aria-label={emptySelectionLabel || "Customer actions"} style={{
           display: "flex",
           gap: "10px",
-          alignItems: "flex-start"
+          alignItems: "flex-start",
+          minHeight: "var(--control-height)" // matches the Registration Number / Delivery Method row height
         }}>
             <Button type="button" data-presentation="create-customer-lookup" variant="primary" onClick={onExistingCustomer} style={{
               flex: "1 1 0",

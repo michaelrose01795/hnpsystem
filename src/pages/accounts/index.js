@@ -330,7 +330,7 @@ export default function AccountsListPage() {
                   </Button>
               }
                 {invoice.order_number &&
-              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/new-order/${encodeURIComponent(invoice.order_number)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/order/${encodeURIComponent(invoice.order_number)}`)}>
                     Order {invoice.order_number}
                   </Button>
               }

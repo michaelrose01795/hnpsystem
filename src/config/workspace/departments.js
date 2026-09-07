@@ -271,14 +271,14 @@ export const WORKSPACE_DASHBOARD_SHORTCUTS = Object.freeze([
   },
   {
     label: "Tech Dashboard",
-    href: "/tech/dashboard",
+    href: "/dashboard/tech",
     roles: ["techs"],
     description: "Technician personal dashboard with job assignments and clocking",
     department: "workshop",
   },
   {
     label: "Mobile Tech Dashboard",
-    href: "/mobile/dashboard",
+    href: "/dashboard/mobile",
     roles: ["mobile technician"],
     description: "Today's on-site jobs, appointment windows, and parts status for mobile visits",
     department: "workshop",
@@ -357,7 +357,7 @@ export const WORKSPACE_QUICK_ACTIONS = Object.freeze([
   },
   {
     label: "Appointments",
-    href: "/job-cards/appointments",
+    href: "/appointments",
     roles: SERVICE_ACTION_ROLES,
     departments: ["service", "workshop"],
   },
@@ -410,13 +410,11 @@ export const WORKSPACE_PAGE_TABS = Object.freeze([
       { href: "/consumables-tracker", match: "prefix" },
       { href: "/clocking", match: "prefix" },
       { href: "/new-job", match: "prefix" },
-      { href: "/job-cards/appointments", match: "prefix" },
       { href: "/appointments", match: "prefix" },
     ],
     items: [
       { href: "/new-job", label: "Create Job Card", match: "prefix" },
-      { href: "/job-cards/appointments", label: "Appointments", match: "prefix" },
-      { href: "/appointments", label: "Check In", match: "prefix" },
+      { href: "/appointments", label: "Appointments", match: "prefix" },
     ],
   },
   {
@@ -796,11 +794,11 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     label: "Workshop",
     department: "workshop",
     hrefs: [
-      // /mobile/dashboard is the Mobile Technician's landing dashboard. It is a
+      // /dashboard/mobile is the Mobile Technician's landing dashboard. It is a
       // workshop-department page and was previously reachable only through a
       // role default that named no library module, which put it outside the
       // library the Module page map claims is complete.
-      "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
+      "/dashboard/workshop", "/dashboard/mobile", "/clocking", "/consumables-tracker",
       "/tech/efficiency", "/nextjobs",
     ],
   },
@@ -811,7 +809,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-tech",
     label: "Tech",
     department: "tech",
-    hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"],
+    hrefs: ["/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request"],
   },
   {
     key: "department-parts",

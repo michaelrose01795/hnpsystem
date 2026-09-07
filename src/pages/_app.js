@@ -71,6 +71,7 @@ const GlobalTableShells = dynamic(() => import("@/components/App/GlobalTableShel
 const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overlay/DevLayoutOverlayRoot"), { ssr: false });
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
+const GlobalContextMenu = dynamic(() => import("@/components/ui/GlobalContextMenu"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
 // StaffProviders and Layout are imported STATICALLY (at the top of this file) and
 // must stay that way.
@@ -711,6 +712,8 @@ function AppWrapper({ Component, pageProps }) {
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
       <GlobalTooltip />
+      {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
+      <GlobalContextMenu />
       {!isCustomerFacingSurface && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}

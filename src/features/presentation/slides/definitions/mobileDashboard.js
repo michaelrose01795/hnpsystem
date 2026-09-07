@@ -1,6 +1,6 @@
 export const mobileDashboardSlide = {
   id: "mobile-dashboard",
-  route: "/mobile/dashboard",
+  route: "/dashboard/mobile",
   title: "Mobile Dashboard",
   roles: null,
   workflowIndex: 80,

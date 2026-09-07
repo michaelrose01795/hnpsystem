@@ -41,6 +41,8 @@ export const PUBLIC_PATHS = new Set([
 // Path prefixes that are always public (auth flow, customer website, public
 // VHC share links, presentation/vision decks, static dirs).
 export const PUBLIC_PREFIXES = [
+  "/customer", // permanent code-authenticated VHC reports
+  "/report", // previously issued report URLs
   "/_next",
   "/api/auth",
   "/api/cookies",
@@ -102,6 +104,8 @@ export const startsWithPath = (pathname, prefix) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export const PUBLIC_VHC_REPORT_PREFIXES = [
+  "/customer",
+  "/report",
   "/vhc/customer",
   "/vhc/customer-preview",
   "/vhc/customer-view",
@@ -218,7 +222,7 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/hr/reports": ["/hr/manager"],
   "/hr/settings": ["/hr/manager"],
   "/hr/training": ["/hr/manager"],
-  "/new-order/[orderNumber]": ["/order", "/new-order"],
+  "/order/[orderNumber]": ["/order", "/new-order"],
   "/deliveries": ["/deliveries"],
   "/deliveries/[deliveryId]": ["/deliveries"],
   "/goods-in/[goodsInNumber]": ["/goods-in"],
@@ -235,11 +239,9 @@ export const DYNAMIC_DETAIL_EXTENDS = {
     "/stock-catalogue",
   ],
   "/parts-manager": ["/goods-in", "/stock-catalogue"],
-  "/tech/dashboard": ["/tech"],
+  "/dashboard/tech": ["/tech"],
   "/workshop": ["/consumables-tracker"],
   "/newpage": ["/consumables-tracker"],
   "/job-cards": ["/jobs"],
-  // /job-cards/appointments redirects to /appointments — grant /appointments
-  // anywhere /job-cards/appointments is in nav.
-  "/appointments": ["/appointments", "/job-cards/appointments"],
+  "/appointments": ["/appointments"],
 };

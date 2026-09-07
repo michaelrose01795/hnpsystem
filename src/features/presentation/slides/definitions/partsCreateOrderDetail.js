@@ -1,6 +1,6 @@
 export const partsCreateOrderDetailSlide = {
   id: "parts-create-order-detail",
-  route: "/new-order/[orderNumber]",
+  route: "/order/[orderNumber]",
   title: "Parts Order Detail",
   roles: null,
   workflowIndex: 75,

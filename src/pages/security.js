@@ -328,8 +328,24 @@ export default function AccountSecurityPage() {
       <Head>
         <title>Security - HNP System</title>
       </Head>
-      <div className="app-page-shell">
-        <SecurityPanel />
+      <div
+        className="app-page-shell"
+        // Centre this standalone page within the viewport; allow tall content to grow and scroll.
+        style={{ display: "grid", placeItems: "center", minHeight: "75svh", paddingBlock: "var(--page-stack-gap)" }}
+      >
+        <div
+          className="app-page-stack"
+          // Keep security settings readable on wide screens without constraining the profile popup.
+          style={{ maxWidth: "44rem", marginInline: "auto" }}
+        >
+          <header style={{ textAlign: "center" }}> {/* Page-specific alignment for the centred settings heading. */}
+            <h1>Security</h1>
+            <p>
+              Manage your password and review recent sign-in activity.
+            </p>
+          </header>
+          <SecurityPanel />
+        </div>
       </div>
     </ProtectedRoute>
   );

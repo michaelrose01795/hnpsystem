@@ -606,6 +606,43 @@ export default function CreateJobCardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.query?.fromEvent]);
 
+  // ✅ Prefill from a customer record (?customerId=<uuid>&reg=<registration>)
+  // Used by the "Create job" quick action on /customers/[customerSlug], so
+  // starting a job from a customer's record does not mean re-finding them.
+  useEffect(() => {
+    const rawId = Array.isArray(router.query?.customerId)
+      ? router.query.customerId[0]
+      : router.query?.customerId;
+    const customerId = typeof rawId === "string" ? rawId.trim() : "";
+    if (!customerId) return;
+
+    let cancelled = false;
+    const hydrateFromCustomer = async () => {
+      try {
+        // Same handler the portal-request prefill uses, so vehicle lookups and
+        // any related state stay consistent.
+        await handleCustomerSelect({ id: customerId });
+        if (cancelled) return;
+
+        const rawReg = Array.isArray(router.query?.reg) ? router.query.reg[0] : router.query?.reg;
+        const reg = typeof rawReg === "string" ? rawReg.trim().toUpperCase() : "";
+        if (reg) {
+          setVehicle((prev) => ({ ...prev, reg }));
+        }
+      } catch (err) {
+        logFailure("customerId prefill failed:", err);
+      }
+    };
+
+    hydrateFromCustomer();
+    return () => {
+      cancelled = true;
+    };
+    // handleCustomerSelect is defined at render scope and stable, matching the
+    // primeJob / fromEvent effects above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query?.customerId, router.query?.reg]);
+
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
     let baseColor = "var(--theme)"; // light grey background

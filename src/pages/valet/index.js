@@ -447,7 +447,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           }
         }}
         style={{
-          fontSize: "14px",
+          fontSize: "inherit",
           fontWeight: 700,
           color: "var(--accent-purple)",
           minWidth: 0,
@@ -468,7 +468,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td>
       <span
         style={{
-          fontSize: "16px",
           fontWeight: 700,
           color: "var(--accent-purple)",
           minWidth: 0,
@@ -483,7 +482,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td>
       <span
         style={{
-          fontSize: "14px",
           color: "var(--text-1)",
           minWidth: 0,
           whiteSpace: "nowrap",
@@ -611,7 +609,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td style={{ textAlign: "right" }}>
       <span
         style={{
-          fontSize: "13px",
           color: "var(--text-1)",
           fontWeight: 600,
           textAlign: "right",

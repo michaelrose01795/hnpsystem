@@ -35,6 +35,7 @@ const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
 const blankForm = {
   internal_notes: "",
   customer_notes: "",
+  invoice_notes: "",
   account_number: "",
   customer_type: "retail",
   pricing_level: "retail",
@@ -124,8 +125,15 @@ export default function PartsCreateOrderPage() {
   const [partSearchResults, setPartSearchResults] = useState([]);
   const [partSearchLoading, setPartSearchLoading] = useState(false);
   const [activePartLine, setActivePartLine] = useState(null);
+  // Last part-number field the user clicked into. "Search catalogue" fills that
+  // line, so clicking a Part number box then searching is a single flow.
+  const [focusedPartLine, setFocusedPartLine] = useState(null);
   const [savingMode, setSavingMode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  // Out-of-stock confirmation raised by Create order. Holds the adviser's answer
+  // until they confirm, then travels with the order as parts_supply.
+  const [stockPromptOpen, setStockPromptOpen] = useState(false);
+  const [stockResolution, setStockResolution] = useState({ mode: "", arrival_date: "", reference: "" });
 
   const showNotification = useCallback((section, type, message) => {
     if (section === "customer") {
@@ -142,6 +150,32 @@ export default function PartsCreateOrderPage() {
   const validPartLines = useMemo(
     () => partLines.filter((line) => line.part_name.trim() || line.part_number.trim()),
     [partLines]
+  );
+
+  // Catalogue lines the shelf cannot cover. The server refuses to reserve these
+  // ("CALR1 only has 0 available."), so the adviser has to say how they will be
+  // supplied before the order can be created.
+  const stockShortages = useMemo(
+    () => validPartLines
+      .filter((line) => line.part_catalog_id)
+      .map((line) => {
+        const available = Math.max(
+          0,
+          Number(line.catalog_snapshot?.qty_in_stock || 0) - Number(line.catalog_snapshot?.qty_reserved || 0)
+        );
+        const required = Number(line.quantity) || 1;
+        return {
+          client_id: line.client_id,
+          part_number: line.part_number.trim(),
+          part_name: line.part_name.trim(),
+          on_order: Number(line.catalog_snapshot?.qty_on_order || 0),
+          available,
+          required,
+          shortfall: required - available,
+        };
+      })
+      .filter((entry) => entry.shortfall > 0),
+    [validPartLines]
   );
 
   const totals = useMemo(() => {
@@ -488,8 +522,17 @@ export default function PartsCreateOrderPage() {
     return next.length ? next : [blankPart()];
   });
 
+  // Which line a catalogue pick lands on: the line the caller named, else the
+  // part-number box the user last clicked into, else the first still-empty
+  // line. Never a line the user has already filled in.
+  const resolvePartTarget = (clientId, lines) => {
+    if (clientId && lines.some((line) => line.client_id === clientId)) return clientId;
+    if (focusedPartLine && lines.some((line) => line.client_id === focusedPartLine)) return focusedPartLine;
+    return lines.find((line) => !line.part_number && !line.part_name)?.client_id || null;
+  };
+
   const openPartSearch = (clientId = null, query = "") => {
-    setActivePartLine(clientId);
+    setActivePartLine(resolvePartTarget(clientId, partLines));
     setPartSearchQuery(query);
     setPartSearchOpen(true);
   };
@@ -520,10 +563,17 @@ export default function PartsCreateOrderPage() {
       },
     };
     setPartLines((current) => {
-      if (activePartLine) return current.map((line) => line.client_id === activePartLine ? { ...line, ...nextLine, client_id: line.client_id } : line);
-      const onlyBlank = current.length === 1 && !current[0].part_number && !current[0].part_name;
-      return onlyBlank ? [{ ...nextLine, client_id: current[0].client_id }] : [...current, nextLine];
+      // Fill the targeted / focused / first empty line in place. Extra lines are
+      // only ever added by the user via "+ Add Part" — the one exception is when
+      // every line is already filled and none was targeted, where appending is
+      // the only way the pick can land anywhere.
+      const targetId = resolvePartTarget(activePartLine, current);
+      if (!targetId) return [...current, nextLine];
+      return current.map((line) => line.client_id === targetId ? { ...line, ...nextLine, client_id: line.client_id } : line);
     });
+    // The filled line is no longer a valid target — the next search should drop
+    // through to the first empty line unless the user clicks a box again.
+    setFocusedPartLine(null);
     closePartSearch();
   };
 
@@ -534,6 +584,7 @@ export default function PartsCreateOrderPage() {
   const clearForm = () => {
     setForm({ ...blankForm, assigned_adviser: adviserName });
     setPartLines([blankPart()]);
+    setFocusedPartLine(null);
     setCustomer(null);
     setCustomerOrders([]);
     setVehicle(createInitialVehicleState());
@@ -547,7 +598,7 @@ export default function PartsCreateOrderPage() {
     }
   };
 
-  const saveOrder = async (status) => {
+  const saveOrder = async (status, supply = null) => {
     if (status !== "draft" && !customerName) return setErrorMessage("Select a customer before creating the order.");
     if (status !== "draft" && validPartLines.length === 0) return setErrorMessage("Add at least one part before creating the order.");
     setSavingMode(status);
@@ -565,7 +616,22 @@ export default function PartsCreateOrderPage() {
         department: form.department,
         notifications: { sms: form.notify_sms, email: form.notify_email, phone: form.notify_phone },
         without_vehicle: withoutVehicle,
+        // How the short-stock lines are being supplied. parts_order_cards has no
+        // column for this and delivery_status is CHECK-constrained to
+        // pending/scheduled/dispatched/delivered, so — like colour / engine /
+        // mileage above — it rides along in vehicle_details.
+        parts_supply: supply,
       };
+      // A held order must not look ready to hand over: keep the ETA on or after
+      // the date the last part lands, and say so on the delivery notes.
+      const holdUntil = supply?.hold_until || "";
+      const deliveryEta = holdUntil && (!form.delivery_eta || form.delivery_eta < holdUntil)
+        ? holdUntil
+        : form.delivery_eta;
+      const holdNote = holdUntil
+        ? `Do not ${form.delivery_type === "collection" ? "release for collection" : "dispatch"} before ${holdUntil} — awaiting ${supply.lines.map((entry) => entry.part_number || entry.part_name).join(", ")}.`
+        : "";
+      const deliveryNotes = [form.delivery_notes.trim(), holdNote].filter(Boolean).join(" · ");
       const order = {
         status,
         priority: form.priority,
@@ -593,7 +659,8 @@ export default function PartsCreateOrderPage() {
           parts_order_context: orderContext,
         },
         notes: form.internal_notes.trim() || null,
-        invoice_notes: form.customer_notes.trim() || null,
+        customer_notes: form.customer_notes.trim() || null,
+        invoice_notes: form.invoice_notes.trim() || null,
         invoice_reference: form.customer_reference.trim() || null,
         invoice_total: totals.total,
         invoice_status: form.payment_status,
@@ -601,15 +668,24 @@ export default function PartsCreateOrderPage() {
         delivery_address: form.delivery_type === "collection" ? null : customerAddress || null,
         delivery_contact: customerName || null,
         delivery_phone: (customerForm.mobile || customerForm.telephone || "").trim() || null,
-        delivery_eta: form.delivery_eta || null,
+        delivery_eta: deliveryEta || null,
         delivery_window: form.delivery_window || null,
         delivery_status: "pending",
-        delivery_notes: form.delivery_notes.trim() || null,
+        delivery_notes: deliveryNotes || null,
       };
       const items = validPartLines.map((line) => {
         const discount = Math.min(Math.max(Number(line.discount) || 0, 0), 100);
         const basePrice = Number(line.unit_price) || 0;
-        const noteParts = [line.notes.trim(), discount ? `Discount ${discount}% from £${basePrice.toFixed(2)}` : ""].filter(Boolean);
+        // A resolved short line records how it is being supplied on the line
+        // itself, and tells the server not to try to reserve stock it has not
+        // got — reserveCatalogueStock() would otherwise fail the whole order.
+        const shortLine = supply?.lines.find((entry) => entry.client_id === line.client_id) || null;
+        const supplyNote = shortLine
+          ? shortLine.mode === "goods_in"
+            ? `Booked in at the counter ${shortLine.arrival_date} (${shortLine.shortfall} short on the shelf)`
+            : `On order${shortLine.reference ? ` (${shortLine.reference})` : ""} — due ${shortLine.arrival_date}`
+          : "";
+        const noteParts = [line.notes.trim(), discount ? `Discount ${discount}% from £${basePrice.toFixed(2)}` : "", supplyNote].filter(Boolean);
         return {
           part_catalog_id: line.part_catalog_id,
           part_number: line.part_number.trim() || null,
@@ -617,6 +693,7 @@ export default function PartsCreateOrderPage() {
           quantity: Number(line.quantity) || 1,
           unit_price: money(basePrice * (1 - discount / 100)),
           notes: noteParts.join(" · ") || null,
+          awaiting_stock: Boolean(shortLine),
         };
       });
       const response = await fetch("/api/parts/orders", {
@@ -627,7 +704,7 @@ export default function PartsCreateOrderPage() {
       const payload = await response.json();
       if (!response.ok || !payload?.success) throw new Error(payload?.message || "Unable to save the parts order.");
       window.dispatchEvent(new CustomEvent("app:drafts:clear-route", { detail: { routeKey: "/new-order" } }));
-      await router.push(`/new-order/${payload.order.order_number}`);
+      await router.push(`/order/${payload.order.order_number}`);
     } catch (error) {
       logFailure("Parts order save failed:", error);
       setErrorMessage(error.message || "Unable to save the parts order.");
@@ -636,9 +713,37 @@ export default function PartsCreateOrderPage() {
     }
   };
 
+  // Create order stops at the shortage popup rather than letting the save fail
+  // on "<part> only has 0 available." — the adviser says how each short line is
+  // being supplied first.
   const handleSubmit = (event) => {
     event.preventDefault();
-    saveOrder("booked");
+    if (stockShortages.length === 0) return saveOrder("booked", null);
+    setErrorMessage("");
+    setStockResolution({ mode: "", arrival_date: "", reference: "" });
+    setStockPromptOpen(true);
+  };
+
+  const confirmStockResolution = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const mode = stockResolution.mode;
+    if (mode !== "goods_in" && mode !== "ordered") return;
+    // Goods in means the parts are on the counter now, so nothing is held.
+    // Ordered means the order waits for the arrival date before it can go out.
+    const arrivalDate = mode === "goods_in" ? today : stockResolution.arrival_date;
+    if (mode === "ordered" && !arrivalDate) return;
+    const supply = {
+      version: 1,
+      mode,
+      arrival_date: arrivalDate,
+      reference: stockResolution.reference.trim() || null,
+      hold_until: mode === "ordered" ? arrivalDate : "",
+      confirmed_by: adviserName,
+      confirmed_at: new Date().toISOString(),
+      lines: stockShortages.map((entry) => ({ ...entry, mode, arrival_date: arrivalDate, reference: stockResolution.reference.trim() || null })),
+    };
+    setStockPromptOpen(false);
+    saveOrder("booked", supply);
   };
 
   if (!hasPartsAccess) return <PartsCreateOrderUi view="access-denied" />;
@@ -675,6 +780,9 @@ export default function PartsCreateOrderPage() {
       isLoadingVehicle={isLoadingVehicle}
       isSavingCustomer={isSavingCustomer}
       newCustomerPrefill={newCustomerPrefill}
+      focusedPartLine={focusedPartLine}
+      setFocusedPartLine={setFocusedPartLine}
+      activePartLine={activePartLine}
       openPartSearch={openPartSearch}
       partLines={partLines}
       partSearchLoading={partSearchLoading}
@@ -683,6 +791,12 @@ export default function PartsCreateOrderPage() {
       partSearchResults={partSearchResults}
       removePart={removePart}
       savingMode={savingMode}
+      stockShortages={stockShortages}
+      stockPromptOpen={stockPromptOpen}
+      stockResolution={stockResolution}
+      setStockResolution={setStockResolution}
+      closeStockPrompt={() => setStockPromptOpen(false)}
+      confirmStockResolution={confirmStockResolution}
       selectPart={selectPart}
       setCustomer={setCustomer}
       setCustomerNotification={setCustomerNotification}

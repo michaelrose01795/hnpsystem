@@ -25,6 +25,7 @@ export default function InvoiceDetailSection({
   jobData = null,
   invoiceReady = false,
   variant = "document",
+  showInvoiceNotes = true, // parts orders edit invoice notes in the shared notes popup instead
   onInvoiceStateChange = null,
   onPaymentCompleted = null,
   onReleaseRequested = null,
@@ -357,6 +358,7 @@ export default function InvoiceDetailSection({
           onPaymentCompleted={onPaymentCompleted}
           onReleaseRequested={onReleaseRequested}
           onSaveNotes={handleSaveNotes}
+          showNotes={showInvoiceNotes}
         />
       ) : (
         <InvoiceDetail

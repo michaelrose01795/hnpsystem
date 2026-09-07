@@ -91,8 +91,8 @@ Assigned: workshop-manager/controller, tech/technician/techs and mobile-technici
 
 - **Dashboards**
   - **D** Workshop Dashboard — `/dashboard/workshop` — workshop-manager, techs, technician.
-  - **D** My Work Dashboard — `/tech/dashboard` — techs.
-  - **D** Mobile Dashboard — `/mobile/dashboard` — mobile-technician; mobile-specific layout, still a workshop module page.
+  - **D** My Work Dashboard — `/dashboard/tech` — techs.
+  - **D** Mobile Dashboard — `/dashboard/mobile` — mobile-technician; mobile-specific layout, still a workshop module page.
 - **Workshop Control**
   - **P** Next Jobs — `/nextjobs` — workshop-manager exception; shared queue.
   - **P** Job Cards — `/jobs` — workshop-manager exception; shared primary route.
@@ -134,7 +134,7 @@ Assigned: parts, parts-manager, parts-driver. Parts-driver currently receives th
   - **P** Deliveries — `/deliveries` — parts/parts-manager; `/deliveries/[deliveryId]` is **Detail**.
   - **P** Delivery / Collection Planner — `/delivery-planner` — parts/parts-manager; currently quick-action/tab-only visibility, promote to a Page in Phase 9.
 - **Ordering**
-  - **P** Create Order — `/new-order` — parts/parts-manager; `/new-order/[orderNumber]` is **Detail**.
+  - **P** Create Order — `/new-order` — parts/parts-manager; `/order/[orderNumber]` is **Detail**.
 - **Hidden compatibility**
   - **Redirect** `/parts` → `/stock-catalogue`.
 

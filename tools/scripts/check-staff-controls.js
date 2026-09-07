@@ -78,7 +78,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 0],
   ["src/components/page-ui/job-cards/WarrantyTab.js", 2],
   ["src/components/page-ui/messages/messages-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 4],
+  ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 0],
   ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 0],
   ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
@@ -181,7 +181,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/admin/compliance/breaches.js", 2],
   ["src/pages/admin/compliance/dpias.js", 1],
   ["src/pages/admin/compliance/ropa.js", 1],
-  ["src/pages/customers/[customerSlug].js", 3],
+  ["src/pages/customers/[customerSlug].js", 1],
   ["src/pages/deliveries/index.js", 0],
   ["src/pages/delivery-planner.js", 16],
   ["src/pages/dev/knowledge.js", 1],
@@ -192,12 +192,11 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
   ["src/pages/job-cards/[jobNumber].js", 25],
-  ["src/pages/new-order/[orderNumber].js", 1],
+  ["src/pages/order/[orderNumber].js", 0],
   ["src/pages/password-reset/new.js", 2],
   ["src/pages/stock-catalogue.js", 31],
   ["src/pages/tech/[jobNumber].js", 5],
   ["src/pages/valet/index.js", 3],
-  ["src/pages/vhc/customer-preview/[jobNumber].js", 2],
 ]);
 
 const CONTROL_TAG_RE = /<(input|textarea|button)\b/;

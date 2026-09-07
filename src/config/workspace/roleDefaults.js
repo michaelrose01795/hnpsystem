@@ -122,7 +122,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "techs": layout(
     mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
     mod("department-workshop", ["/dashboard/workshop"]),
-    mod("department-tech", ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"]),
+    mod("department-tech", ["/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request"]),
   ),
   "technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
@@ -135,7 +135,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "mobile technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-service", ["/new-job", "/appointments"]),
-    mod("department-workshop", ["/mobile/dashboard"]),
+    mod("department-workshop", ["/dashboard/mobile"]),
     mod("department-tech", ["/tech", "/consumables-request"]),
   ),
   "parts": layout(

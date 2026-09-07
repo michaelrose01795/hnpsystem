@@ -124,7 +124,7 @@ import {
   staffWebsiteShopSlide,
 } from "./definitions/websiteShop";
 import { vhcCustomerSlide } from "./definitions/vhcCustomer";
-import { jobCardsIndexSlide, jobCardsAppointmentsSlide } from "./definitions/jobCardsExtras";
+import { jobCardsIndexSlide } from "./definitions/jobCardsExtras";
 
 export const ALL_SLIDES = [
   jobCardsListSlide,
@@ -233,7 +233,6 @@ export const ALL_SLIDES = [
   websiteShopCancelSlide,
   vhcCustomerSlide,
   jobCardsIndexSlide,
-  jobCardsAppointmentsSlide,
 ];
 
 if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {

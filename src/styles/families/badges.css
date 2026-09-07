@@ -37,6 +37,24 @@ html.staff-scope .app-badge.app-badge--count {
   line-height: 1;
 }
 
+/* Full-control-height counter (44px). Same perfect circle as --count, sized to
+   the standard control floor instead of the dense table-row height, for counters
+   that sit in body content rather than inside a nav control. */
+html.staff-scope .app-badge.app-badge--count-control {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 /* Companion container for an absolutely-positioned count badge: reserves the
    badge's width so the row label can never run underneath it. */
 html.staff-scope .app-badge-slot {

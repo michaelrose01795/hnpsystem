@@ -5,6 +5,7 @@ import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { PARTS_ORDER_ROLES } from "@/lib/auth/roles";
 import {
   getPartsOrderByNumber,
+  replacePartsOrderItems,
   updatePartsOrderByNumber,
 } from "@/lib/database/partsOrders";
 
@@ -27,7 +28,19 @@ export async function partsOrderDetailHandler(req, res) {
     }
 
     if (req.method === "PATCH") {
-      const order = await updatePartsOrderByNumber(orderNumber, req.body?.updates || {});
+      const updates = req.body?.updates || {};
+      const items = req.body?.items;
+      let order = null;
+
+      if (Object.keys(updates).length > 0) {
+        order = await updatePartsOrderByNumber(orderNumber, updates);
+      }
+      if (Array.isArray(items)) {
+        order = await replacePartsOrderItems(orderNumber, items); // line-item edits from the parts table
+      }
+      if (!order && !Array.isArray(items) && Object.keys(updates).length === 0) {
+        return res.status(400).json({ success: false, message: "No order updates or items were supplied." });
+      }
       if (!order) {
         return res.status(404).json({ success: false, message: "Parts order not found." });
       }

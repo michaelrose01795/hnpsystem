@@ -200,8 +200,8 @@ Route: /hr/training
 Mobile Technician
 ====================================================
 
-1. /presentation/mobile-technician/mobile-dashboard/0
-Route: /mobile/dashboard
+1. /presentation/mobile-technician/dashboard-mobile/0
+Route: /dashboard/mobile
 
 2. /presentation/mobile-technician/mobile-delivery-jobNumber/1
 Route: /mobile/delivery/[jobNumber]
@@ -263,8 +263,8 @@ Techs
 1. /presentation/techs/dashboard-workshop/0 !!!!!!!!!!!!!!!!!!!!!!
 Route: /dashboard/workshop
 
-2. /presentation/techs/tech-dashboard/1
-Route: /tech/dashboard
+2. /presentation/techs/dashboard-tech/1
+Route: /dashboard/tech
 
 3. /presentation/techs/job-cards-myjobs/2
 Route: /job-cards/myjobs
@@ -342,11 +342,8 @@ Route: /job-cards/create
 12. /presentation/workshop-manager/job-cards-archive/11
 Route: /job-cards/archive
 
-13. /presentation/workshop-manager/job-cards-appointments/12
-Route: /job-cards/appointments
-
-14. /presentation/workshop-manager/customers-customerSlug/13
+13. /presentation/workshop-manager/customers-customerSlug/12
 Route: /customers/[customerSlug]
 
-15. /presentation/workshop-manager/appointments/14
+14. /presentation/workshop-manager/appointments/13
 Route: /appointments

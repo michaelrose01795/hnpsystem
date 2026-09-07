@@ -58,7 +58,6 @@ const ROUTE_TO_MODULE = {
   "/job-cards/[jobNumber]": () => import("@/pages/job-cards/[jobNumber]"),
   "/new-job": () => import("@/pages/new-job/index"),
   "/archive": () => import("@/pages/archive/index"),
-  "/job-cards/appointments": () => import("@/pages/job-cards/appointments"),
   "/tech": () => import("@/pages/tech/index"),
   "/tech/[jobNumber]": () => import("@/pages/tech/[jobNumber]"),
   "/valet/[jobNumber]": () => import("@/pages/valet/[jobNumber]"),
@@ -67,7 +66,7 @@ const ROUTE_TO_MODULE = {
   "/parts": () => import("@/pages/parts/index"),
   "/parts-manager": () => import("@/pages/parts-manager"),
   "/new-order": () => import("@/pages/new-order/index"),
-  "/new-order/[orderNumber]": () => import("@/pages/new-order/[orderNumber]"),
+  "/order/[orderNumber]": () => import("@/pages/order/[orderNumber]"),
   "/deliveries": () => import("@/pages/deliveries/index"),
   "/deliveries/[deliveryId]": () => import("@/pages/deliveries/[deliveryId]"),
   "/delivery-planner": () => import("@/pages/delivery-planner"),
@@ -76,12 +75,12 @@ const ROUTE_TO_MODULE = {
   "/stock-catalogue": () => import("@/pages/stock-catalogue"),
 
   // Tech
-  "/tech/dashboard": () => import("@/pages/tech/dashboard"),
+  "/dashboard/tech": () => import("@/pages/dashboard/tech/index"),
   "/tech/efficiency": () => import("@/pages/tech/efficiency"),
   "/consumables-request": () => import("@/pages/consumables-request"),
 
   // Mobile
-  "/mobile/dashboard": () => import("@/pages/mobile/dashboard"),
+  "/dashboard/mobile": () => import("@/pages/dashboard/mobile/index"),
   "/mobile/delivery/[jobNumber]": () => import("@/pages/mobile/delivery/[jobNumber]"),
 
   // VHC

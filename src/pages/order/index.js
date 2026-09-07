@@ -138,7 +138,7 @@ export default function OrdersPage() {
 
   const handleNavigateToOrder = useCallback(
     (orderNumber) => {
-      router.push(`/new-order/${orderNumber}`);
+      router.push(`/order/${orderNumber}`);
     },
     [router]
   );

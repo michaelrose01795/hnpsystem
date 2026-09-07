@@ -277,7 +277,7 @@ Departments keyed on `ROLE_DEPARTMENT_MAP`. Cross-cutting routes appear under th
 `/newsfeed`, `/messages`, `/tracking` (Service/Workshop/Parts), `/archive`.
 
 ### Workshop — home `/dashboard/workshop`
-`/dashboard/workshop`, `/nextjobs`, `/jobs`, `/appointments`, `/clocking` (+`/clocking/[technicianSlug]`), `/consumables-tracker`, `/consumables-request`, `/archive`, `/tech`* , `/tech/dashboard`*, `/tech/efficiency`*, `/tech/[jobNumber]`* (*technician sub-area — may be its own department, see §11 Q1). Cross: `/job-cards/[jobNumber]`, `/reports/workshop`.
+`/dashboard/workshop`, `/nextjobs`, `/jobs`, `/appointments`, `/clocking` (+`/clocking/[technicianSlug]`), `/consumables-tracker`, `/consumables-request`, `/archive`, `/tech`* , `/dashboard/tech`*, `/tech/efficiency`*, `/tech/[jobNumber]`* (*technician sub-area — may be its own department, see §11 Q1). Cross: `/job-cards/[jobNumber]`, `/reports/workshop`.
 
 ### Parts — home `/dashboard/parts`
 `/dashboard/parts`, `/parts-manager`, `/stock-catalogue`, `/goods-in` (+`/[goodsInNumber]`), `/deliveries` (+`/[deliveryId]`), `/delivery-planner`, `/new-order` (+`/[orderNumber]`). Cross: `/jobs`, `/parts` (redirect), `/reports/parts`, `/accounts/invoices`.
@@ -310,7 +310,7 @@ The Paint dashboard has not been built. Cross: `/reports/paint`, `/job-cards/[jo
 `/dashboard/admin`, `/dashboard/managers`, `/admin/users`, `/admin/compliance` (+ `sars`, `breaches`, `dpias`, `ropa`, `retention`), `/website-manager`, `/newpage`.
 
 ### Mobile (cross-cutting; own auth path)
-`/mobile/dashboard`, `/mobile/delivery/[jobNumber]` — likely a role-scoped view of Workshop/Parts rather than a top-level department (see §11 Q2).
+`/dashboard/mobile`, `/mobile/delivery/[jobNumber]` — likely a role-scoped view of Workshop/Parts rather than a top-level department (see §11 Q2).
 
 ### Customers (cross-cutting, no current sidebar presence)
 `/customers`, `/customers/[customerSlug]` — reached via search/links; currently granted via `DYNAMIC_DETAIL_EXTENDS`. Model as a cross-cutting entity area, not a department.
@@ -364,7 +364,7 @@ Rollback at any phase = flip `workspace_nav_enabled` off; the manifest still fee
 ## 11. Open questions (resolve before/inside Phase 4)
 
 1. **Technician workspace** (`/tech*`): its own Tier-1 department, or a role-scoped view *inside* Workshop? (Techs/MOT testers currently get a slim role section.) — *Recommend: a "My Work" pseudo-department for hands-on roles, distinct from the managerial Workshop department.*
-2. **Mobile Technician**: top-level department or a Workshop/Parts sub-view? — *Recommend: role-scoped view, home `/mobile/dashboard`.*
+2. **Mobile Technician**: top-level department or a Workshop/Parts sub-view? — *Recommend: role-scoped view, home `/dashboard/mobile`.*
 3. **Reports**: a standalone Tier-1 department (as now) or a cross-cutting item pinned inside each operational department's context nav? — *Recommend: keep standalone for executives; also surface the single relevant report inside each department's context nav.*
 4. **Tier-1 form for launch**: grouped single-rail (6.1a) as the destination, or a stepping stone to dual-rail (6.1b)? — *Recommend: 6.1a is the shippable default; 6.1b is opt-in/flagged.*
 5. **Breadcrumb entity labels**: light context vs `getLayout` prop vs per-page hook? — decide in Phase 6.

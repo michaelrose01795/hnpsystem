@@ -5,17 +5,10 @@ import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell } from "@/lib/email/template";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { generateShareCode, buildCustomerReportUrl } from "@/lib/vhc/shareCode";
+import { getOrCreateCustomerVhcLink } from "@/lib/database/vhcCustomerReport";
+import { buildCustomerReportUrl } from "@/lib/vhc/shareCode";
 
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
-
-const generateLinkCode = () => generateShareCode();
-
-const isLinkExpired = (createdAt) => {
-  const created = new Date(createdAt).getTime();
-  if (!Number.isFinite(created)) return true;
-  return Date.now() - created > 24 * 60 * 60 * 1000;
-};
 
 const buildHtml = ({ customerName, jobNumber, shareUrl, branding }) =>
   renderEmailShell({
@@ -34,8 +27,8 @@ const buildHtml = ({ customerName, jobNumber, shareUrl, branding }) =>
             <td style="font-size:13px;color:#111827;font-weight:700;padding:4px 0;">#${jobNumber}</td>
           </tr>
           <tr>
-            <td style="font-size:12px;color:#6b7280;padding:4px 0;">Link Expiry</td>
-            <td style="font-size:13px;color:#111827;font-weight:700;padding:4px 0;">24 hours</td>
+            <td style="font-size:12px;color:#6b7280;padding:4px 0;">Link access</td>
+            <td style="font-size:13px;color:#111827;font-weight:700;padding:4px 0;">No expiry</td>
           </tr>
         </table>
       </div>
@@ -46,7 +39,7 @@ const buildHtml = ({ customerName, jobNumber, shareUrl, branding }) =>
     `,
     ctaLabel: "Open Vehicle Health Check",
     ctaUrl: shareUrl,
-    footerText: `This secure link expires after 24 hours. Contact ${branding.companyName} if you need a new one.`,
+    footerText: `This link does not expire. You can return to view your report or share it.`,
   });
 
 async function handler(req, res, session) {
@@ -103,39 +96,7 @@ async function handler(req, res, session) {
       });
     }
 
-    const { data: existingLinks, error: linksError } = await supabaseService
-      .from("job_share_links")
-      .select("link_code, created_at")
-      .eq("job_number", canonicalJobNumber)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (linksError) throw linksError;
-
-    let linkCode = existingLinks?.[0]?.link_code || null;
-    let createdAt = existingLinks?.[0]?.created_at || null;
-
-    if (!linkCode || isLinkExpired(createdAt)) {
-      linkCode = generateLinkCode();
-      createdAt = new Date().toISOString();
-      const { error: insertError } = await supabaseService.from("job_share_links").insert({
-        job_id: jobRow.id,
-        job_number: canonicalJobNumber,
-        link_code: linkCode,
-        created_at: createdAt,
-      });
-      if (insertError) throw insertError;
-    } else {
-      const { error: resetViewedError } = await supabaseService
-        .from("job_share_links")
-        .update({ viewed_at: null })
-        .eq("job_number", canonicalJobNumber)
-        .eq("link_code", linkCode);
-
-      if (resetViewedError) {
-        console.warn("[send-vhc] Failed to reset viewed status for reused share link:", resetViewedError.message);
-      }
-    }
+    const { link_code: linkCode } = await getOrCreateCustomerVhcLink(canonicalJobNumber, supabaseService);
 
     // The share link goes to the customer's phone/email, so it must always
     // resolve to a publicly reachable host. resolveEmailBaseUrl can fall back
@@ -156,7 +117,7 @@ async function handler(req, res, session) {
       to: customerEmail,
       subject: `Vehicle Health Check for Job #${canonicalJobNumber}`,
       html: buildHtml({ customerName, jobNumber: canonicalJobNumber, shareUrl, branding }),
-      text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${canonicalJobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
+      text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${canonicalJobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link does not expire.\n\nRegards,\n${COMPANY_NAME}`,
       companyName: COMPANY_NAME,
     });
 
@@ -164,7 +125,7 @@ async function handler(req, res, session) {
     // MessageBird) and wire credentials via env vars. For now this only logs the
     // attempt so the test phone number receives the share link via the dev console.
     if (customerPhone) {
-      const smsBody = `Hello ${customerName}, your Vehicle Health Check for job #${canonicalJobNumber} is ready: ${shareUrl} (expires in 24h). - ${COMPANY_NAME}`;
+      const smsBody = `Hello ${customerName}, your Vehicle Health Check for job #${canonicalJobNumber} is ready: ${shareUrl}. - ${COMPANY_NAME}`;
       try {
         const smsApiUrl = process.env.SMS_API_URL;
         const smsApiKey = process.env.SMS_API_KEY;
