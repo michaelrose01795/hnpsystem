@@ -913,3 +913,117 @@ export const getCustomerRecordBundle = async (customerId) => {
     transactions: transactions || [],
   };
 };
+
+/* ============================================
+   CUSTOMER DIRECTORY (list view)
+   ✅ Used by: /customers list page
+   ✅ Server-side search, sort, pagination and the
+      vehicle/job counts in a single round trip.
+============================================ */
+
+// Sort keys the list page offers, mapped to the column they order on.
+const CUSTOMER_DIRECTORY_SORTS = {
+  recent: { column: "created_at", ascending: false },
+  oldest: { column: "created_at", ascending: true },
+  name: { column: "lastname", ascending: true },
+};
+
+export const CUSTOMER_DIRECTORY_PAGE_SIZE = 25;
+
+// PostgREST parses `or=(...)` positionally, so a comma or bracket typed into
+// the search box would split the filter into nonsense. Strip them up front.
+const sanitiseCustomerSearchTerm = (value) =>
+  String(value || "")
+    .replace(/[,()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildCustomerSearchFilter = (term) => {
+  const fieldMatches = [
+    `firstname.ilike.%${term}%`,
+    `lastname.ilike.%${term}%`,
+    `name.ilike.%${term}%`,
+    `email.ilike.%${term}%`,
+    `mobile.ilike.%${term}%`,
+    `telephone.ilike.%${term}%`,
+    `postcode.ilike.%${term}%`,
+  ].join(",");
+
+  const parts = term.split(" ").filter(Boolean);
+  if (parts.length < 2) return fieldMatches;
+
+  // "John Smith" should match firstname+lastname in either order as well as
+  // any single field containing the whole phrase.
+  const first = parts[0];
+  const last = parts.slice(1).join(" ");
+  return [
+    `and(firstname.ilike.%${first}%,lastname.ilike.%${last}%)`,
+    `and(firstname.ilike.%${last}%,lastname.ilike.%${first}%)`,
+    fieldMatches,
+  ].join(",");
+};
+
+// Embedded aggregates come back as [{ count }]. A missing key means the
+// fallback select ran, so report null rather than a misleading zero.
+const readEmbeddedCount = (value) => {
+  if (Array.isArray(value)) return Number(value[0]?.count) || 0;
+  if (value && typeof value === "object") return Number(value.count) || 0;
+  return null;
+};
+
+const mapCustomerDirectoryRow = (row) => {
+  const firstname = row?.firstname || "";
+  const lastname = row?.lastname || "";
+  const fullName = `${firstname} ${lastname}`.trim();
+  return {
+    ...row,
+    displayName: fullName || row?.name || "Unnamed customer",
+    vehicleCount: readEmbeddedCount(row?.vehicles),
+    jobCount: readEmbeddedCount(row?.jobs),
+  };
+};
+
+export const getCustomersDirectory = async ({
+  limit = CUSTOMER_DIRECTORY_PAGE_SIZE,
+  offset = 0,
+  search = "",
+  sort = "recent",
+} = {}) => {
+  const sortConfig = CUSTOMER_DIRECTORY_SORTS[sort] || CUSTOMER_DIRECTORY_SORTS.recent;
+  const term = sanitiseCustomerSearchTerm(search);
+
+  const runQuery = (selectFields) => {
+    let query = supabase.from("customers").select(selectFields, { count: "exact" });
+    if (term) query = query.or(buildCustomerSearchFilter(term));
+    query = query.order(sortConfig.column, {
+      ascending: sortConfig.ascending,
+      nullsFirst: false,
+    });
+    if (sortConfig.column === "lastname") {
+      query = query.order("firstname", { ascending: true, nullsFirst: false });
+    }
+    return query.range(offset, Math.max(offset, offset + limit - 1));
+  };
+
+  let { data, error, count } = await runQuery(
+    `${CUSTOMER_SELECT_FIELDS}, vehicles(count), jobs(count)`
+  );
+
+  if (error) {
+    // The list is more useful without the counts than not at all, so retry on
+    // the plain column list if the embedded aggregates are unavailable.
+    logFailure("❌ getCustomersDirectory embed error:", error.message);
+    ({ data, error, count } = await runQuery(CUSTOMER_SELECT_FIELDS));
+  }
+
+  if (error) {
+    logFailure("❌ getCustomersDirectory error:", error.message);
+    return { data: [], count: 0, error: error.message };
+  }
+
+  return {
+    data: (data || []).map(mapCustomerDirectoryRow),
+    count: count || 0,
+    error: null,
+  };
+};

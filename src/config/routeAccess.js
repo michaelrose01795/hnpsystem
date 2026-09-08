@@ -31,7 +31,7 @@ export const PUBLIC_PATHS = new Set([
   "/favicon.ico",
   "/login",
   "/loginPresentation",
-  "/unauthorized",
+  "/unauthorised",
   "/website",
   "/vision",
   "/presentation",
@@ -83,7 +83,6 @@ export const PROTECTED_PREFIXES = [
   "/new-order", // create parts order (moved from /parts/create-order)
   "/order", // parts order register
   "/nextjobs", // next-jobs queue (moved from /job-cards/waiting/nextjobs)
-  "/parts",
   "/parts-manager", // moved from /parts/manager
   "/profile",
   "/reports", // reporting platform area (Phase 6 — Workshop package)
@@ -129,7 +128,7 @@ export const ALWAYS_ALLOWED_EXACT = new Set([
   "/",
   "/login",
   "/loginPresentation",
-  "/unauthorized",
+  "/unauthorised",
   "/newsfeed",
   "/messages",
   "/profile",
@@ -226,18 +225,13 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/deliveries": ["/deliveries"],
   "/deliveries/[deliveryId]": ["/deliveries"],
   "/goods-in/[goodsInNumber]": ["/goods-in"],
-  // /parts and /parts-manager inherit from the parts-desk pages, deliberately
-  // NOT from /deliveries. A Parts Driver's only page is the delivery diary, so
-  // inheriting off /deliveries would have handed them the Parts Manager screen
-  // as a side effect of being given their own run sheet. Parts and Parts
-  // Manager both carry /goods-in and /stock-catalogue in their navigation, so
-  // neither loses anything by the source list changing. (/jobs was dropped from
-  // the Parts module's navigation — it lives in Reception — but any ONE entry
-  // here grants /parts, so the other two still cover both roles.)
-  "/parts": [
-    "/goods-in",
-    "/stock-catalogue",
-  ],
+  // /parts-manager inherits from the parts-desk pages, deliberately NOT from
+  // /deliveries. A Parts Driver's only page is the delivery diary, so inheriting
+  // off /deliveries would have handed them the Parts Manager screen as a side
+  // effect of being given their own run sheet. The Parts module carries both
+  // /goods-in and /stock-catalogue in its navigation, so nothing is lost by the
+  // source list changing. (There is no /parts route — the stock catalogue is
+  // reached only at /stock-catalogue.)
   "/parts-manager": ["/goods-in", "/stock-catalogue"],
   "/dashboard/tech": ["/tech"],
   "/workshop": ["/consumables-tracker"],

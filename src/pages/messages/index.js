@@ -283,7 +283,7 @@ const renderMessageContent = (content, userRoles = []) => {
     } else if (prefix === 'cust' && value) {
       title = `Customer: ${value}`;
     } else if (standalone === 'parts') {
-      href = '/parts';
+      href = '/stock-catalogue';
       title = 'Parts Management';
     } else if (standalone === 'tracking') {
       href = '/tracking';
@@ -861,7 +861,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "parts",
     hasInput: false,
     roles: ['parts', 'parts manager', 'admin'],
-    getLink: () => '/parts'
+    getLink: () => '/stock-catalogue'
   },
   {
     command: "/order[ordernumber]",

@@ -23,6 +23,7 @@ export default function ValetDashboardUi(props) {
     selectedDay,
     setSearchTerm,
     setSelectedDay,
+    TableSkeleton,
     valetState,
   } = props; // receive page logic props.
 
@@ -148,16 +149,15 @@ export default function ValetDashboardUi(props) {
             </DevLayoutSection>}
         </DevLayoutSection>
 
-        {loading ? <DevLayoutSection sectionKey="valet-jobs-loading" parentKey="app-layout-page-card" sectionType="content-card" style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "60px 0",
-      fontSize: "16px",
-      color: "var(--grey-accent)"
-    }}>
-            Loading valet jobs…
-          </DevLayoutSection> : filteredJobs.length === 0 ? <LayerTheme data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
+        {loading ? <LayerTheme sectionKey="valet-jobs-loading" parentKey="app-layout-page-card" sectionType="content-card">
+            <div className="app-table-shell-wrap app-table-shell-scroll">
+              <TableSkeleton
+                label="Loading valet jobs"
+                rows={8}
+                columns={["Job Number", "Reg", "Customer", "Vehicle Here", "Workshop", "MOT", "Wash", "EST Tech Completion"]}
+              />
+            </div>
+          </LayerTheme> : filteredJobs.length === 0 ? <LayerTheme data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
       textAlign: "center",
       color: "var(--surfaceTextMuted)",
       fontSize: "16px"

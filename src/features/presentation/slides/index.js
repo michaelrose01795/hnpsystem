@@ -71,7 +71,6 @@ import { jobCardsValetSlide } from "./definitions/jobCardsValet";
 import { jobCardsWaitingNextJobsSlide } from "./definitions/jobCardsWaitingNextJobs";
 
 // Parts extras
-import { partsSlide } from "./definitions/parts";
 import { partsManagerSlide } from "./definitions/partsManager";
 import { partsCreateOrderDetailSlide } from "./definitions/partsCreateOrderDetail";
 import { partsDeliveriesDetailSlide } from "./definitions/partsDeliveriesDetail";
@@ -96,7 +95,7 @@ import { newsfeedSlide } from "./definitions/newsfeed";
 import { profilePersonalSlide, profileSlide } from "./definitions/profile";
 import { workshopConsumablesTrackerSlide } from "./definitions/workshopConsumablesTracker";
 import { loginSlide } from "./definitions/login";
-import { unauthorizedSlide } from "./definitions/unauthorized";
+import { unauthorisedSlide } from "./definitions/unauthorised";
 import { passwordResetRevertedSlide } from "./definitions/passwordResetReverted";
 
 // New pages — compliance, account/privacy, website manager, vhc customer, job-cards extras
@@ -188,7 +187,6 @@ export const ALL_SLIDES = [
   jobCardsValetSlide,
   jobCardsWaitingNextJobsSlide,
 
-  partsSlide,
   partsManagerSlide,
   partsCreateOrderDetailSlide,
   partsDeliveriesDetailSlide,
@@ -211,7 +209,7 @@ export const ALL_SLIDES = [
   profilePersonalSlide,
   workshopConsumablesTrackerSlide,
   loginSlide,
-  unauthorizedSlide,
+  unauthorisedSlide,
   passwordResetRevertedSlide,
 
   adminComplianceSlide,

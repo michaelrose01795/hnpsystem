@@ -98,12 +98,12 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "service": layout(
     mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
     mod("department-management", ["/archive"]),
-    mod("department-service", ["/dashboard/service", "/new-job", "/jobs"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/jobs", "/customers"]),
   ),
   "service manager": layout(
     mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-service", ["/dashboard/service", "/new-job", "/appointments", "/jobs"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"]),
     mod("department-workshop", ["/nextjobs"]),
     mod("department-reports", ["/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
@@ -135,8 +135,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "mobile technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-service", ["/new-job", "/appointments"]),
-    mod("department-workshop", ["/dashboard/mobile"]),
-    mod("department-tech", ["/tech", "/consumables-request"]),
+    mod("department-tech", ["/tech", "/consumables-request", "/dashboard/mobile"]),
   ),
   "parts": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
@@ -244,7 +243,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "aftersales manager": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-service", ["/jobs"]),
+    mod("department-service", ["/jobs", "/customers"]),
     mod("department-workshop", ["/nextjobs"]),
     mod("department-reports", ["/reports/service"]),
   ),

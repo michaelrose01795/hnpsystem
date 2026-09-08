@@ -114,6 +114,14 @@ export const UI_FAMILIES = [
         usage: "Job status, service-board style tables.",
         status: "approved",
       },
+      {
+        id: "scroll-shell",
+        className: "app-table-scroll",
+        description:
+          "Table wrapper: no horizontal scroll, vertical scroll past --table-visible-rows (10).",
+        usage: "Wrap every .app-data-table. Rendered by the DataTableShell component.",
+        status: "approved",
+      },
     ],
     customOnly: [
       {
@@ -377,9 +385,12 @@ export const UI_FAMILIES = [
     variants: [
       { id: "block", className: "skeleton-block", description: "Raw shimmer block.", usage: "Use SkeletonBlock — pick width/height props.", status: "approved" },
       { id: "inline", className: "skeleton-block skeleton-block--inline", description: "Inline shimmer + label.", usage: "Filter/search progress.", status: "approved" },
-      { id: "row", className: "skeleton-block skeleton-block--row", description: "Table row placeholder.", usage: "SkeletonTableRow inside an <app-data-table>.", status: "approved" },
+      { id: "row", className: "skeleton-table__row", description: "Single table row placeholder.", usage: "SkeletonTableRow inside a table the page already renders.", status: "approved" },
       { id: "card", className: "skeleton-block skeleton-block--card", description: "Metric / card placeholder.", usage: "SkeletonMetricCard on dashboards.", status: "approved" },
       { id: "page", className: "skeleton-block skeleton-block--page", description: "Full page skeleton.", usage: "PageSkeleton during initial route load.", status: "approved" },
+      { id: "chart", className: "skeleton-chart", description: "Line / trend graph placeholder — animated trace, grid and sweep.", usage: "ChartSkeleton. The only approved loading state for a graph.", status: "approved" },
+      { id: "chart-bars", className: "skeleton-chart skeleton-chart__bars", description: "Bar / column graph placeholder.", usage: "ChartSkeleton variant=\"bars\".", status: "approved" },
+      { id: "table", className: "skeleton-table", description: "Data table placeholder — real .app-data-table with a top-to-bottom shimmer cascade.", usage: "TableSkeleton. The only approved loading state for a table.", status: "approved" },
     ],
   },
   {
@@ -434,10 +445,34 @@ export const UI_FAMILIES = [
       "The in-app error experience: the recovery screen an error boundary renders and the pieces of it reused by the framework error pages and the report popup.",
     variants: [
       {
+        id: "screen",
+        className: "app-recovery",
+        description:
+          "The full recovery screen: centring wrapper plus __card / __badge / __title / __message / __actions / __hint.",
+        usage: "Error boundaries at every level, and the 404 / 500 / _error pages via PageErrorScreen.",
+        status: "approved",
+      },
+      {
+        id: "facts",
+        className: "app-recovery-facts",
+        description:
+          "Quotable incident facts as a dl grid — page, section, time, reference code — on 44px rows.",
+        usage: "Shared by the recovery screen and /unauthorised. One fact list, not two.",
+        status: "approved",
+      },
+      {
         id: "reference",
         className: "app-error-reference",
         description: "The short quotable error reference line shown under the recovery message.",
-        usage: "Recovery screens, 404/500 pages, and the Report a problem popup.",
+        usage: "The Report a problem popup, where there is no facts list to carry the code.",
+        status: "approved",
+      },
+      {
+        id: "access-denied",
+        className: "app-access-denied",
+        description:
+          "Access-denied wrapper: reuses the recovery shell with a calm warning tone instead of the fault tone.",
+        usage: "The /unauthorised screen. A permission refusal, not a fault — never the alert styling.",
         status: "approved",
       },
     ],

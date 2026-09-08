@@ -5,6 +5,9 @@ import HrReportsExportsUi from "@/components/page-ui/hr/hr-reports-ui"; // Extra
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import LayerSurface from "@/components/ui/LayerSurface"; // third rung: nested inside a --theme SectionCard, so --surface (CLAUDE.md 3.0a-2)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("reports");
@@ -21,7 +24,11 @@ function ReportsContent() {
         </p>
       </header>
 
-      <SectionCard title="Report Metrics" subtitle="Overview of report activity.">
+      <SectionCard layer="theme"
+        sectionKey="hr-reports-report-metrics"
+        parentKey="hr-manager-tab-reports"
+        title="Report Metrics"
+        subtitle="Overview of report activity.">
         {showPresentationMock ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--layout-card-gap)" }}>
             {hrPresentationData.reportMetrics.map((metric) => (
@@ -33,73 +40,87 @@ function ReportsContent() {
             ))}
           </div>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch report metrics from Supabase analytics. Display scheduled exports count, reports generated (30d), downloads (30d), and alerts triggered.
-          </p>
+          <EmptyState
+            icon="📊"
+            title="No report activity yet"
+            description="Scheduled exports, reports generated and downloads over the last 30 days appear here."
+          />
         )}
       </SectionCard>
 
-      <SectionCard
+      <SectionCard layer="theme"
+        sectionKey="hr-reports-quick-export"
+        parentKey="hr-manager-tab-reports"
         title="Quick Export"
         subtitle="Choose a report and export format.">
         
         {showPresentationMock ? (
-          <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto" }}>
-            <table className="app-data-table">
-              <thead>
-                <tr>
-                  <th>Report</th>
-                  <th>Description</th>
-                  <th>Formats</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hrPresentationData.reportCatalogue.slice(0, 3).map((report) => (
-                  <tr key={report.id}>
-                    <td style={{ fontWeight: 600 }}>{report.title}</td>
-                    <td>{report.description}</td>
-                    <td>{report.formats}</td>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Report</th>
+                    <th>Description</th>
+                    <th>Formats</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {hrPresentationData.reportCatalogue.slice(0, 3).map((report) => (
+                    <tr key={report.id}>
+                      <td style={{ fontWeight: 600 }}>{report.title}</td>
+                      <td>{report.description}</td>
+                      <td>{report.formats}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch available report types from Supabase. Build export form with report type dropdown, format selection (CSV/Excel/PDF), date range picker, and generate/schedule actions.
-          </p>
+          <EmptyState
+            icon="⬇️"
+            title="No reports available to export"
+            description="Report types appear here with the formats and date ranges you can export them in."
+          />
         )}
       </SectionCard>
 
-      <SectionCard
+      <SectionCard layer="theme"
+        sectionKey="hr-reports-report-catalogue"
+        parentKey="hr-manager-tab-reports"
         title="Report Catalogue"
         subtitle="Available HR reporting templates.">
         
         {showPresentationMock ? (
-          <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto" }}>
-            <table className="app-data-table">
-              <thead>
-                <tr>
-                  <th>Template</th>
-                  <th>Description</th>
-                  <th>Formats</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hrPresentationData.reportCatalogue.map((report) => (
-                  <tr key={report.id}>
-                    <td style={{ fontWeight: 600 }}>{report.title}</td>
-                    <td>{report.description}</td>
-                    <td>{report.formats}</td>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Template</th>
+                    <th>Description</th>
+                    <th>Formats</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {hrPresentationData.reportCatalogue.map((report) => (
+                    <tr key={report.id}>
+                      <td style={{ fontWeight: 600 }}>{report.title}</td>
+                      <td>{report.description}</td>
+                      <td>{report.formats}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch report templates from Supabase. Display each report with title, description, supported formats, and a "View definition" action.
-          </p>
+          <EmptyState
+            icon="🗂️"
+            title="No report templates"
+            description="Saved HR report templates appear here with their description and supported formats."
+          />
         )}
       </SectionCard>
     </div>);

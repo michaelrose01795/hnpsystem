@@ -1214,7 +1214,7 @@ export default function Layout({
   }
 
   if (hasPartsAccess) {
-    addNavItem("Parts Workspace", "/parts", {
+    addNavItem("Parts Workspace", "/stock-catalogue", {
       keywords: ["parts", "inventory", "vhc parts"],
       description: "Manage parts allocations and deliveries",
       section: "Parts",

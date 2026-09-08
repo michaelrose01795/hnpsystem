@@ -1,4 +1,5 @@
-
+TODO
+npm i next@latest
 
 CHECK
 have it so by default the capture screen auto uses the back drives camera not face facing camera etc
@@ -11,86 +12,5 @@ Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.
 ----check all of these for ui design/style-----
 
 
-CHECk
-Workshop
-
-
--------------------
-
-CHECk
-Reception
-
-
--------------------
-
 TODO
 Admin
-
--------------------
-
-CHECk
-Parts
-
-
--------------------
-
-
-CHECk
-MOT
-
--------------------
-
-
-CHECk
-Valeting
-
--------------------
-
-
-CHECk
-Accounts
-
-
--------------------
-
-CHECk
-Reports
-
--------------------
-
-CHECK 
-/new-order/P00001
-
-CHECK
-Within the "/jobs" page there is an "Order" button within the tab section at the top, this needs to change, remove this order button from the tab section and make a new page which mirrors the current style of the "Order" section and name the page "/Order" so if i put within the url /order it opens up 
-
-CHECK
-Within the "/new-order/P00001" for example, have it os the page full follows the staffgloabl.css setting. orgainse the page to work the best and to have sections correctly with "--theme" colour backgrounds cards etc to make it look near and easy to figure out. /Order page is connected to the "Parts" modual within the sidebar so add that to the parts section. this /order page also links full wihtin the "/deliveries" page as they work together. the /orders page can have collection as well as delivers so make something so it can tell the diff with a status of postage for example. mkae sure everything within the ""/new-order/P00001" page is connected to the data base and all works together etc with the otehr parts page 
-
-CHECK
-Remove the "Orders View Filter Shell | 1.2.2.1.1.1 | key orders-view-filter-shell | file src/components/profile/ProfileWorkTab.js:1917 (dynamic pattern) | route /order | where Orders View Filter Shell | parent orders-view-shell 1.2.2.1.1" card and move the search bar with a filter dropdown for collection or deleviry onto the same row as the search bar. 
-
-TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
-
--------------------
-
-TODO
-/new-order
-chatgpt improvements
-
-
-TODO
-and have it so "Delivery date" and "Preferred time" is on the same row as the "Colour". and "Delivery charge" is on the same row as "Make & Model" etc. and "Delivery Method" is on the same row as the "Registration Number" text. change "Delivery charge" text box to be half the width, and add a "£" after it 
-
-TODO
-"Delivery Method
-Collection
-Delivery
-Courier" "Registration Number
-e.g. AB12 CDE
-Search" and "Customer
-Existing Customer
-New Customer" all need to be in th esame row as one another, and then "First Name
-Last Name" also being on that same line when its shown. the same with the rows below to be in line with the ones on taht row within the other rows etc .
-

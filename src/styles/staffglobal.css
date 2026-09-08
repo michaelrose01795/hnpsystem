@@ -4918,10 +4918,13 @@ html.staff-scope .hr-employees-subtitle {
   max-width: 720px;
 }
 
+/* The directory is a picker; the profile is the work surface, so the split is
+   weighted towards the right-hand panel. The list keeps a hard 320px floor so
+   its three columns never collapse. */
 html.staff-scope .hr-employees-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
-  gap: 24px;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.8fr);
+  gap: var(--space-5);
   align-items: start;
 }
 
@@ -4930,6 +4933,11 @@ html.staff-scope .hr-employees-directory-shell {
   flex-direction: column;
   min-width: 0;
   width: 100%;
+  /* Matches the profile panel opposite: the pane stays put and its table
+     scrolls, rather than the page scrolling both out of view together. */
+  position: sticky;
+  top: 0;
+  align-self: start;
 }
 
 html.staff-scope .hr-employees-directory-card {
@@ -5041,25 +5049,28 @@ html.staff-scope .hr-employees-table.app-table-shell {
   min-width: 0;
 }
 
+/* Single-line cells: directory rows sit at the shared --table-row-height
+   (44px), so cell content must never wrap onto a second line. */
 html.staff-scope .hr-employees-table th,
 html.staff-scope .hr-employees-table td {
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(1),
 html.staff-scope .hr-employees-table td:nth-child(1) {
-  width: 64%;
+  width: 40%;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(2),
 html.staff-scope .hr-employees-table td:nth-child(2) {
-  width: 18%;
+  width: 30%;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(3),
 html.staff-scope .hr-employees-table td:nth-child(3) {
-  width: 18%;
+  width: 30%;
 }
 
 html.staff-scope .hr-employees-list.app-table-shell-wrap,
@@ -5089,52 +5100,14 @@ html.staff-scope .hr-employees-empty-row {
   color: var(--text-1);
 }
 
+/* The name column is a normal table cell. It must NOT become a flex/grid
+   container: a <td> with an inner display type is taken out of the table's
+   column model and re-wrapped in an anonymous table cell, which shows up as a
+   dead strip between Name and Department that the row-hover rule cannot reach.
+   Inherit the shared single-line truncation from .hr-employees-table td. */
 html.staff-scope .hr-employees-person-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   min-width: 0;
-  width: 100%;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-avatar {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  font-size: 0.72rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-body {
-  gap: 2px;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-header {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-name {
-  font-size: 0.9rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-email {
-  font-size: 0.76rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-role,
-html.staff-scope .hr-employees-table .hr-employees-row-meta {
-  display: none;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-end {
-  align-items: flex-start;
-  gap: 0;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-chevron {
-  display: none;
+  font-weight: 600;
 }
 
 html.staff-scope .hr-employees-row {
@@ -5255,56 +5228,427 @@ html.staff-scope .hr-employees-row-chevron {
   line-height: 1;
 }
 
+/* ── HR Employees: right-hand profile panel ────────────────────────────────
+   The panel is its own scroll container so the directory (which scrolls inside
+   its table shell) and the profile scroll independently, and so the employee
+   header can stay pinned with `position: sticky` while the sections below move.
+   `container-type: inline-size` lets the section cards go two-up on the panel's
+   own width rather than the viewport's — the panel is a column, not the page. */
 html.staff-scope .hr-employees-detail-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  min-width: 0;
   position: sticky;
   top: 0;
-  overflow: visible;
   align-self: start;
   padding: 0;
-  border-radius: 0;
   background: transparent;
-  border: none;
   box-shadow: none;
 }
 
-html.staff-scope .hr-employees-detail-panel .app-section-card,
-html.staff-scope .hr-employees-detail-panel [data-dev-section-type="content-card"] {
-  background: transparent;
-  border: none;
-  box-shadow: none;
+/* The staff shell scrolls an inner region, not the window: roughly 150px of
+   chrome (top bar, page-card padding, tab strip) sits above that region and
+   ~40px of page-card padding below it, plus this tab’s own stack gap. 300px is
+   the measured total. Keeping the pane inside it means the panel scrolls on its
+   own instead of dragging the whole shell down with it; a taller pane still
+   works (the shell scrolls) but costs the user two scrolls to reach Documents.
+   Released below 1100px, where the two panes stack and scroll with the shell. */
+html.staff-scope .hr-employee-profile-panel {
+  min-width: 0;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  container-type: inline-size;
+  container-name: hr-employee-profile;
 }
 
+html.staff-scope .hr-employee-profile-panel--empty {
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--section-card-padding);
+}
+
+html.staff-scope .hr-employee-empty-title {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+html.staff-scope .hr-employee-empty-copy {
+  margin: 0;
+  max-width: 44ch;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  opacity: 0.75;
+}
+
+/* Sticky employee header. Flush to the top of the panel (the panel itself has
+   no padding) so nothing can scroll through the gap above it. */
 html.staff-scope .hr-employee-profile-header-card {
-  border-bottom: none;
-  padding: 0 0 20px 0 !important;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex: 0 0 auto;
 }
 
+html.staff-scope .hr-employee-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .hr-employee-profile-avatar {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: rgba(var(--primary-rgb), 0.16);
+  color: var(--accentText);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+html.staff-scope .hr-employee-profile-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+html.staff-scope .hr-employee-profile-name {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+  overflow-wrap: break-word;
+}
+
+html.staff-scope .hr-employee-profile-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+}
+
+/* Job title reads as the primary of the pair; department is the qualifier. */
+html.staff-scope .hr-employee-profile-job-title {
+  font-weight: 600;
+}
+
+html.staff-scope .hr-employee-profile-department {
+  opacity: 0.75;
+}
+
+html.staff-scope .hr-employee-profile-meta-divider {
+  width: 3px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--text-1);
+  opacity: 0.4;
+}
+
+html.staff-scope .hr-employee-profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+html.staff-scope .hr-employee-profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html.staff-scope .hr-employee-chip {
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-base-rgb), 0.12);
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* One column by default; two once the panel itself is wide enough. Documents
+   spans the full width in both. */
 html.staff-scope .hr-employee-profile-sections {
-  gap: 14px !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* stretch (the default) rather than start: paired cards share a row height,
+     so a short card no longer leaves a ragged hole beside a tall one. */
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+@container hr-employee-profile (min-width: 38rem) {
+  html.staff-scope .hr-employee-profile-sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 html.staff-scope .hr-employee-card-block {
-  border-radius: 16px;
-  background: var(--surface) !important;
-  border: none !important;
-  padding: 16px !important;
+  min-width: 0;
+  height: 100%;
 }
 
-html.staff-scope .hr-employee-basic-salary-card {
-  background: var(--surface) !important;
-  border: none !important;
+html.staff-scope .hr-employee-card-block--full {
+  grid-column: 1 / -1;
+}
+
+html.staff-scope .hr-employee-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  min-height: var(--control-height);
+}
+
+html.staff-scope .hr-employee-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-card-title {
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+}
+
+html.staff-scope .hr-employee-card-subtitle {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+/* Pay & Hours spans both columns, so the salary tile sits beside its supporting
+   figures instead of stacking above them and stretching the card. */
+html.staff-scope .hr-employee-pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+@container hr-employee-profile (min-width: 38rem) {
+  html.staff-scope .hr-employee-pay-layout {
+    grid-template-columns: minmax(180px, 0.6fr) minmax(0, 2fr);
+  }
+}
+
+html.staff-scope .hr-employee-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
 }
 
 html.staff-scope .hr-employee-key-value {
-  padding: 10px 0;
-  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
-html.staff-scope .hr-employee-key-value:last-child {
-  border-bottom: none;
+html.staff-scope .hr-employee-key-value--wide {
+  grid-column: 1 / -1;
+}
+
+html.staff-scope .hr-employee-key-value-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 24px;
+}
+
+html.staff-scope .hr-employee-label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-value {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-value--muted {
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+html.staff-scope .hr-employee-helper {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-stat-value {
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+}
+
+/* Contact rows: label + actions share the first line, the value gets a line of
+   its own. Long emails break only where a break is legible (before @ / .), and
+   addresses keep their comma-separated wrapping instead of splitting mid-word. */
+html.staff-scope .hr-employee-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+html.staff-scope .hr-employee-contact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-contact-value {
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: var(--leading-normal);
+}
+
+html.staff-scope .hr-employee-contact-value--multiline {
+  white-space: pre-line;
+}
+
+html.staff-scope .hr-employee-action-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+html.staff-scope .hr-employee-manager-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+html.staff-scope .hr-employee-manager-link,
+html.staff-scope .hr-employee-manager-static {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  color: var(--text-1);
+  min-height: 44px;
+  justify-content: center;
+}
+
+html.staff-scope button.hr-employee-manager-link {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+html.staff-scope button.hr-employee-manager-link:hover,
+html.staff-scope button.hr-employee-manager-link:focus-visible {
+  background: var(--theme-hover);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .hr-employee-manager-name {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+html.staff-scope .hr-employee-manager-meta {
+  font-size: var(--text-caption);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-empty-block {
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  padding: var(--space-4);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  text-align: center;
+}
+
+/* Documents table. Fixed layout with per-column widths keyed off data-doc-col
+   so the optional Category / Status / Expires columns can come and go without
+   renumbering nth-child rules. Only the document name wraps, and it wraps on
+   word boundaries. */
+/* Prefixed with .app-table-scroll so these beat the family defaults
+   (`table-layout: auto` and `overflow-wrap: anywhere`, which is what broke
+   document names mid-word) rather than relying on source order alone. */
+html.staff-scope .app-table-scroll .app-data-table.hr-employee-documents-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="name"] {
+  width: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="category"] {
+  width: 16%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="status"] {
+  width: 15%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="uploaded"],
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="expires"] {
+  width: 13%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="actions"] {
+  width: 92px;
+  text-align: right;
+}
+
+/* Directory list fills the same column height as the profile panel beside it,
+   so both panes scroll on their own instead of the page scrolling for them. */
+html.staff-scope .hr-employees-list .app-table-scroll {
+  /* Same shell offset as the profile panel (300px), plus the ~375px of search,
+     filters and summary tiles stacked above the table inside the card. */
+  max-height: calc(100vh - 675px);
+  min-height: 200px;
 }
 
 @media (max-width: 1100px) {
@@ -5312,7 +5656,23 @@ html.staff-scope .hr-employee-key-value:last-child {
     grid-template-columns: 1fr;
   }
 
-  html.staff-scope .hr-employees-detail-panel {
+  html.staff-scope .hr-employees-detail-panel,
+  html.staff-scope .hr-employees-directory-shell {
+    position: static;
+  }
+
+  html.staff-scope .hr-employees-list .app-table-scroll {
+    max-height: calc((var(--table-visible-rows) + 1) * var(--table-row-height));
+  }
+
+  /* Stacked layout: the panel scrolls with the page rather than trapping the
+     scroll in a short box, so the sticky header steps down to the page flow. */
+  html.staff-scope .hr-employee-profile-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  html.staff-scope .hr-employee-profile-header-card {
     position: static;
   }
 }

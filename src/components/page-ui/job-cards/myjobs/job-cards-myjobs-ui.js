@@ -129,6 +129,95 @@ export default function MyJobsPageUi(props) {
           </div>
         </div>
 
+        {/* Job Count Summary */}
+        <LayerTheme sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-summary-card">
+          <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gap: "16px",
+        textAlign: "center"
+      }}>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-total" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
+              <div style={{
+            fontSize: "28px",
+            fontWeight: "700",
+            color: "var(--primary)",
+            marginBottom: "4px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "34px"
+          }}>
+                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.length}
+              </div>
+              <div style={{
+            fontSize: "13px",
+            color: "var(--grey-accent)"
+          }}>Total Jobs</div>
+            </div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-in-progress" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
+              <div style={{
+            fontSize: "28px",
+            fontWeight: "700",
+            color: "var(--info)",
+            marginBottom: "4px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "34px"
+          }}>
+                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
+              isClockedOn: activeJobIds.has(j.id)
+            })) === "in-progress").length}
+              </div>
+              <div style={{
+            fontSize: "13px",
+            color: "var(--grey-accent)"
+          }}>In Progress</div>
+            </div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-waiting" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
+              <div style={{
+            fontSize: "28px",
+            fontWeight: "700",
+            color: "var(--danger)",
+            marginBottom: "4px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "34px"
+          }}>
+                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
+              isClockedOn: activeJobIds.has(j.id)
+            })) === "pending").length}
+              </div>
+              <div style={{
+            fontSize: "13px",
+            color: "var(--grey-accent)"
+          }}>Waiting</div>
+            </div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-complete" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
+              <div style={{
+            fontSize: "28px",
+            fontWeight: "700",
+            color: "var(--info)",
+            marginBottom: "4px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "34px"
+          }}>
+                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
+              isClockedOn: activeJobIds.has(j.id)
+            })) === "complete").length}
+              </div>
+              <div style={{
+            fontSize: "13px",
+            color: "var(--grey-accent)"
+          }}>Completed</div>
+            </div>
+          </div>
+        </LayerTheme>
+
         {/* Jobs List */}
         <LayerTheme data-presentation="my-jobs-results" sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
       flex: 1,
@@ -254,95 +343,6 @@ export default function MyJobsPageUi(props) {
                 </tbody>
               </table>
             </div>}
-        </LayerTheme>
-
-        {/* Job Count Summary */}
-        <LayerTheme sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-summary-card">
-          <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-        gap: "16px",
-        textAlign: "center"
-      }}>
-            <div data-dev-section="1" data-dev-section-key="myjobs-summary-total" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            color: "var(--primary)",
-            marginBottom: "4px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "34px"
-          }}>
-                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.length}
-              </div>
-              <div style={{
-            fontSize: "13px",
-            color: "var(--grey-accent)"
-          }}>Total Jobs</div>
-            </div>
-            <div data-dev-section="1" data-dev-section-key="myjobs-summary-in-progress" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            color: "var(--info)",
-            marginBottom: "4px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "34px"
-          }}>
-                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
-              isClockedOn: activeJobIds.has(j.id)
-            })) === "in-progress").length}
-              </div>
-              <div style={{
-            fontSize: "13px",
-            color: "var(--grey-accent)"
-          }}>In Progress</div>
-            </div>
-            <div data-dev-section="1" data-dev-section-key="myjobs-summary-waiting" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            color: "var(--danger)",
-            marginBottom: "4px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "34px"
-          }}>
-                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
-              isClockedOn: activeJobIds.has(j.id)
-            })) === "pending").length}
-              </div>
-              <div style={{
-            fontSize: "13px",
-            color: "var(--grey-accent)"
-          }}>Waiting</div>
-            </div>
-            <div data-dev-section="1" data-dev-section-key="myjobs-summary-complete" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            color: "var(--info)",
-            marginBottom: "4px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "34px"
-          }}>
-                {loading ? <SkeletonBlock width="48px" height="28px" borderRadius="8px" /> : myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j, {
-              isClockedOn: activeJobIds.has(j.id)
-            })) === "complete").length}
-              </div>
-              <div style={{
-            fontSize: "13px",
-            color: "var(--grey-accent)"
-          }}>Completed</div>
-            </div>
-          </div>
         </LayerTheme>
 
       </div>

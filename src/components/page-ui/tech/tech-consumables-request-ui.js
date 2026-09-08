@@ -397,7 +397,7 @@ export default function TechConsumableRequestPageUi(props) {
         }}>
                   No consumable requests match the current filter.
                 </LayerSurface>}
-            </DevLayoutSection> : <LayerSurface as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" padding="0" style={{
+            </DevLayoutSection> : <LayerSurface as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" padding="0" className="app-table-shell-scroll" style={{
         overflowX: "auto",
         maxHeight: "604px",
         overflowY: "auto"

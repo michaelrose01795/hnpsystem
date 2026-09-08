@@ -11,7 +11,7 @@ import { canAccessPath } from "@/lib/auth/pageAccess";
 // "/jobs" is deliberately not here: Job Cards was removed from the Parts module's
 // navigation (it belongs to Reception), and nav presence IS access — see the
 // separate assertion below.
-const PARTS_PAGES = ["/deliveries", "/delivery-planner", "/stock-catalogue", "/goods-in", "/parts-manager", "/parts"];
+const PARTS_PAGES = ["/deliveries", "/delivery-planner", "/stock-catalogue", "/goods-in", "/parts-manager"];
 
 describe("delivery diary access", () => {
   it("gives a Parts Driver the diary and nothing else", () => {

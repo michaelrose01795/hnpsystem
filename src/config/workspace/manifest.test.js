@@ -348,8 +348,18 @@ function legacyFullLandablePaths(golden, roles) {
     { href: "/accounts/invoices", roles: legacyAccountsRoles },
     { href: "/accounts/reports", roles: legacyAccountsRoles },
   ];
+  // The Reception context section. /customers is group-inherited (no per-page
+  // roles), so its reach is exactly the roles the service department is
+  // assigned — derived here from ROLE_DEPARTMENT_MAP so this reference cannot
+  // silently drift from the manifest's own derivation.
+  const legacyReceptionRoles = new Set(
+    Object.entries(ROLE_DEPARTMENT_MAP)
+      .filter(([, department]) => department === "service")
+      .map(([role]) => role.toLowerCase())
+  );
+  const legacyReceptionLinks = [{ href: "/customers", roles: legacyReceptionRoles }];
 
-  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks]) {
+  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyReceptionLinks]) {
     if (matches(Array.from(link.roles))) accessible.add(link.href);
   }
 
@@ -531,13 +541,12 @@ describe("workspace manifest - module bundle placement", () => {
       }))
     ).toEqual([
       { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
-      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"] },
+      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"] },
       { key: "department-workshop", hrefs: [
-        "/dashboard/workshop", "/dashboard/mobile", "/clocking", "/consumables-tracker",
-        "/tech/efficiency", "/nextjobs",
+        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs",
       ] },
       { key: "department-tech", hrefs: [
-        "/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request",
+        "/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile",
       ] },
       // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
       { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"] },
@@ -604,8 +613,9 @@ describe("workspace manifest - module bundle placement", () => {
     expect(tech.items.map((item) => item.href)).toEqual([
       "/dashboard/tech",
       "/tech",
-      "/tech/efficiency",
       "/consumables-request",
+      "/tech/efficiency",
+      "/dashboard/mobile",
     ]);
   });
 

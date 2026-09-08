@@ -40,6 +40,41 @@ const REQUIRED_ROLES = [
 ];
 
 describe("role workspace defaults", () => {
+  it("places Next Jobs in Workshop for All Access and saved Reception layouts", () => {
+    const savedLayout = {
+      items: ["/appointments", "/nextjobs"],
+      modules: [{ key: "department-service", label: "Reception", items: ["/appointments", "/nextjobs"] }],
+    };
+    for (const sidebarAccess of [null, savedLayout]) {
+      const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE], sidebarAccess);
+      expect(modules.find((module) => module.key === "department-workshop")?.items.map((item) => item.href)).toContain("/nextjobs");
+      expect(modules.find((module) => module.key === "department-service")?.items.map((item) => item.href)).not.toContain("/nextjobs");
+      expect(getActiveRoleWorkspaceModule("/nextjobs", [ALL_ACCESS_ROLE], sidebarAccess)).toBe("department-workshop");
+    }
+    expect(getRoleWorkspaceModules([ALL_ACCESS_ROLE], savedLayout).flatMap((module) => module.items.map((item) => item.href))).toEqual(savedLayout.items);
+  });
+
+  it("groups all five technician pages in Tech for All Access", () => {
+    const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE]);
+    const hrefs = ["/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile"];
+    expect(modules.find((module) => module.key === "department-tech")?.items.map((item) => item.href)).toEqual(hrefs);
+    expect(modules.find((module) => module.key === "department-workshop")?.items.some((item) => hrefs.includes(item.href))).toBe(false);
+    for (const href of hrefs) {
+      expect(getActiveRoleWorkspaceModule(href, [ALL_ACCESS_ROLE])).toBe("department-tech");
+    }
+  });
+
+  it("moves saved Workshop technician pages into Tech without adding access", () => {
+    const modules = getRoleWorkspaceModules(["mobile technician"], {
+      items: ["/dashboard/mobile", "/tech"],
+      modules: [{ key: "department-workshop", label: "Workshop", items: ["/dashboard/mobile", "/tech"] }],
+    });
+    expect(modules.map((module) => module.key)).toEqual(["department-tech"]);
+    expect(modules[0].items.map((item) => item.href)).toEqual(["/tech", "/dashboard/mobile"]);
+    const defaults = getRoleWorkspaceModules(["mobile technician"]);
+    expect(defaults.find((module) => module.key === "department-tech")?.items.map((item) => item.href)).toContain("/dashboard/mobile");
+  });
+
   it("defines every requested staff role exactly once", () => {
     expect(WORKSPACE_ROLE_DEFAULT_NAMES).toEqual(REQUIRED_ROLES);
     expect(new Set(WORKSPACE_ROLE_DEFAULT_NAMES).size).toBe(WORKSPACE_ROLE_DEFAULT_NAMES.length);

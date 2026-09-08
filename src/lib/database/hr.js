@@ -8,6 +8,7 @@ import { getDisplayName } from "@/lib/users/displayName";
 import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { parseDisciplinaryNotes, formatCaseStatus } from "@/lib/hr/disciplinaryCases";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
@@ -639,14 +640,63 @@ export async function getActiveWarnings(limit = 5) {
     throw error;
   }
 
-  return (data || []).map((warning) => ({
-    id: warning.case_id,
-    employee: formatEmployee(warning.user).name,
-    department: warning.user?.department || "Unknown",
-    level: warning.severity || warning.incident_type || "Warning",
-    issuedOn: warning.incident_date,
-    notes: warning.notes,
-  }));
+  return (data || []).map((warning) => mapDisciplinaryCase(warning));
+}
+
+// Shared shape for the Dashboard's "Active Warnings" panel and the Disciplinary
+// tab's two tables, so both read the same row the same way.
+function mapDisciplinaryCase(row = {}) {
+  const detail = parseDisciplinaryNotes(row.notes);
+  const level = row.severity || row.incident_type || "Warning";
+
+  return {
+    id: `DISC-${row.case_id}`,
+    employee: formatEmployee(row.user).name,
+    department: row.user?.department || "Unknown",
+    level, // Dashboard panel
+    warningLevel: level, // Disciplinary tab table + summary strip
+    issuedOn: row.incident_date,
+    incidentDate: row.incident_date,
+    status: formatCaseStatus(row.status),
+    incidentType: row.incident_type,
+    jobNumber: detail.jobNumber || "Internal",
+    recordedBy: detail.recordedBy || "HR",
+    outcome: detail.outcome || formatCaseStatus(row.status),
+    notes: detail.summary,
+  };
+}
+
+// Full case history — the Disciplinary tab's incident log, closed cases and all,
+// where getActiveWarnings deliberately narrows to what still needs attention.
+export async function getDisciplinaryIncidents(limit = 20) {
+  const { data, error } = await supabase
+    .from("hr_disciplinary_cases")
+    .select(
+      `
+        case_id,
+        user_id,
+        incident_type,
+        severity,
+        status,
+        incident_date,
+        notes,
+        user:users!hr_disciplinary_cases_user_id_fkey(
+          user_id,
+          first_name,
+          last_name,
+          department
+        )
+      `
+    )
+    .order("incident_date", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    logFailure("❌ getDisciplinaryIncidents error", error);
+    throw error;
+  }
+
+  return (data || []).map((row) => mapDisciplinaryCase(row));
 }
 
 // Get training renewals due soon
@@ -743,6 +793,7 @@ export async function getHrDashboardSnapshot() {
     trainingCompliance,
     upcomingAbsences,
     activeWarnings,
+    incidentLog,
     departmentPerformance,
     trainingRenewals,
   ] = await Promise.all([
@@ -751,6 +802,7 @@ export async function getHrDashboardSnapshot() {
     getTrainingCompliance(),
     getUpcomingAbsences(),
     getActiveWarnings(),
+    getDisciplinaryIncidents(),
     getDepartmentPerformance(),
     getTrainingRenewals(),
   ]);
@@ -790,6 +842,7 @@ export async function getHrDashboardSnapshot() {
     hrDashboardMetrics,
     upcomingAbsences,
     activeWarnings,
+    incidentLog,
     departmentPerformance,
     trainingRenewals,
   };
@@ -847,7 +900,15 @@ const normalizeDocuments = (documents) => {
     id: doc.id || `DOC-${index + 1}`,
     name: doc.name || doc.title || "Document",
     type: doc.type || doc.category || "general",
+    // Optional metadata: only present on records stored with it, so the profile
+    // panel can show Category / Status / Expiry when the data supports it and
+    // quietly omit those columns when it does not.
+    category: doc.category || doc.documentCategory || doc.document_category || null,
+    status: doc.status || doc.state || null,
     uploadedOn: doc.uploadedOn || doc.uploaded_at || doc.date || doc.created_at || null,
+    expiresOn:
+      doc.expiresOn || doc.expires_on || doc.expiryDate || doc.expiry_date || doc.valid_until || null,
+    url: doc.url || doc.href || doc.file_url || doc.fileUrl || null,
   }));
 };
 
@@ -1353,6 +1414,9 @@ export async function getHrOperationsSnapshot() {
     payRateHistory,
     performanceReviews,
     staffVehicles,
+    activeWarnings,
+    trainingRenewals,
+    trainingCourses,
   ] = await Promise.all([
     getHrAttendanceSnapshot(),
     getHrDashboardSnapshot(),
@@ -1360,16 +1424,23 @@ export async function getHrOperationsSnapshot() {
     getLeaveRequests(),
     getLeaveBalances(),
     getPayRateHistory(),
-    getPerformanceReviews(),
+    // The tab tables show a working list, not the dashboard's headline cut, so
+    // each of these asks for more rows than the panels inside dashboardSnapshot.
+    getPerformanceReviews(30),
     getStaffVehiclesWithHistory(),
+    getActiveWarnings(25),
+    getTrainingRenewals(25),
+    listTrainingCourses(),
   ]);
 
   return {
     hrDashboardMetrics: dashboardSnapshot.hrDashboardMetrics,
     upcomingAbsences: dashboardSnapshot.upcomingAbsences,
-    activeWarnings: dashboardSnapshot.activeWarnings,
+    activeWarnings,
+    incidentLog: dashboardSnapshot.incidentLog,
     departmentPerformance: dashboardSnapshot.departmentPerformance,
-    trainingRenewals: dashboardSnapshot.trainingRenewals,
+    trainingRenewals,
+    trainingCourses,
     employeeDirectory,
     attendanceLogs: attendanceSnapshot.attendanceLogs,
     absenceRecords: attendanceSnapshot.absenceRecords,

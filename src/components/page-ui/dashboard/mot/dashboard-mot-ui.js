@@ -1,10 +1,11 @@
 // file location: src/components/page-ui/dashboard/mot/dashboard-mot-ui.js
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // Card state helper — one place for the loading / error copy so every card on
 // the dashboard behaves identically instead of repeating the branch inline.
 function CardState({ loading, error, children }) {
-  if (loading) return <p style={{ margin: 0, opacity: 0.7 }}>Loading…</p>;
+  if (loading) return <div role="status" aria-label="Loading dashboard data" aria-busy="true" style={{ display: "grid", gap: "var(--layout-card-gap)" }}><SkeletonKeyframes /><SkeletonBlock height="28px" width="48%" /><SkeletonBlock height="14px" /><SkeletonBlock height="14px" width="72%" /></div>;
   if (error) return <p className="app-status-message app-status-message--danger" style={{ margin: 0 }}>{error}</p>;
   return children;
 }

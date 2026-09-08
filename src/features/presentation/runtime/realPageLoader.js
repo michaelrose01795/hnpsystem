@@ -62,8 +62,8 @@ const ROUTE_TO_MODULE = {
   "/tech/[jobNumber]": () => import("@/pages/tech/[jobNumber]"),
   "/valet/[jobNumber]": () => import("@/pages/valet/[jobNumber]"),
 
-  // Parts (deep leaf pages flattened to short top-level paths; /parts index unchanged)
-  "/parts": () => import("@/pages/parts/index"),
+  // Parts (deep leaf pages flattened to short top-level paths). The stock
+  // catalogue is reached only at /stock-catalogue — there is no /parts route.
   "/parts-manager": () => import("@/pages/parts-manager"),
   "/new-order": () => import("@/pages/new-order/index"),
   "/order/[orderNumber]": () => import("@/pages/order/[orderNumber]"),

@@ -122,7 +122,6 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Parts Manager",
     "routes": [
       "/dashboard/parts",
-      "/parts",
       "/parts/manager",
       "/job-cards/view",
       "/stock-catalogue",

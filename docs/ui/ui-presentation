@@ -222,37 +222,34 @@ Parts Manager
 1. /presentation/parts-manager/dashboard-parts/0
 Route: /dashboard/parts
 
-2. /presentation/parts-manager/parts/1
-Route: /parts
-
-3. /presentation/parts-manager/parts-manager/2
+2. /presentation/parts-manager/parts-manager/1
 Route: /parts/manager
 
-4. /presentation/parts-manager/job-cards-view/3 !!!!!!!!!!!!!!!!!!!!!! (JUST SHOW THE ORDERS TAB FOR THIS PAGE AND WITHIN THIS ROLE)
+3. /presentation/parts-manager/job-cards-view/2 !!!!!!!!!!!!!!!!!!!!!! (JUST SHOW THE ORDERS TAB FOR THIS PAGE AND WITHIN THIS ROLE)
 Route: /job-cards/view
 
-5. /presentation/parts-manager/stock-catalogue/4
+4. /presentation/parts-manager/stock-catalogue/3
 Route: /stock-catalogue
 
-6. /presentation/parts-manager/parts-create-order/5
+5. /presentation/parts-manager/parts-create-order/4
 Route: /parts/create-order
 
-7. /presentation/parts-manager/parts-create-order-orderNumber/6
+6. /presentation/parts-manager/parts-create-order-orderNumber/5
 Route: /parts/create-order/[orderNumber]
 
-8. /presentation/parts-manager/parts-deliveries/7
+7. /presentation/parts-manager/parts-deliveries/6
 Route: /parts/deliveries
 
-9. /presentation/parts-manager/parts-deliveries-deliveryId/8
+8. /presentation/parts-manager/parts-deliveries-deliveryId/7
 Route: /parts/deliveries/[deliveryId]
 
-10. /presentation/parts-manager/parts-delivery-planner/9
+9. /presentation/parts-manager/parts-delivery-planner/8
 Route: /parts/delivery-planner
 
-11. /presentation/parts-manager/parts-goods-in/10 !!!!!!!!!!!!!!!!!!!!!!
+10. /presentation/parts-manager/parts-goods-in/9 !!!!!!!!!!!!!!!!!!!!!!
 Route: /parts/goods-in
 
-12. /presentation/parts-manager/parts-goods-in-goodsInNumber/11
+11. /presentation/parts-manager/parts-goods-in-goodsInNumber/10
 Route: /parts/goods-in/[goodsInNumber]
 
 

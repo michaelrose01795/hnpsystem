@@ -172,6 +172,16 @@ export function canAccessHrManagerDashboard(userRoles) {
   return hasAnyRole(userRoles, HR_MANAGER_DASHBOARD_ROLES);
 }
 
+// Sensitive HR data gate: pay, home address, emergency contacts and HR
+// documents. Delegates to the existing HR core role group so widening stays a
+// single-line change here and no role string is hardcoded at the call site
+// (same pattern as canViewDiagnostics below). Every role that can already open
+// the HR Manager dashboard passes, so this narrows nothing that works today —
+// it keeps the gate with the data if the profile panel is reused elsewhere.
+export function canViewSensitiveHrDetails(userRoles) {
+  return isHrCoreRole(userRoles);
+}
+
 // IDENTITY predicates — "is the user THIS kind of person", not "may they do X".
 // These deliberately skip the All Access wildcard: answering yes would push the
 // demo session into a NARROWER role-specific view (mobile-only bookings, the

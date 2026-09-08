@@ -1,3 +1,5 @@
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical theme layer around data tables (CLAUDE.md §3.0)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 // file location: src/components/page-ui/hr/employees/hr-employees-ui.js
 
 export default function EmployeeManagementUi(props) {
@@ -56,64 +58,63 @@ export default function EmployeeManagementUi(props) {
     gap: "var(--layout-card-gap)"
   }}>
           <SectionCard title="Employee Directory" subtitle={`${filteredEmployees.length} of ${employees.length} employees`} action={<DirectoryFilters filters={filters} setFilters={setFilters} departments={uniqueDepartments} employmentTypes={uniqueEmploymentTypes} />}>
-            <div style={{
-        maxHeight: "520px",
-        overflowY: "auto"
-      }}>
-              <table className="app-data-table">
-                <thead style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 1
-          }}>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Department</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEmployees.map(employee => {
-              const isSelected = employee.id === selectedEmployeeId;
-              return <tr key={employee.id} onClick={() => setSelectedEmployeeId(employee.id)} style={{
-                cursor: "pointer",
-                backgroundColor: isSelected ? "var(--theme-hover)" : "transparent"
-              }}>
-                        <td>
-                          <div style={{
-                    display: "flex",
-                    flexDirection: "column"
-                  }}>
-                            <span style={{
-                      fontWeight: 600,
-                      color: "var(--text-1)"
-                    }}>{employee.name}</span>
-                            <span style={{
-                      fontSize: "var(--text-label)",
-                      color: "var(--text-1)"
-                    }}>
-                              {employee.jobTitle}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{
-                  fontWeight: 500
-                }}>{employee.department}</td>
-                        <td style={{
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
+            <LayerTheme padding="var(--space-3)" gap="0">
+              <DataTableShell>
+                <table className="app-data-table">
+                  <thead style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 1
+            }}>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.map(employee => {
+                const isSelected = employee.id === selectedEmployeeId;
+                return <tr key={employee.id} onClick={() => setSelectedEmployeeId(employee.id)} style={{
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? "var(--theme-hover)" : "transparent"
                 }}>
-                          {employee.employmentType}
-                        </td>
-                        <td>
-                          <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "warning"} />
-                        </td>
-                      </tr>;
-            })}
-                </tbody>
-              </table>
-            </div>
+                          <td>
+                            <div style={{
+                      display: "flex",
+                      flexDirection: "column"
+                    }}>
+                              <span style={{
+                        fontWeight: 600,
+                        color: "var(--text-1)"
+                      }}>{employee.name}</span>
+                              <span style={{
+                        fontSize: "var(--text-label)",
+                        color: "var(--text-1)"
+                      }}>
+                                {employee.jobTitle}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{
+                    fontWeight: 500
+                  }}>{employee.department}</td>
+                          <td style={{
+                    fontSize: "var(--text-body-sm)",
+                    color: "var(--text-1)"
+                  }}>
+                            {employee.employmentType}
+                          </td>
+                          <td>
+                            <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "warning"} />
+                          </td>
+                        </tr>;
+              })}
+                  </tbody>
+                </table>
+              </DataTableShell>
+            </LayerTheme>
           </SectionCard>
 
           <EmployeeProfilePanel employee={selectedEmployee} />

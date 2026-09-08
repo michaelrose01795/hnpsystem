@@ -41,7 +41,7 @@ const WORKFLOW_FLOWS = [
     when: (ctx) => onPath(ctx, /^\/(job-cards|jobcards|tech)\/[^/]+/),
     steps: [
       { id: "vhc", label: "Start a health check", subtitle: "VHC", href: "/vhc" },
-      { id: "parts", label: "Request parts for this job", subtitle: "Parts", href: "/parts" },
+      { id: "parts", label: "Request parts for this job", subtitle: "Parts", href: "/stock-catalogue" },
       { id: "approve", label: "Send for authorisation", subtitle: "Approval", href: "/job-cards" },
       { id: "ready", label: "Mark ready & notify the customer", subtitle: "Handover", href: "/job-cards" },
     ],
@@ -56,7 +56,7 @@ const WORKFLOW_FLOWS = [
     steps: [
       { id: "findings", label: "Record findings & severities", subtitle: "Inspection", href: null },
       { id: "authorise", label: "Send the VHC for authorisation", subtitle: "Approval", href: "/job-cards" },
-      { id: "parts", label: "Request parts from the findings", subtitle: "Parts", href: "/parts" },
+      { id: "parts", label: "Request parts from the findings", subtitle: "Parts", href: "/stock-catalogue" },
     ],
   },
   // --- Operational-state: approvals are blocking work ---

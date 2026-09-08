@@ -136,6 +136,8 @@ const nextConfig = { // Exported Next.js configuration object
       { source: "/account/security", destination: "/security", permanent: true }, // Own account security
       // Round 4: the parts order detail moved under the order register it belongs to.
       { source: "/new-order/:orderNumber", destination: "/order/:orderNumber", permanent: true }, // Parts order detail
+      // UK-English sweep (2026-09-08): the access-denied screen is now /unauthorised.
+      { source: "/unauthorized", destination: "/unauthorised", permanent: true }, // Access-denied screen
     ]; // Close redirects array
   }, // Close redirects function
   

@@ -1,7 +1,8 @@
 // file location: src/components/NewsFeed/NewsFilterBar.js
 //
-// The toolbar above the feed: the category, priority and department filters,
-// the news-specific search and the publish action — all on one full-width row.
+// The toolbar above the feed: the news-specific search on the far left, then
+// the category, priority and department filters and the publish action — all on
+// one full-width row.
 //
 // Every control is a shared primitive — SearchBar and
 // MultiSelectDropdown — so the toolbar cannot drift from the rest of the app.
@@ -30,9 +31,19 @@ export default function NewsFilterBar({
 }) {
   return (
     <div className="app-news-filters">
-      {/* Everything on one full-width row: the three filters, the search and
-          the publish action share the space evenly. */}
+      {/* Everything on one full-width row: search leads on the far left, then
+          the three filters and the publish action share the space evenly. */}
       <div className="app-news-toolbar">
+        <div className="app-news-toolbar__control">
+          <SearchBar
+            value={searchTerm}
+            onChange={(event) => onSearchChange?.(event.target.value)}
+            onClear={() => onSearchChange?.("")}
+            placeholder="Search announcements, authors and departments"
+            ariaLabel="Search the news feed"
+          />
+        </div>
+
         <div className="app-news-toolbar__control">
           <MultiSelectDropdown
             id="news-filter-categories"
@@ -79,16 +90,6 @@ export default function NewsFilterBar({
             emptyState="No departments"
             maxHeight="220px"
             usePortal
-          />
-        </div>
-
-        <div className="app-news-toolbar__control">
-          <SearchBar
-            value={searchTerm}
-            onChange={(event) => onSearchChange?.(event.target.value)}
-            onClear={() => onSearchChange?.("")}
-            placeholder="Search announcements, authors and departments"
-            ariaLabel="Search the news feed"
           />
         </div>
 

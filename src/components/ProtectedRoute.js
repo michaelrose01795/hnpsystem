@@ -35,6 +35,16 @@ function resolveAccess({ loading, status, user, session, allowedRoles }) {
   return "denied";
 }
 
+// Where a role-denied user is sent. The route they were trying to open rides
+// along as ?from= so /unauthorised can name it instead of showing a blank
+// "you cannot see this" — and so a support request from that screen records it.
+// Only in-app absolute paths are carried; the page re-validates before display.
+function deniedRoute(attempted) {
+  const path = typeof attempted === "string" ? attempted.trim() : "";
+  if (!path.startsWith("/") || path.startsWith("//")) return "/unauthorised";
+  return `/unauthorised?from=${encodeURIComponent(path)}`;
+}
+
 export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -55,7 +65,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         const hasRole = (user.roles || []).some((r) =>
           allowedRoles.includes(r.toUpperCase())
         );
-        if (!hasRole) router.replace("/unauthorized");
+        if (!hasRole) router.replace(deniedRoute(router.asPath));
       }
       return;
     }
@@ -65,7 +75,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         const hasRole = (session.user.roles || []).some((r) =>
           allowedRoles.includes(r.toUpperCase())
         );
-        if (!hasRole) router.replace("/unauthorized");
+        if (!hasRole) router.replace(deniedRoute(router.asPath));
       }
       return;
     }

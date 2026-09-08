@@ -1,7 +1,9 @@
 // file location: src/components/HR/MetricCard.js
 // Exports MetricCard (metric display widget) and StatusTag (status badge).
 // SectionCard re-export has been removed — all consumers now import it from @/components/Section directly.
-import React from "react";import LayerSurface from "@/components/ui/LayerSurface";
+import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export function MetricCard({
   icon,
@@ -12,19 +14,28 @@ export function MetricCard({
   accentColor = "var(--info-dark)",
   sectionKey,
   parentKey,
-  sectionType = "stat-card"
+  sectionType = "stat-card",
+  // Which rung of the surface ladder the tile sits on (CLAUDE.md 3.0a-2).
+  // "theme" is the default because a metric tile is almost always dropped
+  // straight into the main page card (--surface) and so is the second rung.
+  // Pass layer="surface" when the tile sits inside a --theme section.
+  layer = "theme",
+  ...rest
 }) {
+  const Layer = layer === "surface" ? LayerSurface : LayerTheme;
+
   return (
-    <LayerSurface as="div"
+    <Layer as="div"
     sectionKey={sectionKey}
     parentKey={parentKey}
     sectionType={sectionType}
-    backgroundToken="surface"
+    backgroundToken={layer}
     style={{
       gap: "14px",
       minWidth: "200px",
       flex: 1
-    }}>
+    }}
+    {...rest}>
 
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <span style={{ fontSize: "1.6rem" }}>{icon}</span>
@@ -55,7 +66,7 @@ export function MetricCard({
           {trend}
         </span> :
       null}
-    </LayerSurface>);
+    </Layer>);
 
 }
 

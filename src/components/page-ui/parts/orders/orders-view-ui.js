@@ -8,6 +8,7 @@ import { PageShell, SectionShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import OrderListCard from "./OrderListCard";
+import { ListLoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function OrdersViewUi(props) {
   const {
@@ -77,12 +78,7 @@ export default function OrdersViewUi(props) {
             flexDirection: "column",
             gap: "10px"
           }}>
-              {ordersLoading ? <LayerTheme sectionKey="orders-view-loading" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
-              textAlign: "center",
-              color: "var(--surfaceTextMuted)"
-            }}>
-                  Loading orders...
-                </LayerTheme> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
+              {ordersLoading ? <ListLoadingSkeleton toolbar={false} /> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
                 </LayerTheme> : sortedOrders.map((order, index) => <OrderListCard key={order.id || order.orderNumber} sectionKey={`orders-view-order-row-${order.id || order.orderNumber || index + 1}`} parentKey="orders-view-list-viewport" order={order} index={index} onNavigate={() => onNavigateToOrder(order.orderNumber)} />)}
             </DevLayoutSection>

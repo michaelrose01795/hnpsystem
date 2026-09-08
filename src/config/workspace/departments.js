@@ -755,6 +755,20 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
 // cross-group grant — see docs/Workspace Navigation/workspace-group-permissions.md.
 export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   {
+    department: "service",
+    order: 35,
+    label: "Reception Workspace",
+    category: "departments",
+    flag: null,
+    items: [
+      // No `roles` — the customer list inherits the Reception group, so every
+      // role assigned that group sees it. Context section rather than
+      // WORKSPACE_NAV_SECTIONS so the byte-identical classic sidebar is
+      // untouched (an un-roled classic item would read as visible to all).
+      { label: "Customers", href: "/customers" },
+    ],
+  },
+  {
     department: "accounts",
     order: 132,
     label: "Accounts Workspace",
@@ -787,29 +801,22 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-service",
     label: "Reception",
     department: "service",
-    hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"],
+    hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"],
   },
   {
     key: "department-workshop",
     label: "Workshop",
     department: "workshop",
     hrefs: [
-      // /dashboard/mobile is the Mobile Technician's landing dashboard. It is a
-      // workshop-department page and was previously reachable only through a
-      // role default that named no library module, which put it outside the
-      // library the Module page map claims is complete.
-      "/dashboard/workshop", "/dashboard/mobile", "/clocking", "/consumables-tracker",
-      "/tech/efficiency", "/nextjobs",
+      "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs",
     ],
   },
   {
-    // Tech sits with Workshop: it is the technician's own slice of the same
-    // department. It has no place in the requested rail order because no role
-    // sees both it and every other module at once.
+    // Technician pages share a dedicated module; workspace access stays unchanged.
     key: "department-tech",
     label: "Tech",
     department: "tech",
-    hrefs: ["/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request"],
+    hrefs: ["/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile"],
   },
   {
     key: "department-parts",
@@ -877,7 +884,7 @@ export function sortModulesByLibraryOrder(modules = []) {
 export const WORKSPACE_MODULES = Object.freeze({
   general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking", "/archive"] }],
   management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }],
-  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }],
+  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }, { key: "customers", label: "Customers", hrefs: ["/customers"] }],
   workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
   parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/order", "/new-order"] }],

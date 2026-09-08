@@ -3,8 +3,13 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
 
+// supabase-js v2 only exposes filter methods after .select(), so the count/head
+// options must be applied before any .eq()/.in()/.gt() call.
+const countQuery = (table) =>
+  supabase.from(table).select("id", { count: "exact", head: true });
+
 const fetchCount = async (query) => {
-  const { count, error } = await query.select("id", { count: "exact", head: true });
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 };
@@ -81,19 +86,13 @@ async function handler(req, res, session) {
           { count: "exact" }
         )
         .eq("is_active", true),
-      fetchCount(supabase.from("parts_catalog").eq("is_active", true)),
-      fetchCount(supabase.from("parts_catalog").eq("is_active", false)),
-      fetchCount(supabase.from("parts_catalog").eq("is_active", true).gt("qty_on_order", 0)),
+      fetchCount(countQuery("parts_catalog").eq("is_active", true)),
+      fetchCount(countQuery("parts_catalog").eq("is_active", false)),
+      fetchCount(countQuery("parts_catalog").eq("is_active", true).gt("qty_on_order", 0)),
       fetchCount(
-        supabase
-          .from("parts_deliveries")
-          .in("status", ["ordering", "on_route", "partial"])
+        countQuery("parts_deliveries").in("status", ["ordering", "on_route", "partial"])
       ),
-      fetchCount(
-        supabase
-          .from("parts_job_items")
-          .in("status", OPEN_JOB_STATUSES)
-      ),
+      fetchCount(countQuery("parts_job_items").in("status", OPEN_JOB_STATUSES)),
     ]);
 
     if (catalogError) throw catalogError;

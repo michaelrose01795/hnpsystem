@@ -22,6 +22,25 @@ import {
   getSidebarModuleCatalog,
 } from "@/config/workspace/manifest";
 import { SIDEBAR_ACCESS_UPDATED_EVENT } from "@/lib/sidebarAccess";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
+
+// The All Access demo account is deliberately absent from every user listing
+// (see lib/database/allAccessVisibility) and its layout is derived in code, not
+// stored — so it cannot be fetched or edited here. This synthetic directory
+// entry exists purely so the all-access rail can be READ in the same editor as
+// everybody else, to check its module and page ORDER against the standard
+// modules. Every mutation is blocked while it is selected.
+const ALL_ACCESS_PREVIEW_ID = "all-access-preview";
+
+const ALL_ACCESS_PREVIEW_USER = Object.freeze({
+  id: ALL_ACCESS_PREVIEW_ID,
+  firstName: "All Access",
+  lastName: "Demo",
+  email: ALL_ACCESS_EMAIL,
+  role: ALL_ACCESS_ROLE,
+  sidebarAccess: null,
+});
 
 const userDisplayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
@@ -161,17 +180,20 @@ export default function DevSidebarAccess() {
     load();
   }, [load]);
 
+  // The preview leads the directory so it is reachable without searching.
+  const directoryUsers = useMemo(() => [ALL_ACCESS_PREVIEW_USER, ...users], [users]);
+
   const selectedUser = useMemo(
-    () => users.find((user) => user.id === selectedUserId) || null,
-    [users, selectedUserId]
+    () => directoryUsers.find((user) => user.id === selectedUserId) || null,
+    [directoryUsers, selectedUserId]
   );
+  const isPreviewUser = selectedUser?.id === ALL_ACCESS_PREVIEW_ID;
 
   useEffect(() => {
     const sourceModules = selectedUser ? modulesFromUser(selectedUser) : [];
     const nextModules = selectedUser ? draftFromUser(selectedUser) : [];
     setDraftModules(nextModules);
     setInitialModules(sourceModules);
-    setPageSelections({});
     setSaveError("");
     if (selectedUser?.role && WORKSPACE_ROLE_DEFAULT_NAMES.includes(selectedUser.role)) {
       setCopyRole(selectedUser.role);
@@ -180,13 +202,13 @@ export default function DevSidebarAccess() {
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter((user) =>
+    if (!term) return directoryUsers;
+    return directoryUsers.filter((user) =>
       [userDisplayName(user), user.email, user.role]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term))
     );
-  }, [search, users]);
+  }, [directoryUsers, search]);
 
   const usedHrefs = useMemo(
     () => new Set(draftModules.flatMap((module) => module.items)),
@@ -228,6 +250,7 @@ export default function DevSidebarAccess() {
   }, []);
 
   const updateModule = (index, updates) => {
+    if (isPreviewUser) return;
     setDraftModules((current) =>
       current.map((module, moduleIndex) =>
         moduleIndex === index ? { ...module, ...updates } : module
@@ -236,6 +259,7 @@ export default function DevSidebarAccess() {
   };
 
   const addBundle = (bundle) => {
+    if (isPreviewUser) return;
     const availableItems = bundle.items
       .map((item) => item.href)
       .filter((href) => !usedHrefs.has(href));
@@ -256,10 +280,46 @@ export default function DevSidebarAccess() {
     });
   };
 
-  const selectBundle = (bundle) => addBundle(bundle);
+  // Removing a module hands its pages back to any other assigned module that
+  // also owns them. addBundle() only ever stores a shared page against the first
+  // module that claimed it, so without this a shared page would vanish from the
+  // sidebar even though a module still granting it stays assigned.
+  const removeBundle = (bundle) => {
+    if (isPreviewUser) return;
+    setDraftModules((current) => {
+      const removed = current.find((module) => module.key === bundle.key);
+      if (!removed) return current;
+      const released = new Set(removed.items);
+      const remaining = current.filter((module) => module.key !== bundle.key);
+      return remaining.map((module) => {
+        if (released.size === 0) return module;
+        const catalogBundle = moduleCatalog.find((item) => item.key === module.key);
+        if (!catalogBundle) return module;
+        const owned = new Set(module.items);
+        const reclaimed = catalogBundle.items
+          .map((item) => item.href)
+          .filter((href) => released.has(href) && !owned.has(href));
+        if (reclaimed.length === 0) return module;
+        for (const href of reclaimed) released.delete(href);
+        return { ...module, items: [...module.items, ...reclaimed] };
+      });
+    });
+  };
+
+  // An assigned module that is still missing pages tops itself up on click; a
+  // complete one toggles off. That keeps the button’s own “Add N missing” label honest.
+  const selectBundle = (bundle) => {
+    const assigned = draftModules.some((module) => module.key === bundle.key);
+    const availableCount = bundle.items.filter((item) => !usedHrefs.has(item.href)).length;
+    if (assigned && availableCount === 0) {
+      removeBundle(bundle);
+      return;
+    }
+    addBundle(bundle);
+  };
 
   const saveLayout = async () => {
-    if (!selectedUser || !hasSavableModules) return null;
+    if (!selectedUser || isPreviewUser || !hasSavableModules) return null;
     const modules = draftModules.filter(
       (module) => module.label.trim() && module.items.length > 0
     );
@@ -280,7 +340,7 @@ export default function DevSidebarAccess() {
   };
 
   const copyLayout = async () => {
-    if (!selectedUser || copyTargetIds.length === 0 || !hasSavableModules) return;
+    if (!selectedUser || isPreviewUser || copyTargetIds.length === 0 || !hasSavableModules) return;
     const result = await callApi({
       action: "copy-layout",
       userId: selectedUser.id,
@@ -305,7 +365,9 @@ export default function DevSidebarAccess() {
     [selectedUser?.id, users]
   );
 
-  const selectedStatus = selectedUser?.sidebarAccess
+  const selectedStatus = isPreviewUser
+    ? "Read-only preview"
+    : selectedUser?.sidebarAccess
     ? "Custom modules"
     : "Role default";
 
@@ -399,7 +461,9 @@ export default function DevSidebarAccess() {
                           {userDisplayName(user)}
                         </span>
                         <span style={{ fontSize: "var(--text-caption)", opacity: 0.7 }}>
-                          {user.role || "No role"}{user.sidebarAccess ? " - customised" : ""}
+                          {user.id === ALL_ACCESS_PREVIEW_ID
+                            ? "All access - read-only preview"
+                            : `${user.role || "No role"}${user.sidebarAccess ? " - customised" : ""}`}
                         </span>
                       </span>
                     </button>
@@ -462,7 +526,7 @@ export default function DevSidebarAccess() {
                       const roleModules = getRoleDefaultWorkspaceModules(copyRole).map(moduleToDraft);
                       setDraftModules(roleModules);
                     }}
-                    disabled={saving}
+                    disabled={saving || isPreviewUser}
                     className="app-btn app-btn--secondary"
                   >
                     Load role modules
@@ -470,7 +534,7 @@ export default function DevSidebarAccess() {
                 </div>
 
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <button type="button" onClick={saveLayout} disabled={saving || !isDirty || !hasSavableModules} className="app-btn app-btn--primary">
+                  <button type="button" onClick={saveLayout} disabled={saving || isPreviewUser || !isDirty || !hasSavableModules} className="app-btn app-btn--primary">
                     {saving ? "Saving" : "Save modules"}
                   </button>
                   <button
@@ -480,25 +544,27 @@ export default function DevSidebarAccess() {
                       setSaveError("");
                       setCopyLayoutOpen(true);
                     }}
-                    disabled={saving || !hasSavableModules}
+                    disabled={saving || isPreviewUser || !hasSavableModules}
                     className="app-btn app-btn--secondary"
                   >
                     Copy layout
                   </button>
-                  <button type="button" onClick={() => setDraftModules(initialModules)} disabled={saving || !isDirty} className="app-btn app-btn--secondary">
+                  <button type="button" onClick={() => setDraftModules(initialModules)} disabled={saving || isPreviewUser || !isDirty} className="app-btn app-btn--secondary">
                     Discard changes
                   </button>
                   <button
                     type="button"
                     onClick={() => callApi({ action: "restore-default", userId: selectedUser.id })}
-                    disabled={saving || !selectedUser.sidebarAccess}
+                    disabled={saving || isPreviewUser || !selectedUser.sidebarAccess}
                     className="app-btn app-btn--secondary"
                   >
                     Restore own role default
                   </button>
                 </div>
                 <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
-                  This controls sidebar visibility. Existing page and API role guards remain in force.
+                  {isPreviewUser
+                    ? "The All Access demo layout is derived in code from the full page catalogue, not stored against a user, so it cannot be edited here. It is listed so its module and page order can be compared with the standard modules."
+                    : "This controls sidebar visibility. Existing page and API role guards remain in force."}
                 </div>
                 {saveError ? (
                   <div role="alert" style={{ color: "var(--danger-base)", fontSize: "var(--text-body-sm)" }}>
@@ -528,13 +594,13 @@ export default function DevSidebarAccess() {
                         key={bundle.key}
                         type="button"
                         onClick={() => selectBundle(bundle)}
-                        disabled={!assigned && availableCount === 0}
+                        disabled={isPreviewUser || (!assigned && availableCount === 0)}
                         aria-pressed={assigned}
                         aria-label={
                           assigned && availableCount > 0
                             ? `Add ${availableCount} missing pages to ${bundle.label} module`
                             : assigned
-                            ? `${bundle.label} module selected`
+                            ? `Remove ${bundle.label} module`
                             : `Select ${bundle.label} module`
                         }
                         className={`app-btn app-btn--secondary${assigned ? " is-active" : ""}`}
@@ -545,7 +611,7 @@ export default function DevSidebarAccess() {
                           {assigned
                             ? availableCount > 0
                               ? `Add ${availableCount} missing`
-                              : "Selected"
+                              : "Selected - click to remove"
                             : `${availableCount} pages`}
                         </span>
                       </button>
@@ -606,8 +672,17 @@ export default function DevSidebarAccess() {
             />
           ) : draftModules.map((module, moduleIndex) => {
             const bundle = moduleCatalog.find((item) => item.key === module.key);
-            const visibleItems = bundle?.items || roleModuleOptions.get(module.key) ||
-              module.items.map((href) => catalogByHref.get(href)).filter(Boolean);
+            const baseItems = bundle?.items || roleModuleOptions.get(module.key) || [];
+            // A module can hold pages its curated library bundle does not list —
+            // the All Access layout is bucketed from the WHOLE page catalogue,
+            // and a saved layout can outlive a library change. Without this the
+            // extras are counted but never rendered, so the list reads short.
+            const baseHrefs = new Set(baseItems.map((item) => item.href));
+            const extraItems = module.items
+              .filter((href) => !baseHrefs.has(href))
+              .map((href) => catalogByHref.get(href))
+              .filter(Boolean);
+            const visibleItems = [...baseItems, ...extraItems];
             const selectedCount = module.items.length;
             return (
               <SubSurface
@@ -641,12 +716,12 @@ export default function DevSidebarAccess() {
                     return (
                       <label
                         key={`${module.key}-${item.href}`}
-                        style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: 44, padding: "6px 8px", color: "var(--text-1)", cursor: owner ? "not-allowed" : "pointer", opacity: owner ? 0.6 : 1 }}
+                        style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: 44, padding: "6px 8px", color: "var(--text-1)", cursor: isPreviewUser || owner ? "not-allowed" : "pointer", opacity: owner ? 0.6 : 1 }}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={Boolean(owner)}
+                          disabled={isPreviewUser || Boolean(owner)}
                           onChange={(event) => updateModule(moduleIndex, {
                             items: event.target.checked
                               ? [...module.items, item.href]

@@ -14,7 +14,7 @@
 // Account items (Profile) are always-on invariants and render locked.
 
 import React, { useMemo, useState } from "react";
-import LayerTheme from "@/components/ui/LayerTheme";
+import LayerTheme from "@/components/ui/LayerTheme"; // per-department block: fourth rung, inside the editor's LayerSurface
 import LayerSurface from "@/components/ui/LayerSurface";
 import SidebarGroupAccessModal from "@/components/sidebar-access/SidebarGroupAccessModal";
 import {
@@ -136,7 +136,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
   };
 
   return (
-    <LayerTheme gap="16px">
+    <LayerSurface gap="16px">
       <div
         style={{
           display: "flex",
@@ -165,7 +165,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
         const isAccount = group.category === "account";
         const groupEnabled = group.items.filter((item) => checked.has(item.href)).length;
         return (
-          <LayerSurface key={group.department} gap="10px">
+          <LayerTheme key={group.department} gap="10px">
             <div
               style={{
                 display: "flex",
@@ -246,7 +246,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
                 {groupEnabled} of {group.items.length} enabled
               </span>
             )}
-          </LayerSurface>
+          </LayerTheme>
         );
       })}
 
@@ -270,6 +270,6 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
           return roles === "*" ? "All authenticated users" : roles.join(", ") || "Page-role gated only";
         })()}
       />
-    </LayerTheme>
+    </LayerSurface>
   );
 }

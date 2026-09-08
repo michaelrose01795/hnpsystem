@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
-import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { NextJobsSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useRoster } from "@/context/RosterContext";
@@ -2190,7 +2190,7 @@ export default function NextJobsPage() {
 
   // ✅ Access check
   if (rosterLoading) {
-    return <NextJobsPageUi view="section1" InlineLoading={InlineLoading} />;
+    return <NextJobsSkeleton />;
 
 
 
@@ -2209,7 +2209,7 @@ export default function NextJobsPage() {
   }
 
   if (loading) {
-    return <NextJobsPageUi view="section3" />;
+    return <NextJobsSkeleton />;
   }
 
   // ✅ Page layout — Workshop Queue Planner (replaces the old Next Jobs table/list)

@@ -298,7 +298,7 @@ const FAMILY_OWNERS = [
   [/\.app-tab(?![\w-])|\.app-tab--|\.tab-api/, "src/styles/families/tabs.css"],
   [/\.app-toolbar|\.app-layout-toolbar-row/, "src/styles/families/toolbars.css"],
   [/\.dropdown-api|\.app-dropdown/, "src/styles/families/dropdowns.css"],
-  [/\.skeleton-block/, "src/styles/families/loaders.css"],
+  [/\.skeleton-block|\.skeleton-chart|\.skeleton-table/, "src/styles/families/loaders.css"],
   [/\.app-page-card|\.app-section-card|\.app-layout-surface|\.app-layout-stat-card/, "src/styles/families/cards.css"],
 ];
 
