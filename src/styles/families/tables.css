@@ -2,7 +2,7 @@
  *
  * Canonical home for the Table family.
  *
- * Variants: standard, compact, workflow
+ * Variants: standard, compact, workflow, clickable
  * Showcase:  /dev/user-diagnostic#table
  *
  * NOTE (2026-04 audit pass): the existing .app-data-table, thead, and tbody
@@ -46,6 +46,22 @@ html.staff-scope .app-data-table--workflow tbody tr[data-row-state="active"] {
 
 html.staff-scope .app-data-table--workflow tbody tr[data-row-state="muted"] {
   opacity: 0.62;
+}
+
+/* Clickable rows — the whole row is the click target (the row opens a record),
+   so it needs a hover affordance. --secondary is the lightest accent tint and
+   the same step the --workflow variant uses for its active row, so a hovered
+   row reads one rung above the --surface row without becoming a second surface.
+   Pages must NOT hand-roll this with an inline onMouseEnter background: the
+   usual mistake is painting --surface over a --surface row, which is a no-op. */
+html.staff-scope .app-data-table--clickable tbody tr {
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+html.staff-scope .app-data-table--clickable tbody tr:hover,
+html.staff-scope .app-data-table--clickable tbody tr:focus-within {
+  background: var(--secondary);
 }
 
 /* -------------------------------------------------------------------------- */

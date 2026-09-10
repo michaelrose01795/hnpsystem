@@ -85,6 +85,34 @@ export const UI_FAMILIES = [
     ],
   },
   {
+    id: "symbol",
+    label: "Symbols",
+    cssFile: "src/styles/families/symbols.css",
+    component: "src/components/ui/SymbolButton.js",
+    traceColor: "#ec4899",
+    description:
+      "Icon-only action button. Every symbol in the app is registered in SYMBOLS in SymbolButton.js and rendered as an exact circle with the glyph optically centred - never a stray emoji or a one-off inline SVG. Two sizes only: 44px standing alone, 32px in a table row.",
+    variants: [
+      {
+        id: "default",
+        className: "app-symbol-btn",
+        description: "Accent-tinted circle. The ONLY symbol fill - there is no tone axis.",
+        usage: "Every standalone icon action, whatever it does.",
+        status: "approved",
+      },
+    ],
+    sizes: [
+      { id: "md", className: "", description: "Exact 44px circle. The default everywhere a symbol stands on its own." },
+      { id: "table", className: "app-symbol-btn--table", description: "Exact 32px circle (--table-action-btn-height) with a 23px glyph, so an in-row action lines up with the rest of the row instead of growing it. Applied automatically inside .app-data-table; the class is for row-lists that are not a real <table>." },
+    ],
+    shapes: [
+      { id: "circle", className: "", description: "Always a perfect circle; the geometry is locked in the family file." },
+      { id: "row", className: "app-symbol-row", description: "Wrapping strip of symbol buttons with a --space-xs gap." },
+      { id: "in-button", className: "app-btn app-btn--has-symbol", description: "The same mark beside a text label. Resolved from the label by ui/Button.js through lib/ui/symbolLabels.js - no call site passes it." },
+      { id: "popup-close", className: "app-popup-compact-header", description: "A popup header collapses its Close to the bare 44px symbol circle and orders it last. Owned by the popup convention in staffglobal.css." }
+    ],
+  },
+  {
     id: "table",
     label: "Tables",
     cssFile: "src/styles/families/tables.css",
@@ -112,6 +140,13 @@ export const UI_FAMILIES = [
         className: "app-data-table app-data-table--workflow",
         description: "Status-column-led table with row emphasis on active state.",
         usage: "Job status, service-board style tables.",
+        status: "approved",
+      },
+      {
+        id: "clickable",
+        className: "app-data-table app-data-table--clickable",
+        description: "Rows are the click target — pointer cursor plus a --secondary hover/focus tint.",
+        usage: "Listings where clicking a row opens the record (stock catalogue, directories).",
         status: "approved",
       },
       {
@@ -345,7 +380,7 @@ export const UI_FAMILIES = [
     component: null,
     traceColor: "#fb923c",
     description:
-      "Inline status indicators. Use .app-badge plus a semantic modifier — do not tint inline.",
+      "Inline status indicators, shaped as a summary tile (.app-summary-item box: --radius-sm corner, 44px tall — 32px in a data table) so they never read as buttons. Use .app-badge plus a semantic modifier — do not tint or re-size inline.",
     variants: [
       { id: "neutral", className: "app-badge app-badge--neutral", description: "Generic tag.", usage: "Filter chips, count pills.", status: "approved" },
       { id: "success", className: "app-badge app-badge--success", description: "Positive status.", usage: "Paid, Passed, Completed.", status: "approved" },
@@ -547,6 +582,30 @@ export const UI_FAMILIES = [
         className: "app-news-meter",
         description: "Read-rate meter: track plus fill, no outline.",
         usage: "Read and acknowledgement rates.",
+        status: "approved",
+      },
+      {
+        id: "section",
+        className: "app-news-section",
+        description:
+          "A titled block inside a post — an uppercase label with a count pill above its rows.",
+        usage: "\"Related records\" and \"Attachments\" in the post detail.",
+        status: "approved",
+      },
+      {
+        id: "attachment",
+        className: "app-news-attachment",
+        description:
+          "One attachment row: file-type tag (or thumbnail), name, size. Laid out on a responsive grid by .app-news-attachments.",
+        usage: "Attachments on a post card, in the detail and in the composer.",
+        status: "approved",
+      },
+      {
+        id: "record-link",
+        className: "app-news-link",
+        description:
+          "One link to a DMS record: muted record-type tag plus the record itself. Grid-laid by .app-news-links.",
+        usage: "Related records on a post card, in the detail and in the composer.",
         status: "approved",
       },
     ],

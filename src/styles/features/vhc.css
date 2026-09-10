@@ -43,16 +43,11 @@ html.staff-scope .vhc-toolbar__subtitle {
   color: var(--text-1);
 }
 
-html.staff-scope .vhc-content-card {
-  background: var(--section-card-bg);
-  border: none;
-  border-radius: var(--section-card-radius);
-  padding: var(--section-card-padding);
-}
-
-html.staff-scope .vhc-content-card--bordered {
-  border: none;
-}
+/* .vhc-content-card / .vhc-content-card--bordered removed as style rules.
+   Those elements are now <LayerTheme> and .vhc-card is <LayerSurface>, so the
+   surface ladder (section tint -> nested surface, CLAUDE.md §3.0 / §3.0a-2)
+   comes from the canonical primitives instead of a per-feature copy of it.
+   The class names stay on the markup only as dev-overlay / test hooks. */
 
 html.staff-scope .vhc-section-heading {
   font-size: 16px;
@@ -72,10 +67,11 @@ html.staff-scope .vhc-card-grid {
 }
 
 html.staff-scope .vhc-card {
-  background: var(--control-bg);
+  /* Surface / radius / padding come from the <LayerSurface> (job-card VHC tab)
+     or <LayerTheme> (VHC section modals) the element renders as. What remains
+     is the click affordance, which the layer primitives have no opinion about
+     because a surface is not normally interactive. */
   border: none;
-  border-radius: var(--section-card-radius);
-  padding: var(--section-card-padding);
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   position: relative;

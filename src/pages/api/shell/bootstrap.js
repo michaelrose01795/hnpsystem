@@ -28,6 +28,8 @@ import { resolveSessionUserId, isUserProfileNotFound } from "@/lib/auth/sessionU
 import { getUserSidebarAccessById } from "@/lib/database/users";
 import { buildRosterPayload } from "@/lib/users/rosterPayload";
 import { getUnreadThreadCountForUser } from "@/lib/database/messages";
+import { getOutstandingAckSummary } from "@/lib/database/newsFeed/engagement";
+import { resolveViewer } from "@/lib/news/serverViewer";
 import { createServerTimer } from "@/lib/perf/serverTiming";
 
 // Resolve a section without letting it fail the whole response.
@@ -75,13 +77,26 @@ async function handler(req, res, session) {
   const numericUserId = Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null;
   if (identity === "linked" && numericUserId === null) identity = "unlinked";
 
-  const [sidebarAccess, roster, unreadCount] = await Promise.all([
+  // The News Feed badge needs the viewer's departments as well as their id, so
+  // that it chases the same updates the feed itself would show them. Roles come
+  // off the session, so this costs no query of its own.
+  const newsViewer = resolveViewer(session, req);
+
+  const [sidebarAccess, roster, unreadCount, outstandingAcks] = await Promise.all([
     numericUserId
       ? settle(timer, "sidebarAccess", () => getUserSidebarAccessById(numericUserId))
       : Promise.resolve(null),
     settle(timer, "roster", () => buildRosterPayload()),
     numericUserId
       ? settle(timer, "unreadCount", () => getUnreadThreadCountForUser(numericUserId))
+      : Promise.resolve(null),
+    numericUserId
+      ? settle(timer, "outstandingAcks", () =>
+          getOutstandingAckSummary(numericUserId, {
+            viewerDepartments: newsViewer.departments,
+            canSeeEverything: newsViewer.canSeeEverything,
+          })
+        )
       : Promise.resolve(null),
   ]);
 
@@ -97,6 +112,7 @@ async function handler(req, res, session) {
       sidebarAccess: sidebarAccess ?? null,
       roster: roster ?? null,
       unreadCount: typeof unreadCount === "number" ? unreadCount : null,
+      outstandingAcks: outstandingAcks ?? null,
     },
   });
 }

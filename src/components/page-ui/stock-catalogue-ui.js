@@ -4,8 +4,10 @@ import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import DataTableShell from "@/components/ui/DataTableShell";
 
 const QUICK_FILTERS = [
   { id: "all", label: "All parts" },
@@ -894,22 +896,14 @@ export default function StockCataloguePageUi(props) {
               {inventoryError}
             </div>}
 
-          <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
-        maxHeight: "min(58dvh, 620px)",
-        overflowY: "auto",
-        overflowX: "auto"
-      }}>
-            {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
+          {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory loading state" style={{
           color: "var(--surfaceTextMuted)"
-        }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory empty state" style={{
+        }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory empty state" style={{
           color: "var(--surfaceTextMuted)"
         }}>No parts found. Refine your search.</div> : <>
-                <table className="app-data-table app-data-table--rounded" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
-            ...tableStyle,
-            fontSize: "var(--text-body)",
-            tableLayout: "fixed",
-            minWidth: "960px"
-          }}>
+              {/* Canonical table shell: no horizontal scroll, vertical scroll past 10 rows. */}
+              <DataTableShell data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area">
+                <table className="app-data-table app-data-table--rounded app-data-table--clickable" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table">
                   <colgroup>
                     <col style={{ width: "9%" }} />
                     <col style={{ width: "16%" }} />
@@ -921,34 +915,23 @@ export default function StockCataloguePageUi(props) {
                     <col style={{ width: "10%" }} />
                     <col style={{ width: "8%" }} />
                   </colgroup>
-                  <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-                    <tr style={{
-                background: "var(--surface)",
-                color: "var(--danger)"
-              }}>
+                  <thead>
+                    <tr>
                       <th>Part Number</th>
                       <th>Part details</th>
                       <th>Category / supplier</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Bin</th>
+                      <th data-table-cell="nowrap">Bin</th>
                       <th>Stock</th>
-                      <th>Unit cost</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Reorder</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Status</th>
-                      <th>Actions</th>
+                      <th data-table-cell="nowrap">Unit cost</th>
+                      <th data-table-cell="nowrap">Reorder</th>
+                      <th data-table-cell="nowrap">Status</th>
+                      <th data-table-cell="nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInventory.slice(0, displayLimit).map(part => <tr key={part.id} onClick={() => {
                 setSelectedPart(part);
                 setIsPartModalOpen(true);
-              }} style={{
-                borderBottom: "var(--separating-line)",
-                cursor: "pointer",
-                transition: "background 0.15s ease"
-              }} onMouseEnter={e => {
-                e.currentTarget.style.background = "var(--surface)";
-              }} onMouseLeave={e => {
-                e.currentTarget.style.background = "transparent";
               }}>
                           <td data-label="Part number" style={{
                   fontWeight: 600,
@@ -957,8 +940,8 @@ export default function StockCataloguePageUi(props) {
                 }}>
                             {part.part_number}
                           </td>
-                          <td data-label="Part details" style={{ overflow: "hidden" }}>
-                            <div title={part.name} style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{part.name}</div>
+                          <td data-label="Part details">
+                            <div title={part.name} style={{ fontWeight: 600 }}>{part.name}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
                               OEM {part.oem_reference || "—"}
                             </div>
@@ -967,7 +950,7 @@ export default function StockCataloguePageUi(props) {
                             <div>{part.category || "Uncategorised"}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{part.supplier || "No supplier"}</div>
                           </td>
-                          <td data-label="Bin" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{part.storage_location || "—"}</td>
+                          <td data-label="Bin" data-table-cell="nowrap" style={{ fontWeight: 600 }}>{part.storage_location || "—"}</td>
                           <td data-label="Stock">
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(48px, 1fr))", gap: "var(--space-sm)", fontVariantNumeric: "tabular-nums" }}>
                               <span><small style={{ display: "block", color: "var(--text-1)" }}>Hand</small><strong>{numberValue(part.qty_in_stock)}</strong></span>
@@ -978,8 +961,8 @@ export default function StockCataloguePageUi(props) {
                               Required by open jobs: {numberValue(part.open_job_count)}
                             </div> : null}
                           </td>
-                          <td data-label="Unit cost" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
-                          <td data-label="Reorder" style={{ fontVariantNumeric: "tabular-nums" }}>
+                          <td data-label="Unit cost" data-table-cell="nowrap" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
+                          <td data-label="Reorder" data-table-cell="nowrap" style={{ fontVariantNumeric: "tabular-nums" }}>
                             <strong>{numberValue(part.reorder_level)}</strong>
                             {availableStock(part) < numberValue(part.reorder_level) ? <div style={{ color: "var(--danger)", fontSize: "var(--text-caption)" }}>
                               {numberValue(part.reorder_level) - availableStock(part)} below
@@ -988,23 +971,25 @@ export default function StockCataloguePageUi(props) {
                               {numberValue(part.qty_on_order)} expected soon
                             </div> : null}
                           </td>
-                          <td data-label="Status">
+                          <td data-label="Status" data-table-cell="nowrap">
                             <span className={`app-badge ${stockStatusBadgeTone(part.stock_status)}`}>
                               {(part.stock_status || "in_stock").replace(/_/g, " ")}
                             </span>
                           </td>
-                          <td data-label="Actions">
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={event => {
-                              event.stopPropagation();
-                              setSelectedPart(part);
-                              setIsPartModalOpen(true);
-                            }}>
-                              View
-                            </button>
+                          <td data-label="Actions" data-table-cell="nowrap">
+                            <SymbolButton
+                              symbol="view"
+                              label="View part"
+                              onClick={event => {
+                                event.stopPropagation();
+                                setSelectedPart(part);
+                                setIsPartModalOpen(true);
+                              }} />
                           </td>
                         </tr>)}
                   </tbody>
                 </table>
+              </DataTableShell>
 
                 {/* Load More Button */}
                 {(() => {
@@ -1021,7 +1006,6 @@ export default function StockCataloguePageUi(props) {
                     </div>;
           })()}
               </>}
-          </div>
         </div>
 
         {/* Part Details Modal */}

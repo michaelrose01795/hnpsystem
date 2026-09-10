@@ -41,7 +41,7 @@ export default function EmployeeManagementUi(props) {
     }}>
           Maintain staff records, employment details, documents, and system access.
         </p>
-        <Button variant="secondary">+ Add Employee</Button>
+        <Button variant="secondary">Add Employee</Button>
       </header>
 
       {isLoading && <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">

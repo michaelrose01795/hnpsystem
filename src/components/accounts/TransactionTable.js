@@ -94,8 +94,8 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       </header>
       }
       <div style={{ overflowX: "auto", overflowY: filteredTransactions.length > 10 ? "auto" : "visible", maxHeight: filteredTransactions.length > 10 ? "640px" : "none" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
+        <table className="app-data-table">
+          <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "12px" }}>Date</th>
               <th style={{ textAlign: "left", padding: "12px" }}>Transaction ID</th>

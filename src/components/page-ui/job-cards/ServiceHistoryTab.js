@@ -17,6 +17,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import KpiTrendChart from "@/components/reporting/KpiTrendChart";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import { exportToCsv } from "@/utils/exportUtils";
 import {
   DASH,
@@ -466,9 +467,9 @@ function CompareJobsModal({ isOpen, onClose, history = [], initialJobId }) {
       ariaLabel="Compare jobs"
       cardStyle={{ width: "min(100%, 980px)", padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+      <div className="app-popup-compact-header">
         <h2 style={titleStyle}>Compare Jobs</h2>
-        <button type="button" onClick={onClose} className="app-btn app-btn--ghost">Close</button>
+        <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
       </div>
 
       <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
@@ -575,9 +576,9 @@ function ExportHistoryModal({ isOpen, onClose, history = [], selectedJob }) {
       ariaLabel="Export history"
       cardStyle={{ width: "min(100%, 620px)", padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+      <div className="app-popup-compact-header">
         <h2 style={titleStyle}>Export History</h2>
-        <button type="button" onClick={onClose} className="app-btn app-btn--ghost">Close</button>
+        <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>

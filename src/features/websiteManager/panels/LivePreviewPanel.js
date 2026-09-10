@@ -296,7 +296,7 @@ export default function LivePreviewPanel() {
                         </Button>
                       ))}
                       <Button type="button" size="xs" variant="secondary" onClick={handleAddNewRow}>
-                        + New row
+                        New row
                       </Button>
                     </div>
                   </LayerTheme>

@@ -737,7 +737,6 @@ export default function EmployeesTab() {
                 aria-label="Add employee"
                 style={{ gap: "6px" }}
               >
-                <span style={{ fontSize: "1rem", lineHeight: 1, fontWeight: 700 }}>+</span>
                 <span>Add Employee</span>
               </Button>
             </div>
@@ -1040,7 +1039,7 @@ function SearchableListDropdown({
 
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
-      <input
+      <input className="app-input"
         type="text"
         value={isOpen ? searchTerm : value}
         onChange={(e) => {
@@ -1220,7 +1219,7 @@ function SearchableMultiSelect({
             </button>
           ))
         ) : null}
-        <input
+        <input className="app-input"
           ref={controlInputRef}
           type="text"
           value={searchTerm}
@@ -1352,13 +1351,11 @@ function EmployeeDetailsFields({
   lineManagerOptions = [],
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const inputStyle = {
-    padding: "10px",
-    borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--input-ring-color)",
-    background: "var(--surface)",
-    color: "var(--text-1)",
-  };
+  // Control chrome (padding, radius, ring, fill, text colour) comes from the
+  // global .app-input class in staffglobal.css, which every field now carries.
+  // Keeping the old inline clone here would win over the class and re-introduce
+  // the drift. Only the error state below adds anything.
+  const inputStyle = {};
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
       ? {
@@ -1403,19 +1400,19 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="First Name" errorMessage={fieldErrors.firstName}>
-            <input type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
+            <input className="app-input" type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
           </FormField>
           <FormField label="Last Name" errorMessage={fieldErrors.lastName}>
-            <input type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
+            <input className="app-input" type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
           </FormField>
           <FormField label="Email" errorMessage={fieldErrors.email}>
-            <input type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
+            <input className="app-input" type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
           </FormField>
           <FormField label="Phone" errorMessage={fieldErrors.phone}>
-            <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
+            <input className="app-input" type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
           </FormField>
           <FormField label="Extension" errorMessage={fieldErrors.extension}>
-            <input type="text" value={values.extension} onChange={update("extension")} style={applyFieldErrorStyle("extension")} placeholder="212" />
+            <input className="app-input" type="text" value={values.extension} onChange={update("extension")} style={applyFieldErrorStyle("extension")} placeholder="212" />
           </FormField>
         </div>
       </div>
@@ -1429,7 +1426,7 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="Department" errorMessage={fieldErrors.department}>
-            <input type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
+            <input className="app-input" type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
           </FormField>
           <FormField label="Job Title" errorMessage={fieldErrors.jobTitle}>
             <SearchableListDropdown
@@ -1479,7 +1476,7 @@ function EmployeeDetailsFields({
             </div>
           </FormField>
           <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
-            <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
+            <input className="app-input" type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
           </FormField>
           <FormField label="Line Manager" errorMessage={fieldErrors.lineManagerIds}>
             <SearchableMultiSelect
@@ -1504,13 +1501,13 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="Hourly Rate (£)" errorMessage={fieldErrors.hourlyRate}>
-            <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
+            <input className="app-input" type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
           </FormField>
           <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
-            <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
+            <input className="app-input" type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
           </FormField>
           <FormField label="Basic Salary (£)" errorMessage={fieldErrors.annualSalary}>
-            <input
+            <input className="app-input"
               type="number"
               min="0"
               step="0.01"
@@ -1521,10 +1518,10 @@ function EmployeeDetailsFields({
             />
           </FormField>
           <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
-            <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
+            <input className="app-input" type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
           </FormField>
           <FormField label="National Insurance No." errorMessage={fieldErrors.nationalInsurance}>
-            <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
+            <input className="app-input" type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
           </FormField>
         </div>
       </div>
@@ -1640,7 +1637,7 @@ function AddressSearchField({ value, onChange }) {
       }}
     >
       <FormField label="Address">
-        <input
+        <input className="app-input"
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1651,7 +1648,7 @@ function AddressSearchField({ value, onChange }) {
       <div ref={wrapperRef} style={{ position: "relative" }}>
         <FormField label="Search by Postcode">
           <div style={{ position: "relative" }}>
-            <input
+            <input className="app-input"
               type="text"
               value={query}
               onChange={handleQueryChange}
@@ -1770,7 +1767,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
         }}
       >
         <FormField label="Contact Name">
-          <input
+          <input className="app-input"
             type="text"
             value={parsed.name}
             onChange={handleFieldChange("name")}
@@ -1779,7 +1776,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
           />
         </FormField>
         <FormField label="Contact Phone">
-          <input
+          <input className="app-input"
             type="tel"
             value={parsed.phone}
             onChange={handleFieldChange("phone")}
@@ -1788,7 +1785,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
           />
         </FormField>
         <FormField label="Relationship">
-          <input
+          <input className="app-input"
             type="text"
             value={parsed.relationship}
             onChange={handleFieldChange("relationship")}
@@ -1836,7 +1833,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
           not clear any field values.
         </span>
       </div>
-      <textarea
+      <textarea className="app-input"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={6}

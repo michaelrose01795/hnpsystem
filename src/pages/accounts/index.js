@@ -15,7 +15,8 @@ import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface";
+import SymbolButton from "@/components/ui/SymbolButton"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
@@ -287,16 +288,19 @@ export default function AccountsListPage() {
               <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 {link.title}
               </p>
-              <strong style={{ display: "block", marginTop: "8px", color: "var(--text-1)", fontSize: "1.05rem" }}>
-                {link.value}
-              </strong>
+              {/* The mark sits on the value's row: the reference IS what you
+                  are opening, so the action belongs beside it rather than as
+                  a separate full-width button underneath. */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginTop: "8px" }}>
+                <strong style={{ color: "var(--text-1)", fontSize: "1.05rem", minWidth: 0 }}>
+                  {link.value}
+                </strong>
+                <SymbolButton symbol="open" label={link.actionLabel} onClick={link.onClick} />
+              </div>
             </div>
-            <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5, minHeight: "3em" }}>
+            <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
               {link.description}
             </p>
-            <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
-              {link.actionLabel}
-            </Button>
           </LayerSurface>
         )}
       </div>

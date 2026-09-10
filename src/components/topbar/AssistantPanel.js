@@ -21,6 +21,7 @@ import React from "react";
 import { useRouter } from "next/router";
 import PopupModal from "@/components/popups/popupStyleApi";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { memberContactAction, audienceContactAction } from "@/config/topbar/communicationShortcuts";
 
@@ -125,16 +126,10 @@ function ItemRow({ item, presence, onNavigate }) {
         {item.href && <span aria-hidden="true" style={{ opacity: 0.4 }}>→</span>}
       </button>
       {messageHref && (
-        <button
-          type="button"
-          onClick={() => onNavigate(messageHref)}
-          className="app-btn app-btn--ghost"
-          aria-label="Message the responsible team"
-          title="Message the responsible team"
-          style={{ padding: "4px 8px", minHeight: 0, flexShrink: 0 }}
-        >
-          💬
-        </button>
+        <SymbolButton
+          symbol="message"
+          label="Message the responsible team"
+          onClick={() => onNavigate(messageHref)} />
       )}
     </div>
   );

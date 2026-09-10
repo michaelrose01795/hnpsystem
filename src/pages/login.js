@@ -167,7 +167,7 @@ const LoginCard = ({
   
     <LayerSurface
     radius="var(--radius-xl)"
-    padding="2.25rem"
+    padding="var(--space-xl)"
     style={{
       boxShadow: "var(--shadow-xl)",
       width: "100%",
@@ -178,7 +178,7 @@ const LoginCard = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "6px",
+        gap: "var(--space-1)",
         textAlign: "center"
       }}>
       

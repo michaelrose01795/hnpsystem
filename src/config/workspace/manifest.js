@@ -720,7 +720,7 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     for (const item of developerItems) used.add(item.href);
   }
 
-  // Next Jobs belongs in Workshop, including All Access and saved Reception layouts.
+  // Next Jobs belongs in Workshop, including All Access and saved Service layouts.
   const receptionModule = moduleByKey.get("department-service");
   const nextJobsItem = receptionModule?.items.find((item) => item.href === "/nextjobs");
   if (nextJobsItem) {

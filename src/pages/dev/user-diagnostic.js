@@ -45,6 +45,12 @@ import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import ReactionBar from "@/components/ui/ReactionBar";
+import SymbolButton, { SYMBOLS, SYMBOL_NAMES } from "@/components/ui/SymbolButton";
+import { SYMBOL_USAGE } from "@/lib/ui/symbolUsage.generated";
+import { NON_GLOBAL_AUDIT } from "@/lib/ui/nonGlobalUsage.generated";
+import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
 import ScrollArea from "@/components/ui/scrollAPI/ScrollArea";
 import { SkeletonBlock, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
 import useBusyAction from "@/hooks/useBusyAction";
@@ -583,7 +589,7 @@ const COLOUR_GROUPS = [
 const CARD_BACKGROUND_LAYERS = [
 { label: "--surface", value: "var(--surface)", usage: "Neutral card surfaces (job card sections, clocking history)" },
 { label: "--theme", value: "var(--theme)", usage: "Subtle accent rows (newsfeed updates, profile work summary)" },
-{ label: "--control-bg", value: "var(--theme)", usage: "Interactive card surfaces (.vhc-card, notes widget)" },
+{ label: "--control-bg", value: "var(--theme)", usage: "Control fills (inputs, dropdown triggers, notes widget)" },
 { label: "--success-surface", value: "var(--success-surface)", usage: "Success status cards (appointments, clocking history)" },
 { label: "--warning-surface", value: "var(--warning-surface)", usage: "Warning status cards (appointments, job card modal)" },
 { label: "--danger-surface", value: "var(--danger-surface)", usage: "Danger status cards (appointments, workshop dashboard)" },
@@ -636,7 +642,10 @@ const USAGE_REGISTRY = {
   "app-badge": [
   { label: "Tab badges in job-cards", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "HR employees pills", file: "src/components/HR/tabs/EmployeesTab.js" },
-  { label: "Customer portal", file: "src/features/customerPortal/components/VHCSummaryList.js" }],
+  { label: "Customer portal", file: "src/features/customerPortal/components/VHCSummaryList.js" },
+  { label: ".app-summary-item — Job card Parts metrics", file: "src/components/PartsTab.js" },
+  { label: ".app-summary-item — Customer Requests overview", file: "src/components/JobCards/CustomerRequestsTab.js" },
+  { label: ".app-summary-item — Job card write-up stats", file: "src/components/JobCards/WriteUpWorkspace.js" }],
 
   "tooltips-native": [
   { label: "Sidebar nav titles", file: "src/components/Sidebar.js" },
@@ -689,31 +698,11 @@ const USAGE_REGISTRY = {
   { label: "Customer portal layout", file: "src/features/customerPortal/components/CustomerLayout.js" },
   { label: "Profile page", file: "src/pages/profile/index.js", route: "/profile" }],
 
-  "non-global-banners": [
-  { label: "EmptyStateMessage (VHC)", file: "src/components/VHC/VhcSharedComponents.js" },
-  { label: ".login-error", file: "src/pages/login.js", route: "/login" },
-  { label: ".releasePromptBox", file: "src/features/invoices/styles/invoice.module.css" }],
-
   "global-cards": [
   { label: ".app-page-shell / .app-page-card / .app-page-stack / .app-section-card", file: "src/styles/staffglobal.css" },
   { label: "Section component", file: "src/components/Section.js" },
   { label: "Card / SectionCard component", file: "src/components/ui/Card.js" },
   { label: "--page-card-bg / --section-card-bg tokens", file: "src/styles/theme.css" }],
-
-  "non-global-cards": [
-  { label: ".vhc-card — VHC inspection", file: "src/components/VHC/VhcDetailsPanel.js" },
-  { label: ".customer-portal-card", file: "src/features/customerPortal/components/CustomerLayout.js" },
-  { label: "vhcModal.summaryCard / baseCard", file: "src/styles/appTheme.js" }],
-
-  "non-global-modals": [
-  { label: "VHC modal shells (1080×640)", file: "src/components/VHC/WheelsTyresDetailsModal.js" },
-  { label: ".paymentModal", file: "src/features/invoices/styles/invoice.module.css" },
-  { label: "popupCardStyles", file: "src/styles/appTheme.js" },
-  { label: "popupStyleApi", file: "src/components/popups/popupStyleApi.js" }],
-
-  "non-global-tables": [
-  { label: ".partsTable (invoice)", file: "src/features/invoices/styles/invoice.module.css" },
-  { label: "VHC item cell", file: "src/components/VHC/VhcSharedComponents.js" }],
 
   "domain-class-families": [
   { label: ".vhc-* — staffglobal.css", file: "src/styles/staffglobal.css" },
@@ -738,19 +727,20 @@ const USAGE_REGISTRY = {
   { label: "FilterToolbarRow", file: "src/components/ui/layout-system/FilterToolbarRow.js" }],
 
   "spacing-non-global": [
-  { label: "VHC modal padding (var(--space-md) var(--space-6))", file: "src/styles/appTheme.js" },
-  { label: "Job-card inline 24px padding", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
-  { label: "Login page paddings", file: "src/pages/login.js", route: "/login" },
-  { label: "Customer portal layout gaps", file: "src/features/customerPortal/components/CustomerLayout.js" },
-  { label: "VHC EmptyStateMessage 18px", file: "src/components/VHC/VhcSharedComponents.js" },
-  { label: "Payment modal 24px pad", file: "src/features/invoices/styles/invoice.module.css" },
-  { label: "Documents preview 24px overlay pad", file: "src/pages/tech/[jobNumber].js", route: "/tech" }],
+  { label: "VHC modal header/body/footer padding — DONE, on the --space-* scale", file: "src/styles/appTheme.js" },
+  { label: "Job-card inline padding / gaps — DONE, on the --space-* scale 2026-09-10", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
+  { label: "Login page paddings — DONE, on the --space-* scale 2026-09-10", file: "src/pages/login.js", route: "/login" },
+  { label: "Invoice / payment modal padding + gaps — DONE, on the --space-* scale 2026-09-10", file: "src/features/invoices/styles/invoice.module.css" },
+  { label: "Documents preview overlay pad — DONE, chrome now comes from PopupModal", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
+  { label: "VHC field row gap (14px)", file: "src/components/VHC/VhcDetailsPanel.js" },
+  { label: "VHC modal fixed dimensions (1080×640)", file: "src/components/VHC/VHCModalShell.js" },
+  { label: "Payment modal width min(1180px, 100%)", file: "src/features/invoices/components/InvoicePaymentModal.js" }],
 
   "popup-global": [
-  { label: "popupStyleApi (backdrop + card)", file: "src/components/popups/popupStyleApi.js" },
-  { label: "popupOverlayStyles", file: "src/styles/appTheme.js" },
-  { label: "popupCardStyles", file: "src/styles/appTheme.js" },
+  { label: ".popup-backdrop / .popup-card (the source of truth)", file: "src/styles/staffglobal.css" },
+  { label: "PopupModal + popupStyleApi (backdrop + card)", file: "src/components/popups/popupStyleApi.js" },
   { label: "ModalPortal", file: "src/components/popups/ModalPortal.js" },
+  { label: "VHC section modals", file: "src/components/VHC/VHCModalShell.js" },
   { label: "Stock check popup", file: "src/components/Consumables/StockCheckPopup.js" },
   { label: "Personal settings popup", file: "src/components/profile/personal/PersonalSettingsPopup.js" },
   { label: "Widget settings modal", file: "src/components/profile/personal/WidgetSettingsModal.js" }],
@@ -794,7 +784,7 @@ const USAGE_REGISTRY = {
   { label: "To be adopted in refactor (wrap lucide-react or similar)", file: "src/components/ui/" }],
 
   "empty-state-standard": [
-  { label: "VHC EmptyStateMessage (per-module, non-standard)", file: "src/components/VHC/VhcSharedComponents.js" },
+  { label: "VHC EmptyStateMessage — now renders the global StatusMessage banner", file: "src/components/VHC/VhcSharedComponents.js" },
   { label: "Global Standard (Phase 7) — src/components/ui/EmptyState.js", file: "src/components/ui/EmptyState.js" },
   { label: "To be adopted in refactor (accounts, parts, HR lists)", file: "src/pages/accounts/index.js", route: "/accounts" }],
 
@@ -825,8 +815,8 @@ const USAGE_REGISTRY = {
   { label: "Proposed: <DataTable /> primitive with empty/loading/selected states", file: "src/components/ui/" }],
 
   "popup-unified-proposal": [
-  { label: "Merge popupStyleApi.js", file: "src/components/popups/popupStyleApi.js" },
-  { label: "Merge appTheme.popupOverlayStyles / popupCardStyles", file: "src/styles/appTheme.js" },
+  { label: "PopupModal — the single popup primitive", file: "src/components/popups/popupStyleApi.js" },
+  { label: "appTheme.popupOverlayStyles / popupCardStyles — DONE, removed 2026-09-10", file: "src/styles/appTheme.js" },
   { label: "Proposed Global Standard — src/components/ui/Popup.js", file: "src/components/ui/" }],
 
   "spacing-comparison": [
@@ -834,6 +824,37 @@ const USAGE_REGISTRY = {
   { label: "Audit: appTheme.js inline px values", file: "src/styles/appTheme.js" },
   { label: "Audit: inline padding in job-cards", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Audit: VHC components", file: "src/components/VHC/VhcSharedComponents.js" }],
+
+  // Generated by tools/scripts/check-symbols.js from the code itself, so every
+  // new SymbolButton call site shows up here without anyone remembering to add
+  // it. Regenerate with `npm run check:symbols` (runs in predev/prebuild).
+  "symbol-tokens": SYMBOL_USAGE,
+
+  // Every "Non-Global" section's Where-used list is the audit's own file list,
+  // so the popup and the section body can never disagree. Regenerated by
+  // `npm run audit:non-global` (predev/prebuild).
+  ...Object.fromEntries(
+    Object.entries(NON_GLOBAL_AUDIT).map(([key, entry]) => [key, entry.usage])
+  ),
+
+  // Structural drift the scanner cannot count: these are single facts about the
+  // stylesheets themselves, not a number of call sites.
+  "non-global-feedback": [
+  { label: ".app-toast — defined but zero consumers", file: "src/styles/families/toasts.css" },
+  { label: ".app-alert — what every shipped toast actually uses", file: "src/components/TopbarAlerts.js" },
+  { label: ".app-empty-state — base declaration (align-items: center)", file: "src/styles/families/empty-states.css" },
+  { label: ".app-empty-state — re-declared, wins on source order (flex-start)", file: "src/styles/staffglobal.css" },
+  { label: "EmptyState primitive — the component both rules style", file: "src/components/ui/EmptyState.js" }],
+
+  "non-global-headings": [
+  { label: "h1/h2 styled only inside @media (max-width: 640px)", file: "src/styles/staffglobal.css" },
+  { label: "--text-h1 … --text-h4 type scale (defined, largely unused)", file: "src/styles/theme.css" },
+  { label: "Governance note — deliberately not fixed", file: "docs/ui/staff-design-governance.md" }],
+
+  "non-global-panels": [
+  { label: ".modal-panel / .popup-panel / .drawer-panel — trace selectors only, no CSS", file: "src/styles/families/modals.css" },
+  { label: "Named as canonical shells by the style reviewer", file: "src/lib/staff-style-review/auditParser.js" },
+  { label: ".popup-backdrop / .popup-card — what actually carries the chrome", file: "src/styles/staffglobal.css" }],
 
   "motion-transitions": [
   { label: "Tokens: --duration-* / --ease-* / --control-transition", file: "src/styles/theme.css" },
@@ -875,14 +896,7 @@ function UsagePopup({ itemKey, title, onClose }) {
           <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>
             Where is &ldquo;{title}&rdquo; used?
           </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "var(--text-1)" }}
-            aria-label="Close">
-            
-            ×
-          </button>
+          <SymbolButton symbol="close" label="Close" onClick={onClose} />
         </div>
         <p style={{ margin: "0 0 14px", fontSize: "12px", color: "var(--text-1)" }}>
           {usages.length} known location{usages.length === 1 ? "" : "s"}.
@@ -1094,6 +1108,79 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
       }
       {children}
     </DevLayoutSection>);
+
+}
+
+// One "Non-Global" showcase: staff UI that hand-rolls something staffglobal.css
+// already owns.
+//
+// The counts and the file list come from NON_GLOBAL_AUDIT
+// (src/lib/ui/nonGlobalUsage.generated.js), regenerated by
+// `npm run audit:non-global` in predev/prebuild. Nothing here is typed by hand,
+// so a section cannot claim drift that has since been fixed — which is exactly
+// how the previous Non-Global sections went stale.
+//
+//   instead  – the global thing to reach for instead (required: a section that
+//              cannot name its replacement is a complaint, not a task).
+//   note     – optional extra context for structural drift the scanner can only
+//              partly see.
+function NonGlobalSection({ itemKey, title, instead, note, onOpenUsage, noteText, onNoteChange, noteSaving, children }) {
+  const audit = NON_GLOBAL_AUDIT[itemKey];
+  const usage = audit?.usage || [];
+  return (
+    <ShowcaseSection
+      title={title}
+      itemKey={itemKey}
+      onOpenUsage={onOpenUsage}
+      noteText={noteText}
+      onNoteChange={onNoteChange}
+      noteSaving={noteSaving}>
+
+      {audit &&
+      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
+        <span style={{ fontSize: "22px", fontWeight: 700, color: "var(--primary)", lineHeight: 1 }}>{audit.total}</span>
+        <span style={{ fontSize: "11px", color: "var(--text-1)" }}>
+          across {audit.files} file{audit.files === 1 ? "" : "s"} — {audit.title}
+        </span>
+      </div>
+      }
+
+      <div style={{ fontSize: "11px", color: "var(--text-1)", lineHeight: 1.5, marginBottom: "10px" }}>
+        <strong style={{ color: "var(--accentText)" }}>Use instead:</strong> {instead}
+      </div>
+
+      {note &&
+      <div style={{ fontSize: "11px", color: "var(--text-1)", lineHeight: 1.5, marginBottom: "10px", opacity: 0.85 }}>
+        {note}
+      </div>
+      }
+
+      {children}
+
+      {usage.length > 0 &&
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-1)", marginBottom: "4px" }}>
+          {audit && audit.files > usage.length ? `Heaviest ${usage.length} of ${audit.files} files` : "Where"}
+        </div>
+        {usage.map((entry) =>
+        <div
+          key={entry.file + entry.label}
+          style={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "5px 8px", borderRadius: "var(--radius-xs)", background: "var(--surface)", fontSize: "11px" }}>
+
+          <span style={{ color: "var(--text-1)", fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {entry.label}
+          </span>
+          <code style={{ color: "var(--text-1)", opacity: 0.7, fontSize: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", direction: "rtl", maxWidth: "45%" }}>
+            {entry.file}
+          </code>
+        </div>
+        )}
+        <div style={{ fontSize: "10px", color: "var(--text-1)", opacity: 0.7, marginTop: "6px", fontStyle: "italic" }}>
+          Counted by tools/scripts/audit-non-global.js — “Where used” lists the same files.
+        </div>
+      </div>
+      }
+    </ShowcaseSection>);
 
 }
 
@@ -1621,6 +1708,7 @@ const SHOWCASE_CATALOG = {
   // ── Buttons ──
   "buttons-app-btn": { category: "Buttons", scope: "global", terms: "button btn primary secondary ghost danger pill click action" },
   "interaction-states-buttons": { category: "Buttons", scope: "global", terms: "button hover active focus pressed disabled interaction state" },
+  "non-global-buttons": { category: "Buttons", scope: "non-global", terms: "button hand-rolled inline style bespoke per-module custom not app-btn drift" },
   // ── Inputs & Fields ──
   "input-app-input": { category: "Inputs & Fields", scope: "global", terms: "input text field form app-input textfield" },
   "interaction-states-inputs": { category: "Inputs & Fields", scope: "global", terms: "input hover focus active disabled interaction state" },
@@ -1628,9 +1716,12 @@ const SHOWCASE_CATALOG = {
   "focus-ring": { category: "Inputs & Fields", scope: "global", terms: "focus ring outline control-ring accessibility keyboard" },
   "form-validation": { category: "Inputs & Fields", scope: "global", terms: "validation error success helper text form field" },
   "field-group": { category: "Inputs & Fields", scope: "global", terms: "field group stacked form layout pattern" },
+  "non-global-inputs": { category: "Inputs & Fields", scope: "non-global", terms: "input textarea hand-rolled bespoke per-module custom not app-input drift" },
+  "non-global-form-labels": { category: "Inputs & Fields", scope: "non-global", terms: "label form field caption typography missing primitive per-module custom drift" },
   // ── Dropdowns & Selects ──
   "dropdown-api": { category: "Dropdowns & Selects", scope: "global", terms: "dropdown select option menu picker choice" },
   "multiselect-dropdown": { category: "Dropdowns & Selects", scope: "global", terms: "multiselect multi select dropdown tag chip department" },
+  "non-global-selects": { category: "Dropdowns & Selects", scope: "non-global", terms: "native select raw legacy migration dropdownfield drift" },
   // ── Calendar & Time ──
   "calendar-api": { category: "Calendar & Time", scope: "global", terms: "calendar date picker datepicker range highlight disabled" },
   "monthpicker-api": { category: "Calendar & Time", scope: "global", terms: "month picker monthpicker year previous next dropdown" },
@@ -1639,11 +1730,15 @@ const SHOWCASE_CATALOG = {
   "searchbar-api": { category: "Search", scope: "global", terms: "search bar searchbar query filter clear loading" },
   // ── Tabs ──
   "tab-api": { category: "Tabs", scope: "global", terms: "tab tabs tabgroup navigation switch panel wrap" },
+  "non-global-tabs": { category: "Tabs", scope: "non-global", terms: "tab competing implementation duplicate app-tab stafftabs three systems drift" },
   // ── Badges & Labels ──
-  "app-badge": { category: "Badges & Labels", scope: "global", terms: "badge label bubble pill tag status indicator app-badge tone modifier" },
+  "app-badge": { category: "Badges & Labels", scope: "global", terms: "badge label bubble pill tag status indicator app-badge tone modifier summary tile stat counter metric app-summary-item app-summary-grid app-summary-section app-summary-label app-summary-value" },
+  "non-global-badges": { category: "Badges & Labels", scope: "non-global", terms: "badge pill chip status inline hand-rolled per-module custom not app-badge drift" },
   // ── Colours & Tokens ──
   "colour-tokens": { category: "Colours & Tokens", scope: "global", terms: "colour color token swatch palette theme accent surface primary danger success warning" },
   "section-layers": { category: "Colours & Tokens", scope: "global", terms: "section layer level background surface theme card nesting depth alternation token surfaceMain accentSurfaceSubtle" },
+  "symbol-tokens": { category: "Colours & Tokens", scope: "global", terms: "symbol symbols icon glyph mark circle 44px reply edit delete close next back up down pin announce help message add open app-symbol-btn SymbolButton mark glyph set where used" },
+  "non-global-colours": { category: "Colours & Tokens", scope: "non-global", terms: "raw hex colour literal hardcoded no token status dot accent fallback drift" },
   // ── Spacing & Layout ──
   "spacing-global": { category: "Spacing & Layout", scope: "global", terms: "spacing space gap gutter padding margin layout global" },
   "spacing-non-global": { category: "Spacing & Layout", scope: "non-global", terms: "spacing hardcoded padding margin gap per-module custom" },
@@ -1651,20 +1746,20 @@ const SHOWCASE_CATALOG = {
   "radius-scale": { category: "Spacing & Layout", scope: "global", terms: "radius border-radius scale xs sm md lg xl pill round" },
   // ── Tables ──
   "table-app-data": { category: "Tables", scope: "global", terms: "table data grid row column cell header app-data-table" },
-  "non-global-tables": { category: "Tables", scope: "non-global", terms: "table grid per-module custom data" },
   "table-states": { category: "Tables", scope: "global", terms: "table state empty loading hover selected actions row" },
+  "non-global-tables": { category: "Tables", scope: "non-global", terms: "table grid per-module custom data not app-data-table drift" },
   // ── Popups & Modals ──
-  "popup-global": { category: "Popups & Modals", scope: "global", terms: "popup modal overlay popupStyleApi popupCardStyles dialog" },
-  "non-global-modals": { category: "Popups & Modals", scope: "non-global", terms: "modal dialog popup shell per-module custom" },
+  "popup-global": { category: "Popups & Modals", scope: "global", terms: "popup modal overlay popupStyleApi popup-backdrop popup-card dialog" },
   "popup-unified-proposal": { category: "Popups & Modals", scope: "global", terms: "popup unified proposal replace consolidate modal dialog" },
   "confirm-dialogs": { category: "Popups & Modals", scope: "global", terms: "confirmation dialog confirm cancel action destructive preview" },
+  "non-global-modals": { category: "Popups & Modals", scope: "non-global", terms: "modal dialog popup shell backdrop scrim overlay per-module custom drift blur tint" },
+  "non-global-panels": { category: "Popups & Modals", scope: "non-global", terms: "modal-panel popup-panel drawer-panel phantom class no css trace selector drift" },
   // ── Cards & Sections ──
   "global-cards": { category: "Cards & Sections", scope: "global", terms: "card section panel app-page-card app-section-card app-page-stack app-page-shell Section global canonical hierarchy" },
-  "non-global-cards": { category: "Cards & Sections", scope: "non-global", terms: "card section panel container box per-module custom" },
   // ── Feedback & Status ──
   "status-message": { category: "Feedback & Status", scope: "global", terms: "status message alert info warning error success notification" },
-  "non-global-banners": { category: "Feedback & Status", scope: "non-global", terms: "banner alert notification message per-module custom" },
   "toast-notifications": { category: "Feedback & Status", scope: "global", terms: "toast notification snackbar alert proposed transient" },
+  "non-global-feedback": { category: "Feedback & Status", scope: "non-global", terms: "toast alert banner empty state duplicate competing implementation app-toast app-alert drift" },
   "empty-state-standard": { category: "Feedback & Status", scope: "global", terms: "empty state no data placeholder illustration pattern" },
   "form-validation": { category: "Feedback & Status", scope: "global", terms: "form validation inline field error aria required submit focus summary useFormValidation pattern" },
   // ── Loading & Skeletons ──
@@ -1682,6 +1777,8 @@ const SHOWCASE_CATALOG = {
   "motion-transitions": { category: "Motion & Transitions", scope: "global", terms: "motion transition animation hover transform opacity pulse skeleton" },
   // ── Domain / Reference ──
   "domain-class-families": { category: "Reference", scope: "global", terms: "domain class family index reference audit" },
+  "non-global-stylesheets": { category: "Reference", scope: "non-global", terms: "css module stylesheet competing per-feature surface outside family system drift" },
+  "non-global-headings": { category: "Typography", scope: "non-global", terms: "heading h1 h2 h3 hierarchy type scale desktop browser default missing drift" },
   // ── Dev Overlay ──
   "dev-layout-overlay": { category: "Dev Tools", scope: "global", terms: "dev layout overlay section tree registry debug inspect" }
 };
@@ -1833,29 +1930,15 @@ function DevOverlayShowcase({ overlay, registry, computedSections, onOpenUsage }
 
 }
 
-function ShowcaseCategoryHeader({ category, visible }) {
+function ShowcaseCategoryHeader({ category, visible, children }) {
   if (!visible) return null;
   return (
-    <div
-      className="showcase-category-header"
-      style={{
-        padding: "6px 0 4px",
-        marginBottom: "8px",
-        borderBottom: "2px solid var(--primary-border)"
-      }}>
-      
-      <h3
-        style={{
-          margin: 0,
-          fontSize: "11px",
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          color: "var(--accent-base, var(--primary))"
-        }}>
+    <div className="showcase-category" role="region" aria-label={category}>
+      <h3 className="showcase-category-header">
         
         {category}
       </h3>
+      <div className="showcase-category-grid">{children}</div>
     </div>);
 
 }
@@ -1910,11 +1993,19 @@ function GlobalUiShowcase() {
   // ── Showcase filter & search ──
   const [showcaseScope, setShowcaseScope] = useState("all");
   const [showcaseSearch, setShowcaseSearch] = useState("");
+  const [showcaseCategory, setShowcaseCategory] = useState("all");
   const searchLower = showcaseSearch.toLowerCase().trim();
 
   const isSectionVisible = useCallback((itemKey) => {
     const entry = SHOWCASE_CATALOG[itemKey];
     if (!entry) return true;
+    // A Non-Global section whose audit has reached zero has been migrated onto
+    // the global system, so it drops off the page on its own. The section is
+    // NOT deleted: the audit still scans for it every predev/prebuild, so if the
+    // drift ever comes back the count rises above zero and the section returns
+    // with it. That is the whole point of generating this from the code.
+    if (NON_GLOBAL_AUDIT[itemKey] && NON_GLOBAL_AUDIT[itemKey].total === 0) return false;
+    if (showcaseCategory !== "all" && entry.category !== showcaseCategory) return false;
     if (showcaseScope !== "all" && entry.scope !== showcaseScope) return false;
     if (searchLower) {
       const haystack = `${entry.category} ${entry.terms} ${itemKey}`.toLowerCase();
@@ -1922,7 +2013,7 @@ function GlobalUiShowcase() {
       if (!words.every((w) => haystack.includes(w))) return false;
     }
     return true;
-  }, [showcaseScope, searchLower]);
+  }, [showcaseScope, searchLower, showcaseCategory]);
 
   const visibleCategorySet = new Set();
   for (const [key, entry] of Object.entries(SHOWCASE_CATALOG)) {
@@ -1976,34 +2067,95 @@ function GlobalUiShowcase() {
           gap: var(--space-sm);
           margin-bottom: var(--space-md);
         }
-        /* Masonry-style multi-column layout so the showcase fills wide
-           screens instead of a single tall stack. Category headers and the
-           full-width control cards span every column; individual showcase
-           cards flow into columns and never split across a column break. */
+        /* Page-only layout classes and dividers, explicitly approved by the user.
+           Keep the existing demo backgrounds and shared component styles. */
         .user-diagnostic-showcase {
-          column-gap: var(--space-md);
-          column-width: 340px;
-        }
-        .user-diagnostic-showcase > .showcase-filter-card,
-        .user-diagnostic-showcase > .showcase-comparison-card,
-        .user-diagnostic-showcase > .showcase-category-header {
-          column-span: all;
-          break-inside: avoid;
+          display: flex;
+          flex-direction: column;
+          gap: var(--page-stack-gap);
+          min-width: 0;
         }
         .user-diagnostic-showcase .app-section-card,
         .showcase-section-card {
           background: #fdf2f8 !important;
           box-shadow: none;
           border: none;
-          margin: 0 0 var(--space-md);
-          break-inside: avoid;
-          -webkit-column-break-inside: avoid;
-          page-break-inside: avoid;
         }
-        @media (max-width: 700px) {
-          .user-diagnostic-showcase {
-            column-width: auto;
-            column-count: 1;
+        .user-diagnostic-showcase .showcase-category {
+          container: diagnostic-category / inline-size;
+          width: 100%;
+          min-width: 0;
+        }
+        .user-diagnostic-showcase .showcase-category-header {
+          padding-block: var(--space-sm);
+          margin: 0 0 var(--layout-card-gap);
+          border-bottom: var(--separating-line);
+          font-size: 15px;
+          font-weight: 800;
+          color: var(--accentText);
+        }
+        .user-diagnostic-showcase .showcase-category-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
+          gap: var(--layout-card-gap);
+          align-items: stretch;
+        }
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card {
+          position: relative;
+          min-width: 0;
+          margin: 0;
+          overflow-wrap: anywhere;
+        }
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card::before,
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card::after {
+          content: "";
+          position: absolute;
+          pointer-events: none;
+        }
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card::before {
+          inset-block: 0;
+          left: calc(var(--layout-card-gap) / -2);
+        }
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card::after {
+          inset-inline: 0;
+          top: calc(var(--layout-card-gap) / -2);
+        }
+        .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n + 2)::after {
+          border-top: var(--separating-line);
+        }
+        .user-diagnostic-showcase .showcase-section-card > div:first-child > button,
+        .user-diagnostic-showcase .showcase-filter-card .app-btn {
+          min-height: 44px;
+          min-width: 44px;
+        }
+        @container diagnostic-category (min-width: 620px) {
+          .user-diagnostic-showcase .showcase-category-grid {
+            grid-template-columns: repeat(auto-fit, minmax(calc((100% - var(--layout-card-gap)) / 2), 1fr));
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n)::after {
+            border-top: none;
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n + 3)::after {
+            border-top: var(--separating-line);
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(2n)::before {
+            border-left: var(--separating-line);
+          }
+        }
+        @container diagnostic-category (min-width: 860px) {
+          .user-diagnostic-showcase .showcase-category-grid {
+            grid-template-columns: repeat(auto-fit, minmax(calc((100% - var(--layout-card-gap) * 2) / 3), 1fr));
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n)::before,
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n)::after {
+            border: none;
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(3n + 2)::before,
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(3n + 3)::before {
+            border-left: var(--separating-line);
+          }
+          .user-diagnostic-showcase .showcase-category-grid > .showcase-section-card:nth-child(n + 4)::after {
+            border-top: var(--separating-line);
           }
         }
         /* Default = NO border around showcase demo wrappers.
@@ -2033,9 +2185,7 @@ function GlobalUiShowcase() {
         }
         .showcase-filter-card {
           background: #fdf2f8 !important;
-          position: sticky;
-          top: 0;
-          z-index: 10;
+          position: relative;
           margin-bottom: var(--space-sm);
           border-bottom: none;
         }
@@ -2232,7 +2382,11 @@ function GlobalUiShowcase() {
         parentKey="user-diagnostic/showcase"
         backgroundToken="surface"
         className="app-section-card showcase-filter-card">
-        <div className="showcase-filter-tabs">
+        <div className="showcase-comparison-head">
+          <h2>UI component library</h2>
+          <p>Browse by category or search for a component. Select a section heading to see where it is used; use Add to keep a note.</p>
+        </div>
+        <div className="showcase-filter-tabs" role="group" aria-label="Component scope">
           {[
           { value: "all", label: "All" },
           { value: "global", label: "Global" },
@@ -2249,6 +2403,16 @@ function GlobalUiShowcase() {
             </Button>
           )}
         </div>
+        <DropdownField
+          label="Category"
+          value={showcaseCategory}
+          onValueChange={setShowcaseCategory}
+          options={[
+            { value: "all", label: "All categories" },
+            ...[...new Set(Object.values(SHOWCASE_CATALOG).map((entry) => entry.category))]
+              .map((category) => ({ value: category, label: category }))
+          ]}
+        />
         <SearchBar
           value={showcaseSearch}
           onChange={(e) => setShowcaseSearch(e.target.value)}
@@ -2258,14 +2422,14 @@ function GlobalUiShowcase() {
             width: "100%"
           }} />
 
-        {(showcaseScope !== "all" || searchLower) &&
+        {(showcaseScope !== "all" || searchLower || showcaseCategory !== "all") &&
         <div style={{ marginTop: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "10px", color: "var(--text-1)" }}>
               {visibleCategorySet.size} categor{visibleCategorySet.size === 1 ? "y" : "ies"} visible
             </span>
             <Button
             type="button"
-            onClick={() => {setShowcaseScope("all");setShowcaseSearch("");}}
+            onClick={() => {setShowcaseScope("all");setShowcaseSearch("");setShowcaseCategory("all");}}
             size="xs"
             variant="ghost">
 
@@ -2284,6 +2448,22 @@ function GlobalUiShowcase() {
         <div className="showcase-comparison-head">
           <h3>Height Compare Row</h3>
           <p>One horizontal strip of live controls so button, dropdown, calendar, search, and tab heights can be compared side-by-side.</p>
+        </div>
+        {/* Symbols. The emoji trigger is the same <ReactionBar> the /newsfeed
+            post row uses — pressing it grows the reaction set out of its left
+            edge. Beside it sit the shared symbol circles. They are shown HERE
+            and nowhere else in the compare row because this is the one place
+            their exact 44px circle can be read against the control floor of
+            every control below. Full catalogue: the "Symbols" section under
+            Colours & Tokens. */}
+        <div className="app-symbol-row" style={{ marginBottom: "12px" }}>
+          <ReactionBar label="React" />
+          <SymbolButton symbol="reply" label="Reply" />
+          <SymbolButton symbol="edit" label="Edit" />
+          <SymbolButton symbol="delete" label="Delete" />
+          <SymbolButton symbol="close" label="Close" />
+          <SymbolButton symbol="back" label="Back" />
+          <SymbolButton symbol="next" label="Next" />
         </div>
         <div className="showcase-comparison-scroller">
           <div className="showcase-comparison-item">
@@ -2383,7 +2563,8 @@ function GlobalUiShowcase() {
       </DevLayoutSection>
 
       {/* ── Dev Layout Overlay ────────────────────────────────── */}
-      <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
+      {visibleCategorySet.size === 0 && <p role="status">No sections match these filters. Clear the filters or try another search.</p>}
+      <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")}>
       {isSectionVisible("colour-tokens") &&
       <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ marginBottom: "14px" }}>
@@ -2463,15 +2644,164 @@ function GlobalUiShowcase() {
         )}
       </ShowcaseSection>
       }
+      {/* Symbols live beside the colour tokens on purpose: like a colour, a
+          symbol is a token of the design system, not something a page invents.
+          Everything here comes from SYMBOLS in ui/SymbolButton.js, painted by
+          families/symbols.css. Adding a symbol means adding it there — never a
+          bare emoji or a one-off inline SVG in a page. */}
+      {isSectionVisible("symbol-tokens") &&
+      <ShowcaseSection title="Symbols (.app-symbol-btn)" itemKey="symbol-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        <div style={{ fontSize: "11px", color: "var(--text-1)", opacity: 0.8, marginBottom: "14px", lineHeight: 1.5 }}>
+          Every symbol in the app is registered in SYMBOLS (ui/SymbolButton.js) and painted by
+          families/symbols.css. Each renders as an exact 44px circle with the glyph filling most of
+          it. Size and fill are fixed — a symbol never drops below the touch target, and there is
+          no tone axis: the mark says what the action is. Change a mark here and it changes
+          everywhere it is used. <strong>Where used</strong> above is generated from the code by
+          npm run check:symbols, so every call site appears there on its own — and the same scan
+          fails the build on any hand-rolled emoji or one-off SVG button.
+        </div>
 
-      {isSectionVisible("dev-layout-overlay") &&
-      <>
-        <ShowcaseCategoryHeader category="Dev Tools" visible={visibleCategorySet.has("Dev Tools")} />
-        <DevOverlayShowcase overlay={overlay} registry={registry} computedSections={computedSections} onOpenUsage={openUsage} />
-        </>
+        {/* The full set. This grid IS the catalogue — if a symbol is not here,
+            it does not exist in the app. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          The set — {SYMBOL_NAMES.length} symbols
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
+            gap: "10px",
+            marginBottom: "18px"
+          }}>
+          {SYMBOL_NAMES.map((name) =>
+          <div
+            key={name}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: 0 }}>
+            <SymbolButton symbol={name} label={SYMBOLS[name].label} />
+            <code
+              style={{ fontSize: "9px", color: "var(--text-1)", opacity: 0.75, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+              {name}
+            </code>
+          </div>
+          )}
+        </div>
+
+        {/* The two sizes, side by side. The table one is not opted into at the
+            call site — the rule keys off .app-data-table — so this demo uses a
+            real table to show what a row actually renders. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Two sizes — 44px standing alone, 32px in a table row
+        </div>
+        <div style={{ fontSize: "11px", color: "var(--text-1)", opacity: 0.8, marginBottom: "10px", lineHeight: 1.5 }}>
+          A symbol inside an <code>.app-data-table</code> drops to
+          <code> --table-action-btn-height</code> (32px) with a 23px glyph, so it lines up with
+          the other in-row actions instead of growing the row by 12px. Width and height come
+          down together — it stays a true circle, never an oval. Nothing is passed at the call
+          site; use <code>.app-symbol-btn--table</code> by hand for a row-list that is not a
+          real table.
+        </div>
+        <LayerTheme padding="12px" gap="12px">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <SymbolButton symbol="view" label="View" />
+            <SymbolButton symbol="edit" label="Edit" />
+            <SymbolButton symbol="delete" label="Delete" />
+            <code style={{ fontSize: "10px", color: "var(--text-1)", opacity: 0.75 }}>44px — standalone</code>
+          </div>
+          <table className="app-data-table">
+            <thead>
+              <tr><th>Reference</th><th>Status</th><th style={{ textAlign: "right" }}>Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PS-10432</td>
+                <td><span className="app-badge app-badge--success">Paid</span></td>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: "inline-flex", gap: "8px" }}>
+                    <SymbolButton symbol="view" label="View" />
+                    <SymbolButton symbol="edit" label="Edit" />
+                    <SymbolButton symbol="delete" label="Delete" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>PS-10433</td>
+                <td><span className="app-badge app-badge--warning">Pending</span></td>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: "inline-flex", gap: "8px" }}>
+                    <SymbolButton symbol="view" label="View" />
+                    <SymbolButton symbol="edit" label="Edit" />
+                    <SymbolButton symbol="delete" label="Delete" />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </LayerTheme>
+
+        {/* The popup header convention, rendered outside a popup so it can be
+            inspected. The Close below is a plain <Button>Close</Button>: the
+            rules in staffglobal.css collapse its label, make it the 44px
+            circle and order it last. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Popup header convention — close is top right, everything else to its left
+        </div>
+        <LayerTheme padding="12px">
+          <div className="app-popup-compact-header">
+            <h3 style={{ margin: 0, fontSize: "14px" }}>Job 24815 — parts</h3>
+            <div className="app-popup-compact-header__actions">
+              <Button type="button" variant="secondary" size="sm">Close</Button>
+              <Button type="button" variant="secondary" size="sm">Print</Button>
+              <Button type="button" variant="primary" size="sm">Save</Button>
+            </div>
+          </div>
+        </LayerTheme>
+        <div style={{ fontSize: "10px", color: "var(--text-1)", opacity: 0.75, marginTop: "8px" }}>
+          Close is authored FIRST above and still renders last — order is enforced by the convention,
+          not by markup order, so no popup has to remember it.
+        </div>
+      </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Buttons" visible={visibleCategorySet.has("Buttons")} />
+
+      {isSectionVisible("section-layers") &&
+      <ShowcaseSection title="Section Layers (surface / theme alternation)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-md)", border: "1px solid var(--primary-border)" }}>
+          <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
+          <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-sm)" }}>
+            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerTheme</div>
+            <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
+              <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
+              <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
+                <div style={{ fontSize: "10px", color: "var(--text-1)" }}>LayerTheme</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic", marginTop: "10px" }}>
+          Odd levels use surface colour (--surface); even levels use card background theme colour (--theme). Only two colours — alternating — across all nesting depths.
+        </div>
+      </ShowcaseSection>
+      }
+      {isSectionVisible("non-global-colours") &&
+      <NonGlobalSection
+        itemKey="non-global-colours"
+        title="Non-Global Colours (hex literals)"
+        instead={<>a token from <code>src/styles/theme.css</code>. Never introduce a colour outside it (CLAUDE.md §3.1).</>}
+        note={<>These are the residue recorded on purpose in governance §7.6, not fresh drift: queue-planner and appointment status dots that have no matching token yet, and the accent fallback literals duplicated across BrandLogo / CarImage / ProfileThemeControls where consolidating would change two of the three values. Each needs a token decision before it can move. Photo and video annotation ink is excluded — that colour is baked into the exported image and must not follow the theme.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Dev Tools" visible={visibleCategorySet.has("Dev Tools")}>
+      {isSectionVisible("dev-layout-overlay") && <DevOverlayShowcase overlay={overlay} registry={registry} computedSections={computedSections} onOpenUsage={openUsage} />}
+
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Buttons" visible={visibleCategorySet.has("Buttons")}>
       {isSectionVisible("buttons-app-btn") &&
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
@@ -2513,7 +2843,21 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
-      <ShowcaseCategoryHeader category="Inputs & Fields" visible={visibleCategorySet.has("Inputs & Fields")} />
+      {isSectionVisible("non-global-buttons") &&
+      <NonGlobalSection
+        itemKey="non-global-buttons"
+        title="Non-Global Buttons"
+        instead={<>the shared <strong>&lt;Button&gt;</strong> (src/components/ui/Button.js) or the <code>.app-btn</code> family. Its <code>variant</code> / <code>size</code> props already cover primary, secondary, ghost and danger, plus the 44px control floor and the table-row 32px variant.</>}
+        note={<>A hand-rolled button is the single most common drift in the app: each one re-picks a fill, a radius and a font weight, so hover, disabled and focus-visible states differ page to page. <strong>This one is not a mechanical swap.</strong> Sampling the ten heaviest files, only 17 of ~100 map onto a variant unambiguously; about two thirds carry a <em>conditional or status-derived</em> fill (overdue red, stage colour, on/off state). <code>.app-btn</code> sets <code>background</code> and <code>color</code> with <code>!important</code>, so adding the class to those would silently flatten the state colour the button exists to show. Each needs its meaning preserved — a variant, a tone class, or a token — which is why they are counted here rather than migrated. Only buttons that set their own visual properties are counted; a bare <code>&lt;button&gt;</code> wrapping an icon is not.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Inputs & Fields" visible={visibleCategorySet.has("Inputs & Fields")}>
       {isSectionVisible("input-app-input") &&
       <ShowcaseSection title="Text Field (.app-input + InputField)" itemKey="input-app-input" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -2651,7 +2995,33 @@ function GlobalUiShowcase() {
         <InputField label="Phone" placeholder="+44 ..." />
       </ShowcaseSection>
       }
-      <ShowcaseCategoryHeader category="Dropdowns & Selects" visible={visibleCategorySet.has("Dropdowns & Selects")} />
+      {isSectionVisible("non-global-inputs") &&
+      <NonGlobalSection
+        itemKey="non-global-inputs"
+        title="Non-Global Inputs / Textareas"
+        instead={<>the <strong>&lt;InputField&gt;</strong> primitive, or <code>className="app-input"</code> on a bare input. That is what carries <code>--input-ring</code>, the focus ring, the control height and the placeholder colour.</>}
+        note={<>Counts text inputs and textareas only — checkbox, radio, file, range and colour inputs have their own global rules and are excluded. 120 of the original 182 were migrated on 2026-09-10; most were completely unstyled browser-default inputs, and two files carried a local <code>inputStyle</code> clone that had to be emptied as well, or it would have won over the class it was replacing.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      {isSectionVisible("non-global-form-labels") &&
+      <NonGlobalSection
+        itemKey="non-global-form-labels"
+        title="Non-Global Form Labels"
+        instead={<>nothing yet — <strong>this is a gap in the system, not a misuse of it</strong>. There is no shared form-label primitive, so every form declares label typography locally and they have drifted apart.</>}
+        note={<>Recorded in the governance doc as deliberately unfixed. The fix is to add a label primitive (or a <code>.app-form-label</code> class in families/forms.css) and migrate onto it — not to keep restyling labels per form. Until then these are counted, not blamed.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Dropdowns & Selects" visible={visibleCategorySet.has("Dropdowns & Selects")}>
       {isSectionVisible("dropdown-api") &&
       <ShowcaseSection title="Dropdown (.dropdown-api)" itemKey="dropdown-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -2805,7 +3175,21 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Calendar & Time" visible={visibleCategorySet.has("Calendar & Time")} />
+      {isSectionVisible("non-global-selects") &&
+      <NonGlobalSection
+        itemKey="non-global-selects"
+        title="Non-Global Selects"
+        instead={<><strong>&lt;DropdownField&gt;</strong> (or <strong>&lt;MultiSelectDropdown&gt;</strong>). CLAUDE.md §3.4a: a raw <code>&lt;select&gt;</code> is never allowed in staff UI — it accepts <code>&lt;option&gt;</code> children as a drop-in migration path.</>}
+        note={<>Down from 36 in migration pass 1, and <code>npm run check:dropdowns</code> holds the line so no new one can appear. The survivor is a grouped <code>&lt;optgroup&gt;</code> media-relink control and <strong>DropdownField has no optgroup support</strong> — migrating it means adding grouped options to the dropdown API first, not rewriting the call site.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Calendar & Time" visible={visibleCategorySet.has("Calendar & Time")}>
       {isSectionVisible("calendar-api") &&
       <ShowcaseSection title="Calendar (.calendar-api)" itemKey="calendar-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -2944,7 +3328,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Search" visible={visibleCategorySet.has("Search")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Search" visible={visibleCategorySet.has("Search")}>
       {isSectionVisible("searchbar-api") &&
       <ShowcaseSection title="Search Bar (.searchbar-api)" itemKey="searchbar-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -2997,7 +3383,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Tabs" visible={visibleCategorySet.has("Tabs")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Tabs" visible={visibleCategorySet.has("Tabs")}>
       {isSectionVisible("tab-api") &&
       <ShowcaseSection title="Tabs (.tab-api / TabGroup)" itemKey="tab-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3045,7 +3433,21 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Badges & Labels" visible={visibleCategorySet.has("Badges & Labels")} />
+      {isSectionVisible("non-global-tabs") &&
+      <NonGlobalSection
+        itemKey="non-global-tabs"
+        title="Non-Global Tabs (competing implementations)"
+        instead={<><strong>&lt;TabGroup&gt;</strong> → <code>.tab-api</code>. It is already dominant; the other two bases exist only because nothing has migrated off them.</>}
+        note={<>Three tab systems render tabs in this app. None is broken, which is why all three are still here — consolidating changes what the minority pages look like, and the two bases take different props, so it is a component migration rather than a class swap. Worth knowing: <code>StaffTabs</code> has <strong>no page consumers at all</strong> — only its own file and the <code>components/ui</code> barrel — so it is dead code rather than a competing implementation in use. The count is implementations, not call sites.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Badges & Labels" visible={visibleCategorySet.has("Badges & Labels")}>
       {isSectionVisible("app-badge") &&
       <ShowcaseSection title="Labels & Bubbles (.app-badge)" itemKey="app-badge" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
@@ -3062,32 +3464,112 @@ function GlobalUiShowcase() {
           <span className="app-badge app-badge--uppercase app-badge--success">uppercase</span>
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic", marginTop: "10px" }}>
-          Shape comes from .app-badge; colour comes from one semantic tone modifier. Replaces the per-module rules that previously lived in vhc-badge, hr-employees-row-pill, jobcard-tab-badge, multiselect-dropdown-api__tag, SeverityBadge inline styles, and vhcModalContentStyles.badge.
+          Shape comes from .app-badge; colour comes from one semantic tone modifier. The shape is the summary tile shown
+          below — --radius-sm corner, 8px/10px padding, locked to 44px (32px inside a data table) — not the 28px pill-end
+          a button carries, so a status can never be mistaken for something clickable. Replaces the per-module rules that previously lived in vhc-badge, hr-employees-row-pill, jobcard-tab-badge, multiselect-dropdown-api__tag, SeverityBadge inline styles, and vhcModalContentStyles.badge.
+        </div>
+
+        {/* Summary tiles belong to this category because they are the counter
+            bubble at section scale: a label plus a value in one pill-shaped tile.
+            Base .app-summary-item is filled with --surface, so it is shown here on
+            a LayerTheme strip — its real home, e.g. the job card tab shell. Surface
+            ladder, CLAUDE.md 3.0a-2. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Summary tiles (.app-summary-item) — on a --theme layer
+        </div>
+        <LayerTheme padding="12px">
+          <div className="app-summary-section">
+            <div className="app-summary-grid">
+              <div className="app-summary-item"><span className="app-summary-label">Total Requests</span><span className="app-summary-value">6</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Total Hours</span><span className="app-summary-value">4.75</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Clocked Hrs</span><span className="app-summary-value">3.20</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Pre-picked</span><span className="app-summary-value">2</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">In Progress</span><span className="app-summary-value">1</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Complete</span><span className="app-summary-value">3</span></div>
+            </div>
+          </div>
+        </LayerTheme>
+
+        <div style={{ fontSize: "10px", color: "var(--text-1)", opacity: 0.75, marginTop: "8px" }}>
+          The tile keeps its own --surface fill. This is the common case — the Job card Parts
+          metrics and Customer Requests overview both sit on the tab shell, a --theme layer.
+        </div>
+
+        {/* Same tiles, the other rung — the exact mirror of the demo above: a
+            --surface card holding --theme tiles. The showcase card is itself
+            --surface, so this card's own edge does not read against it; the point
+            here is the tiles, which must flip to --theme on a --surface layer.
+            That is what .app-summary-item--theme is for. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Summary tiles (.app-summary-item) — on a --surface layer
+        </div>
+        <LayerSurface padding="12px">
+          <div className="app-summary-section">
+            <div className="app-summary-grid">
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">Allocated</span><span className="app-summary-value">12</span></div>
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">On Order</span><span className="app-summary-value">4</span></div>
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">Back Order</span><span className="app-summary-value">1</span></div>
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">Return</span><span className="app-summary-value">0</span></div>
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">Removed</span><span className="app-summary-value">1</span></div>
+              <div className="app-summary-item app-summary-item--theme"><span className="app-summary-label">Total Parts</span><span className="app-summary-value">17</span></div>
+            </div>
+          </div>
+        </LayerSurface>
+        <div style={{ fontSize: "10px", color: "var(--text-1)", opacity: 0.75, marginTop: "8px" }}>
+          On a --surface layer the tile takes .app-summary-item--theme and flips to the --theme
+          fill. Use this inside a popup card or any panel that is already --surface.
+        </div>
+
+        {/* The failure the modifier prevents, shown rather than described: the same
+            --surface layer with bare tiles, which have nothing to separate them from
+            the layer behind. */}
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Wrong pairing — bare .app-summary-item on a --surface layer
+        </div>
+        <LayerSurface padding="12px">
+          <div className="app-summary-section">
+            <div className="app-summary-grid">
+              <div className="app-summary-item"><span className="app-summary-label">Allocated</span><span className="app-summary-value">12</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">On Order</span><span className="app-summary-value">4</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Back Order</span><span className="app-summary-value">1</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Return</span><span className="app-summary-value">0</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Removed</span><span className="app-summary-value">1</span></div>
+              <div className="app-summary-item"><span className="app-summary-label">Total Parts</span><span className="app-summary-value">17</span></div>
+            </div>
+          </div>
+        </LayerSurface>
+        <div style={{ fontSize: "10px", color: "var(--danger-text)", marginTop: "8px" }}>
+          --surface tiles on a --surface layer: the step between them is zero, so the tiles
+          dissolve into the panel and only the text reads. Add --theme.
+        </div>
+
+        <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic", marginTop: "12px" }}>
+          Four classes, all in staffglobal.css: .app-summary-section is the flex row that lets
+          controls sit beside the tiles, .app-summary-grid the responsive repeat(auto-fit,
+          minmax(130px, 1fr)) track, .app-summary-item the 44px tile (padding 8px 10px,
+          --radius-sm, --surface), holding .app-summary-label (10px uppercase, --grey-accent)
+          and .app-summary-value (18px, --accentText). Pick the fill from the layer underneath,
+          never from the component — the Job card Parts metrics and Customer Requests overview
+          carry no local overrides.
         </div>
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
-      {isSectionVisible("section-layers") &&
-      <ShowcaseSection title="Section Layers (surface / theme alternation)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-md)", border: "1px solid var(--primary-border)" }}>
-          <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
-          <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-sm)" }}>
-            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerTheme</div>
-            <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
-              <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
-              <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
-                <div style={{ fontSize: "10px", color: "var(--text-1)" }}>LayerTheme</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--text-1)", fontStyle: "italic", marginTop: "10px" }}>
-          Odd levels use surface colour (--surface); even levels use card background theme colour (--theme). Only two colours — alternating — across all nesting depths.
-        </div>
-      </ShowcaseSection>
+      {isSectionVisible("non-global-badges") &&
+      <NonGlobalSection
+        itemKey="non-global-badges"
+        title="Non-Global Badges"
+        instead={<><code>.app-badge</code> plus a tone modifier (<code>--success</code>, <code>--warning</code>, <code>--danger</code>, <code>--accent-soft</code>). Shape, padding and contrast are decided once there.</>}
+        note={<>Detected as a pill-radius span painting its own background — the status chips that make two screens showing the same status look different. <strong>Check the size before migrating one.</strong> <code>.app-badge</code> is <code>--control-height</code> (44px) tall with <code>--radius-sm</code>, sized to sit beside a full control; these inline chips are typically ~20px with <code>--radius-pill</code>. There is no compact text variant (<code>--count</code> is a 32px numeric circle), so swapping the class in roughly doubles a chip's height. Closing this properly means adding a small badge variant to families/badges.css first.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
       }
-      <ShowcaseCategoryHeader category="Spacing & Layout" visible={visibleCategorySet.has("Spacing & Layout")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Spacing & Layout" visible={visibleCategorySet.has("Spacing & Layout")}>
       {isSectionVisible("spacing-global") &&
       <ShowcaseSection title="Spacing — Global (--space-* / gutters / layout)" itemKey="spacing-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
@@ -3167,16 +3649,9 @@ function GlobalUiShowcase() {
       <ShowcaseSection title="Spacing — Non-Global (per-module hardcoded)" itemKey="spacing-non-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px" }}>
           {[
-          ["12px", "Job-card row gap, table cell padding"],
-          ["14px", "VHC field row gap"],
-          ["16px", "VHC EmptyStateMessage padding (alt to --space-md)"],
-          ["18px", "VHC EmptyStateMessage padding (login error pad)"],
-          ["24px", "Document preview overlay pad, paymentModal pad, job-card section pad"],
-          ["30px / 80px", "paymentModal box-shadow offsets"],
-          ["1080×640", "VHC modal fixed dimensions"],
-          ["min(1180px,100%)", "paymentModal width"],
-          ["min(640px,100%)", "popupCardStyles width"],
-          ["min(960px,100%)", "popupStyleApi card width"]].
+          ["14px", "VHC field row gap — VhcDetailsPanel / VhcMediaGallery"],
+          ["1080×640", "VHC modal fixed dimensions — VHCModalShell / appTheme"],
+          ["min(1180px,100%)", "paymentModal width — InvoicePaymentModal"]].
           map(([val, where]) =>
           <div key={val} style={{ display: "flex", gap: "10px", padding: "6px 8px", background: "var(--surface)", borderRadius: "var(--radius-xs)" }}>
               <code style={{ color: "var(--primary)", fontWeight: 700, minWidth: "120px" }}>{val}</code>
@@ -3185,12 +3660,16 @@ function GlobalUiShowcase() {
           )}
         </div>
         <p style={{ marginTop: "10px", marginBottom: 0, fontSize: "10px", color: "var(--text-1)", fontStyle: "italic" }}>
-          These bypass the --space-* scale. Consider replacing with the closest token.
+          These bypass the --space-* scale. Consider replacing with the closest token. The
+          job-card, login and invoice paddings listed here previously were snapped to the scale
+          on 2026-09-10; the document-preview overlay pad now comes from PopupModal chrome.
         </p>
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Tables" visible={visibleCategorySet.has("Tables")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Tables" visible={visibleCategorySet.has("Tables")}>
       {isSectionVisible("table-app-data") &&
       <ShowcaseSection title="Table (.app-data-table / .app-table-shell)" itemKey="table-app-data" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div className="app-table-shell-scroll">
@@ -3241,39 +3720,24 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
-      {isSectionVisible("non-global-tables") &&
-      <ShowcaseSection title="Non-Global Tables" itemKey="non-global-tables" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div>
-            <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "4px" }}>partsTable (fixed-layout invoice)</div>
-            <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", fontSize: "12px" }}>
-              <thead>
-                <tr style={{ background: "var(--surface)", borderBottom: "2px solid var(--primary-border)" }}>
-                  <th style={{ padding: "6px", textAlign: "left" }}>Part</th>
-                  <th style={{ padding: "6px", textAlign: "right" }}>Qty</th>
-                  <th style={{ padding: "6px", textAlign: "right" }}>Net</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td style={{ padding: "6px" }}>Brake pads</td><td style={{ padding: "6px", textAlign: "right" }}>1</td><td style={{ padding: "6px", textAlign: "right" }}>£42.00</td></tr>
-                <tr><td style={{ padding: "6px" }}>Disc</td><td style={{ padding: "6px", textAlign: "right" }}>2</td><td style={{ padding: "6px", textAlign: "right" }}>£88.00</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div>
-            <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "4px" }}>VHC item cell</div>
-            <div style={{ padding: "12px 16px", background: "var(--control-bg)", borderRadius: "var(--radius-sm)" }}>
-              <div style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-1)", fontWeight: 700 }}>BRAKES</div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)" }}>Front pads — 4mm</div>
-            </div>
-          </div>
-        </div>
-      </ShowcaseSection>
-      }
 
-      <ShowcaseCategoryHeader category="Popups & Modals" visible={visibleCategorySet.has("Popups & Modals")} />
+      {isSectionVisible("non-global-tables") &&
+      <NonGlobalSection
+        itemKey="non-global-tables"
+        title="Non-Global Tables"
+        instead={<><code>className="app-data-table"</code>. That is what supplies the <code>--separating-line</code> row rule, the sticky opaque header, the <code>--table-row-height</code> floor and the 32px in-row button height.</>}
+        note={<>A table without the class inherits nothing: no row separator, no sticky header, and in-row buttons render at full 44px control height. 26 of the original 33 were migrated on 2026-09-10 — the compliance pages were declaring the exact <code>--separating-line</code> rule on every cell by hand. What is left is deliberate: two VHC tables opt out via <code>data-app-table-shell="off"</code>, the goods-in invoice tables use <code>border-spacing: 0 10px</code> to float rows as separate cards, one keeps a warning-tinted header that carries meaning, and one is a loading skeleton.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Popups & Modals" visible={visibleCategorySet.has("Popups & Modals")}>
       {isSectionVisible("popup-global") &&
-      <ShowcaseSection title="Popup Styles — Global (popupStyleApi / popupCardStyles)" itemKey="popup-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Popup Styles — Global (.popup-backdrop / .popup-card)" itemKey="popup-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700, textTransform: "uppercase" }}>popupStyleApi.backdrop</div>
@@ -3287,21 +3751,9 @@ function GlobalUiShowcase() {
               min(100%, 960px) · radius-lg · border accentBorder · scrollable
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700, textTransform: "uppercase" }}>appTheme.popupOverlayStyles</div>
-            <div style={{ height: "32px", background: "var(--overlay)", borderRadius: "var(--radius-xs)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-2)", fontSize: "11px" }}>
-              clamp(10px, 2.5vw, 20px) padding · z-index --z-modal
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700, textTransform: "uppercase" }}>appTheme.popupCardStyles</div>
-            <div style={{ background: "var(--surface)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xl)", padding: "12px", fontSize: "11px", color: "var(--text-1)" }}>
-              min(640px, 100%) · radius-xl · border var(--primary-border) · no shadow
-            </div>
-          </div>
         </div>
         <p style={{ marginTop: "10px", marginBottom: 0, fontSize: "10px", color: "var(--text-1)", fontStyle: "italic" }}>
-          Two parallel global popup systems: popupStyleApi.js (newer, --space-* aware) and appTheme.js (legacy clamp-based). Consolidation pending.
+          One popup system. The chrome lives in staffglobal.css (.popup-backdrop / .popup-card); PopupModal applies those classes and strips every visual style key a caller passes, so a popup can only override geometry. The parallel appTheme.popupOverlayStyles / popupCardStyles objects were removed 2026-09-10.
         </p>
       </ShowcaseSection>
       }
@@ -3326,7 +3778,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("popup-unified-proposal") &&
-      <ShowcaseSection title="Popup — Unified Proposal (replaces popupStyleApi + popupCardStyles)" itemKey="popup-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Popup — Unified Proposal (one &lt;Popup /&gt; primitive)" itemKey="popup-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ background: "var(--overlay)", padding: "20px", borderRadius: "var(--radius-md)" }}>
           <div style={{ background: "var(--surface)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xl)", padding: "18px", maxWidth: "320px", margin: "0 auto" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Unified popup card</div>
@@ -3340,27 +3792,38 @@ function GlobalUiShowcase() {
           </div>
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-1)", marginTop: "8px", fontStyle: "italic" }}>
-          Target: merge popupStyleApi.js + appTheme.popupOverlayStyles + popupCardStyles into a single &lt;Popup /&gt; primitive in src/components/ui/.
-        </div>
-      </ShowcaseSection>
-      }
-      {isSectionVisible("non-global-modals") &&
-      <ShowcaseSection title="Non-Global Modal Shells" itemKey="non-global-modals" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ width: "100%", height: "80px", background: "var(--surface)", borderRadius: "var(--section-card-radius)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-1)" }}>
-            VHC modal shell — 1080×640, --section-card-radius
-          </div>
-          <div style={{ width: "100%", height: "80px", background: "var(--surface)", borderRadius: "var(--radius-xl)", border: "1px solid var(--primary-border)", boxShadow: "0 30px 80px rgba(15,23,42,0.22)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-1)" }}>
-            paymentModal — min(1180px,100%), shadow + 24px pad
-          </div>
-          <div style={{ width: "100%", height: "60px", background: "var(--surface)", borderRadius: "var(--radius-xl)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-1)" }}>
-            popupCardStyles — min(640px,100%)
-          </div>
+          Half done: appTheme.popupOverlayStyles / popupCardStyles are gone and every popup now goes through PopupModal + .popup-backdrop / .popup-card. Remaining: lift PopupModal into a fully-featured &lt;Popup /&gt; primitive in src/components/ui/.
         </div>
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")} />
+      {isSectionVisible("non-global-modals") &&
+      <NonGlobalSection
+        itemKey="non-global-modals"
+        title="Non-Global Modal Scrims"
+        instead={<><strong>&lt;PopupModal&gt;</strong>, or <code>.popup-backdrop</code> + <code>.popup-card</code> directly. Those carry the accent-tinted scrim, the 10px backdrop blur, <code>--z-modal</code>, the viewport gap and the portrait rules.</>}
+        note={<>Cleared on 2026-09-10, so this section is hidden until it is needed again. All seven painted their own translucent scrim — four different dimming levels across the app, none of them blurred or accent-tinted — and each fix was the same two lines: drop the inline style, add the class. The audit still scans for this pattern on every predev/prebuild, so a new hand-rolled scrim brings the section straight back.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      {isSectionVisible("non-global-panels") &&
+      <NonGlobalSection
+        itemKey="non-global-panels"
+        title="Non-Global Panel Classes (phantom shells)"
+        instead={<><code>.popup-card</code>. It is the only modal surface with real CSS behind it.</>}
+        note={<><code>.modal-panel</code>, <code>.popup-panel</code> and <code>.drawer-panel</code> are named as canonical modal shells by the style reviewer, and are matched by the dev overlay's trace selectors — but <strong>no stylesheet declares any of them</strong>. Anything adopting one to "follow the system" would render completely unstyled.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")}>
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>
@@ -3384,36 +3847,16 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
-      {isSectionVisible("non-global-cards") &&
-      <ShowcaseSection title="Non-Global Cards / Sections" itemKey="non-global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ background: "var(--control-bg)", padding: "16px", borderRadius: "var(--section-card-radius)", border: "1px solid var(--primary-border)" }}>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--primary)" }}>vhc-card</div>
-            <div style={{ fontSize: "12px", color: "var(--text-1)" }}>hover: translateY(-2px) + shadow</div>
-          </div>
-          <div style={{ background: "var(--page-card-bg)", padding: "var(--section-card-padding)", borderRadius: "var(--section-card-radius)", border: "1px solid var(--primary-border)" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600 }}>customer-portal-card</div>
-          </div>
-          <div style={{ background: "var(--surface)", padding: "var(--section-card-padding)", borderRadius: "var(--section-card-radius)", border: "1px solid var(--primary-border)", opacity: 0.85 }}>
-            <div style={{ fontSize: "13px", fontWeight: 600 }}>customer-portal-card--muted</div>
-          </div>
-          <div style={{ padding: "var(--space-md) var(--space-6)", background: "var(--control-bg)", borderRadius: "var(--section-card-radius)" }}>
-            <div style={{ fontSize: "12px", color: "var(--text-1)" }}>vhcModal.summaryCard</div>
-          </div>
-          <div style={{ display: "grid", padding: "var(--space-6)", background: "var(--surface)", borderRadius: "var(--section-card-radius)", border: "1px solid var(--primary-border)" }}>
-            <div style={{ fontSize: "12px", color: "var(--text-1)" }}>vhcModal.baseCard (hover lifts -3px)</div>
-          </div>
-        </div>
-      </ShowcaseSection>
-      }
 
-      <ShowcaseCategoryHeader category="Feedback & Status" visible={visibleCategorySet.has("Feedback & Status")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Feedback & Status" visible={visibleCategorySet.has("Feedback & Status")}>
       {isSectionVisible("status-message") &&
       <ShowcaseSection title="Status Messages (.app-status-message)" itemKey="status-message" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <StatusMessage tone="info">Info-tone status message.</StatusMessage>
           <StatusMessage tone="success">Success-tone status message.</StatusMessage>
-          <StatusMessage tone="danger">Danger-tone status message.</StatusMessage>
+          <StatusMessage>Danger-tone status message.</StatusMessage>
         </div>
       </ShowcaseSection>
       }
@@ -3473,23 +3916,22 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
-      {isSectionVisible("non-global-banners") &&
-      <ShowcaseSection title="Non-Global Banners / Alerts" itemKey="non-global-banners" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ padding: "18px", border: "none", background: "var(--theme-status)", color: "var(--info)", borderRadius: "var(--radius-md)", fontSize: "13px" }}>
-            VHC EmptyStateMessage (info banner)
-          </div>
-          <div style={{ background: "rgba(var(--danger-rgb), 0.12)", padding: "10px 14px", borderRadius: "var(--radius-lg)", color: "var(--danger-dark)", fontSize: "13px", fontWeight: 600 }}>
-            login-error banner
-          </div>
-          <div style={{ border: "none", background: "var(--warning-surface)", padding: "16px", borderRadius: "var(--radius-md)", color: "var(--warning-text)", fontSize: "13px" }}>
-            releasePromptBox (payment warning)
-          </div>
-        </div>
-      </ShowcaseSection>
-      }
 
-      <ShowcaseCategoryHeader category="Loading & Skeletons" visible={visibleCategorySet.has("Loading & Skeletons")} />
+      {isSectionVisible("non-global-feedback") &&
+      <NonGlobalSection
+        itemKey="non-global-feedback"
+        title="Non-Global Feedback (duplicate declarations)"
+        instead={<><code>.app-alert</code> for toasts and the <strong>&lt;EmptyState&gt;</strong> primitive for empty surfaces — those are what actually ship.</>}
+        note={<>Two duplicates the stylesheets carry today. <code>.app-toast</code> is fully defined in families/toasts.css but has <strong>zero consumers</strong>: it renders only in this showcase, while every shipped toast uses <code>.app-alert</code>. And <code>.app-empty-state</code> is declared twice — the family file sets <code>align-items: center</code>, staffglobal.css re-declares it as <code>flex-start</code> and wins on source order, so the family file's version never applies.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Loading & Skeletons" visible={visibleCategorySet.has("Loading & Skeletons")}>
       {isSectionVisible("loading-skeleton") &&
       <ShowcaseSection title="Loading Skeletons" itemKey="loading-skeleton" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3521,7 +3963,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Navigation" visible={visibleCategorySet.has("Navigation")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Navigation" visible={visibleCategorySet.has("Navigation")}>
       {isSectionVisible("navigation-states") &&
       <ShowcaseSection title="Navigation States (sidebar / breadcrumb / pagination)" itemKey="navigation-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "12px" }}>
@@ -3546,7 +3990,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Scroll" visible={visibleCategorySet.has("Scroll")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Scroll" visible={visibleCategorySet.has("Scroll")}>
       {isSectionVisible("scroll-area") &&
       <ShowcaseSection title="Scroll Area (scrollAPI)" itemKey="scroll-area" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <ScrollArea maxHeight="120px" style={{ border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", padding: "8px" }}>
@@ -3559,7 +4005,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Tooltips" visible={visibleCategorySet.has("Tooltips")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Tooltips" visible={visibleCategorySet.has("Tooltips")}>
       {isSectionVisible("tooltips-native") &&
       <ShowcaseSection title="Tooltips (native title=)" itemKey="tooltips-native" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
@@ -3594,7 +4042,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Icons" visible={visibleCategorySet.has("Icons")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Icons" visible={visibleCategorySet.has("Icons")}>
       {isSectionVisible("icon-system") &&
       <ShowcaseSection title="Icon System (proposed wrapper)" itemKey="icon-system" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3616,7 +4066,9 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Motion & Transitions" visible={visibleCategorySet.has("Motion & Transitions")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Motion & Transitions" visible={visibleCategorySet.has("Motion & Transitions")}>
       {isSectionVisible("motion-transitions") &&
       <ShowcaseSection title="Motion / Transitions" itemKey="motion-transitions" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", marginBottom: "10px" }}>
@@ -3646,7 +4098,38 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
-      <ShowcaseCategoryHeader category="Reference" visible={visibleCategorySet.has("Reference")} />
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Typography" visible={visibleCategorySet.has("Typography")}>
+      {isSectionVisible("non-global-headings") &&
+      <NonGlobalSection
+        itemKey="non-global-headings"
+        title="Non-Global Headings (no desktop hierarchy)"
+        instead={<>the type scale in theme.css — <code>--text-h1</code> … <code>--text-h4</code>, <code>--text-body</code>, <code>--text-label</code>, <code>--text-caption</code>.</>}
+        note={<>staffglobal.css styles <code>h1</code> and <code>h2</code> <strong>only inside a <code>@media (max-width: 640px)</code> block</strong>. On desktop every heading falls through to the browser's default sizing, which is why headings look consistent on a phone and arbitrary on a monitor, and why so many pages set heading typography inline instead. Left as-is on purpose: adding desktop defaults would restyle every unstyled heading in the app at once, so it needs its own visual-review pass.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "10px" }}>
+          {[
+          { label: "h1 — desktop", size: "browser default (2em)", token: "should be var(--text-h1)" },
+          { label: "h1 — under 640px", size: "styled by staffglobal.css", token: "the only place it is set" },
+          { label: "h2 — desktop", size: "browser default (1.5em)", token: "should be var(--text-h2)" }].
+          map((row) =>
+          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "6px 8px", borderRadius: "var(--radius-xs)", background: "var(--surface)", fontSize: "11px" }}>
+              <strong style={{ color: "var(--text-1)" }}>{row.label}</strong>
+              <span style={{ color: "var(--text-1)", opacity: 0.8 }}>{row.size}</span>
+              <code style={{ color: "var(--primary)", fontSize: "10px" }}>{row.token}</code>
+            </div>
+          )}
+        </div>
+      </NonGlobalSection>
+      }
+
+      </ShowcaseCategoryHeader>
+
+      <ShowcaseCategoryHeader category="Reference" visible={visibleCategorySet.has("Reference")}>
       {isSectionVisible("domain-class-families") &&
       <ShowcaseSection title="Domain Class Family Index" itemKey="domain-class-families" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "11px" }}>
@@ -3660,8 +4143,6 @@ function GlobalUiShowcase() {
           [".customer-portal-*", "Customer portal layout"],
           [".redirect-*", "Redirect page shell"],
           [".paymentModal", "Invoice payment modal"],
-          [".partsTable", "Invoice line items table"],
-          [".releasePromptBox", "Payment warning banner"],
           [".paymentMethodCard", "Selectable payment option"]].
           map(([name, desc]) =>
           <div key={name} style={{ padding: "6px 8px", background: "var(--surface)", borderRadius: "var(--radius-xs)" }}>
@@ -3672,6 +4153,20 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+
+      {isSectionVisible("non-global-stylesheets") &&
+      <NonGlobalSection
+        itemKey="non-global-stylesheets"
+        title="Non-Global Stylesheets (CSS Modules)"
+        instead={<>a family file in <code>src/styles/families/</code>, registered in <code>src/components/ui/variants.js</code>. A CSS Module is fine for layout that is genuinely local; it is not the place for a surface, a control fill or a modal shell.</>}
+        note={<>Counted as surface declarations (<code>background</code> / <code>border-radius</code> / <code>box-shadow</code>) living outside the family system. JobCardModal.module.css used to head this list — its own overlay, card, input and buttons — but it turned out to have <strong>no importer</strong>: JobCardModal.js had already moved onto <code>.app-popup-compact-header</code> and <code>.app-input</code>, and the stylesheet was left behind. It was deleted on 2026-09-10. Worth checking the rest for the same thing before migrating anything.</>}
+        onOpenUsage={openUsage}
+        noteText={showcaseNotes}
+        onNoteChange={handleNoteChange}
+        noteSaving={noteSaving}>
+      </NonGlobalSection>
+      }
+      </ShowcaseCategoryHeader>
 
       {usagePopup &&
       <UsagePopup

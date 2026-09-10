@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
 import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
+import DataTableShell from "@/components/ui/DataTableShell";
 
 const textStyle = { color: "var(--text-1)" };
 const mutedStyle = { color: "var(--surfaceTextMuted)" };
@@ -16,12 +17,6 @@ const equalHeightPanelGridStyle = {
   ...panelGridStyle,
   alignItems: "stretch",
   gridAutoRows: "1fr",
-};
-// One sticky header plus ten canonical 44px data rows before internal scrolling.
-const tableViewportStyle = {
-  overflow: "auto",
-  maxWidth: "100%",
-  maxHeight: "calc(var(--table-row-height) * 11)",
 };
 const fourRowListMinHeight = "calc(var(--table-row-height) + var(--table-row-height) + var(--table-row-height) + var(--table-row-height) + var(--layout-card-gap) + var(--layout-card-gap) + var(--layout-card-gap))";
 const labelStyle = {
@@ -52,19 +47,20 @@ function toneStyle(tone) {
   return { background: "var(--surface)", color: "var(--text-1)" };
 }
 
+// Tone -> canonical badge variant (families/badges.css). Inside .app-data-table
+// the badge auto-sizes to --table-action-btn-height (32px), which is what the
+// hand-rolled pill this replaced was hardcoding.
+const BADGE_TONES = {
+  danger: "app-badge--danger",
+  warning: "app-badge--warning",
+  success: "app-badge--success",
+  safe: "app-badge--success",
+  neutral: "app-badge--neutral",
+};
+
 function Status({ children, tone = "neutral" }) {
   return (
-    <span style={{
-      display: "inline-flex",
-      alignItems: "center",
-      minHeight: "32px",
-      padding: "0 var(--space-3)",
-      borderRadius: "var(--radius-sm)",
-      fontSize: "var(--text-caption)",
-      fontWeight: 700,
-      whiteSpace: "nowrap",
-      ...toneStyle(tone),
-    }}>
+    <span className={`app-badge ${BADGE_TONES[tone] || BADGE_TONES.neutral}`}>
       {children}
     </span>
   );
@@ -117,38 +113,16 @@ function PriceChangeMessage({ value }) {
   );
 }
 
+// Canonical table shell (families/tables.css `.app-table-scroll`, rendered by
+// DataTableShell): no horizontal scroll, vertical scroll past ten 44px rows.
+// This used to be a hand-rolled `overflow: auto` div with a ResizeObserver that
+// re-measured header + ten rows — the CSS shell already does exactly that via
+// max-height: calc((--table-visible-rows + 1) * --table-row-height).
 function TableViewport({ children, label }) {
-  const viewportRef = useRef(null);
-  const [measuredMaxHeight, setMeasuredMaxHeight] = useState(null);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const table = viewport?.querySelector("table");
-    if (!table) return undefined;
-
-    const measure = () => {
-      const headerHeight = table.tHead?.getBoundingClientRect().height || 0;
-      const visibleRows = Array.from(table.tBodies?.[0]?.rows || []).slice(0, 10);
-      const rowsHeight = visibleRows.reduce((total, row) => total + row.getBoundingClientRect().height, 0);
-      const nextHeight = Math.ceil(headerHeight + rowsHeight);
-      setMeasuredMaxHeight((current) => current === nextHeight ? current : nextHeight);
-    };
-
-    measure();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(table);
-    return () => observer?.disconnect();
-  }, []);
-
   return (
-    <div
-      ref={viewportRef}
-      aria-label={label}
-      tabIndex={0}
-      style={{ ...tableViewportStyle, ...(measuredMaxHeight === null ? {} : { maxHeight: `${measuredMaxHeight}px` }) }}
-    >
+    <DataTableShell aria-label={label} tabIndex={0}>
       {children}
-    </div>
+    </DataTableShell>
   );
 }
 
@@ -216,16 +190,16 @@ function HistoryRows({ item, formatCurrency, formatDate }) {
   if (!history.length) return <Empty>No previous orders recorded.</Empty>;
   return (
     <TableViewport label="Consumable order history">
-      <table className="app-data-table app-data-table--rounded" style={{ minWidth: "620px" }}>
-        <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th><th>Supplier</th><th>Date</th></tr></thead>
+      <table className="app-data-table app-data-table--rounded">
+        <thead><tr><th>Item</th><th data-table-cell="nowrap">Qty</th><th data-table-cell="nowrap">Unit</th><th data-table-cell="nowrap">Total</th><th>Supplier</th><th data-table-cell="nowrap">Date</th></tr></thead>
         <tbody>{history.map((log, index) => (
           <tr key={`${log.date}-${index}`}>
             <td>{log.itemName || item.name}</td>
-            <td>{Number(log.quantity).toLocaleString()}</td>
-            <td>{formatCurrency(log.unitCost)}</td>
-            <td>{formatCurrency(log.totalCost)}</td>
+            <td data-table-cell="nowrap">{Number(log.quantity).toLocaleString()}</td>
+            <td data-table-cell="nowrap">{formatCurrency(log.unitCost)}</td>
+            <td data-table-cell="nowrap">{formatCurrency(log.totalCost)}</td>
             <td>{log.supplier || "—"}</td>
-            <td>{formatDate(log.date)}</td>
+            <td data-table-cell="nowrap">{formatDate(log.date)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -239,7 +213,7 @@ export default function ConsumablesTrackerPageUi(props) {
     alerts, budgetInput, budgetSaveError, budgetSaveMessage, budgetSaving,
     bulkOrderError, bulkOrderItems, bulkOrderLoading, cardStyle, closeBulkOrder,
     closeHistoryModal, closeOrderModal, consumablesError, criticalItems,
-    dashboardSummary, dbUserId, duplicateModalStyle, duplicateOverlayStyle,
+    dashboardSummary, dbUserId, duplicateModalStyle,
     fetchTechRequests, filteredConsumables, financialError, financialLoading,
     financialSummary, formatCurrency, formatDate, formattedBudgetUpdatedAt,
     groupedRequests, handleBudgetInputChange, handleBudgetSave,
@@ -249,7 +223,7 @@ export default function ConsumablesTrackerPageUi(props) {
     loadingConsumables, logsError, logsLoading, logsSummary, maxMonthValue,
     monthLabel, monthlyLogs, MonthPickerField, openBulkOrder, openHistoryModal,
     openOrderModal, orderForm, orderModalConsumable, orderModalError,
-    orderModalLoading, orderModalOverlayStyle, orderModalStyle, orderingRequestId,
+    orderModalLoading, orderModalStyle, orderingRequestId,
     potentialDuplicates, previewLogs, recentActivity, requestsError,
     requestsLoading, searchQuery, selectedConsumableIds, selectedMonthValue,
     setSearchQuery, setShowDuplicateModal, setShowStockCheck,
@@ -281,8 +255,8 @@ export default function ConsumablesTrackerPageUi(props) {
     <PageShell sectionKey="workshop-consumables-tracker-shell">
       <ContentWidth sectionKey="workshop-consumables-tracker-content" parentKey="workshop-consumables-tracker-shell" widthMode="content">
         {showDuplicateModal && potentialDuplicates.length > 0 ? (
-          <div style={duplicateOverlayStyle}>
-            <div style={duplicateModalStyle} role="dialog" aria-modal="true" aria-label="Potential duplicate consumables">
+          <div className="popup-backdrop">
+            <div className="popup-card" style={duplicateModalStyle} role="dialog" aria-modal="true" aria-label="Potential duplicate consumables">
               <h2 style={headingStyle}>Potential duplicate consumables</h2>
               <p style={{ margin: 0, ...mutedStyle }}>These names normalise to the same value. The tracker still preserves each source record.</p>
               <ul style={{ margin: 0, paddingLeft: "var(--space-lg)", ...mutedStyle }}>{potentialDuplicates.map((entry) => <li key={entry.normalized}>{entry.names.join(" / ")}</li>)}</ul>
@@ -294,8 +268,8 @@ export default function ConsumablesTrackerPageUi(props) {
         {showStockCheck ? <StockCheckPopup open={showStockCheck} onClose={() => setShowStockCheck(false)} isManager technicianId={dbUserId} onRequestsSubmitted={fetchTechRequests} /> : null}
 
         {historyModalConsumable ? (
-          <div style={orderModalOverlayStyle}>
-            <div style={historyModalStyle} role="dialog" aria-modal="true">
+          <div className="popup-backdrop">
+            <div className="popup-card" style={historyModalStyle} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeHistoryModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>{historyModalConsumable.name} order history</h2>
               <PriceChangeMessage value={historyModalConsumable.priceChange} />
@@ -307,8 +281,8 @@ export default function ConsumablesTrackerPageUi(props) {
         ) : null}
 
         {orderModalConsumable ? (
-          <div style={orderModalOverlayStyle}>
-            <div style={orderModalStyle} role="dialog" aria-modal="true">
+          <div className="popup-backdrop">
+            <div className="popup-card" style={orderModalStyle} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeOrderModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>Order {orderModalConsumable.name}</h2>
               <p style={{ margin: 0, ...mutedStyle }}>The last order is pre-filled. Review or change each detail before saving.</p>
@@ -337,15 +311,15 @@ export default function ConsumablesTrackerPageUi(props) {
         ) : null}
 
         {bulkOrderItems.length ? (
-          <div style={orderModalOverlayStyle}>
-            <div style={{ ...historyModalStyle, maxWidth: "980px" }} role="dialog" aria-modal="true">
+          <div className="popup-backdrop">
+            <div className="popup-card" style={{ ...historyModalStyle, maxWidth: "980px" }} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeBulkOrder} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>Grouped supplier order</h2>
               <p style={{ margin: 0, ...mutedStyle }}>Every line creates its own order record. All lines must share one supplier.</p>
               <form onSubmit={handleBulkOrderSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
                 <TableViewport label="Grouped consumables order">
-                  <table className="app-data-table app-data-table--rounded" style={{ minWidth: "820px" }}>
-                    <thead><tr><th>Item</th><th>Quantity</th><th>Unit cost</th><th>Supplier</th><th>Date</th><th>Projected</th></tr></thead>
+                  <table className="app-data-table app-data-table--rounded">
+                    <thead><tr><th>Item</th><th data-table-cell="nowrap">Quantity</th><th data-table-cell="nowrap">Unit cost</th><th>Supplier</th><th data-table-cell="nowrap">Date</th><th data-table-cell="nowrap">Projected</th></tr></thead>
                     <tbody>{bulkOrderItems.map((item) => (
                       <tr key={item.id}>
                         <td><strong>{item.name}</strong>{item.priceChange !== null ? <small style={{ display: "block", ...mutedStyle }}>{item.priceChange >= 0 ? "+" : ""}{item.priceChange.toFixed(1)}% latest price</small> : null}</td>
@@ -353,7 +327,7 @@ export default function ConsumablesTrackerPageUi(props) {
                         <td><input className="app-input" type="number" min="0" step="0.01" value={item.unitCost} onChange={(event) => handleBulkOrderChange(item.id, "unitCost", event.target.value)} required /></td>
                         <td><input className="app-input" type="text" value={item.supplier} onChange={(event) => handleBulkOrderChange(item.id, "supplier", event.target.value)} required /></td>
                         <td><input className="app-input" type="date" value={item.orderDate} onChange={(event) => handleBulkOrderChange(item.id, "orderDate", event.target.value)} required /></td>
-                        <td>{formatCurrency(Number(item.quantity) * Number(item.unitCost))}</td>
+                        <td data-table-cell="nowrap">{formatCurrency(Number(item.quantity) * Number(item.unitCost))}</td>
                       </tr>
                     ))}</tbody>
                   </table>
@@ -478,26 +452,26 @@ export default function ConsumablesTrackerPageUi(props) {
           {selectedConsumableIds.size > 1 && !bulkSelectionValid ? <div className="app-status-message app-status-message--warning">Select at least two items with the same recorded supplier to create a grouped order.</div> : null}
           <ErrorMessage>{consumablesError}</ErrorMessage>
           <TableViewport label="Scheduled consumables">
-            <table className="app-data-table app-data-table--rounded" style={{ minWidth: "1280px" }}>
-              <thead><tr><th>Select</th><th>Item</th><th>Supplier</th><th>Stock</th><th>Min / target</th><th>Days left</th><th>Suggested</th><th>Unit cost</th><th>Projected</th><th>Stock status</th><th>Schedule</th><th>Priority</th><th>Actions</th></tr></thead>
+            <table className="app-data-table app-data-table--rounded">
+              <thead><tr><th data-table-cell="nowrap">Select</th><th>Item</th><th>Supplier</th><th data-table-cell="nowrap">Stock</th><th data-table-cell="nowrap">Min / target</th><th data-table-cell="nowrap">Days left</th><th data-table-cell="nowrap">Suggested</th><th data-table-cell="nowrap">Unit cost</th><th data-table-cell="nowrap">Projected</th><th data-table-cell="nowrap">Stock status</th><th data-table-cell="nowrap">Schedule</th><th data-table-cell="nowrap">Priority</th><th data-table-cell="nowrap">Actions</th></tr></thead>
               <tbody>{scheduled.map((item) => {
                 const projectedQuantity = item.suggestedOrderQuantity ?? item.estimatedQuantity ?? 0;
                 const priority = item.stockStatus === "Out" || item.scheduleStatus.label === "Overdue" ? "Urgent" : item.stockStatus === "Low" || item.scheduleStatus.label === "Coming Up" ? "Review" : "Routine";
                 return (
                   <tr key={item.id}>
-                    <td><label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px" }}><input className="app-toggle--checkbox" type="checkbox" checked={selectedConsumableIds.has(item.id)} onChange={() => toggleConsumableSelection(item.id)} aria-label={`Select ${item.name}`} /></label></td>
+                    <td data-table-cell="nowrap"><label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px" }}><input className="app-toggle--checkbox" type="checkbox" checked={selectedConsumableIds.has(item.id)} onChange={() => toggleConsumableSelection(item.id)} aria-label={`Select ${item.name}`} /></label></td>
                     <td><a href="#consumable-order-history" aria-haspopup="dialog" aria-label={`View order history for ${item.name}`} onClick={(event) => { event.preventDefault(); openHistoryModal(item); }} style={itemHistoryLinkStyle}>{item.name}</a></td>
                     <td>{item.supplier || "—"}</td>
-                    <td>{item.stockQuantity.toLocaleString()}</td>
-                    <td>{item.minimumStock === null ? "—" : item.minimumStock.toLocaleString()} / {item.preferredStock?.toLocaleString() || "—"}</td>
-                    <td>{item.daysRemaining === null ? "—" : item.daysRemaining}</td>
-                    <td>{item.suggestedOrderQuantity === null ? "—" : item.suggestedOrderQuantity.toLocaleString()}</td>
-                    <td>{formatCurrency(item.unitCost)}</td>
-                    <td>{formatCurrency(projectedQuantity * Number(item.unitCost || 0))}</td>
-                    <td><Status tone={item.stockTone}>{item.stockStatus}</Status></td>
-                    <td><Status tone={item.scheduleStatus.tone}>{item.scheduleStatus.label === "Coming Up" ? "Order now" : item.scheduleStatus.label}</Status></td>
-                    <td><Status tone={priority === "Urgent" ? "danger" : priority === "Review" ? "warning" : "safe"}>{priority}</Status></td>
-                    <td><div style={{ display: "flex", gap: "var(--space-sm)" }}><Button type="button" size="xs" variant="primary" onClick={() => openOrderModal(item)}>{item.orderHistory.length ? "Repeat" : "Order"}</Button></div></td>
+                    <td data-table-cell="nowrap">{item.stockQuantity.toLocaleString()}</td>
+                    <td data-table-cell="nowrap">{item.minimumStock === null ? "—" : item.minimumStock.toLocaleString()} / {item.preferredStock?.toLocaleString() || "—"}</td>
+                    <td data-table-cell="nowrap">{item.daysRemaining === null ? "—" : item.daysRemaining}</td>
+                    <td data-table-cell="nowrap">{item.suggestedOrderQuantity === null ? "—" : item.suggestedOrderQuantity.toLocaleString()}</td>
+                    <td data-table-cell="nowrap">{formatCurrency(item.unitCost)}</td>
+                    <td data-table-cell="nowrap">{formatCurrency(projectedQuantity * Number(item.unitCost || 0))}</td>
+                    <td data-table-cell="nowrap"><Status tone={item.stockTone}>{item.stockStatus}</Status></td>
+                    <td data-table-cell="nowrap"><Status tone={item.scheduleStatus.tone}>{item.scheduleStatus.label === "Coming Up" ? "Order now" : item.scheduleStatus.label}</Status></td>
+                    <td data-table-cell="nowrap"><Status tone={priority === "Urgent" ? "danger" : priority === "Review" ? "warning" : "safe"}>{priority}</Status></td>
+                    <td data-table-cell="nowrap"><div style={{ display: "flex", gap: "var(--space-sm)" }}><Button type="button" size="xs" variant="primary" onClick={() => openOrderModal(item)}>{item.orderHistory.length ? "Repeat" : "Order"}</Button></div></td>
                   </tr>
                 );
               })}</tbody>
@@ -522,16 +496,16 @@ export default function ConsumablesTrackerPageUi(props) {
             </div>
           </div>
           <TableViewport label="Technician consumable requests">
-            <table className="app-data-table app-data-table--rounded" style={{ minWidth: "860px" }}>
-              <thead><tr><th>Item</th><th>Quantity</th><th>Technician</th><th>Requested</th><th>Status</th><th>Urgency</th><th>Action</th></tr></thead>
+            <table className="app-data-table app-data-table--rounded">
+              <thead><tr><th>Item</th><th data-table-cell="nowrap">Quantity</th><th>Technician</th><th data-table-cell="nowrap">Requested</th><th data-table-cell="nowrap">Status</th><th data-table-cell="nowrap">Urgency</th><th data-table-cell="nowrap">Action</th></tr></thead>
               <tbody>{techRequests.map((request) => {
                 const urgency = request.status === "urgent" ? "Urgent" : request.status === "pending" ? "Review" : "Normal";
                 return (
                   <tr key={request.id}>
-                    <td>{request.itemName || "Consumable"}</td><td>{Number(request.quantity).toLocaleString()}</td><td>{request.requestedByName || "—"}</td><td>{formatDate(request.requestedAt)}</td>
-                    <td><Status tone={request.status === "rejected" ? "danger" : request.status === "arrived" ? "safe" : request.status === "urgent" ? "warning" : "neutral"}>{(request.status || "pending").replace(/^./, (letter) => letter.toUpperCase())}</Status></td>
-                    <td><Status tone={urgency === "Urgent" ? "danger" : urgency === "Review" ? "warning" : "safe"}>{urgency}</Status></td>
-                    <td>{request.status === "pending" || request.status === "urgent" ? <Button type="button" size="xs" variant="primary" busy={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)}>Order</Button> : request.status === "ordered" ? <Button type="button" size="xs" variant="primary" busy={orderingRequestId === request.id} onClick={() => handleRequestArrived(request)}>Arrived</Button> : request.status === "arrived" ? <Button type="button" size="xs" variant="secondary" busy={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)}>Reorder</Button> : <span style={mutedStyle}>No action</span>}</td>
+                    <td>{request.itemName || "Consumable"}</td><td data-table-cell="nowrap">{Number(request.quantity).toLocaleString()}</td><td>{request.requestedByName || "—"}</td><td data-table-cell="nowrap">{formatDate(request.requestedAt)}</td>
+                    <td data-table-cell="nowrap"><Status tone={request.status === "rejected" ? "danger" : request.status === "arrived" ? "safe" : request.status === "urgent" ? "warning" : "neutral"}>{(request.status || "pending").replace(/^./, (letter) => letter.toUpperCase())}</Status></td>
+                    <td data-table-cell="nowrap"><Status tone={urgency === "Urgent" ? "danger" : urgency === "Review" ? "warning" : "safe"}>{urgency}</Status></td>
+                    <td data-table-cell="nowrap">{request.status === "pending" || request.status === "urgent" ? <Button type="button" size="xs" variant="primary" busy={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)}>Order</Button> : request.status === "ordered" ? <Button type="button" size="xs" variant="primary" busy={orderingRequestId === request.id} onClick={() => handleRequestArrived(request)}>Arrived</Button> : request.status === "arrived" ? <Button type="button" size="xs" variant="secondary" busy={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)}>Reorder</Button> : <span style={mutedStyle}>No action</span>}</td>
                   </tr>
                 );
               })}</tbody>
@@ -567,7 +541,7 @@ export default function ConsumablesTrackerPageUi(props) {
           <SectionHeader title="Order history" meta={`${monthLabel} · ${logsSummary.orders} orders · ${formatCurrency(logsSummary.spend)}`} />
           <ErrorMessage>{logsError}</ErrorMessage>
           {logsLoading ? <InlineLoading width={160} label="Loading order history" /> : monthlyLogs.length ? (
-            <TableViewport label="Monthly consumable order history"><table className="app-data-table app-data-table--rounded" style={{ minWidth: "760px" }}><thead><tr><th>Date</th><th>Item</th><th>Supplier</th><th>Quantity</th><th>Unit cost</th><th>Total</th></tr></thead><tbody>{monthlyLogs.map((order) => <tr key={order.id}><td>{formatDate(order.date)}</td><td>{order.itemName || "Consumable"}</td><td>{order.supplier || "—"}</td><td>{Number(order.quantity).toLocaleString()}</td><td>{formatCurrency(order.unitCost)}</td><td>{formatCurrency(order.totalValue || Number(order.quantity) * Number(order.unitCost))}</td></tr>)}</tbody></table></TableViewport>
+            <TableViewport label="Monthly consumable order history"><table className="app-data-table app-data-table--rounded"><thead><tr><th data-table-cell="nowrap">Date</th><th>Item</th><th>Supplier</th><th data-table-cell="nowrap">Quantity</th><th data-table-cell="nowrap">Unit cost</th><th data-table-cell="nowrap">Total</th></tr></thead><tbody>{monthlyLogs.map((order) => <tr key={order.id}><td data-table-cell="nowrap">{formatDate(order.date)}</td><td>{order.itemName || "Consumable"}</td><td>{order.supplier || "—"}</td><td data-table-cell="nowrap">{Number(order.quantity).toLocaleString()}</td><td data-table-cell="nowrap">{formatCurrency(order.unitCost)}</td><td data-table-cell="nowrap">{formatCurrency(order.totalValue || Number(order.quantity) * Number(order.unitCost))}</td></tr>)}</tbody></table></TableViewport>
           ) : <Empty>No orders were recorded for this month.</Empty>}
         </LayerTheme>
       </ContentWidth>

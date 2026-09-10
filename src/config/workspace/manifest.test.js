@@ -211,7 +211,7 @@ function buildGoldenSidebarSections() {
       label: "Parts",
       category: "departments",
       items: [
-        // Job Cards intentionally absent — it is a Reception page, not a Parts one.
+        // Job Cards intentionally absent — it is a Service page, not a Parts one.
         { label: "Orders", href: "/order", roles: ["parts"] },
         { label: "Create Order", href: "/new-order", roles: ["parts"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
@@ -223,7 +223,7 @@ function buildGoldenSidebarSections() {
       label: "Parts Manager",
       category: "departments",
       items: [
-        // See the Parts section above — Job Cards stays in Reception.
+        // See the Parts section above — Job Cards stays in Service.
         { label: "Orders", href: "/order", roles: ["parts manager"] },
         { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
@@ -348,18 +348,18 @@ function legacyFullLandablePaths(golden, roles) {
     { href: "/accounts/invoices", roles: legacyAccountsRoles },
     { href: "/accounts/reports", roles: legacyAccountsRoles },
   ];
-  // The Reception context section. /customers is group-inherited (no per-page
+  // The Service context section. /customers is group-inherited (no per-page
   // roles), so its reach is exactly the roles the service department is
   // assigned — derived here from ROLE_DEPARTMENT_MAP so this reference cannot
   // silently drift from the manifest's own derivation.
-  const legacyReceptionRoles = new Set(
+  const legacyServiceRoles = new Set(
     Object.entries(ROLE_DEPARTMENT_MAP)
       .filter(([, department]) => department === "service")
       .map(([role]) => role.toLowerCase())
   );
-  const legacyReceptionLinks = [{ href: "/customers", roles: legacyReceptionRoles }];
+  const legacyServiceLinks = [{ href: "/customers", roles: legacyServiceRoles }];
 
-  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyReceptionLinks]) {
+  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyServiceLinks]) {
     if (matches(Array.from(link.roles))) accessible.add(link.href);
   }
 
@@ -505,8 +505,8 @@ describe("workspace manifest - module bundle placement", () => {
 
   it("keeps the former topbar create and appointments pages on the Workshop Manager rail", () => {
     // These used to sit in a bespoke "Workshop Control" bundle that mixed
-    // Workshop and Reception pages. Post module-library sweep they are in the
-    // Reception library module, which owns them — the rail still carries them.
+    // Workshop and Service pages. Post module-library sweep they are in the
+    // Service library module, which owns them — the rail still carries them.
     const reception = getRoleWorkspaceModules(["workshop manager"])
       .find((module) => module.key === "department-service");
 
@@ -524,7 +524,7 @@ describe("workspace manifest - module bundle placement", () => {
       // Library order IS the sidebar rail order for every user (see the header
       // note on SIDEBAR_MODULE_LIBRARY).
       "General",
-      "Reception",
+      "Service",
       "Workshop",
       "Tech",
       "Parts",
@@ -548,7 +548,7 @@ describe("workspace manifest - module bundle placement", () => {
       { key: "department-tech", hrefs: [
         "/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile",
       ] },
-      // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
+      // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Service.
       { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"] },
       { key: "department-management", hrefs: [
         "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
@@ -564,13 +564,13 @@ describe("workspace manifest - module bundle placement", () => {
       ] },
     ]);
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items
+      moduleCatalog.find((module) => module.label === "Service")?.items
     ).toContainEqual(expect.objectContaining({ label: "Appointments", href: "/appointments" }));
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items
+      moduleCatalog.find((module) => module.label === "Service")?.items
     ).toContainEqual(expect.objectContaining({ label: "Create Job Card", href: "/new-job" }));
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items.map((item) => item.href)
+      moduleCatalog.find((module) => module.label === "Service")?.items.map((item) => item.href)
     ).not.toContain("/goods-in");
   });
 
@@ -599,7 +599,7 @@ describe("workspace manifest - module bundle placement", () => {
     const partsHrefs = getRoleWorkspaceModules(["parts"])
       .flatMap((navigationModule) => navigationModule.items.map((item) => item.href));
     const allAccessModules = getRoleWorkspaceModules([ALL_ACCESS_ROLE]);
-    const reception = allAccessModules.find((navigationModule) => navigationModule.label === "Reception");
+    const reception = allAccessModules.find((navigationModule) => navigationModule.label === "Service");
     const parts = allAccessModules.find((navigationModule) => navigationModule.label === "Parts");
 
     expect(serviceHrefs).not.toContain("/goods-in");
@@ -625,7 +625,7 @@ describe("workspace manifest - module bundle placement", () => {
       modules: [
         {
           key: "department-service",
-          label: "Reception",
+          label: "Service",
           items: ["/appointments"],
         },
         {
@@ -692,7 +692,7 @@ describe("workspace manifest - module bundle placement", () => {
       items: ["/newsfeed", "/messages", "/appointments"],
     });
     const service = modules.find((navigationModule) => navigationModule.key === "department-service");
-    expect(service.label).toBe("Reception");
+    expect(service.label).toBe("Service");
     expect(service.items.map((item) => item.href)).toContain("/appointments");
   });
 
@@ -985,7 +985,7 @@ describe("workspace manifest — department-first selectors", () => {
   it("getContextNav deduplicates a department's pages by href", () => {
     // Parts declares Stock Catalogue / Goods In / Deliveries in BOTH the Parts
     // and Parts Manager sections; the context nav shows each once. (Job Cards
-    // is no longer among them — /jobs belongs to Reception.)
+    // is no longer among them — /jobs belongs to Service.)
     const partsManager = getContextNav("parts", ["parts manager"]);
     const hrefs = partsManager.items.map((i) => i.href);
     expect(hrefs).not.toContain("/jobs");
@@ -1015,7 +1015,7 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("getBreadcrumbTrail builds a Module › Page trail", () => {
     // "Parts" is the library module that owns /deliveries; the bespoke
-    // "Fulfilment" bundle (Reception + Parts pages) no longer exists.
+    // "Fulfilment" bundle (Service + Parts pages) no longer exists.
     const trail = getBreadcrumbTrail("/deliveries", ["parts"]);
     expect(trail.map((t) => t.label)).toEqual(["Parts", "Deliveries"]);
   });
@@ -1081,7 +1081,7 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("getWorkspaceRail exposes department-first labels for visible workspaces", () => {
     const serviceRail = getWorkspaceRail(["service"]).map((d) => d.label);
-    expect(serviceRail).toContain("Reception");
+    expect(serviceRail).toContain("Service");
     expect(serviceRail).not.toContain("Parts");
 
     const adminRail = getWorkspaceRail(["admin manager"]).map((d) => d.label);

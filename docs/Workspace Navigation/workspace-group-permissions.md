@@ -82,7 +82,7 @@ Groups are listed in manifest order. "Assigned roles" is the output of `getWorks
 | Website Shop | `/website-manager?tab=shop` | Override (cross-grant) | Same audience. |
 | Public Shop (live) | `/website#shop` | Override (cross-grant) | Same audience. |
 
-### Reception — `service`
+### Service — `service`
 **Assigned roles:** `after sales director, after sales manager, aftersales manager, service, service manager` · **Category:** departments · **Home:** `/dashboard/service`
 
 | Page | Route | Mode | Notes |
@@ -92,9 +92,9 @@ Groups are listed in manifest order. "Assigned roles" is the output of `getWorks
 | New Job | `/new-job` | Override (restriction) · Classic-locked | `service, service manager`. |
 | Next Jobs | `/nextjobs` | Override (restriction) · Classic-locked | `service manager`. |
 | Mobile Appointments | `/appointments` | Override (restriction) · Classic-locked | `service manager`. |
-| Customers | `/customers` | Inherit (group-wide) | The staff customer list. Declared un-roled in `WORKSPACE_CONTEXT_NAV_SECTIONS` ("Reception Workspace"), so it reaches every assigned Reception role. `/customers/[customerSlug]` keeps its wider `DYNAMIC_DETAIL_EXTENDS` reach so search/job-card links from other groups still resolve. |
+| Customers | `/customers` | Inherit (group-wide) | The staff customer list. Declared un-roled in `WORKSPACE_CONTEXT_NAV_SECTIONS` ("Service Workspace"), so it reaches every assigned Service role. `/customers/[customerSlug]` keeps its wider `DYNAMIC_DETAIL_EXTENDS` reach so search/job-card links from other groups still resolve. |
 
-> The assigned roles `after sales director` / `after sales manager` currently match no page in this group (legacy sections key on `aftersales manager`). Access is preserved exactly as legacy — do not "fix" this by broadening pages without a deliberate access decision. Note `/customers`, being group-inherited, is the first page here they *do* reach; they have no Reception module in `roleDefaults.js`, so it shows in their Group view but not on a rail.
+> The assigned roles `after sales director` / `after sales manager` currently match no page in this group (legacy sections key on `aftersales manager`). Access is preserved exactly as legacy — do not "fix" this by broadening pages without a deliberate access decision. Note `/customers`, being group-inherited, is the first page here they *do* reach; they have no Service module in `roleDefaults.js`, so it shows in their Group view but not on a rail.
 
 ### Workshop — `workshop`
 **Assigned roles:** `mobile technician, tech, technician, techs, workshop controller, workshop manager` · **Category:** departments · **Home:** `/dashboard/workshop`

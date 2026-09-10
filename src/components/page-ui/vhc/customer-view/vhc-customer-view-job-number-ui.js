@@ -32,7 +32,7 @@ export default function VhcCustomerViewPageUi(props) {
         fontWeight: 600,
         cursor: "pointer"
       }}>
-              ← Back to workshop view
+              Back to workshop view
             </button> : null}
           <div style={{
         fontSize: "14px",

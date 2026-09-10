@@ -1354,7 +1354,7 @@ export default function TechJobDetailPageUi(props) {
 
           {/* VHC TAB */}
           {activeTab === "vhc" && <DevLayoutSection as="div" sectionKey="myjob-tab-vhc" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell className="vhc-section-shell">
-              {!activeSection && (showVhcReopenButton ? <DevLayoutSection as="div" sectionKey="myjob-vhc-reopen-banner" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card" style={{
+              {!activeSection && (showVhcReopenButton ? <LayerTheme as="div" sectionKey="myjob-vhc-reopen-banner" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card" style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1382,7 +1382,7 @@ export default function TechJobDetailPageUi(props) {
                       Reopen VHC
                     </Button>
                   </div>
-                </DevLayoutSection> : <>
+                </LayerTheme> : <>
                   {/* VHC Header with Save Status */}
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-header" sectionType="toolbar" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-toolbar">
                     <div>
@@ -1426,18 +1426,18 @@ export default function TechJobDetailPageUi(props) {
                   </DevLayoutSection>
 
                   {/* TODO: Myjob VHC Assistant remains here but is intentionally hidden from the front end for now. */}
-                  {false && <DevLayoutSection as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                  {false && <LayerTheme as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                       <VhcAssistantPanel state={vhcAssistantState} title="VHC Assistant (Technician)" chromeless />
-                    </DevLayoutSection>}
+                    </LayerTheme>}
 
                   {!showVhcSummary && <>
                       {/* Mandatory Sections */}
-                      <DevLayoutSection as="div" sectionKey="myjob-vhc-mandatory" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                      <LayerTheme as="div" sectionKey="myjob-vhc-mandatory" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                     <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>Mandatory Sections</h3>
                     <div className="vhc-card-grid">
 
                   {/* Wheels & Tyres */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Wheels & Tyres</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
@@ -1445,10 +1445,10 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Check tread depth, pressure, and condition</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Brakes & Hubs */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Brakes & Hubs</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
@@ -1456,10 +1456,10 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Check pads, discs, and brake system</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Service Indicator & Under Bonnet */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Service Indicator & Under Bonnet</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
@@ -1467,12 +1467,12 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Service reminder, oil level, under bonnet items</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
                 </div>
-                      </DevLayoutSection>
+                      </LayerTheme>
 
               {/* Additional Checks (Optional) */}
-              <DevLayoutSection as="div" sectionKey="myjob-vhc-additional" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+              <LayerTheme as="div" sectionKey="myjob-vhc-additional" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                 <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>
                   Additional Checks
                   <span style={{
@@ -1487,7 +1487,7 @@ export default function TechJobDetailPageUi(props) {
                 <div className="vhc-card-grid">
 
                   {/* External */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("externalInspection")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("externalInspection")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>External</h4>
                       {getOptionalCount("externalInspection") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1498,10 +1498,10 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Body, lights, glass, mirrors</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Internal & Electrics */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("internalElectrics")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("internalElectrics")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Internal & Electrics</h4>
                       {getOptionalCount("internalElectrics") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1512,10 +1512,10 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Interior, lights, electrics, controls</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Underside */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("underside")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("underside")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Underside</h4>
                       {getOptionalCount("underside") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1526,13 +1526,13 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Exhaust, suspension, steering, driveshafts</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
                 </div>
-              </DevLayoutSection>
+              </LayerTheme>
                 </>}
 
               {/* VHC Summary */}
-              {showVhcSummary && <DevLayoutSection as="div" sectionKey="myjob-vhc-summary" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card vhc-content-card--bordered">
+              {showVhcSummary && <LayerTheme as="div" sectionKey="myjob-vhc-summary" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card vhc-content-card--bordered">
                   <div style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -1611,14 +1611,14 @@ export default function TechJobDetailPageUi(props) {
                         No items reported yet. Complete the VHC sections to add items.
                       </p>}
                   </div>
-                </DevLayoutSection>}
+                </LayerTheme>}
                 </>)}
 
               {/* Captured media — read-only viewer so the technician can see the
                   photos / videos they took against concerns during this check. */}
-              {!activeSection && <DevLayoutSection as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+              {!activeSection && <LayerTheme as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                   <VhcMediaGallery jobId={resolvedJobId} reloadToken={galleryReloadToken} />
-                </DevLayoutSection>}
+                </LayerTheme>}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-wheels" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
@@ -1925,7 +1925,7 @@ export default function TechJobDetailPageUi(props) {
               fontSize: "14px",
               fontWeight: "600"
             }}>
-                  + Add Note
+                  Add Note
                 </button>
               </DevLayoutSection>
 

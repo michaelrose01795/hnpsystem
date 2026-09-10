@@ -62,7 +62,13 @@
   /* Full card carries a single rounded radius; overflow:hidden clips the
      themed header and editor surfaces to the same corner. */
   border-radius: var(--section-card-radius);
-  box-shadow: var(--shadow-lg);
+  /* Even black halo on all four sides so the panel reads as FLOATING above the
+     page — same "no offset, no spread ring" shape as the right-click menu
+     (families/context-menu.css), in black rather than accent. --shadow-lg is
+     `none` in both themes, so the elevation has to be declared here. */
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.28),
+    0 0 44px rgba(0, 0, 0, 0.16);
   color: var(--text-1);
   overflow: hidden;
   box-sizing: border-box;
@@ -74,6 +80,14 @@
   font-family: inherit;
   isolation: isolate;
   z-index: 2;
+}
+
+/* Dark mode: the panel sits on a near-black shell, so the same alphas all but
+   disappear. Deepen the halo so the card still lifts off the page. */
+:global(:root[data-theme="dark"]) .panel {
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.55),
+    0 0 52px rgba(0, 0, 0, 0.38);
 }
 
 .panelEnter {

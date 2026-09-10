@@ -8,6 +8,7 @@
 import React from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { WIDGET_META } from "@/config/topbar/productivityWidgets";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
@@ -86,26 +87,16 @@ export default function WorkspaceCustomiseOverlay({
               <span style={{ flex: 1, minWidth: 0, fontSize: "0.86rem", color: "var(--text-1)" }}>
                 {widget.icon} {widget.title}
               </span>
-              <button
-                type="button"
+              <SymbolButton
+                symbol="up"
+                label={`Move ${widget.title} up`}
                 onClick={() => onReorderWidget?.(widget.id, -1)}
-                disabled={index === 0}
-                className="app-btn app-btn--ghost"
-                aria-label={`Move ${widget.title} up`}
-                style={{ padding: "2px 8px", minHeight: 0, opacity: index === 0 ? 0.4 : 1 }}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
+                disabled={index === 0} />
+              <SymbolButton
+                symbol="down"
+                label={`Move ${widget.title} down`}
                 onClick={() => onReorderWidget?.(widget.id, 1)}
-                disabled={index === orderedWidgets.length - 1}
-                className="app-btn app-btn--ghost"
-                aria-label={`Move ${widget.title} down`}
-                style={{ padding: "2px 8px", minHeight: 0, opacity: index === orderedWidgets.length - 1 ? 0.4 : 1 }}
-              >
-                ↓
-              </button>
+                disabled={index === orderedWidgets.length - 1} />
             </div>
           );
         })}

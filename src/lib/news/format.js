@@ -131,6 +131,27 @@ export const formatDueLabel = (value) => {
   return `Due in ${days} days`;
 };
 
+/**
+ * The sidebar badge's sentence, e.g.
+ *   "This update needs your acknowledgement. 6 days overdue."
+ *   "3 updates need your acknowledgement. Due in 2 days."
+ *
+ * Built from the same formatDueLabel() the banner on the post card uses, so the
+ * two never disagree about how a due date reads.
+ *
+ * @param {{ count?: number, dueAt?: string|null }} summary
+ */
+export const formatOutstandingAckLabel = ({ count = 0, dueAt = null } = {}) => {
+  const total = Number(count) || 0;
+  if (total <= 0) return "";
+  const opening =
+    total === 1
+      ? "This update needs your acknowledgement."
+      : `${total} updates need your acknowledgement.`;
+  const due = dueAt ? formatDueLabel(dueAt) : "";
+  return due ? `${opening} ${due}.` : opening;
+};
+
 export const isExpired = (value) => {
   const date = toDate(value);
   return Boolean(date) && date.getTime() <= Date.now();

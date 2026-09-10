@@ -299,6 +299,7 @@ const FAMILY_OWNERS = [
   [/\.app-toolbar|\.app-layout-toolbar-row/, "src/styles/families/toolbars.css"],
   [/\.dropdown-api|\.app-dropdown/, "src/styles/families/dropdowns.css"],
   [/\.skeleton-block|\.skeleton-chart|\.skeleton-table/, "src/styles/families/loaders.css"],
+  [/\.app-symbol-btn|\.app-symbol-row/, "src/styles/families/symbols.css"],
   [/\.app-page-card|\.app-section-card|\.app-layout-surface|\.app-layout-stat-card/, "src/styles/families/cards.css"],
 ];
 

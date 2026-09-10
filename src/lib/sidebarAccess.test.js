@@ -89,7 +89,7 @@ describe("sidebar access snapshots", () => {
 
   it("keeps duplicated standard pages in the first assigned module only", () => {
     const synced = syncAssignedStandardModules([
-      { key: "department-service", label: "Reception", items: ["/jobs"] },
+      { key: "department-service", label: "Service", items: ["/jobs"] },
       { key: "department-workshop", label: "Workshop", items: ["/jobs"] },
     ]);
 

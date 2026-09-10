@@ -55,7 +55,7 @@ function Chart({ title, subtitle, series, unit = "count", formatValue = number }
     <KpiTrendChart series={series} unit={unit} height={180} />
     <details><summary>View daily figures</summary>
       <div className="management-scroll" tabIndex={0} role="region" aria-label={`${title} daily figures`}>
-        <table><caption>{title}</caption><thead><tr><th scope="col">Date</th><th scope="col">Value</th></tr></thead>
+        <table className="app-data-table"><caption>{title}</caption><thead><tr><th scope="col">Date</th><th scope="col">Value</th></tr></thead>
           <tbody>{series.map((point) => <tr key={point.key}><td>{date(point.key, "D MMM YYYY")}</td><td>{formatValue(point.value)}</td></tr>)}</tbody>
         </table>
       </div>
@@ -153,7 +153,7 @@ function Table({ title, subtitle, columns, rows, empty, pageSize = 10 }) {
   return <Section title={title} subtitle={subtitle}>
     {rows.length ? <>
       <div className="management-scroll" tabIndex={0} role="region" aria-label={title}>
-        <table><caption>{title}</caption><thead><tr>{columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
+        <table className="app-data-table"><caption>{title}</caption><thead><tr>{columns.map((column) => <th key={column} scope="col">{column}</th>)}</tr></thead>
           <tbody>{visible.map((row) => <tr key={row.key}>{row.cells.map((cell, index) => <td key={columns[index]}>{cell}</td>)}</tr>)}</tbody>
         </table>
       </div>

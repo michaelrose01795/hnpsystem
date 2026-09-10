@@ -406,7 +406,7 @@ const getUnmatchedTyreWheels = (wheelsTyres = {}) => {
 
 const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => ({
   minHeight: "unset",
-  padding: "6px 12px",
+  padding: "var(--space-1) var(--space-3)",
   borderRadius: "var(--radius-xs)",
   border: "none",
   fontWeight: 600,
@@ -5569,7 +5569,7 @@ function DocumentsTab({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: "12px",
+          gap: "var(--space-3)",
           marginBottom: "16px",
           flexWrap: "wrap"
         }}>
@@ -5604,7 +5604,7 @@ function DocumentsTab({
         sectionType="content-card"
         parentKey="myjob-documents-panel"
         radius="var(--radius-md)"
-        padding="48px 24px"
+        padding="var(--space-2xl) var(--space-lg)"
         gap={undefined}
         style={{
           // Empty-state outline preserved as state-indicator (dashed prompt) — not a card surface border.
@@ -5626,7 +5626,7 @@ function DocumentsTab({
         sectionType="content-card"
         parentKey="myjob-documents-panel"
         radius="var(--radius-md)"
-        padding="48px 24px"
+        padding="var(--space-2xl) var(--space-lg)"
         gap={undefined}
         style={{
           textAlign: "center",
@@ -5643,7 +5643,7 @@ function DocumentsTab({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: "14px"
+          gap: "var(--space-4)"
         }}>
         
           {filteredDocuments.map((doc) => {
@@ -5697,7 +5697,7 @@ function DocumentsTab({
                   style={{
                     width: "100%", height: "100%",
                     display: "flex", flexDirection: "column",
-                    alignItems: "center", justifyContent: "center", gap: "6px"
+                    alignItems: "center", justifyContent: "center", gap: "var(--space-1)"
                   }}>
                   
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
@@ -5710,7 +5710,7 @@ function DocumentsTab({
                 }
                 </button>
 
-                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ padding: "var(--space-2) var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                   <div
                   title={docName}
                   style={{
@@ -5727,7 +5727,7 @@ function DocumentsTab({
 
                 <div
                 style={{
-                  display: "flex", gap: "6px", padding: "8px 12px",
+                  display: "flex", gap: "var(--space-1)", padding: "var(--space-sm) var(--space-3)",
                   backgroundColor: "var(--surface)"
                 }}>
                 
@@ -5736,7 +5736,7 @@ function DocumentsTab({
                   onClick={() => docUrl && setPreviewDoc(doc)}
                   disabled={!docUrl}
                   style={{
-                    flex: 1, padding: "5px 0",
+                    flex: 1, padding: "var(--space-1) 0",
                     borderRadius: "var(--radius-xs)", border: "none",
                     backgroundColor: "var(--theme)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
@@ -5750,7 +5750,7 @@ function DocumentsTab({
                   type="button"
                   onClick={() => typeof onDelete === "function" && onDelete(doc)}
                   style={{
-                    flex: 1, padding: "5px 0",
+                    flex: 1, padding: "var(--space-1) 0",
                     borderRadius: "var(--radius-xs)", border: "none",
                     backgroundColor: "var(--danger-surface)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: "pointer"

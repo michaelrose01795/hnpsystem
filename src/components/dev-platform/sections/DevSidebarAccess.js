@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import { DropdownField, MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import {
   Panel,
@@ -774,7 +775,7 @@ export default function DevSidebarAccess() {
             <>
               <span className="app-badge app-badge--neutral">{`${moduleCatalog.length} modules`}</span>
               <span className={badgeClass(modulePageMap.sharedCount > 0 ? "warning-base" : "success-base", true)}>{`${modulePageMap.sharedCount} shared pages`}</span>
-              <button type="button" onClick={() => setModulePageMapOpen(false)} className="app-btn app-btn--secondary">Close</button>
+              <Button type="button" variant="secondary" onClick={() => setModulePageMapOpen(false)}>Close</Button>
             </>
           )}
         >

@@ -16,6 +16,7 @@
 // attribute contract and `handleCardPointerDown`.
 import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
@@ -535,9 +536,9 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
               <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
             </div>
             <div className="app-popup-compact-header__actions wqp-job-modal-header__actions">
-              <button type="button" className="app-btn app-btn--primary" onClick={onOpenJobCard}>Open Job Card</button>
-              <button type="button" className="app-btn app-btn--secondary" onClick={onAssign}>Assign Technician</button>
-              <button type="button" className="app-btn app-btn--secondary" onClick={onClose}>Close</button>
+              <Button type="button" variant="primary" onClick={onOpenJobCard}>Open Job Card</Button>
+              <Button type="button" variant="secondary" onClick={onAssign}>Assign Technician</Button>
+              <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
             </div>
           </header>
 

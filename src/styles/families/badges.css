@@ -6,6 +6,13 @@
  *           accent-strong
  * Showcase:  /dev/user-diagnostic#badge
  *
+ * SHAPE CONTRACT: a badge is a summary tile, not a control. It borrows the
+ * .app-summary-item box — --radius-sm corner, 8px/10px padding — locked to
+ * 44px tall in body content and 32px inside .app-data-table. Buttons keep the
+ * 28px --control-radius pill, and that gap is what tells a status apart from
+ * something clickable. Only the two --count variants below break the shape,
+ * because a counter reads as a circle. Never re-size a badge at the call site.
+ *
  * NOTE (2026-04 audit pass): the existing .app-badge and every .app-badge--*
  * variant rule lives in src/styles/staffglobal.css (~1412-1501). They stay there
  * for this setup pass — the next cleanup pass will migrate them here

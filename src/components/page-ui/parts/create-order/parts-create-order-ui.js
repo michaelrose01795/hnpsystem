@@ -457,7 +457,7 @@ export default function PartsCreateOrderUi(props) {
                   searchTargetLine?.part_number || searchTargetLine?.part_name || [form.vehicle_make, form.vehicle_model].filter(Boolean).join(" ")
                 )}
               >Search catalogue</Button>
-              <Button type="button" variant="secondary" onClick={addManualPart}>+ Add Part</Button>
+              <Button type="button" variant="secondary" onClick={addManualPart}>Add Part</Button>
             </div>
           </div>
 

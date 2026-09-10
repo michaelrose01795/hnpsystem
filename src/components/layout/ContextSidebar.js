@@ -31,6 +31,7 @@ export default function ContextSidebar({
   navLinkProps,
   renderNavContent,
   renderSectionDivider,
+  renderSectionHeading,
 }) {
   const items = workspace?.items || [];
   const dashboards = workspace?.dashboards || [];
@@ -101,13 +102,9 @@ export default function ContextSidebar({
       {/* Dashboards sub-heading + the group's role-visible dashboards. */}
       {dashboards.length > 0 && (
         <>
-          {isCollapsed ? (
-            renderSectionDivider("divider-workspace-dashboards", { marginBottom: "10px" })
-          ) : (
-            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-              Dashboards
-            </div>
-          )}
+          {renderSectionHeading("heading-workspace-dashboards", "Dashboards", {
+            marginBottom: "10px",
+          })}
           {dashboards.map((item) => renderNavLink(item, "dashboard"))}
         </>
       )}

@@ -135,7 +135,7 @@ function ProductsTab() {
           size="sm"
           onClick={() => setEditing({ mode: "add", row: { status: "draft", stock_qty: 0 } })}
         >
-          + Add product
+          Add product
         </Button>
       </div>
 
@@ -240,7 +240,7 @@ function CategoriesTab() {
           size="sm"
           onClick={() => setEditing({ mode: "add", row: { status: "active" } })}
         >
-          + Add category
+          Add category
         </Button>
       </div>
 

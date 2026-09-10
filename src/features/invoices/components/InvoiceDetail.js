@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentModal";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 import { buildInvoiceRequestRows } from "@/features/invoices/lib/buildInvoiceRequestRows";
 import { useProformaOverrideEditor } from "@/features/invoices/components/ProformaOverrideModal";
 import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized status helpers.
@@ -130,34 +131,34 @@ const RequestBlock = ({ request, linkedParts, isEditable = false, onOpenEditor =
       </div>
 
       {Array.isArray(displayParts) && displayParts.length > 0 && (
-        <div className={styles.partsTableWrapper}>
-          <table className={styles.partsTable}>
+        <DataTableShell>
+          <table className="app-data-table invoice-parts-table">
             <thead>
               <tr>
-                <th>Part No</th>
-                <th>Description</th>
-                <th>Retail</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>VAT</th>
-                <th>Rate %</th>
+                <th scope="col" data-parts-col="part" data-table-cell="nowrap">Part No</th>
+                <th scope="col" data-parts-col="description">Description</th>
+                <th scope="col" data-parts-col="retail" data-table-cell="nowrap">Retail</th>
+                <th scope="col" data-parts-col="qty" data-table-cell="nowrap">Qty</th>
+                <th scope="col" data-parts-col="price" data-table-cell="nowrap">Price</th>
+                <th scope="col" data-parts-col="vat" data-table-cell="nowrap">VAT</th>
+                <th scope="col" data-parts-col="rate" data-table-cell="nowrap">Rate %</th>
               </tr>
             </thead>
             <tbody>
               {displayParts.map((item, index) => (
                 <tr key={`${item.part_number}-${index}`}>
-                  <td>{item.part_number || "—"}</td>
-                  <td>{item.description || "—"}</td>
-                  <td>{item.retail ? formatCurrency(item.retail) : "—"}</td>
-                  <td>{item.qty ?? 0}</td>
-                  <td>{formatCurrency(item.price || 0)}</td>
-                  <td>{formatCurrency(item.vat || 0)}</td>
-                  <td>{item.rate ?? 0}%</td>
+                  <td data-parts-col="part" data-table-cell="nowrap">{item.part_number || "—"}</td>
+                  <td data-parts-col="description">{item.description || "—"}</td>
+                  <td data-parts-col="retail" data-table-cell="nowrap">{item.retail ? formatCurrency(item.retail) : "—"}</td>
+                  <td data-parts-col="qty" data-table-cell="nowrap">{item.qty ?? 0}</td>
+                  <td data-parts-col="price" data-table-cell="nowrap">{formatCurrency(item.price || 0)}</td>
+                  <td data-parts-col="vat" data-table-cell="nowrap">{formatCurrency(item.vat || 0)}</td>
+                  <td data-parts-col="rate" data-table-cell="nowrap">{item.rate ?? 0}%</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTableShell>
       )}
     </section>
   );

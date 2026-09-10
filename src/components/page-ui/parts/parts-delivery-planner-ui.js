@@ -516,11 +516,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           ...collectionTableScrollStyle,
           overflowX: "auto"
         }}>
-                  <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            minWidth: "640px"
-          }}>
+                  <table className="app-data-table" style={{ minWidth: "640px" }}>
                     <thead>
                       <tr style={{
                 background: "var(--surface)",

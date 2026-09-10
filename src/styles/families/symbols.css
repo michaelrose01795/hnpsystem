@@ -1,0 +1,166 @@
+/* file location: src/styles/families/symbols.css
+ *
+ * Symbol buttons — the single source of truth for every icon-only action in
+ * the staff app (reply, edit, delete, close, next, back …).
+ *
+ * The shape is fixed and non-negotiable: an EXACT circle with the symbol drawn
+ * large and optically centred inside it. There are exactly TWO sizes and no
+ * others — 44px standing on its own, and 32px inside a table row, where the
+ * circle drops to --table-action-btn-height so it lines up with the other
+ * in-row actions instead of stretching the row. Every symbol in the app comes
+ * from this family + <SymbolButton> so a "delete" looks and behaves the same
+ * on the newsfeed, in a modal and in a table row. Never hand-roll a glyph
+ * button in page CSS or inline styles.
+ *
+ * Component: src/components/ui/SymbolButton.js
+ * Registered in: src/components/ui/variants.js (family id "symbol")
+ *
+ * Borderless per CLAUDE.md §3.0a — separation comes from the fill, and the
+ * keyboard ring is a box-shadow (--focus-ring), never a border.
+ */
+
+/* ========================================================= */
+/* === The two dials for the whole symbol system           === */
+/* === Set here, read by the circle AND by the in-button   === */
+/* === mark in families/buttons.css, so one edit re-sizes  === */
+/* === or re-weights every symbol in the app.              === */
+/* ========================================================= */
+html.staff-scope {
+  /* 32 of the circle's 44px. The artwork fills its 24-unit viewBox almost
+     edge to edge, so the mark reads large while keeping a clear ring of
+     space around it. */
+  --symbol-glyph-size: 32px;
+
+  /* In viewBox units, matched to the floating-notes bubble: that mark draws
+     at 1.9 units in a 28px box, i.e. 2.22px on screen, so at our 32px box
+     1.9 x 28/24 x 24/32 = 1.66 lands on the same weight. Set here rather
+     than as a stroke-width attribute on each path, because an attribute on
+     the element would win over this inherited value. */
+  --symbol-stroke-width: 1.66;
+}
+
+/* ========================================================= */
+/* === Base — the 44px circle                              === */
+/* ========================================================= */
+html.staff-scope .app-symbol-btn {
+  /* The circle is locked to the control floor in all three dimensions so a
+     flex parent can neither stretch nor squash it out of round. */
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  line-height: 0;
+  font-size: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+/* The glyph. Size and weight both come from the dials at the top of this file.
+
+   `display: block` + `line-height: 0` on the circle removes the inline text
+   baseline gap, which is what pushes an SVG a pixel or two off centre; the flex
+   centring above then lands it exactly. */
+html.staff-scope .app-symbol-btn__glyph {
+  display: block;
+  width: var(--symbol-glyph-size);
+  height: var(--symbol-glyph-size);
+  stroke-width: var(--symbol-stroke-width);
+  /* The global reset caps every svg at max-width: 100%, which resolves against
+     this flex container and silently squashed the mark to 16px wide however
+     large --symbol-glyph-size was set. The mark is a fixed-size icon, not
+     responsive media, so it opts out of that cap. */
+  max-width: none;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+html.staff-scope .app-symbol-btn:hover:not(:disabled) {
+  background: var(--secondary-hover);
+}
+
+html.staff-scope .app-symbol-btn:active:not(:disabled) {
+  background: var(--secondary-pressed);
+  transform: scale(0.94);
+}
+
+html.staff-scope .app-symbol-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .app-symbol-btn:disabled {
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
+  cursor: not-allowed;
+}
+
+/* ========================================================= */
+/* === Table variant — the 32px circle                     === */
+/* === A symbol in a data-table row matches the other      === */
+/* === in-row actions (--table-action-btn-height) rather   === */
+/* === than growing the row by 12px. It stays a TRUE       === */
+/* === circle: width and height come down together.        === */
+/* ========================================================= */
+/* Applied automatically inside .app-data-table, so a table action never has to
+   ask for the right size. .app-symbol-btn--table is the same thing by hand, for
+   a row-list that is not a real <table>.
+
+   The glyph comes down with the circle rather than staying at 32px — 23 in a
+   32px control keeps the same ring of space around the mark as 32 in 44, and
+   is the figure --btn-symbol-size already uses for .app-btn--xxs. */
+html.staff-scope .app-data-table .app-symbol-btn,
+html.staff-scope .app-symbol-btn--table {
+  width: var(--table-action-btn-height);
+  min-width: var(--table-action-btn-height);
+  max-width: var(--table-action-btn-height);
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
+  --symbol-glyph-size: 23px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-symbol-btn {
+    transition: none;
+  }
+
+  html.staff-scope .app-symbol-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* There is ONE fill. A symbol is a symbol: the mark says what the action is,
+   and a second colour axis on top of it only adds a decision that every call
+   site then has to get right. Danger lives in the confirm step, not in the
+   button that opens it. */
+
+/* Trace mode is already covered by the button family, which outlines every
+   <button> element when the dev overlay is in trace mode. */
+
+/* ========================================================= */
+/* === Row                                                 === */
+/* === Wrapping strip of symbol buttons. Gap is one space  === */
+/* === step so two circles never touch.                    === */
+/* ========================================================= */
+html.staff-scope .app-symbol-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}

@@ -394,18 +394,70 @@ html.staff-scope .app-news-ack__actions {
 /* Attachments + record links                                                 */
 /* ========================================================================== */
 
-html.staff-scope .app-news-attachments {
+/* A titled block inside the post detail — "Related records", "Attachments". */
+html.staff-scope .app-news-section {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-sm);
   min-width: 0;
 }
 
-html.staff-scope .app-news-attachment {
-  display: inline-flex;
+html.staff-scope .app-news-section__label {
+  display: flex;
   align-items: center;
   gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.65;
+}
+
+html.staff-scope .app-news-section__count {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 1px var(--space-sm);
+  border-radius: var(--radius-pill);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+/* Uniform rows on a responsive grid — a list of files reads as a block, not a
+   wrapped run of pills. */
+html.staff-scope .app-news-attachments,
+html.staff-scope .app-news-links {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .app-news-attachments {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+html.staff-scope .app-news-links {
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+}
+
+html.staff-scope .app-news-attachment-row,
+html.staff-scope .app-news-link-row {
+  display: flex;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-attachment {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
   max-width: 100%;
+  min-width: 0;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-xs);
   background: var(--surface);
@@ -421,6 +473,24 @@ html.staff-scope .app-news-attachment:focus-visible {
   color: var(--accent-text-on-tint);
 }
 
+/* The file type, spelled out rather than drawn as an emoji. */
+html.staff-scope .app-news-attachment__tag {
+  flex: none;
+  min-width: 34px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+
+html.staff-scope .app-news-attachment__text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 html.staff-scope .app-news-attachment__name {
   min-width: 0;
   overflow: hidden;
@@ -430,45 +500,66 @@ html.staff-scope .app-news-attachment__name {
 
 html.staff-scope .app-news-attachment__size {
   flex-shrink: 0;
+  margin-left: auto;
   font-size: var(--text-caption);
   opacity: 0.7;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news-attachment__remove,
+html.staff-scope .app-news-link__remove {
+  flex: none;
+  margin-left: var(--space-xs);
 }
 
 html.staff-scope .app-news-attachment-thumb {
-  width: 96px;
-  height: 72px;
+  flex: none;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-xs);
   object-fit: cover;
   display: block;
-  background: var(--surface);
-}
-
-html.staff-scope .app-news-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  min-width: 0;
+  background: var(--theme);
 }
 
 html.staff-scope .app-news-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
   max-width: 100%;
-  padding: 3px var(--space-sm);
-  border-radius: var(--radius-pill);
+  min-width: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
   background: var(--surface);
   color: var(--accent-strong);
-  font-size: var(--text-caption);
+  font-size: var(--text-body-sm);
   font-weight: 600;
   text-decoration: none;
-  white-space: nowrap;
+  min-height: var(--table-action-btn-height);
 }
 
 html.staff-scope .app-news-link:hover,
 html.staff-scope .app-news-link:focus-visible {
   background: var(--secondary);
   color: var(--accent-text-on-tint);
+}
+
+/* The record type, carried as a muted tag instead of an emoji glyph. */
+html.staff-scope .app-news-link__type {
+  flex: none;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+html.staff-scope .app-news-link__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ========================================================================== */

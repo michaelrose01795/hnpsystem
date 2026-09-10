@@ -726,7 +726,7 @@ export default function VhcCustomerView({
               {onShare && <Button variant="secondary" onClick={onShare}>{shareLabel}</Button>}
               {onBack && (
                 <Button variant="ghost" size="sm" onClick={onBack} style={{ flexShrink: 0 }}>
-                  ← Back
+                  Back
                 </Button>
               )}
             </div>

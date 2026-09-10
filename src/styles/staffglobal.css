@@ -128,33 +128,37 @@ html.staff-scope textarea {
   }
 }
 
-html.staff-scope.modal-open,
-html.staff-scope:has(.popup-backdrop),
-html.staff-scope:has([aria-modal="true"]) {
+/* Modal scroll lock.
+   Driven ENTIRELY by the `.modal-open` class that _app.js puts on <html> and
+   <body> whenever `.popup-backdrop, [aria-modal="true"], [data-modal-portal="true"]`
+   is present anywhere in the document — i.e. the same set of modal patterns the
+   `:has()` selectors here used to match, so no modal loses its lock.
+
+   Those `:has()` arms were removed on purpose (2026-09). A `:has()` whose
+   subject is <html> or <body> forces the browser to treat every DOM mutation in
+   the app as a possible root-style change, so any interaction that adds or
+   removes nodes drags a document-wide style recalculation with it. Measured on
+   the sidebar collapse: ~60ms of long tasks and 6 dropped frames per toggle
+   with them, none at all without. Do not reintroduce a root-level `:has()` —
+   add the state to the class in _app.js instead. */
+html.staff-scope.modal-open {
   overflow: hidden;
 }
 
-html.staff-scope body.modal-open,
-html.staff-scope body:has(.popup-backdrop),
-html.staff-scope body:has([aria-modal="true"]) {
+html.staff-scope body.modal-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-html.staff-scope body.modal-open #__next,
-html.staff-scope body:has(.popup-backdrop) #__next,
-html.staff-scope body:has([aria-modal="true"]) #__next {
+html.staff-scope body.modal-open #__next {
   pointer-events: none;
 }
 
-html.staff-scope body.modal-open [data-modal-portal="true"] {
-  pointer-events: auto;
-}
-
-html.staff-scope body:has(.popup-backdrop) .popup-backdrop,
-html.staff-scope body:has(.popup-backdrop) .popup-backdrop *,
-html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"],
-html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"] * {
+html.staff-scope body.modal-open [data-modal-portal="true"],
+html.staff-scope body.modal-open .popup-backdrop,
+html.staff-scope body.modal-open .popup-backdrop *,
+html.staff-scope body.modal-open [aria-modal="true"],
+html.staff-scope body.modal-open [aria-modal="true"] * {
   pointer-events: auto;
 }
 
@@ -870,13 +874,14 @@ html.staff-scope .app-sidebar__section-title {
 
 /* Workspace module geometry.
    This class is intentionally scoped beneath .app-sidebar so the module
-   shape cannot affect buttons anywhere else. Modules remain 44px high:
-   rounded rows when expanded and rounded squares when collapsed. Page
+   shape cannot affect buttons anywhere else. Modules remain 44px high and
+   share the same square-ish corner radius whether the sidebar is expanded
+   or collapsed, so module rows read as rectangles rather than pills. Page
    links keep the canonical pill geometry and render as circles in the rail. */
 html.staff-scope .app-sidebar .app-sidebar__module-button.app-btn {
   height: var(--control-height);
   min-height: var(--control-height);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
 }
 
 html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button.app-btn {
@@ -1559,6 +1564,59 @@ html.staff-scope .app-popup-compact-header__actions {
   }
 }
 
+/* Popup close convention — THE LAW for every popup header.
+
+   The close action is the symbol circle in the TOP RIGHT of the header, and
+   every other header action sits to its left. Nothing in a popup declares this:
+   the close button is an ordinary <Button>Close</Button> (or any button whose
+   accessible name is Close), Button resolves the close symbol from that label,
+   and Button swaps the word for the mark. The rules below then hold it to the
+   44px circle and pin it to the corner. Change them and every popup follows.
+
+   Ordering is enforced here rather than left to markup order, so a popup that
+   authors Close first still renders it last. */
+html.staff-scope .app-popup-compact-header button {
+  order: 1;
+}
+
+html.staff-scope .app-popup-compact-header [data-symbol="close"] {
+  order: 2;
+  margin-left: auto;
+}
+
+/* The actions group is its own flex line, so the auto margin above would push
+   the whole group instead of the close button. Inside it, ordering alone puts
+   close last and the group is already right-aligned. */
+html.staff-scope .app-popup-compact-header__actions [data-symbol="close"] {
+  margin-left: 0;
+}
+
+
+/* Locked to the 44px circle whatever size the popup asked for — a close is a
+   close, and the symbol law says 44px exactly. */
+html.staff-scope .app-popup-compact-header [data-symbol="close"] {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  gap: 0;
+}
+
+
+@media (max-width: 640px) {
+  /* The actions group wraps to its own full-width line on narrow screens, so
+     close keeps the top-right corner of that line. */
+  html.staff-scope .app-popup-compact-header > [data-symbol="close"] {
+    margin-left: auto;
+  }
+}
+
+
 /* Links */
 html.staff-scope a {
   color: var(--accent-strong);
@@ -1922,8 +1980,14 @@ html.staff-scope .app-data-table tbody tr {
 
 /* Default in-row button height — every <button> inside an .app-data-table
    snaps to --table-action-btn-height (32px). Wins over .app-btn via the
-   higher specificity. To opt out, set an explicit height on the button. */
-html.staff-scope .app-data-table button {
+   higher specificity. To opt out, set an explicit height on the button.
+
+   .app-symbol-btn and .app-btn--has-symbol are excluded because they are
+   SQUARE, not pills: both size width and height together, so forcing only the
+   height here left them 44x32 ovals. Each sizes itself down to the same 32px
+   in a table — see the table variants in families/symbols.css and
+   families/buttons.css. */
+html.staff-scope .app-data-table button:not(.app-symbol-btn):not(.app-btn--has-symbol) {
   height: var(--table-action-btn-height) !important;
   min-height: var(--table-action-btn-height) !important;
 }
@@ -2038,11 +2102,20 @@ html.staff-scope .app-table-action-btn--primary:focus-visible {
 
 /* Canonical home: src/styles/families/badges.css
  * (rules queued to migrate during UI cleanup pass) */
+
+/* A badge takes the shape and footprint of a summary tile (.app-summary-item,
+   ~line 221): the --radius-sm (12px) corner and the tile's 8px/10px padding on
+   a box locked to the 44px control height. That divergence from the control
+   family is the point — buttons keep the 28px --control-radius pill-end, so a
+   status label can no longer be read as something clickable. Colour is
+   untouched and still comes from the .app-badge--* tone modifiers below. */
 html.staff-scope .app-badge {
   min-width: 0;
+  height: var(--control-height);
   min-height: var(--control-height);
-  padding: var(--control-padding);
-  border-radius: var(--control-radius);
+  max-height: var(--control-height);
+  padding: var(--space-sm) var(--space-2); /* = .app-summary-item's 8px 10px */
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2060,6 +2133,7 @@ html.staff-scope .app-badge {
 html.staff-scope .app-data-table .app-badge {
   height: var(--table-action-btn-height);
   min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
   padding: 0 var(--space-3);
 }
 
@@ -2496,7 +2570,7 @@ html.staff-scope .redirect-dots span:nth-child(3) {
 /* ========================================================= */
 
 /* Prevent horizontal scroll on login page */
-html.staff-scope body:has(.login-page-wrapper) {
+html.staff-scope body.login-scope {
   overflow-x: hidden;
   overflow-y: hidden;
   width: 100vw;
@@ -2710,7 +2784,7 @@ html.staff-scope .login-dev-panel .login-card--dev > div {
 }
 
 @media (max-width: 1100px) {
-  html.staff-scope body:has(.login-page-wrapper) {
+  html.staff-scope body.login-scope {
     overflow-y: auto;
   }
 
@@ -5642,6 +5716,50 @@ html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="a
   text-align: right;
 }
 
+/* Invoice parts table. An invoice renders one table per request section, so the
+   columns have to line up section-to-section — fixed layout with per-column
+   widths keyed off data-parts-col, the same approach as the documents table
+   above. Everything else (padding, header tint, row rules, sticky thead) comes
+   from the global table shell. */
+/* Prefixed with .app-table-scroll so these beat the family defaults
+   (`table-layout: auto`) rather than relying on source order alone. */
+html.staff-scope .app-table-scroll .app-data-table.invoice-parts-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="part"] {
+  width: 16%;
+}
+
+/* The only column that wraps — it takes whatever the numeric columns leave. */
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="description"] {
+  width: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="retail"] {
+  width: 12%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="qty"] {
+  width: 8%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="price"] {
+  width: 11%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="vat"] {
+  width: 10%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="rate"] {
+  width: 9%;
+}
+
 /* Directory list fills the same column height as the profile panel beside it,
    so both panes scroll on their own instead of the page scrolling for them. */
 html.staff-scope .hr-employees-list .app-table-scroll {
@@ -6461,7 +6579,7 @@ html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-head
 /* Real portrait phones keep login cards stacked even when browser UI changes
    make CSS width and device width disagree. */
 @media (max-device-width: 640px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
-  html.staff-scope body:has(.login-page-wrapper) {
+  html.staff-scope body.login-scope {
     overflow-y: auto;
   }
 
@@ -7254,6 +7372,14 @@ html.staff-scope .myjobs-date {
     padding: 0 !important;
     font-size: 11pt !important;
     color: #000 !important;
+  }
+
+  /* The .app-table-scroll row cap is a screen affordance — on paper the parts
+     table prints in full. `overflow: visible` is already forced above; this
+     drops the height cap so the rows do not run over the totals below them.
+     No !important needed: this outscores the family rule on specificity. */
+  html.staff-scope [data-invoice-print-area] .app-table-scroll {
+    max-height: none;
   }
 
   /* Print-friendly table styles */

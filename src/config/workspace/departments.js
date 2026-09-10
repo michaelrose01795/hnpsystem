@@ -158,7 +158,7 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
   },
   {
     key: "service",
-    label: "Reception",
+    label: "Service",
     category: "departments",
     icon: "service",
     home: "/dashboard/service",
@@ -623,7 +623,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      // Job Cards deliberately NOT listed here — /jobs belongs to Reception
+      // Job Cards deliberately NOT listed here — /jobs belongs to Service
       // (department-service). The parts desk reaches job data through its own
       // pages, so the Parts module does not duplicate the page button.
       { label: "Orders", href: "/order", roles: ["parts"] },
@@ -640,7 +640,7 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      // See the note in the Parts section above — Job Cards stays in Reception.
+      // See the note in the Parts section above — Job Cards stays in Service.
       { label: "Orders", href: "/order", roles: ["parts manager"] },
       { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
@@ -757,11 +757,11 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   {
     department: "service",
     order: 35,
-    label: "Reception Workspace",
+    label: "Service Workspace",
     category: "departments",
     flag: null,
     items: [
-      // No `roles` — the customer list inherits the Reception group, so every
+      // No `roles` — the customer list inherits the Service group, so every
       // role assigned that group sees it. Context section rather than
       // WORKSPACE_NAV_SECTIONS so the byte-identical classic sidebar is
       // untouched (an un-roled classic item would read as visible to all).
@@ -799,7 +799,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
   { key: "department-general", label: "General", department: "general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
   {
     key: "department-service",
-    label: "Reception",
+    label: "Service",
     department: "service",
     hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"],
   },

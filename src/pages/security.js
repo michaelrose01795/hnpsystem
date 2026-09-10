@@ -234,7 +234,7 @@ function RecentActivity() {
       data-dev-shell="0"
     >
       <table
-        style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
+        className="app-data-table"
         data-dev-section="1"
         data-dev-section-key="account-security-activity-table"
         data-dev-section-type="data-table"

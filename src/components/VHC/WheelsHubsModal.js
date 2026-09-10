@@ -1,6 +1,6 @@
 // file location: src/components/VHC/WheelsHubsModal.js
 import React, { useMemo, useState } from "react"; // Import React for modal composition
-import themeConfig, { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme"; // Use shared theme tokens for consistent styling
+import themeConfig from "@/styles/appTheme"; // Use shared theme tokens for consistent styling
 import TyresSection from "@/components/VHC/TyresSection"; // Reuse tyre search component for managers and technicians
 import { getTyreDetails } from "@/lib/tyre/tyreAPI"; // Access placeholder tyre lookup helper
 
@@ -52,20 +52,14 @@ export default function WheelsHubsModal({
 
   return (
     <div
-      style={{
-        ...popupOverlayStyles,
-        zIndex: "var(--z-modal)",
-        padding: "24px",
-      }}
+      className="popup-backdrop"
       onClick={onClose}
     >
       <div
         onClick={(event) => event.stopPropagation()}
+        className="popup-card"
         style={{
-          ...popupCardStyles,
           width: "min(780px, 100%)", // Limit modal width for readability
-          maxHeight: "90vh", // Prevent overflow from exceeding viewport height
-          overflowY: "auto", // Allow scrolling when content is tall
           padding: "28px", // Internal padding for modal content
           display: "flex", // Use flex layout for vertical stacking
           flexDirection: "column", // Stack children vertically

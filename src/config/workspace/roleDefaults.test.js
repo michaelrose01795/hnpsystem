@@ -40,10 +40,10 @@ const REQUIRED_ROLES = [
 ];
 
 describe("role workspace defaults", () => {
-  it("places Next Jobs in Workshop for All Access and saved Reception layouts", () => {
+  it("places Next Jobs in Workshop for All Access and saved Service layouts", () => {
     const savedLayout = {
       items: ["/appointments", "/nextjobs"],
-      modules: [{ key: "department-service", label: "Reception", items: ["/appointments", "/nextjobs"] }],
+      modules: [{ key: "department-service", label: "Service", items: ["/appointments", "/nextjobs"] }],
     };
     for (const sidebarAccess of [null, savedLayout]) {
       const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE], sidebarAccess);
@@ -111,7 +111,7 @@ describe("role workspace defaults", () => {
     // checking each role's rail is a subsequence of the canonical order.
     const RAIL_ORDER = [
       "General",
-      "Reception",
+      "Service",
       "Workshop",
       "Tech",
       "Parts",

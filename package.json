@@ -7,8 +7,8 @@
   },
   "scripts": {
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
-    "predev": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design && node tools/scripts/use-local-next-cache.js",
-    "prebuild": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design",
+    "predev": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:symbols && npm run audit:non-global && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design && node tools/scripts/use-local-next-cache.js",
+    "prebuild": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:symbols && npm run audit:non-global && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design",
     "dev": "next dev",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
@@ -57,7 +57,9 @@
     "check:colours": "node tools/scripts/check-colour-system.js",
     "review:colours": "node tools/scripts/capture-colour-review.js",
     "report:bundles": "node tools/scripts/report-route-bundles.js",
-    "css:route-scoped": "node tools/scripts/emit-route-scoped-css.js"
+    "css:route-scoped": "node tools/scripts/emit-route-scoped-css.js",
+    "check:symbols": "node tools/scripts/check-symbols.js --emit-usage",
+    "audit:non-global": "node tools/scripts/audit-non-global.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

@@ -15,7 +15,6 @@ const loadJobsDb = () => import("@/lib/database/jobs");
 const loadUsersDb = () => import("@/lib/database/users");
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import { normalizeRequests, compareJobsForBoard, isNextJobsTechnicianPanelJob } from "@/lib/jobCards/utils";

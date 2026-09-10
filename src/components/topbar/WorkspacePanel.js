@@ -14,6 +14,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import PopupModal from "@/components/popups/popupStyleApi";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const TONE_COLOR = {
@@ -248,15 +249,10 @@ function ReminderList({ reminders, items, emptyText, draft, setDraft, onSubmit }
               >
                 {item.label}
               </span>
-              <button
-                type="button"
-                onClick={() => reminders?.removeReminder?.(item.id)}
-                className="app-btn app-btn--ghost"
-                aria-label="Remove reminder"
-                style={{ padding: "2px 8px", minHeight: 0 }}
-              >
-                ✕
-              </button>
+              <SymbolButton
+                symbol="delete"
+                label="Remove reminder"
+                onClick={() => reminders?.removeReminder?.(item.id)} />
             </div>
           ))}
         </div>

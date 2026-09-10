@@ -422,7 +422,7 @@ export default function CreateJobCardPageUi(props) {
                 Job Requests
               </h3>
               <Button type="button" variant="secondary" onClick={handleAddRequest}>
-                + Add Request
+                Add Request
               </Button>
             </div>
             <div style={{

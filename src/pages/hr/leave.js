@@ -76,7 +76,7 @@ function LeaveContent() {
         <p style={{ color: "var(--text-1)", margin: 0 }}>
           Approve leave requests, calculate balances, and track special leave programmes.
         </p>
-        <Button variant="primary">+ New Leave Request</Button>
+        <Button variant="primary">New Leave Request</Button>
       </header>
 
       {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-leave" />}

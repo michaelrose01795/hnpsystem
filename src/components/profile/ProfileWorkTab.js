@@ -9,6 +9,7 @@ import { useUser } from "@/context/UserContext"; // shared authenticated user co
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/ui/calendarAPI";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
@@ -1250,13 +1251,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
               Set overtime rules that auto-log hours on matching days. Period runs from the 26th to the 25th.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)", padding: "4px", flexShrink: 0 }}
-          >
-            ✕
-          </button>
+          <SymbolButton symbol="close" label="Close" onClick={onClose} />
         </div>
 
         {/* Smart summary strip — only shown when active rules exist */}

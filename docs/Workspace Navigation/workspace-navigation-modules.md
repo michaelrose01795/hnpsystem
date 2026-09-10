@@ -41,7 +41,7 @@ Modules add no independent ACL. A module is visible when it contains at least on
 |---|---|---|
 | General | all authenticated users | pseudo-group |
 | Admin | management roles derived from `ROLE_DEPARTMENT_MAP` | page exceptions remain explicit |
-| Reception | service / aftersales roles | derived |
+| Service | service / aftersales roles | derived |
 | Workshop | workshop, technician and mobile-tech roles | derived |
 | MOT | mot tester | derived |
 | Parts | parts, parts manager, parts driver | derived |
@@ -69,7 +69,7 @@ Assigned: all authenticated users.
 - **Customers**
   - **Hidden** Customer directory/detail — `/customers`, `/customers/[customerSlug]`. Keep link/search-only; current `/customers` redirects to the customer portal, while staff detail is reached from jobs/search and has its own tab workspace.
 
-### Reception
+### Service
 
 Assigned: service, service-manager, aftersales-manager, after-sales-manager/director where configured.
 
@@ -172,7 +172,7 @@ Reports has no inherited Group audience. The Group appears only when at least on
 
 - **Operational Reports**
   - **P** Workshop — `/reports/workshop` — workshop/service/management/admin derived audience.
-  - **P** Reception — `/reports/service` — service/management/admin derived audience.
+  - **P** Service — `/reports/service` — service/management/admin derived audience.
   - **P** Parts — `/reports/parts` — parts/management/admin derived audience.
   - **P** MOT — `/reports/mot` — mot/service/workshop/management/admin derived audience.
   - **P** Valeting — `/reports/valeting` — valeting/service/workshop/management/admin derived audience.

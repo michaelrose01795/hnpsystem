@@ -147,17 +147,23 @@ export default function NewsPostDetailModal({
         <NewsBodyText body={post.content} currentUserId={currentUserId} />
 
         {post.links.length > 0 && (
-          <div>
-            <p className="app-news-composer__hint">Related records</p>
+          <section className="app-news-section">
+            <h3 className="app-news-section__label">
+              Related records
+              <span className="app-news-section__count">{post.links.length}</span>
+            </h3>
             <NewsRecordLinks links={post.links} />
-          </div>
+          </section>
         )}
 
         {post.attachments.length > 0 && (
-          <div>
-            <p className="app-news-composer__hint">Attachments</p>
+          <section className="app-news-section">
+            <h3 className="app-news-section__label">
+              Attachments
+              <span className="app-news-section__count">{post.attachments.length}</span>
+            </h3>
             <NewsAttachments attachments={post.attachments} />
-          </div>
+          </section>
         )}
 
         <LayerTheme gap="var(--space-3)">

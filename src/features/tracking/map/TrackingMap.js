@@ -245,19 +245,19 @@ export default function TrackingMap({ pins = [], onRefresh, onClose }) {
         <div className="tracking-map-editbar">
           <span className="tracking-map-props-label">Add section:</span>
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("building")}>
-            + Building
+            Building
           </button>
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("road")}>
-            + Road
+            Road
           </button>
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("grass")}>
-            + Grass
+            Grass
           </button>
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("fence")}>
-            + Fence line
+            Fence line
           </button>
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={() => addItem("parking")}>
-            + Parking
+            Parking
           </button>
           <span className="tracking-map-editbar-spacer" />
           <button type="button" className="tracking-map-button tracking-map-button--sm" onClick={handleCopyLayout}>
