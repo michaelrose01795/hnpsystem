@@ -7,6 +7,7 @@
 
 import React, { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { useSavedViews } from "@/hooks/reporting/useReporting";
 import { reportDevKey } from "./reportDevOverlay";
 
@@ -66,14 +67,7 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
             >
               {v.name}
             </button>
-            <button
-              type="button"
-              title="Delete view"
-              onClick={() => deleteView(v.view_id)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--surfaceTextMuted)", lineHeight: 1 }}
-            >
-              ×
-            </button>
+            <SymbolButton symbol="delete" label="Delete view" onClick={() => deleteView(v.view_id)} />
           </span>
         ))}
       </div>

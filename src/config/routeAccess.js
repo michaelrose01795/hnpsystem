@@ -31,7 +31,7 @@ export const PUBLIC_PATHS = new Set([
   "/favicon.ico",
   "/login",
   "/loginPresentation",
-  "/unauthorized",
+  "/unauthorised",
   "/website",
   "/vision",
   "/presentation",
@@ -41,6 +41,8 @@ export const PUBLIC_PATHS = new Set([
 // Path prefixes that are always public (auth flow, customer website, public
 // VHC share links, presentation/vision decks, static dirs).
 export const PUBLIC_PREFIXES = [
+  "/customer", // permanent code-authenticated VHC reports
+  "/report", // previously issued report URLs
   "/_next",
   "/api/auth",
   "/api/cookies",
@@ -81,7 +83,6 @@ export const PROTECTED_PREFIXES = [
   "/new-order", // create parts order (moved from /parts/create-order)
   "/order", // parts order register
   "/nextjobs", // next-jobs queue (moved from /job-cards/waiting/nextjobs)
-  "/parts",
   "/parts-manager", // moved from /parts/manager
   "/profile",
   "/reports", // reporting platform area (Phase 6 — Workshop package)
@@ -102,6 +103,8 @@ export const startsWithPath = (pathname, prefix) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export const PUBLIC_VHC_REPORT_PREFIXES = [
+  "/customer",
+  "/report",
   "/vhc/customer",
   "/vhc/customer-preview",
   "/vhc/customer-view",
@@ -125,7 +128,7 @@ export const ALWAYS_ALLOWED_EXACT = new Set([
   "/",
   "/login",
   "/loginPresentation",
-  "/unauthorized",
+  "/unauthorised",
   "/newsfeed",
   "/messages",
   "/profile",
@@ -218,28 +221,21 @@ export const DYNAMIC_DETAIL_EXTENDS = {
   "/hr/reports": ["/hr/manager"],
   "/hr/settings": ["/hr/manager"],
   "/hr/training": ["/hr/manager"],
-  "/new-order/[orderNumber]": ["/order", "/new-order"],
+  "/order/[orderNumber]": ["/order", "/new-order"],
   "/deliveries": ["/deliveries"],
   "/deliveries/[deliveryId]": ["/deliveries"],
   "/goods-in/[goodsInNumber]": ["/goods-in"],
-  // /parts and /parts-manager inherit from the parts-desk pages, deliberately
-  // NOT from /deliveries. A Parts Driver's only page is the delivery diary, so
-  // inheriting off /deliveries would have handed them the Parts Manager screen
-  // as a side effect of being given their own run sheet. Parts and Parts
-  // Manager both carry /goods-in and /stock-catalogue in their navigation, so
-  // neither loses anything by the source list changing. (/jobs was dropped from
-  // the Parts module's navigation — it lives in Reception — but any ONE entry
-  // here grants /parts, so the other two still cover both roles.)
-  "/parts": [
-    "/goods-in",
-    "/stock-catalogue",
-  ],
+  // /parts-manager inherits from the parts-desk pages, deliberately NOT from
+  // /deliveries. A Parts Driver's only page is the delivery diary, so inheriting
+  // off /deliveries would have handed them the Parts Manager screen as a side
+  // effect of being given their own run sheet. The Parts module carries both
+  // /goods-in and /stock-catalogue in its navigation, so nothing is lost by the
+  // source list changing. (There is no /parts route — the stock catalogue is
+  // reached only at /stock-catalogue.)
   "/parts-manager": ["/goods-in", "/stock-catalogue"],
-  "/tech/dashboard": ["/tech"],
+  "/dashboard/tech": ["/tech"],
   "/workshop": ["/consumables-tracker"],
   "/newpage": ["/consumables-tracker"],
   "/job-cards": ["/jobs"],
-  // /job-cards/appointments redirects to /appointments — grant /appointments
-  // anywhere /job-cards/appointments is in nav.
-  "/appointments": ["/appointments", "/job-cards/appointments"],
+  "/appointments": ["/appointments"],
 };

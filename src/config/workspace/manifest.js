@@ -273,7 +273,11 @@ export function getAccessibleNavPaths(roles) {
     if (itemVisibleTo(action, roleSet)) accessible.add(action.href);
   }
   for (const section of WORKSPACE_CONTEXT_NAV_SECTIONS) {
-    if (section.department !== "accounts") continue;
+    // Every context section, not just Accounts. These sections are the
+    // documented home for group-inherited pages, so a page added to one must
+    // become landable for the group's roles — otherwise the Group view renders
+    // a button the permission layer refuses. Accounts was simply the only
+    // context section that existed when this loop was written.
     if (!sectionFlagEnabled(section)) continue;
     for (const item of section.items || []) {
       if (!item.href) continue;
@@ -429,19 +433,48 @@ function allAccessModuleLabel(departmentKey) {
   return moduleBundleLabel(departmentKey);
 }
 
+const techSidebarModule = SIDEBAR_MODULE_LIBRARY.find((module) => module.key === "department-tech");
+const techSidebarHrefs = new Set(techSidebarModule.hrefs);
+
+// My Jobs is a technician page, so the All Access bucketing below files it under
+// Tech. An MOT tester works the same personal queue, and the MOT library module
+// lists it too, so it belongs to both modules rather than being claimed
+// exclusively by the Tech bundle.
+const MOT_SHARED_TECH_HREFS = ["/tech"];
+
+// Hrefs allowed to appear in more than one module. Everything else is claimed
+// by the first module that lists it (see `used` in getRoleWorkspaceModules), so
+// without this My Jobs would be swallowed by Tech and vanish from MOT for any
+// role holding both modules.
+const SHARED_MODULE_HREFS = new Set(MOT_SHARED_TECH_HREFS);
+
 function allAccessDefaultModules() {
   const modules = new Map();
+  const bucketedHrefs = new Set();
   for (const item of getWorkspacePageCatalog()) {
     if (item.department === DEVELOPER_GROUP_LOCK.key) continue;
     // Profile/Logout are the sidebar's persistent bottom controls, not a module.
     if (item.department === "account" || standaloneSidebarHrefs.has(item.href)) continue;
     if (isDeveloperOnlyItem(item)) continue;
-    const key = moduleBundleKey(item.department);
+    const department = techSidebarHrefs.has(item.href) ? "tech" : item.department;
+    const key = moduleBundleKey(department);
     if (!modules.has(key)) {
-      modules.set(key, { key, label: allAccessModuleLabel(item.department), hrefs: [] });
+      modules.set(key, { key, label: allAccessModuleLabel(department), hrefs: [] });
     }
     const bundle = modules.get(key);
     if (!bundle.hrefs.includes(item.href)) bundle.hrefs.push(item.href);
+    bucketedHrefs.add(item.href);
+  }
+  // Put the shared technician pages back into MOT as well, so All Access is not
+  // the one login where the MOT module is missing My Jobs.
+  for (const href of MOT_SHARED_TECH_HREFS) {
+    if (!bucketedHrefs.has(href)) continue;
+    const key = moduleBundleKey("mot");
+    if (!modules.has(key)) {
+      modules.set(key, { key, label: allAccessModuleLabel("mot"), hrefs: [] });
+    }
+    const bundle = modules.get(key);
+    if (!bundle.hrefs.includes(href)) bundle.hrefs.push(href);
   }
   // Bucketing above follows page-catalogue order, which is not the rail order.
   // Sort the finished bundles so the All Access rail reads exactly like every
@@ -613,7 +646,7 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     if (!sourceModule.key || !sourceModule.label) continue;
     for (const href of sourceModule.hrefs || []) {
       const item = byHref.get(href);
-      if (!item || used.has(href)) continue;
+      if (!item || (used.has(href) && !SHARED_MODULE_HREFS.has(href))) continue;
       if (explicitlyRepositioned.has(href)) continue;
       if (managedSnapshot && !managedSnapshot.has(href)) continue;
       if (!storedModules) {
@@ -685,6 +718,40 @@ export function getRoleWorkspaceModules(roles, sidebarAccess = null) {
     }
     developerModule.items = developerItems.map(toRoleModuleItem);
     for (const item of developerItems) used.add(item.href);
+  }
+
+  // Next Jobs belongs in Workshop, including All Access and saved Service layouts.
+  const receptionModule = moduleByKey.get("department-service");
+  const nextJobsItem = receptionModule?.items.find((item) => item.href === "/nextjobs");
+  if (nextJobsItem) {
+    receptionModule.items = receptionModule.items.filter((item) => item.href !== "/nextjobs");
+    let targetModule = moduleByKey.get("department-workshop");
+    if (!targetModule) {
+      const libraryModule = SIDEBAR_MODULE_LIBRARY.find((module) => module.key === "department-workshop");
+      targetModule = { key: libraryModule.key, label: libraryModule.label, items: [] };
+      modules.splice(modules.indexOf(receptionModule) + 1, 0, targetModule);
+      moduleByKey.set(targetModule.key, targetModule);
+    }
+    targetModule.items.push(nextJobsItem);
+  }
+
+  // Move technician pages out of the standard Workshop bundle, including old
+  // saved layouts. Preserve granted pages and any deliberately custom modules.
+  const workshopModule = moduleByKey.get("department-workshop");
+  const technicianItems = workshopModule?.items.filter((item) => techSidebarHrefs.has(item.href)) || [];
+  if (technicianItems.length > 0) {
+    workshopModule.items = workshopModule.items.filter((item) => !techSidebarHrefs.has(item.href));
+    let techModule = moduleByKey.get(techSidebarModule.key);
+    if (!techModule) {
+      techModule = { key: techSidebarModule.key, label: techSidebarModule.label, items: [] };
+      modules.splice(modules.indexOf(workshopModule) + 1, 0, techModule);
+      moduleByKey.set(techModule.key, techModule);
+    }
+    techModule.items.push(...technicianItems);
+  }
+  const techModule = moduleByKey.get(techSidebarModule.key);
+  if (techModule) {
+    techModule.items.sort((left, right) => techSidebarModule.hrefs.indexOf(left.href) - techSidebarModule.hrefs.indexOf(right.href));
   }
 
   // Rail order. A saved layout from the Sidebar Access editor is a deliberate
@@ -1098,13 +1165,37 @@ export function getActiveWorkspaceDepartment(pathname, roles, sidebarAccess = nu
   return best;
 }
 
+// A nav item claims its descendant routes (so /accounts stays lit on
+// /accounts/view/123) — but NEVER a descendant that is a nav page in its own
+// right. Payslips, Invoices and Reports each own their own sidebar button, so
+// landing on one lights that button alone; the parent /accounts button is not
+// also shown as open.
+function isOwnNavPage(path) {
+  if (!path) return false;
+  return getWorkspacePageCatalog().some((entry) => pathOf(entry.href) === path);
+}
+
 export function isContextNavItemActive(item, pathname, pendingHref = null) {
   const itemPath = pathOf(item?.href);
   if (!itemPath) return false;
   const pendingPath = pathOf(pendingHref);
   if (pendingPath) return pendingPath === itemPath;
   const currentPath = pathOf(pathname);
-  return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
+  if (currentPath === itemPath) return true;
+  if (!currentPath.startsWith(`${itemPath}/`)) return false;
+  if (isOwnNavPage(currentPath)) return false;
+  // Walk up from the current route: if any ancestor nearer than this item is a
+  // nav page itself, that page owns the route instead (e.g. /accounts/invoices
+  // owns /accounts/invoices/123, not /accounts).
+  let ancestor = currentPath;
+  while (ancestor.length > itemPath.length) {
+    const cut = ancestor.lastIndexOf("/");
+    if (cut <= 0) break;
+    ancestor = ancestor.slice(0, cut);
+    if (ancestor.length <= itemPath.length) break;
+    if (isOwnNavPage(ancestor)) return false;
+  }
+  return true;
 }
 
 export function resolveHome(roles) {

@@ -143,7 +143,7 @@ const RECOMMENDATION_RULES = [
     build: (ctx) => ({
       label: `Prep for ${num(ctx.metrics, "appointmentsToday")} appointments today`,
       subtitle: "Busy diary",
-      href: "/job-cards/appointments",
+      href: "/appointments",
       tone: "info",
       source: "workload",
       confidence: "medium",

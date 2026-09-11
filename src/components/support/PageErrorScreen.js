@@ -33,6 +33,7 @@ import {
   RECOVERY_ACTIONS,
   RECOVERY_LEVELS,
   RECOVERY_VARIANTS,
+  RECOVERY_TONES,
   labelFor,
 } from "@/lib/support/recoveryModel";
 import { generateReferenceCode } from "@/lib/notifications/buildErrorAlert";
@@ -43,35 +44,52 @@ import { logErrorEvent, ERROR_KINDS } from "@/lib/support/autoErrorLog";
 export function describe(statusCode) {
   if (statusCode === 404) {
     return {
-      headline: "We couldn't find that page",
+      headline: "That page doesn't exist",
       message:
-        "The link may be out of date, or the page may have moved. Head back to the newsfeed and try again from there.",
+        "Nothing is broken — there is simply no page at this address. An out-of-date bookmark, a link in an old email, or a mistyped job or order number will all land here.",
       // A 404 is not retryable: the route genuinely does not exist, so offering
       // "Try again" would just reproduce it.
       retryable: false,
+      // Not a fault, so not a fault-coloured screen. The badge tint is the only
+      // severity signal a borderless screen has (§3.0a), so it must not shout.
+      tone: RECOVERY_TONES.INFO,
+      icon: "?",
+      hint:
+        "Everything you have access to is reachable from the sidebar. If a link inside the system brought you here, please report it — that one is ours to fix.",
     };
   }
   if (statusCode === 403 || statusCode === 401) {
     return {
       headline: "You don't have access to that page",
       message:
-        "Your account doesn't have permission for this area. If you think it should, send us a report and we'll check it.",
+        "You are signed in, but your account does not have permission for this area. If you think it should, ask your manager or send us a request and we will check your role.",
       retryable: false,
+      tone: RECOVERY_TONES.WARNING,
+      icon: "🔒",
+      hint: "Nothing has gone wrong and no work has been lost.",
     };
   }
   if (statusCode === 500) {
     return {
       headline: "The server ran into a problem",
       message:
-        "Something failed while loading this page. Trying again often clears it — if it doesn't, please send us a report.",
+        "This page failed on the server, so it never reached your browser. These are usually momentary and trying again clears most of them — if it does not, head back and carry on elsewhere while we look at it.",
       retryable: true,
+      tone: RECOVERY_TONES.DANGER,
+      icon: "!",
+      hint:
+        "Nothing you had already saved is affected, and this failure is already logged against the reference code above.",
     };
   }
   return {
     headline: "This page hit an unexpected error",
     message:
-      "You can try again, or head back to the newsfeed. If it keeps happening, please send us a report so we can look into it.",
+      "Something went wrong loading this page. Trying again usually clears a one-off; if it does not, head back to the newsfeed and carry on from there.",
     retryable: true,
+    tone: RECOVERY_TONES.DANGER,
+    icon: "!",
+    hint:
+      "Nothing you had already saved is affected, and this failure is already logged against the reference code above.",
   };
 }
 
@@ -91,7 +109,7 @@ export function buildPageErrorPlan({
   variant = RECOVERY_VARIANTS.STAFF,
   homeHref,
 } = {}) {
-  const { headline, message, retryable } = describe(statusCode);
+  const { headline, message, retryable, tone, icon, hint } = describe(statusCode);
 
   // The action set, in the order the user should consider them. Report is always
   // last and always ghost — matching resolveRecovery()'s tone rules.
@@ -108,6 +126,9 @@ export function buildPageErrorPlan({
     loop: false,
     headline,
     message,
+    hint,
+    tone,
+    icon,
     primaryActionId: primaryId,
     // Labels come from the shared resolver, so a page error and a caught crash
     // never disagree about what the same button is called.
@@ -128,7 +149,7 @@ export function buildPageErrorPlan({
  * @param {object} props
  * @param {number} [props.statusCode]  The HTTP status Next.js reported.
  * @param {string} [props.variant]     "staff" (default) or "customer".
- * @param {string} [props.homeHref]    Where "Return to Newsfeed" goes.
+ * @param {string} [props.homeHref]    Where "Return to the newsfeed" goes.
  * @param {unknown} [props.error]      The error Next.js passed, when it has one.
  */
 export default function PageErrorScreen({

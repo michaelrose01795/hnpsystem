@@ -186,7 +186,7 @@ function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, t
     >
       <SkeletonBlock width={titleWidth} height="18px" />
       <div className="efficiency-table-wrap" style={tableWrapperStyle} aria-hidden="true">
-        <table style={tableStyle}>
+        <table className="app-data-table">
           <thead><tr>{Array.from({ length: 9 }).map((_, index) => <th key={index}><SkeletonBlock width={index === 2 ? "112px" : "72px"} height="11px" /></th>)}</tr></thead>
           <tbody>{Array.from({ length: 5 }).map((_, index) => <SkeletonTableRow key={index} cols={9} />)}</tbody>
         </table>
@@ -1176,11 +1176,9 @@ export default function EfficiencyTab({
     overflow: "hidden",
   };
 
-  const tableStyle = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "0.9rem",
-  };
+  // Table chrome comes from the global .app-data-table class in
+  // staffglobal.css (width, border-spacing, row rule, sticky header, row
+  // height). Nothing table-level is declared locally any more.
 
   const thStyle = {
     textAlign: "left",
@@ -1439,7 +1437,7 @@ export default function EfficiencyTab({
                 size="sm"
                 onClick={openAddModal}
               >
-                + Add Job Entry
+                Add Job Entry
               </Button>
             )}
           </DevLayoutSection>
@@ -1707,7 +1705,7 @@ export default function EfficiencyTab({
               data-dev-section-type="data-table"
               data-dev-section-parent="tech-efficiency-overall-breakdown"
             >
-              <table style={tableStyle}>
+              <table className="app-data-table">
                 <thead style={{ background: "var(--theme-hover)" }}>
                   <tr>
                     <th style={themedTableHeadingStyle}>Technician</th>
@@ -1834,7 +1832,7 @@ export default function EfficiencyTab({
               data-dev-section-parent="tech-efficiency-tech-entries"
             >
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
-                <table style={tableStyle}>
+                <table className="app-data-table">
                   <thead style={{ background: "var(--theme-hover)" }}>
                     <tr>
                       <th style={themedTableHeadingStyle}>Date</th>
@@ -2151,7 +2149,7 @@ export default function EfficiencyTab({
               {/* Entries table */}
               <div style={tableWrapperStyle}>
                 <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  <table style={tableStyle}>
+                  <table className="app-data-table">
                     <thead>
                       <tr>
                         <th style={thStyle}>Date</th>

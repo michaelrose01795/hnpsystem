@@ -1,0 +1,655 @@
+// file location: src/pages/dashboard/tech/index.js
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SectionShell, StatCard } from "@/components/ui";
+import { PageSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { useUser } from "@/context/UserContext";
+import { useRoster } from "@/context/RosterContext";
+import { fetchJobsWorkload } from "@/hooks/useJobsList";
+import { hasAllAccessRole } from "@/lib/auth/roles";
+// Loaded on demand — this module resolves the Supabase browser client, and its
+// single use here is one await inside a mount effect.
+const loadClocking = () => import("@/lib/database/clocking");
+import { prefetchJob } from "@/lib/swr/prefetch";
+import TechsDashboardUi from "@/components/page-ui/tech/tech-dashboard-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
+
+const pageShellStyle = {
+  width: "100%",
+  minWidth: 0,
+  padding: "8px 0"
+};
+
+const statsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+  gap: "12px",
+  width: "100%"
+};
+
+const actionGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+  gap: "12px",
+  width: "100%"
+};
+
+const jobsListStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px"
+};
+
+const centeredStateStyle = {
+  minHeight: "280px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center"
+};
+
+const statCardBaseStyle = {
+  boxShadow: "none"
+};
+
+const buildToneSurfaceStyle = (surface, border = "var(--primary-border)") => ({
+  ...statCardBaseStyle
+});
+
+const sectionSurfaceStyle = {
+  boxShadow: "none"
+};
+
+const emphasizedSectionSurfaceStyle = {
+  ...sectionSurfaceStyle
+};
+
+// The status cell is a Badge family tone, not a hand-built box. It used to be
+// an inline style pairing .app-table-action-btn's shape with its own fill, so
+// a job status looked like a row action you could click. .app-badge inside an
+// .app-data-table already resolves to the same 32px dense height, so the
+// footprint is unchanged — only the shape and the palette are now shared.
+const getStatusBadgeTone = (status) => {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "in progress":
+      return "accent-soft";
+    case "complete":
+      return "success";
+    default:
+      return "warning";
+  }
+};
+
+const formatClockInLabel = (clockInTime) => {
+  if (!clockInTime) return "Not currently working";
+  return `Since ${new Date(clockInTime).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })}`;
+};
+
+const buildVehicleLabel = (job) => {
+  const reg = job?.reg || "No registration";
+  const makeModel = job?.makeModel || "Vehicle details missing";
+  return `${reg} - ${makeModel}`;
+};
+
+const detailLabelStyle = {
+  fontSize: "15px",
+  color: "var(--text-1)",
+  margin: 0,
+  lineHeight: 1.5
+};
+
+const sectionHeadingStyle = {
+  fontSize: "20px",
+  fontWeight: "700",
+  color: "var(--text-1)",
+  margin: 0
+};
+
+const sectionCopyStyle = {
+  margin: 0,
+  fontSize: "14px",
+  color: "var(--text-1)",
+  lineHeight: 1.5
+};
+
+export default function TechsDashboard() {
+  const router = useRouter();
+  const { user, dbUserId } = useUser();
+  const { usersByRole, isLoading: rosterLoading } = useRoster();
+  const [myJobs, setMyJobs] = useState([]);
+  const [nextJob, setNextJob] = useState(null);
+  const [currentJob, setCurrentJob] = useState(null);
+  const [clockingStatus, setClockingStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const techsList = usersByRole?.["Techs"] || [];
+  const motList = usersByRole?.["MOT Tester"] || [];
+  const allowedNames = new Set([...techsList, ...motList]);
+  const username = typeof user?.username === "string" ? user.username.trim() : "";
+  const hasTechRole =
+  user?.roles?.some((role) => role?.toLowerCase().includes("tech")) || false;
+  const hasFullAccess = hasAllAccessRole(user?.roles || []);
+  const isTech = hasFullAccess || allowedNames.has(username) || hasTechRole;
+
+  const isAssignedToTechnician = useCallback(
+    (job) => {
+      if (!dbUserId || !job) return false;
+      const assignedNumeric =
+      typeof job.assignedTo === "number" ?
+      job.assignedTo :
+      typeof job.assignedTo === "string" ?
+      Number(job.assignedTo) :
+      null;
+
+      if (assignedNumeric === dbUserId) return true;
+      if (job.assignedTech?.id && job.assignedTech.id === dbUserId) return true;
+      return false;
+    },
+    [dbUserId]
+  );
+
+  useEffect(() => {
+    if (!isTech || !dbUserId) return;
+
+    const fetchData = async () => {
+      setLoading(true);
+
+      try {
+        // Scoped server-side to this technician rather than downloading the whole
+        // jobs table and filtering in the browser. isAssignedToTechnician is
+        // still applied below: the server filter is equivalent (assigned_to is
+        // the column both of its branches resolve to), so this is belt-and-braces
+        // and keeps the page correct if the endpoint ever returns a wider set.
+        //
+        // The limit is raised above the list default deliberately. getAllJobs()
+        // had no .limit() and no .order(), so PostgREST silently capped it at
+        // 1000 arbitrary rows — the "assigned jobs" stat below was therefore
+        // counting a random subset (~110) of a technician's real total, and
+        // changed between loads. Scoped and ordered, the busiest technician has
+        // 545 jobs, so 1000 returns all of them and the count is finally both
+        // complete and stable.
+        const fetchedJobs = await fetchJobsWorkload({ assignedTo: dbUserId, limit: 1000 });
+        const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
+        const sortedJobs = assignedJobs.sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          }
+          return 0;
+        });
+
+        setMyJobs(sortedJobs);
+        setNextJob(sortedJobs.length > 0 ? sortedJobs[0] : null);
+
+        const { getClockingStatus } = await loadClocking();
+        const { isClockedIn, data } = await getClockingStatus(dbUserId);
+        setClockingStatus(data);
+        setCurrentJob(isClockedIn && data ? sortedJobs[0] || null : null);
+      } catch (error) {
+        logFailure("Error fetching tech data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [dbUserId, isAssignedToTechnician, isTech]);
+
+  const handleStartJob = useCallback(
+    (job) => {
+      router.push(`/tech/${job.jobNumber}`);
+    },
+    [router]
+  );
+
+  const visibleJobs = useMemo(() => myJobs.slice(0, 3), [myJobs]);
+  const isClockedIn = Boolean(clockingStatus?.clock_in);
+  const clockInTime = clockingStatus?.clock_in || null;
+  const dashboardActions = [
+  {
+    key: "view-all-jobs",
+    label: "View All Jobs",
+    href: "/tech"
+  },
+  {
+    key: "time-tracking",
+    label: "Time Tracking",
+    href: "/tech/efficiency"
+  },
+  {
+    key: "request-consumables",
+    label: "Request Consumables",
+    href: "/consumables-request"
+  }];
+
+
+  // The All Access demo role is authoritative and does not depend on the staff
+  // roster containing the demo identity. This keeps the page reachable even if
+  // the roster request is slow or unavailable during a demonstration.
+  if (rosterLoading && !hasFullAccess) {
+    return <TechsDashboardUi view="section1" centeredStateStyle={centeredStateStyle} InlineLoading={InlineLoading} SectionShell={SectionShell} />;
+
+
+
+
+
+
+
+
+
+
+  }
+
+  if (!isTech) {
+    return <TechsDashboardUi view="section2" centeredStateStyle={centeredStateStyle} SectionShell={SectionShell} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  }
+
+  if (loading) {
+    return <TechsDashboardUi view="section3" PageSkeleton={PageSkeleton} />;
+  }
+
+  return <TechsDashboardUi view="section4" actionGridStyle={actionGridStyle} buildToneSurfaceStyle={buildToneSurfaceStyle} buildVehicleLabel={buildVehicleLabel} calculateHoursWorked={calculateHoursWorked} clockInTime={clockInTime} currentJob={currentJob} dashboardActions={dashboardActions} detailLabelStyle={detailLabelStyle} DevLayoutSection={DevLayoutSection} emphasizedSectionSurfaceStyle={emphasizedSectionSurfaceStyle} formatClockInLabel={formatClockInLabel} getStatusBadgeTone={getStatusBadgeTone} handleStartJob={handleStartJob} isClockedIn={isClockedIn} jobsListStyle={jobsListStyle} myJobs={myJobs} nextJob={nextJob} pageShellStyle={pageShellStyle} prefetchJob={prefetchJob} router={router} sectionCopyStyle={sectionCopyStyle} sectionHeadingStyle={sectionHeadingStyle} SectionShell={SectionShell} sectionSurfaceStyle={sectionSurfaceStyle} StatCard={StatCard} statsGridStyle={statsGridStyle} visibleJobs={visibleJobs} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+function calculateHoursWorked(clockInTime) {
+  if (!clockInTime) return "0.0";
+  const now = new Date();
+  const clockIn = new Date(clockInTime);
+  const hours = (now - clockIn) / (1000 * 60 * 60);
+  return hours.toFixed(1);
+}

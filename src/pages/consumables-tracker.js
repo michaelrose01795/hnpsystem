@@ -6,7 +6,6 @@ import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import { supabase } from "@/lib/database/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -30,26 +29,18 @@ const cardStyle = {
   padding: "var(--section-card-padding)"
 };
 
-const orderModalOverlayStyle = {
-  ...popupOverlayStyles,
-  zIndex: "var(--z-modal)",
-  padding: "16px"
-};
-
+// Popup chrome comes from the global `.popup-backdrop` / `.popup-card` classes
+// in staffglobal.css. These objects carry geometry only.
 const orderModalStyle = {
-  ...popupCardStyles,
   width: "100%",
   maxWidth: "520px",
-  padding: "28px",
-  position: "relative"
+  padding: "28px"
 };
 
 const historyModalStyle = {
-  ...popupCardStyles,
   width: "100%",
   maxWidth: "860px",
-  padding: "24px",
-  position: "relative"
+  padding: "24px"
 };
 
 
@@ -163,14 +154,7 @@ function getPriceChange(item) {
   return ((latest - previous) / previous) * 100;
 }
 
-const duplicateOverlayStyle = {
-  ...popupOverlayStyles,
-  zIndex: "var(--z-modal)",
-  padding: "16px"
-};
-
 const duplicateModalStyle = {
-  ...popupCardStyles,
   padding: "24px",
   maxWidth: "540px",
   width: "100%"
@@ -1073,7 +1057,6 @@ function ConsumablesTrackerPage() {
     dashboardSummary={dashboardSummary}
     dbUserId={dbUserId}
     duplicateModalStyle={duplicateModalStyle}
-    duplicateOverlayStyle={duplicateOverlayStyle}
     fetchTechRequests={fetchTechRequests}
     filteredConsumables={filteredConsumables}
     financialError={financialError}
@@ -1110,7 +1093,6 @@ function ConsumablesTrackerPage() {
     orderModalConsumable={orderModalConsumable}
     orderModalError={orderModalError}
     orderModalLoading={orderModalLoading}
-    orderModalOverlayStyle={orderModalOverlayStyle}
     orderModalStyle={orderModalStyle}
     orderingRequestId={orderingRequestId}
     potentialDuplicates={potentialDuplicates}

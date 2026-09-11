@@ -281,7 +281,7 @@ export default function JobClockingCard() {
             onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--primary-selected)")}
             onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--primary)")}
           >
-            {loading ? "Refreshing..." : "🔄 Refresh"}
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 

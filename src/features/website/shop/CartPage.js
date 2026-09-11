@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import ShopShell from "./ShopShell";
+import BasketAccountNotice from "./BasketAccountNotice";
 import useShopCart, { formatGbp } from "../hooks/useShopCart";
 
 export default function CartPage() {
@@ -10,13 +11,13 @@ export default function CartPage() {
 
   if (cart.items.length === 0) {
     return (
-      <ShopShell title="Your cart">
+      <ShopShell title="Your basket">
         <div className="ws-card" style={{ padding: 24, textAlign: "center" }}>
           <p style={{ marginTop: 0, color: "var(--txt-mute)" }}>
-            Your cart is empty.
+            Your basket is empty.
           </p>
-          <Link href="/website#shop" className="ws-btn ws-btn--primary">
-            Browse the shop
+          <Link href="/website/parts-catalog" className="ws-btn ws-btn--primary">
+            Browse the parts catalogue
           </Link>
         </div>
       </ShopShell>
@@ -24,7 +25,8 @@ export default function CartPage() {
   }
 
   return (
-    <ShopShell title="Your cart">
+    <ShopShell title="Your basket">
+      <BasketAccountNotice cart={cart} />
       <div className="ws-checkout-grid">
         <div>
           {cart.items.map((it) => (

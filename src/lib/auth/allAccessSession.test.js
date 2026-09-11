@@ -170,8 +170,8 @@ describe("all access session — reach", () => {
     const hrefs = getRoleWorkspaceModules(ROLES).flatMap((navigationModule) =>
       navigationModule.items.map((item) => item.href)
     );
-    expect(hrefs).toContain("/tech/dashboard");
-    expect(canAccessPath("/tech/dashboard", ROLES)).toBe(true);
+    expect(hrefs).toContain("/dashboard/tech");
+    expect(canAccessPath("/dashboard/tech", ROLES)).toBe(true);
   });
 
   it("gets every accounts permission, with no narrowing filters", () => {

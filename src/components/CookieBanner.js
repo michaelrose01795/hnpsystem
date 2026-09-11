@@ -137,8 +137,21 @@ export default function CookieBanner() {
     // .app-btn as the red-wash secondary - handing both to .app-btn there
     // would flatten the accept/reject hierarchy the customer site relies on.
     setIsStaffScope(!document.documentElement.classList.contains("website-scope"));
+    // A staff preview embed (/website?preview=… inside a website-manager
+    // iframe) is panel content, not a customer visit: consent belongs to the
+    // real visit, and a pinned banner would sit over the section the staff
+    // member is looking at. Both conditions are required so a staff page that
+    // happens to carry ?preview= never loses its own banner.
+    let isPreviewEmbed = false;
+    try {
+      isPreviewEmbed =
+        new URLSearchParams(window.location.search).has("preview") &&
+        window.top !== window.self;
+    } catch {
+      isPreviewEmbed = false;
+    }
     const storedConsent = readStoredConsent();
-    if (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION) {
+    if (!isPreviewEmbed && (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION)) {
       setOpen(true);
     }
   }, []);

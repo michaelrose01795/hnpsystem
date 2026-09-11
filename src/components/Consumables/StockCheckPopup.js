@@ -715,8 +715,7 @@ function StockCheckPopup({
                 aria-label={`Increase quantity for ${item.name}`}
                 style={{ width: "var(--control-height)", minWidth: "var(--control-height)", height: "var(--control-height)", minHeight: "var(--control-height)", padding: 0, background: "transparent", borderRadius: "50%" }}
               >
-                <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "var(--table-action-btn-height)", height: "var(--table-action-btn-height)", borderRadius: "50%", background: "var(--surface)" }}>+</span>
-              </button>
+                </button>
             </div>
           )}
           {isManager && (

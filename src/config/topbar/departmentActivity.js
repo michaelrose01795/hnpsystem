@@ -33,7 +33,7 @@ const METRIC_SIGNALS = [
     kind: "appointment",
     tone: "info",
     icon: "📅",
-    href: "/job-cards/appointments",
+    href: "/appointments",
     text: (d) => `${d} new appointment${d === 1 ? "" : "s"} booked`,
   },
   {

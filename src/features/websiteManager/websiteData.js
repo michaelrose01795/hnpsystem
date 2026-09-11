@@ -313,7 +313,7 @@ export const MEDIA_ASSETS = collectMedia();
 
 export const SEO_ENTRIES = {
   home: {
-    metaTitle: `${brand.name} — Family-run Suzuki, KGM & Mitsubishi dealer in Kent`,
+    metaTitle: `${brand.name} — Family-run Suzuki & Mitsubishi dealer in Kent`,
     metaDescription:
       "Humphries & Parks: family-run dealership in West Malling, Kent since 1947. New & used cars, Motability, servicing, MOTs and parts.",
     slug: "/website",
@@ -339,7 +339,7 @@ export const SEO_ENTRIES = {
   },
   offers: {
     metaTitle: `Offers — ${brand.name}`,
-    metaDescription: `${offers.length} current manufacturer offers across the Suzuki, KGM and Mitsubishi ranges.`,
+    metaDescription: `${offers.length} current manufacturer offers across the Suzuki and Mitsubishi ranges.`,
     slug: "/website#offers",
     canonical: "",
     ogImage: offers[0] ? fileNameFromUrl(offers[0].image) : "",

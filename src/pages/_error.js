@@ -19,14 +19,22 @@
 // caught by the RouteBoundary in _app.js and never reaches this page. This is
 // only for the errors React cannot see.
 
+import Head from "next/head";
 import PageErrorScreen from "@/components/support/PageErrorScreen";
 
 function AppErrorPage({ statusCode, isCustomerSurface }) {
   return (
-    <PageErrorScreen
-      statusCode={statusCode || 500}
-      variant={isCustomerSurface ? "customer" : "staff"}
-    />
+    <>
+      {/* Named so a staff member with a dozen tabs open can see WHICH one fell
+          over without clicking through them. */}
+      <Head>
+        <title>{statusCode === 404 ? "Page not found" : "Something went wrong"} - HNP System</title>
+      </Head>
+      <PageErrorScreen
+        statusCode={statusCode || 500}
+        variant={isCustomerSurface ? "customer" : "staff"}
+      />
+    </>
   );
 }
 

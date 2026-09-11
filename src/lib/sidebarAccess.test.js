@@ -22,6 +22,22 @@ import {
 } from "@/config/workspace/manifest";
 
 describe("sidebar access snapshots", () => {
+  it("preserves saved dashboard assignments after moving routes", () => {
+    const saved = {
+      items: ["/mobile/dashboard", "/tech/dashboard", "/dashboard/tech"],
+      modules: [{ key: "custom", label: "My dashboards", items: ["/mobile/dashboard", "/tech/dashboard"] }],
+      pagePlacements: { "/mobile/dashboard": "custom", "/tech/dashboard": "custom" },
+    };
+    const normalized = normalizeSidebarAccess(saved);
+    expect(normalized.items).toEqual(["/dashboard/mobile", "/dashboard/tech"]);
+    expect(normalized.modules[0].items).toEqual(["/dashboard/mobile", "/dashboard/tech"]);
+    expect(normalized.pagePlacements).toEqual({ "/dashboard/mobile": "custom", "/dashboard/tech": "custom" });
+    expect(syncAssignedStandardModules(saved.modules)[0].items).toEqual(normalized.items);
+    expect(normalizeSidebarAccess(JSON.stringify(saved))).toEqual(normalized);
+    expect(normalizeSidebarAccess(normalized)).toEqual(normalized);
+    expect(saved.items[0]).toBe("/mobile/dashboard");
+  });
+
   it("refreshes assigned standard modules without changing custom modules", () => {
     const synced = syncAssignedStandardModules([
       {
@@ -47,7 +63,7 @@ describe("sidebar access snapshots", () => {
     expect(synced.find((module) => module.key === "department-workshop")?.items)
       .toEqual([
         "/dashboard/workshop",
-        "/mobile/dashboard",
+        "/dashboard/mobile",
         "/clocking",
         "/consumables-tracker",
         "/tech/efficiency",
@@ -56,9 +72,9 @@ describe("sidebar access snapshots", () => {
     expect(synced.find((module) => module.key === "department-workshop")?.items)
       .not.toContain("/tech");
     expect(syncAssignedStandardModules([
-      { key: "department-tech", label: "Tech", items: ["/tech/dashboard", "/tech", "/tech/efficiency"] },
+      { key: "department-tech", label: "Tech", items: ["/dashboard/tech", "/tech", "/tech/efficiency"] },
     ])[0].items).toEqual([
-      "/tech/dashboard",
+      "/dashboard/tech",
       "/tech",
       "/tech/efficiency",
       "/consumables-request",
@@ -73,7 +89,7 @@ describe("sidebar access snapshots", () => {
 
   it("keeps duplicated standard pages in the first assigned module only", () => {
     const synced = syncAssignedStandardModules([
-      { key: "department-service", label: "Reception", items: ["/jobs"] },
+      { key: "department-service", label: "Service", items: ["/jobs"] },
       { key: "department-workshop", label: "Workshop", items: ["/jobs"] },
     ]);
 

@@ -71,6 +71,7 @@ const GlobalTableShells = dynamic(() => import("@/components/App/GlobalTableShel
 const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overlay/DevLayoutOverlayRoot"), { ssr: false });
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
+const GlobalContextMenu = dynamic(() => import("@/components/ui/GlobalContextMenu"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
 // StaffProviders and Layout are imported STATICALLY (at the top of this file) and
 // must stay that way.
@@ -168,6 +169,13 @@ function AppWrapper({ Component, pageProps }) {
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
   const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
+  // Login routes get their own body class. The login page's viewport rules used
+  // to hang off `body:has(.login-page-wrapper)`; a `:has()` whose subject is the
+  // root makes EVERY DOM mutation in the app a candidate for a document-wide
+  // style recalculation, which showed up as dropped frames in any animation
+  // that also touches the DOM (see the sidebar collapse). A route class costs
+  // nothing and matches exactly the same pages.
+  const isLoginRoute = pathname === "/login" || pathname === "/loginPresentation";
   const hideNotesWidget =
     isPresentationRoute ||
     isCustomerRoute ||
@@ -215,8 +223,9 @@ function AppWrapper({ Component, pageProps }) {
     body?.classList.toggle("website-scope", isWebsiteRoute);
     body?.classList.toggle("staff-scope", !isWebsiteRoute);
     body?.classList.toggle("dev-scope", isDevRoute);
+    body?.classList.toggle("login-scope", isLoginRoute);
     return undefined;
-  }, [isWebsiteRoute, isTrackingRoute, isDevRoute]);
+  }, [isWebsiteRoute, isTrackingRoute, isDevRoute, isLoginRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.
@@ -711,6 +720,8 @@ function AppWrapper({ Component, pageProps }) {
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
       <GlobalTooltip />
+      {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
+      <GlobalContextMenu />
       {!isCustomerFacingSurface && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}
@@ -764,7 +775,12 @@ function LightweightLoginScope({ children }) {
     root.classList.add("staff-scope");
     body.classList.remove("website-scope", "dev-scope");
     body.classList.add("staff-scope");
+    // The login page's viewport rules hang off this class (they used to use
+    // `body:has(.login-page-wrapper)` — see the note in staffglobal.css). /login
+    // renders outside AppWrapper, so it sets the class itself.
+    body.classList.add("login-scope");
     restoreFetchInterceptor();
+    return () => body.classList.remove("login-scope");
   }, []);
 
   return children;

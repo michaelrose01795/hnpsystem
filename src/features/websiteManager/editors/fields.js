@@ -310,7 +310,7 @@ function StringList({ value, onChange, disabled, multiline }) {
       ))}
       <div>
         <Button type="button" size="xs" variant="secondary" onClick={add} disabled={disabled}>
-          + Add
+          Add
         </Button>
       </div>
     </div>
@@ -393,7 +393,7 @@ function ObjectList({ value, onChange, disabled, itemSchema }) {
       ))}
       <div>
         <Button type="button" size="xs" variant="secondary" onClick={add} disabled={disabled}>
-          + Add
+          Add
         </Button>
       </div>
     </div>

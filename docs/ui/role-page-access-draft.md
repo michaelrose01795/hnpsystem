@@ -86,7 +86,7 @@ Format to edit:
 
 ## Mobile Technician
 
-- /mobile/dashboard
+- /dashboard/mobile
 - /job-cards/myjobs
 - /job-cards/myjobs/[jobNumber]
 - /mobile/appointments
@@ -156,7 +156,7 @@ Format to edit:
 ## Techs
 
 - /dashboard/workshop
-- /tech/dashboard
+- /dashboard/tech
 - /job-cards/myjobs
 - /job-cards/myjobs/[jobNumber]
 - /job-cards/[jobNumber]

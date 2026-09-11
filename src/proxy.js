@@ -60,6 +60,17 @@ const redirectToLogin = (req, pathname) => {
   return NextResponse.redirect(loginUrl);
 };
 
+// The edge equivalent of ProtectedRoute's deniedRoute(): send a role-denied
+// request to /unauthorised with the route it was trying to reach attached, so
+// that screen can name the page instead of refusing anonymously.
+function unauthorisedUrl(req, pathname) {
+  const url = new URL("/unauthorised", req.url);
+  if (typeof pathname === "string" && pathname.startsWith("/") && !pathname.startsWith("//")) {
+    url.searchParams.set("from", pathname);
+  }
+  return url;
+}
+
 export async function proxy(req) {
   applyRuntimeNextAuthUrl(req);
   const { pathname } = req.nextUrl;
@@ -136,7 +147,7 @@ export async function proxy(req) {
       if (hasHrManagerDashboardAccess) {
         return NextResponse.next();
       }
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return NextResponse.redirect(unauthorisedUrl(req, pathname));
     }
 
     const managerFriendly = HR_ALLOWED_PATHS_FOR_MANAGERS.some((route) =>
@@ -148,7 +159,7 @@ export async function proxy(req) {
     }
 
     if (!hasHrCoreAccess) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return NextResponse.redirect(unauthorisedUrl(req, pathname));
     }
   }
 

@@ -1081,13 +1081,13 @@ export function CustomerRequestsTab({
   return (
     <div className="jc-customer-requests">
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {/* Stats + actions row. The stat tiles live in a responsive equal-width
-            grid (.jc-request-overview-statgrid) that fills all the width up to the
-            left of the Edit/Save controls. Each tile shows its title and counter on
-            one line when wide enough and wraps the counter below the title when the
-            tile gets too narrow. */}
+        {/* Stats + actions row. The stat tiles are the canonical staffglobal.css
+            summary primitive with no local overrides: .app-summary-section wraps the
+            responsive .app-summary-grid (auto-fit, minmax(130px, 1fr)) and each tile
+            is a bare .app-summary-item, so this row renders identically to every
+            other stat row in the app (e.g. the Parts tab metrics). */}
         <div className="app-summary-section">
-          <div className="app-summary-grid jc-req-statgrid jc-request-overview-statgrid">
+          <div className="app-summary-grid">
             <div className="app-summary-item"><span className="app-summary-label">Total Requests</span><span className="app-summary-value">{requestStats.totalRequests}</span></div>
             <div className="app-summary-item"><span className="app-summary-label">Total Hours</span><span className="app-summary-value">{formatHoursDisplay(requestStats.totalHours)}</span></div>
             <div className="app-summary-item"><span className="app-summary-label">Clocked Hrs</span><span className="app-summary-value">{formatHoursDisplay(requestStats.clockedHours)}</span></div>
@@ -1381,22 +1381,6 @@ export function CustomerRequestsTab({
         }
 
         <style jsx global>{`
-          html.staff-scope .jc-req-statgrid {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 10px;
-          }
-          html.staff-scope .jc-req-statgrid.jc-request-overview-statgrid {
-            /* Equal-width tiles that fill the available width and reflow with the
-               screen: as many >=130px columns as fit, each sharing the leftover
-               space (1fr), wrapping to new rows when they no longer fit. Grid
-               stretch keeps every tile in a row the same height. */
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            grid-auto-flow: row;
-            gap: 8px;
-            overflow-x: visible;
-            padding-bottom: 0;
-          }
           html.staff-scope .jc-customer-requests .jc-req-split {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1439,14 +1423,8 @@ export function CustomerRequestsTab({
           @media (max-width: 1280px) {
             html.staff-scope .jc-req-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
           }
-          @media (max-width: 1100px) {
-            html.staff-scope .jc-req-statgrid:not(.jc-request-overview-statgrid) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-          }
           @media (max-width: 900px) {
             html.staff-scope .jc-customer-requests .jc-req-split { grid-template-columns: minmax(0, 1fr); }
-          }
-          @media (max-width: 560px) {
-            html.staff-scope .jc-req-statgrid:not(.jc-request-overview-statgrid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           }
         `}</style>
       </div>

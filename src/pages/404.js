@@ -8,8 +8,18 @@
 // screen instead (the same component the error boundary uses) and logs the hit
 // automatically to support_error_events.
 
+import Head from "next/head";
 import PageErrorScreen from "@/components/support/PageErrorScreen";
 
 export default function NotFoundPage() {
-  return <PageErrorScreen statusCode={404} />;
+  return (
+    <>
+      {/* Named so a staff member with a dozen tabs open can see WHICH one fell
+          over without clicking through them. */}
+      <Head>
+        <title>Page not found - HNP System</title>
+      </Head>
+      <PageErrorScreen statusCode={404} />
+    </>
+  );
 }

@@ -7,6 +7,7 @@ export { default as PageWrapper } from "./PageWrapper";
 export { default as PageContainer } from "./PageContainer";
 export { default as PageSection } from "./PageSection";
 export { default as Card } from "./Card";
+export { default as DataTableShell } from "./DataTableShell";
 export { default as LayerSurface } from "./LayerSurface";
 export { default as LayerTheme } from "./LayerTheme";
 // ToolbarRow not re-exported from barrel — 4 live consumers in src/pages/accounts and src/components/accounts still import it directly; pending migration to FilterToolbarRow
@@ -16,6 +17,7 @@ export { default as StatusMessage } from "./StatusMessage";
 // Control components
 export { default as Button } from "./Button";
 export { default as InputField } from "./InputField";
+export { default as SymbolButton, Symbol, SYMBOLS, SYMBOL_NAMES } from "./SymbolButton";
 export { default as EmptyState } from "./EmptyState";
 export { default as FieldError } from "./FieldError";
 export { default as FormErrorSummary } from "./FormErrorSummary";

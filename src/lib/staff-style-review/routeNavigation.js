@@ -15,7 +15,7 @@ const DESCRIPTIVE_ROUTE_DESTINATIONS = Object.freeze([
 ]);
 
 const DYNAMIC_ROUTE_DESTINATIONS = Object.freeze({
-  "/mobile/delivery/[jobNumber]": "/mobile/dashboard",
+  "/mobile/delivery/[jobNumber]": "/dashboard/mobile",
 });
 
 function firstAuditedPath(routeDescription) {

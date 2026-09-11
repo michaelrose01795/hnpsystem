@@ -135,28 +135,14 @@ const paidPillStyle = (isPaid) => ({
   color: isPaid ? "var(--success)" : "var(--danger-dark)"
 });
 
-const modalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "16px",
-  zIndex: "var(--z-modal)"
-};
-
+// Popup chrome comes from the global .popup-backdrop / .popup-card classes in
+// staffglobal.css - this carries geometry only.
 const modalContentStyle = {
-  background: "var(--surface)",
-  borderRadius: "var(--radius-md)",
   padding: "24px",
   width: "min(900px, 100%)",
-  maxHeight: "90vh",
-  overflowY: "auto",
   display: "flex",
   flexDirection: "column",
-  gap: "18px",
-  border: "none"
+  gap: "18px"
 };
 
 const modalFieldColumnStyle = {
@@ -1445,7 +1431,7 @@ function DeliveryJobModal({
 
   return (
     <ModalPortal>
-      <div style={modalOverlayStyle}>
+      <div className="popup-backdrop">
         <div style={modalContentStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
@@ -1487,7 +1473,7 @@ function DeliveryJobModal({
           <span style={{ fontWeight: 600, color: "var(--primary-selected)", fontSize: "0.85rem" }}>
             Search invoice number
           </span>
-          <input
+          <input className="app-input"
               type="text"
               value={invoiceQuery}
               placeholder="Enter invoice or order number"
@@ -1549,7 +1535,7 @@ function DeliveryJobModal({
             
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Payment method</span>
-            <input
+            <input className="app-input"
                 type="text"
                 value={job.payment_method || ""}
                 onChange={(event) => onFieldChange("payment_method", event.target.value)}
@@ -1581,7 +1567,7 @@ function DeliveryJobModal({
           </div>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Part number</span>
-            <input
+            <input className="app-input"
                 type="text"
                 value={job.part_number || ""}
                 onChange={(event) => onFieldChange("part_number", event.target.value)}
@@ -1595,7 +1581,7 @@ function DeliveryJobModal({
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Part / order name</span>
-            <input
+            <input className="app-input"
                 type="text"
                 value={job.part_name || ""}
                 onChange={(event) => onFieldChange("part_name", event.target.value)}
@@ -1609,7 +1595,7 @@ function DeliveryJobModal({
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Quantity</span>
-            <input
+            <input className="app-input"
                 type="number"
                 min="1"
                 value={job.quantity || totalQuantity}
@@ -1630,7 +1616,7 @@ function DeliveryJobModal({
         <div style={modalFieldColumnStyle}>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Customer name</span>
-            <input
+            <input className="app-input"
                 type="text"
                 value={job.customer_name || ""}
                 onChange={(event) => onFieldChange("customer_name", event.target.value)}
@@ -1643,7 +1629,7 @@ function DeliveryJobModal({
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Contact number</span>
-            <input
+            <input className="app-input"
                 type="tel"
                 value={job.contact_phone || ""}
                 onChange={(event) => onFieldChange("contact_phone", event.target.value)}
@@ -1656,7 +1642,7 @@ function DeliveryJobModal({
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontWeight: 600 }}>Contact email</span>
-            <input
+            <input className="app-input"
                 type="email"
                 value={job.contact_email || ""}
                 onChange={(event) => onFieldChange("contact_email", event.target.value)}
@@ -1671,7 +1657,7 @@ function DeliveryJobModal({
 
         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <span style={{ fontWeight: 600 }}>Delivery address</span>
-          <textarea
+          <textarea className="app-input"
               value={job.address || ""}
               onChange={(event) => onFieldChange("address", event.target.value)}
               rows={3}
@@ -1686,7 +1672,7 @@ function DeliveryJobModal({
 
         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <span style={{ fontWeight: 600 }}>Notes</span>
-          <textarea
+          <textarea className="app-input"
               value={job.notes || ""}
               onChange={(event) => onFieldChange("notes", event.target.value)}
               rows={3}

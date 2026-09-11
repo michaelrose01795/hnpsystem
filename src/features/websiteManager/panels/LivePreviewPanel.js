@@ -1,53 +1,128 @@
 // file location: src/features/websiteManager/panels/LivePreviewPanel.js
 //
-// WYSIWYG editor for the public /website.
+// Preview tab for the public /website.
 //
-//   - Renders /website in an iframe with `?preview=editor`, which puts the
-//     page into preview mode: every editable section becomes a clickable
-//     overlay (see src/features/website/components/PreviewClickTarget).
-//   - When the user clicks a section in the iframe, the iframe posts a
-//     `hnp:section-selected` message back here; we load that section from
-//     /api/website/sections/:section and open a SectionEditor in the side pane.
-//   - As the user types in the editor, we forward each draft change to the
-//     iframe via `hnp:content-patch` postMessages. The iframe's
-//     useWebsiteContent hook applies the patch to its in-memory state, so the
-//     change is visible immediately - no reload, no jump-to-tab.
-//   - On Save, we PATCH the API and ask the iframe to refresh from the API so
-//     the staff sees the canonical saved version.
+// The first tab, Website, is the whole site as a customer sees it — top bar,
+// every block, footer — scrolling inside its frame (`?preview=site`).
 //
-// Most edits to /website content are meant to flow through here; the Pages &
-// sections tab stays as the list-driven route for bulk work.
+// Every other tab is one entry of the public top nav, and shows the real
+// content of that section directly underneath the tab row. Nothing is mocked
+// up: the frame loads /website with `?preview=section&block=<id>`, which tells
+// WebsitePage to draw that layout block ONLY, with no top bar, no footer and no
+// editing overlays (see useWebsitePreviewMode). The embed reports its rendered
+// height back here, so the frame grows to fit the section and there is no inner
+// scrollbar — it reads as page content rather than a shrunken picture of the
+// site.
+//
+// Under the frame sit the editors for exactly the sections that tab renders,
+// and nothing else.
+//
+// Content ownership (2026-09-11). Every page SECTION is now owned by a code
+// module under src/features/website/data — the register is
+// @/features/website/data/codeOwnedContent. The public page ignores the
+// website_* rows for those sections, so an editor here would save a row that
+// never renders and quietly promise a change the site never makes. Each tab
+// therefore splits its sections in two:
+//   - code-owned  a "Set in code" note naming the exact file to edit
+//   - editable    the site chrome that is still database-backed (brand
+//                 identity and the footer, on the Website tab) —
+//                 singletons edited in place, collections through the shared
+//                 <CollectionManager> (add / edit / delete / reorder / hide)
+// For the editable ones, every keystroke is forwarded into the frame as
+// `hnp:content-patch`, so the change is visible in the section above before it
+// is saved; saving PATCHes the API and sends `hnp:editor-refresh` so the frame
+// re-reads the canonical row.
+//
+// New and Used are the same `cars` block with a different starting filter,
+// exactly as the public nav does it (src/features/website/data/navTabs.js), and
+// their editors list only the vehicles of that type.
+//
+// The Design & layout tab keeps the WYSIWYG `?preview=editor` embed for the
+// site chrome, and Pages & sections stays the list-driven route for bulk work.
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Section from "@/components/Section";
-import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import SectionEditor from "../editors/SectionEditor";
-import { SECTION_SCHEMAS } from "../editors/sectionSchemas";
-import {
-  fetchSection,
-  patchSingleton,
-  patchRow,
-  createRow,
-  deleteRowApi,
-} from "../websiteApi";
-import { slugify } from "../helpers";
 import { PREVIEW_MESSAGE_TYPES } from "@/features/website/hooks/useWebsitePreviewMode";
+import {
+  CODE_OWNED_SECTIONS,
+  isCodeOwnedSection,
+} from "@/features/website/data/codeOwnedContent";
+import { SECTION_SCHEMAS } from "../editors/sectionSchemas";
+import SectionEditor from "../editors/SectionEditor";
+import CollectionManager from "./CollectionManager";
+import { fetchSection, patchSingleton } from "../websiteApi";
 
-// The public site is a single scroller, so each "page" is an anchor on it.
-const PAGES = [
-  { key: "home", name: "Homepage", hash: "" },
-  { key: "new-cars", name: "Cars", hash: "#cars" },
-  { key: "offers", name: "Offers", hash: "#offers" },
-  { key: "shop", name: "Shop", hash: "#shop" },
-  { key: "sell-your-car", name: "Sell Your Car", hash: "#sell" },
-  { key: "service-parts", name: "Service & Parts", hash: "#service" },
-  { key: "motability", name: "Motability", hash: "#motability" },
-  { key: "about", name: "About Us", hash: "#about" },
-  { key: "blog", name: "Blog", hash: "#blog" },
-  { key: "contact", name: "Contact", hash: "#contact" },
+// The whole site, then one tab per public nav entry (plus the homepage banner).
+//   blocks   layout row ids from WebsitePage's BLOCK_RENDERERS
+//   filter   seeds the Cars New / Used filter
+//   whole    the full scrolling site instead of a block list
+//   sections schema keys (../editors/sectionSchemas) for the content that tab
+//            draws, in the order it appears. Each is either code-owned (listed
+//            under "Set in code" with its file) or still editable here.
+//   rowFilter narrows a collection's row list to the rows this tab shows
+//   rowDefaults seeds a new row so it belongs to this tab
+//   emptyState shown when `sections` is empty — i.e. the tab's content is
+//            owned somewhere this panel cannot reach at all (the Shop)
+const SECTION_TABS = [
+  { key: "site", name: "Website", whole: true, sections: ["brand", "footer"] },
+  {
+    key: "home",
+    name: "Homepage",
+    blocks: ["hero", "brands"],
+    sections: ["hero", "trust-points", "partner-brands"],
+  },
+  // Cars are the DMS stock, reached through src/lib/stock/vehicleStock.js — a
+  // car is added, priced, photographed or withdrawn in the DMS, never here.
+  { key: "new", name: "New", blocks: ["cars"], filter: "new", sections: ["vehicles"] },
+  { key: "used", name: "Used", blocks: ["cars"], filter: "used", sections: ["vehicles"] },
+  {
+    key: "offers",
+    name: "Offers",
+    blocks: ["offers"],
+    sections: ["offers"],
+  },
+  {
+    key: "shop",
+    name: "Shop",
+    blocks: ["shop"],
+    sections: [],
+    emptyState: {
+      title: "Shop content is managed in the Shop tab",
+      description:
+        "Products, prices, stock and images for the shop live under Website manager → Shop. The heading above this block is set in Design and layout → Sections.",
+    },
+  },
+  { key: "sell", name: "Sell Your Car", blocks: ["sell"], sections: ["sell-your-car"] },
+  {
+    key: "service",
+    name: "Service & Parts",
+    blocks: ["service"],
+    sections: ["service-parts"],
+  },
+  {
+    key: "motability",
+    name: "Motability",
+    blocks: ["motability"],
+    sections: ["motability"],
+  },
+  {
+    key: "about",
+    name: "About Us",
+    blocks: ["about", "reviews", "team"],
+    sections: [
+      "about",
+      "timeline",
+      "reviews",
+      "ratings",
+      "team-departments",
+      "team-members",
+    ],
+  },
+  { key: "blog", name: "Blog", blocks: ["blog"], sections: ["blog-posts"] },
+  { key: "contact", name: "Contact Us", blocks: ["contact"], sections: ["contact"] },
 ];
 
 const DEVICES = [
@@ -56,185 +131,108 @@ const DEVICES = [
   { value: "mobile", label: "Mobile" },
 ];
 
+// Starting height before the embed reports its own. Roughly one section tall,
+// so the panel does not jump far once the real measurement lands.
+const INITIAL_HEIGHT = 640;
+
 export default function LivePreviewPanel() {
-  const [pageKey, setPageKey] = useState("home");
+  const [tabKey, setTabKey] = useState("site");
   const [device, setDevice] = useState("desktop");
   const [reloadKey, setReloadKey] = useState(0);
-  const [iframeReady, setIframeReady] = useState(false);
-  const [selection, setSelection] = useState(null); // { sectionKey, rowId }
-  const [sectionData, setSectionData] = useState(null);
-  const [sectionRows, setSectionRows] = useState([]);
-  const [loadingSection, setLoadingSection] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [ready, setReady] = useState(false);
+  const [height, setHeight] = useState(INITIAL_HEIGHT);
   const iframeRef = useRef(null);
 
-  const activePage = PAGES.find((p) => p.key === pageKey) || PAGES[0];
-  const src = `/website?preview=editor&v=${reloadKey}${activePage.hash}`;
+  const activeTab = useMemo(
+    () => SECTION_TABS.find((tab) => tab.key === tabKey) || SECTION_TABS[0],
+    [tabKey]
+  );
 
-  const postToIframe = useCallback((message) => {
-    const w = iframeRef.current?.contentWindow;
-    if (!w) return;
-    w.postMessage(message, window.location.origin);
+  // Split what this tab covers into "edit it here" and "it lives in code".
+  // Driven by the register rather than a hand-kept list, so a section that
+  // ever moves back to the database grows its editor again on its own.
+  const codeOwnedSections = useMemo(
+    () => activeTab.sections.filter(isCodeOwnedSection),
+    [activeTab]
+  );
+  const editableSections = useMemo(
+    () => activeTab.sections.filter((key) => !isCodeOwnedSection(key)),
+    [activeTab]
+  );
+
+  const src = useMemo(() => {
+    if (activeTab.whole) {
+      return `/website?preview=site&v=${reloadKey}`;
+    }
+    const params = new URLSearchParams({
+      preview: "section",
+      block: activeTab.blocks.join(","),
+      v: String(reloadKey),
+    });
+    if (activeTab.filter) params.set("filter", activeTab.filter);
+    return `/website?${params.toString()}`;
+  }, [activeTab, reloadKey]);
+
+  // Each tab loads a fresh document, so the old section's height must not be
+  // carried over into the new one.
+  const resetFrame = useCallback(() => {
+    setReady(false);
+    setHeight(INITIAL_HEIGHT);
   }, []);
 
-  // ---- listen for the iframe's selection events ---------------------------
+  const postToFrame = useCallback((message) => {
+    const frame = iframeRef.current?.contentWindow;
+    if (!frame) return;
+    frame.postMessage(message, window.location.origin);
+  }, []);
+
+  // Draft keystroke -> the frame above, so the edit shows before it is saved.
+  const handleDraftChange = useCallback(
+    (sectionKey, rowId, draft) => {
+      postToFrame({
+        type: PREVIEW_MESSAGE_TYPES.PATCH,
+        sectionKey,
+        rowId: rowId || null,
+        payload: draft,
+      });
+    },
+    [postToFrame]
+  );
+
+  // Saved -> ask the frame to re-read the canonical content.
+  const handleSaved = useCallback(() => {
+    postToFrame({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
+  }, [postToFrame]);
+
   useEffect(() => {
     const handle = (event) => {
       if (event.origin !== window.location.origin) return;
       const msg = event?.data;
       if (!msg || typeof msg !== "object") return;
+      // Only this panel's frame — other /website embeds post the same types.
+      if (event.source !== iframeRef.current?.contentWindow) return;
       if (msg.type === PREVIEW_MESSAGE_TYPES.READY) {
-        setIframeReady(true);
-      } else if (msg.type === PREVIEW_MESSAGE_TYPES.SECTION_SELECTED) {
-        setSelection({ sectionKey: msg.sectionKey, rowId: null });
-      } else if (msg.type === PREVIEW_MESSAGE_TYPES.ROW_SELECTED) {
-        setSelection({ sectionKey: msg.sectionKey, rowId: msg.rowId });
+        setReady(true);
+      } else if (msg.type === PREVIEW_MESSAGE_TYPES.HEIGHT && msg.height > 0) {
+        setHeight(msg.height);
       }
     };
     window.addEventListener("message", handle);
     return () => window.removeEventListener("message", handle);
   }, []);
 
-  // ---- load the section payload when selection changes ---------------------
-  useEffect(() => {
-    if (!selection?.sectionKey) {
-      setSectionData(null);
-      setSectionRows([]);
-      return;
-    }
-    // A selection with `newRow` set is a local "add" — there is nothing to
-    // fetch, the blank draft is already in sectionData.
-    if (selection.newRow) return;
-    setLoadingSection(true);
-    setError(null);
-    let active = true;
-    (async () => {
-      try {
-        const data = await fetchSection(selection.sectionKey);
-        if (!active) return;
-        const schema = SECTION_SCHEMAS[selection.sectionKey];
-        if (schema?.kind === "collection") {
-          const list = Array.isArray(data) ? data : [];
-          setSectionRows(list);
-          // Focus the clicked row, else the first one.
-          const focus = selection.rowId
-            ? list.find((r) => r.id === selection.rowId)
-            : list[0];
-          setSectionData(focus || { status: "published" });
-        } else {
-          setSectionData(data || {});
-          setSectionRows([]);
-        }
-      } catch (err) {
-        if (active) setError(err.message);
-      } finally {
-        if (active) setLoadingSection(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [selection]);
-
-  // ---- highlight selected section inside iframe ---------------------------
-  useEffect(() => {
-    if (!iframeReady) return;
-    postToIframe({
-      type: PREVIEW_MESSAGE_TYPES.HIGHLIGHT,
-      sectionKey: selection?.sectionKey || null,
-    });
-  }, [iframeReady, selection, postToIframe]);
-
-  // ---- live-patch the iframe as user types --------------------------------
-  const handleEditorChange = useCallback(
-    (draft) => {
-      if (!selection?.sectionKey) return;
-      postToIframe({
-        type: PREVIEW_MESSAGE_TYPES.PATCH,
-        sectionKey: selection.sectionKey,
-        rowId: selection.rowId,
-        payload: draft,
-      });
-    },
-    [selection, postToIframe]
-  );
-
-  const schema = selection?.sectionKey ? SECTION_SCHEMAS[selection.sectionKey] : null;
-
-  // ---- save handlers -------------------------------------------------------
-  const handleSave = async (draft) => {
-    if (!selection?.sectionKey) return;
-    setSaving(true);
-    setError(null);
-    try {
-      if (schema?.kind === "collection") {
-        if (selection.rowId) {
-          await patchRow(selection.sectionKey, selection.rowId, draft);
-        } else {
-          // No existing row — this is a new one. Collection rows need a stable
-          // text PK; derive it from the row label so staff never type an id.
-          const next = { ...draft };
-          if (!next.id) {
-            const label = schema.rowLabel ? schema.rowLabel(next) : "";
-            const base = slugify(label, selection.sectionKey);
-            let candidate = base;
-            let n = 2;
-            while (sectionRows.some((r) => r.id === candidate)) candidate = `${base}-${n++}`;
-            next.id = candidate;
-          }
-          if (next.sort_order == null) next.sort_order = sectionRows.length;
-          await createRow(selection.sectionKey, next);
-          // Re-select the saved row so the editor stops being an "add" form.
-          setSelection({ sectionKey: selection.sectionKey, rowId: next.id });
-        }
-      } else {
-        await patchSingleton(selection.sectionKey, draft);
-      }
-      // Ask the iframe to re-fetch so its state reflects the canonical save.
-      postToIframe({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
-    } catch (err) {
-      setError(err.message);
-      throw err; // let SectionEditor surface it inline too
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selection?.sectionKey || !selection.rowId) return;
-    if (!window.confirm("Delete this row? This cannot be undone.")) return;
-    try {
-      await deleteRowApi(selection.sectionKey, selection.rowId);
-      setSelection(null);
-      postToIframe({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
-      setReloadKey((n) => n + 1);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handleAddNewRow = () => {
-    setSelection({ sectionKey: selection.sectionKey, rowId: null, newRow: true });
-    setSectionData({ status: "published" });
-  };
-
-  const handleSwitchRow = (row) => {
-    setSelection({ sectionKey: selection.sectionKey, rowId: row.id });
-  };
-
   return (
     <>
-      <Section title="Visual editor">
+      <Section title="Preview">
         <div className="website-manager__preview-toolbar">
           <TabGroup
-            items={PAGES.map((page) => ({ value: page.key, label: page.name }))}
-            value={pageKey}
+            items={SECTION_TABS.map((tab) => ({ value: tab.key, label: tab.name }))}
+            value={tabKey}
             onChange={(value) => {
-              setPageKey(value);
-              setSelection(null);
+              setTabKey(value);
+              resetFrame();
             }}
-            ariaLabel="Website preview page"
+            ariaLabel="Website section"
           />
           <TabGroup
             items={DEVICES}
@@ -248,88 +246,166 @@ export default function LivePreviewPanel() {
             variant="secondary"
             onClick={() => {
               setReloadKey((n) => n + 1);
-              setIframeReady(false);
-              setSelection(null);
+              resetFrame();
             }}
           >
-            Reload preview
+            Reload
           </Button>
         </div>
       </Section>
 
-      <Section title={activePage.name}>
-        <div className="ws-editor-split">
-          {/* ----- left: editor pane --------------------------------------- */}
-          <div className="ws-editor-pane">
-            {!selection && (
-              <EmptyState
-                variant="bare"
-                icon="🖱"
-                title="Click a section in the preview"
-                description="Hover the site on the right and click any outlined region. Its editor opens here and your changes show live as you type."
-              />
-            )}
-
-            {selection && loadingSection && <p className="website-manager__meta">Loading section…</p>}
-
-            {error && (
-              <div className="website-manager__notice website-manager__notice--warning" role="alert">
-                {error}
-              </div>
-            )}
-
-            {selection && !loadingSection && schema && (
-              <>
-                {schema.kind === "collection" && sectionRows.length > 0 && (
-                  <LayerTheme gap="var(--space-2)">
-                    <span className="website-manager__label">Rows in this section</span>
-                    <div className="website-manager__chip-row">
-                      {sectionRows.map((row) => (
-                        <Button
-                          key={row.id}
-                          type="button"
-                          size="xs"
-                          variant={selection.rowId === row.id ? "primary" : "secondary"}
-                          onClick={() => handleSwitchRow(row)}
-                        >
-                          {schema.rowLabel ? schema.rowLabel(row) : row.id}
-                        </Button>
-                      ))}
-                      <Button type="button" size="xs" variant="secondary" onClick={handleAddNewRow}>
-                        + New row
-                      </Button>
-                    </div>
-                  </LayerTheme>
-                )}
-
-                <SectionEditor
-                  schema={schema}
-                  initialValue={sectionData || {}}
-                  onChange={handleEditorChange}
-                  onSave={handleSave}
-                  onCancel={() => setSelection(null)}
-                  onDelete={
-                    schema.kind === "collection" && selection.rowId ? handleDelete : null
-                  }
-                  saveLabel={
-                    schema.kind === "collection" && !selection.rowId
-                      ? "Add to the site"
-                      : "Save changes"
-                  }
-                />
-
-                {saving && <p className="website-manager__meta">Saving…</p>}
-              </>
-            )}
-          </div>
-
-          {/* ----- right: iframe ------------------------------------------- */}
-          <div className={`ws-editor-preview ws-editor-preview--${device}`}>
-            <iframe ref={iframeRef} key={reloadKey} title="Website preview" src={src} />
-            {!iframeReady && <p className="website-manager__meta">Preview loading…</p>}
-          </div>
+      <Section title={activeTab.whole ? "Whole website" : activeTab.name}>
+        <div
+          className={`ws-section-view ws-section-view--${device}${
+            activeTab.whole ? " ws-section-view--whole" : ""
+          }`}
+        >
+          <iframe
+            ref={iframeRef}
+            key={src}
+            title={activeTab.whole ? "Website" : `${activeTab.name} section`}
+            src={src}
+            /* A section frame is sized by the embed's own measurement so it
+               never scrolls internally — layout only, so it stays clear of the
+               inline-styling ban (CLAUDE.md §3.0b). The whole-site frame keeps
+               its fixed height from CSS and scrolls like the real site. */
+            style={activeTab.whole ? undefined : { height: `${height}px` }}
+            scrolling={activeTab.whole ? undefined : "no"}
+          />
         </div>
+        {!ready && (
+          <p className="website-manager__meta">
+            {activeTab.whole ? "Loading website…" : "Loading section…"}
+          </p>
+        )}
       </Section>
+
+      {/* The sections this tab draws that are owned by code — named, with the
+          file to edit, so the route to changing them is obvious even though
+          there is no form here. */}
+      {codeOwnedSections.length > 0 && (
+        <Section title="Set in code">
+          <p className="website-manager__meta">
+            {codeOwnedSections.length === 1
+              ? "This section is built from the app's code, not the database. A developer edits the file below to add, remove, reorder or reword its items — the change goes live with the next release."
+              : "These sections are built from the app's code, not the database. A developer edits the files below to add, remove, reorder or reword their items — the change goes live with the next release."}
+          </p>
+          <ul className="website-manager__bullets">
+            {codeOwnedSections.map((sectionKey) => {
+              const entry = CODE_OWNED_SECTIONS[sectionKey];
+              return (
+                <li key={sectionKey}>
+                  {entry.label} —{" "}
+                  <span className="website-manager__cell-mono">{entry.file}</span> (
+                  {entry.export})
+                </li>
+              );
+            })}
+          </ul>
+          <p className="website-manager__meta">
+            The heading, lead and running order of every block are still yours:
+            Design and layout → Sections.
+          </p>
+        </Section>
+      )}
+
+      {editableSections.length === 0 && codeOwnedSections.length === 0 ? (
+        <Section title="Edit this section">
+          <EmptyState
+            variant="bare"
+            title={activeTab.emptyState?.title || "Nothing to edit on this tab"}
+            description={activeTab.emptyState?.description || ""}
+          />
+        </Section>
+      ) : (
+        editableSections.map((sectionKey) => {
+          const schema = SECTION_SCHEMAS[sectionKey];
+          if (!schema) return null;
+          return schema.kind === "collection" ? (
+            <CollectionManager
+              key={`${activeTab.key}:${sectionKey}`}
+              sectionKey={sectionKey}
+              schema={schema}
+              filterRow={activeTab.rowFilter}
+              newRowDefaults={activeTab.rowDefaults || { status: "published" }}
+              deriveId={(row) => (schema.rowLabel ? schema.rowLabel(row) : "")}
+              onDraftChange={(draft, rowId) =>
+                handleDraftChange(sectionKey, rowId, draft)
+              }
+              onChanged={handleSaved}
+            />
+          ) : (
+            <LiveSingletonEditor
+              key={`${activeTab.key}:${sectionKey}`}
+              sectionKey={sectionKey}
+              schema={schema}
+              onDraftChange={handleDraftChange}
+              onSaved={handleSaved}
+            />
+          );
+        })
+      )}
     </>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* Singleton section — one row, edited in place under the preview.   */
+/* Kept open rather than behind an "Edit" button: on this tab the    */
+/* form IS the point, and typing repaints the section above it.      */
+/* ---------------------------------------------------------------- */
+
+function LiveSingletonEditor({ sectionKey, schema, onDraftChange, onSaved }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    (async () => {
+      try {
+        const loaded = await fetchSection(sectionKey);
+        if (!active) return;
+        setData(loaded || {});
+        setError("");
+      } catch (e) {
+        if (active) setError(e?.message || "This section could not be loaded.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [sectionKey]);
+
+  // SectionEditor re-seeds its draft whenever this identity changes, so it must
+  // not be a fresh object on every render.
+  const initialValue = useMemo(() => data || {}, [data]);
+
+  const handleSave = async (draft) => {
+    const saved = await patchSingleton(sectionKey, draft);
+    setData(saved || draft);
+    onSaved?.();
+  };
+
+  return (
+    <Section title={schema.label}>
+      {error && (
+        <div className="website-manager__notice website-manager__notice--warning" role="alert">
+          {error}
+        </div>
+      )}
+      {loading && <p className="website-manager__meta">Loading…</p>}
+      {!loading && !error && (
+        <SectionEditor
+          schema={schema}
+          initialValue={initialValue}
+          onChange={(draft) => onDraftChange(sectionKey, null, draft)}
+          onSave={handleSave}
+        />
+      )}
+    </Section>
   );
 }

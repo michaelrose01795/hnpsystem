@@ -2,7 +2,7 @@
  *
  * Canonical home for the Table family.
  *
- * Variants: standard, compact, workflow
+ * Variants: standard, compact, workflow, clickable
  * Showcase:  /dev/user-diagnostic#table
  *
  * NOTE (2026-04 audit pass): the existing .app-data-table, thead, and tbody
@@ -48,6 +48,22 @@ html.staff-scope .app-data-table--workflow tbody tr[data-row-state="muted"] {
   opacity: 0.62;
 }
 
+/* Clickable rows — the whole row is the click target (the row opens a record),
+   so it needs a hover affordance. --secondary is the lightest accent tint and
+   the same step the --workflow variant uses for its active row, so a hovered
+   row reads one rung above the --surface row without becoming a second surface.
+   Pages must NOT hand-roll this with an inline onMouseEnter background: the
+   usual mistake is painting --surface over a --surface row, which is a no-op. */
+html.staff-scope .app-data-table--clickable tbody tr {
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+html.staff-scope .app-data-table--clickable tbody tr:hover,
+html.staff-scope .app-data-table--clickable tbody tr:focus-within {
+  background: var(--secondary);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud grey outlines on every table-family element. */
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-table="1"])
@@ -59,4 +75,50 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline: 2px solid #6b7280 !important;
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(107, 114, 128, 0.32) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vertical table scroll shell — .app-table-scroll
+ *
+ * The canonical wrapper for a data table that can outgrow its card. It is the
+ * replacement for the ad-hoc `<div style={{ overflowX: "auto" }}>` wrappers
+ * that used to sit around tables: those pushed dense tables sideways, which
+ * hides columns behind a scrollbar the staff stylesheet deliberately hides.
+ *
+ *   - NO horizontal scroll. The table always fits the card; long cell values
+ *     wrap onto a second line and the row grows (the `height` on `tbody tr`
+ *     is a MINIMUM for table rows, so wrapping is safe).
+ *   - Vertical scroll once the body passes --table-visible-rows (10) rows.
+ *     +1 row of headroom covers the sticky <thead>, which stays pinned because
+ *     this element is the scroll container.
+ *
+ * Override the row cap per table with the --table-visible-rows custom property
+ * (DataTableShell's `visibleRows` prop sets it). Scrollbar chrome stays hidden
+ * app-wide — see the "App-Wide Hidden Scrollbars" block in staffglobal.css.
+ */
+html.staff-scope .app-table-scroll {
+  --table-visible-rows: 10;
+  max-height: calc((var(--table-visible-rows) + 1) * var(--table-row-height));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+html.staff-scope .app-table-scroll .app-data-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+html.staff-scope .app-table-scroll .app-data-table th,
+html.staff-scope .app-table-scroll .app-data-table td {
+  /* Wrap rather than widen — this is what removes the horizontal scroll. */
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Numeric / status columns read better without mid-value wrapping. */
+html.staff-scope .app-table-scroll .app-data-table :where(th, td)[data-table-cell="nowrap"] {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }

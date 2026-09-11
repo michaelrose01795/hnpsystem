@@ -14,6 +14,16 @@ const DEFAULT_TARGET_RGB = {
 
 const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
 
+// Recolouring is expensive: it decodes the source PNG, walks every pixel and
+// re-encodes the result with toDataURL — tens of milliseconds of blocking main
+// thread work. The sidebar swaps between the wordmark and the square rail icon
+// on every collapse/expand, so without a cache that cost was paid again on each
+// toggle, landing exactly on the first frames of the collapse animation. The
+// result only depends on (source, mode, target colour), so cache it per tab.
+const recolorCache = new Map();
+const recolorCacheKey = (baseSrc, mode, targetRgb) =>
+  `${baseSrc}|${mode}|${targetRgb.r},${targetRgb.g},${targetRgb.b}`;
+
 const rgbToHsv = (r, g, b) => {
   const nr = r / 255;
   const ng = g / 255;
@@ -105,7 +115,6 @@ export default function BrandLogo({
   // theme) so the logo recolours to match what is actually on screen — not the
   // user's stored accent preference.
   const { resolvedMode, effectiveAccent } = useTheme();
-  const [src, setSrc] = useState(() => srcProp);
 
   const mode = resolvedMode === "dark" ? "dark" : "light";
   const baseSrc = srcProp;
@@ -124,6 +133,12 @@ export default function BrandLogo({
     };
   }, [effectiveAccent, mode]);
 
+  // Seed from the cache so a remount (e.g. the sidebar swapping the wordmark for
+  // the rail icon) paints the already-recoloured image on the FIRST render —
+  // no pixel walk, no flash of the un-recoloured source.
+  const cacheKey = recolor ? recolorCacheKey(baseSrc, mode, targetRgb) : "";
+  const [src, setSrc] = useState(() => (cacheKey && recolorCache.get(cacheKey)) || srcProp);
+
   useEffect(() => {
     if (!recolor) {
       setSrc(baseSrc);
@@ -135,16 +150,23 @@ export default function BrandLogo({
       return;
     }
 
+    const cached = recolorCache.get(cacheKey);
+    if (cached) {
+      setSrc(cached);
+      return;
+    }
+
     const img = new window.Image();
     img.onload = () => {
       const recolored = recolorLogo(img, targetRgb, mode);
+      if (recolored) recolorCache.set(cacheKey, recolored);
       setSrc(recolored || baseSrc);
     };
     img.onerror = () => {
       setSrc(baseSrc);
     };
     img.src = baseSrc;
-  }, [baseSrc, targetRgb, mode, recolor]);
+  }, [baseSrc, targetRgb, mode, recolor, cacheKey]);
 
   return (
     <Image

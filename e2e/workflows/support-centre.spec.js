@@ -32,7 +32,7 @@ test.describe('Support Centre — permissions', () => {
     const page = await ctx.newPage();
     await page.goto('/dev/support-reports');
     await page.waitForLoadState('networkidle');
-    // ProtectedRoute redirects away (login/unauthorized) — the heading must not render.
+    // ProtectedRoute redirects away (login/unauthorised) — the heading must not render.
     await expect(page.getByText('Support Centre', { exact: false })).toHaveCount(0);
     await ctx.close();
   });

@@ -15,14 +15,14 @@
 // often needs, with the handoff framed as an action.
 const DEPARTMENT_COORDINATION = {
   workshop: [
-    { toDept: "parts", label: "Chase parts for a job", subtitle: "Parts", href: "/parts" },
+    { toDept: "parts", label: "Chase parts for a job", subtitle: "Parts", href: "/stock-catalogue" },
     { toDept: "service", label: "Update the service desk", subtitle: "Service", href: "/job-cards" },
-    { toDept: "mot", label: "Book a retest slot", subtitle: "MOT", href: "/job-cards/appointments" },
+    { toDept: "mot", label: "Book a retest slot", subtitle: "MOT", href: "/appointments" },
     { toDept: "valeting", label: "Send a vehicle to valet", subtitle: "Valeting", href: "/valet" },
   ],
   service: [
     { toDept: "workshop", label: "Check workshop progress", subtitle: "Workshop", href: "/nextjobs" },
-    { toDept: "parts", label: "Check parts availability", subtitle: "Parts", href: "/parts" },
+    { toDept: "parts", label: "Check parts availability", subtitle: "Parts", href: "/stock-catalogue" },
     { toDept: "valeting", label: "Confirm valet before handover", subtitle: "Valeting", href: "/valet" },
     { toDept: "accounts", label: "Query an invoice", subtitle: "Accounts", href: "/accounts/invoices" },
   ],
@@ -41,16 +41,16 @@ const DEPARTMENT_COORDINATION = {
   ],
   paint: [
     { toDept: "workshop", label: "Coordinate a strip / refit", subtitle: "Workshop", href: "/nextjobs" },
-    { toDept: "parts", label: "Order paint & consumables", subtitle: "Parts", href: "/parts" },
+    { toDept: "parts", label: "Order paint & consumables", subtitle: "Parts", href: "/stock-catalogue" },
   ],
   accounts: [
     { toDept: "service", label: "Resolve a service query", subtitle: "Service", href: "/job-cards" },
-    { toDept: "parts", label: "Reconcile parts spend", subtitle: "Parts", href: "/parts" },
+    { toDept: "parts", label: "Reconcile parts spend", subtitle: "Parts", href: "/stock-catalogue" },
   ],
   management: [
     { toDept: "workshop", label: "Review workshop load", subtitle: "Workshop", href: "/nextjobs" },
-    { toDept: "service", label: "Review the service diary", subtitle: "Service", href: "/job-cards/appointments" },
-    { toDept: "parts", label: "Review parts pipeline", subtitle: "Parts", href: "/parts" },
+    { toDept: "service", label: "Review the service diary", subtitle: "Service", href: "/appointments" },
+    { toDept: "parts", label: "Review parts pipeline", subtitle: "Parts", href: "/stock-catalogue" },
   ],
 };
 
@@ -60,7 +60,7 @@ const CONTEXTUAL_BOOSTS = [
   {
     when: /^\/(job-cards|tech)\/[^/]+/,
     links: [
-      { toDept: "parts", label: "Chase parts for this job", subtitle: "This job", href: "/parts", weight: 100 },
+      { toDept: "parts", label: "Chase parts for this job", subtitle: "This job", href: "/stock-catalogue", weight: 100 },
       { toDept: "service", label: "Message service about this job", subtitle: "This job", href: null, weight: 90 },
     ],
   },
@@ -68,7 +68,7 @@ const CONTEXTUAL_BOOSTS = [
     when: /^\/vhc\//,
     links: [
       { toDept: "service", label: "Send this VHC for authorisation", subtitle: "Approval", href: "/job-cards", weight: 95 },
-      { toDept: "parts", label: "Request parts from this VHC", subtitle: "Parts", href: "/parts", weight: 85 },
+      { toDept: "parts", label: "Request parts from this VHC", subtitle: "Parts", href: "/stock-catalogue", weight: 85 },
     ],
   },
   {

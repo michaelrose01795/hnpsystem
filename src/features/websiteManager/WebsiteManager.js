@@ -4,8 +4,8 @@
 //
 // Page status / SEO / media writes persist via /api/website/*. Per-section
 // content writes are handled directly by PageContentPanel (which loads from
-// /api/website/sections/* on demand). The Visual editor tab embeds /website
-// itself in an iframe with click-to-edit overlays, and the Design & layout tab
+// /api/website/sections/* on demand). The Preview tab embeds /website
+// one section at a time, read-only, and the Design & layout tab
 // edits the site chrome (top bar, block running order, visual design) through
 // the website_nav / website_section_layout / website_design tables. The Shop
 // tab manages the e-commerce catalogue.
@@ -39,7 +39,7 @@ import DesignPanel from "./panels/DesignPanel";
 
 const TABS = [
   { value: "overview", label: "Overview" },
-  { value: "preview", label: "Visual editor" },
+  { value: "preview", label: "Preview" },
   { value: "content", label: "Pages & sections" },
   { value: "design", label: "Design & layout" },
   { value: "shop", label: "Shop" },

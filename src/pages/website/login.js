@@ -53,6 +53,21 @@ export default function CustomerLoginPage() {
   const [devLoading, setDevLoading] = useState(false);
   const pageTitle = `Sign in - ${siteContent.brand.name}`;
 
+  // Where to land after signing in. Callers that send a customer here
+  // mid-task — the shop basket prompt, for one — pass ?next= so the
+  // customer returns to what they were doing instead of the profile page.
+  // Only same-origin /website paths are honoured, so ?next= can never be
+  // turned into an open redirect.
+  const nextPath = useMemo(() => {
+    const raw = router.query?.next;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof value !== "string") return "/website/profile";
+    if (!value.startsWith("/website") || value.startsWith("//")) {
+      return "/website/profile";
+    }
+    return value;
+  }, [router.query?.next]);
+
   // Skip the page entirely if the user is already signed in.
   useEffect(() => {
     let cancelled = false;
@@ -61,14 +76,14 @@ export default function CustomerLoginPage() {
       .then((data) => {
         if (cancelled) return;
         if (data?.authenticated && data?.customer) {
-          router.replace("/website/profile");
+          router.replace(nextPath);
         }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, nextPath]);
 
   // Pre-fetch the customers list for the dev dropdown.
   useEffect(() => {
@@ -212,7 +227,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not sign in.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -235,7 +250,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not set your password.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -258,7 +273,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not create account.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -282,7 +297,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Dev login failed.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {

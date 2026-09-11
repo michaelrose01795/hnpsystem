@@ -9,10 +9,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useClockingContext } from "@/context/ClockingContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
+import { useNewsAckBadge } from "@/hooks/useNewsAckBadge";
+import { formatOutstandingAckLabel } from "@/lib/news/format";
 import { sidebarSections } from "@/config/navigation";
 import {
   getKnownSidebarHrefs,
@@ -44,6 +46,151 @@ const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
+
+// ---------------------------------------------------------------------------
+// Brand mark geometry — the collapse/expand animation of the sidebar logo.
+//
+// There are two source images and both of them contain the same car:
+//   Logo.png      881x270  "Humphries &" + the car with "Parks" inside it
+//   icon-256.png  256x256  the car alone, on a filled disc
+//
+// THE CAR IS THE ANCHOR. It is the object that travels and scales between the
+// two resting states, so it is never clipped and never disappears; the
+// wordmark's text is simply dragged out of view behind the rail's left edge as
+// the car moves in. (The text sits to the LEFT of the car in the artwork, so
+// moving the car left is the only path that keeps the car fully visible — a
+// car left where it is would be the first thing the closing edge cut off.)
+//
+// Neither resting state changes. The boxes below reproduce exactly what the
+// header renders today:
+//   expanded  — wordmark in the header's content box: 260px rail - 2x18px
+//               padding = 224px wide, its 68.6px height centred in 75px.
+//   collapsed — icon 44px square (48px rail - 2x2px padding), centred in 75px.
+const BRAND_HEADER_HEIGHT = 75;
+const BRAND_WORDMARK_SIZE = { width: 881, height: 270 }; // Logo.png, natural size
+const BRAND_WORDMARK_WIDTH = 224; // 260px rail - 2x18px of header padding
+// Derived, not rounded: the old layout sized the wordmark `width:100%,
+// height:auto` and centred it, so rounding here would shift it by a fraction of
+// a pixel and change how the artwork antialiases.
+const BRAND_WORDMARK_HEIGHT =
+  (BRAND_WORDMARK_WIDTH * BRAND_WORDMARK_SIZE.height) / BRAND_WORDMARK_SIZE.width;
+const BRAND_WORDMARK_BOX = {
+  left: 18,
+  width: BRAND_WORDMARK_WIDTH,
+  height: BRAND_WORDMARK_HEIGHT,
+  top: (BRAND_HEADER_HEIGHT - BRAND_WORDMARK_HEIGHT) / 2,
+};
+const BRAND_ICON_BOX = { left: 2, size: 44, top: (BRAND_HEADER_HEIGHT - 44) / 2 };
+// Car bounding boxes measured off the source PNGs, as fractions of each image:
+// Logo.png     — the red car (with "Parks" inside it) spans x 512-870, y 13-259.
+// icon-256.png — the car glyph spans x 28-233, y 52-198 of the 256px disc.
+const BRAND_WORDMARK_CAR = { x0: 512 / 881, x1: 870 / 881, y0: 13 / 270, y1: 259 / 270 };
+const BRAND_ICON_CAR = { x0: 28 / 256, x1: 233 / 256, y0: 52 / 256, y1: 198 / 256 };
+
+const brandCarRect = (left, top, width, height, car) => {
+  const w = width * (car.x1 - car.x0);
+  const h = height * (car.y1 - car.y0);
+  return { cx: left + width * car.x0 + w / 2, cy: top + height * car.y0 + h / 2, w, h };
+};
+const brandCarOrigin = (car) =>
+  `${((car.x0 + car.x1) / 2) * 100}% ${((car.y0 + car.y1) / 2) * 100}%`;
+
+const BRAND_CAR_OPEN = brandCarRect(
+  BRAND_WORDMARK_BOX.left,
+  BRAND_WORDMARK_BOX.top,
+  BRAND_WORDMARK_BOX.width,
+  BRAND_WORDMARK_BOX.height,
+  BRAND_WORDMARK_CAR
+);
+const BRAND_CAR_CLOSED = brandCarRect(
+  BRAND_ICON_BOX.left,
+  BRAND_ICON_BOX.top,
+  BRAND_ICON_BOX.size,
+  BRAND_ICON_BOX.size,
+  BRAND_ICON_CAR
+);
+// One journey, expressed twice: the wordmark travels open -> collapsed, the icon
+// travels collapsed -> open. Because both pivot on their own car centre and use
+// the same numbers, the two cars stay exactly superimposed for the whole
+// transition — the artwork crossfades, the car never moves out from under it.
+const BRAND_SHRINK = BRAND_CAR_CLOSED.w / BRAND_CAR_OPEN.w; // ~0.39
+const BRAND_DX = BRAND_CAR_CLOSED.cx - BRAND_CAR_OPEN.cx;   // ~-169px
+const BRAND_DY = BRAND_CAR_CLOSED.cy - BRAND_CAR_OPEN.cy;   // ~-1px
+const BRAND_WORDMARK_ORIGIN = brandCarOrigin(BRAND_WORDMARK_CAR);
+const BRAND_ICON_ORIGIN = brandCarOrigin(BRAND_ICON_CAR);
+const BRAND_WORDMARK_COLLAPSED_TRANSFORM = `translate(${BRAND_DX}px, ${BRAND_DY}px) scale(${BRAND_SHRINK})`;
+const BRAND_ICON_EXPANDED_TRANSFORM = `translate(${-BRAND_DX}px, ${-BRAND_DY}px) scale(${1 / BRAND_SHRINK})`;
+// Handing the car over from one artwork to the other is a WIPE, not a crossfade.
+// Fading two different cars through each other leaves both half-transparent for
+// the length of the fade — the car goes pale for ~150ms, which is exactly what
+// "keep the car 100% visible" rules out. Instead the disc is clipped to a circle
+// that grows from nothing at the car's centre: outside it you still see the
+// wordmark's car at full strength, inside it the badge's, and the two are the
+// same car at the same size and place, so it reads as the badge filling in.
+// Nothing is ever translucent.
+//
+// The window sits at the end of the close (and the very start of the open, where
+// easeOutExpo covers most of the distance in the first fraction of a second),
+// for a second reason: the disc is much bigger than the car inside it, so while
+// the icon is scaled up to meet the wordmark it is taller than the 75px header
+// and would be cut off top and bottom if it were painted that early.
+const BRAND_ICON_CLIP_HIDDEN = "circle(0% at 50% 50%)";
+const BRAND_ICON_CLIP_SHOWN = "circle(80% at 50% 50%)"; // 80% of 44px clears the disc's corners
+const BRAND_WIPE_CLOSE = "clip-path 0.14s linear 0.2s";
+const BRAND_WIPE_OPEN = "clip-path 0.08s linear";
+// The wordmark is switched off, not faded: by 0.34s the disc covers its car
+// completely (the wipe finishes at 0.34s, this fires at 0.37s), so the only
+// thing left to hide is the tail of the text at the
+// rail's left edge — and a step change there is invisible. On the way open it is
+// switched straight back on underneath the disc, before the wipe uncovers it.
+const BRAND_WORDMARK_HIDE_CLOSE = "opacity 0s linear 0.37s";
+const BRAND_WORDMARK_SHOW_OPEN = "opacity 0s linear";
+
+// Nav rows and section headings hand over the same way, and the two halves
+// OVERLAP: the label is already on its way out when the icon starts coming in,
+// so a row never reads as empty, and the handover happens inside the rail's own
+// travel rather than before or after it.
+//
+// The handover is FRONT-LOADED: it runs in the first third of the travel and is
+// finished long before the rail reaches its end state, so the rail spends its
+// slow settle arriving at rows that have already changed over.
+//
+//   close (rail travels 0.4s):   label out 0.00 -> 0.10, icon in  0.06 -> 0.16
+//   open  (rail travels 0.52s):  icon  out 0.00 -> 0.05, label in 0.02 -> 0.07
+//
+// Opening is MUCH the faster of the two on purpose. easeOutExpo throws the rail
+// most of the way to full width almost immediately, so the room for the text is
+// there well before the movement finishes - a leisurely handover just leaves the
+// rows looking empty while the rail is already open. The labels are back within
+// the first ~13% of the travel and the rail catches up to them. Closing keeps
+// the longer, calmer handover because easeInOutCubic takes the width away
+// gradually.
+//
+// The 0.02-0.04s overlap in both directions is what keeps a row from ever
+// reading as momentarily empty.
+//
+// These delays are measured from the COMMIT of the rows' style change, not from
+// the click. The rows key off rowsCollapsed (useDeferredValue), so React lands
+// that commit a beat after the press - which is what keeps the contents from
+// turning over on the frame the toggle is hit, and is why the outgoing halves
+// can now start at 0s delay without snapping. Adding a delay here stacks ON TOP
+// of that beat, which is what made the swap feel late.
+const NAV_FADE_CLOSE_LABEL = "opacity 0.1s linear";
+const NAV_FADE_CLOSE_ICON = "opacity 0.1s linear 0.06s";
+const NAV_FADE_OPEN_ICON = "opacity 0.05s linear";
+const NAV_FADE_OPEN_LABEL = "opacity 0.05s linear 0.02s";
+// A nav button's TEXT may only change while that text is invisible. Collapsing,
+// NAV_FADE_CLOSE_LABEL finishes at 0.10s, so any text swap is held to 0.12s;
+// expanding, the new text is set on the frame of the press, before
+// NAV_FADE_OPEN_LABEL starts revealing it at 0.02s. Only the Profile row's text
+// currently differs between the two states (full name vs "Profile").
+const NAV_LABEL_SWAP_CLOSE_DELAY_MS = 120;
+
+// The collapsed rail marks a section break with a short rule where the title
+// text sits when the rail is open. One element, shared by both renderers.
+const SECTION_RULE = (
+  <span style={{ width: 24, height: 2, borderRadius: 1, background: "var(--theme)" }} />
+);
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -186,6 +333,36 @@ export default function Sidebar({
   pendingHref = null,
   isAuthLoading = false,
 }) {
+  // Collapse/expand is ONE movement. Every part of it — the shell's width, the
+  // body padding, each row's padding, the label/icon handover, the section
+  // headings and the brand mark — is a CSS transition on the same clock (MOTION
+  // below), started by the same commit. Nothing waits for anything else, and
+  // nothing swaps out of the DOM mid-animation: both states of every element are
+  // mounted and only their opacity/transform change, so React's work on the
+  // toggling frame is a style diff rather than a rebuild of the nav tree.
+  //
+  // The rail's own geometry and the brand mark key off `isCollapsed` and move on
+  // the frame you click. The nav rows key off the deferred copy, which React is
+  // free to render at transition priority — it lands a frame or so later, which
+  // is invisible against a 0.4s travel, and it keeps the one big render off the
+  // frame that has to start the animation.
+  const rowsCollapsed = useDeferredValue(isCollapsed);
+  // rowsCollapsed drives the CROSSFADE - both states stay mounted, so flipping
+  // it a frame after the press is harmless. Text that genuinely CHANGES between
+  // the two states is different: there is only one string on screen, so swapping
+  // it is a visible jump and it has to happen while that string is at opacity 0.
+  // labelsCollapsed is that later flag - held back until the close fade-out has
+  // finished, and flipped straight back on open so the new text is in place
+  // before anything reveals it. See NAV_LABEL_SWAP_CLOSE_DELAY_MS.
+  const [labelsCollapsed, setLabelsCollapsed] = useState(isCollapsed);
+  useEffect(() => {
+    if (!isCollapsed) {
+      setLabelsCollapsed(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setLabelsCollapsed(true), NAV_LABEL_SWAP_CLOSE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
   // Optimistic active state: in the Pages Router router.asPath does not update
@@ -212,6 +389,16 @@ export default function Sidebar({
   // signed-in user — pass null to skip the unread-messages query so the badge
   // doesn't surface the presenter's actual inbox count.
   const { unreadCount } = useMessagesBadge(inPresentationMode ? null : dbUserId);
+  // Same treatment for the News Feed item: the count is how many published
+  // updates this user still owes an acknowledgement on, and the badge's title
+  // spells out why ("This update needs your acknowledgement. 6 days overdue.").
+  const { count: outstandingAckCount, dueAt: ackDueAt } = useNewsAckBadge(
+    inPresentationMode ? null : dbUserId
+  );
+  const outstandingAckLabel = useMemo(
+    () => formatOutstandingAckLabel({ count: outstandingAckCount, dueAt: ackDueAt }),
+    [outstandingAckCount, ackDueAt]
+  );
 
   // Mirror PresentationProvider's "Hide" state so we can show a "Show overlay"
   // sidebar button when the user has dismissed the popup. The state lives in
@@ -225,6 +412,7 @@ export default function Sidebar({
   }, []);
   const inPresentationRoute = pathname.startsWith("/presentation");
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
+  const inWebsiteRoute = pathname === "/website" || pathname.startsWith("/website/");
   const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
   const isSidebarNavigationLoading =
     !inPresentationMode &&
@@ -259,6 +447,9 @@ export default function Sidebar({
     Boolean(user) && !inPresentationMode && canShowDevPages();
   const canShowDevOverlayControl =
     Boolean(user) && !inPresentationMode && canUseDevOverlay;
+  // Shortcut into the customer-facing site, shown to the same audience as the
+  // Dev / Overlay controls it sits with.
+  const canShowWebsiteLink = canShowDevPagesLink || canShowDevOverlayControl;
   // Per-user sidebar-access override (admin-set snapshot). Skipped in
   // presentation mode (the rail belongs to the demo role, not the real user).
   // When no snapshot exists, snapshotAllowed is null and every filter below is
@@ -467,9 +658,19 @@ export default function Sidebar({
   // `truncate` ellipsises the label on a single line — used by the Profile
   // button, which now renders the user's (potentially long) full name inside the
   // fixed-width rail. `title` keeps the full text accessible on hover.
+  //
+  // Two nav items carry a count badge: Messages (unread threads) and News Feed
+  // (updates still awaiting this user's acknowledgement). They share one badge
+  // treatment so the rail reads consistently — only the number and the title
+  // text differ.
   const renderLinkLabel = (label, href, { truncate = false } = {}) => {
-    const isMessagesItem = href === "/messages";
-    const showUnreadBadge = isMessagesItem && unreadCount > 0;
+    const badgeCount =
+      href === "/messages" ? unreadCount : href === "/newsfeed" ? outstandingAckCount : 0;
+    const badgeTitle =
+      href === "/messages"
+        ? `${unreadCount} unread ${unreadCount === 1 ? "conversation" : "conversations"}`
+        : outstandingAckLabel;
+    const showUnreadBadge = badgeCount > 0;
     const labelStyle = truncate
       ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }
       : undefined;
@@ -500,8 +701,10 @@ export default function Sidebar({
           <span
             className="app-badge app-badge--danger-strong app-badge--count"
             style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)" }}
+            title={badgeTitle || undefined}
+            aria-label={badgeTitle || undefined}
           >
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         )}
       </div>
@@ -514,27 +717,63 @@ export default function Sidebar({
   // Idle icons match the normal sidebar button text colour (.app-btn--secondary
   // uses var(--text-accent)).
   const ICON_COLOR = "var(--text-accent)";
+  // Both halves of a nav row are ALWAYS in the DOM — the label in flow, the icon
+  // as a centred overlay — and collapsing only changes their opacity. Swapping
+  // the two out of the DOM instead (what this used to do) meant the row's
+  // contents changed in one jump at one instant, which no amount of easing can
+  // link to a 0.4s width animation; it also rebuilt the whole nav tree on the
+  // frame the animation started. Now the label is squeezed out by the rail while
+  // the icon fades up in its place, all on the same clock.
+  // opts.iconLabel pins the GLYPH to a label that never changes (the nav item's
+  // own), so a row whose text swaps between states - Profile - cannot briefly
+  // resolve the wrong icon while its text is still the other string.
   const renderNavContent = (label, href, isActive = false, opts = {}) => {
-    if (!isCollapsed) return renderLinkLabel(label, href, opts);
+    const { iconLabel, ...labelOpts } = opts;
     return (
+    <>
       <span
         aria-hidden="true"
         style={{
-          display: "inline-flex",
+          position: "absolute",
+          inset: 0,
+          display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // Fills the 44px button's content box (44 − 2×8px padding = 28px) so
-          // the glyph reads large within the collapsed rail.
-          width: 28,
-          height: 28,
+          pointerEvents: "none",
           // Selected item flips the glyph to the surface colour so it reads
           // against the active (accent) button fill; idle glyphs use --theme.
           color: isActive ? "var(--surface)" : ICON_COLOR,
-          background: "transparent",
+          opacity: rowsCollapsed ? 1 : 0,
+          transition: rowsCollapsed ? NAV_FADE_CLOSE_ICON : NAV_FADE_OPEN_ICON,
         }}
       >
-        {getSidebarNavIcon(label)}
+        <span
+          style={{
+            // Fills the 44px button's content box (44 − 2×8px padding = 28px) so
+            // the glyph reads large within the collapsed rail.
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28,
+            height: 28,
+          }}
+        >
+          {getSidebarNavIcon(iconLabel || label)}
+        </span>
       </span>
+      <span
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flex: 1,
+          minWidth: 0,
+          opacity: rowsCollapsed ? 0 : 1,
+          transition: rowsCollapsed ? NAV_FADE_CLOSE_LABEL : NAV_FADE_OPEN_LABEL,
+        }}
+      >
+        {renderLinkLabel(label, href, labelOpts)}
+      </span>
+    </>
     );
   };
   // Collapsed rail keeps sections separated with a short 2px theme line in place
@@ -568,7 +807,51 @@ export default function Sidebar({
           justifyContent: "center",
         }}
       >
-        <span style={{ width: 24, height: 2, borderRadius: 1, background: "var(--theme)" }} />
+        {SECTION_RULE}
+      </span>
+    </div>
+  );
+  // A section heading holds BOTH of its states at once — the title text and the
+  // collapsed rule — and crossfades between them on the rail's clock, for the
+  // same reason the nav rows do (see renderNavContent). The box keeps the
+  // title's line height in both states so nothing below it ever shifts.
+  const renderSectionHeading = (key, title, marginStyle = {}, className = "") => (
+    <div
+      key={key}
+      className={`app-sidebar__section-title${className ? ` ${className}` : ""}`}
+      style={{
+        position: "relative",
+        display: "block",
+        alignSelf: "stretch",
+        flexShrink: 0,
+        ...marginStyle,
+      }}
+    >
+      <span
+        style={{
+          display: "block",
+          whiteSpace: "nowrap",
+          opacity: rowsCollapsed ? 0 : 1,
+          transition: rowsCollapsed ? NAV_FADE_CLOSE_LABEL : NAV_FADE_OPEN_LABEL,
+        }}
+      >
+        {title}
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          justifyContent: "center",
+          opacity: rowsCollapsed ? 1 : 0,
+          transition: rowsCollapsed ? NAV_FADE_CLOSE_ICON : NAV_FADE_OPEN_ICON,
+        }}
+      >
+        {SECTION_RULE}
       </span>
     </div>
   );
@@ -583,33 +866,51 @@ export default function Sidebar({
   const OPEN_MOTION = "0.52s cubic-bezier(0.16, 1, 0.3, 1)"; // easeOutExpo — reveal
   const CLOSE_MOTION = "0.4s cubic-bezier(0.65, 0, 0.35, 1)"; // easeInOutCubic — close
   const MOTION = isCollapsed ? CLOSE_MOTION : OPEN_MOTION;
-  const NAV_LINK_TRANSITION = `width ${MOTION}, min-width ${MOTION}, padding ${MOTION}`;
-  // Props applied to every nav link. When collapsed: square icon footprint,
-  // centred content, and the label surfaced as a tooltip / a11y name.
+  // Only padding is animated per link. The links are `.app-btn--nav`, i.e.
+  // width:100% of the rail, so their width already follows the shell's animated
+  // width for free — declaring a width transition on every one of them made the
+  // browser run a separate interpolation, style recalc and paint chunk per link
+  // per frame (a measured ~1,400 paint records for one collapse) for motion the
+  // parent was producing anyway.
+  const NAV_LINK_TRANSITION = `padding ${MOTION}`;
+  // Props applied to every nav link. When collapsed: square icon footprint and
+  // the label surfaced as a tooltip / a11y name. The visible centring comes from
+  // the icon overlay, not from the row - see the note on justify-content below.
+  // The icon overlay inside every row is absolutely positioned, so the row is the
+  // containing block; the row also clips, because the label stays mounted (at
+  // opacity 0) while the rail squeezes it down to 44px.
+  const NAV_LINK_BOX = { position: "relative", overflow: "hidden" };
   const navLinkProps = (label, extraStyle = {}) =>
-    isCollapsed
+    rowsCollapsed
       ? {
           title: label,
           "aria-label": label,
           style: {
+            ...NAV_LINK_BOX,
             // Match the expanded button's vertical box exactly (height +
             // margin come from .app-btn / .app-btn--nav) so the list lines up
-            // through the whole transition. The 44px button is centred in the
-            // 48px rail by the body's 2px horizontal padding. Padding tightens
-            // to 8px (from --control-padding's 14px) so the larger icon fills
-            // the button; because NAV_LINK_TRANSITION animates padding too, the
-            // content still glides rather than snapping when toggling.
-            width: 44,
-            minWidth: 44,
+            // through the whole transition. Width is left to .app-btn--nav's
+            // 100% — that resolves to exactly 44px once the rail is collapsed
+            // (48px rail − the body's 2px side padding), and tracks the shell
+            // while it animates. Padding tightens to 8px (from
+            // --control-padding's 14px) so the larger icon fills the button;
+            // NAV_LINK_TRANSITION animates that, so the content glides rather
+            // than snapping when toggling.
             height: "var(--control-height)",
             minHeight: "var(--control-height)",
             padding: 8,
-            justifyContent: "center",
+            // NO justify-content override here. The icon overlay is absolutely
+            // positioned and centres itself over the whole row, so centring the
+            // row's flex line buys nothing - but it WOULD yank the still-visible
+            // label to the middle on the frame of the press, which is exactly
+            // the mid-animation content jump the fade timings above exist to
+            // prevent. Left on .app-btn--nav's flex-start, the label is simply
+            // squeezed out by the narrowing rail.
             transition: NAV_LINK_TRANSITION,
             ...extraStyle,
           },
         }
-      : { style: { transition: NAV_LINK_TRANSITION, ...extraStyle } };
+      : { style: { ...NAV_LINK_BOX, transition: NAV_LINK_TRANSITION, ...extraStyle } };
 
   const sidebarSectionKey = isCondensed ? "app-sidebar-shell-mobile" : "app-sidebar-shell";
   const sidebarHeaderKey = isCondensed ? "app-sidebar-header-mobile" : "app-sidebar-header";
@@ -667,47 +968,99 @@ export default function Sidebar({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // Collapsed rail is only 44px wide; drop the header's horizontal padding
-          // so the (shrunken) logo isn't crushed by it.
-          padding: isCollapsed ? "0 2px" : undefined,
-          height: isCondensed ? "60px" : "75px", // fix the height so the oversized logo crops vertically
+          // Desktop rail: the brand stage below positions both logos itself, in
+          // header coordinates, so the header must not add padding of its own —
+          // an animating padding would move the car's anchor out from under it.
+          // The compact top-drop sidebar keeps the original padded layout.
+          padding: isCondensed ? undefined : 0,
+          height: isCondensed ? "60px" : `${BRAND_HEADER_HEIGHT}px`, // fix the height so the oversized logo crops vertically
           overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              flex: "1 1 auto",
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {isCollapsed ? (
-              // Collapsed rail uses the square desktop-app icon (the same image
-              // offered on the desktop-download card) rather than the wide wordmark.
-              // Routed through BrandLogo so the icon recolours to the active theme
-              // accent, matching the expanded wordmark instead of staying a fixed red.
-              // icon-256 rather than the 1254x1254 desktop.png: this rail renders
-              // at 60-75px, and BrandLogo downloads the raw file at full size to
-              // recolour it on a canvas — so the source was 806 KB for a 75px
-              // icon. 256px keeps >3x headroom at any DPR. Same image, generated
-              // from the same source.
-              <BrandLogo
-                src="/images/logo/icon-256.png"
-                alt="H&P"
-                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-              />
-            ) : (
+          {isCondensed ? (
+            // Compact top-drop sidebar: no collapsed state, so it keeps the
+            // simple centred wordmark it has always had.
+            <div
+              style={{
+                flex: "1 1 auto",
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <BrandLogo alt="H&P logo" width={800} height={240} style={headerLogoStyle} />
+            </div>
+          ) : (
+            // Brand stage. Both logos live here permanently, each pinned by its
+            // own car: the wordmark rests in the expanded position, the icon in
+            // the collapsed one, and each carries the transform that takes its
+            // car onto the other's. Toggling swaps which transform is applied,
+            // so the car glides and scales between the two resting states on the
+            // same clock as the rail itself — see the geometry block at the top
+            // of this file.
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+              }}
+            >
               <BrandLogo
                 alt="H&P logo"
-                width={800}
-                height={240}
-                style={headerLogoStyle}
+                width={881}
+                height={270}
+                style={{
+                  position: "absolute",
+                  left: `${BRAND_WORDMARK_BOX.left}px`,
+                  top: `${BRAND_WORDMARK_BOX.top}px`,
+                  width: `${BRAND_WORDMARK_BOX.width}px`,
+                  height: `${BRAND_WORDMARK_BOX.height}px`,
+                  // The stage clips this, not the rail. Without opting out of
+                  // staffglobal's `img { max-width: 100% }` the wordmark gets
+                  // squashed to the rail's width the moment it starts closing,
+                  // which drags its car away from the icon's.
+                  maxWidth: "none",
+                  display: "block",
+                  transformOrigin: BRAND_WORDMARK_ORIGIN,
+                  transform: isCollapsed ? BRAND_WORDMARK_COLLAPSED_TRANSFORM : "none",
+                  opacity: isCollapsed ? 0 : 1,
+                  transition: `transform ${MOTION}, ${
+                    isCollapsed ? BRAND_WORDMARK_HIDE_CLOSE : BRAND_WORDMARK_SHOW_OPEN
+                  }`,
+                }}
               />
-            )}
-          </div>
+              {/* The car on its disc. Sits above the wordmark so that, once it
+                  has faded in, its opaque disc covers whatever is left of the
+                  wordmark underneath. icon-256 rather than the 1254x1254
+                  desktop.png: this rail renders at 75px, and BrandLogo fetches
+                  the raw file at full size to recolour it on a canvas. */}
+              <BrandLogo
+                src="/images/logo/icon-256.png"
+                alt=""
+                aria-hidden="true"
+                width={256}
+                height={256}
+                style={{
+                  position: "absolute",
+                  left: `${BRAND_ICON_BOX.left}px`,
+                  top: `${BRAND_ICON_BOX.top}px`,
+                  width: `${BRAND_ICON_BOX.size}px`,
+                  height: `${BRAND_ICON_BOX.size}px`,
+                  maxWidth: "none", // as above — the disc is scaled up past the rail's width
+                  display: "block",
+                  transformOrigin: BRAND_ICON_ORIGIN,
+                  transform: isCollapsed ? "none" : BRAND_ICON_EXPANDED_TRANSFORM,
+                  clipPath: isCollapsed ? BRAND_ICON_CLIP_SHOWN : BRAND_ICON_CLIP_HIDDEN,
+                  transition: `transform ${MOTION}, ${
+                    isCollapsed ? BRAND_WIPE_CLOSE : BRAND_WIPE_OPEN
+                  }`,
+                }}
+              />
+            </div>
+          )}
         </DevLayoutSection>
       )}
 
@@ -756,13 +1109,9 @@ export default function Sidebar({
       >
         {presentationPageLinks.length > 0 && (
           <>
-            {isCollapsed ? (
-              renderSectionDivider("divider-presentation", { marginBottom: "10px" })
-            ) : (
-              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-                Presentation Pages
-              </div>
-            )}
+            {renderSectionHeading("heading-presentation", "Presentation Pages", {
+              marginBottom: "10px",
+            })}
             {presentationPageLinks.map((item) => {
               const isActive = isItemActive(item.href);
               return (
@@ -787,15 +1136,11 @@ export default function Sidebar({
 
         {!isSidebarNavigationLoading && workspaceNavEnabled && roleWorkspaceModules.length > 0 && (
           <>
-            {isCollapsed ? (
-              renderSectionDivider("divider-workspace", { marginBottom: "10px" })
-            ) : (
-              <div
-                className="app-sidebar__section-title app-sidebar__workspace-heading"
-                style={{ marginBottom: "10px" }}
-              >
-                <span>Workspace</span>
-              </div>
+            {renderSectionHeading(
+              "heading-workspace",
+              <span>Workspace</span>,
+              { marginBottom: "10px" },
+              "app-sidebar__workspace-heading"
             )}
             <ContextSidebar
               workspace={roleWorkspace}
@@ -810,7 +1155,8 @@ export default function Sidebar({
               }}
               pathname={pathname}
               pendingHref={pendingHref}
-              isCollapsed={isCollapsed}
+              isCollapsed={rowsCollapsed}
+              motion={MOTION}
               getNavHref={getNavHref}
               onNavigate={(href) => {
                 recordWorkspaceRecentHref(href);
@@ -820,6 +1166,7 @@ export default function Sidebar({
               navLinkProps={navLinkProps}
               renderNavContent={renderNavContent}
               renderSectionDivider={renderSectionDivider}
+              renderSectionHeading={renderSectionHeading}
             />
           </>
         )}
@@ -827,20 +1174,16 @@ export default function Sidebar({
 
         {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && dashboardShortcuts.length > 0 && (
           <>
-            {isCollapsed ? (
-              renderSectionDivider("divider-dashboard", { marginBottom: "10px" })
-            ) : (
-              <div
+            {renderSectionHeading(
+              "heading-dashboard",
+              <span
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: "10px",
                 }}
               >
-                <div className="app-sidebar__section-title">
-                  Dashboard
-                </div>
+                <span>Dashboard</span>
                 {onToggle && !isVerticalPhone && (
                   <button
                     className="app-btn app-btn--secondary app-btn--xs"
@@ -851,7 +1194,8 @@ export default function Sidebar({
                     Close
                   </button>
                 )}
-              </div>
+              </span>,
+              { marginBottom: "10px" }
             )}
             {dashboardShortcuts.map((shortcut) => {
               const isActive =
@@ -878,13 +1222,7 @@ export default function Sidebar({
         {/* General Section */}
         {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && generalSections.length > 0 && (
           <>
-            {isCollapsed ? (
-              renderSectionDivider("divider-general", { marginBottom: "10px" })
-            ) : (
-              <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
-                General
-              </div>
-            )}
+            {renderSectionHeading("heading-general", "General", { marginBottom: "10px" })}
             {generalSections.flatMap((section) => section.items).map((item) => {
               if (!item.href) return null;
               const isActive = isItemActive(item.href);
@@ -908,13 +1246,10 @@ export default function Sidebar({
         {/* Department Sections - NO COLLAPSE, just headers */}
         {!isSidebarNavigationLoading && !workspaceNavEnabled && !inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
-            {isCollapsed ? (
-              renderSectionDivider(`divider-${section.label}`, { marginTop: "16px", marginBottom: "10px" })
-            ) : (
-              <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
-                {section.label}
-              </div>
-            )}
+            {renderSectionHeading(`heading-${section.label}`, section.label, {
+              marginTop: "16px",
+              marginBottom: "10px",
+            })}
             {section.items.map((item) => {
               if (!item.href) return null;
               const isActive = isItemActive(item.href);
@@ -938,18 +1273,15 @@ export default function Sidebar({
         {/* Account Section */}
         {!isSidebarNavigationLoading && accountSections.length > 0 && (
           <>
-            {isCollapsed ? (
-              renderSectionDivider("divider-account", { marginTop: "16px", marginBottom: "10px" })
-            ) : (
-              <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
-                Account
-              </div>
-            )}
+            {renderSectionHeading("heading-account", "Account", {
+              marginTop: "16px",
+              marginBottom: "10px",
+            })}
             {accountSections.flatMap((section) => section.items).map((item) => {
               if (item.action === "logout") {
                 // Collapsed rail shows only nav icons down to Profile — the
                 // clock / logout / vision controls are hidden here.
-                if (isCollapsed) {
+                if (rowsCollapsed) {
                   return (
                     <Fragment key="collapsed-dev-controls">
                       {canShowDevPagesLink && (
@@ -980,6 +1312,19 @@ export default function Sidebar({
                         >
                           {renderNavContent("Overlay", "", devOverlayEnabled)}
                         </button>
+                      )}
+                      {canShowWebsiteLink && (
+                        <Link
+                          className={`app-btn app-btn--nav${inWebsiteRoute ? " is-active" : ""}`}
+                          href="/website"
+                          prefetch={inPresentationMode ? false : undefined}
+                          onClick={handleNavigationPress}
+                          {...navLinkProps("Website")}
+                        >
+                          {renderNavContent("Website", "/website", inWebsiteRoute, {
+                            iconLabel: "Website Manager",
+                          })}
+                        </Link>
                       )}
                     </Fragment>
                   );
@@ -1047,6 +1392,23 @@ export default function Sidebar({
                         )}
                       </div>
                     )}
+                    {canShowWebsiteLink && (
+                      <Link
+                        className="app-btn"
+                        style={{
+                          display: "flex",
+                          width: "100%",
+                          marginTop: "8px",
+                          ...(inWebsiteRoute ? successGhostControlStyle : ghostControlStyle),
+                        }}
+                        href="/website"
+                        prefetch={inPresentationMode ? false : undefined}
+                        aria-current={inWebsiteRoute ? "page" : undefined}
+                        onClick={handleNavigationPress}
+                      >
+                        Website
+                      </Link>
+                    )}
                     {isDevRole && !inPresentationMode && (
                       <Link
                         className="app-btn"
@@ -1100,13 +1462,15 @@ export default function Sidebar({
                 if (inPresentationMode) return null;
                 const isActive = isItemActive(item.href);
                 // Profile button shows the user's full name in place of the
-                // generic "Profile" label. When the rail is collapsed the icon
-                // stays keyed on the original label ("Profile") so
-                // getSidebarNavIcon still resolves; the full name surfaces as the
-                // hover/aria label instead.
+                // generic "Profile" label. The icon is keyed on the original
+                // label ("Profile") through iconLabel so getSidebarNavIcon
+                // always resolves; the full name surfaces as the hover/aria
+                // label. The TEXT swap keys off labelsCollapsed, not
+                // rowsCollapsed, so the name never flips to "Profile" while it
+                // is still on screen - it changes behind a faded-out label.
                 const isProfileItem = item.href === "/profile";
                 const displayLabel = isProfileItem && fullName ? fullName : item.label;
-                const contentLabel = isCollapsed ? item.label : displayLabel;
+                const contentLabel = labelsCollapsed ? item.label : displayLabel;
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
@@ -1122,6 +1486,7 @@ export default function Sidebar({
                   >
                     {renderNavContent(contentLabel, item.href, isActive, {
                       truncate: isProfileItem,
+                      iconLabel: item.label,
                     })}
                   </Link>
                 );

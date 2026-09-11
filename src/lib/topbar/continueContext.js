@@ -22,7 +22,7 @@ const RESUMABLE_RULES = [
   { type: "Customer", test: (p) => /^\/customers(\/|$)/.test(p) },
   {
     type: "Parts order",
-    test: (p) => /^\/(new-order|goods-in|delivery-planner|parts)(\/|$)/.test(p),
+    test: (p) => /^\/(new-order|order|goods-in|delivery-planner|parts)(\/|$)/.test(p),
   },
   { type: "Search", test: (p) => /^\/search(\/|$)/.test(p) },
 ];

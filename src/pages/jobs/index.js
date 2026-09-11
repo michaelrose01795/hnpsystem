@@ -18,7 +18,6 @@ import { useRouter } from "next/router"; // for navigation
 const loadJobsDb = () => import("@/lib/database/jobs");
 const loadNotesDb = () => import("@/lib/database/notes");
 const loadUsersDb = () => import("@/lib/database/users");
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -103,10 +102,14 @@ const getStatusCounts = (jobs = []) => {
 
 const getJobStatusBadgeTone = (status) => {
   const normalized = normalizeString(status);
-  if (normalized.includes("released") || normalized.includes("complete") || normalized.includes("invoiced")) return "app-badge--success";
-  if (normalized.includes("progress") || normalized.includes("checked")) return "app-badge--accent-soft";
+  if (normalized.includes("cancel") || normalized.includes("failed") || normalized.includes("reject")) return "app-badge--danger";
+  if (normalized.includes("overdue") || normalized.includes("urgent") || normalized.includes("breakdown")) return "app-badge--danger-strong";
+  if (normalized.includes("released") || normalized.includes("invoiced") || normalized.includes("collected")) return "app-badge--success-strong";
+  if (normalized.includes("complete") || normalized.includes("finished") || normalized.includes("ready")) return "app-badge--success";
+  if (normalized.includes("progress") || normalized.includes("started") || normalized.includes("checked")) return "app-badge--accent-strong";
+  if (normalized.includes("booked") || normalized.includes("scheduled") || normalized.includes("arrived") || normalized.includes("new") || normalized.includes("open")) return "app-badge--accent-soft";
+  if (normalized.includes("parts") || normalized.includes("authoris") || normalized.includes("approval")) return "app-badge--warning-strong";
   if (normalized.includes("waiting") || normalized.includes("hold") || normalized.includes("pending")) return "app-badge--warning";
-  if (normalized.includes("cancel") || normalized.includes("failed")) return "app-badge--danger";
   return "app-badge--neutral";
 };
 
@@ -665,7 +668,7 @@ export default function ViewJobCards() {
   /* ================================
      Page Layout
   ================================ */
-  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} closeQuickNote={closeQuickNote} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} JobListCard={JobListCard} nextJobsTechnicians={nextJobsTechnicians} onOpenQuickNote={openQuickNote} operationalNow={operationalNow} operationalStatusCounts={operationalStatusCounts} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} quickNoteError={quickNoteError} quickNoteHidden={quickNoteHidden} quickNoteJob={quickNoteJob} quickNoteLoading={quickNoteLoading} quickNoteNotes={quickNoteNotes} quickNoteSaving={quickNoteSaving} quickNoteText={quickNoteText} router={router} saveQuickNote={saveQuickNote} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} setQuickNoteHidden={setQuickNoteHidden} setQuickNoteText={setQuickNoteText} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} technicianLoads={technicianLoads} />;
+  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} closeQuickNote={closeQuickNote} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} JobListCard={JobListCard} nextJobsTechnicians={nextJobsTechnicians} onOpenQuickNote={openQuickNote} operationalNow={operationalNow} operationalStatusCounts={operationalStatusCounts} PageShell={PageShell} popupJob={popupJob} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} quickNoteError={quickNoteError} quickNoteHidden={quickNoteHidden} quickNoteJob={quickNoteJob} quickNoteLoading={quickNoteLoading} quickNoteNotes={quickNoteNotes} quickNoteSaving={quickNoteSaving} quickNoteText={quickNoteText} router={router} saveQuickNote={saveQuickNote} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} setQuickNoteHidden={setQuickNoteHidden} setQuickNoteText={setQuickNoteText} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} technicianLoads={technicianLoads} />;
 
 
 
@@ -1373,9 +1376,14 @@ export default function ViewJobCards() {
 
 const operationalBadgeTone = (tone) => ({
   accent: "app-badge--accent-soft",
+  "accent-soft": "app-badge--accent-soft",
+  "accent-strong": "app-badge--accent-strong",
   danger: "app-badge--danger",
+  "danger-strong": "app-badge--danger-strong",
   success: "app-badge--success",
+  "success-strong": "app-badge--success-strong",
   warning: "app-badge--warning",
+  "warning-strong": "app-badge--warning-strong",
 }[tone] || "app-badge--neutral");
 
 const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKey, parentKey, now, technicianLoads, nextJobsTechnicians }) => {
@@ -1461,7 +1469,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
 
         <div className="app-job-operations-row__column app-job-operations-row__column--technician">
           <span className="app-job-operations-row__label">Technician</span>
-          {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--neutral">No tech</span>}
+          {assignedTechName ? <strong className="app-job-operations-row__value">{assignedTechName}</strong> : <span className="app-badge app-badge--warning">No tech</span>}
           {summary.technicianLoad && <span className="app-job-operations-row__muted">{summary.technicianLoad}</span>}
         </div>
 

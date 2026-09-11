@@ -70,7 +70,7 @@ Back-compat facade: [`src/config/navigation.js`](../../src/config/navigation.js)
 
 When `workspace_nav_enabled` is on, each Workspace Group behaves like **its own dedicated sidebar**. There are exactly **two states**, and clicking a group **fully replaces** the sidebar body — no always-visible General section, no hover preview / fly-out, no collapsible sections (the one permitted sub-heading is the group's **Dashboards** block):
 
-1. **Groups view** — a clean list of the user's top-level groups from `getWorkspaceGroups()`: **General** first, then every group the user's roles can access (Reception, Workshop, Parts, MOT, Valeting, Accounts, Reports, Admin, Developer …) in manifest order. General is itself a selectable group. The group whose department owns the current route is highlighted.
+1. **Groups view** — a clean list of the user's top-level groups from `getWorkspaceGroups()`: **General** first, then every group the user's roles can access (Service, Workshop, Parts, MOT, Valeting, Accounts, Reports, Admin, Developer …) in manifest order. General is itself a selectable group. The group whose department owns the current route is highlighted.
 2. **Group view** — clicking a group swaps the entire body for that group's `ContextSidebar`: a **‹ Back to Groups** control at the top, the group name, an optional **Dashboards** sub-section (the group's role-visible dashboards), then a **flat list** of the group's pages (from `getDepartmentWorkspaceNav()`) with active states. There is no "Overview" entry — the department home is reached through its Dashboards block.
 
 ### Permission model (group assignment grants pages)

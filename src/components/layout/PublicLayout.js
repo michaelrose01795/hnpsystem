@@ -1,9 +1,9 @@
 // file location: src/components/layout/PublicLayout.js
 // Minimal shell for truly public, chrome-free staff-side pages (e.g. /login,
-// /unauthorized, /loginPresentation). These render under `html.staff-scope`
+// /unauthorised, /loginPresentation). These render under `html.staff-scope`
 // CSS but without the StaffSidebar / StaffTopbar navigation chrome.
 //
-// NOTE (adoption status): today /login and /unauthorized still flow through
+// NOTE (adoption status): today /login and /unauthorised still flow through
 // StaffLayout, which hides its own chrome on those routes (see `hideSidebar`
 // in StaffLayout). This component is the designated home for that "no chrome"
 // concern going forward — migrating those pages onto PublicLayout is a safe

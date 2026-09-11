@@ -508,7 +508,7 @@ export default function MessagesPageUi(props) {
           marginBottom: "var(--space-xs)"
         }}>
                 <Button type="button" variant="ghost" size="sm" onClick={() => handleMobileBack(false)}>
-                  ← Back
+                  Back
                 </Button>
               </div>}
             {activeSystemView || activeBookingsView ? <>

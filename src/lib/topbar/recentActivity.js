@@ -68,7 +68,8 @@ const RECENT_RULES = [
   },
   {
     category: "workflow",
-    match: (base) => /^\/(new-order|goods-in|delivery-planner)(\/[^/]+)?/.test(base),
+    // /order/P00001 is a record; the bare /order register is a list, so it stays out.
+    match: (base) => /^\/(?:(?:new-order|goods-in|delivery-planner)(?:\/[^/]+)?|order\/[^/]+)/.test(base),
     build: (segs) => {
       const head = titleCaseSegment(segs[0]);
       const id = segs[1];

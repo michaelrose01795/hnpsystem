@@ -1,26 +1,16 @@
 // file location: src/components/HR/HrTabLoadingSkeleton.js
 import React from "react";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
 
 function SkeletonPanel({ titleWidth = "180px", subtitleWidth = "260px", children }) {
-  return (
-    <div
-      style={{
-        background: "var(--section-card-bg, var(--surface))",
-        borderRadius: "var(--radius-md)",
-        padding: "var(--section-card-padding, 18px)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "14px",
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        <SkeletonBlock width={titleWidth} height="18px" borderRadius="8px" />
-        <SkeletonBlock width={subtitleWidth} height="12px" borderRadius="6px" />
-      </div>
-      {children}
+  return <LayerTheme style={{ minWidth: 0 }}>
+    <div style={{ display: "grid", gap: "var(--space-sm)" }}>
+      <SkeletonBlock width={titleWidth} height="18px" />
+      <SkeletonBlock width={subtitleWidth} height="12px" />
     </div>
-  );
+    {children}
+  </LayerTheme>;
 }
 
 function TableRows({ rows = 6, cols = 4 }) {
@@ -76,13 +66,13 @@ function ListRows({ rows = 5 }) {
 function DashboardVariant() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "18px" }}>
         {Array.from({ length: 4 }).map((_, index) => (
           <SkeletonMetricCard key={index} />
         ))}
       </div>
 
-      <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "2fr 1.2fr" }}>
+      <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
         <SkeletonPanel titleWidth="210px" subtitleWidth="300px">
           <TableRows rows={5} cols={4} />
         </SkeletonPanel>
@@ -91,7 +81,7 @@ function DashboardVariant() {
         </SkeletonPanel>
       </div>
 
-      <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "1.4fr 1fr" }}>
+      <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
         <SkeletonPanel titleWidth="220px" subtitleWidth="280px">
           <TableRows rows={4} cols={4} />
         </SkeletonPanel>
@@ -117,7 +107,7 @@ function EmployeesVariant() {
         <SkeletonBlock width="132px" height="38px" borderRadius="12px" />
       </div>
 
-      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "minmax(340px, 1.1fr) minmax(320px, 1fr)" }}>
+      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
         <SkeletonPanel titleWidth="180px" subtitleWidth="250px">
           <div style={{ display: "grid", gap: "12px" }}>
             {Array.from({ length: 6 }).map((_, index) => (
@@ -149,7 +139,7 @@ function EmployeesVariant() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <SkeletonBlock width="40%" height="12px" borderRadius="999px" />
             <SkeletonBlock width="56%" height="28px" borderRadius="8px" />
-            <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+            <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))" }}>
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
@@ -178,7 +168,7 @@ function EmployeesVariant() {
 function StandardVariant() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "1.5fr 1fr" }}>
+      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
         <SkeletonPanel titleWidth="200px" subtitleWidth="280px">
           <TableRows rows={6} cols={4} />
         </SkeletonPanel>
@@ -196,7 +186,7 @@ function StandardVariant() {
 
 export default function HrTabLoadingSkeleton({ variant = "standard" }) {
   return (
-    <div role="status" aria-live="polite" aria-label="Loading" style={{ padding: "8px 8px 32px" }}>
+    <div role="status" aria-live="polite" aria-label="Loading" aria-busy="true" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
       {variant === "dashboard" ? (
         <DashboardVariant />

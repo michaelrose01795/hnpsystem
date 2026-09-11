@@ -102,7 +102,7 @@ export const PRESENTATION_ROLES = [
     "label": "Mobile Technician",
     "demoName": "Demo Mobile Technician",
     "routes": [
-      "/mobile/dashboard",
+      "/dashboard/mobile",
       "/mobile/delivery/[jobNumber]"
     ]
   },
@@ -122,7 +122,6 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Parts Manager",
     "routes": [
       "/dashboard/parts",
-      "/parts",
       "/parts/manager",
       "/job-cards/view",
       "/stock-catalogue",
@@ -142,7 +141,7 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Technician",
     "routes": [
       "/dashboard/workshop",
-      "/tech/dashboard",
+      "/dashboard/tech",
       "/job-cards/myjobs",
       "/job-cards/myjobs/[jobNumber]",
       "/job-cards/[jobNumber]",
@@ -181,7 +180,6 @@ export const PRESENTATION_ROLES = [
       "/job-cards",
       "/job-cards/create",
       "/job-cards/archive",
-      "/job-cards/appointments",
       "/customers/[customerSlug]",
       "/appointments"
     ]

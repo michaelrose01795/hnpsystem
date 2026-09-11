@@ -917,7 +917,6 @@ export default function AiGuidePanel({ userId, userRoles }) {
           disabled={isSending}
           aria-label="Start a new chat"
         >
-          <span aria-hidden="true">+</span>
           <span className={styles.newChatLabel}>New</span>
         </button>
       </div>

@@ -135,17 +135,17 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       <LayerTheme radius="var(--radius-xs)" padding="10px 12px" gap={undefined} style={{
         display: "grid",
         gridTemplateColumns: "minmax(8.5rem, auto) minmax(0, 1fr)",
-        alignItems: "start",
+        alignItems: "center",
         gap: "8px 12px"
       }}>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", minWidth: 0, alignSelf: "center" }}>
             <span style={{ fontSize: "11px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 700 }}>
               Parts Summary
             </span>
-            <span className="app-badge app-badge--neutral">{items.length}</span>
+            <span className="app-badge app-badge--neutral app-badge--count-control">{items.length}</span>
           </div>
-          <div style={{ color: "var(--text-1)", fontSize: "14px", fontWeight: 500, lineHeight: "1.45", minWidth: 0, overflowWrap: "anywhere" }}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", color: "var(--text-1)", fontSize: "14px", fontWeight: 500, lineHeight: "1.45", minWidth: 0, overflowWrap: "anywhere", alignSelf: "center" }}>
             {items.
           slice(0, 4).
           map((item) => item.part_name || item.part_number || "Part").

@@ -1,7 +1,6 @@
+npm i next@latest
 
 
-CHECK
-have it so by default the capture screen auto uses the back drives camera not face facing camera etc
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
@@ -11,86 +10,173 @@ Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.
 ----check all of these for ui design/style-----
 
 
-CHECk
-Workshop
-
-
--------------------
-
-CHECk
-Reception
-
-
--------------------
-
 TODO
 Admin
 
--------------------
 
-CHECk
-Parts
+----------
 
-
--------------------
+TODO
+Clocking within "View details" popup for each uers inise that page, have it so the card whcih is outside the table but insdie the "View details" section is removed, change the "Manual clocking entry" card to "--surface" colour etc
 
 
-CHECk
-MOT
+----------
 
--------------------
+TODO 
+Symbols
 
-
-CHECk
-Valeting
-
--------------------
+--------
 
 
-CHECk
-Accounts
+CHECK
+CHECK NON GLOBAL ON DEV PAGE
 
 
--------------------
+ 
+-------------
 
-CHECk
-Reports
+TODO
+/website
 
--------------------
+TODO
+Remove "Desktop Tablet Mobile Reload preview" tab and button section from "/website-manager?tab=preview" page 
+
+
+
+---
+
+Website
 
 CHECK 
-/new-order/P00001
+have it so all the sectison belwo is a tab button, the website shows the whole scroll section, then each other tab just shows the content of the section from the /website page etc. "Website Homepage NewUsed Offers Shop Sell Your CarService & Parts Motability About Us Blog Contact Us" etc.
 
 CHECK
-Within the "/jobs" page there is an "Order" button within the tab section at the top, this needs to change, remove this order button from the tab section and make a new page which mirrors the current style of the "Order" section and name the page "/Order" so if i put within the url /order it opens up 
+all of the data within the/webiste page was extracted, make sure a change here doesnt change the page extracted from and any changes that website makes doesnt change mine, none of the content or aanythign else etc. 
+
+---
+
+Homepage
+CHECK
+have it so within each tab section the the actaul content can be changed, so for example within the this is all kept within in code section, with everything being able to be removed, edited changed etc, although this is extraced its all changed within this app. so for example the photo url can be edited and changed to a diff photo or any of the other section can also be changed etc. for example from the "View Cars Book a Service Sell Your Car Contact Us" button only from this section.  
+
+---
+
+New
+CHECK
+have it so wihtin this seciton the items listed here will link to the vehicle stock instide the staff dms section. have it so the current 9 listed items are removed, and a mock data example of serveral suzuks are shown here, within the new and used section, but max 8 all cars to be shown, this is then below where the vehicles are listed is a show more button, this will take the user into the "/website/availible-stock" when clicked this page opens up and will be like what autotrader is where customer can search and find vehicles they want, haev it so this page fully follows the custglobal.css setting as well. if the user came from the new tab then it will have the new filter chosen already out of the new or used, and if used tab was on when clicked it will show the used filter out of the new or used again, if all cars shown thne have it show all of the vheicles until filter is clicked, deep dive to make the layout the best of the customers here to find a vehicle, and when clciked it opens "/webiste/stock/[reg]" which will all be linked to that vehicle by the reg and a new used before stock number, this stock number which is auto generated make sure the vehciel desont cross with old data if the vehicle reg has been used before etc. 
+
+---
+
+Offers
+CHECK
+for the offer section have this 100% in code data with the image etc, haev it show mock data 8 card sections atm, but then this can be changed when ever remove the current 6 section there is atm, and how it so the image url or however to get the image there etc is done through code etc. 
+
+---
+
+Shop
+CHECK
+have this seciton be linked to the stock catalog from the staff dms database section, this also section on the /website page will show only 8 items, and at the bottom of these 8 items add a show more button, when this show more button is pressed it takes the user to the "/website/parts-catalog" page this page will be like a full on shop for parts, accessorys etc, the cust can add to basket and all of that etc have it so it shows the mock data within the /website page but then the "/website/parts-catalog" opens it shows all linked to database adn the items when clicked opens the item onto a new page where the user can view more info and add to basket there as well. the users basket is linked to the user logged into the /website page and if there isnt a login promp the user to log in and also if not logged in at least save the basket details locally etc. have this seciton be linked to the stock catalog from the staff dms database section, this also section on the /website page will show only 8 items, and at the bottom of these 8 items add a show more button, when this show more button is pressed it takes the user to the "/website/parts-catalog" page this page will be like a full on shop for parts, accessorys etc, the cust can add to basket and all of that etc have it so it shows the mock data within the /website page but then the "/website/parts-catalog" opens it shows all linked to database adn the items when clicked opens the item onto a new page where the user can view more info and add to basket there as well. the users basket is linked to the user logged into the /website page and if there isnt a login promp the user to log in and also if not logged in at least save the basket details locally etc. 
+
+---
+
+Sell Your Car
+CHECK
+good seciton ave it so the "Get your free valuation" button takes the user onto a "/website/valuation" page where it asked the user to entere the reg (linked to the dvla api for example). then have it so it asks questions to give an valuation on the vehicle make the steps simple short and easy to follow with simple tick boxes, next and back button etc make sure this is good for any vehicle, as automated as possible. and say this is an estimate and a 100% vaualtion can be given if you come see user, give a direction button, or a call for more questions etc. 
+
+---
+
+Service & Parts
+CHECK
+this seciton is good, change the heading to "Opening Times", remove KGM from the whole of this /webiste page, found anywhere remove it and mkae sure Suzki is amin and then Mitsubshi is next etc, 
+
+---
+
+Motability
+CHECK
+For "Suzuki Swift Vitara S-Cross Across e-Vitara KGM TivoliTorres Korando " section haev it so the KGM is removed if not already and have it so it hsows mitubshi with all there model options etc 
+
+---
+Reviews
+CHECK
+within this seciton add a add reveiew and have it take the user to the google review page etc. this is linked to this section where it shows all of the reviews and all of the data is linked etc. 
+
+---
+
+About Us
+GOOD
+
+---
+Meet the Team
+CHECK
+section is good, have it so all section is done through the code, and items can be removed etc. 
+
+---
+
+Blog
+CHECK
+this seciton is to give help about hwo we can help and be as of service, remove the current cards, and add new ones mock data which is realist and helpful, add a more info button which opnes a popup shows more details, add iamges which are good and everything which can be changed etc. 
 
 CHECK
-Within the "/new-order/P00001" for example, have it os the page full follows the staffgloabl.css setting. orgainse the page to work the best and to have sections correctly with "--theme" colour backgrounds cards etc to make it look near and easy to figure out. /Order page is connected to the "Parts" modual within the sidebar so add that to the parts section. this /order page also links full wihtin the "/deliveries" page as they work together. the /orders page can have collection as well as delivers so make something so it can tell the diff with a status of postage for example. mkae sure everything within the ""/new-order/P00001" page is connected to the data base and all works together etc with the otehr parts page 
+add popup section where the more ifo button for the blog is pressed then opens this and make srue the popup follows the shape and size and button location as the staffglobal.css settings but the design colour etc used in custgloabl.css setting, haev it so the size shape etc is in line code and not just following the staffglobal.css setting etc. d
+
+---
+
+TODO
+Contact Us
+
+TODO
+**add all of the sections above to the top bar seciton etc. """"""" images, get the images back but add them to the database or somewhere so then its used there instead of url link or anything etc**
 
 CHECK
-Remove the "Orders View Filter Shell | 1.2.2.1.1.1 | key orders-view-filter-shell | file src/components/profile/ProfileWorkTab.js:1917 (dynamic pattern) | route /order | where Orders View Filter Shell | parent orders-view-shell 1.2.2.1.1" card and move the search bar with a filter dropdown for collection or deleviry onto the same row as the search bar. 
+when first loading up the /website page it loads up content which it shouldnt etc, make sure it doesnt load the wrong or the extracted content etc, this si now its own section and website etc 
 
-TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
-
--------------------
-
-
-TODO
-newsfeed
+---
 
 CHECK
-same happens with the catagories dropdown, deep dive to fix this. 
+"/website/valuation"
+have it so the button on the top is back to site, or "01732 870711" button. 
+
+---
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+"/website/parts-catalog
+
+CHECK
+remove the "Basket" button from within the "/website/parts-catalog" page content but keep wihtin the top bar section. add the sign in button or users probfil button to the top right of the topbar section. haev it so the top bar seciton is one style have it the sign in or account butto in the top right and the logo in the top left, and the buttons relevent to the page they are on in the middle seciton of the top bar etc, 
+
+CHECK
+move "All part Airbag Body Brakes" for example and the rest into a dropdown within the "/website/parts-catalog" page etc
+
+
+
+---
 
 TODO
-"yes make "The sidebar request requires a global navigation change in:
+/website/available-stock
 
-- `src/config/workspace/departments.js`
-- `src/config/workspace/roleDefaults.js`
+CHECK
+remove the "Contact" button at the top, and just leave the phone number button, change it so the phone number button text is in the middle of the button height fix this . what style does the "Used" button use in this page, can we change it so the dropdown list view uses the same background colour, tint, transparency effect etc, and have this so the dropdown buttons, calenedar time etc all all other buttons within the custglobal.css setting follows this to keep it all lloking thesame, this is the secondary button effect, the primarty button style is like the phone number button used in the top bar section etc
 
-This will add Orders to the Parts module for Parts and Parts Manager users and affect shared navigation across the app. It cannot be implemented locally because `StaffSidebar` derives its links from this manifest.
+---
 
-Please confirm that I may make this global navigation change alongside the local `/new-order/[orderNumber]`, `/order`, database API, and `/deliveries` integration work." change"
+TODO
+/website/profile
+
+
+-------------
+
+CHECK
+
+/website
+/website/login
+/website/profile
+/website/valuation
+/website/dev
+/website/available-stock
+/website/stock/[reg]
+/website/parts-catalog
+/website/parts-catalog/[partId]
+/website/shop/cart
+/website/shop/checkout
+/website/shop/success
+/website/shop/cancel

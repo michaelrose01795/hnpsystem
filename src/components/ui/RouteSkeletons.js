@@ -89,7 +89,7 @@ export function RouteSkeleton({ href }) {
   if (pathname === "/tracking") {
     return <TrackingRouteSkeleton />;
   }
-  return <PageSkeleton />;
+  return <PageSkeleton href={pathname} />;
 }
 
 export { TrackingRouteSkeleton };

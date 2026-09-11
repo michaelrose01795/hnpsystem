@@ -1,6 +1,7 @@
 // file location: src/components/VHC/InternalElectricsDetailsModal.js
 import React, { useEffect, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md 3.0)
 import IssueReportPopup, {
   IssueReportAddSection,
   IssueReportList,
@@ -90,17 +91,6 @@ export default function InternalElectricsDetailsModal({
     alignContent: "start",
   };
 
-  const setCardHoverState = (element, hovering) => {
-    const source = hovering
-      ? vhcModalContentStyles.baseCardHover
-      : {
-          transform: vhcModalContentStyles.baseCard.transform,
-          boxShadow: "none",
-        };
-    Object.entries(source).forEach(([key, value]) => {
-      element.style[key] = value;
-    });
-  };
 
   const [data, setData] = useState(() => buildInitialData(readDraft(initialData)));
 
@@ -237,13 +227,13 @@ export default function InternalElectricsDetailsModal({
             const loggedCount = redCount + amberCount + greenCount;
 
             return (
-              <button
+              <LayerTheme
+                as="button"
+                className="vhc-card"
                 key={category}
                 type="button"
                 onClick={() => enableConcern(category)}
                 style={baseCardStyle}
-                onMouseEnter={(e) => setCardHoverState(e.currentTarget, true)}
-                onMouseLeave={(e) => setCardHoverState(e.currentTarget, false)}
               >
                 <span style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, textAlign: "left" }}>
                   {category}
@@ -254,7 +244,7 @@ export default function InternalElectricsDetailsModal({
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   <div className="app-badge app-badge--accent-soft">{loggedCount} logged</div>
                 </div>
-              </button>
+              </LayerTheme>
             );
           })}
         </div>

@@ -72,7 +72,7 @@ const SMART_REMINDER_RULES = [
       return {
         label: `${n} appointment${n === 1 ? "" : "s"} today`,
         subtitle: "Check the running order",
-        href: "/job-cards/appointments",
+        href: "/appointments",
         tone: "info",
       };
     },

@@ -1,15 +1,16 @@
 // file location: src/features/website/hooks/useWebsiteTheme.js
-// Drives the /website colour theme while any marketing page is mounted, so
-// the light/dark choice is consistent across EVERY /website route — not
-// just the profile page that owns the toggle.
+// Pins the /website colour theme to LIGHT while any marketing page is mounted,
+// so the light look is consistent across EVERY /website route.
 //
-// Resolution priority:
-//   1. The explicit /website theme choice — persisted to localStorage under
-//      `hnp-website-theme` by the profile / dev page theme cycles, and
-//      therefore shared by every /website page.
-//   2. For a logged-in visitor with no explicit /website choice, the colour
-//      mode they picked for their HNPSystem account (themeProvider `mode`).
-//   3. Otherwise the dark cinematic marketing default.
+// The customer site is light-only (2026-09-11)
+// --------------------------------------------
+// This hook used to resolve a mode from three sources — the `hnp-website-theme`
+// localStorage choice, then the logged-in visitor's HNPSystem colour mode, then
+// the staff-chosen `website_design.default_theme`. None of those are readable
+// on the server or before hydration, so the page always painted on custglobal's
+// dark baseline first and flicked to light once this effect ran. The site now
+// has one answer, which `_document.js` paints before first paint as well (see
+// isLightOnlyWebsitePath there) — the two must stay in step.
 //
 // The resolved mode is applied two ways: `setTemporaryOverride` swings the
 // underlying semantic tokens, and `data-website-theme` on <html> gates the
@@ -17,53 +18,21 @@
 
 import { useEffect } from "react";
 import { useTheme } from "@/styles/themeProvider";
-import { useUser } from "@/context/UserContext";
 
-// Shared key — must match WEBSITE_THEME_KEY in the profile / dev pages.
-const WEBSITE_THEME_KEY = "hnp-website-theme";
+// The one mode the customer site renders in.
+const WEBSITE_MODE = "light";
 
-// Resolve a "system" preference into a concrete light/dark value.
-const resolveSystemMode = () => {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return "dark";
-  }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-};
-
-// Map a stored preference ("light" | "dark" | "system") to light/dark, or
-// null when nothing valid is stored.
-const resolveWebsiteTheme = (preference) => {
-  if (preference === "light" || preference === "dark") return preference;
-  if (preference === "system") return resolveSystemMode();
-  return null;
-};
-
-export default function useWebsiteTheme(siteDefaultMode) {
-  const { setTemporaryOverride, mode } = useTheme();
-  const { user } = useUser() || {};
-  const isLoggedIn = Boolean(user);
+export default function useWebsiteTheme() {
+  const { setTemporaryOverride } = useTheme();
 
   useEffect(() => {
-    // 1. Explicit /website choice (shared across every /website page).
-    let websiteMode = null;
-    if (typeof window !== "undefined") {
-      websiteMode = resolveWebsiteTheme(window.localStorage.getItem(WEBSITE_THEME_KEY));
-    }
-    // 2. Logged-in account colour mode, when no explicit /website choice.
-    if (!websiteMode && isLoggedIn) {
-      websiteMode = mode === "system" ? resolveSystemMode() : mode === "light" ? "light" : "dark";
-    }
-    // 3. The staff-chosen default from website_design, else the dark marketing
-    //    default. /website-manager -> Design -> "Default colour mode" decides
-    //    what a first-time visitor sees, without overriding anyone who has
-    //    already picked for themselves in step 1.
-    if (!websiteMode) websiteMode = siteDefaultMode === "light" ? "light" : "dark";
-
-    // Underlying semantic tokens — keep the brand-red accent in both modes.
-    setTemporaryOverride({ mode: websiteMode, accent: "red" });
+    // Underlying semantic tokens — brand-red accent, light surfaces.
+    setTemporaryOverride({ mode: WEBSITE_MODE, accent: "red" });
     // custglobal.css light overrides are gated on data-website-theme="light".
+    // Already set by the _document boot script on a hard load; set again here
+    // so a client-side navigation onto a /website route lands the same way.
     if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-website-theme", websiteMode);
+      document.documentElement.setAttribute("data-website-theme", WEBSITE_MODE);
     }
 
     return () => {
@@ -72,5 +41,5 @@ export default function useWebsiteTheme(siteDefaultMode) {
         document.documentElement.removeAttribute("data-website-theme");
       }
     };
-  }, [setTemporaryOverride, isLoggedIn, mode, siteDefaultMode]);
+  }, [setTemporaryOverride]);
 }

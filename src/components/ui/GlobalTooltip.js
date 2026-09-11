@@ -33,6 +33,19 @@ export default function GlobalTooltip() {
     let showTimer = null;
     let pointerX = 0;        // last known cursor position — the tooltip follows it
     let pointerY = 0;
+    // Cached bubble size, measured once per show. Re-measuring inside every
+    // pointermove forced a synchronous layout of the whole document on each
+    // mouse event — which is what made moving the cursor during a layout
+    // animation (e.g. collapsing the sidebar) stutter. The size only changes
+    // when the text does, so measure it there instead.
+    let tipW = 0;
+    let tipH = 0;
+    let moveFrame = 0;       // rAF handle: at most one reposition per frame
+    // Reading offsetWidth flushes pending layout, so a show that lands during a
+    // layout animation (collapsing the sidebar moves elements under a resting
+    // cursor, which shows a tooltip) pays for the whole page. The bubble's size
+    // is a pure function of its text, so remember it.
+    const sizeCache = new Map();
 
     const getTip = () => {
       if (tip) return tip;
@@ -55,13 +68,30 @@ export default function GlobalTooltip() {
       return "";
     };
 
-    const position = () => {
+    // Measure the bubble at its current text. Called from show() only — the one
+    // place the content can have changed.
+    const measure = (text) => {
       if (!tip) return;
-      // Reset before measuring so width/height reflect the new text, not the last position.
+      const cached = sizeCache.get(text);
+      if (cached) {
+        tipW = cached.w;
+        tipH = cached.h;
+        return;
+      }
+      // Measure from the viewport origin so the available width is the full
+      // viewport — the bubble must not wrap differently just because the cursor
+      // happens to be near the right edge.
       tip.style.left = "0px";
       tip.style.top = "0px";
-      const tw = tip.offsetWidth;
-      const th = tip.offsetHeight;
+      tipW = tip.offsetWidth;
+      tipH = tip.offsetHeight;
+      sizeCache.set(text, { w: tipW, h: tipH });
+    };
+
+    const position = () => {
+      if (!tip) return;
+      const tw = tipW;
+      const th = tipH;
 
       // Follow the cursor: anchor the tooltip to the pointer rather than the
       // trigger element, so it shows exactly where the cursor is.
@@ -88,6 +118,7 @@ export default function GlobalTooltip() {
       node.style.textAlign = multiline ? "left" : "center";
       node.classList.add("is-visible");
       node.setAttribute("aria-hidden", "false");
+      measure(text);
       position();
     };
 
@@ -95,6 +126,10 @@ export default function GlobalTooltip() {
       if (showTimer) {
         window.clearTimeout(showTimer);
         showTimer = null;
+      }
+      if (moveFrame) {
+        window.cancelAnimationFrame(moveFrame);
+        moveFrame = 0;
       }
       if (tip) {
         tip.classList.remove("is-visible");
@@ -134,10 +169,17 @@ export default function GlobalTooltip() {
     };
 
     // Keep the tooltip pinned to the cursor as it moves across the trigger.
+    // Pointer events fire far faster than the screen refreshes, so coalesce the
+    // repositioning to one write per frame.
     const onMove = (event) => {
       pointerX = event.clientX;
       pointerY = event.clientY;
-      if (activeEl && tip && tip.classList.contains("is-visible")) position();
+      if (!activeEl || !tip || !tip.classList.contains("is-visible")) return;
+      if (moveFrame) return;
+      moveFrame = window.requestAnimationFrame(() => {
+        moveFrame = 0;
+        position();
+      });
     };
 
     const onOut = (event) => {
@@ -183,6 +225,7 @@ export default function GlobalTooltip() {
       window.removeEventListener("resize", dismiss, true);
       document.removeEventListener("keydown", onKey, true);
       if (showTimer) window.clearTimeout(showTimer);
+      if (moveFrame) window.cancelAnimationFrame(moveFrame);
       if (tip && tip.parentNode) tip.parentNode.removeChild(tip);
       tip = null;
     };

@@ -7,8 +7,9 @@ import { useHrDashboardData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
-import LayerSurface from "@/components/ui/LayerSurface";
+import LayerSurface from "@/components/ui/LayerSurface"; // third rung: tables nested inside a --theme card flip back to --surface
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 
 const slug = (label) =>
   label
@@ -55,7 +56,14 @@ export default function HRDashboardTab() {
 
   if (error) {
     return (
-      <SectionCard title="Failed to load HR data" subtitle="An error occurred.">
+      <SectionCard
+        sectionKey="hr-manager-dashboard-error"
+        parentKey="hr-manager-tab-dashboard"
+        layer="theme"
+        data-dev-card-section="Dashboard load error"
+        title="Failed to load HR data"
+        subtitle="An error occurred."
+      >
         <span style={{ color: "var(--danger)" }}>{error.message}</span>
       </SectionCard>
     );
@@ -64,55 +72,68 @@ export default function HRDashboardTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Metrics Overview */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+      <DevLayoutSection
+        sectionKey="hr-manager-dashboard-metrics-row"
+        parentKey="hr-manager-tab-dashboard"
+        sectionType="section-shell"
+        data-dev-card-section="Dashboard metrics row"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}
+      >
         {formattedMetrics.map((metric) => (
           <MetricCard
             key={metric.label}
             {...metric}
             accentColor="var(--info)"
             sectionKey={`hr-manager-dashboard-metric-${slug(metric.label)}`}
-            parentKey="hr-manager-tab-dashboard"
+            parentKey="hr-manager-dashboard-metrics-row"
+            data-dev-card-section={metric.label}
           />
         ))}
-      </div>
+      </DevLayoutSection>
 
       {/* Department Performance & Training */}
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "2fr 1.2fr" }}>
         <SectionCard
-          sectionKey="hr-manager-auto-content-card-1"
+          sectionKey="hr-manager-dashboard-department-performance"
           parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
-          backgroundToken="surface"
+          layer="theme"
+          data-dev-card-section="Department Performance Snapshot"
           title="Department Performance Snapshot"
           subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)"
         >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ padding: "12px 0" }}>Department</th>
-                <th>Productivity</th>
-                <th>Quality</th>
-                <th>Teamwork</th>
-              </tr>
-            </thead>
-            <tbody>
-              {departmentPerformance.map((dept) => (
-                <tr key={dept.id} style={{ borderBottom: "1px solid var(--separating-line-color)" }}>
-                  <td style={{ padding: "14px 0", fontWeight: 600 }}>{dept.department}</td>
-                  <td>{dept.productivity}%</td>
-                  <td>{dept.quality}%</td>
-                  <td>{dept.teamwork}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th>Productivity</th>
+                    <th>Quality</th>
+                    <th>Teamwork</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departmentPerformance.map((dept) => (
+                    <tr key={dept.id}>
+                      <td style={{ fontWeight: 600 }}>{dept.department}</td>
+                      <td>{dept.productivity}%</td>
+                      <td>{dept.quality}%</td>
+                      <td>{dept.teamwork}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         </SectionCard>
 
         <SectionCard
-          sectionKey="hr-manager-auto-content-card-2"
+          sectionKey="hr-manager-dashboard-training-renewals"
           parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
-          backgroundToken="surface"
+          layer="theme"
+          data-dev-card-section="Training Renewals"
           title="Training Renewals"
           subtitle="Upcoming expiries across mandatory certifications"
         >
@@ -157,43 +178,49 @@ export default function HRDashboardTab() {
       {/* Absences & Warnings */}
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "1.4fr 1fr" }}>
         <SectionCard
-          sectionKey="hr-manager-auto-content-card-3"
+          sectionKey="hr-manager-dashboard-upcoming-absences"
           parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
-          backgroundToken="surface"
+          layer="theme"
+          data-dev-card-section="Upcoming Holidays & Absences"
           title="Upcoming Holidays & Absences"
           subtitle="Next 14 days across the business"
         >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ paddingBottom: "10px" }}>Employee</th>
-                <th>Department</th>
-                <th>Type</th>
-                <th>Dates</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcomingAbsences.map((absence) => (
-                <tr key={absence.id} style={{ borderBottom: "1px solid var(--separating-line-color)" }}>
-                  <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
-                  <td>{absence.department}</td>
-                  <td>{absence.type}</td>
-                  <td>
-                    {new Date(absence.startDate).toLocaleDateString()} -{" "}
-                    {new Date(absence.endDate).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Type</th>
+                    <th>Dates</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingAbsences.map((absence) => (
+                    <tr key={absence.id}>
+                      <td style={{ fontWeight: 600 }}>{absence.employee}</td>
+                      <td>{absence.department}</td>
+                      <td>{absence.type}</td>
+                      <td>
+                        {new Date(absence.startDate).toLocaleDateString()} -{" "}
+                        {new Date(absence.endDate).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         </SectionCard>
 
         <SectionCard
-          sectionKey="hr-manager-auto-content-card-4"
+          sectionKey="hr-manager-dashboard-active-warnings"
           parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
-          backgroundToken="surface"
+          layer="theme"
+          data-dev-card-section="Active Warnings"
           title="Active Warnings"
           subtitle="Summary of open disciplinary notices"
         >
@@ -210,17 +237,21 @@ export default function HRDashboardTab() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600, color: "var(--primary)" }}>{warning.employee}</span>
+                  <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{warning.employee}</span>
                   <StatusTag
                     label={warning.level}
                     tone={warning.level.includes("Final") ? "danger" : "warning"}
                   />
                 </div>
-                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{warning.department}</span>
-                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
+                <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.7 }}>
+                  {warning.department}
+                </span>
+                <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.7 }}>
                   Issued {new Date(warning.issuedOn).toLocaleDateString()}
                 </span>
-                <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{warning.notes}</span>
+                <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
+                  {warning.notes}
+                </span>
               </div>
             ))}
           </div>

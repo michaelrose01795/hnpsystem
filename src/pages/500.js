@@ -10,8 +10,16 @@
 // Anything the client CAN still do (report a problem, log the event, navigate
 // away) is handled by the shared recovery screen once it hydrates.
 
+import Head from "next/head";
 import PageErrorScreen from "@/components/support/PageErrorScreen";
 
 export default function ServerErrorPage() {
-  return <PageErrorScreen statusCode={500} />;
+  return (
+    <>
+      <Head>
+        <title>Server error - HNP System</title>
+      </Head>
+      <PageErrorScreen statusCode={500} />
+    </>
+  );
 }

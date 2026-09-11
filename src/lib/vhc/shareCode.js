@@ -1,25 +1,3 @@
-// file location: src/lib/vhc/shareCode.js
-//
-// Share codes for the customer VHC report link.
-//
-// The customer link used to be /vhc/customer/<job number>/<12 base64url chars>
-// — three path segments, a mixed-case code with `-` and `_` in it, and the
-// internal job number on show. Read out over the phone or seen in a text
-// message it looks like a debug URL, and base64url is hostile to reading aloud
-// (`I` vs `l`, `O` vs `0`).
-//
-// New links are /report/<8 chars> instead: one word, one code. The alphabet
-// below is Crockford-style — uppercase, with I, L, O and U removed so nothing
-// can be misheard or mistyped, and U dropped so the generator cannot spell
-// anything unfortunate. 8 characters over 28 symbols is ~38 bits, which is far
-// more than a 24-hour link needs.
-//
-// `normaliseShareCode` is deliberately forgiving in the same direction: a
-// customer typing the code by hand gets lowercase and the O/0, I/1 confusions
-// folded back before lookup. Old base64url codes still resolve — they are left
-// untouched by the normaliser (see below) so links already sent out keep
-// working until they expire.
-
 // Web Crypto, not node:crypto — `buildCustomerReportUrl` below is called from
 // the job-card page (client), and a `node:crypto` import would either fail the
 // browser build or drag a polyfill into it. `globalThis.crypto.getRandomValues`
@@ -28,12 +6,12 @@ const randomBytes = (n) => globalThis.crypto.getRandomValues(new Uint8Array(n));
 
 // 32 symbols: 0-9 plus A-Z with I, L, O and U removed.
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-export const SHARE_CODE_LENGTH = 8;
+export const SHARE_CODE_LENGTH = 26;
 
 // Anything that is exactly our alphabet at our length is a "new style" code and
 // is safe to normalise. Anything else (a legacy 12-char base64url code, which is
 // case-sensitive) is returned verbatim.
-const NEW_STYLE = new RegExp(`^[${ALPHABET}]{${SHARE_CODE_LENGTH}}$`);
+const NEW_STYLE = new RegExp("^(?:[" + ALPHABET + "]{8}|[" + ALPHABET + "]{" + SHARE_CODE_LENGTH + "})$");
 
 /**
  * Generate a customer-facing share code.
@@ -83,6 +61,6 @@ export function normaliseShareCode(raw) {
  * @param {string} [origin] absolute origin; omit for a relative path
  */
 export function buildCustomerReportUrl(code, origin = "") {
-  const path = `/report/${encodeURIComponent(code)}`;
+  const path = `/customer/${encodeURIComponent(code)}`;
   return origin ? `${String(origin).replace(/\/+$/, "")}${path}` : path;
 }

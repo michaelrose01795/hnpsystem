@@ -1,0 +1,125 @@
+/* file location: src/styles/families/context-menu.css
+ *
+ * Canonical home for the Context Menu family — the in-app replacement for the
+ * browser's native right-click menu.
+ *
+ * Variants: menu, item, separator, section-label
+ * Component: src/components/ui/GlobalContextMenu.js (mounted once from _app.js)
+ * Showcase:  /dev/user-diagnostic#context-menu
+ *
+ * The panel itself is a <LayerSurface>, so its background / radius / padding
+ * come from the layer primitive (§3.0). The rows are real Secondary buttons —
+ * the markup carries `app-btn app-btn--secondary`, so buttons.css owns every
+ * colour and this file adds layout only. Nothing here paints a row fill.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Panel. Fixed to the viewport so it is never clipped by a card/table/panel
+   with overflow:hidden — same reasoning as .app-global-tooltip. z-index 4000
+   clears the layout chrome (topbar 3300, status drawer 3400, sidebar 3500,
+   nav toggle 3601) and stays below the 9900 route-progress bar. */
+html.staff-scope .app-context-menu {
+  position: fixed;
+  z-index: 4000;
+  min-width: 244px;
+  max-width: min(340px, 92vw);
+  max-height: min(72vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Even accent glow on all four sides, so the panel reads as HOVERING above
+     the page. Deliberately NOT --control-menu-shadow: that token leads with a
+     `0 0 0 1px` hairline plus a black 12px halo, which rendered as a dark
+     outline around the menu. Two evenly-spread accent halos, no spread ring,
+     no black — nothing here reads as a border. */
+  box-shadow:
+    0 0 18px rgba(var(--accentMainRgb), 0.38),
+    0 0 44px rgba(var(--accentMainRgb), 0.22);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+html.staff-scope .app-context-menu.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-context-menu {
+    transition: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rows. Each row is a REAL Secondary button — the markup carries
+   `app-btn app-btn--secondary`, so fill, label colour, hover, press, disabled,
+   44px height, padding and radius all come from buttons.css and can never
+   drift from the rest of the app. This class only adds the things a menu row
+   needs that a button does not: full width, left alignment, and the row's own
+   icon / label / shortcut columns. It declares NO colours on purpose. The 8px
+   gap between rows comes from the panel's LayerSurface gap prop. */
+html.staff-scope .app-context-menu__item {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  gap: var(--control-gap);
+  font-weight: var(--control-font-weight);
+}
+
+/* Keyboard highlight has to match what :hover paints, so arrowing down the
+   menu looks identical to running the mouse down it. Deliberately NOT named
+   is-active: .app-btn.is-active means SELECTED and paints a full brand fill. */
+html.staff-scope .app-context-menu__item.is-highlighted:not(:disabled) {
+  --btn-bg: var(--secondary-hover);
+}
+
+html.staff-scope .app-context-menu__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Label grows; the shortcut hint is pushed to the trailing edge. */
+html.staff-scope .app-context-menu__label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-context-menu__shortcut {
+  flex: 0 0 auto;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+/* Leading glyph column — fixed width so labels align regardless of icon. */
+html.staff-scope .app-context-menu__icon {
+  flex: 0 0 auto;
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.75;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Group separator. A context menu is a list, so --separating-line is the
+   correct (and only allowed) rule here — see §3.0a. */
+html.staff-scope .app-context-menu__separator {
+  height: 0;
+  /* No vertical margin of its own — it already sits between two 8px row gaps,
+     which is the whole separation the group divider needs. */
+  margin: 0 2px;
+  border: none;
+  border-bottom: var(--separating-line);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — matches the dropdown family's magenta, since this is a menu. */
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  .app-context-menu {
+  outline: 2px solid #d946ef;
+  outline-offset: 2px;
+}

@@ -1,6 +1,6 @@
 export const techDashboardSlide = {
   id: "tech-dashboard",
-  route: "/tech/dashboard",
+  route: "/dashboard/tech",
   title: "Tech Dashboard",
   roles: null,
   workflowIndex: 91,

@@ -522,6 +522,39 @@ html.staff-scope .website-manager__color-swatch::-webkit-color-swatch {
   max-width: 24rem;
 }
 
+/* Preview tab: the chosen /website section rendered inline underneath the
+   tab row. The frame is sized by the embed's own reported height (set as an
+   inline height in LivePreviewPanel), so it never scrolls internally and
+   reads as page content rather than a shrunken picture of the site. */
+.ws-section-view {
+  width: 100%;
+  margin-inline: auto;
+  transition: max-width 200ms ease;
+}
+
+.ws-section-view iframe {
+  width: 100%;
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+}
+
+.ws-section-view--tablet {
+  max-width: 48rem;
+}
+
+.ws-section-view--mobile {
+  max-width: 24rem;
+}
+
+/* The Website tab shows the whole scrolling site, so its frame keeps a fixed
+   viewport-shaped height and scrolls internally instead of being sized to its
+   content (which would be the full ~17,000px page). */
+.ws-section-view--whole iframe {
+  height: min(78dvh, 52rem);
+  min-height: 36rem;
+}
+
 /* Design tab: settings form on the left, live site on the right. Shorter than
    the visual editor's preview because the design controls are the focus. */
 .website-manager__design-split {

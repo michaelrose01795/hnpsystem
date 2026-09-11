@@ -10,6 +10,7 @@
 // so consumers cannot drift from the design system. Use a variant or size
 // prop instead — or extend the global system in staffglobal.css/theme.css.
 import React from "react";
+import { Symbol, resolveSymbolForLabel } from "./SymbolButton";
 
 const DISALLOWED_STYLE_KEYS = new Set([
   "background", "backgroundColor", "backgroundImage",
@@ -72,10 +73,21 @@ export default function Button({
   pill = false,
   busy = false,
   disabled = false,
+  symbol,
   className = "",
   style,
   ...rest
 }) {
+  // A button is EITHER a symbol or words — never both. When a label names an
+  // action the symbol set covers, the mark replaces the text entirely and the
+  // words become the accessible name. Which labels qualify is decided in one
+  // place, lib/ui/symbolLabels.js, so the whole app flips together.
+  //
+  // `symbol="name"` forces a mark onto a label the map does not cover;
+  // `symbol={false}` keeps a button as words even if its label is mapped.
+  const resolvedSymbol =
+    symbol === false ? null : symbol || resolveSymbolForLabel(children, rest["aria-label"]);
+
   const classes = [
     "app-btn",
     `app-btn--${variant}`,
@@ -84,10 +96,18 @@ export default function Button({
     size === "xxs" && "app-btn--xxs",
     pill && "app-btn--pill",
     busy && "is-busy",
+    resolvedSymbol && "app-btn--has-symbol",
     className,
   ]
     .filter(Boolean)
     .join(" ");
+
+  // Losing the words must not lose the name: the label the symbol replaced
+  // becomes aria-label (and the tooltip below), so the button still announces
+  // itself and is still findable by its text in tests.
+  const ariaLabel =
+    rest["aria-label"] ||
+    (resolvedSymbol && typeof children === "string" ? children.trim() : undefined);
 
   // `busy` disables the button (blocking double-submits) and announces the
   // pending state to assistive tech, while keeping the label visible next to
@@ -99,9 +119,15 @@ export default function Button({
       aria-busy={busy || undefined}
       style={sanitizeStyle(style)}
       {...rest}
+      data-symbol={resolvedSymbol || undefined}
+      aria-label={ariaLabel}
+      title={rest.title || (resolvedSymbol ? ariaLabel : undefined)}
     >
       {busy && <ButtonSpinner />}
-      {children}
+      {/* The mark stands in for the children; a button without one keeps
+          exactly the children it was given. */}
+      {resolvedSymbol && !busy && <Symbol symbol={resolvedSymbol} className="app-btn__symbol" />}
+      {!resolvedSymbol && children}
     </button>
   );
 }

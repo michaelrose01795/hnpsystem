@@ -87,31 +87,28 @@ export const dropdownTriggerButtonStyle = {
 // It is NOT the same as src/components/VHC/vhcModalStyles.js which holds FIELD-LEVEL input styles.
 // Both exist and serve different purposes. Do not rename or merge without updating all consumers.
 export const vhcModalStyles = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: palette.overlay,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: "var(--z-modal)",
-    padding: "clamp(10px, 2.5vw, 20px)",
-    overflow: "hidden",
-    overscrollBehavior: "contain",
-  },
+  // `overlay` removed. VHCModalShell now renders through PopupModal, so the
+  // backdrop is the canonical `.popup-backdrop` from staffglobal.css — which
+  // carries the accent-tinted scrim and the 10px backdrop blur this bespoke
+  // object never had. Viewport gap, z-index and scroll containment come from
+  // there too.
+  //
+  // `container` is layout only: the popup card's surface (background, radius,
+  // shadow, max-width / max-height against --popup-viewport-gap) belongs to
+  // `.popup-card`.
   container: ({ width = "1080px", height = "640px" } = {}) => ({
     width,
-    maxWidth: "calc(100vw - clamp(10px, 2.5vw, 20px) * 2)",
     height,
-    maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
-    background: palette.modalGradient,
-    borderRadius: "var(--section-card-radius)",
-    border: "none",
-    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
     position: "relative",
+    minHeight: 0,
+    // The shell's own header / body / footer carry the modal padding and
+    // spacing, so whichever surface it lands on (.popup-card in modal mode,
+    // .app-section-card inline) contributes none of its own.
+    padding: 0,
+    gap: 0,
   }),
   header: {
     padding: "var(--space-6) var(--space-lg) var(--space-3)",
@@ -158,90 +155,34 @@ export const vhcModalContentStyles = {
     gap: "var(--space-5)",
     minHeight: 0,
   },
-  summaryCard: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "var(--space-md) var(--space-6)",
-    borderRadius: "var(--section-card-radius)",
-    border: "none",
-    background: "var(--control-bg)",
-    boxShadow: "none",
-  },
-  summaryTextBlock: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "var(--space-xs)",
-  },
-  summaryTitle: {
-    fontSize: "13px",
-    color: palette.textMuted,
-    fontWeight: 600,
-    letterSpacing: "0.2px",
-  },
-  summaryMetric: {
-    fontSize: "20px",
-    fontWeight: 700,
-    color: palette.textPrimary,
-  },
-  summaryBadges: {
-    display: "flex",
-    gap: "var(--space-3)",
-    flexWrap: "wrap",
-    alignItems: "center",
-  },
+  // summaryCard / summaryTextBlock / summaryTitle / summaryMetric / summaryBadges
+  // removed — they had no consumers left and re-declared the section-card surface
+  // in JS. Any future summary strip uses the global `.app-section-card` class.
   cardGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "var(--space-5)",
   },
+  // Layout only. The card surface — background, radius, padding, gap, shadow —
+  // comes from the global `.app-section-card` class in staffglobal.css, which
+  // every call site now carries. Clickable cards additionally carry `.vhc-card`
+  // (src/styles/features/vhc.css) for the cursor and the hover lift, so the
+  // former JS `baseCardHover` object and its onMouseEnter/Leave handlers are
+  // gone: hover is a CSS concern and is now identical to the VHC section cards
+  // on the job-card page.
   baseCard: {
     position: "relative",
     textAlign: "left",
-    border: "none",
-    backgroundColor: "var(--control-bg)",
-    borderRadius: "var(--section-card-radius)",
-    padding: "var(--space-6)",
-    boxShadow: "none",
-    cursor: "pointer",
-    transition: "transform 0.2s ease, background-color 0.2s ease",
-    display: "flex",
-    flexDirection: "column",
-    gap: "var(--space-3)",
-    transform: "translateY(0)",
-  },
-  baseCardHover: {
-    transform: "translateY(-3px)",
-    boxShadow: "none",
-    backgroundColor: "var(--control-bg-hover)",
   },
 };
 
-export const popupOverlayStyles = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: palette.overlay,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px))",
-  zIndex: "var(--z-modal)",
-  overflow: "hidden",
-  overscrollBehavior: "contain",
-};
-
-export const popupCardStyles = {
-  width: "min(640px, 100%)",
-  maxWidth: "calc(100vw - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
-  maxHeight: "calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
-  background: "var(--surface)",
-  borderRadius: "var(--radius-lg)",
-  border: "none",
-  boxShadow: "none",
-  color: "var(--text-1)",
-  overflowY: "auto",
-  overscrollBehavior: "contain",
-};
+// popupOverlayStyles / popupCardStyles removed. They were a second, JS-side
+// implementation of the popup chrome that staffglobal.css already owns, and
+// they drifted from it: no backdrop blur, no accent tint on the scrim, and a
+// card that re-declared background / radius / max-size by hand. Every consumer
+// now carries the canonical `.popup-backdrop` / `.popup-card` classes (or goes
+// through PopupModal in src/components/popups/popupStyleApi.js) and passes only
+// geometry inline.
 
 export const appShellTheme = {
   palette,

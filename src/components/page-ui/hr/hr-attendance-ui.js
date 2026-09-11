@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/hr/hr-attendance-ui.js
 import { LayerTheme } from "@/components/ui"; // canonical layer primitive (see CLAUDE.md §3.0)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 
 export default function HrAttendanceUi(props) {
   const {
@@ -49,37 +50,36 @@ export default function HrAttendanceUi(props) {
             <SectionCard title="Daily Time Logs" subtitle="Sourced from the workshop clocking system" action={<Button variant="secondary" size="sm">
                   Export CSV
                 </Button>}>
-              <div style={{
-          maxHeight: "360px",
-          overflowY: "auto"
-        }}>
-                <table className="app-data-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Date</th>
-                      <th>Clock In</th>
-                      <th>Clock Out</th>
-                      <th>Total Hours</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendanceLogs.map(log => <tr key={log.id}>
-                        <td style={{
-                  fontWeight: 600
-                }}>{log.employeeName || "Unknown user"}</td>
-                        <td>{new Date(log.date).toLocaleDateString()}</td>
-                        <td>{log.clockIn}</td>
-                        <td>{log.clockOut}</td>
-                        <td>{Number(log.totalHours).toFixed(1)} hrs</td>
-                        <td>
-                          <StatusTag label={log.status} tone={log.status === "On Time" ? "success" : log.status === "Overtime" ? "warning" : "default"} />
-                        </td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </div>
+              <LayerTheme padding="var(--space-3)" gap="0">
+                <DataTableShell>
+                  <table className="app-data-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Total Hours</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceLogs.map(log => <tr key={log.id}>
+                          <td style={{
+                    fontWeight: 600
+                  }}>{log.employeeName || "Unknown user"}</td>
+                          <td>{new Date(log.date).toLocaleDateString()}</td>
+                          <td>{log.clockIn}</td>
+                          <td>{log.clockOut}</td>
+                          <td>{Number(log.totalHours).toFixed(1)} hrs</td>
+                          <td>
+                            <StatusTag label={log.status} tone={log.status === "On Time" ? "success" : log.status === "Overtime" ? "warning" : "default"} />
+                          </td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </DataTableShell>
+              </LayerTheme>
             </SectionCard>
 
             <SectionCard title="Overtime Summary" subtitle="Captured per 26th-to-26th overtime period" action={<Button variant="primary" size="sm">
@@ -135,34 +135,34 @@ export default function HrAttendanceUi(props) {
                   New Absence
                 </Button>
               </div>}>
-            <div style={{
-        overflowX: "auto"
-      }}>
-              <table className="app-data-table">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Type</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {absenceRecords.map(absence => <tr key={absence.id}>
-                      <td style={{
-                fontWeight: 600
-              }}>{absence.employee}</td>
-                      <td>{absence.type}</td>
-                      <td>{new Date(absence.startDate).toLocaleDateString()}</td>
-                      <td>{new Date(absence.endDate).toLocaleDateString()}</td>
-                      <td>
-                        <StatusTag label={absence.approvalStatus} tone={absence.approvalStatus === "Approved" ? "success" : "warning"} />
-                      </td>
-                    </tr>)}
-                </tbody>
-              </table>
-            </div>
+            <LayerTheme padding="var(--space-3)" gap="0">
+              <DataTableShell>
+                <table className="app-data-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Type</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {absenceRecords.map(absence => <tr key={absence.id}>
+                        <td style={{
+                  fontWeight: 600
+                }}>{absence.employee}</td>
+                        <td>{absence.type}</td>
+                        <td>{new Date(absence.startDate).toLocaleDateString()}</td>
+                        <td>{new Date(absence.endDate).toLocaleDateString()}</td>
+                        <td>
+                          <StatusTag label={absence.approvalStatus} tone={absence.approvalStatus === "Approved" ? "success" : "warning"} />
+                        </td>
+                      </tr>)}
+                  </tbody>
+                </table>
+              </DataTableShell>
+            </LayerTheme>
           </SectionCard>
         </>}
     </div>; // render extracted page section.

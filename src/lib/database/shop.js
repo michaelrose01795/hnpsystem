@@ -276,3 +276,61 @@ export const decrementStockForOrder = async (orderId) => {
   }
   return { ok: true };
 };
+
+/* =========================== CUSTOMER BASKETS ======================== */
+// One saved basket per signed-in customer, so a basket started on a phone
+// is still there on a laptop. Signed-out visitors keep their basket in
+// localStorage only (see useShopCart) and it is merged up on sign-in.
+//
+// The table is optional at runtime: if shop_carts has not been created in
+// this environment yet, every function below degrades to "no saved basket"
+// rather than breaking the shop. Schema lives in
+// src/lib/database/schema/shop-carts.sql.
+
+const MISSING_TABLE_CODES = new Set(["42P01", "PGRST205"]);
+
+const isMissingCartTable = (error) =>
+  Boolean(error) &&
+  (MISSING_TABLE_CODES.has(error.code) ||
+    /shop_carts/i.test(error.message || ""));
+
+export const getCustomerCart = async (customerId) => {
+  if (!customerId) return { ok: true, items: [], persisted: false };
+  const { data, error } = await supabase
+    .from("shop_carts")
+    .select("items, updated_at")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+  if (error) {
+    if (isMissingCartTable(error)) return { ok: true, items: [], persisted: false };
+    logFailure("[shop] getCustomerCart:", error.message);
+    return { ok: false, items: [], persisted: false };
+  }
+  return {
+    ok: true,
+    items: Array.isArray(data?.items) ? data.items : [],
+    updatedAt: data?.updated_at || null,
+    persisted: true,
+  };
+};
+
+export const saveCustomerCart = async (customerId, items) => {
+  if (!customerId) return { ok: false, persisted: false };
+  const { error } = await supabase.from("shop_carts").upsert(
+    {
+      customer_id: customerId,
+      items: Array.isArray(items) ? items : [],
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "customer_id" }
+  );
+  if (error) {
+    if (isMissingCartTable(error)) return { ok: true, persisted: false };
+    logFailure("[shop] saveCustomerCart:", error.message);
+    return { ok: false, persisted: false };
+  }
+  return { ok: true, persisted: true };
+};
+
+export const clearCustomerCart = async (customerId) =>
+  saveCustomerCart(customerId, []);

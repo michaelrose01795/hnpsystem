@@ -465,15 +465,9 @@ export const BUILDER_SCHEMAS = {
     fields: [
       { name: "accent_hex", label: "Accent colour", type: "color" },
       { name: "accent_hover_hex", label: "Accent colour (hover)", type: "color" },
-      {
-        name: "default_theme",
-        label: "Default colour mode",
-        type: "select",
-        options: [
-          { value: "dark", label: "Dark" },
-          { value: "light", label: "Light" },
-        ],
-      },
+      // "Default colour mode" was removed here (2026-09-11): the customer site
+      // is light-only, so the control had nothing left to switch. The
+      // website_design.default_theme column is left in place.
       {
         name: "container_width",
         label: "Content width",

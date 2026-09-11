@@ -51,7 +51,7 @@ function NewActivityForm({ onCreated }) {
   if (!open) {
     return (
       <Button type="button" variant="primary" size="sm" onClick={() => setOpen(true)}>
-        + New Processing Activity
+        New Processing Activity
       </Button>
     );
   }
@@ -143,24 +143,24 @@ export default function RopaPage() {
           <p style={{ margin: 0, color: "var(--text-1)" }}>No activities recorded yet.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Name</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Lawful basis</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Purpose</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Last reviewed</th>
+                  <th>Name</th>
+                  <th>Lawful basis</th>
+                  <th>Purpose</th>
+                  <th>Last reviewed</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.name}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.lawful_basis || "—"}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>{row.name}</td>
+                    <td>{row.lawful_basis || "—"}</td>
+                    <td>
                       {row.purpose ? row.purpose.slice(0, 120) : "—"}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.last_reviewed_at || "—"}</td>
+                    <td>{row.last_reviewed_at || "—"}</td>
                   </tr>
                 ))}
               </tbody>

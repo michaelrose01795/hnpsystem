@@ -69,15 +69,23 @@ const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: 
 const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "service" };
 
 const TrendBlock = ({ data }) => (
-  <ReportLinkedTrend
-    kpiId="svc.booking_volume"
-    filter={REPORT_TREND_FILTER}
-    fallbackData={data}
-    sectionKey="dashboard-service-booking-volume-chart"
-    parentKey="dashboard-service-appointment-trends"
-    unit="count"
-    format="0,0"
-  />
+  <>
+    <ReportLinkedTrend
+      kpiId="svc.booking_volume"
+      filter={REPORT_TREND_FILTER}
+      fallbackData={data}
+      sectionKey="dashboard-service-booking-volume-chart"
+      parentKey="dashboard-service-appointment-trends"
+      unit="count"
+      format="0,0"
+    />
+    {/* Scope the existing chart text token to this instance's permanently dark backdrop. */}
+    <style jsx global>{`
+      html.staff-scope [data-dev-section-key="dashboard-service-booking-volume-chart"] {
+        --report-graph-axis-text: var(--report-graph-value-text);
+      }
+    `}</style>
+  </>
 );
 
 const ProgressBar = ({ completed, target }) => {

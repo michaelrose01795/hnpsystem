@@ -12,6 +12,45 @@ export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
 export const PARTS_ORDER_ROLES = ["parts", "parts manager"];
 export const CUSTOMER_ROLES = Array.from(roleCategories.Customers || []);
 export const WORKSHOP_CONTROLLER_ROLES = ["workshop manager", "workshop controller"];
+
+/* ------------------------------------------------------------------------ */
+/* Dealership departments, as used by the customer record hub.               */
+/* These are the same role strings as roleCategories in src/config/users.js, */
+/* grouped by the desk a person sits at rather than by the retail/sales split.*/
+/* Import these — never inline a role string at a call site (CLAUDE.md §6).   */
+/* ------------------------------------------------------------------------ */
+export const RECEPTION_ROLES = ["receptionist", "service", "sales"];
+export const SERVICE_DESK_ROLES = ["service", "service manager", "receptionist"];
+export const WORKSHOP_FLOOR_ROLES = [
+  "techs",
+  "technician",
+  "technician lead",
+  "lead technician",
+  "mot tester",
+  "tester",
+  "mobile technician",
+  "workshop manager",
+  "workshop controller",
+  "painters",
+  "contractors",
+];
+export const PARTS_DEPARTMENT_ROLES = ["parts", "parts manager", "parts driver"];
+export const ACCOUNTS_ROLES = ["accounts", "accounts manager"];
+export const ADMIN_ROLES = ["admin", "admin manager"];
+export const DEALERSHIP_MANAGER_ROLES = [
+  "manager",
+  "service manager",
+  "workshop manager",
+  "parts manager",
+  "accounts manager",
+  "general manager",
+  "after sales director",
+  "after sales manager",
+  "aftersales manager",
+  "sales director",
+  "buying director",
+  "admin manager",
+];
 export const TECHNICIAN_ROLES = [
   "Techs",
   "Technician",
@@ -131,6 +170,16 @@ export function isManagerScopedRole(userRoles) {
 
 export function canAccessHrManagerDashboard(userRoles) {
   return hasAnyRole(userRoles, HR_MANAGER_DASHBOARD_ROLES);
+}
+
+// Sensitive HR data gate: pay, home address, emergency contacts and HR
+// documents. Delegates to the existing HR core role group so widening stays a
+// single-line change here and no role string is hardcoded at the call site
+// (same pattern as canViewDiagnostics below). Every role that can already open
+// the HR Manager dashboard passes, so this narrows nothing that works today —
+// it keeps the gate with the data if the profile panel is reused elsewhere.
+export function canViewSensitiveHrDetails(userRoles) {
+  return isHrCoreRole(userRoles);
 }
 
 // IDENTITY predicates — "is the user THIS kind of person", not "may they do X".

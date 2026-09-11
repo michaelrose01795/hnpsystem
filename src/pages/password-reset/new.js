@@ -5,12 +5,24 @@
 //
 // This page replaces the old /password-reset/reverted flow, which leaked
 // the user's previous plaintext password back to them.
+//
+// Layout: chrome-free public page (PublicLayout — the reset link is followed
+// by a signed-OUT user, so the gated StaffLayout shell must not wrap it).
+// Surfaces follow the layer ladder: LayerSurface (page card) > LayerTheme
+// (form section). All appearance comes from staffglobal.css / families:
+// .app-page-shell, .app-page-header*, .app-input (via InputField),
+// .app-toggle-field + .app-toggle--checkbox, .app-status-message, .app-btn.
 
 import React, { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { publicGetLayout } from "@/components/layout/PublicLayout";
 import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import InputField from "@/components/ui/InputField";
+import StatusMessage from "@/components/ui/StatusMessage";
+import Button from "@/components/ui/Button";
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -77,6 +89,11 @@ export default function PasswordResetNewPage() {
     }
   };
 
+  const mismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword
+      ? "The two passwords do not match."
+      : undefined;
+
   return (
     <>
       <Head>
@@ -84,184 +101,110 @@ export default function PasswordResetNewPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
+      {/* Shell background, colour and font come from html.staff-scope body. */}
       <main
+        className="app-page-shell"
         style={{
-          minHeight: "100dvh",
-          background: "var(--page-shell-bg)",
-          color: "var(--text-1)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 16,
-          fontFamily: "var(--font-family, system-ui, sans-serif)",
-          boxSizing: "border-box",
+          minHeight: "100dvh",
+          width: "100%",
         }}
       >
+        {/* Margin (not padding) keeps the gutter on a flex item without
+            overflowing the 100% width on narrow phones. */}
         <LayerSurface
           as="section"
-          radius="var(--radius-md, 12px)"
-          padding="24px"
-          style={{
-            width: "100%",
-            maxWidth: 480,
-            boxShadow: "var(--shadow-xl, 0 24px 48px rgba(0,0,0,0.18))",
-            boxSizing: "border-box",
-          }}
+          padding="var(--page-card-padding)"
+          gap="var(--page-stack-gap)"
+          style={{ flex: "1 1 auto", maxWidth: 440, margin: "var(--space-md)" }}
         >
-          <h1
-            style={{
-              margin: "0 0 6px",
-              fontSize: "1.5rem",
-              color: "var(--primary)",
-              textAlign: "center",
-            }}
-          >
-            {done ? "Password Updated" : "Set a New Password"}
-          </h1>
-          <p
-            style={{
-              margin: "0 0 20px",
-              color: "var(--text-1)",
-              textAlign: "center",
-              lineHeight: 1.5,
-            }}
-          >
-            {done
-              ? "Your password has been updated. You can now sign in with the new password."
-              : "Choose a new password for your account."}
-          </p>
+          <header className="app-page-header">
+            <div className="app-page-header__text">
+              <h1 className="app-page-header__title">
+                {done ? "Password updated" : "Set a new password"}
+              </h1>
+              <p className="app-page-header__subtitle">
+                {done
+                  ? "You can now sign in with your new password."
+                  : "Choose a new password for your account."}
+              </p>
+            </div>
+          </header>
 
           {done ? (
-            <div style={{ textAlign: "center" }}>
+            <LayerTheme>
+              <StatusMessage tone="success">
+                Your password has been updated.
+              </StatusMessage>
               <Link
                 href="/login"
-                style={{
-                  display: "inline-block",
-                  padding: "12px 18px",
-                  borderRadius: "var(--radius-xs, 6px)",
-                  background: "var(--primary)",
-                  color: "var(--onAccentText)",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
+                className="app-btn app-btn--primary"
+                style={{ width: "100%" }}
               >
-                Continue to Sign In
+                Continue to sign in
               </Link>
-            </div>
+            </LayerTheme>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.8rem",
-                  color: "var(--text-1)",
-                  marginBottom: 6,
-                }}
-              >
-                New password
-              </label>
-              <input
-                className="app-input"
+            <LayerTheme as="form" onSubmit={handleSubmit} noValidate>
+              <InputField
+                label="New password"
+                id="new-password"
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD_LENGTH}
                 required
-                style={{ marginBottom: 12 }}
+                hint={`Use at least ${MIN_PASSWORD_LENGTH} characters. Avoid passwords you use on other sites.`}
               />
 
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.8rem",
-                  color: "var(--text-1)",
-                  marginBottom: 6,
-                }}
-              >
-                Confirm new password
-              </label>
-              <input
-                className="app-input"
+              <InputField
+                label="Confirm new password"
+                id="confirm-password"
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD_LENGTH}
                 required
-                style={{ marginBottom: 12 }}
+                error={mismatch}
               />
 
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: "0.85rem",
-                  color: "var(--text-1)",
-                  marginBottom: 14,
-                  cursor: "pointer",
-                }}
-              >
+              <label className="app-toggle-field" htmlFor="show-passwords">
                 <input
+                  id="show-passwords"
+                  className="app-toggle--checkbox"
                   type="checkbox"
                   checked={showPassword}
                   onChange={(e) => setShowPassword(e.target.checked)}
                 />
-                Show passwords
+                <span>Show passwords</span>
               </label>
 
-              <p
-                style={{
-                  margin: "0 0 14px",
-                  fontSize: "0.78rem",
-                  color: "var(--text-1)",
-                  lineHeight: 1.5,
-                }}
-              >
-                Use at least {MIN_PASSWORD_LENGTH} characters. Avoid passwords you use
-                on other sites.
-              </p>
+              {/* Live region stays mounted so the message is announced; hidden
+                  when empty so it does not add an extra gap to the stack. */}
+              <div role="alert" style={{ display: errorMessage ? "block" : "none" }}>
+                {errorMessage && (
+                  <StatusMessage tone="danger">{errorMessage}</StatusMessage>
+                )}
+              </div>
 
-              {errorMessage && (
-                <div
-                  role="alert"
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "var(--radius-xs, 6px)",
-                    background: "rgba(239, 68, 68, 0.1)",
-                    color: "#ef4444",
-                    fontSize: "0.85rem",
-                    marginBottom: 12,
-                  }}
-                >
-                  {errorMessage}
-                </div>
-              )}
-
-              <button
+              <Button
                 type="submit"
-                disabled={submitting || !token}
-                style={{
-                  width: "100%",
-                  minHeight: 44,
-                  padding: "12px 14px",
-                  border: "none",
-                  borderRadius: "var(--radius-xs, 6px)",
-                  background: "var(--primary)",
-                  color: "var(--onAccentText)",
-                  fontWeight: 700,
-                  fontSize: "0.95rem",
-                  cursor: submitting ? "not-allowed" : "pointer",
-                  opacity: submitting || !token ? 0.7 : 1,
-                }}
+                busy={submitting}
+                disabled={!token}
+                style={{ width: "100%" }}
               >
-                {submitting ? "Saving..." : "Save New Password"}
-              </button>
-            </form>
+                {submitting ? "Saving…" : "Save new password"}
+              </Button>
+            </LayerTheme>
           )}
         </LayerSurface>
       </main>
     </>
   );
 }
+
+PasswordResetNewPage.getLayout = publicGetLayout;

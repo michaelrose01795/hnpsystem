@@ -23,6 +23,7 @@ export default function ValetDashboardUi(props) {
     selectedDay,
     setSearchTerm,
     setSelectedDay,
+    TableSkeleton,
     valetState,
   } = props; // receive page logic props.
 
@@ -76,12 +77,8 @@ export default function ValetDashboardUi(props) {
       </>; // render extracted page section.
 
     case "section4":
-      return <>
-        <DevLayoutSection sectionKey="valet-controls-shell" parentKey="app-layout-page-card" sectionType="section-shell" style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px"
-    }}>
+      return <div className="app-page-stack">
+        <DevLayoutSection sectionKey="valet-controls-shell" parentKey="app-layout-page-card" sectionType="section-shell" className="app-page-stack">
           <DevLayoutSection data-presentation="valet-filters" sectionKey="valet-filter-row" parentKey="valet-controls-shell" sectionType="filter-row" style={{
         display: "flex",
         gap: "12px",
@@ -152,25 +149,22 @@ export default function ValetDashboardUi(props) {
             </DevLayoutSection>}
         </DevLayoutSection>
 
-        {loading ? <DevLayoutSection sectionKey="valet-jobs-loading" parentKey="app-layout-page-card" sectionType="content-card" style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "60px 0",
-      fontSize: "16px",
-      color: "var(--grey-accent)"
-    }}>
-            Loading valet jobs…
-          </DevLayoutSection> : filteredJobs.length === 0 ? <DevLayoutSection data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
-      padding: "60px 0",
+        {loading ? <LayerTheme sectionKey="valet-jobs-loading" parentKey="app-layout-page-card" sectionType="content-card">
+            <div className="app-table-shell-wrap app-table-shell-scroll">
+              <TableSkeleton
+                label="Loading valet jobs"
+                rows={8}
+                columns={["Job Number", "Reg", "Customer", "Vehicle Here", "Workshop", "MOT", "Wash", "EST Tech Completion"]}
+              />
+            </div>
+          </LayerTheme> : filteredJobs.length === 0 ? <LayerTheme data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
       textAlign: "center",
       color: "var(--surfaceTextMuted)",
       fontSize: "16px"
     }}>
             {selectedDay ? `No valet jobs found for ${formatDateOnlyLabel(selectedDay)}.` : "No jobs requiring wash were found."}
-          </DevLayoutSection> : <LayerTheme sectionKey="valet-jobs-list" parentKey="app-layout-page-card" sectionType="data-table-shell" className="app-table-shell-scroll" style={{
-      width: "100%"
-    }}>
+          </LayerTheme> : <LayerTheme sectionKey="valet-jobs-list" parentKey="app-layout-page-card" sectionType="content-card">
+            <div className="app-table-shell-wrap app-table-shell-scroll">
             <table
               className="app-data-table app-table-shell app-table-shell--with-headings"
               data-dev-section="1"
@@ -205,8 +199,9 @@ export default function ValetDashboardUi(props) {
         }} />)}
               </tbody>
             </table>
+            </div>
           </LayerTheme>}
-    </>; // render extracted page section.
+    </div>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
   }

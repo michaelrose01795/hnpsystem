@@ -25,6 +25,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_DRAFT_SCREENSHOTS } from "@/lib/support/supportDraft";
+import SymbolButton from "@/components/ui/SymbolButton";
 
 const MAX_DIMENSION = 1600; // cap the longest edge — keeps payload small
 const MAX_SHOTS = MAX_DRAFT_SCREENSHOTS;
@@ -326,7 +327,7 @@ export default function SupportScreenshotsField({
           aria-label="Add a screenshot"
           style={{ minHeight: "44px" }}
         >
-          {isCapturing ? "Capturing…" : items.length ? "+ Add another" : "+ Capture screen"}
+          {isCapturing ? "Capturing…" : items.length ? "Add another" : "Capture screen"}
         </button>
       </div>
 
@@ -351,26 +352,16 @@ export default function SupportScreenshotsField({
               {item.rawSrc ? " — drag on the image to black out anything private" : ""}
             </span>
             <div style={{ display: "flex", gap: "6px" }}>
-              <button
-                type="button"
-                className="app-btn app-btn--ghost"
+              <SymbolButton
+                symbol="up"
+                label={`Move screenshot ${index + 1} up`}
                 onClick={() => move(item.id, -1)}
-                disabled={isCapturing || index === 0}
-                aria-label={`Move screenshot ${index + 1} up`}
-                style={{ minHeight: "44px", minWidth: "44px" }}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="app-btn app-btn--ghost"
+                disabled={isCapturing || index === 0} />
+              <SymbolButton
+                symbol="down"
+                label={`Move screenshot ${index + 1} down`}
                 onClick={() => move(item.id, 1)}
-                disabled={isCapturing || index === items.length - 1}
-                aria-label={`Move screenshot ${index + 1} down`}
-                style={{ minHeight: "44px", minWidth: "44px" }}
-              >
-                ↓
-              </button>
+                disabled={isCapturing || index === items.length - 1} />
               <button
                 type="button"
                 className="app-btn app-btn--danger"

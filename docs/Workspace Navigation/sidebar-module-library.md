@@ -25,7 +25,7 @@ Current standard module and page inventory shown by **Select standard modules** 
 
 1. General
 2. Admin
-3. Reception
+3. Service
 4. Workshop
 5. MOT
 6. Parts
@@ -78,7 +78,7 @@ Current page count: **21**
 
 ---
 
-## Reception
+## Service
 
 Module key: `department-service`  
 Department: `service`  
@@ -111,7 +111,7 @@ Module key: `department-tech`
 Department: `tech`
 Current page count: **4**
 
-- Tech Dashboard - `/tech/dashboard`
+- Tech Dashboard - `/dashboard/tech`
 - My Jobs - `/tech`
 - Efficiency - `/tech/efficiency`
 - Request Consumables - `/consumables-request`

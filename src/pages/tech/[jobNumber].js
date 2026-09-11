@@ -215,37 +215,23 @@ const isConcernLocked = (concern) => {
 
 const styles = vhcLayoutStyles;
 
-// Status color mapping for consistency
-const STATUS_COLORS = {
-  "Waiting": "var(--warning)",
-  "In Progress": "var(--info)",
-  "VHC Complete": "var(--success)",
-  "VHC Reopened": "var(--warning)",
-  "Write Up Complete": "var(--info)",
-  "Complete": "var(--success)",
-  "Outstanding": "var(--info)",
-  "Accepted": "var(--primary)",
-  "Awaiting Authorisation": "var(--warning)",
-  "Authorised": "var(--accent-purple)",
-  "Ready": "var(--info)",
-  "Carry Over": "var(--danger)",
-  "Complete": "var(--info)",
-  "Sent": "var(--accent-purple)",
-  "Viewed": "var(--info)"
+// Header status tone, as a Badge family variant. This used to be a pair of
+// maps — STATUS_BADGE_STYLES for the fill, STATUS_COLORS for the fallback,
+// both now deleted — applied inline over .app-btn, so the job's status carried
+// a button's shape and could be read as an action. "Complete" takes the solid --success-strong
+// fill because it previously rendered as a solid primary button and is meant
+// to stay the loudest state in the header.
+const STATUS_BADGE_TONES = {
+  "Waiting": "warning",
+  "In Progress": "accent-soft",
+  "VHC Complete": "success",
+  "VHC Reopened": "warning",
+  "Write Up Complete": "accent-soft",
+  "Complete": "success-strong",
+  "Started": "accent-soft"
 };
 
-const STATUS_BADGE_STYLES = {
-  "Waiting": { background: "var(--warning-surface)", color: "var(--text-1)" },
-  "In Progress": { background: "var(--theme)", color: "var(--text-1)" },
-  "VHC Complete": { background: "var(--success-surface)", color: "var(--text-1)" },
-  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--text-1)" },
-  "Write Up Complete": { background: "var(--theme)", color: "var(--text-1)" },
-  "Complete": { background: "var(--success-surface)", color: "var(--text-1)" },
-  "Started": { background: "var(--theme)", color: "var(--text-1)" }
-};
-
-const getStatusBadgeStyle = (status, fallbackColor) =>
-STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "var(--text-2)" };
+const getStatusBadgeTone = (status) => STATUS_BADGE_TONES[status] || "neutral";
 
 const IN_PROGRESS_STATUS = "In Progress";
 
@@ -303,24 +289,26 @@ const deriveStoragePathFromUrl = (url = "") => {
 
 const JOB_DOCUMENT_BUCKET = "job-documents";
 
-const PARTS_STATUS_STYLES = {
-  pending: { background: "var(--warning-surface)", color: "var(--text-1)" },
-  awaiting_stock: { background: "var(--danger-surface)", color: "var(--text-1)" },
-  priced: { background: "var(--theme)", color: "var(--text-1)" },
-  "pre-pick": { background: "var(--success-surface)", color: "var(--text-1)" },
-  "pre_pick": { background: "var(--success-surface)", color: "var(--text-1)" },
-  "on-order": { background: "var(--warning-surface)", color: "var(--text-1)" },
-  "on_order": { background: "var(--warning-surface)", color: "var(--text-1)" },
-  allocated: { background: "var(--success-surface)", color: "var(--text-1)" },
-  picked: { background: "var(--success-surface)", color: "var(--text-1)" },
-  fitted: { background: "var(--theme)", color: "var(--text-1)" },
-  cancelled: { background: "var(--theme)", color: "var(--text-1)" }
+// Parts status as a Badge family tone. Previously a fill/colour pair spread
+// into a fully hand-built inline span at each of the three call sites, complete
+// with --control-radius — the button pill the badge shape contract exists to
+// keep statuses away from.
+const PARTS_STATUS_TONES = {
+  pending: "warning",
+  awaiting_stock: "danger",
+  priced: "accent-soft",
+  "pre-pick": "success",
+  "pre_pick": "success",
+  "on-order": "warning",
+  "on_order": "warning",
+  allocated: "success",
+  picked: "success",
+  fitted: "accent-soft",
+  cancelled: "neutral"
 };
 
-const getPartsStatusStyle = (status) => {
-  if (!status) return { background: "var(--theme)", color: "var(--text-1)" };
-  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--theme)", color: "var(--text-1)" };
-};
+const getPartsStatusTone = (status) =>
+(status && PARTS_STATUS_TONES[status.toLowerCase()]) || "neutral";
 
 // Helper to get status after clock out
 const getStatusAfterClockOut = () => null;
@@ -406,7 +394,7 @@ const getUnmatchedTyreWheels = (wheelsTyres = {}) => {
 
 const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => ({
   minHeight: "unset",
-  padding: "6px 12px",
+  padding: "var(--space-1) var(--space-3)",
   borderRadius: "var(--radius-xs)",
   border: "none",
   fontWeight: 600,
@@ -3108,9 +3096,7 @@ export default function TechJobDetailPage() {
   const techStatusDisplay =
   snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus] ||
   resolveTechStatusLabel(jobCard, { hasActiveClocking: Boolean(jobClocking) });
-  const isHeaderCompleteStatus = String(techStatusDisplay || "").trim().toLowerCase() === "complete";
-  const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
-  const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
+  const jobStatusBadgeTone = getStatusBadgeTone(techStatusDisplay);
   // Count authorised VHC items for the quick stats
   const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0 ?
   jobData.vhcChecks :
@@ -3385,7 +3371,7 @@ export default function TechJobDetailPage() {
 
   }
 
-  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedParts={authorizedParts} authorizedPartsLoading={authorizedPartsLoading} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartJobItemAction={handlePartJobItemAction} handlePartsRequestAction={handlePartsRequestAction} handlePartsRequestNote={handlePartsRequestNote} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTabComplete={writeUpTabComplete} writeUpTabPartiallyComplete={writeUpTabPartiallyComplete} writeUpTechComplete={writeUpTechComplete} />;
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} actingUserNumericId={Number.isFinite(Number(dbUserId)) ? Number(dbUserId) : null} authorisedVhcItems={authorisedVhcItems} authorizedParts={authorizedParts} authorizedPartsLoading={authorizedPartsLoading} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canEditTrackingLocations={String(jobCard.status || "").trim().toLowerCase() !== "archived"} canEditWorkspace={!technicianWorkDone} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerRequestsTab={CustomerRequestsTab} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusTone={getPartsStatusTone} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleNotesChange={setNotes} handlePartJobItemAction={handlePartJobItemAction} handlePartsRequestAction={handlePartsRequestAction} handlePartsRequestNote={handlePartsRequestNote} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleSaveWriteUp={handleSaveWriteUp} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} handleTrackerSave={handleTrackerSave} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeTone={jobStatusBadgeTone} LocationUpdateModal={LocationUpdateModal} ModalPortal={ModalPortal} newNote={newNote} NotesTabNew={NotesTabNew} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} setTrackerQuickModalOpen={setTrackerQuickModalOpen} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} workspaceClockingEntries={workspaceClockingEntries} workspaceJobData={workspaceJobData} workspaceOverallStatusId={resolveMainStatusId(jobCard.status)} WriteUpForm={WriteUpForm} WriteUpWorkspace={WriteUpWorkspace} writeUpTabComplete={writeUpTabComplete} writeUpTabPartiallyComplete={writeUpTabPartiallyComplete} writeUpTechComplete={writeUpTechComplete} />;
 
 
 
@@ -5569,7 +5555,7 @@ function DocumentsTab({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: "12px",
+          gap: "var(--space-3)",
           marginBottom: "16px",
           flexWrap: "wrap"
         }}>
@@ -5604,7 +5590,7 @@ function DocumentsTab({
         sectionType="content-card"
         parentKey="myjob-documents-panel"
         radius="var(--radius-md)"
-        padding="48px 24px"
+        padding="var(--space-2xl) var(--space-lg)"
         gap={undefined}
         style={{
           // Empty-state outline preserved as state-indicator (dashed prompt) — not a card surface border.
@@ -5626,7 +5612,7 @@ function DocumentsTab({
         sectionType="content-card"
         parentKey="myjob-documents-panel"
         radius="var(--radius-md)"
-        padding="48px 24px"
+        padding="var(--space-2xl) var(--space-lg)"
         gap={undefined}
         style={{
           textAlign: "center",
@@ -5643,7 +5629,7 @@ function DocumentsTab({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: "14px"
+          gap: "var(--space-4)"
         }}>
         
           {filteredDocuments.map((doc) => {
@@ -5697,7 +5683,7 @@ function DocumentsTab({
                   style={{
                     width: "100%", height: "100%",
                     display: "flex", flexDirection: "column",
-                    alignItems: "center", justifyContent: "center", gap: "6px"
+                    alignItems: "center", justifyContent: "center", gap: "var(--space-1)"
                   }}>
                   
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
@@ -5710,7 +5696,7 @@ function DocumentsTab({
                 }
                 </button>
 
-                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ padding: "var(--space-2) var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                   <div
                   title={docName}
                   style={{
@@ -5727,7 +5713,7 @@ function DocumentsTab({
 
                 <div
                 style={{
-                  display: "flex", gap: "6px", padding: "8px 12px",
+                  display: "flex", gap: "var(--space-1)", padding: "var(--space-sm) var(--space-3)",
                   backgroundColor: "var(--surface)"
                 }}>
                 
@@ -5736,7 +5722,7 @@ function DocumentsTab({
                   onClick={() => docUrl && setPreviewDoc(doc)}
                   disabled={!docUrl}
                   style={{
-                    flex: 1, padding: "5px 0",
+                    flex: 1, padding: "var(--space-1) 0",
                     borderRadius: "var(--radius-xs)", border: "none",
                     backgroundColor: "var(--theme)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
@@ -5750,7 +5736,7 @@ function DocumentsTab({
                   type="button"
                   onClick={() => typeof onDelete === "function" && onDelete(doc)}
                   style={{
-                    flex: 1, padding: "5px 0",
+                    flex: 1, padding: "var(--space-1) 0",
                     borderRadius: "var(--radius-xs)", border: "none",
                     backgroundColor: "var(--danger-surface)", color: "var(--text-1)",
                     fontSize: "12px", fontWeight: 600, cursor: "pointer"

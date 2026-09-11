@@ -300,6 +300,66 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
 }
 
 /* ========================================================= */
+/* === Symbol + label                                      === */
+/* === A button whose label names an action (Reply, Save,  === */
+/* === Delete ...) carries that action's mark, resolved    === */
+/* === from the label itself in ui/Button.js. The artwork  === */
+/* === lives in ui/SymbolButton.js; the circle form of the === */
+/* === same mark lives in families/symbols.css.            === */
+/* ========================================================= */
+/* The mark matches a standalone .app-symbol-btn exactly — 32px in a 44px
+   control. It cannot be a percentage of the button: .app-btn sets min-height
+   rather than height, so a percentage has no definite size to resolve against
+   and the svg falls back to its 300px intrinsic box. --btn-symbol-size is set
+   per size modifier below instead. */
+html.staff-scope .app-btn__symbol {
+  display: block;
+  width: var(--btn-symbol-size, 32px);
+  height: var(--btn-symbol-size, 32px);
+  /* Same weight dial as the symbol circle — see families/symbols.css. */
+  stroke-width: var(--symbol-stroke-width);
+  /* Opts out of the global svg max-width: 100% cap for the same reason as
+     .app-symbol-btn__glyph — it would otherwise squash the mark inside the
+     button rather than let the em size decide. */
+  max-width: none;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+/* A symbol button carries no words at all (ui/Button.js swaps the label for
+   the mark), so it is square and reads as the same shape as .app-symbol-btn
+   rather than a stubby pill. Every size modifier bar --xxs leaves the 44px
+   control height alone, so one square covers them all. */
+html.staff-scope .app-btn--has-symbol {
+  --btn-symbol-size: 32px;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  padding: 0;
+  aspect-ratio: 1 / 1;
+}
+
+/* In a table row the square comes down to --table-action-btn-height, exactly as
+   the symbol circle does (families/symbols.css). Both halves move together so it
+   stays square: staffglobal.css forces only the height on in-row buttons, which
+   is why .app-btn--has-symbol is excluded from that rule. */
+html.staff-scope .app-data-table .app-btn--has-symbol {
+  --btn-symbol-size: 23px;
+  width: var(--table-action-btn-height);
+  min-width: var(--table-action-btn-height);
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+}
+
+/* --xxs is the one size that leaves the control floor (32px tall), so its mark
+   comes down with it to keep the same ring of space around the glyph. */
+html.staff-scope .app-btn--xxs.app-btn--has-symbol {
+  --btn-symbol-size: 23px;
+  width: 32px;
+  min-width: 32px;
+}
+
+
+/* ========================================================= */
 /* === Glyph modifier — oversized single glyph             === */
 /* === Pairs with .app-btn--icon when the glyph is a bare  === */
 /* === mark ("+", "×") that should fill the circle rather  === */

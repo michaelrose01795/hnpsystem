@@ -85,6 +85,34 @@ export const UI_FAMILIES = [
     ],
   },
   {
+    id: "symbol",
+    label: "Symbols",
+    cssFile: "src/styles/families/symbols.css",
+    component: "src/components/ui/SymbolButton.js",
+    traceColor: "#ec4899",
+    description:
+      "Icon-only action button. Every symbol in the app is registered in SYMBOLS in SymbolButton.js and rendered as an exact circle with the glyph optically centred - never a stray emoji or a one-off inline SVG. Two sizes only: 44px standing alone, 32px in a table row.",
+    variants: [
+      {
+        id: "default",
+        className: "app-symbol-btn",
+        description: "Accent-tinted circle. The ONLY symbol fill - there is no tone axis.",
+        usage: "Every standalone icon action, whatever it does.",
+        status: "approved",
+      },
+    ],
+    sizes: [
+      { id: "md", className: "", description: "Exact 44px circle. The default everywhere a symbol stands on its own." },
+      { id: "table", className: "app-symbol-btn--table", description: "Exact 32px circle (--table-action-btn-height) with a 23px glyph, so an in-row action lines up with the rest of the row instead of growing it. Applied automatically inside .app-data-table; the class is for row-lists that are not a real <table>." },
+    ],
+    shapes: [
+      { id: "circle", className: "", description: "Always a perfect circle; the geometry is locked in the family file." },
+      { id: "row", className: "app-symbol-row", description: "Wrapping strip of symbol buttons with a --space-xs gap." },
+      { id: "in-button", className: "app-btn app-btn--has-symbol", description: "The same mark beside a text label. Resolved from the label by ui/Button.js through lib/ui/symbolLabels.js - no call site passes it." },
+      { id: "popup-close", className: "app-popup-compact-header", description: "A popup header collapses its Close to the bare 44px symbol circle and orders it last. Owned by the popup convention in staffglobal.css." }
+    ],
+  },
+  {
     id: "table",
     label: "Tables",
     cssFile: "src/styles/families/tables.css",
@@ -112,6 +140,21 @@ export const UI_FAMILIES = [
         className: "app-data-table app-data-table--workflow",
         description: "Status-column-led table with row emphasis on active state.",
         usage: "Job status, service-board style tables.",
+        status: "approved",
+      },
+      {
+        id: "clickable",
+        className: "app-data-table app-data-table--clickable",
+        description: "Rows are the click target — pointer cursor plus a --secondary hover/focus tint.",
+        usage: "Listings where clicking a row opens the record (stock catalogue, directories).",
+        status: "approved",
+      },
+      {
+        id: "scroll-shell",
+        className: "app-table-scroll",
+        description:
+          "Table wrapper: no horizontal scroll, vertical scroll past --table-visible-rows (10).",
+        usage: "Wrap every .app-data-table. Rendered by the DataTableShell component.",
         status: "approved",
       },
     ],
@@ -337,7 +380,7 @@ export const UI_FAMILIES = [
     component: null,
     traceColor: "#fb923c",
     description:
-      "Inline status indicators. Use .app-badge plus a semantic modifier — do not tint inline.",
+      "Inline status indicators, shaped as a summary tile (.app-summary-item box: --radius-sm corner, 44px tall — 32px in a data table) so they never read as buttons. Use .app-badge plus a semantic modifier — do not tint or re-size inline.",
     variants: [
       { id: "neutral", className: "app-badge app-badge--neutral", description: "Generic tag.", usage: "Filter chips, count pills.", status: "approved" },
       { id: "success", className: "app-badge app-badge--success", description: "Positive status.", usage: "Paid, Passed, Completed.", status: "approved" },
@@ -348,6 +391,7 @@ export const UI_FAMILIES = [
       { id: "accent-soft", className: "app-badge app-badge--accent-soft", description: "Soft accent chip.", usage: "Category tags inside lists.", status: "approved" },
       { id: "accent-strong", className: "app-badge app-badge--accent-strong", description: "Filled accent chip.", usage: "Active filter, selected tag.", status: "approved" },
       { id: "count", className: "app-badge app-badge--danger-strong app-badge--count", description: "Fixed 32px circular counter.", usage: "Unread counts on sidebar nav rows. Host row takes .app-badge-slot (+ --counted while a badge is shown).", status: "approved" },
+      { id: "count-control", className: "app-badge app-badge--neutral app-badge--count-control", description: "Fixed 44px circular counter (control height).", usage: "Item counts inside body content, e.g. the Parts Summary total on an order row.", status: "approved" },
     ],
   },
   {
@@ -362,6 +406,7 @@ export const UI_FAMILIES = [
       { id: "switch", className: "app-toggle app-toggle--switch", description: "iOS-style on/off switch.", usage: "Settings, feature flags.", status: "approved" },
       { id: "checkbox", className: "app-toggle app-toggle--checkbox", description: "Styled checkbox.", usage: "Multi-select lists, optional filters.", status: "approved" },
       { id: "radio", className: "app-toggle app-toggle--radio", description: "Styled radio.", usage: "Single-choice groups.", status: "approved" },
+      { id: "field", className: "app-toggle-field", description: "Label wrapper pairing a checkbox/radio with its caption.", usage: "Any checkbox or radio that has visible text beside it.", status: "approved" },
     ],
   },
   {
@@ -375,9 +420,12 @@ export const UI_FAMILIES = [
     variants: [
       { id: "block", className: "skeleton-block", description: "Raw shimmer block.", usage: "Use SkeletonBlock — pick width/height props.", status: "approved" },
       { id: "inline", className: "skeleton-block skeleton-block--inline", description: "Inline shimmer + label.", usage: "Filter/search progress.", status: "approved" },
-      { id: "row", className: "skeleton-block skeleton-block--row", description: "Table row placeholder.", usage: "SkeletonTableRow inside an <app-data-table>.", status: "approved" },
+      { id: "row", className: "skeleton-table__row", description: "Single table row placeholder.", usage: "SkeletonTableRow inside a table the page already renders.", status: "approved" },
       { id: "card", className: "skeleton-block skeleton-block--card", description: "Metric / card placeholder.", usage: "SkeletonMetricCard on dashboards.", status: "approved" },
       { id: "page", className: "skeleton-block skeleton-block--page", description: "Full page skeleton.", usage: "PageSkeleton during initial route load.", status: "approved" },
+      { id: "chart", className: "skeleton-chart", description: "Line / trend graph placeholder — animated trace, grid and sweep.", usage: "ChartSkeleton. The only approved loading state for a graph.", status: "approved" },
+      { id: "chart-bars", className: "skeleton-chart skeleton-chart__bars", description: "Bar / column graph placeholder.", usage: "ChartSkeleton variant=\"bars\".", status: "approved" },
+      { id: "table", className: "skeleton-table", description: "Data table placeholder — real .app-data-table with a top-to-bottom shimmer cascade.", usage: "TableSkeleton. The only approved loading state for a table.", status: "approved" },
     ],
   },
   {
@@ -432,10 +480,34 @@ export const UI_FAMILIES = [
       "The in-app error experience: the recovery screen an error boundary renders and the pieces of it reused by the framework error pages and the report popup.",
     variants: [
       {
+        id: "screen",
+        className: "app-recovery",
+        description:
+          "The full recovery screen: centring wrapper plus __card / __badge / __title / __message / __actions / __hint.",
+        usage: "Error boundaries at every level, and the 404 / 500 / _error pages via PageErrorScreen.",
+        status: "approved",
+      },
+      {
+        id: "facts",
+        className: "app-recovery-facts",
+        description:
+          "Quotable incident facts as a dl grid — page, section, time, reference code — on 44px rows.",
+        usage: "Shared by the recovery screen and /unauthorised. One fact list, not two.",
+        status: "approved",
+      },
+      {
         id: "reference",
         className: "app-error-reference",
         description: "The short quotable error reference line shown under the recovery message.",
-        usage: "Recovery screens, 404/500 pages, and the Report a problem popup.",
+        usage: "The Report a problem popup, where there is no facts list to carry the code.",
+        status: "approved",
+      },
+      {
+        id: "access-denied",
+        className: "app-access-denied",
+        description:
+          "Access-denied wrapper: reuses the recovery shell with a calm warning tone instead of the fault tone.",
+        usage: "The /unauthorised screen. A permission refusal, not a fault — never the alert styling.",
         status: "approved",
       },
     ],
@@ -447,7 +519,7 @@ export const UI_FAMILIES = [
     component: "src/components/NewsFeed/NewsPostCard.js",
     traceColor: "#0ea5e9",
     description:
-      "The dealership communication hub: feed cards, priority and category chips, author avatars, acknowledgement banners, attachment and record-link rows, comment threads and the reach/read-rate insight blocks.",
+      "The dealership communication hub: feed cards, author avatars, acknowledgement banners, attachment and record-link rows, comment threads and the reach/read-rate insight blocks. Post metadata labels are plain .app-badge in an .app-news-badge-row — this family has no badge shape of its own.",
     variants: [
       {
         id: "card",
@@ -464,17 +536,11 @@ export const UI_FAMILIES = [
         status: "approved",
       },
       {
-        id: "chip",
-        className: "app-news-chip",
-        description: "Category / department / state chip on the accent tint.",
-        usage: "Post metadata rows and filter summaries.",
-        status: "approved",
-      },
-      {
-        id: "chip-urgent",
-        className: "app-news-chip app-news-chip--urgent",
-        description: "Urgent priority chip. Tone is carried by tint + glyph, never by a border.",
-        usage: "Urgent announcements only.",
+        id: "badge-row",
+        className: "app-news-badge-row",
+        description:
+          "Lays out a post's metadata badges. The badges inside it are .app-badge + a tone modifier from the Badge family — never a news-local pill.",
+        usage: "Post metadata rows, linked-post rows and filter summaries.",
         status: "approved",
       },
       {
@@ -510,6 +576,125 @@ export const UI_FAMILIES = [
         className: "app-news-meter",
         description: "Read-rate meter: track plus fill, no outline.",
         usage: "Read and acknowledgement rates.",
+        status: "approved",
+      },
+      {
+        id: "section",
+        className: "app-news-section",
+        description:
+          "A titled block inside a post — an uppercase label with a count pill, then its rows on the same line. Sized to its content, never stretched.",
+        usage:
+          "\"Related records\" and \"Attachments\" in the post detail, on a theme layer.",
+        status: "approved",
+      },
+      {
+        id: "section-row",
+        className: "app-news-section-row",
+        description:
+          "Wrapping row that carries the record and attachment blocks side by side, each at its content width.",
+        usage: "Wraps .app-news-section pairs in the post detail and the bare lists on a card.",
+        status: "approved",
+      },
+      {
+        id: "attachment",
+        className: "app-news-attachment",
+        description:
+          "One attachment row: file-type tag (or thumbnail), name, size. Flowed along the line by .app-news-attachments at its content width.",
+        usage: "Attachments on a post card, in the detail and in the composer.",
+        status: "approved",
+      },
+      {
+        id: "record-link",
+        className: "app-news-link",
+        description:
+          "One link to a DMS record: muted record-type tag plus the record itself. Flowed along the line by .app-news-links.",
+        usage: "Related records on a post card, in the detail and in the composer.",
+        status: "approved",
+      },
+    ],
+  },
+  {
+    id: "record",
+    label: "Record",
+    cssFile: "src/styles/families/records.css",
+    component: "src/features/customers/hub/RecordPrimitives.js",
+    traceColor: "#0ea5e9",
+    description:
+      "The shared vocabulary for a record screen — one entity, everything about it. Label/value fields, a field grid, the registration plate, a file card and the event timeline. Used by the customer record hub; intended for the vehicle, account and job records too.",
+    variants: [
+      {
+        id: "field",
+        className: "app-record-field",
+        description: "One label-above-value pair. The label is a caption, the value carries the weight.",
+        usage: "Every read-only detail on a record card — VIN, mileage, MOT due, advisor.",
+        status: "approved",
+      },
+      {
+        id: "field-grid",
+        className: "app-record-grid",
+        description: "Responsive auto-fit grid of record fields. `--wide` widens the minimum column.",
+        usage: "The detail block of a vehicle, appointment, invoice or job card.",
+        status: "approved",
+      },
+      {
+        id: "plate",
+        className: "app-record-plate",
+        description: "Registration plate chip. `--theme` flips the fill when it sits on a --surface layer.",
+        usage: "Anywhere a vehicle registration is the identity of the row.",
+        status: "approved",
+      },
+      {
+        id: "actions",
+        className: "app-record-actions",
+        description: "Wrapping action row for the buttons attached to one record.",
+        usage: "Open vehicle / create job / book appointment / view history.",
+        status: "approved",
+      },
+      {
+        id: "file",
+        className: "app-record-file",
+        description: "Document, photo or video card with a fixed preview frame.",
+        usage: "The files attached to a customer's or job's record.",
+        status: "approved",
+      },
+      {
+        id: "timeline",
+        className: "app-timeline",
+        description:
+          "Vertical event timeline: rail, coloured dot, title/time head and meta row. The rail is a background, never a border.",
+        usage: "Dealership history and customer/staff activity feeds.",
+        status: "approved",
+      },
+    ],
+  },
+  {
+    id: "context-menu",
+    label: "Context Menu",
+    cssFile: "src/styles/families/context-menu.css",
+    component: "src/components/ui/GlobalContextMenu.js",
+    traceColor: "#d946ef",
+    description:
+      "The in-app right-click menu that replaces the browser native context menu app-wide. Mounted once from _app.js; the panel is a LayerSurface and every row is a Secondary button at the 44px control floor.",
+    variants: [
+      {
+        id: "menu",
+        className: "app-context-menu",
+        description: "The floating menu panel itself — fixed, clamped into the viewport, above all layout chrome.",
+        usage: "Rendered by GlobalContextMenu on right-click. Never instantiate it directly.",
+        status: "approved",
+      },
+      {
+        id: "item",
+        className: "app-context-menu__item",
+        description: "One menu row: icon, label and keyboard-shortcut hint. Styled as .app-btn--secondary at 44px, with an 8px gap to its neighbours.",
+        usage: "Every action in the right-click menu.",
+        status: "approved",
+      },
+      {
+        id: "separator",
+        className: "app-context-menu__separator",
+        description: "Group divider. Carries the only allowed line — a --separating-line row rule.",
+        usage: "Between action groups (link / edit / page).",
         status: "approved",
       },
     ],

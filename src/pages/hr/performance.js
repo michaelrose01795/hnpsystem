@@ -2,12 +2,15 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { Button, InputField, StatusMessage } from "@/components/ui";
+import { Button, InputField, LayerSurface, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
+import HrSummaryStrip from "@/components/HR/HrSummaryStrip"; // shared at-a-glance metric strip
+import { buildPerformanceSummary } from "@/lib/hr/hrTabSummaries";
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("performance");
@@ -52,12 +55,17 @@ function PerformanceContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const employeeDirectory = data?.employeeDirectory ?? [];
   const performanceReviews = data?.performanceReviews ?? [];
+  const departmentPerformance = data?.departmentPerformance ?? [];
+
+  // Review health at a glance: what is overdue, what lands this month, and how
+  // the scored reviews average out.
+  const summary = buildPerformanceSummary({ performanceReviews, departmentPerformance });
 
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard
-          sectionKey="hr-performance-card-1" parentKey="hr-manager-tab-performance" title="Unable to load performance data" subtitle="Mock API returned an error.">
+        <SectionCard layer="theme"
+          sectionKey="hr-performance-error" parentKey="hr-manager-tab-performance" title="Unable to load performance data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -78,24 +86,15 @@ function PerformanceContent() {
         </p>
       </header>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-performance-row-1"
-        parentKey="hr-manager-tab-performance"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)"
-        }}>
+      {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-performance" />}
+
+      <SectionCard layer="theme"
+        sectionKey="hr-performance-upcoming-reviews" parentKey="hr-manager-tab-performance"
+        title="Upcoming Reviews"
+        subtitle="Schedule and prepare feedback before the review date">
         
-        <SectionCard
-          sectionKey="hr-performance-card-2" parentKey="hr-performance-row-1"
-          title="Upcoming Reviews"
-          subtitle="Schedule and prepare feedback before the review date">
-          
-          <div style={{ overflowX: "auto" }}>
+        <LayerSurface padding="var(--space-3)" gap="0">
+          <DataTableShell>
             <table className="app-data-table">
               <thead>
                 <tr>
@@ -109,6 +108,13 @@ function PerformanceContent() {
                 {isLoading ?
                 <TableRowsSkeleton rows={4} cols={4} /> :
 
+                performanceReviews.length === 0 ?
+                <tr>
+                  <td colSpan={4}>
+                    <EmptyState variant="bare" icon="⭐" title="No reviews scheduled" description="Reviews appear here with their period, reviewer and next review date." />
+                  </td>
+                </tr> :
+
                 performanceReviews.map((review) =>
                 <tr key={review.id}>
                       <td style={{ fontWeight: 600 }}>{review.employee}</td>
@@ -120,43 +126,43 @@ function PerformanceContent() {
                 }
               </tbody>
             </table>
-          </div>
-        </SectionCard>
+          </DataTableShell>
+        </LayerSurface>
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-performance-card-3" parentKey="hr-performance-row-1"
-          title="Development To-Do"
-          subtitle="Actions to follow up after reviews"
-          action={
-          <Button variant="primary" size="sm">
-              Add reminder
-            </Button>
-          }>
+      <SectionCard layer="theme"
+        sectionKey="hr-performance-development-todo" parentKey="hr-manager-tab-performance"
+        title="Development To-Do"
+        subtitle="Actions to follow up after reviews"
+        action={
+        <Button variant="primary" size="sm">
+            Add reminder
+          </Button>
+        }>
+        
+        {isLoading ?
+        <BulletsSkeleton rows={4} /> :
+
+        <ul
+          style={{
+            margin: 0,
+            paddingLeft: "var(--space-6)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-sm)"
+          }}>
           
-          {isLoading ?
-          <BulletsSkeleton rows={4} /> :
+            {performanceReviews.map((review) =>
+          <li key={review.id} style={{ color: "var(--text-1)" }}>
+                <strong>{review.employee}:</strong> {review.developmentFocus}
+              </li>
+          )}
+          </ul>
+        }
+      </SectionCard>
 
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: "var(--space-6)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-sm)"
-            }}>
-            
-              {performanceReviews.map((review) =>
-            <li key={review.id} style={{ color: "var(--text-1)" }}>
-                  <strong>{review.employee}:</strong> {review.developmentFocus}
-                </li>
-            )}
-            </ul>
-          }
-        </SectionCard>
-      </DevLayoutSection>
-
-      <SectionCard
-        sectionKey="hr-performance-card-4" parentKey="hr-manager-tab-performance"
+      <SectionCard layer="theme"
+        sectionKey="hr-performance-recent-appraisals" parentKey="hr-manager-tab-performance"
         title="Recent Appraisals"
         subtitle="Summary of the last review and ratings"
         action={
@@ -165,47 +171,56 @@ function PerformanceContent() {
           </Button>
         }>
         
-        <div style={{ overflowX: "auto" }}>
-          <table className="app-data-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Overall</th>
-                <th>Attendance</th>
-                <th>Productivity</th>
-                <th>Quality</th>
-                <th>Teamwork</th>
-                <th>Reviewer</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ?
-              <TableRowsSkeleton rows={5} cols={7} /> :
+        <LayerSurface padding="var(--space-3)" gap="0">
+          <DataTableShell>
+            <table className="app-data-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Overall</th>
+                  <th>Attendance</th>
+                  <th>Productivity</th>
+                  <th>Quality</th>
+                  <th>Teamwork</th>
+                  <th>Reviewer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ?
+                <TableRowsSkeleton rows={5} cols={7} /> :
 
-              performanceReviews.map((review) =>
-              <tr key={review.id}>
-                    <td style={{ fontWeight: 600 }}>{review.employee}</td>
-                    <td>
-                      <StatusTag
-                    label={`${review.overall ?? 0}/5`}
-                    tone={(review.overall ?? 0) >= 4 ? "success" : "default"} />
-                  
-                    </td>
-                    <td>{review.ratings.attendance}/5</td>
-                    <td>{review.ratings.productivity}/5</td>
-                    <td>{review.ratings.quality}/5</td>
-                    <td>{review.ratings.teamwork}/5</td>
-                    <td>{review.reviewer}</td>
-                  </tr>
-              )
-              }
-            </tbody>
-          </table>
-        </div>
+                performanceReviews.length === 0 ?
+                <tr>
+                  <td colSpan={7}>
+                    <EmptyState variant="bare" icon="⭐" title="No reviews scheduled" description="Reviews appear here with their period, reviewer and next review date." />
+                  </td>
+                </tr> :
+
+                performanceReviews.map((review) =>
+                <tr key={review.id}>
+                      <td style={{ fontWeight: 600 }}>{review.employee}</td>
+                      <td>
+                        <StatusTag
+                      label={`${review.overall ?? 0}/5`}
+                      tone={(review.overall ?? 0) >= 4 ? "success" : "default"} />
+                    
+                      </td>
+                      <td>{review.ratings.attendance}/5</td>
+                      <td>{review.ratings.productivity}/5</td>
+                      <td>{review.ratings.quality}/5</td>
+                      <td>{review.ratings.teamwork}/5</td>
+                      <td>{review.reviewer}</td>
+                    </tr>
+                )
+                }
+              </tbody>
+            </table>
+          </DataTableShell>
+        </LayerSurface>
       </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-performance-card-5" parentKey="hr-manager-tab-performance"
+      <SectionCard layer="theme"
+        sectionKey="hr-performance-create-review" parentKey="hr-manager-tab-performance"
         title="Create Performance Review"
         subtitle="Kick off a new review cycle or log a mid-year check-in.">
         

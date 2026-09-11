@@ -198,7 +198,13 @@ CREATE TABLE public.customers (
   contact_preference text DEFAULT 'email'::text,
   updated_at timestamp with time zone DEFAULT now(),
   name text,
-  slug_key text DEFAULT regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text),
+  -- NOTE: this is a GENERATED column in the live database, not a plain DEFAULT.
+  -- It recomputes itself from firstname + lastname on every write and CANNOT be
+  -- written to: including it in an INSERT or UPDATE — even with the value it
+  -- already holds — fails the whole statement with
+  --   "cannot insert a non-DEFAULT value into column slug_key".
+  -- Never send it; let Postgres derive it.
+  slug_key text GENERATED ALWAYS AS (regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text)) STORED,
   preferences ARRAY NOT NULL DEFAULT '{}'::text[],
   notes text,
   work_address text,
@@ -1276,6 +1282,7 @@ CREATE TABLE public.parts_order_cards (
   invoice_total numeric DEFAULT 0,
   invoice_status text NOT NULL DEFAULT 'draft'::text CHECK (invoice_status = ANY (ARRAY['draft'::text, 'issued'::text, 'paid'::text, 'cancelled'::text])),
   invoice_notes text,
+  customer_notes text,
   created_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -1327,7 +1334,7 @@ CREATE TABLE public.news_updates (
   view_count integer NOT NULL DEFAULT 0,
   deleted_at timestamp with time zone,
   CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
-  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
+  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.news_post_reads (
   post_id uuid NOT NULL,

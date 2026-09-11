@@ -28,6 +28,7 @@ import { useConfirmation } from "@/context/ConfirmationContext";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 import Button from "@/components/ui/Button";
+import { Symbol } from "@/components/ui/SymbolButton";
 
 import useDeviceCamera from "./useDeviceCamera";
 import useWidgetRecorder from "./useWidgetRecorder";
@@ -1696,29 +1697,34 @@ export default function FullScreenCapture({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", pointerEvents: "auto" }}>
+              {/* HUD button, not a .app-symbol-btn: it sits over live video, so it
+                  keeps the blurred hud fill instead of the accent-tinted circle.
+                  The MARK still comes from the registry, so "close" is the same
+                  drawing here as everywhere else. */}
               <button
                 type="button"
                 onClick={handleClose}
                 aria-label="Close camera"
                 disabled={recordingLock}
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   width: 44,
                   height: 44,
                   borderRadius: "var(--radius-pill)",
                   border: "none",
                   background: "rgba(var(--accentMainRgb), 0.10)",
                   color: "var(--hud-text)",
-                  fontSize: "var(--text-h3)",
-                  lineHeight: 1,
+                  lineHeight: 0,
                   cursor: recordingLock ? "not-allowed" : "pointer",
                   backdropFilter: "var(--hud-blur)",
                   WebkitBackdropFilter: "var(--hud-blur)",
                   opacity: recordingLock ? 0.4 : 1,
-                  fontFamily: "var(--font-family)",
                   transition: "var(--control-transition)",
                 }}
               >
-                ×
+                <Symbol symbol="close" />
               </button>
               {title ? (
                 <span style={{

@@ -10,6 +10,7 @@ import {
   formatStatusLabel,
 } from "@/features/payslips/payslipUtils";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 
 // Payslip status → staffglobal .app-badge tone modifier.
@@ -206,15 +207,9 @@ export default function PayslipsAdminPageUi(uiProps) {
                         </td>
                         <td style={{ textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: "8px" }}>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setActivePayslip(slip)}>
-                              View
-                            </button>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setEditingPayslip(slip)}>
-                              Edit
-                            </button>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--danger" onClick={() => handleDelete(slip)}>
-                              Delete
-                            </button>
+                            <SymbolButton symbol="view" label="View payslip" onClick={() => setActivePayslip(slip)} />
+                            <SymbolButton symbol="edit" label="Edit payslip" onClick={() => setEditingPayslip(slip)} />
+                            <SymbolButton symbol="delete" label="Delete payslip" onClick={() => handleDelete(slip)} />
                           </div>
                         </td>
                       </tr>

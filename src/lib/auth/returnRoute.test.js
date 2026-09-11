@@ -42,7 +42,7 @@ describe("returnRoute — isRestorableRoute", () => {
     expect(isRestorableRoute("/login")).toBe(false);
     expect(isRestorableRoute("/login?redirectedFrom=/jobs")).toBe(false);
     expect(isRestorableRoute("/loginPresentation")).toBe(false);
-    expect(isRestorableRoute("/unauthorized")).toBe(false);
+    expect(isRestorableRoute("/unauthorised")).toBe(false);
   });
 
   it("rejects anything that could leave the app", () => {

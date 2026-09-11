@@ -276,14 +276,14 @@ const renderMessageContent = (content, userRoles = []) => {
       href = `/accounts/view/${value}`;
       title = `Account ${value}`;
     } else if (prefix === 'order' && value) {
-      href = `/new-order/${value}`;
+      href = `/order/${value}`;
       title = `Parts Order ${value}`;
     } else if (prefix === 'user' && value) {
       title = `User: ${value}`;
     } else if (prefix === 'cust' && value) {
       title = `Customer: ${value}`;
     } else if (standalone === 'parts') {
-      href = '/parts';
+      href = '/stock-catalogue';
       title = 'Parts Management';
     } else if (standalone === 'tracking') {
       href = '/tracking';
@@ -304,7 +304,7 @@ const renderMessageContent = (content, userRoles = []) => {
       href = '/tech';
       title = 'My Jobs';
     } else if (standalone === 'appointments') {
-      href = '/job-cards/appointments';
+      href = '/appointments';
       title = 'Appointments';
     }
 
@@ -861,7 +861,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "parts",
     hasInput: false,
     roles: ['parts', 'parts manager', 'admin'],
-    getLink: () => '/parts'
+    getLink: () => '/stock-catalogue'
   },
   {
     command: "/order[ordernumber]",
@@ -870,7 +870,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "order",
     hasInput: true,
     roles: ['parts', 'parts manager', 'admin'],
-    getLink: (num) => `/new-order/${num}`
+    getLink: (num) => `/order/${num}`
   },
 
   // Account Commands
@@ -969,7 +969,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "appointments",
     hasInput: false,
     roles: ['service advisor', 'service manager', 'admin'],
-    getLink: () => '/job-cards/appointments'
+    getLink: () => '/appointments'
   }];
 
 

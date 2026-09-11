@@ -209,8 +209,7 @@ export default function IssueReportPopup({
               aria-label="Close issue report"
               title="Close"
             >
-              <span aria-hidden="true">×</span>
-            </Button>
+              </Button>
           </div>
         </LayerTheme>
         <div className="vhc-issue-report__body">{children}</div>
