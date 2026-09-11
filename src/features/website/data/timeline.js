@@ -1,5 +1,20 @@
 // file location: src/features/website/data/timeline.js
-// The H&P milestone timeline — used by the AboutUs history section.
+//
+// The "Our story since 1947" milestones at the foot of the About Us block on
+// /website.
+//
+// Code-owned: this array is the ONE place the milestones come from. The
+// public page ignores website_timeline entirely (see codeOwnedContent.js).
+//
+//   - add a milestone     append an object
+//   - remove a milestone  delete its object — empty the array and the
+//                         timeline and its heading both go, leaving the About
+//                         Us copy above them
+//   - reorder             move the objects; they render in written order, so
+//                         keep them chronological
+//
+// Fields: year (also the React key, so keep it unique — "1950s" is fine),
+// title, body.
 
 export const timeline = [
   {
@@ -40,7 +55,7 @@ export const timeline = [
   {
     year: "2024",
     title: "Suzuki Maidstone",
-    body: "Becomes the Suzuki franchise for Maidstone, joining the existing KGM and Mitsubishi line-up.",
+    body: "Becomes the Suzuki franchise for Maidstone, joining the existing Mitsubishi line-up.",
   },
   {
     year: "2025",

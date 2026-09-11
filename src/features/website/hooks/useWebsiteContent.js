@@ -2,10 +2,12 @@
 //
 // Content source-of-truth for the public /website page.
 //
-// Strategy: render from the static data modules under src/features/website/data/*
-// on the very first frame (so there is no skeleton flash and the page survives
-// the database being unreachable), then fetch /api/website/content on mount
-// and swap in the live DB content when it arrives.
+// Strategy: render from the data modules under src/features/website/data/* on
+// the very first frame (so there is no skeleton flash and the page survives the
+// database being unreachable), then fetch /api/website/content on mount and
+// swap in the live DB content for the parts of the tree the database still
+// owns — the site chrome. Every page SECTION stays on its code module for the
+// life of the page: see codeOwnedContent.js and mergeWithFallback below.
 //
 // Additionally, when /website is rendered inside the staff Live Preview editor
 // iframe (?preview=editor), this hook listens for postMessage patches from the
@@ -28,7 +30,23 @@ import {
   sectionLayout as staticSectionLayout,
   design as staticDesign,
 } from "../data/siteDesign";
+import {
+  CODE_OWNED_COLLECTIONS,
+  CODE_OWNED_SITE_CONTENT,
+  isCodeOwnedSection,
+} from "../data/codeOwnedContent";
 import { PREVIEW_MESSAGE_TYPES } from "./useWebsitePreviewMode";
+
+// Every page SECTION is now owned by the modules imported above, with the
+// database deliberately out of the loop: whatever /api/website/content returns
+// for these keys is discarded in mergeWithFallback, and Live Preview patches
+// aimed at them are ignored. The register — which sections, and which file
+// owns each one — is src/features/website/data/codeOwnedContent.js.
+//
+// What still comes from the database: the site chrome. Brand identity and the
+// footer (siteContent.brand / siteContent.footer), the top-bar links, the
+// block running order and heading copy, and the design tokens. Those keep
+// their Website Manager editors.
 
 const STATIC_FALLBACK = {
   siteContent: {
@@ -76,6 +94,14 @@ export default function useWebsiteContent() {
 
     return () => {
       cancelled = true;
+      // React StrictMode mounts effects twice in development. Without this
+      // reset the FIRST run is the only one that ever fetches (the `fetched`
+      // guard blocks the second), and its result is thrown away by the
+      // `cancelled` check from this very cleanup — so the page sat on its
+      // static fallback for the whole dev session no matter what was in the
+      // database. Letting the second mount re-fetch costs one request and
+      // keeps the guard doing its real job (no repeat fetch per re-render).
+      fetched.current = false;
     };
   }, []);
 
@@ -127,6 +153,9 @@ async function refetchAndApply(setContent, setSource) {
 
 function applyLivePatch(prev, sectionKey, payload, rowId) {
   if (!sectionKey || !payload) return prev;
+  // A code-owned section cannot be edited from the staff preview — showing
+  // the typed value would promise a change the published page never makes.
+  if (isCodeOwnedSection(sectionKey)) return prev;
   const next = { ...prev, siteContent: { ...prev.siteContent } };
 
   switch (sectionKey) {
@@ -140,103 +169,6 @@ function applyLivePatch(prev, sectionKey, payload, rowId) {
       };
       return next;
 
-    case "hero":
-      next.siteContent.hero = {
-        ...next.siteContent.hero,
-        eyebrow: payload.eyebrow ?? next.siteContent.hero?.eyebrow,
-        headline: payload.headline ?? next.siteContent.hero?.headline,
-        subhead: payload.subhead ?? next.siteContent.hero?.subhead,
-        backgroundUrl:
-          payload.background_url ?? next.siteContent.hero?.backgroundUrl,
-        ctas: payload.ctas ?? next.siteContent.hero?.ctas,
-      };
-      return next;
-
-    case "about":
-      next.siteContent.about = {
-        ...next.siteContent.about,
-        eyebrow: payload.eyebrow ?? next.siteContent.about?.eyebrow,
-        title: payload.title ?? next.siteContent.about?.title,
-        body: payload.body ?? next.siteContent.about?.body,
-        imageUrl: payload.image_url ?? next.siteContent.about?.imageUrl,
-      };
-      return next;
-
-    case "sell-your-car":
-      next.siteContent.sellYourCar = {
-        ...next.siteContent.sellYourCar,
-        eyebrow: payload.eyebrow ?? next.siteContent.sellYourCar?.eyebrow,
-        title: payload.title ?? next.siteContent.sellYourCar?.title,
-        steps: payload.steps ?? next.siteContent.sellYourCar?.steps,
-        benefits: payload.benefits ?? next.siteContent.sellYourCar?.benefits,
-        cta: {
-          label:
-            payload.cta_label ?? next.siteContent.sellYourCar?.cta?.label,
-          href: payload.cta_href ?? next.siteContent.sellYourCar?.cta?.href,
-        },
-      };
-      return next;
-
-    case "service-parts":
-      next.siteContent.serviceAndParts = {
-        ...next.siteContent.serviceAndParts,
-        eyebrow:
-          payload.eyebrow ?? next.siteContent.serviceAndParts?.eyebrow,
-        title: payload.title ?? next.siteContent.serviceAndParts?.title,
-        body: payload.body ?? next.siteContent.serviceAndParts?.body,
-        hours: payload.hours ?? next.siteContent.serviceAndParts?.hours,
-        imageUrl:
-          payload.image_url ?? next.siteContent.serviceAndParts?.imageUrl,
-      };
-      return next;
-
-    case "motability":
-      next.siteContent.motability = {
-        ...next.siteContent.motability,
-        eyebrow: payload.eyebrow ?? next.siteContent.motability?.eyebrow,
-        title: payload.title ?? next.siteContent.motability?.title,
-        body: payload.body ?? next.siteContent.motability?.body,
-        payments:
-          payload.payments ?? next.siteContent.motability?.payments,
-        rangeBrands:
-          payload.range_brands ?? next.siteContent.motability?.rangeBrands,
-        cta: {
-          label: payload.cta_label ?? next.siteContent.motability?.cta?.label,
-          href: payload.cta_href ?? next.siteContent.motability?.cta?.href,
-        },
-      };
-      return next;
-
-    case "parts-content":
-      next.siteContent.partsContent = {
-        ...next.siteContent.partsContent,
-        eyebrow:
-          payload.eyebrow ?? next.siteContent.partsContent?.eyebrow,
-        title: payload.title ?? next.siteContent.partsContent?.title,
-        body: payload.body ?? next.siteContent.partsContent?.body,
-        brands: payload.brands ?? next.siteContent.partsContent?.brands,
-      };
-      return next;
-
-    case "contact":
-      next.siteContent.contact = {
-        ...next.siteContent.contact,
-        eyebrow: payload.eyebrow ?? next.siteContent.contact?.eyebrow,
-        title: payload.title ?? next.siteContent.contact?.title,
-        phone: payload.phone ?? next.siteContent.contact?.phone,
-        phoneHref:
-          payload.phone_href ?? next.siteContent.contact?.phoneHref,
-        address: payload.address ?? next.siteContent.contact?.address,
-        salesHours:
-          payload.sales_hours ?? next.siteContent.contact?.salesHours,
-        serviceHours:
-          payload.service_hours ?? next.siteContent.contact?.serviceHours,
-        socials: payload.socials ?? next.siteContent.contact?.socials,
-        mapEmbed:
-          payload.map_embed ?? next.siteContent.contact?.mapEmbed,
-      };
-      return next;
-
     case "footer":
       next.siteContent.footer = {
         ...next.siteContent.footer,
@@ -247,130 +179,6 @@ function applyLivePatch(prev, sectionKey, payload, rowId) {
           next.siteContent.footer?.creditDisclosure,
       };
       return next;
-
-    /* ----------------------- collections ------------------------ */
-
-    case "trust-points": {
-      const list = ensureList(prev.siteContent.trustPoints).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        value: row.value,
-        label: row.label,
-      }));
-      next.siteContent.trustPoints = list;
-      return next;
-    }
-
-    case "ratings": {
-      const list = ensureList(prev.siteContent.ratings).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        source: row.source,
-        score: row.score,
-      }));
-      next.siteContent.ratings = list;
-      return next;
-    }
-
-    case "partner-brands": {
-      const list = ensureList(prev.brands).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        name: row.name,
-        logo: row.logo_url,
-      }));
-      next.brands = list;
-      return next;
-    }
-
-    case "vehicles": {
-      const list = ensureList(prev.vehicles).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        type: row.vehicle_type,
-        brand: row.brand,
-        model: row.model,
-        year: row.year,
-        price: row.price_text,
-        miles: row.miles,
-        badge: row.badge,
-        image: row.image_url,
-      }));
-      next.vehicles = list;
-      return next;
-    }
-
-    case "offers": {
-      const list = ensureList(prev.offers).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        title: row.title,
-        headline: row.headline,
-        body: row.body,
-        image: row.image_url,
-      }));
-      next.offers = list;
-      return next;
-    }
-
-    case "reviews": {
-      const list = ensureList(prev.reviews).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        name: row.customer_name,
-        rating: row.rating,
-        source: row.source,
-        date: row.review_date,
-        quote: row.quote,
-      }));
-      next.reviews = list;
-      return next;
-    }
-
-    case "team-members": {
-      const list = ensureList(prev.team).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        name: row.name,
-        role: row.role,
-        department: row.department_id,
-        photo: row.photo_url,
-      }));
-      next.team = list;
-      return next;
-    }
-
-    case "team-departments": {
-      const list = ensureList(prev.teamDepartments).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        label: row.label,
-      }));
-      next.teamDepartments = list;
-      return next;
-    }
-
-    case "timeline": {
-      const list = ensureList(prev.timeline).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        year: row.year,
-        title: row.title,
-        body: row.body,
-      }));
-      next.timeline = list;
-      return next;
-    }
-
-    case "blog-posts": {
-      const list = ensureList(prev.blogPosts).slice();
-      applyRowPatch(list, rowId, payload, (row) => ({
-        id: row.id,
-        title: row.title,
-        date: row.post_date,
-        excerpt: row.excerpt,
-        body: row.body,
-        image: row.image_url,
-      }));
-      next.blogPosts = list;
-      return next;
-    }
 
     /* ------------------- site builder (chrome) ------------------ */
 
@@ -444,20 +252,22 @@ function applyRowPatch(list, rowId, payload, mapper) {
 
 function mergeWithFallback(live, fallback) {
   const out = { ...fallback, ...live };
+  // Code-owned sections ignore the API payload entirely, so a stale or
+  // half-populated website_* table can never reach the page — and an empty
+  // array in code means the section is empty on the site, not "fall back to
+  // whatever the database still holds".
+  CODE_OWNED_COLLECTIONS.forEach((key) => {
+    out[key] = fallback[key];
+  });
   out.siteContent = { ...fallback.siteContent, ...(live.siteContent || {}) };
+  CODE_OWNED_SITE_CONTENT.forEach((slot) => {
+    out.siteContent[slot] = fallback.siteContent[slot];
+  });
   const fillEmpty = (key) => {
     const v = live[key];
     if (!Array.isArray(v) || v.length === 0) out[key] = fallback[key];
   };
   [
-    "vehicles",
-    "offers",
-    "reviews",
-    "team",
-    "teamDepartments",
-    "timeline",
-    "brands",
-    "blogPosts",
     // Builder collections. An empty array here means the builder migration has
     // not been applied (or every row is draft) — fall back rather than render
     // a site with no navigation and no sections.

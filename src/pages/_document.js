@@ -30,9 +30,36 @@ const parseCookieHeader = (cookieHeader = "") =>
       return acc;
     }, {});
 
+// The public customer site is LIGHT-ONLY (2026-09-11).
+//
+// Every /website route that runs through useWebsiteTheme paints light, so the
+// first paint has to agree. It previously did not: the document booted on
+// whatever colour mode the staff cookie / OS preference resolved to, custglobal
+// renders `html.website-scope` dark by default, and `data-website-theme="light"`
+// only landed once the hook mounted — which is the dark-then-light flick.
+//
+// /website/profile and /website/dev are excluded: both own their own <html>
+// theme attributes (profile deliberately forces dark and hosts the light / dark
+// cycle button), so forcing light here would only invert the flash for them.
+const LIGHT_ONLY_WEBSITE_EXCEPTIONS = ["/website/profile", "/website/dev"];
+
+const isLightOnlyWebsitePath = (pathname = "") => {
+  const path = String(pathname);
+  if (path !== "/website" && !path.startsWith("/website/")) return false;
+  return !LIGHT_ONLY_WEBSITE_EXCEPTIONS.some(
+    (exception) => path === exception || path.startsWith(`${exception}/`)
+  );
+};
+
 const getBootTheme = (cookies = {}, pathname = "") => {
+  // The customer site is light-only and brand-red — it never reads the staff
+  // colour preference, so neither does its first paint.
+  const websiteLightOnly = isLightOnlyWebsitePath(pathname);
+
   // Resolve the requested theme mode from cookies first.
-  const requestedMode = normalizeMode(cookies["hp-dms-theme"] || "system");
+  const requestedMode = websiteLightOnly
+    ? "light"
+    : normalizeMode(cookies["hp-dms-theme"] || "system");
 
   // Resolve the server-side boot mode conservatively so initial HTML remains deterministic.
   const resolvedMode = requestedMode === "dark" ? "dark" : "light";
@@ -41,7 +68,7 @@ const getBootTheme = (cookies = {}, pathname = "") => {
   // (e.g. logout) never flashes the previous user's accent. The stored accent
   // is left untouched — only what is painted changes.
   const accentName =
-    pathname === "/login"
+    pathname === "/login" || websiteLightOnly
       ? DEFAULT_ACCENT
       : normalizeAccent(cookies["hp-dms-accent"] || DEFAULT_ACCENT);
 
@@ -50,6 +77,7 @@ const getBootTheme = (cookies = {}, pathname = "") => {
 
   // Return the values needed by the document and boot script.
   return {
+    websiteLightOnly,
     requestedMode,
     resolvedMode,
     accentName,
@@ -134,6 +162,16 @@ const themeBootScript = `
       return match ? decodeURIComponent(match[1]) : null;
     };
 
+    // Resolve the route first: the customer site is light-only, so on those
+    // paths the stored colour preference is not consulted at all.
+    const path = window.location.pathname;
+    const isWebsiteRoute = path === "/website" || path.indexOf("/website/") === 0;
+    const websiteLightOnly =
+      isWebsiteRoute &&
+      !["/website/profile","/website/dev"].some(
+        (exception) => path === exception || path.indexOf(exception + "/") === 0
+      );
+
     const storedMode = window.localStorage.getItem("hp-dms-theme") || readCookie("hp-dms-theme");
     const mode =
       storedMode === "dark" || storedMode === "light" || storedMode === "system"
@@ -142,9 +180,18 @@ const themeBootScript = `
     const prefersDark =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const resolvedMode = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+    const resolvedMode = websiteLightOnly
+      ? "light"
+      : mode === "system"
+        ? (prefersDark ? "dark" : "light")
+        : mode;
     document.documentElement.setAttribute("data-theme", resolvedMode);
     document.documentElement.style.colorScheme = resolvedMode;
+    // Gates the custglobal.css light branch before first paint — without this
+    // the customer site paints on its dark baseline until useWebsiteTheme runs.
+    if (websiteLightOnly) {
+      document.documentElement.setAttribute("data-website-theme", "light");
+    }
 
     const accents = ${JSON.stringify(ACCENT_PALETTES)};
 
@@ -152,8 +199,10 @@ const themeBootScript = `
     // /login always paints brand red regardless of the stored accent, so a hard
     // navigation onto it never flashes the previous user's colour. The stored
     // value itself is preserved (the cookie write below still uses storedAccent).
-    const isLoginRoute = window.location.pathname === "/login";
-    const paintAccent = isLoginRoute ? "${DEFAULT_ACCENT}" : storedAccent;
+    // The customer site is brand-red in both directions too, matching the
+    // accent: "red" override useWebsiteTheme applies after hydration.
+    const isLoginRoute = path === "/login";
+    const paintAccent = isLoginRoute || websiteLightOnly ? "${DEFAULT_ACCENT}" : storedAccent;
     const palette = accents[paintAccent] || accents["${DEFAULT_ACCENT}"];
     const resolvedAccent = resolvedMode === "dark" ? palette.dark : palette.light;
     const runtime = ${buildClientRuntimeExpression()};
@@ -167,7 +216,6 @@ const themeBootScript = `
     var tm = document.querySelector('meta[name="theme-color"]');
     if (tm) tm.setAttribute("content", runtime.shellBackground);
 
-    const isWebsiteRoute = window.location.pathname === "/website" || window.location.pathname.startsWith("/website/");
     document.documentElement.classList.toggle("website-scope", isWebsiteRoute);
     document.documentElement.classList.toggle("staff-scope", !isWebsiteRoute);
     if (document.body) {
@@ -237,6 +285,7 @@ class MyDocument extends Document {
       <Html
         data-theme={bootTheme.resolvedMode}
         data-theme-requested={bootTheme.requestedMode}
+        data-website-theme={bootTheme.websiteLightOnly ? "light" : undefined}
         data-authenticated={this.props.hasAuthCookie ? "true" : "false"}
         style={{ backgroundColor: bootTheme.background, colorScheme: bootTheme.resolvedMode }}
       >

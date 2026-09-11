@@ -84,19 +84,19 @@ export const NON_GLOBAL_AUDIT = {
   },
   "non-global-badges": {
     title: "pill-shaped status chips built inline instead of .app-badge",
-    total: 58,
-    files: 33,
+    total: 56,
+    files: 32,
     usage: [
       { label: "VhcDetailsPanel (VHC) — 7", file: "src/components/VHC/VhcDetailsPanel.js" },
       { label: "ProfileWorkTab (profile) — 5", file: "src/components/profile/ProfileWorkTab.js" },
       { label: "FullScreenCapture (mediaCapture) — 4", file: "src/components/VHC/mediaCapture/FullScreenCapture.js" },
       { label: "index (goods-in) — 3", file: "src/pages/goods-in/index.js", route: "/goods-in" },
       { label: "ServiceIndicatorDetailsModal (VHC) — 3", file: "src/components/VHC/ServiceIndicatorDetailsModal.js" },
-      { label: "MetricCard (HR) — 2", file: "src/components/HR/MetricCard.js" },
       { label: "NotesTab (components) — 2", file: "src/components/NotesTab.js" },
       { label: "appointments-ui (appointments) — 2", file: "src/components/page-ui/appointments/appointments-ui.js" },
       { label: "WarrantyTab (job-cards) — 2", file: "src/components/page-ui/job-cards/WarrantyTab.js" },
       { label: "ConcernPanel (mediaCapture) — 2", file: "src/components/VHC/mediaCapture/ConcernPanel.js" },
+      { label: "ConcernPickerModal (mediaCapture) — 2", file: "src/components/VHC/mediaCapture/ConcernPickerModal.js" },
     ],
   },
   "non-global-modals": {

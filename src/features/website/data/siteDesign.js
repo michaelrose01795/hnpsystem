@@ -42,7 +42,7 @@ export const sectionLayout = [
     anchor: "cars",
     eyebrow: "Our Cars",
     title: "Find your next car at Humphries & Parks",
-    lead: "Every used car arrives with a 120-point inspection, a minimum 6-month MOT and a free 6-month warranty. New Suzuki, KGM and Mitsubishi available with manufacturer offers.",
+    lead: "Every used car arrives with a 120-point inspection, a minimum 6-month MOT and a free 6-month warranty. New Suzuki and Mitsubishi available with manufacturer offers.",
     tint: false,
   },
   {
@@ -60,7 +60,7 @@ export const sectionLayout = [
     anchor: "shop",
     eyebrow: "Shop",
     title: "Parts & accessories",
-    lead: "Genuine Suzuki, KGM and Mitsubishi parts and accessories — shipped UK-wide. Add to cart and checkout in minutes.",
+    lead: "Genuine Suzuki and Mitsubishi parts and accessories — shipped UK-wide. Add to cart and checkout in minutes.",
     tint: true,
   },
   {
@@ -108,7 +108,10 @@ export const sectionLayout = [
 export const design = {
   accentHex: "#b91c1c",
   accentHoverHex: "#981717",
-  defaultTheme: "dark",
+  // Retained for the website_design row shape only. The customer site is
+  // light-only (see useWebsiteTheme / isLightOnlyWebsitePath in _document.js),
+  // so nothing reads this any more.
+  defaultTheme: "light",
   containerWidth: "1200px",
   cornerRadius: "18px",
   buttonRadius: "999px",

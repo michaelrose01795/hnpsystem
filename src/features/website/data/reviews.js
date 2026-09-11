@@ -1,5 +1,28 @@
 // file location: src/features/website/data/reviews.js
-// Customer testimonials sourced from humphriesandparks.net/reviews.
+//
+// The customer testimonials in the Reviews block on /website. Sourced from
+// humphriesandparks.net/reviews.
+//
+// Code-owned: this array is the ONE place the quotes come from. The public
+// page ignores website_reviews entirely (see codeOwnedContent.js).
+//
+//   - add a review     append an object
+//   - remove a review  delete its object — remove them all and the quote grid
+//                      goes, leaving the rating summary and the "Leave a
+//                      review" button, which are separate lists
+//   - reorder          move the objects; newest first reads best
+//
+// The star rating summary above the quotes is siteContent.ratings, and the
+// "Leave a review" button is siteContent.reviewCta — both in siteContent.js.
+//
+// Fields, all required:
+//   id      stable unique key for React — kebab-case, never reused
+//   name    the customer, as they should appear publicly
+//   source  where the review was left, e.g. "Google" / "JudgeService"
+//   date    free text, e.g. "April 2026" — not parsed, so write it as it reads
+//   rating  1–5, drawn as stars (anything above 5 simply fills all five)
+//   quote   the review itself, without surrounding quote marks — the page
+//           adds the curly quotes around it
 
 export const reviews = [
   { id: "kieran-hill", name: "Kieran Hill", source: "JudgeService", date: "April 2026", rating: 5,

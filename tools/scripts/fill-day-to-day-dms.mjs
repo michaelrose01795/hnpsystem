@@ -1274,7 +1274,7 @@ const main = async () => {
     };
   });
 
-  await seedWebsiteAndShop(staff, customers);
+  await seedShop(staff, customers);
 
   await topUp("floating_note_shares", 80, async () => null).catch(() => {});
   const notes = await all("floating_notes", "note_id,id,user_id,created_at", "created_at").catch(() => []);
@@ -1293,7 +1293,7 @@ const main = async () => {
     "parts_goods_in", "parts_goods_in_items", "parts_job_items", "parts_stock_movements",
     "workshop_consumable_usage", "vehicle_tracking_events", "key_tracking_events",
     "hr_training_assignments", "hr_performance_reviews", "personal_transactions",
-    "website_brand", "website_vehicles", "shop_products", "shop_orders",
+    "shop_products", "shop_orders",
   ];
   const report = {};
   for (const table of reportTables) report[table] = await countRows(table);
@@ -1301,35 +1301,23 @@ const main = async () => {
   console.log(JSON.stringify(report, null, 2));
 };
 
-const seedWebsiteAndShop = async (staff, customers) => {
+const seedShop = async (staff, customers) => {
   const actor = staff[0]?.email || "system";
-  await upsert("website_brand", [{ id: "default", name: "Humphries & Parks", logo_url: "/logo.png", logo_white_url: "/logo-white.png", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_hero", [{ id: "default", eyebrow: "Kent family dealership", headline: "Humphries & Parks", subhead: "New and used vehicles, service, MOT, parts and customer care from one local team.", background_url: "/website/hero.jpg", ctas: [{ label: "Book service", href: "/website/profile" }, { label: "Shop parts", href: "/website/shop" }], updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_about", [{ id: "default", eyebrow: "About us", title: "A dealership built around repeat customers", body: ["Family-run dealership operations across sales, service, MOT and parts.", "The team keeps customers updated from booking to collection."], image_url: "/website/about.jpg", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_sell_your_car", [{ id: "default", eyebrow: "Sell your car", title: "Straightforward valuations and quick payment", steps: ["Submit vehicle details", "Inspection and valuation", "Same-day decision"], benefits: ["Local team", "No pressure", "Clear paperwork"], cta_label: "Start valuation", cta_href: "/website#sell", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_service_parts", [{ id: "default", eyebrow: "Service & parts", title: "Workshop, MOT and genuine parts support", body: ["Factory-trained technicians.", "Live parts tracking and VHC updates."], hours: ["Mon-Fri 08:00-18:00", "Sat 08:30-13:00"], image_url: "/website/service.jpg", cta_label: "Book online", cta_href: "/website/profile", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_motability", [{ id: "default", eyebrow: "Motability", title: "Support choosing and maintaining your next vehicle", body: ["Advice, test drives and aftersales in one place."], payments: "Advance payment offers available across selected models.", range_brands: ["KGM", "Mitsubishi", "Approved Used"], cta_label: "Ask the team", cta_href: "/website#contact", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_parts_content", [{ id: "default", eyebrow: "Parts", title: "Genuine parts and accessories", body: ["Order service parts, accessories and essentials."], brands: ["KGM", "Mitsubishi", "Aftermarket"], cta_label: "Shop parts", cta_href: "/website/shop", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_contact", [{ id: "default", eyebrow: "Contact", title: "Visit Humphries & Parks", phone: "01622 872121", phone_href: "tel:01622872121", address: ["Humphries & Parks", "Maidstone Road", "West Malling"], sales_hours: ["Mon-Fri 08:30-18:00", "Sat 09:00-17:00"], service_hours: ["Mon-Fri 08:00-18:00", "Sat 08:30-13:00"], socials: [{ label: "Facebook", href: "#" }], map_embed: "https://maps.example.com/hnp", updated_at: iso(today), updated_by: actor }], "id");
-  await upsert("website_footer", [{ id: "default", legal_links: [{ label: "Privacy", href: "/profile/privacy" }, { label: "Terms", href: "/terms" }], fca_reg: "FCA reference available on request.", credit_disclosure: "Finance subject to status.", updated_at: iso(today), updated_by: actor }], "id");
 
-  await upsert("website_trust_points", ["40+|Years trading", "4.8|Customer rating", "120+|Used cars", "24hr|Online updates"].map((raw, i) => {
-    const [value, label] = raw.split("|");
-    return { id: `trust-${i}`, value, label, sort_order: i, status: "published", updated_at: iso(today), updated_by: actor };
-  }), "id");
-  await upsert("website_partner_brands", ["KGM", "Mitsubishi", "Motability", "Approved Used"].map((name, i) => ({ id: `brand-${i}`, name, logo_url: `/website/brands/${name.toLowerCase().replaceAll(" ", "-")}.png`, sort_order: i, status: "published", updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_ratings", ["Google|4.8/5", "AutoTrader|Excellent", "Facebook|Recommended"].map((raw, i) => { const [source, score] = raw.split("|"); return { id: `rating-${i}`, source, score, sort_order: i, status: "published", updated_at: iso(today), updated_by: actor }; }), "id");
-  await upsert("website_vehicles", Array.from({ length: 24 }, (_, i) => ({ id: `vehicle-${i}`, vehicle_type: i % 3 === 0 ? "new" : "used", brand: pick(["KGM", "Mitsubishi", "Hyundai", "Kia"], i), model: pick(["Korando", "Tivoli", "Outlander", "Sportage"], i), year: 2020 + (i % 7), price_text: `£${(8995 + i * 750).toLocaleString("en-GB")}`, miles: `${(1200 + i * 3400).toLocaleString("en-GB")} miles`, badge: pick(["Available", "Just arrived", "Low mileage"], i), image_url: `/website/vehicles/${i}.jpg`, status: "published", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_offers", Array.from({ length: 10 }, (_, i) => ({ id: `offer-${i}`, title: pick(["Service plan", "MOT offer", "Accessory bundle", "Used car finance"], i), headline: "Current dealership offer", body: "Live offer managed through staff website manager.", image_url: `/website/offers/${i}.jpg`, status: "published", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_reviews", Array.from({ length: 24 }, (_, i) => ({ id: `review-${i}`, customer_name: customers[i % customers.length].name || "Customer", rating: 4 + (i % 2), source: pick(["Google", "AutoTrader", "Facebook"], i), review_date: date(addDays(today, -i * 9)), quote: "Great communication from booking through to collection.", status: "published", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_team_departments", ["sales", "service", "parts", "workshop", "admin"].map((id, i) => ({ id, label: id[0].toUpperCase() + id.slice(1), sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_team_members", staff.slice(0, 36).map((user, i) => ({ id: `staff-${user.user_id}`, name: `${user.first_name} ${user.last_name}`, role: user.job_title || user.role, department_id: String(user.department || user.role || "admin").toLowerCase().includes("part") ? "parts" : String(user.department || "").toLowerCase().includes("workshop") ? "workshop" : String(user.role || "").toLowerCase().includes("sales") ? "sales" : String(user.role || "").toLowerCase().includes("service") ? "service" : "admin", photo_url: `https://example-customer.hnp/staff/${user.user_id}.jpg`, status: "published", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_timeline", Array.from({ length: 8 }, (_, i) => ({ id: `timeline-${i}`, year: String(1985 + i * 6), title: pick(["Business founded", "Workshop expanded", "Parts department opened", "Digital service updates launched"], i), body: "Milestone in Humphries & Parks history.", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_blog_posts", Array.from({ length: 16 }, (_, i) => ({ id: `blog-${i}`, title: pick(["Preparing for MOT season", "Why VHC videos help customers", "Choosing used SUV", "Winter checks"], i), post_date: date(addDays(today, -i * 14)), excerpt: "Advice from the dealership team.", body: "Long-form content managed through the staff website CMS.", image_url: `/website/blog/${i}.jpg`, status: "published", sort_order: i, updated_at: iso(today), updated_by: actor })), "id");
-  await upsert("website_pages", ["home", "shop", "profile", "contact", "service"].map((page, i) => ({ page_key: page, name: page[0].toUpperCase() + page.slice(1), route: page === "home" ? "/website" : `/website/${page}`, status: "published", last_edited_by: actor, last_edited_at: iso(today) })), "page_key");
-  await upsert("website_seo", ["home", "shop", "profile", "contact", "service"].map((page) => ({ page_key: page, meta_title: `Humphries & Parks ${page}`, meta_description: "Dealer website content populated for live CMS.", slug: page, canonical: `https://example-customer.hnp/${page}`, og_image: "/website/og.jpg", indexed: true, updated_at: iso(today), updated_by: actor })), "page_key");
-  await topUp("website_activity", 120, (i) => ({ occurred_at: iso(addDays(today, -i)), actor, action: pick(["updated", "published", "uploaded", "reviewed"], i), target: pick(["hero", "vehicle", "offer", "blog", "shop product"], i), page_key: pick(["home", "shop", "service", "contact"], i) }));
-  await upsert("website_media", Array.from({ length: 60 }, (_, i) => ({ id: `media-${i}`, name: pick(["Vehicle image", "Workshop photo", "Team headshot", "Offer banner"], i), url: `/website/media/${i}.jpg`, media_type: i % 10 === 0 ? "video" : "image", size_kb: 120 + i * 8, storage_path: `website/media/${i}.jpg`, used_on: pick(["home", "shop", "team", "offers"], i), uploaded_by: actor, uploaded_at: iso(addDays(today, -i)) })), "id");
+  // This filler does NOT write any website_* table, by design.
+  //
+  // It used to seed all of them, and the result was that the public marketing
+  // site at /website served DMS demo data: website_team_members was filled from
+  // the staff user accounts (photo_url on the non-existent example-customer.hnp
+  // host), website_reviews from real customer names with one canned quote, and
+  // every hero/about/contact image pointed at a /website/*.jpg path that has
+  // never existed in public/. Because /website fetches the database and swaps it
+  // in over the first paint, visitors saw the real site for a moment and the
+  // filler after it.
+  //
+  // Marketing content is owned by src/features/website/data/* and seeded into
+  // the website_* tables by `npm run seed:website-content`. A day-to-day DMS
+  // filler has no business overwriting it. Keep it that way.
 
   const categories = await upsert("shop_categories", ["service-parts|Service Parts", "accessories|Accessories", "car-care|Car Care", "merchandise|Merchandise"].map((raw, i) => { const [slug, name] = raw.split("|"); return { id: `cat-${slug}`, slug, name, description: `${name} for HNP customers.`, sort_order: i, status: "active", updated_at: iso(today), updated_by: actor }; }), "id");
   const products = await upsert("shop_products", Array.from({ length: 40 }, (_, i) => {

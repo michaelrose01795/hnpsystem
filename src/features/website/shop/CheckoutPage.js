@@ -1,9 +1,10 @@
 // file location: src/features/website/shop/CheckoutPage.js
 // /website/shop/checkout  -- contact + shipping form, then redirect to Stripe.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ShopShell from "./ShopShell";
+import BasketAccountNotice from "./BasketAccountNotice";
 import useShopCart, { formatGbp } from "../hooks/useShopCart";
 
 const SHIPPING_PENCE = 595;
@@ -22,6 +23,29 @@ export default function CheckoutPage() {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const prefilled = useRef(false);
+
+  // Prefill from the signed-in customer, once, and only into fields the
+  // customer has not already typed into — a returning customer should not
+  // have to retype what we already hold, and must still be free to ship to
+  // a different address.
+  useEffect(() => {
+    const customer = cart.customer;
+    if (!customer || prefilled.current) return;
+    prefilled.current = true;
+    setForm((prev) => ({
+      ...prev,
+      name:
+        prev.name ||
+        [customer.firstname, customer.lastname].filter(Boolean).join(" ") ||
+        customer.name ||
+        "",
+      email: prev.email || customer.email || "",
+      phone: prev.phone || customer.mobile || customer.telephone || "",
+      line1: prev.line1 || customer.address || "",
+      postcode: prev.postcode || customer.postcode || "",
+    }));
+  }, [cart.customer]);
 
   const set = (k) => (e) => setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
@@ -78,6 +102,7 @@ export default function CheckoutPage() {
 
   return (
     <ShopShell title="Checkout">
+      <BasketAccountNotice cart={cart} />
       <form onSubmit={handleSubmit} className="ws-checkout-grid">
         <div className="ws-card" style={{ padding: 20 }}>
           <h3 className="ws-h3" style={{ marginTop: 0 }}>

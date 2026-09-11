@@ -49,6 +49,23 @@ const LOGIN_THEME_OVERRIDE = { mode: "system", accent: DEFAULT_ACCENT };
 const isLoginThemeRoute = () =>
   typeof window !== "undefined" && LOGIN_THEME_ROUTES.has(window.location.pathname);
 
+// The public customer site is light-only and brand-red, whatever the visitor's
+// stored staff preference is. Same trick as the login theme above: seeding the
+// override means the very first React paint on /website is already light, so
+// there is no dark frame before useWebsiteTheme's effect runs. _document.js
+// mirrors this (isLightOnlyWebsitePath) — keep the two predicates in step.
+const WEBSITE_THEME_EXCEPTIONS = ["/website/profile", "/website/dev"];
+const WEBSITE_THEME_OVERRIDE = { mode: "light", accent: DEFAULT_ACCENT };
+
+const isWebsiteThemeRoute = () => {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname;
+  if (path !== "/website" && !path.startsWith("/website/")) return false;
+  return !WEBSITE_THEME_EXCEPTIONS.some(
+    (exception) => path === exception || path.startsWith(`${exception}/`)
+  );
+};
+
 // (The promise-based `withTimeout` helper was removed with the direct Supabase
 // reads it wrapped; theme I/O now goes through fetchWithTimeout below.)
 const fetchWithTimeout = async (url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) => {
@@ -192,7 +209,10 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
   // `mode` / `accent` always hold the user's TRUE preference — never an override.
   const [mode, setMode] = useState(() => {
-    if (typeof document !== "undefined") {
+    // On a light-only /website route the boot script pins data-theme="light"
+    // for the paint, so it says nothing about this user's real preference —
+    // reading it back here would overwrite a dark-mode user's stored choice.
+    if (typeof document !== "undefined" && !isWebsiteThemeRoute()) {
       const docMode = document.documentElement.getAttribute("data-theme");
       if (docMode === "dark" || docMode === "light") {
         const storedMode = readStoredMode();
@@ -213,10 +233,12 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   const [loading, setLoading] = useState(true);
 
   // Transient display theme. Initialised to the red login theme when the app
-  // first paints on /login so there is no flash before the login page mounts.
-  const [temporaryOverride, setTemporaryOverride] = useState(() =>
-    isLoginThemeRoute() ? LOGIN_THEME_OVERRIDE : null
-  );
+  // first paints on /login, and to the light customer theme on /website, so
+  // neither flashes before the page that owns the override mounts.
+  const [temporaryOverride, setTemporaryOverride] = useState(() => {
+    if (isWebsiteThemeRoute()) return WEBSITE_THEME_OVERRIDE;
+    return isLoginThemeRoute() ? LOGIN_THEME_OVERRIDE : null;
+  });
 
   // Resolved mode of the true preference.
   const resolvedMode = mode === "system" ? systemMode : normalizeMode(mode);
