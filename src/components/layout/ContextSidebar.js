@@ -24,6 +24,9 @@ export default function ContextSidebar({
   pathname,
   pendingHref = null,
   isCollapsed = false,
+  // The rail's own duration + easing, passed down by StaffSidebar so anything
+  // that moves in here moves on the same clock as the collapse/expand.
+  motion = null,
   getNavHref = (href) => href,
   onNavigate,
   onBack,
@@ -120,7 +123,17 @@ export default function ContextSidebar({
               {renderNavContent(module.label, null, expanded)}
             </button>
             {expanded && module.items.map((item) => (
-              <div key={item.href} style={{ marginLeft: isCollapsed ? 0 : "16px" }}>
+              // A module's children are indented under it when the rail is
+              // open and flush when it is collapsed. Transitioned on the rail's
+              // clock rather than switched, so the row slides across with the
+              // collapse instead of jumping left on the frame of the press.
+              <div
+                key={item.href}
+                style={{
+                  marginLeft: isCollapsed ? 0 : "16px",
+                  transition: motion ? `margin-left ${motion}` : undefined,
+                }}
+              >
                 {renderNavLink(item, `module-${module.key}`)}
               </div>
             ))}

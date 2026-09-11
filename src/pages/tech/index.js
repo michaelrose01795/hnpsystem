@@ -42,15 +42,6 @@ import {
 import MyJobsPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
 
-const STATUS_BADGE_STYLES = {
-  Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  "In Progress": { background: "var(--theme)", color: "var(--accent-purple)" },
-  Complete: { background: "var(--success-surface)", color: "var(--success-dark)" }
-};
-
-const getStatusBadgeStyle = (status) =>
-STATUS_BADGE_STYLES[status] || { background: "var(--theme)", color: "var(--info-dark)" };
-
 const MY_JOBS_CACHE_VERSION = 1;
 const getMyJobsCacheKey = (userId) => `hnp:my-jobs:${userId}:v${MY_JOBS_CACHE_VERSION}`;
 
@@ -588,7 +579,7 @@ export default function MyJobsPage() {
   { width: "60px" } // type
   ];
 
-  return <MyJobsPageUi view="section3" activeJobIds={activeJobIds} deriveJobTypeDisplay={deriveJobTypeDisplay} DevLayoutSection={DevLayoutSection} filter={filter} filteredJobs={filteredJobs} getMakeModel={getMakeModel} getStatusBadgeStyle={getStatusBadgeStyle} getTechStatusCategory={getTechStatusCategory} handleJobClick={handleJobClick} JobCardModal={JobCardModal} loading={loading} myJobs={myJobs} prefetchJob={prefetchJob} prefilledJobNumber={prefilledJobNumber} resolveTechStatusLabel={resolveTechStatusLabel} resolveTechStatusTooltip={resolveTechStatusTooltip} router={router} rowSkeletonCells={rowSkeletonCells} SearchBar={SearchBar} searchTerm={searchTerm} setFilter={setFilter} setPrefilledJobNumber={setPrefilledJobNumber} setSearchTerm={setSearchTerm} setShowStartJobModal={setShowStartJobModal} showStartJobModal={showStartJobModal} SKELETON_ROW_COUNT={SKELETON_ROW_COUNT} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} summarizePartsPipeline={summarizePartsPipeline} />;
+  return <MyJobsPageUi view="section3" activeJobIds={activeJobIds} deriveJobTypeDisplay={deriveJobTypeDisplay} DevLayoutSection={DevLayoutSection} filter={filter} filteredJobs={filteredJobs} getMakeModel={getMakeModel} getTechStatusCategory={getTechStatusCategory} handleJobClick={handleJobClick} JobCardModal={JobCardModal} loading={loading} myJobs={myJobs} prefetchJob={prefetchJob} prefilledJobNumber={prefilledJobNumber} resolveTechStatusLabel={resolveTechStatusLabel} resolveTechStatusTooltip={resolveTechStatusTooltip} router={router} rowSkeletonCells={rowSkeletonCells} SearchBar={SearchBar} searchTerm={searchTerm} setFilter={setFilter} setPrefilledJobNumber={setPrefilledJobNumber} setSearchTerm={setSearchTerm} setShowStartJobModal={setShowStartJobModal} showStartJobModal={showStartJobModal} SKELETON_ROW_COUNT={SKELETON_ROW_COUNT} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} summarizePartsPipeline={summarizePartsPipeline} />;
 
 
 

@@ -94,8 +94,10 @@ export default function NewsFilterBar({
         </div>
 
         {canPublish && (
-          <div className="app-news-toolbar__control">
-            <Button type="button" variant="primary" onClick={onOpenComposer}>
+          <div className="app-news-toolbar__control app-news-toolbar__control--action">
+            {/* A plus, not words: the label stays as the accessible name and
+                tooltip (Button does that for any symbol button). */}
+            <Button type="button" variant="primary" symbol="add" onClick={onOpenComposer}>
               New announcement
             </Button>
           </div>

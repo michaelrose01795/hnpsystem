@@ -282,59 +282,25 @@ html.staff-scope .app-news-avatar-stack > * + * {
 }
 
 /* ========================================================================== */
-/* Chips — priority, category, department, state                              */
+/* Badge row — priority, category, department, state                          */
 /* ========================================================================== */
 
-html.staff-scope .app-news-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  max-width: 100%;
-  min-height: var(--control-height);
-  padding: var(--space-xs) var(--space-md);
-  border-radius: var(--radius-pill);
-  background: var(--secondary);
-  color: var(--accent-text-on-tint);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* The labels themselves are plain .app-badge + a tone modifier (families/
+   badges.css). This family owns only where they sit and the leading glyph;
+   the pill-shaped .app-news-chip that used to live here was a second badge
+   implementation with its own radius, type scale and tone palette, so the same
+   status read one way in the feed and another everywhere else. Do not
+   reintroduce a news-local badge shape — add the variant to badges.css. */
 
-html.staff-scope .app-news-chip--muted {
-  background: var(--surface);
-  color: var(--text-1);
-  opacity: 0.85;
-}
-
-html.staff-scope .app-news-chip--category {
-  background: var(--theme);
-  color: var(--text-1);
-}
-
-html.staff-scope .app-news-chip--important {
-  background: var(--warning-surface);
-  color: var(--warning-text);
-}
-
-html.staff-scope .app-news-chip--urgent {
-  background: var(--danger-surface);
-  color: var(--danger-text);
-}
-
-html.staff-scope .app-news-chip--success {
-  background: var(--success-surface);
-  color: var(--success-text);
-}
-
-html.staff-scope .app-news-chip__glyph {
-  font-size: 11px;
+/* Sized off the badge's own type rather than a fixed pixel value so the glyph
+   tracks the label it sits beside. The gap between the two comes from
+   .app-badge. */
+html.staff-scope .app-news-badge__glyph {
+  font-size: 0.95em;
   line-height: 1;
 }
 
-html.staff-scope .app-news-chip-row {
+html.staff-scope .app-news-badge-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -342,7 +308,7 @@ html.staff-scope .app-news-chip-row {
   min-width: 0;
 }
 
-html.staff-scope .app-news-card__head > .app-news-chip-row {
+html.staff-scope .app-news-card__head > .app-news-badge-row {
   flex: 0 1 auto;
   justify-content: flex-end;
   margin-left: auto;
@@ -394,18 +360,35 @@ html.staff-scope .app-news-ack__actions {
 /* Attachments + record links                                                 */
 /* ========================================================================== */
 
-/* A titled block inside the post detail — "Related records", "Attachments". */
-html.staff-scope .app-news-section {
+/* "Related records" and "Attachments" share one line, each block only as wide
+   as its own content, wrapping once the pair no longer fits. */
+html.staff-scope .app-news-section-row {
   display: flex;
-  flex-direction: column;
+  flex-flow: row wrap;
+  align-items: flex-start;
   gap: var(--space-sm);
   min-width: 0;
+}
+
+/* A titled block inside the post detail — "Related records", "Attachments".
+   The label and the rows share one line, so a post with a single link or file
+   costs one row of height instead of two. Width is the content's, not the
+   row's: the block shrinks to fit and never stretches. */
+html.staff-scope .app-news-section {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: var(--space-xs) var(--space-sm);
+  min-width: 0;
+  max-width: 100%;
 }
 
 html.staff-scope .app-news-section__label {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  flex: none;
   margin: 0;
   font-size: var(--text-label);
   font-weight: 700;
@@ -425,30 +408,32 @@ html.staff-scope .app-news-section__count {
   color: var(--accent-text-on-tint);
 }
 
-/* Uniform rows on a responsive grid — a list of files reads as a block, not a
-   wrapped run of pills. */
+/* Uniform rows that flow along the line, each as wide as the file name or
+   record it carries — never stretched to the width of the block. */
 html.staff-scope .app-news-attachments,
 html.staff-scope .app-news-links {
-  display: grid;
+  display: flex;
+  flex-flow: row wrap;
   gap: var(--space-xs);
   min-width: 0;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-html.staff-scope .app-news-attachments {
-  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-}
-
-html.staff-scope .app-news-links {
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+/* Inside a titled block the list is the second item on the label's line. */
+html.staff-scope .app-news-section > .app-news-attachments,
+html.staff-scope .app-news-section > .app-news-links {
+  flex: 0 1 auto;
 }
 
 html.staff-scope .app-news-attachment-row,
 html.staff-scope .app-news-link-row {
   display: flex;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
 }
 
 html.staff-scope .app-news-attachment {
@@ -964,12 +949,26 @@ html.staff-scope .app-news-revision__body {
   }
 }
 
+/* The publish action is a square symbol button, not a field, so its column
+   sizes to the button instead of taking an equal share of the row. Declared
+   after the responsive block on purpose: the media queries above set flex on
+   the base class at the same specificity, and this must win at every width.
+   At the stacked width it keeps the mark on the right of its own line. */
+html.staff-scope .app-news-toolbar__control--action {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+html.staff-scope .app-news-toolbar__control--action > * {
+  width: auto;
+}
+
 /* ========================================================================== */
 /* Trace mode — the dev overlay's outline pass for this family.               */
 /* ========================================================================== */
 
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
-  :where(.app-news-card, .app-news-chip, .app-news-comment, .app-news-stat) {
+  :where(.app-news-card, .app-news-comment, .app-news-stat) {
   outline: 1px dashed #0ea5e9;
   outline-offset: -1px;
 }

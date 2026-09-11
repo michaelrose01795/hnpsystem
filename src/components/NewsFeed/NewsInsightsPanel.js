@@ -27,8 +27,8 @@ const STATE_LABEL = {
 };
 
 const STATE_TONE = {
-  acknowledged: "app-news-chip app-news-chip--success",
-  outstanding: "app-news-chip app-news-chip--urgent",
+  acknowledged: "app-badge app-badge--success",
+  outstanding: "app-badge app-badge--danger",
 };
 
 export default function NewsInsightsPanel({ insights }) {

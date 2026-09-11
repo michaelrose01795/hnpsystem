@@ -1,8 +1,6 @@
-TODO
 npm i next@latest
 
-CHECK
-have it so by default the capture screen auto uses the back drives camera not face facing camera etc
+
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
@@ -37,5 +35,65 @@ CHECK NON GLOBAL ON DEV PAGE
  
 -------------
 
+TODO
+/website
+
+TODO
+Remove "Desktop Tablet Mobile Reload preview" tab and button section from "/website-manager?tab=preview" page 
+
+
+
+---
+
+Website
+
+CHECK 
+have it so all the sectison belwo is a tab button, the website shows the whole scroll section, then each other tab just shows the content of the section from the /website page etc. "Website Homepage NewUsed Offers Shop Sell Your CarService & Parts Motability About Us Blog Contact Us" etc. 
+
+---
+
+Homepage
 CHECK
-sidebar annimation 
+have it so within each tab section the the actaul content can be changed, so for example within the this is all kept within in code section, with everything being able to be removed, edited changed etc, although this is extraced its all changed within this app. so for example the photo url can be edited and changed to a diff photo or any of the other section can also be changed etc. for example from the "View Cars Book a Service Sell Your Car Contact Us" button only from this section.  
+
+---
+
+New
+TODO
+have it so wihtin this seciton the items listed here will link to the vehicle stock instide the staff dms section. have it so the current 9 listed items are removed, and a mock data example of serveral suzuks are shown here, within the new and used section, but max 8 all cars to be shown, this is then below where the vehicles are listed is a show more button, this will take the user into the "/website/availible-stock" when clicked this page opens up and will be like what autotrader is where customer can search and find vehicles they want, haev it so this page fully follows the custglobal.css setting as well. if the user came from the new tab then it will have the new filter chosen already out of the new or used, and if used tab was on when clicked it will show the used filter out of the new or used again, if all cars shown thne have it show all of the vheicles until filter is clicked, deep dive to make the layout the best of the customers here to find a vehicle, and when clciked it opens "/webiste/stock/[reg]" which will all be linked to that vehicle by the reg and a new used before stock number, this stock number which is auto generated make sure the vehciel desont cross with old data if the vehicle reg has been used before etc. 
+
+---
+
+Offers
+TODO
+for the offer section have this 100% in code data with the image etc, haev it show mock data 8 card sections atm, but then this can be changed when ever remove the current 6 section there is atm, and how it so the image url or however to get the image there etc is done through code etc. 
+
+---
+
+Shop
+TODO
+have this seciton be linked to the stock catalog from the staff dms database section, this also section on the /website page will show only 8 items, and at the bottom of these 8 items add a show more button, when this show more button is pressed it takes the user to the "/website/parts-catalog" page this page will be like a full on shop for parts, accessorys etc, the cust can add to basket and all of that etc have it so it shows the mock data within the /website page but then the "/website/parts-catalog" opens it shows all linked to database adn the items when clicked opens the item onto a new page where the user can view more info and add to basket there as well. the users basket is linked to the user logged into the /website page and if there isnt a login promp the user to log in and also if not logged in at least save the basket details to the 
+
+---
+
+Sell Your Car
+
+---
+
+Service & Parts
+
+---
+
+Motability
+
+---
+
+About Us
+
+---
+
+Blog
+
+---
+
+Contact Us

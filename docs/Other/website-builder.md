@@ -85,15 +85,20 @@ before, so an unstyled or half-populated row degrades to the current look.
 
 ## 4. Live preview
 
-Two tabs embed `/website?preview=editor` and drive it over `postMessage`
+Two tabs embed `/website` and talk to it over `postMessage`
 (`PREVIEW_MESSAGE_TYPES` in `useWebsitePreviewMode.js`):
 
-- **Visual editor** — click a region in the iframe, its editor opens in the
-  side pane, and every keystroke is forwarded as `hnp:content-patch` so the
-  change shows before it is saved. Saving PATCHes the API and sends
-  `hnp:editor-refresh` so the iframe re-reads the canonical row.
-- **Design & layout → Style** — the same mechanism with `sectionKey: "design"`,
-  so a colour or spacing change repaints the preview instantly.
+- **Preview** — the first tab, Website, embeds the whole scrolling site with
+  `?preview=site` (all chrome, fixed-height frame). Every other tab is one
+  public nav entry and uses
+  `?preview=section&block=<id>[,<id>]&filter=<carFilter>`: the page renders only
+  those layout blocks, with no top bar, footer or click overlays, and posts its
+  rendered height back (`hnp:preview-height`) so the frame sizes itself to the
+  section and shows it inline under the tab row. Read-only — content edits live
+  in Pages & sections.
+- **Design & layout → Style** — `?preview=editor`, the WYSIWYG mechanism, with
+  `sectionKey: "design"`, so a colour or spacing change repaints the preview
+  instantly.
 
 `useWebsiteContent` applies both kinds of patch in `applyLivePatch()`; a new
 section key needs a `case` there or its live preview will silently do nothing.

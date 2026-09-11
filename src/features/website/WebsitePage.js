@@ -104,7 +104,11 @@ export default function WebsitePage() {
   // useWebsiteContent additionally accepts postMessage patches so staff edits
   // appear instantly as they type.
   const { content } = useWebsiteContent();
-  const { isPreview, highlightedSection } = useWebsitePreviewMode();
+  // sectionPreview is set when the page is embedded by the website-manager
+  // Preview tab as `?preview=section&block=…`: only those blocks render, and
+  // the site chrome is left off, so the staff tab shows the real section
+  // content inline under its own tab row.
+  const { isPreview, highlightedSection, sectionPreview } = useWebsitePreviewMode();
   const click = (sectionKey, sectionLabel, rowId, as) => ({
     isPreview,
     isHighlighted: highlightedSection === sectionKey,
@@ -140,7 +144,9 @@ export default function WebsitePage() {
   const designVars = useMemo(() => designToCssVars(design), [design]);
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [carFilter, setCarFilter] = useState("all");
+  // A section embed can pin the Cars filter up front (the manager's New and
+  // Used tabs are the same block with a different starting filter).
+  const [carFilter, setCarFilter] = useState(sectionPreview?.carFilter || "all");
   const [activeId, setActiveId] = useState("top");
   const [authState, setAuthState] = useState({
     loading: true,
@@ -164,9 +170,13 @@ export default function WebsitePage() {
       (Array.isArray(sectionLayout) ? sectionLayout : []).filter((row) => {
         if (!row || !BLOCK_KEYS.has(row.id)) return false;
         if (row.id === "brands" && design?.showBrandStrip === false) return false;
+        // A section embed draws its named blocks only. The brand-strip and
+        // layout rules above still apply, so a block hidden on the live site
+        // stays hidden in the manager too.
+        if (sectionPreview && !sectionPreview.blocks.includes(row.id)) return false;
         return true;
       }),
-    [sectionLayout, design?.showBrandStrip],
+    [sectionLayout, design?.showBrandStrip, sectionPreview],
   );
 
   // Scroll-spy — highlight the nav entry for the section in view. Derived from
@@ -643,6 +653,8 @@ export default function WebsitePage() {
 
       <div className="ws-page" data-presentation="website-home" style={designVars}>
         {/* ---------------- Top navigation ---------------- */}
+        {/* Section embeds are one block on their own — no nav, no footer. */}
+        {sectionPreview ? null : (
           <header className="ws-nav" data-presentation="website-nav">
             <div className="ws-nav-inner">
               <a href="#top" className="ws-brand" onClick={closeMenu}>
@@ -693,11 +705,13 @@ export default function WebsitePage() {
               </button>
             </div>
           </header>
+        )}
 
         <main>{visibleBlocks.map((row) => BLOCK_RENDERERS[row.id](row))}</main>
 
         {/* ---------------- Footer ---------------- */}
-        <PreviewClickTarget {...click("footer", "Footer", null, "div")}>
+        {sectionPreview ? null : (
+          <PreviewClickTarget {...click("footer", "Footer", null, "div")}>
           <footer className="ws-footer">
             <div className="ws-container ws-footer-inner">
               <div className="ws-footer-top">
@@ -718,7 +732,8 @@ export default function WebsitePage() {
               </p>
             </div>
           </footer>
-        </PreviewClickTarget>
+          </PreviewClickTarget>
+        )}
       </div>
     </>
   );

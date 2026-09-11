@@ -72,20 +72,6 @@ const detailLabelStyle = {
   overflowWrap: "anywhere",
 };
 
-const statusBadgeBaseStyle = {
-  height: "var(--table-action-btn-height, 32px)",
-  minHeight: "var(--table-action-btn-height, 32px)",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "0 12px",
-  borderRadius: "var(--radius-xs)",
-  fontSize: "11px",
-  fontWeight: 600,
-  lineHeight: 1,
-  whiteSpace: "nowrap",
-};
-
 const quickActions = [
   { key: "appointments", label: "Appointments", href: "/appointments" },
   { key: "my-jobs", label: "My Mobile Jobs", href: "/tech" },
@@ -129,30 +115,15 @@ const formatVisitStatus = (job) => {
   return outcomeLabels[job?.mobile_outcome] || job?.status || "Scheduled";
 };
 
-const getStatusBadgeStyle = (job) => {
+// Visit status is a Badge family tone. It was previously an inline style laid
+// over .app-table-action-btn, which gave a read-only status the shape of a
+// clickable row action. .app-badge inside an .app-data-table already resolves
+// to the same 32px dense height, so the cell footprint is unchanged.
+const getStatusBadgeTone = (job) => {
   const status = formatVisitStatus(job).toLowerCase();
-
-  if (status.includes("complete") && !status.includes("unable")) {
-    return {
-      ...statusBadgeBaseStyle,
-      backgroundColor: "var(--success-surface)",
-      color: "var(--success-text)",
-    };
-  }
-
-  if (status.includes("unable") || status.includes("workshop")) {
-    return {
-      ...statusBadgeBaseStyle,
-      backgroundColor: "var(--danger-surface)",
-      color: "var(--danger-text)",
-    };
-  }
-
-  return {
-    ...statusBadgeBaseStyle,
-    backgroundColor: "var(--warning-surface)",
-    color: "var(--warning-text)",
-  };
+  if (status.includes("complete") && !status.includes("unable")) return "success";
+  if (status.includes("unable") || status.includes("workshop")) return "danger";
+  return "warning";
 };
 
 function MobileDashboardInner() {
@@ -394,7 +365,7 @@ function MobileDashboardInner() {
                       <td>{formatWindow(job.appointment_window_start, job.appointment_window_end)}</td>
                       <td>{[job.service_address, job.service_postcode].filter(Boolean).join(", ") || "Address not added"}</td>
                       <td>
-                        <span className="app-table-action-btn" style={getStatusBadgeStyle(job)}>
+                        <span className={`app-badge app-badge--${getStatusBadgeTone(job)}`}>
                           {formatVisitStatus(job)}
                         </span>
                       </td>

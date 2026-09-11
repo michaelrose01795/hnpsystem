@@ -106,7 +106,11 @@ export default function PresentationControls({ onExport, exportBusy }) {
         </button>
         {isPublicViewer && (
           <span
-            className="app-badge app-badge--info"
+            /* --info is not a Badge family variant and never has been: the
+               class resolved to nothing, so this label rendered as bare text
+               on the toolbar. --accent-soft is the family's informational
+               tint. */
+            className="app-badge app-badge--accent-soft"
             title="This public demo stays inside Presentation Mode."
           >
             Public demo

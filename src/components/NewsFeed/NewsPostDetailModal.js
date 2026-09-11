@@ -146,24 +146,54 @@ export default function NewsPostDetailModal({
 
         <NewsBodyText body={post.content} currentUserId={currentUserId} />
 
-        {post.links.length > 0 && (
-          <section className="app-news-section">
-            <h3 className="app-news-section__label">
-              Related records
-              <span className="app-news-section__count">{post.links.length}</span>
-            </h3>
-            <NewsRecordLinks links={post.links} />
-          </section>
-        )}
+        {(post.links.length > 0 || post.attachments.length > 0) && (
+          <div className="app-news-section-row">
+            {post.links.length > 0 && (
+              <LayerTheme
+                as="section"
+                className="app-news-section"
+                padding="var(--space-2) var(--space-3)"
+                gap="var(--space-sm)"
+                // LayerTheme lays its children out in a column inline; these
+                // blocks read as one row (label, then the rows) and size to
+                // their content, so the direction and the auto width are
+                // overridden here — layout only, the surface stays LayerTheme's.
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  width: "auto",
+                }}
+              >
+                <h3 className="app-news-section__label">
+                  Related records
+                  <span className="app-news-section__count">{post.links.length}</span>
+                </h3>
+                <NewsRecordLinks links={post.links} />
+              </LayerTheme>
+            )}
 
-        {post.attachments.length > 0 && (
-          <section className="app-news-section">
-            <h3 className="app-news-section__label">
-              Attachments
-              <span className="app-news-section__count">{post.attachments.length}</span>
-            </h3>
-            <NewsAttachments attachments={post.attachments} />
-          </section>
+            {post.attachments.length > 0 && (
+              <LayerTheme
+                as="section"
+                className="app-news-section"
+                padding="var(--space-2) var(--space-3)"
+                gap="var(--space-sm)"
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  width: "auto",
+                }}
+              >
+                <h3 className="app-news-section__label">
+                  Attachments
+                  <span className="app-news-section__count">{post.attachments.length}</span>
+                </h3>
+                <NewsAttachments attachments={post.attachments} />
+              </LayerTheme>
+            )}
+          </div>
         )}
 
         <LayerTheme gap="var(--space-3)">

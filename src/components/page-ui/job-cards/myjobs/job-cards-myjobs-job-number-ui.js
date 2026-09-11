@@ -185,7 +185,7 @@ export default function TechJobDetailPageUi(props) {
     formatPrePickLabel,
     getBadgeState,
     getOptionalCount,
-    getPartsStatusStyle,
+    getPartsStatusTone,
     handleAddNote,
     handleCompleteJob,
     handleCompleteVhcClick,
@@ -207,7 +207,6 @@ export default function TechJobDetailPageUi(props) {
     handleTrackerSave,
     handleUpdateRequests,
     handleUpdateRequestStatus,
-    isHeaderCompleteStatus,
     isReopenMode,
     isVhcCompleted,
     jobCard,
@@ -215,7 +214,7 @@ export default function TechJobDetailPageUi(props) {
     jobData,
     jobDocuments,
     jobNumber,
-    jobStatusBadgeStyle,
+    jobStatusBadgeTone,
     newNote,
     notes,
     notesLoading,
@@ -805,20 +804,11 @@ export default function TechJobDetailPageUi(props) {
         gap: "12px",
         flexWrap: "wrap"
       }}>
-              {/* Status pill rides the shared .app-btn shape. Semantic colour
-                  for non-complete states comes from STATUS_BADGE_STYLES — those
-                  background/color tokens are applied inline because .app-btn
-                  does not expose a per-status colour variant. */}
-              <span className={isHeaderCompleteStatus ? "app-btn app-btn--primary" : "app-btn"} style={isHeaderCompleteStatus ? {
-            cursor: "default",
-            letterSpacing: "0.02em"
-          } : {
-            background: jobStatusBadgeStyle.background,
-            color: "var(--text-1)",
-            border: "none",
-            cursor: "default",
-            letterSpacing: "0.02em"
-          }}>
+              {/* Status label, not a control: .app-badge + one tone from the
+                  Badge family. It previously borrowed .app-btn and tinted it
+                  inline, which gave a read-only status the shape of the Clock
+                  Out / Complete Job buttons sitting immediately beside it. */}
+              <span className={`app-badge app-badge--${jobStatusBadgeTone}`}>
                 {techStatusDisplay}
               </span>
               <div style={{
@@ -1666,7 +1656,7 @@ export default function TechJobDetailPageUi(props) {
                 </p> : partsRequests.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {partsRequests.map((request) => {
                     const statusLabel = formatRequestStatusLabel(request.status);
-                    const badgeStyle = getPartsStatusStyle(request.status);
+                    const badgeTone = getPartsStatusTone(request.status);
                     const quantity = request.quantity ?? 1;
                     const bookedPart = findBookedPartForRequest(request);
                     const partLabel = bookedPart ? resolveBookedPartName(bookedPart) : resolveRequestPartName(request);
@@ -1693,7 +1683,7 @@ export default function TechJobDetailPageUi(props) {
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Vehicle: {location}</span>
                         {bookedPart && <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Collect: {resolveBookedPartCollectionLocation(bookedPart)}</span>}
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{priority}</span>
-                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                        <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                       </div>
                       <div style={{ color: "var(--text-1)", fontSize: "12px" }}>Latest update: {latestUpdate}</div>
                       {isExpanded && <div style={{ color: "var(--text-1)", fontSize: "13px", whiteSpace: "pre-wrap" }}>{request.description || "No detail supplied."}</div>}
@@ -1726,7 +1716,7 @@ export default function TechJobDetailPageUi(props) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     {directlyBookedJobParts.map((part) => {
                       const statusLabel = formatRequestStatusLabel(part.status);
-                      const badgeStyle = getPartsStatusStyle(part.status);
+                      const badgeTone = getPartsStatusTone(part.status);
                       const partName = resolveBookedPartName(part);
                       const partNumber = resolveBookedPartNumber(part);
                       const quantityBooked = resolveBookedPartQuantity(part, "quantityRequested", "quantity_requested");
@@ -1745,7 +1735,7 @@ export default function TechJobDetailPageUi(props) {
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Booked: {quantityBooked || 1}</span>
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Allocated: {quantityAllocated}</span>
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Fitted: {quantityFitted}</span>
-                          <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                          <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", color: "var(--text-1)", fontSize: "12px" }}>
                           <span>Collection location: {resolveBookedPartCollectionLocation(part)}</span>
@@ -1767,7 +1757,7 @@ export default function TechJobDetailPageUi(props) {
                 {authorizedPartsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading approved parts...</p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {authorizedParts.map((part) => {
                     const statusLabel = formatRequestStatusLabel(part.status);
-                    const badgeStyle = getPartsStatusStyle(part.status);
+                    const badgeTone = getPartsStatusTone(part.status);
                     const partName = part.part?.name || part.part_name_snapshot || part.row_description || "Approved part";
                     const canCollect = ["allocated", "pre_picked", "picked", "stock"].includes(String(part.status || "").toLowerCase());
                     return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-ready-${part.id}`} sectionType="content-card" parentKey="myjob-parts-ready-approved" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="8px">
@@ -1775,7 +1765,7 @@ export default function TechJobDetailPageUi(props) {
                         <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partName}</strong>
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Qty {part.quantity_requested || 1}</span>
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{part.authorised ? "Approved" : "Ordered"}</span>
-                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                        <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap", color: "var(--text-1)", fontSize: "12px" }}>
                         <span>Latest update: {formatDateTime(part.updated_at || part.created_at)}</span>

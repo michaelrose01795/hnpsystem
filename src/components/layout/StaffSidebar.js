@@ -150,10 +150,41 @@ const BRAND_WORDMARK_SHOW_OPEN = "opacity 0s linear";
 // OVERLAP: the label is already on its way out when the icon starts coming in,
 // so a row never reads as empty, and the handover happens inside the rail's own
 // travel rather than before or after it.
-const NAV_FADE_CLOSE_LABEL = "opacity 0.22s linear";
-const NAV_FADE_CLOSE_ICON = "opacity 0.24s linear 0.06s";
-const NAV_FADE_OPEN_ICON = "opacity 0.14s linear";
-const NAV_FADE_OPEN_LABEL = "opacity 0.24s linear 0.04s";
+//
+// The handover is FRONT-LOADED: it runs in the first third of the travel and is
+// finished long before the rail reaches its end state, so the rail spends its
+// slow settle arriving at rows that have already changed over.
+//
+//   close (rail travels 0.4s):   label out 0.00 -> 0.10, icon in  0.06 -> 0.16
+//   open  (rail travels 0.52s):  icon  out 0.00 -> 0.05, label in 0.02 -> 0.07
+//
+// Opening is MUCH the faster of the two on purpose. easeOutExpo throws the rail
+// most of the way to full width almost immediately, so the room for the text is
+// there well before the movement finishes - a leisurely handover just leaves the
+// rows looking empty while the rail is already open. The labels are back within
+// the first ~13% of the travel and the rail catches up to them. Closing keeps
+// the longer, calmer handover because easeInOutCubic takes the width away
+// gradually.
+//
+// The 0.02-0.04s overlap in both directions is what keeps a row from ever
+// reading as momentarily empty.
+//
+// These delays are measured from the COMMIT of the rows' style change, not from
+// the click. The rows key off rowsCollapsed (useDeferredValue), so React lands
+// that commit a beat after the press - which is what keeps the contents from
+// turning over on the frame the toggle is hit, and is why the outgoing halves
+// can now start at 0s delay without snapping. Adding a delay here stacks ON TOP
+// of that beat, which is what made the swap feel late.
+const NAV_FADE_CLOSE_LABEL = "opacity 0.1s linear";
+const NAV_FADE_CLOSE_ICON = "opacity 0.1s linear 0.06s";
+const NAV_FADE_OPEN_ICON = "opacity 0.05s linear";
+const NAV_FADE_OPEN_LABEL = "opacity 0.05s linear 0.02s";
+// A nav button's TEXT may only change while that text is invisible. Collapsing,
+// NAV_FADE_CLOSE_LABEL finishes at 0.10s, so any text swap is held to 0.12s;
+// expanding, the new text is set on the frame of the press, before
+// NAV_FADE_OPEN_LABEL starts revealing it at 0.02s. Only the Profile row's text
+// currently differs between the two states (full name vs "Profile").
+const NAV_LABEL_SWAP_CLOSE_DELAY_MS = 120;
 
 // The collapsed rail marks a section break with a short rule where the title
 // text sits when the rail is open. One element, shared by both renderers.
@@ -316,6 +347,22 @@ export default function Sidebar({
   // is invisible against a 0.4s travel, and it keeps the one big render off the
   // frame that has to start the animation.
   const rowsCollapsed = useDeferredValue(isCollapsed);
+  // rowsCollapsed drives the CROSSFADE - both states stay mounted, so flipping
+  // it a frame after the press is harmless. Text that genuinely CHANGES between
+  // the two states is different: there is only one string on screen, so swapping
+  // it is a visible jump and it has to happen while that string is at opacity 0.
+  // labelsCollapsed is that later flag - held back until the close fade-out has
+  // finished, and flipped straight back on open so the new text is in place
+  // before anything reveals it. See NAV_LABEL_SWAP_CLOSE_DELAY_MS.
+  const [labelsCollapsed, setLabelsCollapsed] = useState(isCollapsed);
+  useEffect(() => {
+    if (!isCollapsed) {
+      setLabelsCollapsed(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setLabelsCollapsed(true), NAV_LABEL_SWAP_CLOSE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
   // Optimistic active state: in the Pages Router router.asPath does not update
@@ -365,6 +412,7 @@ export default function Sidebar({
   }, []);
   const inPresentationRoute = pathname.startsWith("/presentation");
   const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
+  const inWebsiteRoute = pathname === "/website" || pathname.startsWith("/website/");
   const workspaceNavEnabled = !inPresentationMode && isWorkspaceNavEnabled();
   const isSidebarNavigationLoading =
     !inPresentationMode &&
@@ -399,6 +447,9 @@ export default function Sidebar({
     Boolean(user) && !inPresentationMode && canShowDevPages();
   const canShowDevOverlayControl =
     Boolean(user) && !inPresentationMode && canUseDevOverlay;
+  // Shortcut into the customer-facing site, shown to the same audience as the
+  // Dev / Overlay controls it sits with.
+  const canShowWebsiteLink = canShowDevPagesLink || canShowDevOverlayControl;
   // Per-user sidebar-access override (admin-set snapshot). Skipped in
   // presentation mode (the rail belongs to the demo role, not the real user).
   // When no snapshot exists, snapshotAllowed is null and every filter below is
@@ -673,7 +724,12 @@ export default function Sidebar({
   // link to a 0.4s width animation; it also rebuilt the whole nav tree on the
   // frame the animation started. Now the label is squeezed out by the rail while
   // the icon fades up in its place, all on the same clock.
-  const renderNavContent = (label, href, isActive = false, opts = {}) => (
+  // opts.iconLabel pins the GLYPH to a label that never changes (the nav item's
+  // own), so a row whose text swaps between states - Profile - cannot briefly
+  // resolve the wrong icon while its text is still the other string.
+  const renderNavContent = (label, href, isActive = false, opts = {}) => {
+    const { iconLabel, ...labelOpts } = opts;
+    return (
     <>
       <span
         aria-hidden="true"
@@ -702,7 +758,7 @@ export default function Sidebar({
             height: 28,
           }}
         >
-          {getSidebarNavIcon(label)}
+          {getSidebarNavIcon(iconLabel || label)}
         </span>
       </span>
       <span
@@ -715,10 +771,11 @@ export default function Sidebar({
           transition: rowsCollapsed ? NAV_FADE_CLOSE_LABEL : NAV_FADE_OPEN_LABEL,
         }}
       >
-        {renderLinkLabel(label, href, opts)}
+        {renderLinkLabel(label, href, labelOpts)}
       </span>
     </>
-  );
+    );
+  };
   // Collapsed rail keeps sections separated with a short 2px theme line in place
   // of the section-title text. To preserve the EXACT vertical rhythm of the
   // expanded rail (so buttons line up through the whole transition), the divider
@@ -816,8 +873,9 @@ export default function Sidebar({
   // per frame (a measured ~1,400 paint records for one collapse) for motion the
   // parent was producing anyway.
   const NAV_LINK_TRANSITION = `padding ${MOTION}`;
-  // Props applied to every nav link. When collapsed: square icon footprint,
-  // centred content, and the label surfaced as a tooltip / a11y name.
+  // Props applied to every nav link. When collapsed: square icon footprint and
+  // the label surfaced as a tooltip / a11y name. The visible centring comes from
+  // the icon overlay, not from the row - see the note on justify-content below.
   // The icon overlay inside every row is absolutely positioned, so the row is the
   // containing block; the row also clips, because the label stays mounted (at
   // opacity 0) while the rail squeezes it down to 44px.
@@ -841,7 +899,13 @@ export default function Sidebar({
             height: "var(--control-height)",
             minHeight: "var(--control-height)",
             padding: 8,
-            justifyContent: "center",
+            // NO justify-content override here. The icon overlay is absolutely
+            // positioned and centres itself over the whole row, so centring the
+            // row's flex line buys nothing - but it WOULD yank the still-visible
+            // label to the middle on the frame of the press, which is exactly
+            // the mid-animation content jump the fade timings above exist to
+            // prevent. Left on .app-btn--nav's flex-start, the label is simply
+            // squeezed out by the narrowing rail.
             transition: NAV_LINK_TRANSITION,
             ...extraStyle,
           },
@@ -1092,6 +1156,7 @@ export default function Sidebar({
               pathname={pathname}
               pendingHref={pendingHref}
               isCollapsed={rowsCollapsed}
+              motion={MOTION}
               getNavHref={getNavHref}
               onNavigate={(href) => {
                 recordWorkspaceRecentHref(href);
@@ -1248,6 +1313,19 @@ export default function Sidebar({
                           {renderNavContent("Overlay", "", devOverlayEnabled)}
                         </button>
                       )}
+                      {canShowWebsiteLink && (
+                        <Link
+                          className={`app-btn app-btn--nav${inWebsiteRoute ? " is-active" : ""}`}
+                          href="/website"
+                          prefetch={inPresentationMode ? false : undefined}
+                          onClick={handleNavigationPress}
+                          {...navLinkProps("Website")}
+                        >
+                          {renderNavContent("Website", "/website", inWebsiteRoute, {
+                            iconLabel: "Website Manager",
+                          })}
+                        </Link>
+                      )}
                     </Fragment>
                   );
                 }
@@ -1314,6 +1392,23 @@ export default function Sidebar({
                         )}
                       </div>
                     )}
+                    {canShowWebsiteLink && (
+                      <Link
+                        className="app-btn"
+                        style={{
+                          display: "flex",
+                          width: "100%",
+                          marginTop: "8px",
+                          ...(inWebsiteRoute ? successGhostControlStyle : ghostControlStyle),
+                        }}
+                        href="/website"
+                        prefetch={inPresentationMode ? false : undefined}
+                        aria-current={inWebsiteRoute ? "page" : undefined}
+                        onClick={handleNavigationPress}
+                      >
+                        Website
+                      </Link>
+                    )}
                     {isDevRole && !inPresentationMode && (
                       <Link
                         className="app-btn"
@@ -1367,13 +1462,15 @@ export default function Sidebar({
                 if (inPresentationMode) return null;
                 const isActive = isItemActive(item.href);
                 // Profile button shows the user's full name in place of the
-                // generic "Profile" label. When the rail is collapsed the icon
-                // stays keyed on the original label ("Profile") so
-                // getSidebarNavIcon still resolves; the full name surfaces as the
-                // hover/aria label instead.
+                // generic "Profile" label. The icon is keyed on the original
+                // label ("Profile") through iconLabel so getSidebarNavIcon
+                // always resolves; the full name surfaces as the hover/aria
+                // label. The TEXT swap keys off labelsCollapsed, not
+                // rowsCollapsed, so the name never flips to "Profile" while it
+                // is still on screen - it changes behind a faded-out label.
                 const isProfileItem = item.href === "/profile";
                 const displayLabel = isProfileItem && fullName ? fullName : item.label;
-                const contentLabel = rowsCollapsed ? item.label : displayLabel;
+                const contentLabel = labelsCollapsed ? item.label : displayLabel;
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
@@ -1389,6 +1486,7 @@ export default function Sidebar({
                   >
                     {renderNavContent(contentLabel, item.href, isActive, {
                       truncate: isProfileItem,
+                      iconLabel: item.label,
                     })}
                   </Link>
                 );

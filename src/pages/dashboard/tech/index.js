@@ -67,40 +67,19 @@ const emphasizedSectionSurfaceStyle = {
   ...sectionSurfaceStyle
 };
 
-const statusBadgeBaseStyle = {
-  height: "var(--table-action-btn-height, 32px)",
-  minHeight: "var(--table-action-btn-height, 32px)",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "0 12px",
-  borderRadius: "var(--radius-xs)",
-  fontSize: "11px",
-  fontWeight: "600",
-  lineHeight: 1,
-  whiteSpace: "nowrap"
-};
-
-const getStatusBadgeStyle = (status) => {
+// The status cell is a Badge family tone, not a hand-built box. It used to be
+// an inline style pairing .app-table-action-btn's shape with its own fill, so
+// a job status looked like a row action you could click. .app-badge inside an
+// .app-data-table already resolves to the same 32px dense height, so the
+// footprint is unchanged — only the shape and the palette are now shared.
+const getStatusBadgeTone = (status) => {
   switch (String(status || "").trim().toLowerCase()) {
     case "in progress":
-      return {
-        ...statusBadgeBaseStyle,
-        backgroundColor: "var(--theme)",
-        color: "var(--text-accent)"
-      };
+      return "accent-soft";
     case "complete":
-      return {
-        ...statusBadgeBaseStyle,
-        backgroundColor: "var(--success-surface)",
-        color: "var(--success-text)"
-      };
+      return "success";
     default:
-      return {
-        ...statusBadgeBaseStyle,
-        backgroundColor: "var(--warning-surface)",
-        color: "var(--warning-text)"
-      };
+      return "warning";
   }
 };
 
@@ -288,7 +267,7 @@ export default function TechsDashboard() {
     return <TechsDashboardUi view="section3" PageSkeleton={PageSkeleton} />;
   }
 
-  return <TechsDashboardUi view="section4" actionGridStyle={actionGridStyle} buildToneSurfaceStyle={buildToneSurfaceStyle} buildVehicleLabel={buildVehicleLabel} calculateHoursWorked={calculateHoursWorked} clockInTime={clockInTime} currentJob={currentJob} dashboardActions={dashboardActions} detailLabelStyle={detailLabelStyle} DevLayoutSection={DevLayoutSection} emphasizedSectionSurfaceStyle={emphasizedSectionSurfaceStyle} formatClockInLabel={formatClockInLabel} getStatusBadgeStyle={getStatusBadgeStyle} handleStartJob={handleStartJob} isClockedIn={isClockedIn} jobsListStyle={jobsListStyle} myJobs={myJobs} nextJob={nextJob} pageShellStyle={pageShellStyle} prefetchJob={prefetchJob} router={router} sectionCopyStyle={sectionCopyStyle} sectionHeadingStyle={sectionHeadingStyle} SectionShell={SectionShell} sectionSurfaceStyle={sectionSurfaceStyle} StatCard={StatCard} statsGridStyle={statsGridStyle} visibleJobs={visibleJobs} />;
+  return <TechsDashboardUi view="section4" actionGridStyle={actionGridStyle} buildToneSurfaceStyle={buildToneSurfaceStyle} buildVehicleLabel={buildVehicleLabel} calculateHoursWorked={calculateHoursWorked} clockInTime={clockInTime} currentJob={currentJob} dashboardActions={dashboardActions} detailLabelStyle={detailLabelStyle} DevLayoutSection={DevLayoutSection} emphasizedSectionSurfaceStyle={emphasizedSectionSurfaceStyle} formatClockInLabel={formatClockInLabel} getStatusBadgeTone={getStatusBadgeTone} handleStartJob={handleStartJob} isClockedIn={isClockedIn} jobsListStyle={jobsListStyle} myJobs={myJobs} nextJob={nextJob} pageShellStyle={pageShellStyle} prefetchJob={prefetchJob} router={router} sectionCopyStyle={sectionCopyStyle} sectionHeadingStyle={sectionHeadingStyle} SectionShell={SectionShell} sectionSurfaceStyle={sectionSurfaceStyle} StatCard={StatCard} statsGridStyle={statsGridStyle} visibleJobs={visibleJobs} />;
 
 
 

@@ -519,7 +519,7 @@ export const UI_FAMILIES = [
     component: "src/components/NewsFeed/NewsPostCard.js",
     traceColor: "#0ea5e9",
     description:
-      "The dealership communication hub: feed cards, priority and category chips, author avatars, acknowledgement banners, attachment and record-link rows, comment threads and the reach/read-rate insight blocks.",
+      "The dealership communication hub: feed cards, author avatars, acknowledgement banners, attachment and record-link rows, comment threads and the reach/read-rate insight blocks. Post metadata labels are plain .app-badge in an .app-news-badge-row — this family has no badge shape of its own.",
     variants: [
       {
         id: "card",
@@ -536,17 +536,11 @@ export const UI_FAMILIES = [
         status: "approved",
       },
       {
-        id: "chip",
-        className: "app-news-chip",
-        description: "Category / department / state chip on the accent tint.",
-        usage: "Post metadata rows and filter summaries.",
-        status: "approved",
-      },
-      {
-        id: "chip-urgent",
-        className: "app-news-chip app-news-chip--urgent",
-        description: "Urgent priority chip. Tone is carried by tint + glyph, never by a border.",
-        usage: "Urgent announcements only.",
+        id: "badge-row",
+        className: "app-news-badge-row",
+        description:
+          "Lays out a post's metadata badges. The badges inside it are .app-badge + a tone modifier from the Badge family — never a news-local pill.",
+        usage: "Post metadata rows, linked-post rows and filter summaries.",
         status: "approved",
       },
       {
@@ -588,15 +582,24 @@ export const UI_FAMILIES = [
         id: "section",
         className: "app-news-section",
         description:
-          "A titled block inside a post — an uppercase label with a count pill above its rows.",
-        usage: "\"Related records\" and \"Attachments\" in the post detail.",
+          "A titled block inside a post — an uppercase label with a count pill, then its rows on the same line. Sized to its content, never stretched.",
+        usage:
+          "\"Related records\" and \"Attachments\" in the post detail, on a theme layer.",
+        status: "approved",
+      },
+      {
+        id: "section-row",
+        className: "app-news-section-row",
+        description:
+          "Wrapping row that carries the record and attachment blocks side by side, each at its content width.",
+        usage: "Wraps .app-news-section pairs in the post detail and the bare lists on a card.",
         status: "approved",
       },
       {
         id: "attachment",
         className: "app-news-attachment",
         description:
-          "One attachment row: file-type tag (or thumbnail), name, size. Laid out on a responsive grid by .app-news-attachments.",
+          "One attachment row: file-type tag (or thumbnail), name, size. Flowed along the line by .app-news-attachments at its content width.",
         usage: "Attachments on a post card, in the detail and in the composer.",
         status: "approved",
       },
@@ -604,7 +607,7 @@ export const UI_FAMILIES = [
         id: "record-link",
         className: "app-news-link",
         description:
-          "One link to a DMS record: muted record-type tag plus the record itself. Grid-laid by .app-news-links.",
+          "One link to a DMS record: muted record-type tag plus the record itself. Flowed along the line by .app-news-links.",
         usage: "Related records on a post card, in the detail and in the composer.",
         status: "approved",
       },
